@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.rest;
 
 import org.nmcpye.datarun.domain.Warehouse;
 import org.nmcpye.datarun.repository.WarehouseRepositoryCustom;
-import org.nmcpye.datarun.service.WarehouseServiceCustom;
+import org.nmcpye.datarun.service.custom.WarehouseServiceCustom;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

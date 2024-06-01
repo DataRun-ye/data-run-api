@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.rest;
 
 import org.nmcpye.datarun.domain.ItnsVillage;
 import org.nmcpye.datarun.repository.ItnsVillageRepositoryCustom;
-import org.nmcpye.datarun.service.ItnsVillageServiceCustom;
+import org.nmcpye.datarun.service.custom.ItnsVillageServiceCustom;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

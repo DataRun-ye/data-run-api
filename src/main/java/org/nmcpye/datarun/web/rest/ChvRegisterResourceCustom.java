@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.rest;
 
 import org.nmcpye.datarun.domain.ChvRegister;
 import org.nmcpye.datarun.repository.ChvRegisterRepositoryCustom;
-import org.nmcpye.datarun.service.ChvRegisterServiceCustom;
+import org.nmcpye.datarun.service.custom.ChvRegisterServiceCustom;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

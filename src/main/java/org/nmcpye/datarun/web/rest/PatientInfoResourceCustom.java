@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.rest;
 
 import org.nmcpye.datarun.domain.PatientInfo;
 import org.nmcpye.datarun.repository.PatientInfoRepositoryCustom;
-import org.nmcpye.datarun.service.PatientInfoServiceCustom;
+import org.nmcpye.datarun.service.custom.PatientInfoServiceCustom;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
