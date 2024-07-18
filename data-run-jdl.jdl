@@ -285,21 +285,21 @@ entity RefreshToken {
     expiryDate Instant
 }
 
-//SystemFormType
-entity TeamFormAccess {
-    uid String required unique maxlength(11)
-    code String
-    name String
-    sessionDate Instant required
-    subject MSessionSubject
-    sessions Integer required
-    people Integer required
-    comment String
-    deleted Boolean
-    startEntryTime Instant
-    finishedEntryTime Instant
-    status SyncableStatus
-}
+////SystemFormType
+//entity TeamFormAccess {
+//    uid String required unique maxlength(11)
+//    code String
+//    name String
+//    sessionDate Instant required
+//    subject MSessionSubject
+//    sessions Integer required
+//    people Integer required
+//    comment String
+//    deleted Boolean
+//    startEntryTime Instant
+//    finishedEntryTime Instant
+//    status SyncableStatus
+//}
 
 // Define Relationships
 relationship ManyToOne {
@@ -414,4 +414,4 @@ relationship ManyToOne {
 //dto * with mapstruct
 
 service * with serviceImpl
-paginate RefreshToken, ChvRegister, ChvSession, Assignment, Activity, Team, Warehouse, WarehouseTransaction, ItnsVillageHousesDetail, ItnsVillage, VillageLocation with pagination
+paginate Assignment, VillageLocation, RefreshToken, ChvRegister, ChvSession, Activity, Team, Warehouse, WarehouseItem, WarehouseTransaction, ItnsVillageHousesDetail, ItnsVillage with pagination
