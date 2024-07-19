@@ -1,0 +1,110 @@
+// Define Enums
+enum ValueType {
+    Text,
+    LongText,
+    Letter,
+    PhoneNumber,
+    Email,
+    Boolean,
+    TrueOnly,
+    Date,
+    DateTime,
+    Time,
+    Number,
+    UnitInterval,
+    Percentage,
+    Integer,
+    IntegerPositive,
+    IntegerNegative,
+    IntegerZeroOrPositive,
+    Username,
+    Coordinate,
+    OrganisationUnit,
+    Reference,
+    Age,
+    URL,
+    FileResource,
+    Image,
+    SelectMulti,
+    SelectOne,
+    YesNo,
+    GeoJson,
+    Team,
+    Activity,
+    Warehouse
+}
+
+enum RuleAction {
+    Show,
+    Hide,
+    Error,
+    Warning,
+}
+
+
+entity Activity {
+    uid String unique maxlength(11)
+    code String unique
+    name String
+    startDate Instant required
+    endDate Instant
+    disabled Boolean
+    deleteClientData Boolean
+}
+
+
+entity DataForm {
+    uid String required unique maxlength(11)
+    code String unique
+    name String required
+    description String maxlength(2000)
+    disabled Boolean
+}
+
+entity DataField {
+    uid String required unique maxlength(11)
+    code String unique
+    name String required unique
+    description String maxlength(2000)
+    type ValueType
+    required Boolean
+}
+
+entity DataFieldRule {
+    uid String required unique maxlength(11)
+    code String unique
+    name String required
+    description String maxlength(2000)
+    expression String maxlength(2000)
+    action RuleAction
+}
+
+entity DataOption {
+    uid String required unique maxlength(11)
+    code String unique
+    name String required unique
+    description String maxlength(2000)
+}
+
+// Define Relationships
+relationship ManyToMany {
+    DataForm{field (name)} to DataField{form(name) required}
+    DataField{option (name)} to DataOption
+}
+
+relationship ManyToOne {
+    DataForm{activity(name) required} to Activity
+}
+
+relationship ManyToOne {
+    DataFieldRule{field(name) required} to DataField{rule(name)}
+}
+
+relationship OneToMany {
+    DataForm{rule} to DataFieldRule{form(name) required}
+}
+
+//dto * with mapstruct
+
+service * with serviceImpl
+paginate Activity, DataForm, DataField, DataOption, DataFieldRule with pagination
