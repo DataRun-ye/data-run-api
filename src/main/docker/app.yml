@@ -2,8 +2,8 @@
 name: datarunapi
 services:
   app:
-#    env_file:
-#      - .env
+    env_file:
+      - .env
     image: datarunapi
     container_name: datarunapi-app
     environment:
