@@ -89,6 +89,7 @@ entity DataOption {
 // Define Relationships
 relationship ManyToMany {
     DataForm{field (name)} to DataField{form(name) required}
+    DataForm{mainField (name)} to DataField
     DataField{option (name)} to DataOption
 }
 

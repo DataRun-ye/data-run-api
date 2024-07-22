@@ -47,12 +47,6 @@ public class WebConfigurer implements ServletContextInitializer {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = jHipsterProperties.getCors();
         if (!CollectionUtils.isEmpty(config.getAllowedOrigins()) || !CollectionUtils.isEmpty(config.getAllowedOriginPatterns())) {
-            config.setAllowedOrigins(List.of("*"));
-            config.setAllowedMethods(List.of("*"));
-            config.setAllowedHeaders(List.of("*"));
-            config.setExposedHeaders(List.of("Authorization", "Link", "X-Total-Count"));
-            config.setAllowCredentials(true);
-            config.setMaxAge(1800L);
             log.debug("Registering CORS filter");
             source.registerCorsConfiguration("/api/**", config);
             source.registerCorsConfiguration("/management/**", config);
