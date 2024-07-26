@@ -583,19 +583,17 @@ class ItnsVillageResourceIT {
         partialUpdatedItnsVillage.setId(itnsVillage.getId());
 
         partialUpdatedItnsVillage
-            .uid(UPDATED_UID)
+            .code(UPDATED_CODE)
+            .submissionUuid(UPDATED_SUBMISSION_UUID)
+            .submissionId(UPDATED_SUBMISSION_ID)
             .workDayDate(UPDATED_WORK_DAY_DATE)
-            .surveytype(UPDATED_SURVEYTYPE)
             .otherReasonComment(UPDATED_OTHER_REASON_COMMENT)
-            .reasonNotcomplete(UPDATED_REASON_NOTCOMPLETE)
-            .settlement(UPDATED_SETTLEMENT)
+            .settlementName(UPDATED_SETTLEMENT_NAME)
             .tlCommenet(UPDATED_TL_COMMENET)
+            .timeSpentHours(UPDATED_TIME_SPENT_HOURS)
             .timeSpentMinutes(UPDATED_TIME_SPENT_MINUTES)
-            .locationCaptureTime(UPDATED_LOCATION_CAPTURE_TIME)
             .hoProof(UPDATED_HO_PROOF)
-            .hoProofUrl(UPDATED_HO_PROOF_URL)
-            .submissionTime(UPDATED_SUBMISSION_TIME)
-            .untargetingOtherSpecify(UPDATED_UNTARGETING_OTHER_SPECIFY)
+            .otherVillageName(UPDATED_OTHER_VILLAGE_NAME)
             .otherVillageCode(UPDATED_OTHER_VILLAGE_CODE);
 
         restItnsVillageMockMvc

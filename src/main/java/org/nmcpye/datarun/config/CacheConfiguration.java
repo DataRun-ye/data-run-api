@@ -70,6 +70,7 @@ public class CacheConfiguration {
             createCache(cm, org.nmcpye.datarun.domain.RefreshToken.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.TeamFormAccess.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.ChvRegister.class.getName());
+            createCache(cm, org.nmcpye.datarun.domain.ChvSupply.class.getName());
             // jhipster-needle-ehcache-add-entry
         };
     }

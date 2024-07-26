@@ -3,7 +3,7 @@ package org.nmcpye.datarun.web.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.Mockito.*;
-import static org.nmcpye.datarun.domain.ChvSessionAsserts.*;
+import static org.nmcpye.datarun.domain.ChvSupplyAsserts.*;
 import static org.nmcpye.datarun.web.rest.TestUtil.createUpdateProxyForBean;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -22,12 +22,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nmcpye.datarun.IntegrationTest;
 import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.domain.ChvSession;
+import org.nmcpye.datarun.domain.ChvSupply;
 import org.nmcpye.datarun.domain.Team;
-import org.nmcpye.datarun.domain.enumeration.MSessionSubject;
+import org.nmcpye.datarun.domain.enumeration.DrugItemType;
 import org.nmcpye.datarun.domain.enumeration.SyncableStatus;
-import org.nmcpye.datarun.repository.ChvSessionRepository;
-import org.nmcpye.datarun.service.ChvSessionService;
+import org.nmcpye.datarun.repository.ChvSupplyRepository;
+import org.nmcpye.datarun.service.ChvSupplyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.data.domain.PageImpl;
@@ -38,13 +38,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Integration tests for the {@link ChvSessionResource} REST controller.
+ * Integration tests for the {@link ChvSupplyResource} REST controller.
  */
 @IntegrationTest
 @ExtendWith(MockitoExtension.class)
 @AutoConfigureMockMvc
 @WithMockUser
-class ChvSessionResourceIT {
+class ChvSupplyResourceIT {
 
     private static final String DEFAULT_UID = "AAAAAAAAAA";
     private static final String UPDATED_UID = "BBBBBBBBBB";
@@ -55,17 +55,23 @@ class ChvSessionResourceIT {
     private static final String DEFAULT_NAME = "AAAAAAAAAA";
     private static final String UPDATED_NAME = "BBBBBBBBBB";
 
-    private static final Instant DEFAULT_SESSION_DATE = Instant.ofEpochMilli(0L);
-    private static final Instant UPDATED_SESSION_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    private static final DrugItemType DEFAULT_ITEM = DrugItemType.MRDT;
+    private static final DrugItemType UPDATED_ITEM = DrugItemType.MDrugs;
 
-    private static final MSessionSubject DEFAULT_SUBJECT = MSessionSubject.ITNs;
-    private static final MSessionSubject UPDATED_SUBJECT = MSessionSubject.BreadingSite;
+    private static final Integer DEFAULT_PREVIOUS_BALANCE = 1;
+    private static final Integer UPDATED_PREVIOUS_BALANCE = 2;
 
-    private static final Integer DEFAULT_SESSIONS = 1;
-    private static final Integer UPDATED_SESSIONS = 2;
+    private static final Integer DEFAULT_NEW_SUPPLY = 1;
+    private static final Integer UPDATED_NEW_SUPPLY = 2;
 
-    private static final Integer DEFAULT_PEOPLE = 1;
-    private static final Integer UPDATED_PEOPLE = 2;
+    private static final Integer DEFAULT_CONSUMED = 1;
+    private static final Integer UPDATED_CONSUMED = 2;
+
+    private static final Integer DEFAULT_LOST_CORRUPT = 1;
+    private static final Integer UPDATED_LOST_CORRUPT = 2;
+
+    private static final Integer DEFAULT_REMAINING = 1;
+    private static final Integer UPDATED_REMAINING = 2;
 
     private static final String DEFAULT_COMMENT = "AAAAAAAAAA";
     private static final String UPDATED_COMMENT = "BBBBBBBBBB";
@@ -82,7 +88,7 @@ class ChvSessionResourceIT {
     private static final SyncableStatus DEFAULT_STATUS = SyncableStatus.ACTIVE;
     private static final SyncableStatus UPDATED_STATUS = SyncableStatus.COMPLETED;
 
-    private static final String ENTITY_API_URL = "/api/chv-sessions";
+    private static final String ENTITY_API_URL = "/api/chv-supplies";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
 
     private static Random random = new Random();
@@ -92,21 +98,21 @@ class ChvSessionResourceIT {
     private ObjectMapper om;
 
     @Autowired
-    private ChvSessionRepository chvSessionRepository;
+    private ChvSupplyRepository chvSupplyRepository;
 
     @Mock
-    private ChvSessionRepository chvSessionRepositoryMock;
+    private ChvSupplyRepository chvSupplyRepositoryMock;
 
     @Mock
-    private ChvSessionService chvSessionServiceMock;
+    private ChvSupplyService chvSupplyServiceMock;
 
     @Autowired
     private EntityManager em;
 
     @Autowired
-    private MockMvc restChvSessionMockMvc;
+    private MockMvc restChvSupplyMockMvc;
 
-    private ChvSession chvSession;
+    private ChvSupply chvSupply;
 
     /**
      * Create an entity for this test.
@@ -114,30 +120,22 @@ class ChvSessionResourceIT {
      * This is a static method, as tests for other entities might also need it,
      * if they test an entity which requires the current entity.
      */
-    public static ChvSession createEntity(EntityManager em) {
-        ChvSession chvSession = new ChvSession()
+    public static ChvSupply createEntity(EntityManager em) {
+        ChvSupply chvSupply = new ChvSupply()
             .uid(DEFAULT_UID)
             .code(DEFAULT_CODE)
             .name(DEFAULT_NAME)
-            .sessionDate(DEFAULT_SESSION_DATE)
-            .subject(DEFAULT_SUBJECT)
-            .sessions(DEFAULT_SESSIONS)
-            .people(DEFAULT_PEOPLE)
+            .item(DEFAULT_ITEM)
+            .previousBalance(DEFAULT_PREVIOUS_BALANCE)
+            .newSupply(DEFAULT_NEW_SUPPLY)
+            .consumed(DEFAULT_CONSUMED)
+            .lostCorrupt(DEFAULT_LOST_CORRUPT)
+            .remaining(DEFAULT_REMAINING)
             .comment(DEFAULT_COMMENT)
             .deleted(DEFAULT_DELETED)
             .startEntryTime(DEFAULT_START_ENTRY_TIME)
             .finishedEntryTime(DEFAULT_FINISHED_ENTRY_TIME)
             .status(DEFAULT_STATUS);
-        // Add required entity
-        Team team;
-        if (TestUtil.findAll(em, Team.class).isEmpty()) {
-            team = TeamResourceIT.createEntity(em);
-            em.persist(team);
-            em.flush();
-        } else {
-            team = TestUtil.findAll(em, Team.class).get(0);
-        }
-        chvSession.setTeam(team);
         // Add required entity
         Activity activity;
         if (TestUtil.findAll(em, Activity.class).isEmpty()) {
@@ -147,8 +145,18 @@ class ChvSessionResourceIT {
         } else {
             activity = TestUtil.findAll(em, Activity.class).get(0);
         }
-        chvSession.setActivity(activity);
-        return chvSession;
+        chvSupply.setActivity(activity);
+        // Add required entity
+        Team team;
+        if (TestUtil.findAll(em, Team.class).isEmpty()) {
+            team = TeamResourceIT.createEntity(em);
+            em.persist(team);
+            em.flush();
+        } else {
+            team = TestUtil.findAll(em, Team.class).get(0);
+        }
+        chvSupply.setTeam(team);
+        return chvSupply;
     }
 
     /**
@@ -157,30 +165,22 @@ class ChvSessionResourceIT {
      * This is a static method, as tests for other entities might also need it,
      * if they test an entity which requires the current entity.
      */
-    public static ChvSession createUpdatedEntity(EntityManager em) {
-        ChvSession chvSession = new ChvSession()
+    public static ChvSupply createUpdatedEntity(EntityManager em) {
+        ChvSupply chvSupply = new ChvSupply()
             .uid(UPDATED_UID)
             .code(UPDATED_CODE)
             .name(UPDATED_NAME)
-            .sessionDate(UPDATED_SESSION_DATE)
-            .subject(UPDATED_SUBJECT)
-            .sessions(UPDATED_SESSIONS)
-            .people(UPDATED_PEOPLE)
+            .item(UPDATED_ITEM)
+            .previousBalance(UPDATED_PREVIOUS_BALANCE)
+            .newSupply(UPDATED_NEW_SUPPLY)
+            .consumed(UPDATED_CONSUMED)
+            .lostCorrupt(UPDATED_LOST_CORRUPT)
+            .remaining(UPDATED_REMAINING)
             .comment(UPDATED_COMMENT)
             .deleted(UPDATED_DELETED)
             .startEntryTime(UPDATED_START_ENTRY_TIME)
             .finishedEntryTime(UPDATED_FINISHED_ENTRY_TIME)
             .status(UPDATED_STATUS);
-        // Add required entity
-        Team team;
-        if (TestUtil.findAll(em, Team.class).isEmpty()) {
-            team = TeamResourceIT.createUpdatedEntity(em);
-            em.persist(team);
-            em.flush();
-        } else {
-            team = TestUtil.findAll(em, Team.class).get(0);
-        }
-        chvSession.setTeam(team);
         // Add required entity
         Activity activity;
         if (TestUtil.findAll(em, Activity.class).isEmpty()) {
@@ -190,49 +190,59 @@ class ChvSessionResourceIT {
         } else {
             activity = TestUtil.findAll(em, Activity.class).get(0);
         }
-        chvSession.setActivity(activity);
-        return chvSession;
+        chvSupply.setActivity(activity);
+        // Add required entity
+        Team team;
+        if (TestUtil.findAll(em, Team.class).isEmpty()) {
+            team = TeamResourceIT.createUpdatedEntity(em);
+            em.persist(team);
+            em.flush();
+        } else {
+            team = TestUtil.findAll(em, Team.class).get(0);
+        }
+        chvSupply.setTeam(team);
+        return chvSupply;
     }
 
     @BeforeEach
     public void initTest() {
-        chvSession = createEntity(em);
+        chvSupply = createEntity(em);
     }
 
     @Test
     @Transactional
-    void createChvSession() throws Exception {
+    void createChvSupply() throws Exception {
         long databaseSizeBeforeCreate = getRepositoryCount();
-        // Create the ChvSession
-        var returnedChvSession = om.readValue(
-            restChvSessionMockMvc
-                .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSession)))
+        // Create the ChvSupply
+        var returnedChvSupply = om.readValue(
+            restChvSupplyMockMvc
+                .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSupply)))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
                 .getContentAsString(),
-            ChvSession.class
+            ChvSupply.class
         );
 
-        // Validate the ChvSession in the database
+        // Validate the ChvSupply in the database
         assertIncrementedRepositoryCount(databaseSizeBeforeCreate);
-        assertChvSessionUpdatableFieldsEquals(returnedChvSession, getPersistedChvSession(returnedChvSession));
+        assertChvSupplyUpdatableFieldsEquals(returnedChvSupply, getPersistedChvSupply(returnedChvSupply));
     }
 
     @Test
     @Transactional
-    void createChvSessionWithExistingId() throws Exception {
-        // Create the ChvSession with an existing ID
-        chvSession.setId(1L);
+    void createChvSupplyWithExistingId() throws Exception {
+        // Create the ChvSupply with an existing ID
+        chvSupply.setId(1L);
 
         long databaseSizeBeforeCreate = getRepositoryCount();
 
         // An entity with an existing ID cannot be created, so this API call must fail
-        restChvSessionMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSession)))
+        restChvSupplyMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSupply)))
             .andExpect(status().isBadRequest());
 
-        // Validate the ChvSession in the database
+        // Validate the ChvSupply in the database
         assertSameRepositoryCount(databaseSizeBeforeCreate);
     }
 
@@ -241,12 +251,12 @@ class ChvSessionResourceIT {
     void checkUidIsRequired() throws Exception {
         long databaseSizeBeforeTest = getRepositoryCount();
         // set the field null
-        chvSession.setUid(null);
+        chvSupply.setUid(null);
 
-        // Create the ChvSession, which fails.
+        // Create the ChvSupply, which fails.
 
-        restChvSessionMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSession)))
+        restChvSupplyMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSupply)))
             .andExpect(status().isBadRequest());
 
         assertSameRepositoryCount(databaseSizeBeforeTest);
@@ -257,12 +267,12 @@ class ChvSessionResourceIT {
     void checkStatusIsRequired() throws Exception {
         long databaseSizeBeforeTest = getRepositoryCount();
         // set the field null
-        chvSession.setStatus(null);
+        chvSupply.setStatus(null);
 
-        // Create the ChvSession, which fails.
+        // Create the ChvSupply, which fails.
 
-        restChvSessionMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSession)))
+        restChvSupplyMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSupply)))
             .andExpect(status().isBadRequest());
 
         assertSameRepositoryCount(databaseSizeBeforeTest);
@@ -270,23 +280,25 @@ class ChvSessionResourceIT {
 
     @Test
     @Transactional
-    void getAllChvSessions() throws Exception {
+    void getAllChvSupplies() throws Exception {
         // Initialize the database
-        chvSessionRepository.saveAndFlush(chvSession);
+        chvSupplyRepository.saveAndFlush(chvSupply);
 
-        // Get all the chvSessionList
-        restChvSessionMockMvc
+        // Get all the chvSupplyList
+        restChvSupplyMockMvc
             .perform(get(ENTITY_API_URL + "?sort=id,desc"))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(jsonPath("$.[*].id").value(hasItem(chvSession.getId().intValue())))
+            .andExpect(jsonPath("$.[*].id").value(hasItem(chvSupply.getId().intValue())))
             .andExpect(jsonPath("$.[*].uid").value(hasItem(DEFAULT_UID)))
             .andExpect(jsonPath("$.[*].code").value(hasItem(DEFAULT_CODE)))
             .andExpect(jsonPath("$.[*].name").value(hasItem(DEFAULT_NAME)))
-            .andExpect(jsonPath("$.[*].sessionDate").value(hasItem(DEFAULT_SESSION_DATE.toString())))
-            .andExpect(jsonPath("$.[*].subject").value(hasItem(DEFAULT_SUBJECT.toString())))
-            .andExpect(jsonPath("$.[*].sessions").value(hasItem(DEFAULT_SESSIONS)))
-            .andExpect(jsonPath("$.[*].people").value(hasItem(DEFAULT_PEOPLE)))
+            .andExpect(jsonPath("$.[*].item").value(hasItem(DEFAULT_ITEM.toString())))
+            .andExpect(jsonPath("$.[*].previousBalance").value(hasItem(DEFAULT_PREVIOUS_BALANCE)))
+            .andExpect(jsonPath("$.[*].newSupply").value(hasItem(DEFAULT_NEW_SUPPLY)))
+            .andExpect(jsonPath("$.[*].consumed").value(hasItem(DEFAULT_CONSUMED)))
+            .andExpect(jsonPath("$.[*].lostCorrupt").value(hasItem(DEFAULT_LOST_CORRUPT)))
+            .andExpect(jsonPath("$.[*].remaining").value(hasItem(DEFAULT_REMAINING)))
             .andExpect(jsonPath("$.[*].comment").value(hasItem(DEFAULT_COMMENT)))
             .andExpect(jsonPath("$.[*].deleted").value(hasItem(DEFAULT_DELETED.booleanValue())))
             .andExpect(jsonPath("$.[*].startEntryTime").value(hasItem(DEFAULT_START_ENTRY_TIME.toString())))
@@ -295,41 +307,43 @@ class ChvSessionResourceIT {
     }
 
     @SuppressWarnings({ "unchecked" })
-    void getAllChvSessionsWithEagerRelationshipsIsEnabled() throws Exception {
-        when(chvSessionServiceMock.findAllWithEagerRelationships(any())).thenReturn(new PageImpl(new ArrayList<>()));
+    void getAllChvSuppliesWithEagerRelationshipsIsEnabled() throws Exception {
+        when(chvSupplyServiceMock.findAllWithEagerRelationships(any())).thenReturn(new PageImpl(new ArrayList<>()));
 
-        restChvSessionMockMvc.perform(get(ENTITY_API_URL + "?eagerload=true")).andExpect(status().isOk());
+        restChvSupplyMockMvc.perform(get(ENTITY_API_URL + "?eagerload=true")).andExpect(status().isOk());
 
-        verify(chvSessionServiceMock, times(1)).findAllWithEagerRelationships(any());
+        verify(chvSupplyServiceMock, times(1)).findAllWithEagerRelationships(any());
     }
 
     @SuppressWarnings({ "unchecked" })
-    void getAllChvSessionsWithEagerRelationshipsIsNotEnabled() throws Exception {
-        when(chvSessionServiceMock.findAllWithEagerRelationships(any())).thenReturn(new PageImpl(new ArrayList<>()));
+    void getAllChvSuppliesWithEagerRelationshipsIsNotEnabled() throws Exception {
+        when(chvSupplyServiceMock.findAllWithEagerRelationships(any())).thenReturn(new PageImpl(new ArrayList<>()));
 
-        restChvSessionMockMvc.perform(get(ENTITY_API_URL + "?eagerload=false")).andExpect(status().isOk());
-        verify(chvSessionRepositoryMock, times(1)).findAll(any(Pageable.class));
+        restChvSupplyMockMvc.perform(get(ENTITY_API_URL + "?eagerload=false")).andExpect(status().isOk());
+        verify(chvSupplyRepositoryMock, times(1)).findAll(any(Pageable.class));
     }
 
     @Test
     @Transactional
-    void getChvSession() throws Exception {
+    void getChvSupply() throws Exception {
         // Initialize the database
-        chvSessionRepository.saveAndFlush(chvSession);
+        chvSupplyRepository.saveAndFlush(chvSupply);
 
-        // Get the chvSession
-        restChvSessionMockMvc
-            .perform(get(ENTITY_API_URL_ID, chvSession.getId()))
+        // Get the chvSupply
+        restChvSupplyMockMvc
+            .perform(get(ENTITY_API_URL_ID, chvSupply.getId()))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(jsonPath("$.id").value(chvSession.getId().intValue()))
+            .andExpect(jsonPath("$.id").value(chvSupply.getId().intValue()))
             .andExpect(jsonPath("$.uid").value(DEFAULT_UID))
             .andExpect(jsonPath("$.code").value(DEFAULT_CODE))
             .andExpect(jsonPath("$.name").value(DEFAULT_NAME))
-            .andExpect(jsonPath("$.sessionDate").value(DEFAULT_SESSION_DATE.toString()))
-            .andExpect(jsonPath("$.subject").value(DEFAULT_SUBJECT.toString()))
-            .andExpect(jsonPath("$.sessions").value(DEFAULT_SESSIONS))
-            .andExpect(jsonPath("$.people").value(DEFAULT_PEOPLE))
+            .andExpect(jsonPath("$.item").value(DEFAULT_ITEM.toString()))
+            .andExpect(jsonPath("$.previousBalance").value(DEFAULT_PREVIOUS_BALANCE))
+            .andExpect(jsonPath("$.newSupply").value(DEFAULT_NEW_SUPPLY))
+            .andExpect(jsonPath("$.consumed").value(DEFAULT_CONSUMED))
+            .andExpect(jsonPath("$.lostCorrupt").value(DEFAULT_LOST_CORRUPT))
+            .andExpect(jsonPath("$.remaining").value(DEFAULT_REMAINING))
             .andExpect(jsonPath("$.comment").value(DEFAULT_COMMENT))
             .andExpect(jsonPath("$.deleted").value(DEFAULT_DELETED.booleanValue()))
             .andExpect(jsonPath("$.startEntryTime").value(DEFAULT_START_ENTRY_TIME.toString()))
@@ -339,243 +353,249 @@ class ChvSessionResourceIT {
 
     @Test
     @Transactional
-    void getNonExistingChvSession() throws Exception {
-        // Get the chvSession
-        restChvSessionMockMvc.perform(get(ENTITY_API_URL_ID, Long.MAX_VALUE)).andExpect(status().isNotFound());
+    void getNonExistingChvSupply() throws Exception {
+        // Get the chvSupply
+        restChvSupplyMockMvc.perform(get(ENTITY_API_URL_ID, Long.MAX_VALUE)).andExpect(status().isNotFound());
     }
 
     @Test
     @Transactional
-    void putExistingChvSession() throws Exception {
+    void putExistingChvSupply() throws Exception {
         // Initialize the database
-        chvSessionRepository.saveAndFlush(chvSession);
+        chvSupplyRepository.saveAndFlush(chvSupply);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
-        // Update the chvSession
-        ChvSession updatedChvSession = chvSessionRepository.findById(chvSession.getId()).orElseThrow();
-        // Disconnect from session so that the updates on updatedChvSession are not directly saved in db
-        em.detach(updatedChvSession);
-        updatedChvSession
+        // Update the chvSupply
+        ChvSupply updatedChvSupply = chvSupplyRepository.findById(chvSupply.getId()).orElseThrow();
+        // Disconnect from session so that the updates on updatedChvSupply are not directly saved in db
+        em.detach(updatedChvSupply);
+        updatedChvSupply
             .uid(UPDATED_UID)
             .code(UPDATED_CODE)
             .name(UPDATED_NAME)
-            .sessionDate(UPDATED_SESSION_DATE)
-            .subject(UPDATED_SUBJECT)
-            .sessions(UPDATED_SESSIONS)
-            .people(UPDATED_PEOPLE)
+            .item(UPDATED_ITEM)
+            .previousBalance(UPDATED_PREVIOUS_BALANCE)
+            .newSupply(UPDATED_NEW_SUPPLY)
+            .consumed(UPDATED_CONSUMED)
+            .lostCorrupt(UPDATED_LOST_CORRUPT)
+            .remaining(UPDATED_REMAINING)
             .comment(UPDATED_COMMENT)
             .deleted(UPDATED_DELETED)
             .startEntryTime(UPDATED_START_ENTRY_TIME)
             .finishedEntryTime(UPDATED_FINISHED_ENTRY_TIME)
             .status(UPDATED_STATUS);
 
-        restChvSessionMockMvc
+        restChvSupplyMockMvc
             .perform(
-                put(ENTITY_API_URL_ID, updatedChvSession.getId())
+                put(ENTITY_API_URL_ID, updatedChvSupply.getId())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(om.writeValueAsBytes(updatedChvSession))
+                    .content(om.writeValueAsBytes(updatedChvSupply))
             )
             .andExpect(status().isOk());
 
-        // Validate the ChvSession in the database
+        // Validate the ChvSupply in the database
         assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertPersistedChvSessionToMatchAllProperties(updatedChvSession);
+        assertPersistedChvSupplyToMatchAllProperties(updatedChvSupply);
     }
 
     @Test
     @Transactional
-    void putNonExistingChvSession() throws Exception {
+    void putNonExistingChvSupply() throws Exception {
         long databaseSizeBeforeUpdate = getRepositoryCount();
-        chvSession.setId(longCount.incrementAndGet());
+        chvSupply.setId(longCount.incrementAndGet());
 
         // If the entity doesn't have an ID, it will throw BadRequestAlertException
-        restChvSessionMockMvc
+        restChvSupplyMockMvc
             .perform(
-                put(ENTITY_API_URL_ID, chvSession.getId()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSession))
+                put(ENTITY_API_URL_ID, chvSupply.getId()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSupply))
             )
             .andExpect(status().isBadRequest());
 
-        // Validate the ChvSession in the database
+        // Validate the ChvSupply in the database
         assertSameRepositoryCount(databaseSizeBeforeUpdate);
     }
 
     @Test
     @Transactional
-    void putWithIdMismatchChvSession() throws Exception {
+    void putWithIdMismatchChvSupply() throws Exception {
         long databaseSizeBeforeUpdate = getRepositoryCount();
-        chvSession.setId(longCount.incrementAndGet());
+        chvSupply.setId(longCount.incrementAndGet());
 
         // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restChvSessionMockMvc
+        restChvSupplyMockMvc
             .perform(
                 put(ENTITY_API_URL_ID, longCount.incrementAndGet())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(om.writeValueAsBytes(chvSession))
+                    .content(om.writeValueAsBytes(chvSupply))
             )
             .andExpect(status().isBadRequest());
 
-        // Validate the ChvSession in the database
+        // Validate the ChvSupply in the database
         assertSameRepositoryCount(databaseSizeBeforeUpdate);
     }
 
     @Test
     @Transactional
-    void putWithMissingIdPathParamChvSession() throws Exception {
+    void putWithMissingIdPathParamChvSupply() throws Exception {
         long databaseSizeBeforeUpdate = getRepositoryCount();
-        chvSession.setId(longCount.incrementAndGet());
+        chvSupply.setId(longCount.incrementAndGet());
 
         // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restChvSessionMockMvc
-            .perform(put(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSession)))
+        restChvSupplyMockMvc
+            .perform(put(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSupply)))
             .andExpect(status().isMethodNotAllowed());
 
-        // Validate the ChvSession in the database
+        // Validate the ChvSupply in the database
         assertSameRepositoryCount(databaseSizeBeforeUpdate);
     }
 
     @Test
     @Transactional
-    void partialUpdateChvSessionWithPatch() throws Exception {
+    void partialUpdateChvSupplyWithPatch() throws Exception {
         // Initialize the database
-        chvSessionRepository.saveAndFlush(chvSession);
+        chvSupplyRepository.saveAndFlush(chvSupply);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
-        // Update the chvSession using partial update
-        ChvSession partialUpdatedChvSession = new ChvSession();
-        partialUpdatedChvSession.setId(chvSession.getId());
+        // Update the chvSupply using partial update
+        ChvSupply partialUpdatedChvSupply = new ChvSupply();
+        partialUpdatedChvSupply.setId(chvSupply.getId());
 
-        partialUpdatedChvSession
-            .name(UPDATED_NAME)
-            .sessionDate(UPDATED_SESSION_DATE)
-            .subject(UPDATED_SUBJECT)
-            .sessions(UPDATED_SESSIONS)
+        partialUpdatedChvSupply
+            .uid(UPDATED_UID)
+            .code(UPDATED_CODE)
+            .item(UPDATED_ITEM)
+            .previousBalance(UPDATED_PREVIOUS_BALANCE)
+            .newSupply(UPDATED_NEW_SUPPLY)
+            .lostCorrupt(UPDATED_LOST_CORRUPT)
+            .remaining(UPDATED_REMAINING)
             .deleted(UPDATED_DELETED)
-            .startEntryTime(UPDATED_START_ENTRY_TIME)
-            .finishedEntryTime(UPDATED_FINISHED_ENTRY_TIME);
+            .status(UPDATED_STATUS);
 
-        restChvSessionMockMvc
+        restChvSupplyMockMvc
             .perform(
-                patch(ENTITY_API_URL_ID, partialUpdatedChvSession.getId())
+                patch(ENTITY_API_URL_ID, partialUpdatedChvSupply.getId())
                     .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(partialUpdatedChvSession))
+                    .content(om.writeValueAsBytes(partialUpdatedChvSupply))
             )
             .andExpect(status().isOk());
 
-        // Validate the ChvSession in the database
+        // Validate the ChvSupply in the database
 
         assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertChvSessionUpdatableFieldsEquals(
-            createUpdateProxyForBean(partialUpdatedChvSession, chvSession),
-            getPersistedChvSession(chvSession)
+        assertChvSupplyUpdatableFieldsEquals(
+            createUpdateProxyForBean(partialUpdatedChvSupply, chvSupply),
+            getPersistedChvSupply(chvSupply)
         );
     }
 
     @Test
     @Transactional
-    void fullUpdateChvSessionWithPatch() throws Exception {
+    void fullUpdateChvSupplyWithPatch() throws Exception {
         // Initialize the database
-        chvSessionRepository.saveAndFlush(chvSession);
+        chvSupplyRepository.saveAndFlush(chvSupply);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
-        // Update the chvSession using partial update
-        ChvSession partialUpdatedChvSession = new ChvSession();
-        partialUpdatedChvSession.setId(chvSession.getId());
+        // Update the chvSupply using partial update
+        ChvSupply partialUpdatedChvSupply = new ChvSupply();
+        partialUpdatedChvSupply.setId(chvSupply.getId());
 
-        partialUpdatedChvSession
+        partialUpdatedChvSupply
             .uid(UPDATED_UID)
             .code(UPDATED_CODE)
             .name(UPDATED_NAME)
-            .sessionDate(UPDATED_SESSION_DATE)
-            .subject(UPDATED_SUBJECT)
-            .sessions(UPDATED_SESSIONS)
-            .people(UPDATED_PEOPLE)
+            .item(UPDATED_ITEM)
+            .previousBalance(UPDATED_PREVIOUS_BALANCE)
+            .newSupply(UPDATED_NEW_SUPPLY)
+            .consumed(UPDATED_CONSUMED)
+            .lostCorrupt(UPDATED_LOST_CORRUPT)
+            .remaining(UPDATED_REMAINING)
             .comment(UPDATED_COMMENT)
             .deleted(UPDATED_DELETED)
             .startEntryTime(UPDATED_START_ENTRY_TIME)
             .finishedEntryTime(UPDATED_FINISHED_ENTRY_TIME)
             .status(UPDATED_STATUS);
 
-        restChvSessionMockMvc
+        restChvSupplyMockMvc
             .perform(
-                patch(ENTITY_API_URL_ID, partialUpdatedChvSession.getId())
+                patch(ENTITY_API_URL_ID, partialUpdatedChvSupply.getId())
                     .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(partialUpdatedChvSession))
+                    .content(om.writeValueAsBytes(partialUpdatedChvSupply))
             )
             .andExpect(status().isOk());
 
-        // Validate the ChvSession in the database
+        // Validate the ChvSupply in the database
 
         assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertChvSessionUpdatableFieldsEquals(partialUpdatedChvSession, getPersistedChvSession(partialUpdatedChvSession));
+        assertChvSupplyUpdatableFieldsEquals(partialUpdatedChvSupply, getPersistedChvSupply(partialUpdatedChvSupply));
     }
 
     @Test
     @Transactional
-    void patchNonExistingChvSession() throws Exception {
+    void patchNonExistingChvSupply() throws Exception {
         long databaseSizeBeforeUpdate = getRepositoryCount();
-        chvSession.setId(longCount.incrementAndGet());
+        chvSupply.setId(longCount.incrementAndGet());
 
         // If the entity doesn't have an ID, it will throw BadRequestAlertException
-        restChvSessionMockMvc
+        restChvSupplyMockMvc
             .perform(
-                patch(ENTITY_API_URL_ID, chvSession.getId())
+                patch(ENTITY_API_URL_ID, chvSupply.getId())
                     .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(chvSession))
+                    .content(om.writeValueAsBytes(chvSupply))
             )
             .andExpect(status().isBadRequest());
 
-        // Validate the ChvSession in the database
+        // Validate the ChvSupply in the database
         assertSameRepositoryCount(databaseSizeBeforeUpdate);
     }
 
     @Test
     @Transactional
-    void patchWithIdMismatchChvSession() throws Exception {
+    void patchWithIdMismatchChvSupply() throws Exception {
         long databaseSizeBeforeUpdate = getRepositoryCount();
-        chvSession.setId(longCount.incrementAndGet());
+        chvSupply.setId(longCount.incrementAndGet());
 
         // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restChvSessionMockMvc
+        restChvSupplyMockMvc
             .perform(
                 patch(ENTITY_API_URL_ID, longCount.incrementAndGet())
                     .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(chvSession))
+                    .content(om.writeValueAsBytes(chvSupply))
             )
             .andExpect(status().isBadRequest());
 
-        // Validate the ChvSession in the database
+        // Validate the ChvSupply in the database
         assertSameRepositoryCount(databaseSizeBeforeUpdate);
     }
 
     @Test
     @Transactional
-    void patchWithMissingIdPathParamChvSession() throws Exception {
+    void patchWithMissingIdPathParamChvSupply() throws Exception {
         long databaseSizeBeforeUpdate = getRepositoryCount();
-        chvSession.setId(longCount.incrementAndGet());
+        chvSupply.setId(longCount.incrementAndGet());
 
         // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restChvSessionMockMvc
-            .perform(patch(ENTITY_API_URL).contentType("application/merge-patch+json").content(om.writeValueAsBytes(chvSession)))
+        restChvSupplyMockMvc
+            .perform(patch(ENTITY_API_URL).contentType("application/merge-patch+json").content(om.writeValueAsBytes(chvSupply)))
             .andExpect(status().isMethodNotAllowed());
 
-        // Validate the ChvSession in the database
+        // Validate the ChvSupply in the database
         assertSameRepositoryCount(databaseSizeBeforeUpdate);
     }
 
     @Test
     @Transactional
-    void deleteChvSession() throws Exception {
+    void deleteChvSupply() throws Exception {
         // Initialize the database
-        chvSessionRepository.saveAndFlush(chvSession);
+        chvSupplyRepository.saveAndFlush(chvSupply);
 
         long databaseSizeBeforeDelete = getRepositoryCount();
 
-        // Delete the chvSession
-        restChvSessionMockMvc
-            .perform(delete(ENTITY_API_URL_ID, chvSession.getId()).accept(MediaType.APPLICATION_JSON))
+        // Delete the chvSupply
+        restChvSupplyMockMvc
+            .perform(delete(ENTITY_API_URL_ID, chvSupply.getId()).accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isNoContent());
 
         // Validate the database contains one less item
@@ -583,7 +603,7 @@ class ChvSessionResourceIT {
     }
 
     protected long getRepositoryCount() {
-        return chvSessionRepository.count();
+        return chvSupplyRepository.count();
     }
 
     protected void assertIncrementedRepositoryCount(long countBefore) {
@@ -598,15 +618,15 @@ class ChvSessionResourceIT {
         assertThat(countBefore).isEqualTo(getRepositoryCount());
     }
 
-    protected ChvSession getPersistedChvSession(ChvSession chvSession) {
-        return chvSessionRepository.findById(chvSession.getId()).orElseThrow();
+    protected ChvSupply getPersistedChvSupply(ChvSupply chvSupply) {
+        return chvSupplyRepository.findById(chvSupply.getId()).orElseThrow();
     }
 
-    protected void assertPersistedChvSessionToMatchAllProperties(ChvSession expectedChvSession) {
-        assertChvSessionAllPropertiesEquals(expectedChvSession, getPersistedChvSession(expectedChvSession));
+    protected void assertPersistedChvSupplyToMatchAllProperties(ChvSupply expectedChvSupply) {
+        assertChvSupplyAllPropertiesEquals(expectedChvSupply, getPersistedChvSupply(expectedChvSupply));
     }
 
-    protected void assertPersistedChvSessionToMatchUpdatableProperties(ChvSession expectedChvSession) {
-        assertChvSessionAllUpdatablePropertiesEquals(expectedChvSession, getPersistedChvSession(expectedChvSession));
+    protected void assertPersistedChvSupplyToMatchUpdatableProperties(ChvSupply expectedChvSupply) {
+        assertChvSupplyAllUpdatablePropertiesEquals(expectedChvSupply, getPersistedChvSupply(expectedChvSupply));
     }
 }

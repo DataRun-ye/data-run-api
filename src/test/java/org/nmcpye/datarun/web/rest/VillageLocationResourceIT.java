@@ -439,12 +439,11 @@ class VillageLocationResourceIT {
             .uid(UPDATED_UID)
             .name(UPDATED_NAME)
             .mappingStatus(UPDATED_MAPPING_STATUS)
-            .villageName(UPDATED_VILLAGE_NAME)
-            .subvillageName(UPDATED_SUBVILLAGE_NAME)
-            .urbanRuralId(UPDATED_URBAN_RURAL_ID)
-            .longitude(UPDATED_LONGITUDE)
-            .latitude(UPDATED_LATITUDE)
-            .ppcCodeGis(UPDATED_PPC_CODE_GIS);
+            .districtCode(UPDATED_DISTRICT_CODE)
+            .villageUid(UPDATED_VILLAGE_UID)
+            .subdistrictName(UPDATED_SUBDISTRICT_NAME)
+            .pop2022(UPDATED_POP_2022)
+            .level(UPDATED_LEVEL);
 
         restVillageLocationMockMvc
             .perform(

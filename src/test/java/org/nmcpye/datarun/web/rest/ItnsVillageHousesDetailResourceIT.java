@@ -415,11 +415,13 @@ class ItnsVillageHousesDetailResourceIT {
         partialUpdatedItnsVillageHousesDetail.setId(itnsVillageHousesDetail.getId());
 
         partialUpdatedItnsVillageHousesDetail
+            .uid(UPDATED_UID)
             .code(UPDATED_CODE)
+            .couponId(UPDATED_COUPON_ID)
+            .name(UPDATED_NAME)
+            .pregnant(UPDATED_PREGNANT)
             .population(UPDATED_POPULATION)
-            .maleChild(UPDATED_MALE_CHILD)
             .femaleChild(UPDATED_FEMALE_CHILD)
-            .itns(UPDATED_ITNS)
             .comment(UPDATED_COMMENT)
             .houseUuid(UPDATED_HOUSE_UUID);
 

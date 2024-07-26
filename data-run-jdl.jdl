@@ -7,6 +7,12 @@ enum TeamType {
     CHV_PATIENTS
 }
 
+enum DrugItemType {
+    MRDT,
+    MDrugs,
+    ARTSUPP
+}
+
 enum EntryTypeEnum {
     DISPENSED
     RETURNED
@@ -279,6 +285,23 @@ entity ChvSession {
     status SyncableStatus required required
 }
 
+entity ChvSupply {
+    uid String required unique maxlength(11)
+    code String
+    name String
+    item DrugItemType
+    previousBalance Integer
+    newSupply Integer
+    consumed Integer
+    lostCorrupt Integer
+    remaining Integer
+    comment String
+    deleted Boolean
+    startEntryTime Instant
+    finishedEntryTime Instant
+    status SyncableStatus required required
+}
+
 entity RefreshToken {
     uid String unique maxlength(11)
     token String required unique
@@ -316,6 +339,15 @@ relationship ManyToOne {
 
 relationship ManyToOne {
     ChvRegister{team(code) required} to Team
+}
+
+//
+relationship ManyToOne {
+    ChvSupply {activity (code) required} to Activity
+}
+
+relationship ManyToOne {
+    ChvSupply {team(code) required} to Team
 }
 
 

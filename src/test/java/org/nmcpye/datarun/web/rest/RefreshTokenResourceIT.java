@@ -318,7 +318,7 @@ class RefreshTokenResourceIT {
         RefreshToken partialUpdatedRefreshToken = new RefreshToken();
         partialUpdatedRefreshToken.setId(refreshToken.getId());
 
-        partialUpdatedRefreshToken.uid(UPDATED_UID).token(UPDATED_TOKEN);
+        partialUpdatedRefreshToken.uid(UPDATED_UID);
 
         restRefreshTokenMockMvc
             .perform(
