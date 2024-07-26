@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.service;
 
-import java.util.List;
 import java.util.Optional;
 import org.nmcpye.datarun.domain.ChvSupply;
 import org.springframework.data.domain.Page;
@@ -37,9 +36,10 @@ public interface ChvSupplyService {
     /**
      * Get all the chvSupplies.
      *
+     * @param pageable the pagination information.
      * @return the list of entities.
      */
-    List<ChvSupply> findAll();
+    Page<ChvSupply> findAll(Pageable pageable);
 
     /**
      * Get all the chvSupplies with eager load of many-to-many relationships.

@@ -446,4 +446,4 @@ relationship ManyToOne {
 //dto * with mapstruct
 
 service * with serviceImpl
-paginate Assignment, VillageLocation, RefreshToken, ChvRegister, ChvSession, Activity, Team, Warehouse, WarehouseItem, WarehouseTransaction, ItnsVillageHousesDetail, ItnsVillage with pagination
+paginate ChvSupply, Assignment, VillageLocation, RefreshToken, ChvRegister, ChvSession, Activity, Team, Warehouse, WarehouseItem, WarehouseTransaction, ItnsVillageHousesDetail, ItnsVillage with pagination

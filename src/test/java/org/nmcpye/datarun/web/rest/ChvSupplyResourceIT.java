@@ -465,13 +465,15 @@ class ChvSupplyResourceIT {
         partialUpdatedChvSupply
             .uid(UPDATED_UID)
             .code(UPDATED_CODE)
+            .name(UPDATED_NAME)
             .item(UPDATED_ITEM)
             .previousBalance(UPDATED_PREVIOUS_BALANCE)
             .newSupply(UPDATED_NEW_SUPPLY)
             .lostCorrupt(UPDATED_LOST_CORRUPT)
             .remaining(UPDATED_REMAINING)
+            .comment(UPDATED_COMMENT)
             .deleted(UPDATED_DELETED)
-            .status(UPDATED_STATUS);
+            .finishedEntryTime(UPDATED_FINISHED_ENTRY_TIME);
 
         restChvSupplyMockMvc
             .perform(

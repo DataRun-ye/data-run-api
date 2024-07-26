@@ -9,6 +9,7 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.domain.enumeration.DrugItemType;
 import org.nmcpye.datarun.domain.enumeration.SyncableStatus;
+import org.springframework.data.domain.Persistable;
 
 /**
  * A ChvSupply.
@@ -16,8 +17,9 @@ import org.nmcpye.datarun.domain.enumeration.SyncableStatus;
 @Entity
 @Table(name = "chv_supply")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+@JsonIgnoreProperties(value = { "new" })
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class ChvSupply implements Serializable {
+public class ChvSupply extends AbstractAuditingEntity<Long> implements Serializable, Persistable<Long> {
 
     private static final long serialVersionUID = 1L;
 
@@ -73,6 +75,13 @@ public class ChvSupply implements Serializable {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private SyncableStatus status;
+
+    // Inherited createdBy definition
+    // Inherited createdDate definition
+    // Inherited lastModifiedBy definition
+    // Inherited lastModifiedDate definition
+    @Transient
+    private boolean isPersisted;
 
     @ManyToOne(optional = false)
     @NotNull
@@ -281,6 +290,47 @@ public class ChvSupply implements Serializable {
         this.status = status;
     }
 
+    // Inherited createdBy methods
+    public ChvSupply createdBy(String createdBy) {
+        this.setCreatedBy(createdBy);
+        return this;
+    }
+
+    // Inherited createdDate methods
+    public ChvSupply createdDate(Instant createdDate) {
+        this.setCreatedDate(createdDate);
+        return this;
+    }
+
+    // Inherited lastModifiedBy methods
+    public ChvSupply lastModifiedBy(String lastModifiedBy) {
+        this.setLastModifiedBy(lastModifiedBy);
+        return this;
+    }
+
+    // Inherited lastModifiedDate methods
+    public ChvSupply lastModifiedDate(Instant lastModifiedDate) {
+        this.setLastModifiedDate(lastModifiedDate);
+        return this;
+    }
+
+    @PostLoad
+    @PostPersist
+    public void updateEntityState() {
+        this.setIsPersisted();
+    }
+
+    @Transient
+    @Override
+    public boolean isNew() {
+        return !this.isPersisted;
+    }
+
+    public ChvSupply setIsPersisted() {
+        this.isPersisted = true;
+        return this;
+    }
+
     public Activity getActivity() {
         return this.activity;
     }
@@ -345,6 +395,10 @@ public class ChvSupply implements Serializable {
             ", startEntryTime='" + getStartEntryTime() + "'" +
             ", finishedEntryTime='" + getFinishedEntryTime() + "'" +
             ", status='" + getStatus() + "'" +
+            ", createdBy='" + getCreatedBy() + "'" +
+            ", createdDate='" + getCreatedDate() + "'" +
+            ", lastModifiedBy='" + getLastModifiedBy() + "'" +
+            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             "}";
     }
 }

@@ -22,7 +22,9 @@ public class ChvSupplyTestSamples {
             .consumed(1)
             .lostCorrupt(1)
             .remaining(1)
-            .comment("comment1");
+            .comment("comment1")
+            .createdBy("createdBy1")
+            .lastModifiedBy("lastModifiedBy1");
     }
 
     public static ChvSupply getChvSupplySample2() {
@@ -36,7 +38,9 @@ public class ChvSupplyTestSamples {
             .consumed(2)
             .lostCorrupt(2)
             .remaining(2)
-            .comment("comment2");
+            .comment("comment2")
+            .createdBy("createdBy2")
+            .lastModifiedBy("lastModifiedBy2");
     }
 
     public static ChvSupply getChvSupplyRandomSampleGenerator() {
@@ -50,6 +54,8 @@ public class ChvSupplyTestSamples {
             .consumed(intCount.incrementAndGet())
             .lostCorrupt(intCount.incrementAndGet())
             .remaining(intCount.incrementAndGet())
-            .comment(UUID.randomUUID().toString());
+            .comment(UUID.randomUUID().toString())
+            .createdBy(UUID.randomUUID().toString())
+            .lastModifiedBy(UUID.randomUUID().toString());
     }
 }

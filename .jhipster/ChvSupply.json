@@ -3,6 +3,7 @@
     "changelogDate": "20240726221133"
   },
   "applications": "*",
+  "enableAudit": true,
   "fields": [
     {
       "fieldName": "uid",
@@ -64,10 +65,45 @@
       "fieldType": "SyncableStatus",
       "fieldValidateRules": ["required"],
       "fieldValues": "ACTIVE,COMPLETED"
+    },
+    {
+      "auditField": true,
+      "autoGenerate": true,
+      "columnType": "varchar(50)",
+      "fieldName": "createdBy",
+      "fieldType": "String",
+      "nullable": false,
+      "readonly": true
+    },
+    {
+      "auditField": true,
+      "autoGenerate": true,
+      "fieldName": "createdDate",
+      "fieldType": "Instant",
+      "nullable": false,
+      "readonly": true
+    },
+    {
+      "auditField": true,
+      "autoGenerate": true,
+      "columnType": "varchar(50)",
+      "fieldName": "lastModifiedBy",
+      "fieldType": "String",
+      "nullable": false,
+      "readonly": true
+    },
+    {
+      "auditField": true,
+      "autoGenerate": true,
+      "fieldName": "lastModifiedDate",
+      "fieldType": "Instant",
+      "nullable": false,
+      "readonly": true
     }
   ],
   "incrementalChangelog": true,
   "name": "ChvSupply",
+  "pagination": "pagination",
   "relationships": [
     {
       "otherEntityField": "code",

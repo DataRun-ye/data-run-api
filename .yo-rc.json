@@ -43,7 +43,7 @@
     "jhipsterVersion": "8.4.0",
     "jwtSecretKey": "MjJmNDA2ZjQwMzg5NWE0ZDFiZmZmY2IzYzk2NmQ0MmI4OTM0NWU1MDBjYmU1N2VkYmNjOWM2ZmI2OGVlZWVmYTI0NDM0Y2JhY2ZhMWI2Nzg2ZGY2YWNhZjNmMTViYTcyZTNmMjMwNmFjZTRkMTAzOTVhYjlkNDRhOWZhNDJhY2I=",
     "languages": ["en", "ar-ly"],
-    "lastLiquibaseTimestamp": 1722031893000,
+    "lastLiquibaseTimestamp": 1722032904000,
     "messageBroker": false,
     "nativeLanguage": "en",
     "packageName": "org.nmcpye.datarun",
