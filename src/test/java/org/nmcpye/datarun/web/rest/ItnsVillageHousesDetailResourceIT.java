@@ -415,10 +415,13 @@ class ItnsVillageHousesDetailResourceIT {
         partialUpdatedItnsVillageHousesDetail.setId(itnsVillageHousesDetail.getId());
 
         partialUpdatedItnsVillageHousesDetail
-            .uid(UPDATED_UID)
-            .pregnant(UPDATED_PREGNANT)
-            .displaced(UPDATED_DISPLACED)
-            .submissionUuid(UPDATED_SUBMISSION_UUID);
+            .code(UPDATED_CODE)
+            .population(UPDATED_POPULATION)
+            .maleChild(UPDATED_MALE_CHILD)
+            .femaleChild(UPDATED_FEMALE_CHILD)
+            .itns(UPDATED_ITNS)
+            .comment(UPDATED_COMMENT)
+            .houseUuid(UPDATED_HOUSE_UUID);
 
         restItnsVillageHousesDetailMockMvc
             .perform(

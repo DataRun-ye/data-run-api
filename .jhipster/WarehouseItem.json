@@ -60,6 +60,7 @@
   ],
   "incrementalChangelog": false,
   "name": "WarehouseItem",
+  "pagination": "pagination",
   "relationships": [],
   "searchEngine": "no",
   "service": "serviceImpl"

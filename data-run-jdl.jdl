@@ -134,8 +134,8 @@ entity ItnsVillage {
     uid String required unique maxlength(11)
     code String unique
     name String
-    submissionUuid String unique required
-    submissionId Long required
+    submissionUuid String unique
+    submissionId Long
     workDayDate Instant
     surveytype SurveyTypeEnum
     otherReasonComment String maxlength(2000)
@@ -158,7 +158,7 @@ entity ItnsVillage {
     startEntryTime Instant
     finishedEntryTime Instant
     deleted Boolean
-    status SyncableStatus required
+    status SyncableStatus
 }
 
 entity ItnsVillageHousesDetail {
@@ -227,11 +227,11 @@ entity WarehouseTransaction {
     uid String required unique maxlength(11)
     code String
     name String
-    imovUid String unique required
-    transactionDate Instant required
+    imovUid String unique
+    transactionDate Instant
     phaseNo Integer
-    entryType String required
-    quantity Integer required min(0)
+    entryType String
+    quantity Integer  min(0)
     notes String maxlength(2000)
     personName String maxlength(2000)
     workDayId Integer
@@ -241,17 +241,17 @@ entity WarehouseTransaction {
     submissionUuid String
     startEntryTime Instant
     finishedEntryTime Instant
-    status SyncableStatus required
+    status SyncableStatus
 }
 
 entity ChvRegister {
     uid String required unique maxlength(11)
     code String
-    name String required
+    name String
     locationName String
     age Integer
     gender Gender
-    visitDate Instant required
+    visitDate Instant
     pregnant Boolean
     testResult MTestResult
     detectionType MDetectionType
@@ -261,17 +261,17 @@ entity ChvRegister {
     startEntryTime Instant
     finishedEntryTime Instant
     comment String maxlength(2000)
-    status SyncableStatus required
+    status SyncableStatus
 }
 
 entity ChvSession {
     uid String required unique maxlength(11)
     code String
     name String
-    sessionDate Instant required
+    sessionDate Instant
     subject MSessionSubject
-    sessions Integer required
-    people Integer required
+    sessions Integer
+    people Integer
     comment String
     deleted Boolean
     startEntryTime Instant

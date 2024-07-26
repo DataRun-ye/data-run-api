@@ -40,20 +40,17 @@ public class ChvSession extends AbstractAuditingEntity<Long> implements Serializ
     @Column(name = "name")
     private String name;
 
-    @NotNull
-    @Column(name = "session_date", nullable = false)
+    @Column(name = "session_date")
     private Instant sessionDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "subject")
     private MSessionSubject subject;
 
-    @NotNull
-    @Column(name = "sessions", nullable = false)
+    @Column(name = "sessions")
     private Integer sessions;
 
-    @NotNull
-    @Column(name = "people", nullable = false)
+    @Column(name = "people")
     private Integer people;
 
     @Column(name = "comment")

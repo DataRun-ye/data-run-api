@@ -276,7 +276,7 @@ class ReviewTeamResourceIT {
         ReviewTeam partialUpdatedReviewTeam = new ReviewTeam();
         partialUpdatedReviewTeam.setId(reviewTeam.getId());
 
-        partialUpdatedReviewTeam.user(UPDATED_USER);
+        partialUpdatedReviewTeam.uid(UPDATED_UID).user(UPDATED_USER);
 
         restReviewTeamMockMvc
             .perform(

@@ -356,54 +356,6 @@ class ItnsVillageResourceIT {
 
     @Test
     @Transactional
-    void checkSubmissionUuidIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        itnsVillage.setSubmissionUuid(null);
-
-        // Create the ItnsVillage, which fails.
-
-        restItnsVillageMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(itnsVillage)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkSubmissionIdIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        itnsVillage.setSubmissionId(null);
-
-        // Create the ItnsVillage, which fails.
-
-        restItnsVillageMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(itnsVillage)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkStatusIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        itnsVillage.setStatus(null);
-
-        // Create the ItnsVillage, which fails.
-
-        restItnsVillageMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(itnsVillage)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
     void getAllItnsVillages() throws Exception {
         // Initialize the database
         itnsVillageRepository.saveAndFlush(itnsVillage);
@@ -631,16 +583,20 @@ class ItnsVillageResourceIT {
         partialUpdatedItnsVillage.setId(itnsVillage.getId());
 
         partialUpdatedItnsVillage
-            .name(UPDATED_NAME)
-            .submissionUuid(UPDATED_SUBMISSION_UUID)
+            .uid(UPDATED_UID)
+            .workDayDate(UPDATED_WORK_DAY_DATE)
+            .surveytype(UPDATED_SURVEYTYPE)
             .otherReasonComment(UPDATED_OTHER_REASON_COMMENT)
-            .settlementName(UPDATED_SETTLEMENT_NAME)
+            .reasonNotcomplete(UPDATED_REASON_NOTCOMPLETE)
+            .settlement(UPDATED_SETTLEMENT)
+            .tlCommenet(UPDATED_TL_COMMENET)
+            .timeSpentMinutes(UPDATED_TIME_SPENT_MINUTES)
             .locationCaptureTime(UPDATED_LOCATION_CAPTURE_TIME)
             .hoProof(UPDATED_HO_PROOF)
+            .hoProofUrl(UPDATED_HO_PROOF_URL)
+            .submissionTime(UPDATED_SUBMISSION_TIME)
             .untargetingOtherSpecify(UPDATED_UNTARGETING_OTHER_SPECIFY)
-            .otherVillageCode(UPDATED_OTHER_VILLAGE_CODE)
-            .otherTeamNo(UPDATED_OTHER_TEAM_NO)
-            .deleted(UPDATED_DELETED);
+            .otherVillageCode(UPDATED_OTHER_VILLAGE_CODE);
 
         restItnsVillageMockMvc
             .perform(

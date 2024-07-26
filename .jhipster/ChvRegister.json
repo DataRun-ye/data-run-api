@@ -17,8 +17,7 @@
     },
     {
       "fieldName": "name",
-      "fieldType": "String",
-      "fieldValidateRules": ["required"]
+      "fieldType": "String"
     },
     {
       "fieldName": "locationName",
@@ -35,8 +34,7 @@
     },
     {
       "fieldName": "visitDate",
-      "fieldType": "Instant",
-      "fieldValidateRules": ["required"]
+      "fieldType": "Instant"
     },
     {
       "fieldName": "pregnant",
@@ -83,7 +81,6 @@
     {
       "fieldName": "status",
       "fieldType": "SyncableStatus",
-      "fieldValidateRules": ["required"],
       "fieldValues": "ACTIVE,COMPLETED"
     },
     {

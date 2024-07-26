@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1722028679130-2" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(255)" columnName="entry_type" tableName="warehouse_transaction"/>
+    </changeSet>
+    <changeSet id="1722028679130-3" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(255)" columnName="imov_uid" tableName="warehouse_transaction"/>
+    </changeSet>
+    <changeSet id="1722028679130-5" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by" tableName="assignment"/>
+    </changeSet>
+    <changeSet id="1722028679130-6" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by" tableName="chv_register"/>
+    </changeSet>
+    <changeSet id="1722028679130-7" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by" tableName="chv_session"/>
+    </changeSet>
+    <changeSet id="1722028679130-8" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by" tableName="itns_village"/>
+    </changeSet>
+    <changeSet id="1722028679130-9" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by"
+                               tableName="itns_village_houses_detail"/>
+    </changeSet>
+    <changeSet id="1722028679130-10" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by" tableName="progress_status"/>
+    </changeSet>
+    <changeSet id="1722028679130-11" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by" tableName="project"/>
+    </changeSet>
+    <changeSet id="1722028679130-12" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by" tableName="refresh_token"/>
+    </changeSet>
+    <changeSet id="1722028679130-13" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by" tableName="review_team"/>
+    </changeSet>
+    <changeSet id="1722028679130-14" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by" tableName="team"/>
+    </changeSet>
+    <changeSet id="1722028679130-15" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by" tableName="village_location"/>
+    </changeSet>
+    <changeSet id="1722028679130-16" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by" tableName="warehouse"/>
+    </changeSet>
+    <changeSet id="1722028679130-17" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by" tableName="warehouse_item"/>
+    </changeSet>
+    <changeSet id="1722028679130-18" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(50)" columnName="last_modified_by"
+                               tableName="warehouse_transaction"/>
+    </changeSet>
+    <changeSet id="1722028679130-19" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(255)" columnName="name" tableName="chv_register"/>
+    </changeSet>
+    <changeSet id="1722028679130-20" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="int" columnName="people" tableName="chv_session"/>
+    </changeSet>
+    <changeSet id="1722028679130-21" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="int" columnName="quantity" tableName="warehouse_transaction"/>
+    </changeSet>
+    <changeSet id="1722028679130-22" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="datetime" columnName="session_date" tableName="chv_session"/>
+    </changeSet>
+    <changeSet id="1722028679130-23" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="int" columnName="sessions" tableName="chv_session"/>
+    </changeSet>
+    <changeSet id="1722028679130-24" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(255)" columnName="status" tableName="chv_register"/>
+    </changeSet>
+    <changeSet id="1722028679130-25" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(255)" columnName="status" tableName="itns_village"/>
+    </changeSet>
+    <changeSet id="1722028679130-26" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(255)" columnName="status" tableName="warehouse_transaction"/>
+    </changeSet>
+    <changeSet id="1722028679130-27" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="bigint" columnName="submission_id" tableName="itns_village"/>
+    </changeSet>
+    <changeSet id="1722028679130-28" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="varchar(255)" columnName="submission_uuid" tableName="itns_village"/>
+    </changeSet>
+    <changeSet id="1722028679130-29" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="datetime" columnName="transaction_date"
+                               tableName="warehouse_transaction"/>
+    </changeSet>
+    <changeSet id="1722028679130-30" author="Hamza (generated)">
+        <dropNotNullConstraint columnDataType="datetime" columnName="visit_date" tableName="chv_register"/>
+    </changeSet>
+
+</databaseChangeLog>

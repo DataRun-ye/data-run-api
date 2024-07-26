@@ -23,12 +23,11 @@
     {
       "fieldName": "submissionUuid",
       "fieldType": "String",
-      "fieldValidateRules": ["unique", "required"]
+      "fieldValidateRules": ["unique"]
     },
     {
       "fieldName": "submissionId",
-      "fieldType": "Long",
-      "fieldValidateRules": ["required"]
+      "fieldType": "Long"
     },
     {
       "fieldName": "workDayDate",
@@ -137,7 +136,6 @@
     {
       "fieldName": "status",
       "fieldType": "SyncableStatus",
-      "fieldValidateRules": ["required"],
       "fieldValues": "ACTIVE,COMPLETED"
     },
     {

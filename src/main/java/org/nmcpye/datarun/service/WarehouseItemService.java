@@ -1,8 +1,9 @@
 package org.nmcpye.datarun.service;
 
-import java.util.List;
 import java.util.Optional;
 import org.nmcpye.datarun.domain.WarehouseItem;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Service Interface for managing {@link org.nmcpye.datarun.domain.WarehouseItem}.
@@ -35,9 +36,10 @@ public interface WarehouseItemService {
     /**
      * Get all the warehouseItems.
      *
+     * @param pageable the pagination information.
      * @return the list of entities.
      */
-    List<WarehouseItem> findAll();
+    Page<WarehouseItem> findAll(Pageable pageable);
 
     /**
      * Get the "id" warehouseItem.

@@ -39,24 +39,20 @@ public class WarehouseTransaction extends AbstractAuditingEntity<Long> implement
     @Column(name = "name")
     private String name;
 
-    @NotNull
-    @Column(name = "imov_uid", nullable = false, unique = true)
+    @Column(name = "imov_uid", unique = true)
     private String imovUid;
 
-    @NotNull
-    @Column(name = "transaction_date", nullable = false)
+    @Column(name = "transaction_date")
     private Instant transactionDate;
 
     @Column(name = "phase_no")
     private Integer phaseNo;
 
-    @NotNull
-    @Column(name = "entry_type", nullable = false)
+    @Column(name = "entry_type")
     private String entryType;
 
-    @NotNull
     @Min(value = 0)
-    @Column(name = "quantity", nullable = false)
+    @Column(name = "quantity")
     private Integer quantity;
 
     @Size(max = 2000)
@@ -88,9 +84,8 @@ public class WarehouseTransaction extends AbstractAuditingEntity<Long> implement
     @Column(name = "finished_entry_time")
     private Instant finishedEntryTime;
 
-    @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status")
     private SyncableStatus status;
 
     // Inherited createdBy definition

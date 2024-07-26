@@ -22,12 +22,11 @@
     {
       "fieldName": "imovUid",
       "fieldType": "String",
-      "fieldValidateRules": ["unique", "required"]
+      "fieldValidateRules": ["unique"]
     },
     {
       "fieldName": "transactionDate",
-      "fieldType": "Instant",
-      "fieldValidateRules": ["required"]
+      "fieldType": "Instant"
     },
     {
       "fieldName": "phaseNo",
@@ -35,13 +34,12 @@
     },
     {
       "fieldName": "entryType",
-      "fieldType": "String",
-      "fieldValidateRules": ["required"]
+      "fieldType": "String"
     },
     {
       "fieldName": "quantity",
       "fieldType": "Integer",
-      "fieldValidateRules": ["required", "min"],
+      "fieldValidateRules": ["min"],
       "fieldValidateRulesMin": "0"
     },
     {
@@ -87,7 +85,6 @@
     {
       "fieldName": "status",
       "fieldType": "SyncableStatus",
-      "fieldValidateRules": ["required"],
       "fieldValues": "ACTIVE,COMPLETED"
     },
     {

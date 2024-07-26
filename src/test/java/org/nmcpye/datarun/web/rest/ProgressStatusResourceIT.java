@@ -273,8 +273,6 @@ class ProgressStatusResourceIT {
         ProgressStatus partialUpdatedProgressStatus = new ProgressStatus();
         partialUpdatedProgressStatus.setId(progressStatus.getId());
 
-        partialUpdatedProgressStatus.code(UPDATED_CODE).name(UPDATED_NAME);
-
         restProgressStatusMockMvc
             .perform(
                 patch(ENTITY_API_URL_ID, partialUpdatedProgressStatus.getId())

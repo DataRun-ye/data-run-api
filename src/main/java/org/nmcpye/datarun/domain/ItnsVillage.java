@@ -43,12 +43,10 @@ public class ItnsVillage extends AbstractAuditingEntity<Long> implements Seriali
     @Column(name = "name")
     private String name;
 
-    @NotNull
-    @Column(name = "submission_uuid", nullable = false, unique = true)
+    @Column(name = "submission_uuid", unique = true)
     private String submissionUuid;
 
-    @NotNull
-    @Column(name = "submission_id", nullable = false)
+    @Column(name = "submission_id")
     private Long submissionId;
 
     @Column(name = "work_day_date")
@@ -126,9 +124,8 @@ public class ItnsVillage extends AbstractAuditingEntity<Long> implements Seriali
     @Column(name = "deleted")
     private Boolean deleted;
 
-    @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status")
     private SyncableStatus status;
 
     // Inherited createdBy definition

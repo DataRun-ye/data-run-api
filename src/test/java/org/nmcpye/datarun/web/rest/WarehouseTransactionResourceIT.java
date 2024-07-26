@@ -265,86 +265,6 @@ class WarehouseTransactionResourceIT {
 
     @Test
     @Transactional
-    void checkImovUidIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        warehouseTransaction.setImovUid(null);
-
-        // Create the WarehouseTransaction, which fails.
-
-        restWarehouseTransactionMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(warehouseTransaction)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkTransactionDateIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        warehouseTransaction.setTransactionDate(null);
-
-        // Create the WarehouseTransaction, which fails.
-
-        restWarehouseTransactionMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(warehouseTransaction)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkEntryTypeIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        warehouseTransaction.setEntryType(null);
-
-        // Create the WarehouseTransaction, which fails.
-
-        restWarehouseTransactionMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(warehouseTransaction)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkQuantityIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        warehouseTransaction.setQuantity(null);
-
-        // Create the WarehouseTransaction, which fails.
-
-        restWarehouseTransactionMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(warehouseTransaction)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkStatusIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        warehouseTransaction.setStatus(null);
-
-        // Create the WarehouseTransaction, which fails.
-
-        restWarehouseTransactionMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(warehouseTransaction)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
     void getAllWarehouseTransactions() throws Exception {
         // Initialize the database
         warehouseTransactionRepository.saveAndFlush(warehouseTransaction);
@@ -544,15 +464,17 @@ class WarehouseTransactionResourceIT {
         partialUpdatedWarehouseTransaction.setId(warehouseTransaction.getId());
 
         partialUpdatedWarehouseTransaction
+            .uid(UPDATED_UID)
             .name(UPDATED_NAME)
             .imovUid(UPDATED_IMOV_UID)
             .transactionDate(UPDATED_TRANSACTION_DATE)
-            .phaseNo(UPDATED_PHASE_NO)
             .entryType(UPDATED_ENTRY_TYPE)
+            .quantity(UPDATED_QUANTITY)
             .notes(UPDATED_NOTES)
+            .submissionTime(UPDATED_SUBMISSION_TIME)
             .submissionId(UPDATED_SUBMISSION_ID)
             .submissionUuid(UPDATED_SUBMISSION_UUID)
-            .finishedEntryTime(UPDATED_FINISHED_ENTRY_TIME);
+            .status(UPDATED_STATUS);
 
         restWarehouseTransactionMockMvc
             .perform(

@@ -254,54 +254,6 @@ class ChvSessionResourceIT {
 
     @Test
     @Transactional
-    void checkSessionDateIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        chvSession.setSessionDate(null);
-
-        // Create the ChvSession, which fails.
-
-        restChvSessionMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSession)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkSessionsIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        chvSession.setSessions(null);
-
-        // Create the ChvSession, which fails.
-
-        restChvSessionMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSession)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkPeopleIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        chvSession.setPeople(null);
-
-        // Create the ChvSession, which fails.
-
-        restChvSessionMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvSession)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
     void checkStatusIsRequired() throws Exception {
         long databaseSizeBeforeTest = getRepositoryCount();
         // set the field null
@@ -494,14 +446,7 @@ class ChvSessionResourceIT {
         ChvSession partialUpdatedChvSession = new ChvSession();
         partialUpdatedChvSession.setId(chvSession.getId());
 
-        partialUpdatedChvSession
-            .uid(UPDATED_UID)
-            .name(UPDATED_NAME)
-            .people(UPDATED_PEOPLE)
-            .deleted(UPDATED_DELETED)
-            .startEntryTime(UPDATED_START_ENTRY_TIME)
-            .finishedEntryTime(UPDATED_FINISHED_ENTRY_TIME)
-            .status(UPDATED_STATUS);
+        partialUpdatedChvSession.code(UPDATED_CODE).deleted(UPDATED_DELETED).finishedEntryTime(UPDATED_FINISHED_ENTRY_TIME);
 
         restChvSessionMockMvc
             .perform(

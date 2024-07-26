@@ -448,13 +448,14 @@ class AssignmentResourceIT {
         partialUpdatedAssignment.setId(assignment.getId());
 
         partialUpdatedAssignment
+            .code(UPDATED_CODE)
+            .phaseNo(UPDATED_PHASE_NO)
             .districtCode(UPDATED_DISTRICT_CODE)
             .gov(UPDATED_GOV)
-            .village(UPDATED_VILLAGE)
+            .district(UPDATED_DISTRICT)
+            .subvillage(UPDATED_SUBVILLAGE)
             .name(UPDATED_NAME)
-            .population(UPDATED_POPULATION)
             .targetType(UPDATED_TARGET_TYPE)
-            .longitude(UPDATED_LONGITUDE)
             .latitude(UPDATED_LATITUDE)
             .startDate(UPDATED_START_DATE);
 

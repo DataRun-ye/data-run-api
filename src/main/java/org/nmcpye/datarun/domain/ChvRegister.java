@@ -41,8 +41,7 @@ public class ChvRegister extends AbstractAuditingEntity<Long> implements Seriali
     @Column(name = "code")
     private String code;
 
-    @NotNull
-    @Column(name = "name", nullable = false)
+    @Column(name = "name")
     private String name;
 
     @Column(name = "location_name")
@@ -55,8 +54,7 @@ public class ChvRegister extends AbstractAuditingEntity<Long> implements Seriali
     @Column(name = "gender")
     private Gender gender;
 
-    @NotNull
-    @Column(name = "visit_date", nullable = false)
+    @Column(name = "visit_date")
     private Instant visitDate;
 
     @Column(name = "pregnant")
@@ -91,9 +89,8 @@ public class ChvRegister extends AbstractAuditingEntity<Long> implements Seriali
     @Column(name = "comment", length = 2000)
     private String comment;
 
-    @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status")
     private SyncableStatus status;
 
     // Inherited createdBy definition

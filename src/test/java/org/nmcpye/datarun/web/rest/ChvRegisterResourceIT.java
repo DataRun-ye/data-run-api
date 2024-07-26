@@ -283,54 +283,6 @@ class ChvRegisterResourceIT {
 
     @Test
     @Transactional
-    void checkNameIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        chvRegister.setName(null);
-
-        // Create the ChvRegister, which fails.
-
-        restChvRegisterMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvRegister)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkVisitDateIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        chvRegister.setVisitDate(null);
-
-        // Create the ChvRegister, which fails.
-
-        restChvRegisterMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvRegister)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkStatusIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        chvRegister.setStatus(null);
-
-        // Create the ChvRegister, which fails.
-
-        restChvRegisterMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(chvRegister)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
     void getAllChvRegisters() throws Exception {
         // Initialize the database
         chvRegisterRepository.saveAndFlush(chvRegister);
@@ -524,7 +476,17 @@ class ChvRegisterResourceIT {
         ChvRegister partialUpdatedChvRegister = new ChvRegister();
         partialUpdatedChvRegister.setId(chvRegister.getId());
 
-        partialUpdatedChvRegister.uid(UPDATED_UID).code(UPDATED_CODE).testResult(UPDATED_TEST_RESULT).severity(UPDATED_SEVERITY);
+        partialUpdatedChvRegister
+            .uid(UPDATED_UID)
+            .code(UPDATED_CODE)
+            .gender(UPDATED_GENDER)
+            .testResult(UPDATED_TEST_RESULT)
+            .detectionType(UPDATED_DETECTION_TYPE)
+            .deleted(UPDATED_DELETED)
+            .startEntryTime(UPDATED_START_ENTRY_TIME)
+            .finishedEntryTime(UPDATED_FINISHED_ENTRY_TIME)
+            .comment(UPDATED_COMMENT)
+            .status(UPDATED_STATUS);
 
         restChvRegisterMockMvc
             .perform(
