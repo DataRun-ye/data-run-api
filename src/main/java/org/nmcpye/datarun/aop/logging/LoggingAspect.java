@@ -46,8 +46,8 @@ public class LoggingAspect {
         "within(org.nmcpye.datarun.repository..*)" +
             " || within(org.nmcpye.datarun.service..*)" +
             " || within(org.nmcpye.datarun.web.rest..*) " +
-            " || within(org.nmcpye.datarun.drun.repository..*)" +
-            " || within(org.nmcpye.datarun.drun.service..*)" +
+            " || within(org.nmcpye.datarun.drun.postgres.repository..*)" +
+            " || within(org.nmcpye.datarun.drun.postgres.service..*)" +
             " || within(org.nmcpye.datarun.web.rest.drun..*)"
     )
     public void applicationPackagePointcut() {

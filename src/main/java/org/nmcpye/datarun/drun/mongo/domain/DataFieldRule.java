@@ -1,0 +1,107 @@
+package org.nmcpye.datarun.drun.mongo.domain;
+
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import org.nmcpye.datarun.drun.mongo.domain.enumeration.RuleAction;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+import java.io.Serializable;
+
+/**
+ * A DataFieldRule.
+ */
+@SuppressWarnings("common-java:DuplicatedBlocks")
+public class DataFieldRule implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @Size(max = 11)
+    @Field("uid")
+    private String uid;
+
+    @NotNull
+    @Field("expression")
+    private String expression;
+
+    @NotNull
+    @Field("action")
+    private RuleAction action;
+
+    private FilterRuleInfo filterInfo;
+
+    // jhipster-needle-entity-add-field - JHipster will add fields here
+
+    public String getUid() {
+        return this.uid;
+    }
+
+    public DataFieldRule uid(String uid) {
+        this.setUid(uid);
+        return this;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
+
+    public String getExpression() {
+        return this.expression;
+    }
+
+    public DataFieldRule expression(String expression) {
+        this.setExpression(expression);
+        return this;
+    }
+
+    public void setExpression(String expression) {
+        this.expression = expression;
+    }
+
+    public RuleAction getAction() {
+        return this.action;
+    }
+
+    public DataFieldRule action(RuleAction action) {
+        this.setAction(action);
+        return this;
+    }
+
+    public void setAction(RuleAction action) {
+        this.action = action;
+    }
+
+    public FilterRuleInfo getFilterInfo() {
+        return filterInfo;
+    }
+
+    public void setFilterInfo(FilterRuleInfo filterInfo) {
+        this.filterInfo = filterInfo;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof DataFieldRule)) {
+            return false;
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        // see https://vladmihalcea.com/how-to-implement-equals-and-hashcode-using-the-jpa-entity-identifier/
+        return getClass().hashCode();
+    }
+
+    // prettier-ignore
+    @Override
+    public String toString() {
+        return "DataFieldRule{" +
+            ", uid='" + getUid() + "'" +
+            ", expression='" + getExpression() + "'" +
+            ", action='" + getAction() + "'" +
+            "}";
+    }
+}

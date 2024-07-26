@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest;
 
 import org.nmcpye.datarun.domain.Team;
-import org.nmcpye.datarun.drun.repository.TeamRepositoryCustom;
-import org.nmcpye.datarun.drun.service.TeamServiceCustom;
+import org.nmcpye.datarun.drun.postgres.repository.TeamRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

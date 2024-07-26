@@ -1,0 +1,26 @@
+package org.nmcpye.datarun.drun.mongo.repository;
+
+import org.nmcpye.datarun.domain.common.IdentifiableObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+import org.springframework.data.repository.NoRepositoryBean;
+
+import java.util.List;
+import java.util.Optional;
+
+@NoRepositoryBean
+public interface IdentifiableMongoRepository<T extends IdentifiableObject<String>>
+    extends MongoRepository<T, String> {
+    @Query("{'uid': ?0}")
+    Optional<T> findByUid(String uid);
+
+    Page<T> findAllByUser(Pageable pageable);
+
+    Page<T> findAllWithEagerRelationshipsByUser(Pageable pageable);
+
+    List<T> findAllWithEagerRelationshipsByUser();
+
+    Optional<T> findOneWithEagerRelationshipsByUser(String id);
+}

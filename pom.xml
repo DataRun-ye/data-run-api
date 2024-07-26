@@ -76,7 +76,21 @@
         <sonar-maven-plugin.version>3.11.0.3922</sonar-maven-plugin.version>
         <spotless-maven-plugin.version>2.43.0</spotless-maven-plugin.version>
         <springdoc-openapi-starter-webmvc-api.version>2.5.0</springdoc-openapi-starter-webmvc-api.version>
+        <!--  NMC      -->
+        <mongock-bom.version>5.4.2</mongock-bom.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.mongock</groupId>
+                <artifactId>mongock-bom</artifactId>
+                <version>${mongock-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -109,6 +123,13 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+
+        <!-- NMC   -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
+        <!--  NMC end      -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-logging</artifactId>
@@ -213,6 +234,16 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
+        <!-- NMC    -->
+        <dependency>
+            <groupId>io.mongock</groupId>
+            <artifactId>mongock-springboot-v3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.mongock</groupId>
+            <artifactId>mongodb-springdata-v4-driver</artifactId>
+        </dependency>
+        <!--  NMC end      -->
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
@@ -898,9 +929,12 @@
                 <!-- default Spring profiles -->
                 <spring.profiles.active>prod${profile.api-docs}${profile.tls}${profile.e2e}${profile.no-liquibase}</spring.profiles.active>
                 <profile.test>testprod</profile.test>
-                <liquibase-plugin.url>jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}</liquibase-plugin.url>
-                <liquibase-plugin.username>${DATABASE_USER}</liquibase-plugin.username>
-                <liquibase-plugin.password>${DATABASE_PASSWORD}</liquibase-plugin.password>
+<!--                <liquibase-plugin.url>jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}</liquibase-plugin.url>-->
+<!--                <liquibase-plugin.username>${DATABASE_USER}</liquibase-plugin.username>-->
+<!--                <liquibase-plugin.password>${DATABASE_PASSWORD}</liquibase-plugin.password>-->
+                <liquibase-plugin.url>${liquibase-url}</liquibase-plugin.url>
+                <liquibase-plugin.username>${liquibase-username}</liquibase-plugin.username>
+                <liquibase-plugin.password>${liquibase-password}</liquibase-plugin.password>
             </properties>
             <build>
                 <plugins>

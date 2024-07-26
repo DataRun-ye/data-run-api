@@ -22,7 +22,7 @@ spring:
       on-profile: '!api-docs'
 springdoc:
   api-docs:
-    enabled: false
+    enabled: true
 ---
 management:
   endpoints:
@@ -87,7 +87,9 @@ management:
       repository:
         autotime:
           enabled: true
-
+mongock:
+  migration-scan-package:
+    - org.nmcpye.datarun.config.dbmigrations
 spring:
   application:
     name: dataRunApi

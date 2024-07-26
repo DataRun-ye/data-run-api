@@ -1,0 +1,39 @@
+package org.nmcpye.datarun.drun.mongo.domain.enumeration;
+
+/**
+ * The ValueType enumeration.
+ */
+public enum ValueType {
+    Text,
+    LongText,
+    Letter,
+    PhoneNumber,
+    Email,
+    Boolean,
+    TrueOnly,
+    Date,
+    DateTime,
+    Time,
+    Number,
+    UnitInterval,
+    Percentage,
+    Integer,
+    IntegerPositive,
+    IntegerNegative,
+    IntegerZeroOrPositive,
+    Username,
+    Coordinate,
+    OrganisationUnit,
+    Reference,
+    Age,
+    URL,
+    FileResource,
+    Image,
+    SelectMulti,
+    SelectOne,
+    YesNo,
+    GeoJson,
+    Team,
+    Activity,
+    Warehouse,
+}

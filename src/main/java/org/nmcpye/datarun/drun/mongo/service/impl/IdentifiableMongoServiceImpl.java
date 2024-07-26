@@ -1,0 +1,79 @@
+package org.nmcpye.datarun.drun.mongo.service.impl;
+
+import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.domain.common.IdentifiableObject;
+import org.nmcpye.datarun.drun.mongo.repository.IdentifiableMongoRepository;
+import org.nmcpye.datarun.drun.mongo.service.IdentifiableMongoService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.util.Optional;
+
+public abstract class IdentifiableMongoServiceImpl<T extends IdentifiableObject<String>>
+    implements IdentifiableMongoService<T> {
+    private final Logger log = LoggerFactory.getLogger(IdentifiableMongoServiceImpl.class);
+
+    protected final IdentifiableMongoRepository<T> repository;
+
+    public IdentifiableMongoServiceImpl(IdentifiableMongoRepository<T> repository) {
+        this.repository = repository;
+    }
+
+
+    @Override
+    public boolean existsByUid(String uid) {
+        return repository.findByUid(uid).isPresent();
+    }
+
+    @Override
+    public Optional<T> findByUid(String uid) {
+        return repository.findByUid(uid);
+    }
+
+    @Override
+    public void deleteByUid(String uid) {
+        repository.findByUid(uid).ifPresent(repository::delete);
+    }
+
+    @Override
+    public T save(T object) {
+        return saveWithRelations(object);
+    }
+
+    @Override
+    public T update(T object) {
+        T existingEntity = repository
+            .findByUid(object.getUid())
+            .orElseThrow(() -> new PropertyNotFoundException("Entity not found with UID: " + object.getUid()));
+
+        log.debug("Request to update T : {}", object);
+        object.setId(existingEntity.getId());
+
+        return saveWithRelations(object);
+    }
+
+    @Override
+    public Page<T> findAll(Pageable pageable) {
+        log.debug("Request to get all ChvRegisters");
+        return repository.findAllByUser(pageable);
+    }
+
+    @Override
+    public Page<T> findAllWithEagerRelationships(Pageable pageable) {
+        return repository.findAllWithEagerRelationshipsByUser(pageable);
+    }
+
+    @Override
+    public Optional<T> findOne(String id) {
+        log.debug("Request to get T : {}", id);
+        return repository.findOneWithEagerRelationshipsByUser(id);
+    }
+
+    @Override
+    public void delete(String id) {
+        log.debug("Request to delete T : {}", id);
+        repository.deleteById(id);
+    }
+}

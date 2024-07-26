@@ -31,6 +31,9 @@ spring:
       enabled: false
     livereload:
       enabled: false
+  data:
+    mongodb:
+      uri: mongodb://${DATABASE_HOST}:27017/${DATABASE_NAME}
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     url: jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}

@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest;
 
 import org.nmcpye.datarun.domain.Assignment;
-import org.nmcpye.datarun.drun.repository.AssignmentRepositoryCustom;
-import org.nmcpye.datarun.drun.service.AssignmentServiceCustom;
+import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.service.AssignmentServiceCustom;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

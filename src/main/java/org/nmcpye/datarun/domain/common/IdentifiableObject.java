@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.domain.common;
 
-public interface IdentifiableObject<ID extends Number> {
+public interface IdentifiableObject<ID> {
 
     void setId(ID id);
 
@@ -13,6 +13,7 @@ public interface IdentifiableObject<ID extends Number> {
 
     void setUid(String uid);
 
-    IdentifiableObject setIsPersisted();
-
+    default IdentifiableObject<ID> setIsPersisted() {
+        return null;
+    }
 }

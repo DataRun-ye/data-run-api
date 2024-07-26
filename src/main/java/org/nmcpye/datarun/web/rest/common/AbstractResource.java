@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.rest.common;
 
 import jakarta.validation.Valid;
 import org.nmcpye.datarun.domain.common.IdentifiableObject;
-import org.nmcpye.datarun.drun.service.IdentifiableService;
+import org.nmcpye.datarun.drun.postgres.service.IdentifiableService;
 import org.nmcpye.datarun.service.dto.drun.SaveSummary;
 import org.nmcpye.datarun.web.rest.ChvRegisterResourceCustom;
 import org.slf4j.Logger;

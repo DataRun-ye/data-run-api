@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest;
 
 import org.nmcpye.datarun.domain.ProgressStatus;
-import org.nmcpye.datarun.drun.repository.ProgressStatusRepositoryCustom;
-import org.nmcpye.datarun.drun.service.ProgressStatusServiceCustom;
+import org.nmcpye.datarun.drun.postgres.repository.ProgressStatusRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.service.ProgressStatusServiceCustom;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
