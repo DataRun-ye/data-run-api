@@ -1,0 +1,13 @@
+name: datarunapi
+services:
+  mongodb:
+    image: mongo:7.0.6
+    ports:
+      - 27017:27017
+    # volumes:
+    #   - ~/volumes/jhipster/masspro/mongodb/:/data/db/
+    healthcheck:
+      test: ['CMD', 'echo', '''db.runCommand("ping").ok''', '|', 'mongo', 'localhost:27017/test', '--quiet']
+      interval: 5s
+      timeout: 5s
+      retries: 10

@@ -5,3 +5,7 @@ services:
     extends:
       file: ./postgresql.yml
       service: postgresql
+  mongodb:
+    extends:
+      file: ./mongodb.yml
+      service: mongodb

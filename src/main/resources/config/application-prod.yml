@@ -33,12 +33,12 @@ spring:
       enabled: false
   data:
     mongodb:
-      uri: mongodb://${DATABASE_HOST}:27017/${DATABASE_NAME}
+      uri: mongodb://mongodb:27017/dataRunApi
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}
-    username: ${DATABASE_USER}
-    password: ${DATABASE_PASSWORD}
+    url: jdbc:postgresql://localhost:5432/dataRunApi
+    username: dataRunApi
+    password: dataRunApi
     hikari:
       poolName: Hikari
       auto-commit: false

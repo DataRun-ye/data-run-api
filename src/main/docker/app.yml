@@ -12,6 +12,7 @@ services:
       - MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED=true
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}
       - SPRING_LIQUIBASE_URL=jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/${DATABASE_NAME}
 #    volumes:
 #      - ../../target/data-run-api-0.0.1-SNAPSHOT.jar:/app/data-run-api-0.0.1-SNAPSHOT.jar
 #    command: ["java", "-jar", "/app/data-run-api-0.0.1-SNAPSHOT.jar"]
@@ -29,7 +30,13 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+      mongodb:
+        condition: service_healthy
   postgresql:
     extends:
       file: ./postgresql.yml
       service: postgresql
+  mongodb:
+    extends:
+      file: ./mongodb.yml
+      service: mongodb
