@@ -3,8 +3,11 @@ package org.nmcpye.datarun.drun.mongo.domain;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
+import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -25,16 +28,19 @@ public class DataForm
     @Id
     private String id;
 
-    @NotNull
     @Size(max = 11)
+    @NotNull
     @Field("uid")
+    @Indexed(unique = true, name = "form_uid")
     private String uid;
 
     @Field("code")
+    @Indexed(unique = true, name = "form_code")
     private String code;
 
     @NotNull
     @Field("name")
+    @Indexed(unique = true, name = "form_name")
     private String name;
 
     @Size(max = 2000)
@@ -44,14 +50,25 @@ public class DataForm
     @Field("disabled")
     private Boolean disabled;
 
-    private Set<DataField> fields = new HashSet<>();
-
-    private Set<DataField> mainFields = new HashSet<>();
-
+    @Field("activity")
     private String activity;
+
+    private Integer version;
 
     @Field("defaultLocal")
     private String defaultLocal;
+
+    private Map<String, String> label;
+
+    @Field("fields")
+    private Set<DataField> fields = new HashSet<>();
+
+    @Field("rules")
+    private Set<DataFieldRule> rules = new HashSet<>();
+
+    @Field("options")
+    private Set<DataOption> options = new HashSet<>();
+
 
     public Integer getVersion() {
         return version;
@@ -60,10 +77,6 @@ public class DataForm
     public void setVersion(Integer version) {
         this.version = version;
     }
-
-    private Integer version;
-
-    private Map<String, String> label;
 
     public String getDefaultLocal() {
         return defaultLocal;
@@ -84,7 +97,46 @@ public class DataForm
         return label;
     }
 
-    // jhipster-needle-entity-add-field - JHipster will add fields here
+    public Set<DataFieldRule> getRules() {
+        return this.rules;
+    }
+
+    public void setRules(Set<DataFieldRule> dataFieldRules) {
+        this.rules = dataFieldRules;
+    }
+
+    public DataForm rules(Set<DataFieldRule> dataFieldRules) {
+        this.setRules(dataFieldRules);
+        return this;
+    }
+
+    public DataForm addRule(DataFieldRule dataFieldRule) {
+        this.rules.add(dataFieldRule);
+        return this;
+    }
+
+    public DataForm removeRule(DataFieldRule dataFieldRule) {
+        this.rules.remove(dataFieldRule);
+        return this;
+    }
+
+    public Set<DataOption> getOptions() {
+        return options;
+    }
+
+    public void setOptions(Set<DataOption> options) {
+        this.options = options;
+    }
+
+    public DataForm addOption(DataOption option) {
+        this.options.add(option);
+        return this;
+    }
+
+    public DataForm removeOption(DataOption option) {
+        this.options.remove(option);
+        return this;
+    }
 
     public String getId() {
         return this.id;
@@ -187,29 +239,6 @@ public class DataForm
         return this;
     }
 
-    public Set<DataField> getMainFields() {
-        return this.mainFields;
-    }
-
-    public void setMainFields(Set<DataField> dataFields) {
-        this.mainFields = dataFields;
-    }
-
-    public DataForm mainFields(Set<DataField> dataFields) {
-        this.setMainFields(dataFields);
-        return this;
-    }
-
-    public DataForm addMainField(DataField dataField) {
-        this.mainFields.add(dataField);
-        return this;
-    }
-
-    public DataForm removeMainField(DataField dataField) {
-        this.mainFields.remove(dataField);
-        return this;
-    }
-
     public String getActivity() {
         return this.activity;
     }
@@ -223,23 +252,18 @@ public class DataForm
         return this;
     }
 
-    // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
-
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof DataForm)) {
-            return false;
-        }
-        return getId() != null && getId().equals(((DataForm) o).getId());
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DataForm dataForm = (DataForm) o;
+        return getUid().equals(dataForm.getUid());
     }
 
     @Override
     public int hashCode() {
-        // see https://vladmihalcea.com/how-to-implement-equals-and-hashcode-using-the-jpa-entity-identifier/
-        return getClass().hashCode();
+        return getUid().hashCode();
     }
 
     // prettier-ignore

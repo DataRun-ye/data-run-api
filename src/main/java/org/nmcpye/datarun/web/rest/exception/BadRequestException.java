@@ -1,7 +1,7 @@
-package org.nmcpye.datarun.web.rest.exception;
-
-public class BadRequestException extends RuntimeException {
-    public BadRequestException(String message) {
-        super(message);
-    }
-}
+//package org.nmcpye.datarun.web.rest.exception;
+//
+//public class BadRequestException extends RuntimeException {
+//    public BadRequestException(String message) {
+//        super(message);
+//    }
+//}

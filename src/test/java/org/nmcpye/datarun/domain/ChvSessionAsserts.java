@@ -55,7 +55,7 @@ public class ChvSessionAsserts {
             .satisfies(e -> assertThat(e.getSessionDate()).as("check sessionDate").isEqualTo(actual.getSessionDate()))
             .satisfies(e -> assertThat(e.getSubject()).as("check subject").isEqualTo(actual.getSubject()))
             .satisfies(e -> assertThat(e.getSessions()).as("check sessions").isEqualTo(actual.getSessions()))
-            .satisfies(e -> assertThat(e.getPeople()).as("check people").isEqualTo(actual.getPeople()))
+            .satisfies(e -> assertThat(e.getPeopleItns()).as("check people").isEqualTo(actual.getPeopleItns()))
             .satisfies(e -> assertThat(e.getComment()).as("check comment").isEqualTo(actual.getComment()))
             .satisfies(e -> assertThat(e.getDeleted()).as("check deleted").isEqualTo(actual.getDeleted()))
             .satisfies(e -> assertThat(e.getStartEntryTime()).as("check startEntryTime").isEqualTo(actual.getStartEntryTime()))

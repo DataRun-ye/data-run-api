@@ -13,6 +13,14 @@ public interface IdentifiableObject<ID> {
 
     void setUid(String uid);
 
+    default String getCode() {
+        return null;
+    }
+
+    default void setCode(String code) {
+
+    }
+
     default IdentifiableObject<ID> setIsPersisted() {
         return null;
     }

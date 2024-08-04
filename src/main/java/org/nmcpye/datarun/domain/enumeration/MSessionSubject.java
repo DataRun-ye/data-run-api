@@ -6,5 +6,5 @@ package org.nmcpye.datarun.domain.enumeration;
 public enum MSessionSubject {
     ITNs,
     BreadingSite,
-    TRANSMISSION_PREVENTION,
+    Transmission_Prevention,
 }

@@ -8,6 +8,7 @@ public enum RuleAction {
     Hide,
     Error,
     Warning,
-    Filter,
     Assign,
+    Filter,
+    ChangeLabel,
 }

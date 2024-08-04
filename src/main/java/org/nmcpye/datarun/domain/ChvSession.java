@@ -50,8 +50,14 @@ public class ChvSession extends AbstractAuditingEntity<Long> implements Serializ
     @Column(name = "sessions")
     private Integer sessions;
 
-    @Column(name = "people")
-    private Integer people;
+    @Column(name = "people_itns")
+    private Integer peopleItns;
+
+    @Column(name = "people_breading_sites")
+    private Integer peopleBreadingSites;
+
+    @Column(name = "people_tranmission_prevention")
+    private Integer peopleTransmissionPrevention;
 
     @Column(name = "comment")
     private String comment;
@@ -180,17 +186,33 @@ public class ChvSession extends AbstractAuditingEntity<Long> implements Serializ
         this.sessions = sessions;
     }
 
-    public Integer getPeople() {
-        return this.people;
+    public Integer getPeopleItns() {
+        return this.peopleItns;
     }
 
-    public ChvSession people(Integer people) {
-        this.setPeople(people);
+    public ChvSession peopleItns(Integer people) {
+        this.setPeopleItns(people);
         return this;
     }
 
-    public void setPeople(Integer people) {
-        this.people = people;
+    public void setPeopleItns(Integer peopleItns) {
+        this.peopleItns = peopleItns;
+    }
+
+    public Integer getPeopleBreadingSites() {
+        return peopleBreadingSites;
+    }
+
+    public void setPeopleBreadingSites(Integer peopleBreadingSites) {
+        this.peopleBreadingSites = peopleBreadingSites;
+    }
+
+    public Integer getPeopleTransmissionPrevention() {
+        return peopleTransmissionPrevention;
+    }
+
+    public void setPeopleTransmissionPrevention(Integer peopleTransmissionPrevention) {
+        this.peopleTransmissionPrevention = peopleTransmissionPrevention;
     }
 
     public String getComment() {
@@ -355,7 +377,7 @@ public class ChvSession extends AbstractAuditingEntity<Long> implements Serializ
             ", sessionDate='" + getSessionDate() + "'" +
             ", subject='" + getSubject() + "'" +
             ", sessions=" + getSessions() +
-            ", people=" + getPeople() +
+            ", people=" + getPeopleItns() +
             ", comment='" + getComment() + "'" +
             ", deleted='" + getDeleted() + "'" +
             ", startEntryTime='" + getStartEntryTime() + "'" +

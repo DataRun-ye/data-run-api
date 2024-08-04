@@ -84,7 +84,7 @@ class ChvRegisterResourceIT {
     private static final MSeverity UPDATED_SEVERITY = MSeverity.SEVERE;
 
     private static final MTreatment DEFAULT_TREATMENT = MTreatment.TREATED;
-    private static final MTreatment UPDATED_TREATMENT = MTreatment.FIRSTDOSE;
+    private static final MTreatment UPDATED_TREATMENT = MTreatment.FIRST_DOSE;
 
     private static final Boolean DEFAULT_DELETED = false;
     private static final Boolean UPDATED_DELETED = true;

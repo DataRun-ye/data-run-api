@@ -2,10 +2,10 @@
 services:
   nginx:
     image: nginx
-    container_name: nginx
+    container_name: datarun-nginx
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - /etc/ssl/letsencrypt:/etc/letsencrypt
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - /etc/letsencrypt:/etc/letsencrypt
       - /var/www/certbot:/var/www/certbot
     ports:
       - "80:80"
@@ -13,3 +13,5 @@ services:
     depends_on:
       app:
         condition: service_healthy
+    networks:
+      - nmcp-network

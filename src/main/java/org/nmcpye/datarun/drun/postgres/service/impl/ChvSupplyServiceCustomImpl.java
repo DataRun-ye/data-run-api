@@ -8,7 +8,6 @@ import org.nmcpye.datarun.drun.postgres.repository.ActivityRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.ChvSupplyRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.ChvSupplyServiceCustom;
-import org.nmcpye.datarun.drun.postgres.service.IdentifiableServiceImpl;
 import org.nmcpye.datarun.utils.CodeGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,10 +54,6 @@ public class ChvSupplyServiceCustomImpl
         chvSupply.setActivity(activity);
 
         chvSupply.setTeam(team);
-
-        if (chvSupply.getUid() == null || chvSupply.getUid().isEmpty()) {
-            chvSupply.setUid(CodeGenerator.generateUid());
-        }
 
         return repository.save(chvSupply);
     }

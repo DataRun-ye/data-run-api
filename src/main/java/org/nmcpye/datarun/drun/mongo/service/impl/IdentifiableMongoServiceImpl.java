@@ -4,6 +4,7 @@ import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.domain.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.mongo.repository.IdentifiableMongoRepository;
 import org.nmcpye.datarun.drun.mongo.service.IdentifiableMongoService;
+import org.nmcpye.datarun.utils.CodeGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -28,8 +29,23 @@ public abstract class IdentifiableMongoServiceImpl<T extends IdentifiableObject<
     }
 
     @Override
+    public boolean existsByCode(String code) {
+        return repository.findByCode(code).isPresent();
+    }
+
+    @Override
+    public boolean existsById(String id) {
+        return repository.findById(id).isPresent();
+    }
+
+    @Override
     public Optional<T> findByUid(String uid) {
         return repository.findByUid(uid);
+    }
+
+    @Override
+    public Optional<T> findByCode(String code) {
+        return repository.findByCode(code);
     }
 
     @Override
@@ -38,7 +54,16 @@ public abstract class IdentifiableMongoServiceImpl<T extends IdentifiableObject<
     }
 
     @Override
+    public void deleteByCode(String code) {
+        repository.findByCode(code).ifPresent(repository::delete);
+    }
+
+    @Override
     public T save(T object) {
+        if (object.getUid() == null || object.getUid().isEmpty()) {
+            object.setUid(CodeGenerator.generateUid());
+        }
+
         return saveWithRelations(object);
     }
 
@@ -46,11 +71,12 @@ public abstract class IdentifiableMongoServiceImpl<T extends IdentifiableObject<
     public T update(T object) {
         T existingEntity = repository
             .findByUid(object.getUid())
+//            .or(() -> repository
+//                .findById(object.getId()))
             .orElseThrow(() -> new PropertyNotFoundException("Entity not found with UID: " + object.getUid()));
 
         log.debug("Request to update T : {}", object);
         object.setId(existingEntity.getId());
-
         return saveWithRelations(object);
     }
 

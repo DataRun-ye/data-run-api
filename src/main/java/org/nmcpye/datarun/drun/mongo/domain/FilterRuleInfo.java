@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.drun.mongo.domain;
 
+import jakarta.validation.constraints.NotNull;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -11,6 +13,7 @@ public class FilterRuleInfo implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @NotNull
     private String fieldToFilter;
 
     private List<String> optionsToHide;

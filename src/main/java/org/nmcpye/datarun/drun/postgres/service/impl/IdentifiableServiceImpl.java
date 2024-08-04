@@ -1,9 +1,10 @@
-package org.nmcpye.datarun.drun.postgres.service;
+package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.persistence.EntityNotFoundException;
 import java.util.Optional;
 import org.nmcpye.datarun.domain.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.repository.IdentifiableRepository;
+import org.nmcpye.datarun.drun.postgres.service.IdentifiableService;
 import org.nmcpye.datarun.utils.CodeGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +26,6 @@ public abstract class IdentifiableServiceImpl<T extends IdentifiableObject<Long>
     @Override
     public T saveWithRelations(T object) {
         log.debug("Request to save T With Relations, saveWithRelations not implement will perform a normal save: {}", object);
-        if (object.getUid() == null || object.getUid().isEmpty()) {
-            object.setUid(CodeGenerator.generateUid());
-        }
         return repository.save(object);
     }
 
@@ -49,6 +47,9 @@ public abstract class IdentifiableServiceImpl<T extends IdentifiableObject<Long>
 
     @Override
     public T save(T object) {
+        if (object.getUid() == null || object.getUid().isEmpty()) {
+            object.setUid(CodeGenerator.generateUid());
+        }
         return saveWithRelations(object);
     }
 

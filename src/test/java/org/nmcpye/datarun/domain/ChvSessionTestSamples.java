@@ -18,7 +18,7 @@ public class ChvSessionTestSamples {
             .code("code1")
             .name("name1")
             .sessions(1)
-            .people(1)
+            .peopleItns(1)
             .comment("comment1")
             .createdBy("createdBy1")
             .lastModifiedBy("lastModifiedBy1");
@@ -31,7 +31,7 @@ public class ChvSessionTestSamples {
             .code("code2")
             .name("name2")
             .sessions(2)
-            .people(2)
+            .peopleItns(2)
             .comment("comment2")
             .createdBy("createdBy2")
             .lastModifiedBy("lastModifiedBy2");
@@ -44,7 +44,7 @@ public class ChvSessionTestSamples {
             .code(UUID.randomUUID().toString())
             .name(UUID.randomUUID().toString())
             .sessions(intCount.incrementAndGet())
-            .people(intCount.incrementAndGet())
+            .peopleItns(intCount.incrementAndGet())
             .comment(UUID.randomUUID().toString())
             .createdBy(UUID.randomUUID().toString())
             .lastModifiedBy(UUID.randomUUID().toString());

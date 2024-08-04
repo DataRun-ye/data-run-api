@@ -439,7 +439,7 @@
                             </platforms>
                         </from>
                         <to>
-                            <image>datarunapi:latest</image>
+                            <image>kaswarah/datarunapi:latest</image>
                         </to>
                         <container>
                             <entrypoint>

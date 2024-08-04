@@ -64,8 +64,8 @@ public class ChvSessionServiceImpl implements ChvSessionService {
                 if (chvSession.getSessions() != null) {
                     existingChvSession.setSessions(chvSession.getSessions());
                 }
-                if (chvSession.getPeople() != null) {
-                    existingChvSession.setPeople(chvSession.getPeople());
+                if (chvSession.getPeopleItns() != null) {
+                    existingChvSession.setPeopleItns(chvSession.getPeopleItns());
                 }
                 if (chvSession.getComment() != null) {
                     existingChvSession.setComment(chvSession.getComment());

@@ -30,7 +30,7 @@ public class ChvSessionDTO implements Serializable {
     private Integer sessions;
 
     @NotNull
-    private Integer people;
+    private Integer peopleItns;
 
     private String comment;
 
@@ -90,12 +90,12 @@ public class ChvSessionDTO implements Serializable {
         this.sessions = sessions;
     }
 
-    public Integer getPeople() {
-        return people;
+    public Integer getPeopleItns() {
+        return peopleItns;
     }
 
-    public void setPeople(Integer people) {
-        this.people = people;
+    public void setPeopleItns(Integer peopleItns) {
+        this.peopleItns = peopleItns;
     }
 
     public String getComment() {
@@ -161,7 +161,7 @@ public class ChvSessionDTO implements Serializable {
             ", sessionDate='" + getSessionDate() + "'" +
             ", subject='" + getSubject() + "'" +
             ", sessions=" + getSessions() +
-            ", people=" + getPeople() +
+            ", people=" + getPeopleItns() +
             ", comment='" + getComment() + "'" +
             ", startEntryTime='" + getStartEntryTime() + "'" +
             ", deleted='" + getDeleted() + "'" +

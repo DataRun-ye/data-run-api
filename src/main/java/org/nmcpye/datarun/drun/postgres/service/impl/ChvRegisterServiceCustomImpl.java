@@ -14,7 +14,6 @@ import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.ChvRegisterRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.ChvRegisterServiceCustom;
-import org.nmcpye.datarun.drun.postgres.service.IdentifiableServiceImpl;
 import org.nmcpye.datarun.service.dto.drun.SaveSummaryOld;
 import org.nmcpye.datarun.service.impl.ChvRegisterServiceImpl;
 import org.nmcpye.datarun.utils.CodeGenerator;
@@ -109,10 +108,6 @@ public class ChvRegisterServiceCustomImpl extends IdentifiableServiceImpl<ChvReg
         chvRegister.setActivity(activity);
 
         chvRegister.setTeam(team);
-
-        if (chvRegister.getUid() == null || chvRegister.getUid().isEmpty()) {
-            chvRegister.setUid(CodeGenerator.generateUid());
-        }
 
         return repository.save(chvRegister);
     }

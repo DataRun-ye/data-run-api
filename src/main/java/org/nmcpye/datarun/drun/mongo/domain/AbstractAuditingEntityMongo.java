@@ -2,7 +2,6 @@ package org.nmcpye.datarun.drun.mongo.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.nmcpye.datarun.domain.common.IdentifiableObject;
-import org.nmcpye.datarun.utils.CodeGenerator;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -29,7 +28,7 @@ public abstract class AbstractAuditingEntityMongo<T> implements IdentifiableObje
 
     @CreatedDate
     @Field("created_date")
-    private Instant createdDate;
+    private Instant createdDate = Instant.now();
 
     @LastModifiedBy
     @Field("last_modified_by")
@@ -37,15 +36,7 @@ public abstract class AbstractAuditingEntityMongo<T> implements IdentifiableObje
 
     @LastModifiedDate
     @Field("last_modified_date")
-    private Instant lastModifiedDate;
-
-    public AbstractAuditingEntityMongo() {
-        this.createdDate = Instant.now();
-        this.lastModifiedDate = Instant.now();
-        if (getUid() == null) {
-            setUid(CodeGenerator.generateUid());
-        }
-    }
+    private Instant lastModifiedDate = Instant.now();
 
     public String getCreatedBy() {
         return createdBy;

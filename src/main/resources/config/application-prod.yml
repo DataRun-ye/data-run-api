@@ -33,7 +33,10 @@ spring:
       enabled: false
   data:
     mongodb:
-      uri: mongodb://mongodb:27017/dataRunApi
+      uri: mongodb://localhost:27017/dataRunApi
+      auto-index-creation: true
+      username: dataRunApi
+      password: dataRunApi
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     url: jdbc:postgresql://localhost:5432/dataRunApi

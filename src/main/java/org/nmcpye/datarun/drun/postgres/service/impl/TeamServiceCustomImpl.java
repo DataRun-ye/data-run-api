@@ -2,7 +2,6 @@ package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import org.nmcpye.datarun.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.service.IdentifiableServiceImpl;
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

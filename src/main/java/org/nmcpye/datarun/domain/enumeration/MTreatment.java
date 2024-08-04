@@ -5,6 +5,7 @@ package org.nmcpye.datarun.domain.enumeration;
  */
 public enum MTreatment {
     TREATED,
-    FIRSTDOSE,
-    REFERAL,
+    FIRST_DOSE,
+    FIRST_DOSE_REFERRAL,
+    REFERRAL,
 }

@@ -14,9 +14,17 @@ public interface IdentifiableMongoService<T extends IdentifiableObject<String>> 
 
     boolean existsByUid(String uid);
 
+    boolean existsById(String id);
+
+    boolean existsByCode(String code);
+
     Optional<T> findByUid(String uid);
 
+    Optional<T> findByCode(String code);
+
     void deleteByUid(String uid);
+
+    void deleteByCode(String code);
 
     /**
      * Save an object.

@@ -34,16 +34,23 @@ public class DataField implements Serializable {
     @Field("description")
     private String description;
 
+    @NotNull
     @Field("type")
     private ValueType type;
 
     @Field("mandatory")
     private Boolean mandatory;
 
-    @Field("rule")
+    @Field("mainField")
+    private Boolean mainField;
+
+    @Field("rules")
     private Set<DataFieldRule> rules = new HashSet<>();
 
-    @Field("option")
+    @Field("listName")
+    private String listName;
+
+    @Field("options")
     private Set<DataOption> options = new HashSet<>();
 
     private Map<String, String> label;
@@ -139,6 +146,14 @@ public class DataField implements Serializable {
         this.mandatory = mandatory;
     }
 
+    public Boolean getMainField() {
+        return mainField;
+    }
+
+    public void setMainField(Boolean mainField) {
+        this.mainField = mainField;
+    }
+
     public Set<DataFieldRule> getRules() {
         return this.rules;
     }
@@ -160,6 +175,14 @@ public class DataField implements Serializable {
     public DataField removeRule(DataFieldRule dataFieldRule) {
         this.rules.remove(dataFieldRule);
         return this;
+    }
+
+    public String getListName() {
+        return listName;
+    }
+
+    public void setListName(String listName) {
+        this.listName = listName;
     }
 
     public Set<DataOption> getOptions() {

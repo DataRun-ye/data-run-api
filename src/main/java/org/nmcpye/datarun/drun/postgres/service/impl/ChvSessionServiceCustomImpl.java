@@ -8,8 +8,6 @@ import org.nmcpye.datarun.drun.postgres.repository.ActivityRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.ChvSessionRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.ChvSessionServiceCustom;
-import org.nmcpye.datarun.drun.postgres.service.IdentifiableServiceImpl;
-import org.nmcpye.datarun.utils.CodeGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
@@ -53,10 +51,6 @@ public class ChvSessionServiceCustomImpl
 
         chvSession.setTeam(team);
 
-        if (chvSession.getUid() == null || chvSession.getUid().isEmpty()) {
-            chvSession.setUid(CodeGenerator.generateUid());
-        }
-
         return repository.save(chvSession);
     }
 
@@ -85,8 +79,8 @@ public class ChvSessionServiceCustomImpl
                 if (chvSession.getSessions() != null) {
                     existingChvSession.setSessions(chvSession.getSessions());
                 }
-                if (chvSession.getPeople() != null) {
-                    existingChvSession.setPeople(chvSession.getPeople());
+                if (chvSession.getPeopleItns() != null) {
+                    existingChvSession.setPeopleItns(chvSession.getPeopleItns());
                 }
                 if (chvSession.getComment() != null) {
                     existingChvSession.setComment(chvSession.getComment());

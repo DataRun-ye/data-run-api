@@ -20,6 +20,10 @@ public class DataFieldRule implements Serializable {
     private String uid;
 
     @NotNull
+    @Field("field")
+    private String field;
+
+    @NotNull
     @Field("expression")
     private String expression;
 
@@ -42,6 +46,14 @@ public class DataFieldRule implements Serializable {
 
     public void setUid(String uid) {
         this.uid = uid;
+    }
+
+    public String getField() {
+        return field;
+    }
+
+    public void setField(String field) {
+        this.field = field;
     }
 
     public String getExpression() {

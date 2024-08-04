@@ -16,6 +16,9 @@ public interface IdentifiableMongoRepository<T extends IdentifiableObject<String
     @Query("{'uid': ?0}")
     Optional<T> findByUid(String uid);
 
+    @Query("{'code': ?0}")
+    Optional<T> findByCode(String code);
+
     Page<T> findAllByUser(Pageable pageable);
 
     Page<T> findAllWithEagerRelationshipsByUser(Pageable pageable);

@@ -4,13 +4,13 @@ services:
   postgresql:
     image: postgres:16.2
     container_name: datarunapi-postgresql
-#    volumes:
-#      - ./dataRunApi_backup.dump:/docker-entrypoint-initdb.d/dataRunApi_backup.dump
-#      - ~/volumes/jhipster/dataRunApi/postgresql/:/var/lib/postgresql/data/
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+#      - ./nmcpdb_backup.sql:/docker-entrypoint-initdb.d/nmcpdb_backup.sql
     environment:
-      - POSTGRES_USER=${DATABASE_USER}
-      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
-      - POSTGRES_DB=${DATABASE_NAME}
+      - POSTGRES_USER=dRunUser
+      - POSTGRES_PASSWORD=dRunUser
+      - POSTGRES_DB=dRunDb
       - POSTGRES_HOST_AUTH_METHOD=trust
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER}']
@@ -18,7 +18,7 @@ services:
       timeout: 5s
       retries: 10
     ports:
-      - ${DATABASE_PORT}:5432
+      - 5432:5432
 #    command: >
 #      bash -c "
 #      docker-entrypoint.sh postgres &

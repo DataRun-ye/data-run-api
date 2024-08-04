@@ -4,8 +4,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.nmcpye.datarun.domain.enumeration.SyncableStatus;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
+import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -24,9 +26,9 @@ public class DataFormSubmission
     @Id
     private String id;
 
-    @NotNull
     @Size(max = 11)
     @Field("uid")
+    @Indexed(unique = true, name = "data_submission_uid")
     private String uid;
 
     @Field("deleted")
@@ -37,10 +39,6 @@ public class DataFormSubmission
 
     @Field("finished_entry_time")
     private Instant finishedEntryTime;
-
-    @Size(max = 2000)
-    @Field("comment")
-    private String comment;
 
     @Field("status")
     private SyncableStatus status;
@@ -126,19 +124,6 @@ public class DataFormSubmission
 
     public void setFinishedEntryTime(Instant finishedEntryTime) {
         this.finishedEntryTime = finishedEntryTime;
-    }
-
-    public String getComment() {
-        return this.comment;
-    }
-
-    public DataFormSubmission comment(String comment) {
-        this.setComment(comment);
-        return this;
-    }
-
-    public void setComment(String comment) {
-        this.comment = comment;
     }
 
     public SyncableStatus getStatus() {
@@ -234,7 +219,6 @@ public class DataFormSubmission
             ", deleted='" + getDeleted() + "'" +
             ", startEntryTime='" + getStartEntryTime() + "'" +
             ", finishedEntryTime='" + getFinishedEntryTime() + "'" +
-            ", comment='" + getComment() + "'" +
             ", status='" + getStatus() + "'" +
             "}";
     }

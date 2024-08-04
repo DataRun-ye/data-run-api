@@ -3,6 +3,7 @@ package org.nmcpye.datarun.drun.mongo.domain;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.mongodb.core.mapping.Field;
+import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -16,12 +17,20 @@ public class DataOption implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @MongoId
+    private String id;
+
+    // formUid_listName_optionUid
     @Size(max = 11)
+    @NotNull
     @Field("uid")
     private String uid;
 
-    @Field("code")
-    private String code;
+    private String form;
+
+    @NotNull
+    @Field("listName")
+    private String listName;
 
     @NotNull
     @Field("name")
@@ -31,7 +40,26 @@ public class DataOption implements Serializable {
     @Field("description")
     private String description;
 
+    @Field("order")
+    private Integer order;
+
     private Map<String, String> label;
+
+    public String getForm() {
+        return form;
+    }
+
+    public void setForm(String form) {
+        this.form = form;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public void setLabel(Map<String, String> label) {
         this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
@@ -44,7 +72,13 @@ public class DataOption implements Serializable {
         return label;
     }
 
-    // jhipster-needle-entity-add-field - JHipster will add fields here
+    public Integer getOrder() {
+        return order;
+    }
+
+    public void setOrder(Integer order) {
+        this.order = order;
+    }
 
     public String getUid() {
         return this.uid;
@@ -59,17 +93,12 @@ public class DataOption implements Serializable {
         this.uid = uid;
     }
 
-    public String getCode() {
-        return this.code;
+    public String getListName() {
+        return listName;
     }
 
-    public DataOption code(String code) {
-        this.setCode(code);
-        return this;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
+    public void setListName(String listName) {
+        this.listName = listName;
     }
 
     public String getName() {
@@ -122,7 +151,6 @@ public class DataOption implements Serializable {
     public String toString() {
         return "DataOption{" +
             ", uid='" + getUid() + "'" +
-            ", code='" + getCode() + "'" +
             ", name='" + getName() + "'" +
             ", description='" + getDescription() + "'" +
             "}";

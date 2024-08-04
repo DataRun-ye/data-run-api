@@ -41,10 +41,6 @@ public class DataFormServiceCustomImpl
         Activity activity = activityRepository.findByUid(dataForm.getActivity())
             .orElseThrow(() -> new PropertyNotFoundException("Activity not found: " + dataForm.getActivity()));
         dataForm.setActivity(activity.getUid());
-        // Generate UID if not present
-        if (dataForm.getUid() == null || dataForm.getUid().isEmpty()) {
-            dataForm.setUid(CodeGenerator.generateUid());
-        }
 
         // Save the DataForm entity
         return dataFormRepository.save(dataForm);

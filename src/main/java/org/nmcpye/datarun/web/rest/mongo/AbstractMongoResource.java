@@ -6,6 +6,7 @@ import org.nmcpye.datarun.drun.mongo.service.IdentifiableMongoService;
 import org.nmcpye.datarun.service.dto.drun.SaveSummary;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
+import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springdoc.core.annotations.ParameterObject;
@@ -19,7 +20,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
 
+import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @RequestMapping("/api/custom")
@@ -80,36 +83,15 @@ public abstract class AbstractMongoResource<T extends IdentifiableObject<String>
     public ResponseEntity<SaveSummary> saveAll(@Valid @RequestBody List<T> entities) {
         SaveSummary summary = new SaveSummary();
         for (T entity : entities) {
-            try {
-                if (identifiableService.existsByUid(entity.getUid())) {
-                    identifiableService.update(entity);
-                    summary.getUpdated().add(entity.getUid());
-                } else {
-                    identifiableService.save(entity);
-                    summary.getCreated().add(entity.getUid());
-                }
-            } catch (Exception e) {
-                summary.getFailed().put(entity.getUid(), e.getMessage());
-            }
+            saveEntity(entity, summary);
         }
         return ResponseEntity.ok(summary);
     }
 
-
     @PostMapping
     public ResponseEntity<SaveSummary> saveOne(@Valid @RequestBody T entity) {
         SaveSummary summary = new SaveSummary();
-        try {
-            if (identifiableService.existsByUid(entity.getUid())) {
-                identifiableService.update(entity);
-                summary.getUpdated().add(entity.getUid());
-            } else {
-                identifiableService.save(entity);
-                summary.getCreated().add(entity.getUid());
-            }
-        } catch (Exception e) {
-            summary.getFailed().put(entity.getUid(), e.getMessage());
-        }
+            saveEntity(entity, summary);
         return ResponseEntity.ok(summary);
     }
 
@@ -124,7 +106,6 @@ public abstract class AbstractMongoResource<T extends IdentifiableObject<String>
     public ResponseEntity<Void> deleteActivityByIdUid(@PathVariable("id") String id) {
         log.debug("REST request to delete from {}: {}", getName(), id);
         identifiableService.findOne(id).ifPresent(repository::delete);
-        identifiableService.findByUid(id).ifPresent(repository::delete);
         return ResponseEntity
             .noContent()
             .headers(HeaderUtil
@@ -137,6 +118,47 @@ public abstract class AbstractMongoResource<T extends IdentifiableObject<String>
             return identifiableService.findAllWithEagerRelationships(pageable);
         }
         return identifiableService.findAll(pageable);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<T> updateEntity(
+        @PathVariable(value = "id", required = false) final String id,
+        @Valid @RequestBody T entity
+    ) throws URISyntaxException {
+        log.debug("REST request to delete from {}: {}", getName(), id);
+        if (entity.getId() == null) {
+            throw new BadRequestAlertException("Invalid id", getName(), "idnull");
+        }
+        if (!Objects.equals(id, entity.getId())) {
+            if (!Objects.equals(id, entity.getUid())) {
+                throw new BadRequestAlertException("Invalid ID", getName(), "idinvalid");
+            }
+        }
+
+        if (!identifiableService.existsById(id)) {
+            if (!identifiableService.existsByUid(id)) {
+                throw new BadRequestAlertException("Entity not found", getName(), "idnotfound");
+            }
+        }
+        entity = identifiableService.update(entity);
+
+        return ResponseEntity.ok()
+            .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), entity.getId().toString()))
+            .body(entity);
+    }
+
+    void saveEntity(T entity, SaveSummary summary) {
+        try {
+            if (identifiableService.existsByUid(entity.getUid())) {
+                identifiableService.update(entity);
+                summary.getUpdated().add(entity.getUid());
+            } else {
+                identifiableService.save(entity);
+                summary.getCreated().add(entity.getUid());
+            }
+        } catch (Exception e) {
+            summary.getFailed().put(entity.getUid(), e.getMessage());
+        }
     }
 
     protected abstract String getName();
