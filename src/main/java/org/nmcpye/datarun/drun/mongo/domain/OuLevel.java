@@ -2,6 +2,7 @@ package org.nmcpye.datarun.drun.mongo.domain;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.mapping.MongoId;
 
@@ -9,30 +10,24 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * A DataOption.
- */
+
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataOption implements Serializable {
+public class OuLevel implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @MongoId
     private String id;
 
-    // formUid_listName_optionUid
     @Size(max = 11)
     @NotNull
     @Field("uid")
     private String uid;
 
-    private String form;
-
     @NotNull
-    @Field("listName")
-    private String listName;
+    @Field("level")
+    private String level;
 
-    @NotNull
     @Field("name")
     private String name;
 
@@ -40,18 +35,7 @@ public class DataOption implements Serializable {
     @Field("description")
     private String description;
 
-    @Field("order")
-    private Integer order;
-
     private Map<String, String> label;
-
-    public String getForm() {
-        return form;
-    }
-
-    public void setForm(String form) {
-        this.form = form;
-    }
 
     public String getId() {
         return id;
@@ -72,19 +56,19 @@ public class DataOption implements Serializable {
         return label;
     }
 
-    public Integer getOrder() {
-        return order;
+    public String getLevel() {
+        return level;
     }
 
-    public void setOrder(Integer order) {
-        this.order = Objects.requireNonNullElseGet(order, () -> 0);
+    public void setLevel(String level) {
+        this.level = level;
     }
 
     public String getUid() {
         return this.uid;
     }
 
-    public DataOption uid(String uid) {
+    public OuLevel uid(String uid) {
         this.setUid(uid);
         return this;
     }
@@ -93,19 +77,11 @@ public class DataOption implements Serializable {
         this.uid = uid;
     }
 
-    public String getListName() {
-        return listName;
-    }
-
-    public void setListName(String listName) {
-        this.listName = listName;
-    }
-
     public String getName() {
         return this.name;
     }
 
-    public DataOption name(String name) {
+    public OuLevel name(String name) {
         this.setName(name);
         return this;
     }
@@ -118,7 +94,7 @@ public class DataOption implements Serializable {
         return this.description;
     }
 
-    public DataOption description(String description) {
+    public OuLevel description(String description) {
         this.setDescription(description);
         return this;
     }
@@ -134,7 +110,7 @@ public class DataOption implements Serializable {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof DataOption)) {
+        if (!(o instanceof OuLevel)) {
             return false;
         }
         return false;
@@ -149,7 +125,7 @@ public class DataOption implements Serializable {
     // prettier-ignore
     @Override
     public String toString() {
-        return "DataOption{" +
+        return "OuLevel{" +
             ", uid='" + getUid() + "'" +
             ", name='" + getName() + "'" +
             ", description='" + getDescription() + "'" +

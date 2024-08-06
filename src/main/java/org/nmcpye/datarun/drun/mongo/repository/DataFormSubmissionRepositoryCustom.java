@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.drun.mongo.repository;
 
+import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.drun.mongo.domain.DataFormSubmission;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +14,7 @@ import java.util.Optional;
  * Spring Data MongoDB repository for the DataFormSubmission entity.
  */
 @Repository
+@JaversSpringDataAuditable
 public interface DataFormSubmissionRepositoryCustom
     extends IdentifiableMongoRepository<DataFormSubmission> {
 

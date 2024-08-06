@@ -6,6 +6,8 @@ import org.nmcpye.datarun.drun.mongo.domain.enumeration.RuleAction;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.io.Serializable;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * A DataFieldRule.
@@ -31,9 +33,21 @@ public class DataFieldRule implements Serializable {
     @Field("action")
     private RuleAction action;
 
+    @Field("message")
+    private Map<String, String> message;
+
     private FilterRuleInfo filterInfo;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
+
+    public Map<String, String> getMessage() {
+        return message;
+    }
+
+
+    public void setMessage(Map<String, String> message) {
+        this.message = Objects.requireNonNullElseGet(message, () -> Map.of("en", "Error"));
+    }
 
     public String getUid() {
         return this.uid;
@@ -92,28 +106,14 @@ public class DataFieldRule implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof DataFieldRule)) {
-            return false;
-        }
-        return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DataFieldRule that = (DataFieldRule) o;
+        return Objects.equals(expression, that.expression) && action == that.action && Objects.equals(message, that.message);
     }
 
     @Override
     public int hashCode() {
-        // see https://vladmihalcea.com/how-to-implement-equals-and-hashcode-using-the-jpa-entity-identifier/
-        return getClass().hashCode();
-    }
-
-    // prettier-ignore
-    @Override
-    public String toString() {
-        return "DataFieldRule{" +
-            ", uid='" + getUid() + "'" +
-            ", expression='" + getExpression() + "'" +
-            ", action='" + getAction() + "'" +
-            "}";
+        return Objects.hash(expression, action, message);
     }
 }

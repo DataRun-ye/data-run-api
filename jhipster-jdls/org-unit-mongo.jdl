@@ -1,0 +1,20 @@
+entity OuLevel {
+    uid String unique maxlength(11)
+    name String
+    level Integer required
+}
+
+entity OrganizationUnit {
+    uid String unique maxlength(11)
+    code String unique
+    name String required
+    ouPath String required
+    parent String
+    parentCode String
+}
+
+
+//@embedded
+
+service * with serviceImpl
+paginate OrganizationUnit with pagination

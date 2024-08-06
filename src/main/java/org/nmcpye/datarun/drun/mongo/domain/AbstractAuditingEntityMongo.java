@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.drun.mongo.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.javers.core.metamodel.annotation.DiffIgnore;
 import org.nmcpye.datarun.domain.common.IdentifiableObject;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -16,6 +17,7 @@ import java.time.Instant;
  * last modified by attributes.
  */
 @JsonIgnoreProperties(value = {"createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
+@DiffIgnore
 public abstract class AbstractAuditingEntityMongo<T> implements IdentifiableObject<T>, Serializable {
 
     private static final long serialVersionUID = 1L;

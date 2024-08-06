@@ -10,6 +10,7 @@ import org.springframework.data.repository.NoRepositoryBean;
 import java.util.List;
 import java.util.Optional;
 
+@SuppressWarnings("unused")
 @NoRepositoryBean
 public interface IdentifiableMongoRepository<T extends IdentifiableObject<String>>
     extends MongoRepository<T, String> {

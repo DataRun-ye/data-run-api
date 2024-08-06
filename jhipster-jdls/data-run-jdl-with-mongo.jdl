@@ -1,0 +1,220 @@
+// Define Enums
+enum ValueType {
+    Text,
+    LongText,
+    Letter,
+    PhoneNumber,
+    Email,
+    Boolean,
+    TrueOnly,
+    Date,
+    DateTime,
+    Time,
+    Number,
+    UnitInterval,
+    Percentage,
+    Integer,
+    IntegerPositive,
+    IntegerNegative,
+    IntegerZeroOrPositive,
+    Username,
+    Coordinate,
+    OrganisationUnit,
+    Reference,
+    Age,
+    URL,
+    FileResource,
+    Image,
+    SelectMulti,
+    SelectOne,
+    YesNo,
+    GeoJson,
+    Team,
+    Activity,
+    Warehouse
+}
+
+enum TeamType {
+    ITNS_DISTRIBUTION,
+    ITNS_WAREHOUSE,
+    IRS_DISTRIBUTION,
+    IRS_WAREHOUSE,
+    CHV_PATIENTS
+}
+
+enum SyncableStatus {
+    ACTIVE
+    COMPLETED
+}
+
+enum PublicLocationType {
+    DISTRICT
+    SUBDISTRICT
+    SUBVILLAGE
+}
+
+enum RuleAction {
+    Show
+    Hide
+    Error
+    Warning
+    Filter
+    Assign
+}
+
+entity Project {
+    uid String unique maxlength(11)
+    code String unique
+    name String
+    disabled Boolean
+}
+
+entity Activity {
+    uid String unique maxlength(11)
+    code String unique
+    name String
+    startDate Instant required
+    endDate Instant
+    disabled Boolean
+    deleteClientData Boolean
+}
+
+entity VillageLocation {
+    uid String required unique maxlength(11)
+    code String unique required
+    name String
+    mappingStatus Integer
+    districtCode Integer
+    villageUid String
+    subdistrictName String
+    villageName String
+    subvillageName String
+    urbanRuralId Integer
+    urbanRural String
+    settlement String
+    pop2004 Double
+    pop2022 Double
+    longitude Double
+    latitude Double
+    ppcCodeGis String required
+    level PublicLocationType
+}
+
+entity Assignment {
+    uid String required unique maxlength(11)
+    code String
+    phaseNo Integer
+    districtCode Integer
+    gov String
+    district String
+    subdistrict String
+    village String
+    subvillage String
+    name String
+    dayId Integer
+    population Double
+    itnsPlanned Integer
+    targetType Integer
+    longitude Double
+    latitude Double
+    startDate Instant
+}
+
+entity Team {
+    uid String required unique maxlength(11)
+    code String required
+    name String
+    description String
+    mobile String
+    workers Integer
+    mobility String
+    teamType TeamType required,
+    disabled Boolean,
+    deleteClientData Boolean
+}
+
+entity DataForm {
+    uid String required unique maxlength(11)
+    code String unique
+    name String required
+    description String maxlength(2000)
+    disabled Boolean
+}
+
+entity DataField {
+    uid String required unique maxlength(11)
+    code String unique
+    name String required unique
+    listName String
+    description String maxlength(2000)
+    type ValueType
+    mandatory Boolean
+}
+
+entity DataOption {
+    uid String required unique maxlength(11)
+    code String unique
+    name String required unique
+    listName String required
+    description String maxlength(2000)
+}
+
+@embedded
+entity DataFieldRule {
+    uid String required unique maxlength(11)
+    expression String required
+    action RuleAction required
+}
+
+entity DataFormSubmission {
+    uid String required unique maxlength(11)
+    deleted Boolean
+    startEntryTime Instant
+    finishedEntryTime Instant
+    comment String maxlength(2000)
+    status SyncableStatus
+}
+
+relationship OneToMany {
+    DataForm{field(name)} to DataField{form(name)}
+    DataForm{option(name)} to DataOption{form(name)}
+    DataField{rule(uid)} to DataFieldRule{field(name)}
+}
+
+relationship ManyToOne {
+    DataFormSubmission{form(name) required} to DataForm
+    DataFormSubmission{activity(name) required} to Activity
+    DataFormSubmission{team(name) required} to Team
+    DataFormSubmission{assignment(code)} to Assignment
+}
+
+relationship ManyToOne {
+    DataForm{activity(name) required} to Activity
+}
+
+relationship ManyToOne {
+    Activity{project(name) required} to Project{activity}
+}
+
+relationship ManyToOne {
+    Team {activity (code)} to Activity
+}
+
+relationship ManyToOne {
+    Assignment {activity (code)} to Activity
+}
+
+relationship ManyToOne {
+    Assignment {organisationUnit (code)} to VillageLocation
+}
+
+relationship ManyToOne {
+    Assignment {team (code) required} to Team {assignment}
+}
+
+relationship ManyToOne {
+    Team{userInfo(login)} to User {team} with builtInEntity
+}
+
+service * with serviceImpl
+paginate Project, Activity, Team, Assignment, VillageLocation, DataForm, DataFormSubmission with pagination

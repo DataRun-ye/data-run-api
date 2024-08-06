@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.drun.mongo.repository;
 
 import org.javers.spring.annotation.JaversSpringDataAuditable;
-import org.nmcpye.datarun.drun.mongo.domain.DataForm;
+import org.nmcpye.datarun.drun.mongo.domain.OrganizationUnit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.Query;
@@ -15,18 +15,18 @@ import java.util.Optional;
  */
 @Repository
 @JaversSpringDataAuditable
-public interface DataFormRepositoryCustom
-    extends IdentifiableMongoRepository<DataForm> {
+public interface OrganizationUnitRepositoryCustom
+    extends IdentifiableMongoRepository<OrganizationUnit> {
 
     @Query("{}")
-    Page<DataForm> findAllByUser(Pageable pageable);
+    Page<OrganizationUnit> findAllByUser(Pageable pageable);
 
     @Query("{}")
-    Page<DataForm> findAllWithEagerRelationshipsByUser(Pageable pageable);
+    Page<OrganizationUnit> findAllWithEagerRelationshipsByUser(Pageable pageable);
 
     @Query("{}")
-    List<DataForm> findAllWithEagerRelationshipsByUser();
+    List<OrganizationUnit> findAllWithEagerRelationshipsByUser();
 
     @Query("{'id': ?0}")
-    Optional<DataForm> findOneWithEagerRelationshipsByUser(String id);
+    Optional<OrganizationUnit> findOneWithEagerRelationshipsByUser(String id);
 }
