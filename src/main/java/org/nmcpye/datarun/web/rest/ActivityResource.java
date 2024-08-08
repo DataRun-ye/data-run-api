@@ -31,7 +31,7 @@ import tech.jhipster.web.util.ResponseUtil;
 @RequestMapping("/api/activities")
 public class ActivityResource {
 
-    private final Logger log = LoggerFactory.getLogger(ActivityResource.class);
+    private static final Logger log = LoggerFactory.getLogger(ActivityResource.class);
 
     private static final String ENTITY_NAME = "activity";
 

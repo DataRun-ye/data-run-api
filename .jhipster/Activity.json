@@ -22,8 +22,7 @@
     },
     {
       "fieldName": "startDate",
-      "fieldType": "Instant",
-      "fieldValidateRules": ["required"]
+      "fieldType": "Instant"
     },
     {
       "fieldName": "endDate",
@@ -31,11 +30,17 @@
     },
     {
       "fieldName": "disabled",
-      "fieldType": "Boolean"
+      "fieldType": "Boolean",
+      "options": {
+        "defaultValue": "false"
+      }
     },
     {
       "fieldName": "deleteClientData",
-      "fieldType": "Boolean"
+      "fieldType": "Boolean",
+      "options": {
+        "defaultValue": "false"
+      }
     },
     {
       "auditField": true,

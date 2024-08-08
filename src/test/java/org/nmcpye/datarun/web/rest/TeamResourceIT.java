@@ -13,6 +13,7 @@ import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,8 +21,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nmcpye.datarun.IntegrationTest;
 import org.nmcpye.datarun.domain.Team;
-import org.nmcpye.datarun.domain.enumeration.TeamType;
 import org.nmcpye.datarun.repository.TeamRepository;
+import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.service.TeamService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -62,9 +63,6 @@ class TeamResourceIT {
     private static final String DEFAULT_MOBILITY = "AAAAAAAAAA";
     private static final String UPDATED_MOBILITY = "BBBBBBBBBB";
 
-    private static final TeamType DEFAULT_TEAM_TYPE = TeamType.ITNS_DISTRIBUTION;
-    private static final TeamType UPDATED_TEAM_TYPE = TeamType.ITNS_WAREHOUSE;
-
     private static final Boolean DEFAULT_DISABLED = false;
     private static final Boolean UPDATED_DISABLED = true;
 
@@ -83,6 +81,9 @@ class TeamResourceIT {
     @Autowired
     private TeamRepository teamRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Mock
     private TeamRepository teamRepositoryMock;
 
@@ -96,6 +97,8 @@ class TeamResourceIT {
     private MockMvc restTeamMockMvc;
 
     private Team team;
+
+    private Team insertedTeam;
 
     /**
      * Create an entity for this test.
@@ -112,7 +115,6 @@ class TeamResourceIT {
             .mobile(DEFAULT_MOBILE)
             .workers(DEFAULT_WORKERS)
             .mobility(DEFAULT_MOBILITY)
-            .teamType(DEFAULT_TEAM_TYPE)
             .disabled(DEFAULT_DISABLED)
             .deleteClientData(DEFAULT_DELETE_CLIENT_DATA);
         return team;
@@ -133,7 +135,6 @@ class TeamResourceIT {
             .mobile(UPDATED_MOBILE)
             .workers(UPDATED_WORKERS)
             .mobility(UPDATED_MOBILITY)
-            .teamType(UPDATED_TEAM_TYPE)
             .disabled(UPDATED_DISABLED)
             .deleteClientData(UPDATED_DELETE_CLIENT_DATA);
         return team;
@@ -142,6 +143,14 @@ class TeamResourceIT {
     @BeforeEach
     public void initTest() {
         team = createEntity(em);
+    }
+
+    @AfterEach
+    public void cleanup() {
+        if (insertedTeam != null) {
+            teamRepository.delete(insertedTeam);
+            insertedTeam = null;
+        }
     }
 
     @Test
@@ -162,6 +171,8 @@ class TeamResourceIT {
         // Validate the Team in the database
         assertIncrementedRepositoryCount(databaseSizeBeforeCreate);
         assertTeamUpdatableFieldsEquals(returnedTeam, getPersistedTeam(returnedTeam));
+
+        insertedTeam = returnedTeam;
     }
 
     @Test
@@ -215,25 +226,9 @@ class TeamResourceIT {
 
     @Test
     @Transactional
-    void checkTeamTypeIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        team.setTeamType(null);
-
-        // Create the Team, which fails.
-
-        restTeamMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(team)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
     void getAllTeams() throws Exception {
         // Initialize the database
-        teamRepository.saveAndFlush(team);
+        insertedTeam = teamRepository.saveAndFlush(team);
 
         // Get all the teamList
         restTeamMockMvc
@@ -248,7 +243,6 @@ class TeamResourceIT {
             .andExpect(jsonPath("$.[*].mobile").value(hasItem(DEFAULT_MOBILE)))
             .andExpect(jsonPath("$.[*].workers").value(hasItem(DEFAULT_WORKERS)))
             .andExpect(jsonPath("$.[*].mobility").value(hasItem(DEFAULT_MOBILITY)))
-            .andExpect(jsonPath("$.[*].teamType").value(hasItem(DEFAULT_TEAM_TYPE.toString())))
             .andExpect(jsonPath("$.[*].disabled").value(hasItem(DEFAULT_DISABLED.booleanValue())))
             .andExpect(jsonPath("$.[*].deleteClientData").value(hasItem(DEFAULT_DELETE_CLIENT_DATA.booleanValue())));
     }
@@ -274,7 +268,7 @@ class TeamResourceIT {
     @Transactional
     void getTeam() throws Exception {
         // Initialize the database
-        teamRepository.saveAndFlush(team);
+        insertedTeam = teamRepository.saveAndFlush(team);
 
         // Get the team
         restTeamMockMvc
@@ -289,7 +283,6 @@ class TeamResourceIT {
             .andExpect(jsonPath("$.mobile").value(DEFAULT_MOBILE))
             .andExpect(jsonPath("$.workers").value(DEFAULT_WORKERS))
             .andExpect(jsonPath("$.mobility").value(DEFAULT_MOBILITY))
-            .andExpect(jsonPath("$.teamType").value(DEFAULT_TEAM_TYPE.toString()))
             .andExpect(jsonPath("$.disabled").value(DEFAULT_DISABLED.booleanValue()))
             .andExpect(jsonPath("$.deleteClientData").value(DEFAULT_DELETE_CLIENT_DATA.booleanValue()));
     }
@@ -305,7 +298,7 @@ class TeamResourceIT {
     @Transactional
     void putExistingTeam() throws Exception {
         // Initialize the database
-        teamRepository.saveAndFlush(team);
+        insertedTeam = teamRepository.saveAndFlush(team);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -321,7 +314,6 @@ class TeamResourceIT {
             .mobile(UPDATED_MOBILE)
             .workers(UPDATED_WORKERS)
             .mobility(UPDATED_MOBILITY)
-            .teamType(UPDATED_TEAM_TYPE)
             .disabled(UPDATED_DISABLED)
             .deleteClientData(UPDATED_DELETE_CLIENT_DATA);
 
@@ -391,7 +383,7 @@ class TeamResourceIT {
     @Transactional
     void partialUpdateTeamWithPatch() throws Exception {
         // Initialize the database
-        teamRepository.saveAndFlush(team);
+        insertedTeam = teamRepository.saveAndFlush(team);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -400,11 +392,9 @@ class TeamResourceIT {
         partialUpdatedTeam.setId(team.getId());
 
         partialUpdatedTeam
-            .uid(UPDATED_UID)
             .code(UPDATED_CODE)
-            .workers(UPDATED_WORKERS)
+            .mobile(UPDATED_MOBILE)
             .mobility(UPDATED_MOBILITY)
-            .teamType(UPDATED_TEAM_TYPE)
             .disabled(UPDATED_DISABLED)
             .deleteClientData(UPDATED_DELETE_CLIENT_DATA);
 
@@ -426,7 +416,7 @@ class TeamResourceIT {
     @Transactional
     void fullUpdateTeamWithPatch() throws Exception {
         // Initialize the database
-        teamRepository.saveAndFlush(team);
+        insertedTeam = teamRepository.saveAndFlush(team);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -442,7 +432,6 @@ class TeamResourceIT {
             .mobile(UPDATED_MOBILE)
             .workers(UPDATED_WORKERS)
             .mobility(UPDATED_MOBILITY)
-            .teamType(UPDATED_TEAM_TYPE)
             .disabled(UPDATED_DISABLED)
             .deleteClientData(UPDATED_DELETE_CLIENT_DATA);
 
@@ -513,7 +502,7 @@ class TeamResourceIT {
     @Transactional
     void deleteTeam() throws Exception {
         // Initialize the database
-        teamRepository.saveAndFlush(team);
+        insertedTeam = teamRepository.saveAndFlush(team);
 
         long databaseSizeBeforeDelete = getRepositoryCount();
 

@@ -26,7 +26,7 @@ class ProjectTest {
     }
 
     @Test
-    void activityTest() throws Exception {
+    void activityTest() {
         Project project = getProjectRandomSampleGenerator();
         Activity activityBack = getActivityRandomSampleGenerator();
 

@@ -1,9 +1,5 @@
 package org.nmcpye.datarun.service;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.stream.Collectors;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.domain.Authority;
 import org.nmcpye.datarun.domain.User;
@@ -13,6 +9,7 @@ import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.service.dto.AdminUserDTO;
 import org.nmcpye.datarun.service.dto.UserDTO;
+import org.nmcpye.datarun.web.rest.errors.InvalidPasswordException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
@@ -24,6 +21,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.jhipster.security.RandomUtil;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
+
 /**
  * Service class for managing users.
  */
@@ -31,7 +33,7 @@ import tech.jhipster.security.RandomUtil;
 @Transactional
 public class UserService {
 
-    private final Logger log = LoggerFactory.getLogger(UserService.class);
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
 

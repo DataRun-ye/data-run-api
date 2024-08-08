@@ -1,13 +1,11 @@
 package org.nmcpye.datarun.drun.mongo.domain;
 
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.nmcpye.datarun.domain.enumeration.SyncableStatus;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
-import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -50,16 +48,6 @@ public class DataFormSubmission
     private String team;
 
     private String assignment;
-
-    private Map<String, Object> formData;
-
-    public Map<String, Object> getFormData() {
-        return formData;
-    }
-
-    public void setFormData(Map<String, Object> formData) {
-        this.formData = formData;
-    }
 
     public String getId() {
         return this.id;
@@ -189,6 +177,16 @@ public class DataFormSubmission
     public DataFormSubmission assignment(String assignment) {
         this.setAssignment(assignment);
         return this;
+    }
+
+    private Map<String, Object> formData;
+
+    public Map<String, Object> getFormData() {
+        return formData;
+    }
+
+    public void setFormData(Map<String, Object> formData) {
+        this.formData = formData;
     }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here

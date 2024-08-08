@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class WarehouseServiceImpl implements WarehouseService {
 
-    private final Logger log = LoggerFactory.getLogger(WarehouseServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(WarehouseServiceImpl.class);
 
     private final WarehouseRepository warehouseRepository;
 

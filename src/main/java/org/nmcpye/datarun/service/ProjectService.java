@@ -1,8 +1,9 @@
 package org.nmcpye.datarun.service;
 
-import java.util.List;
 import java.util.Optional;
 import org.nmcpye.datarun.domain.Project;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Service Interface for managing {@link org.nmcpye.datarun.domain.Project}.
@@ -35,9 +36,10 @@ public interface ProjectService {
     /**
      * Get all the projects.
      *
+     * @param pageable the pagination information.
      * @return the list of entities.
      */
-    List<Project> findAll();
+    Page<Project> findAll(Pageable pageable);
 
     /**
      * Get the "id" project.

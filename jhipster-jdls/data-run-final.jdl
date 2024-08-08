@@ -5,6 +5,7 @@ enum PublicLocationType {
     SUBVILLAGE
 }
 
+
 entity Project {
     uid String unique maxlength(11)
     code String unique
@@ -69,12 +70,6 @@ entity Assignment {
     startDate Instant
 }
 
-entity ProgressStatus {
-    uid String required unique maxlength(11)
-    code String unique
-    name String
-}
-
 entity Team {
     uid String required unique maxlength(11)
     code String required
@@ -99,6 +94,32 @@ entity Warehouse {
     gpsCoordinate String
     supervisor String
     supervisorMobile String
+}
+
+entity WarehouseItem {
+    uid String required unique maxlength(11)
+    code String
+    name String
+    description String
+}
+
+entity OuLevel {
+    uid String unique maxlength(11)
+    name String
+    level Integer required
+}
+
+entity OrganizationUnit {
+    uid String unique maxlength(11)
+    code String unique
+    name String required
+    ouPath String required
+    parent String
+    parentCode String
+}
+
+relationship ManyToOne {
+    OrganizationUnit{level(name) required} to OuLevel
 }
 
 relationship ManyToOne {
@@ -138,4 +159,4 @@ relationship ManyToOne {
 }
 
 service * with serviceImpl
-paginate Assignment, VillageLocation, Activity, Team, Warehouse with pagination
+paginate Project, Activity, Assignment, VillageLocation, Team, Warehouse, OrganizationUnit with pagination

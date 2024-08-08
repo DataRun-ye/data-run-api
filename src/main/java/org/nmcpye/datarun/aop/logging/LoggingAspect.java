@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.aop.logging;
 
-import java.util.Arrays;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterThrowing;
@@ -12,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import tech.jhipster.config.JHipsterConstants;
+
+import java.util.Arrays;
 
 /**
  * Aspect for logging execution of service and repository Spring components.
@@ -32,7 +33,7 @@ public class LoggingAspect {
      */
     @Pointcut(
         "within(@org.springframework.stereotype.Repository *)" +
-            " || within(@org.springframework.stereotype.Service *)" +
+        " || within(@org.springframework.stereotype.Service *)" +
         " || within(@org.springframework.web.bind.annotation.RestController *)"
     )
     public void springBeanPointcut() {
@@ -44,10 +45,12 @@ public class LoggingAspect {
      */
     @Pointcut(
         "within(org.nmcpye.datarun.repository..*)" +
-            " || within(org.nmcpye.datarun.service..*)" +
-            " || within(org.nmcpye.datarun.web.rest..*) " +
+        " || within(org.nmcpye.datarun.service..*)" +
+        " || within(org.nmcpye.datarun.web.rest..*)" +
             " || within(org.nmcpye.datarun.drun.postgres.repository..*)" +
             " || within(org.nmcpye.datarun.drun.postgres.service..*)" +
+            " || within(org.nmcpye.datarun.drun.mongo.repository..*)" +
+            " || within(org.nmcpye.datarun.drun.mongo.service..*)" +
             " || within(org.nmcpye.datarun.web.rest.drun..*)"
     )
     public void applicationPackagePointcut() {

@@ -1,12 +1,13 @@
 package org.nmcpye.datarun.service.impl;
 
-import java.util.List;
 import java.util.Optional;
 import org.nmcpye.datarun.domain.Project;
 import org.nmcpye.datarun.repository.ProjectRepository;
 import org.nmcpye.datarun.service.ProjectService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ProjectServiceImpl implements ProjectService {
 
-    private final Logger log = LoggerFactory.getLogger(ProjectServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(ProjectServiceImpl.class);
 
     private final ProjectRepository projectRepository;
 
@@ -77,9 +78,9 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Project> findAll() {
+    public Page<Project> findAll(Pageable pageable) {
         log.debug("Request to get all Projects");
-        return projectRepository.findAll();
+        return projectRepository.findAll(pageable);
     }
 
     @Override

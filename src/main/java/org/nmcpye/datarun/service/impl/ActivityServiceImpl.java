@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ActivityServiceImpl implements ActivityService {
 
-    private final Logger log = LoggerFactory.getLogger(ActivityServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(ActivityServiceImpl.class);
 
     private final ActivityRepository activityRepository;
 

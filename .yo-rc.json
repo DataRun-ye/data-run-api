@@ -7,7 +7,7 @@
     "blueprints": [
       {
         "name": "generator-jhipster-entity-audit",
-        "version": "5.3.0"
+        "version": "5.5.0"
       }
     ],
     "buildTool": "maven",
@@ -23,27 +23,19 @@
       "Activity",
       "VillageLocation",
       "Assignment",
-      "ItnsVillage",
-      "ItnsVillageHousesDetail",
-      "ProgressStatus",
-      "ReviewTeam",
       "Team",
       "Warehouse",
-      "WarehouseItem",
-      "WarehouseTransaction",
-      "ChvSession",
-      "RefreshToken",
-      "TeamFormAccess",
-      "ChvRegister",
-      "ChvSupply"
+      "OrganizationUnit",
+      "OuLevel",
+      "WarehouseItem"
     ],
     "feignClient": null,
     "incrementalChangelog": true,
     "jhiPrefix": "app",
-    "jhipsterVersion": "8.4.0",
+    "jhipsterVersion": "8.6.0",
     "jwtSecretKey": "MjJmNDA2ZjQwMzg5NWE0ZDFiZmZmY2IzYzk2NmQ0MmI4OTM0NWU1MDBjYmU1N2VkYmNjOWM2ZmI2OGVlZWVmYTI0NDM0Y2JhY2ZhMWI2Nzg2ZGY2YWNhZjNmMTViYTcyZTNmMjMwNmFjZTRkMTAzOTVhYjlkNDRhOWZhNDJhY2I=",
     "languages": ["en", "ar-ly"],
-    "lastLiquibaseTimestamp": 1722032904000,
+    "lastLiquibaseTimestamp": 1722975381000,
     "messageBroker": false,
     "nativeLanguage": "en",
     "packageName": "org.nmcpye.datarun",

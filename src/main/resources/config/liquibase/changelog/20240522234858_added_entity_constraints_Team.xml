@@ -17,13 +17,6 @@
                                  referencedTableName="activity"
                                  />
 
-        <addForeignKeyConstraint baseColumnNames="operation_room_id"
-                                 baseTableName="team"
-                                 constraintName="fk_team__operation_room_id"
-                                 referencedColumnNames="id"
-                                 referencedTableName="review_team"
-                                 />
-
         <addForeignKeyConstraint baseColumnNames="warehouse_id"
                                  baseTableName="team"
                                  constraintName="fk_team__warehouse_id"

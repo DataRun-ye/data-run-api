@@ -43,8 +43,6 @@ public class DataOption implements Serializable {
     @Field("order")
     private Integer order;
 
-    private Map<String, String> label;
-
     public String getForm() {
         return form;
     }
@@ -59,10 +57,6 @@ public class DataOption implements Serializable {
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    public void setLabel(Map<String, String> label) {
-        this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
     }
 
     public Map<String, String> getLabel() {
@@ -125,6 +119,12 @@ public class DataOption implements Serializable {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    private Map<String, String> label;
+
+    public void setLabel(Map<String, String> label) {
+        this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
     }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here

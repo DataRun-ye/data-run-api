@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class TeamServiceImpl implements TeamService {
 
-    private final Logger log = LoggerFactory.getLogger(TeamServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(TeamServiceImpl.class);
 
     private final TeamRepository teamRepository;
 
@@ -66,9 +66,6 @@ public class TeamServiceImpl implements TeamService {
                 }
                 if (team.getMobility() != null) {
                     existingTeam.setMobility(team.getMobility());
-                }
-                if (team.getTeamType() != null) {
-                    existingTeam.setTeamType(team.getTeamType());
                 }
                 if (team.getDisabled() != null) {
                     existingTeam.setDisabled(team.getDisabled());

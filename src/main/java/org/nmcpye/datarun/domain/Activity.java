@@ -37,8 +37,7 @@ public class Activity extends AbstractAuditingEntity<Long> implements Serializab
     @Column(name = "name")
     private String name;
 
-    @NotNull
-    @Column(name = "start_date", nullable = false)
+    @Column(name = "start_date")
     private Instant startDate;
 
     @Column(name = "end_date")

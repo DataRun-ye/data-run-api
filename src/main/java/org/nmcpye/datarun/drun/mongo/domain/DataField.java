@@ -50,9 +50,6 @@ public class DataField implements Serializable {
     @Field("listName")
     private String listName;
 
-    @Field("options")
-    private Set<DataOption> options = new HashSet<>();
-
     private Map<String, String> label;
 
     public void setLabel(Map<String, String> label) {
@@ -185,28 +182,6 @@ public class DataField implements Serializable {
         this.listName = listName;
     }
 
-    public Set<DataOption> getOptions() {
-        return this.options;
-    }
-
-    public void setOptions(Set<DataOption> dataOptions) {
-        this.options = dataOptions;
-    }
-
-    public DataField options(Set<DataOption> dataOptions) {
-        this.setOptions(dataOptions);
-        return this;
-    }
-
-    public DataField addOption(DataOption dataOption) {
-        this.options.add(dataOption);
-        return this;
-    }
-
-    public DataField removeOption(DataOption dataOption) {
-        this.options.remove(dataOption);
-        return this;
-    }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
 

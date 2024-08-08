@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.IntegrationTest;
@@ -63,6 +64,8 @@ class ProjectResourceIT {
 
     private Project project;
 
+    private Project insertedProject;
+
     /**
      * Create an entity for this test.
      *
@@ -90,6 +93,14 @@ class ProjectResourceIT {
         project = createEntity(em);
     }
 
+    @AfterEach
+    public void cleanup() {
+        if (insertedProject != null) {
+            projectRepository.delete(insertedProject);
+            insertedProject = null;
+        }
+    }
+
     @Test
     @Transactional
     void createProject() throws Exception {
@@ -108,6 +119,8 @@ class ProjectResourceIT {
         // Validate the Project in the database
         assertIncrementedRepositoryCount(databaseSizeBeforeCreate);
         assertProjectUpdatableFieldsEquals(returnedProject, getPersistedProject(returnedProject));
+
+        insertedProject = returnedProject;
     }
 
     @Test
@@ -131,7 +144,7 @@ class ProjectResourceIT {
     @Transactional
     void getAllProjects() throws Exception {
         // Initialize the database
-        projectRepository.saveAndFlush(project);
+        insertedProject = projectRepository.saveAndFlush(project);
 
         // Get all the projectList
         restProjectMockMvc
@@ -149,7 +162,7 @@ class ProjectResourceIT {
     @Transactional
     void getProject() throws Exception {
         // Initialize the database
-        projectRepository.saveAndFlush(project);
+        insertedProject = projectRepository.saveAndFlush(project);
 
         // Get the project
         restProjectMockMvc
@@ -174,7 +187,7 @@ class ProjectResourceIT {
     @Transactional
     void putExistingProject() throws Exception {
         // Initialize the database
-        projectRepository.saveAndFlush(project);
+        insertedProject = projectRepository.saveAndFlush(project);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -250,7 +263,7 @@ class ProjectResourceIT {
     @Transactional
     void partialUpdateProjectWithPatch() throws Exception {
         // Initialize the database
-        projectRepository.saveAndFlush(project);
+        insertedProject = projectRepository.saveAndFlush(project);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -258,7 +271,7 @@ class ProjectResourceIT {
         Project partialUpdatedProject = new Project();
         partialUpdatedProject.setId(project.getId());
 
-        partialUpdatedProject.uid(UPDATED_UID).name(UPDATED_NAME).disabled(UPDATED_DISABLED);
+        partialUpdatedProject.name(UPDATED_NAME);
 
         restProjectMockMvc
             .perform(
@@ -278,7 +291,7 @@ class ProjectResourceIT {
     @Transactional
     void fullUpdateProjectWithPatch() throws Exception {
         // Initialize the database
-        projectRepository.saveAndFlush(project);
+        insertedProject = projectRepository.saveAndFlush(project);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -357,7 +370,7 @@ class ProjectResourceIT {
     @Transactional
     void deleteProject() throws Exception {
         // Initialize the database
-        projectRepository.saveAndFlush(project);
+        insertedProject = projectRepository.saveAndFlush(project);
 
         long databaseSizeBeforeDelete = getRepositoryCount();
 

@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.Set;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.domain.enumeration.TeamType;
 import org.springframework.data.domain.Persistable;
 
 /**
@@ -30,6 +29,7 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
     @Column(name = "id")
     private Long id;
 
+    @NotNull
     @Size(max = 11)
     @Column(name = "uid", length = 11, nullable = false, unique = true)
     private String uid;
@@ -53,11 +53,6 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
     @Column(name = "mobility")
     private String mobility;
 
-    @NotNull
-    @Enumerated(EnumType.STRING)
-    @Column(name = "team_type", nullable = false)
-    private TeamType teamType;
-
     @Column(name = "disabled")
     private Boolean disabled;
 
@@ -74,9 +69,6 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = { "project" }, allowSetters = true)
     private Activity activity;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    private ReviewTeam operationRoom;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = { "activity" }, allowSetters = true)
@@ -196,19 +188,6 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
         this.mobility = mobility;
     }
 
-    public TeamType getTeamType() {
-        return this.teamType;
-    }
-
-    public Team teamType(TeamType teamType) {
-        this.setTeamType(teamType);
-        return this;
-    }
-
-    public void setTeamType(TeamType teamType) {
-        this.teamType = teamType;
-    }
-
     public Boolean getDisabled() {
         return this.disabled;
     }
@@ -286,19 +265,6 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
 
     public Team activity(Activity activity) {
         this.setActivity(activity);
-        return this;
-    }
-
-    public ReviewTeam getOperationRoom() {
-        return this.operationRoom;
-    }
-
-    public void setOperationRoom(ReviewTeam reviewTeam) {
-        this.operationRoom = reviewTeam;
-    }
-
-    public Team operationRoom(ReviewTeam reviewTeam) {
-        this.setOperationRoom(reviewTeam);
         return this;
     }
 
@@ -390,7 +356,6 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
             ", mobile='" + getMobile() + "'" +
             ", workers=" + getWorkers() +
             ", mobility='" + getMobility() + "'" +
-            ", teamType='" + getTeamType() + "'" +
             ", disabled='" + getDisabled() + "'" +
             ", deleteClientData='" + getDeleteClientData() + "'" +
             ", createdBy='" + getCreatedBy() + "'" +

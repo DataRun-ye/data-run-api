@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.drun.postgres.service;
 
-import org.nmcpye.datarun.domain.ChvRegister;
 import org.nmcpye.datarun.domain.common.IdentifiableObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -14,15 +14,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 import tech.jhipster.config.JHipsterProperties;
 
-import java.util.List;
-
 /**
  * Configuration of web application with Servlet 3.0 APIs.
  */
 @Configuration
 public class WebConfigurer implements ServletContextInitializer {
 
-    private final Logger log = LoggerFactory.getLogger(WebConfigurer.class);
+    private static final Logger log = LoggerFactory.getLogger(WebConfigurer.class);
 
     private final Environment env;
 

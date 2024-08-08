@@ -15,6 +15,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -90,6 +91,8 @@ class ActivityResourceIT {
 
     private Activity activity;
 
+    private Activity insertedActivity;
+
     /**
      * Create an entity for this test.
      *
@@ -151,6 +154,14 @@ class ActivityResourceIT {
         activity = createEntity(em);
     }
 
+    @AfterEach
+    public void cleanup() {
+        if (insertedActivity != null) {
+            activityRepository.delete(insertedActivity);
+            insertedActivity = null;
+        }
+    }
+
     @Test
     @Transactional
     void createActivity() throws Exception {
@@ -169,6 +180,8 @@ class ActivityResourceIT {
         // Validate the Activity in the database
         assertIncrementedRepositoryCount(databaseSizeBeforeCreate);
         assertActivityUpdatableFieldsEquals(returnedActivity, getPersistedActivity(returnedActivity));
+
+        insertedActivity = returnedActivity;
     }
 
     @Test
@@ -190,25 +203,9 @@ class ActivityResourceIT {
 
     @Test
     @Transactional
-    void checkStartDateIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        activity.setStartDate(null);
-
-        // Create the Activity, which fails.
-
-        restActivityMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(activity)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
     void getAllActivities() throws Exception {
         // Initialize the database
-        activityRepository.saveAndFlush(activity);
+        insertedActivity = activityRepository.saveAndFlush(activity);
 
         // Get all the activityList
         restActivityMockMvc
@@ -246,7 +243,7 @@ class ActivityResourceIT {
     @Transactional
     void getActivity() throws Exception {
         // Initialize the database
-        activityRepository.saveAndFlush(activity);
+        insertedActivity = activityRepository.saveAndFlush(activity);
 
         // Get the activity
         restActivityMockMvc
@@ -274,7 +271,7 @@ class ActivityResourceIT {
     @Transactional
     void putExistingActivity() throws Exception {
         // Initialize the database
-        activityRepository.saveAndFlush(activity);
+        insertedActivity = activityRepository.saveAndFlush(activity);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -359,7 +356,7 @@ class ActivityResourceIT {
     @Transactional
     void partialUpdateActivityWithPatch() throws Exception {
         // Initialize the database
-        activityRepository.saveAndFlush(activity);
+        insertedActivity = activityRepository.saveAndFlush(activity);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -367,7 +364,13 @@ class ActivityResourceIT {
         Activity partialUpdatedActivity = new Activity();
         partialUpdatedActivity.setId(activity.getId());
 
-        partialUpdatedActivity.endDate(UPDATED_END_DATE).disabled(UPDATED_DISABLED).deleteClientData(UPDATED_DELETE_CLIENT_DATA);
+        partialUpdatedActivity
+            .uid(UPDATED_UID)
+            .code(UPDATED_CODE)
+            .name(UPDATED_NAME)
+            .startDate(UPDATED_START_DATE)
+            .endDate(UPDATED_END_DATE)
+            .disabled(UPDATED_DISABLED);
 
         restActivityMockMvc
             .perform(
@@ -387,7 +390,7 @@ class ActivityResourceIT {
     @Transactional
     void fullUpdateActivityWithPatch() throws Exception {
         // Initialize the database
-        activityRepository.saveAndFlush(activity);
+        insertedActivity = activityRepository.saveAndFlush(activity);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -475,7 +478,7 @@ class ActivityResourceIT {
     @Transactional
     void deleteActivity() throws Exception {
         // Initialize the database
-        activityRepository.saveAndFlush(activity);
+        insertedActivity = activityRepository.saveAndFlush(activity);
 
         long databaseSizeBeforeDelete = getRepositoryCount();
 

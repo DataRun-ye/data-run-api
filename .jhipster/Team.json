@@ -37,18 +37,18 @@
       "fieldType": "String"
     },
     {
-      "fieldName": "teamType",
-      "fieldType": "TeamType",
-      "fieldValidateRules": ["required"],
-      "fieldValues": "ITNS_DISTRIBUTION,ITNS_WAREHOUSE,IRS_DISTRIBUTION,IRS_WAREHOUSE,CHV_PATIENTS"
-    },
-    {
       "fieldName": "disabled",
-      "fieldType": "Boolean"
+      "fieldType": "Boolean",
+      "options": {
+        "defaultValue": "false"
+      }
     },
     {
       "fieldName": "deleteClientData",
-      "fieldType": "Boolean"
+      "fieldType": "Boolean",
+      "options": {
+        "defaultValue": "false"
+      }
     },
     {
       "auditField": true,
@@ -93,13 +93,6 @@
       "otherEntityField": "code",
       "otherEntityName": "activity",
       "relationshipName": "activity",
-      "relationshipSide": "left",
-      "relationshipType": "many-to-one"
-    },
-    {
-      "otherEntityField": "name",
-      "otherEntityName": "reviewTeam",
-      "relationshipName": "operationRoom",
       "relationshipSide": "left",
       "relationshipType": "many-to-one"
     },

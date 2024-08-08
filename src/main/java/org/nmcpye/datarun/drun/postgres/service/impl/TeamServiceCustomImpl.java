@@ -55,9 +55,6 @@ public class TeamServiceCustomImpl
                 if (team.getMobility() != null) {
                     existingTeam.setMobility(team.getMobility());
                 }
-                if (team.getTeamType() != null) {
-                    existingTeam.setTeamType(team.getTeamType());
-                }
                 if (team.getDisabled() != null) {
                     existingTeam.setDisabled(team.getDisabled());
                 }

@@ -29,7 +29,6 @@ public interface TeamRepositoryCustom
     @Query(
         value = "select team from Team team " +
             "left join team.activity " +
-            "left join team.operationRoom " +
             "left join team.warehouse " +
             "left join team.userInfo " +
             "where team.userInfo.login = ?#{authentication.name}",
@@ -41,7 +40,6 @@ public interface TeamRepositoryCustom
     @Query(
         value = "select team from Team team " +
             "left join fetch team.activity " +
-            "left join fetch team.operationRoom " +
             "left join fetch team.warehouse " +
             "left join fetch team.userInfo " +
             "where team.userInfo.login = ?#{authentication.name}",
@@ -53,7 +51,6 @@ public interface TeamRepositoryCustom
 //    @Query(
 //        "select team from Team team " +
 //            "left join fetch team.activity " +
-//            "left join fetch team.operationRoom " +
 //            "left join fetch team.warehouse " +
 //            "left join fetch team.userInfo " +
 //            "where team.userInfo.login = ?#{authentication.name}"
@@ -63,7 +60,6 @@ public interface TeamRepositoryCustom
     @Query(
         "select team from Team team " +
             "left join fetch team.activity " +
-            "left join fetch team.operationRoom " +
             "left join fetch team.warehouse " +
             "left join fetch team.userInfo " +
             "where team.id =:id and team.userInfo.login = ?#{authentication.name}"

@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.persistence.EntityNotFoundException;
-import java.util.Optional;
 import org.nmcpye.datarun.domain.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.repository.IdentifiableRepository;
 import org.nmcpye.datarun.drun.postgres.service.IdentifiableService;
@@ -11,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Transactional
 public abstract class IdentifiableServiceImpl<T extends IdentifiableObject<Long>> implements IdentifiableService<T> {

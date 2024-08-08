@@ -24,7 +24,7 @@ class WarehouseTest {
     }
 
     @Test
-    void activityTest() throws Exception {
+    void activityTest() {
         Warehouse warehouse = getWarehouseRandomSampleGenerator();
         Activity activityBack = getActivityRandomSampleGenerator();
 

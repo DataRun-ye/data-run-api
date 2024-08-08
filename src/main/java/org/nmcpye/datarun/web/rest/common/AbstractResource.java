@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import org.nmcpye.datarun.domain.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.service.IdentifiableService;
 import org.nmcpye.datarun.service.dto.drun.SaveSummary;
-import org.nmcpye.datarun.web.rest.ChvRegisterResourceCustom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springdoc.core.annotations.ParameterObject;
@@ -19,9 +18,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.util.List;
 
 @RequestMapping("/api/custom")
-public abstract class AbstractResource<T extends IdentifiableObject> {
+public abstract class AbstractResource<T extends IdentifiableObject<Long>> {
 
-    private final Logger log = LoggerFactory.getLogger(ChvRegisterResourceCustom.class);
+    private final Logger log = LoggerFactory.getLogger(AbstractResource.class);
 
     @Value("${jhipster.clientApp.name}")
     private String applicationName;

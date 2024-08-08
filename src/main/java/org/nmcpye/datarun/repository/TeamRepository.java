@@ -30,18 +30,16 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     }
 
     @Query(
-        value = "select team from Team team left join fetch team.activity left join fetch team.operationRoom left join fetch team.warehouse left join fetch team.userInfo",
+        value = "select team from Team team left join fetch team.activity left join fetch team.warehouse left join fetch team.userInfo",
         countQuery = "select count(team) from Team team"
     )
     Page<Team> findAllWithToOneRelationships(Pageable pageable);
 
-    @Query(
-        "select team from Team team left join fetch team.activity left join fetch team.operationRoom left join fetch team.warehouse left join fetch team.userInfo"
-    )
+    @Query("select team from Team team left join fetch team.activity left join fetch team.warehouse left join fetch team.userInfo")
     List<Team> findAllWithToOneRelationships();
 
     @Query(
-        "select team from Team team left join fetch team.activity left join fetch team.operationRoom left join fetch team.warehouse left join fetch team.userInfo where team.id =:id"
+        "select team from Team team left join fetch team.activity left join fetch team.warehouse left join fetch team.userInfo where team.id =:id"
     )
     Optional<Team> findOneWithToOneRelationships(@Param("id") Long id);
 }

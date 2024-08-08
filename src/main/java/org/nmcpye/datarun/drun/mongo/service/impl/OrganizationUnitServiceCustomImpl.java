@@ -1,18 +1,13 @@
 package org.nmcpye.datarun.drun.mongo.service.impl;
 
-import jakarta.el.PropertyNotFoundException;
-import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.drun.mongo.domain.OrganizationUnit;
 import org.nmcpye.datarun.drun.mongo.domain.OrganizationUnit;
 import org.nmcpye.datarun.drun.mongo.repository.OrganizationUnitRepositoryCustom;
 import org.nmcpye.datarun.drun.mongo.service.OrganizationUnitServiceCustom;
-import org.nmcpye.datarun.drun.postgres.repository.ActivityRepositoryCustom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
-import java.util.Objects;
 import java.util.Optional;
 
 /**

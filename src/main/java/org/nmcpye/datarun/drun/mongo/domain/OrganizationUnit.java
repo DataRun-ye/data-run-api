@@ -8,7 +8,9 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * A OrganizationUnit.

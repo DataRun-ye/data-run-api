@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AssignmentServiceImpl implements AssignmentService {
 
-    private final Logger log = LoggerFactory.getLogger(AssignmentServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(AssignmentServiceImpl.class);
 
     private final AssignmentRepository assignmentRepository;
 
@@ -52,6 +52,9 @@ public class AssignmentServiceImpl implements AssignmentService {
                 if (assignment.getCode() != null) {
                     existingAssignment.setCode(assignment.getCode());
                 }
+                if (assignment.getName() != null) {
+                    existingAssignment.setName(assignment.getName());
+                }
                 if (assignment.getPhaseNo() != null) {
                     existingAssignment.setPhaseNo(assignment.getPhaseNo());
                 }
@@ -72,9 +75,6 @@ public class AssignmentServiceImpl implements AssignmentService {
                 }
                 if (assignment.getSubvillage() != null) {
                     existingAssignment.setSubvillage(assignment.getSubvillage());
-                }
-                if (assignment.getName() != null) {
-                    existingAssignment.setName(assignment.getName());
                 }
                 if (assignment.getDayId() != null) {
                     existingAssignment.setDayId(assignment.getDayId());

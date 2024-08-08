@@ -31,7 +31,7 @@ import tech.jhipster.web.util.ResponseUtil;
 @RequestMapping("/api/warehouses")
 public class WarehouseResource {
 
-    private final Logger log = LoggerFactory.getLogger(WarehouseResource.class);
+    private static final Logger log = LoggerFactory.getLogger(WarehouseResource.class);
 
     private static final String ENTITY_NAME = "warehouse";
 

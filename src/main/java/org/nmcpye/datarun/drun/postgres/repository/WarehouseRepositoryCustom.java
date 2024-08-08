@@ -17,9 +17,6 @@ public interface WarehouseRepositoryCustom
     extends IdentifiableRepository<Warehouse> {
 
     Optional<Warehouse> findByUid(String uid);
-//    @Query("SELECT warehouse FROM Warehouse warehouse " +
-//        "WHERE EXISTS (SELECT t FROM Team t WHERE t.userInfo.login = ?#{authentication.name} AND t.warehouse = warehouse)")
-//    Page<Warehouse> findByCurrentUser(Pageable pageable);
 
     default Optional<Warehouse> findOneWithEagerRelationshipsByUser(Long id) {
         return this.findOneWithToOneRelationshipsByUser(id);

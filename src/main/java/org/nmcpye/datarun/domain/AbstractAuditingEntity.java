@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
-import java.io.Serializable;
-import java.time.Instant;
 import org.nmcpye.datarun.audit.EntityAuditEventListener;
 import org.nmcpye.datarun.domain.common.IdentifiableObject;
 import org.springframework.data.annotation.CreatedBy;
@@ -14,6 +12,9 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.io.Serializable;
+import java.time.Instant;
+
 /**
  * Base abstract class for entities which will hold definitions for created, last modified, created by,
  * last modified by attributes.
@@ -21,7 +22,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @MappedSuperclass
 @EntityListeners({AuditingEntityListener.class, EntityAuditEventListener.class})
 @JsonIgnoreProperties(value = {"createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
-public abstract class AbstractAuditingEntity<T extends Number> implements IdentifiableObject<T>, Serializable {
+public abstract class AbstractAuditingEntity<T> implements IdentifiableObject<T>, Serializable {
 
     private static final long serialVersionUID = 1L;
 

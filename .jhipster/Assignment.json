@@ -16,6 +16,10 @@
       "fieldType": "String"
     },
     {
+      "fieldName": "name",
+      "fieldType": "String"
+    },
+    {
       "fieldName": "phaseNo",
       "fieldType": "Integer"
     },
@@ -41,10 +45,6 @@
     },
     {
       "fieldName": "subvillage",
-      "fieldType": "String"
-    },
-    {
-      "fieldName": "name",
       "fieldType": "String"
     },
     {

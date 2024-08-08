@@ -13,6 +13,7 @@ import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,6 +88,8 @@ class WarehouseResourceIT {
 
     private Warehouse warehouse;
 
+    private Warehouse insertedWarehouse;
+
     /**
      * Create an entity for this test.
      *
@@ -128,6 +131,14 @@ class WarehouseResourceIT {
         warehouse = createEntity(em);
     }
 
+    @AfterEach
+    public void cleanup() {
+        if (insertedWarehouse != null) {
+            warehouseRepository.delete(insertedWarehouse);
+            insertedWarehouse = null;
+        }
+    }
+
     @Test
     @Transactional
     void createWarehouse() throws Exception {
@@ -146,6 +157,8 @@ class WarehouseResourceIT {
         // Validate the Warehouse in the database
         assertIncrementedRepositoryCount(databaseSizeBeforeCreate);
         assertWarehouseUpdatableFieldsEquals(returnedWarehouse, getPersistedWarehouse(returnedWarehouse));
+
+        insertedWarehouse = returnedWarehouse;
     }
 
     @Test
@@ -201,7 +214,7 @@ class WarehouseResourceIT {
     @Transactional
     void getAllWarehouses() throws Exception {
         // Initialize the database
-        warehouseRepository.saveAndFlush(warehouse);
+        insertedWarehouse = warehouseRepository.saveAndFlush(warehouse);
 
         // Get all the warehouseList
         restWarehouseMockMvc
@@ -239,7 +252,7 @@ class WarehouseResourceIT {
     @Transactional
     void getWarehouse() throws Exception {
         // Initialize the database
-        warehouseRepository.saveAndFlush(warehouse);
+        insertedWarehouse = warehouseRepository.saveAndFlush(warehouse);
 
         // Get the warehouse
         restWarehouseMockMvc
@@ -267,7 +280,7 @@ class WarehouseResourceIT {
     @Transactional
     void putExistingWarehouse() throws Exception {
         // Initialize the database
-        warehouseRepository.saveAndFlush(warehouse);
+        insertedWarehouse = warehouseRepository.saveAndFlush(warehouse);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -352,7 +365,7 @@ class WarehouseResourceIT {
     @Transactional
     void partialUpdateWarehouseWithPatch() throws Exception {
         // Initialize the database
-        warehouseRepository.saveAndFlush(warehouse);
+        insertedWarehouse = warehouseRepository.saveAndFlush(warehouse);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -360,7 +373,7 @@ class WarehouseResourceIT {
         Warehouse partialUpdatedWarehouse = new Warehouse();
         partialUpdatedWarehouse.setId(warehouse.getId());
 
-        partialUpdatedWarehouse.uid(UPDATED_UID).code(UPDATED_CODE).description(UPDATED_DESCRIPTION).supervisor(UPDATED_SUPERVISOR);
+        partialUpdatedWarehouse.uid(UPDATED_UID).gpsCoordinate(UPDATED_GPS_COORDINATE).supervisorMobile(UPDATED_SUPERVISOR_MOBILE);
 
         restWarehouseMockMvc
             .perform(
@@ -383,7 +396,7 @@ class WarehouseResourceIT {
     @Transactional
     void fullUpdateWarehouseWithPatch() throws Exception {
         // Initialize the database
-        warehouseRepository.saveAndFlush(warehouse);
+        insertedWarehouse = warehouseRepository.saveAndFlush(warehouse);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -471,7 +484,7 @@ class WarehouseResourceIT {
     @Transactional
     void deleteWarehouse() throws Exception {
         // Initialize the database
-        warehouseRepository.saveAndFlush(warehouse);
+        insertedWarehouse = warehouseRepository.saveAndFlush(warehouse);
 
         long databaseSizeBeforeDelete = getRepositoryCount();
 

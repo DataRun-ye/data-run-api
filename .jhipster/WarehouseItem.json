@@ -1,9 +1,8 @@
 {
   "annotations": {
-    "changelogDate": "20240522234900"
+    "changelogDate": "20240806201621"
   },
   "applications": "*",
-  "enableAudit": true,
   "fields": [
     {
       "fieldName": "uid",
@@ -22,45 +21,10 @@
     {
       "fieldName": "description",
       "fieldType": "String"
-    },
-    {
-      "auditField": true,
-      "autoGenerate": true,
-      "columnType": "varchar(50)",
-      "fieldName": "createdBy",
-      "fieldType": "String",
-      "nullable": false,
-      "readonly": true
-    },
-    {
-      "auditField": true,
-      "autoGenerate": true,
-      "fieldName": "createdDate",
-      "fieldType": "Instant",
-      "nullable": false,
-      "readonly": true
-    },
-    {
-      "auditField": true,
-      "autoGenerate": true,
-      "columnType": "varchar(50)",
-      "fieldName": "lastModifiedBy",
-      "fieldType": "String",
-      "nullable": false,
-      "readonly": true
-    },
-    {
-      "auditField": true,
-      "autoGenerate": true,
-      "fieldName": "lastModifiedDate",
-      "fieldType": "Instant",
-      "nullable": false,
-      "readonly": true
     }
   ],
-  "incrementalChangelog": false,
+  "incrementalChangelog": true,
   "name": "WarehouseItem",
-  "pagination": "pagination",
   "relationships": [],
   "searchEngine": "no",
   "service": "serviceImpl"

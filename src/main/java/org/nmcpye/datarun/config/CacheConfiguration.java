@@ -56,21 +56,12 @@ public class CacheConfiguration {
             createCache(cm, org.nmcpye.datarun.domain.Activity.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.VillageLocation.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Assignment.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.ItnsVillage.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.ItnsVillage.class.getName() + ".houseDetails");
-            createCache(cm, org.nmcpye.datarun.domain.ItnsVillageHousesDetail.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.ProgressStatus.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.ReviewTeam.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Team.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Team.class.getName() + ".assignments");
             createCache(cm, org.nmcpye.datarun.domain.Warehouse.class.getName());
+            createCache(cm, org.nmcpye.datarun.domain.OrganizationUnit.class.getName());
+            createCache(cm, org.nmcpye.datarun.domain.OuLevel.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.WarehouseItem.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.WarehouseTransaction.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.ChvSession.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.RefreshToken.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.TeamFormAccess.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.ChvRegister.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.ChvSupply.class.getName());
             // jhipster-needle-ehcache-add-entry
         };
     }

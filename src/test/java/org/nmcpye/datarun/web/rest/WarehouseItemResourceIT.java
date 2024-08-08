@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.IntegrationTest;
@@ -63,6 +64,8 @@ class WarehouseItemResourceIT {
 
     private WarehouseItem warehouseItem;
 
+    private WarehouseItem insertedWarehouseItem;
+
     /**
      * Create an entity for this test.
      *
@@ -98,6 +101,14 @@ class WarehouseItemResourceIT {
         warehouseItem = createEntity(em);
     }
 
+    @AfterEach
+    public void cleanup() {
+        if (insertedWarehouseItem != null) {
+            warehouseItemRepository.delete(insertedWarehouseItem);
+            insertedWarehouseItem = null;
+        }
+    }
+
     @Test
     @Transactional
     void createWarehouseItem() throws Exception {
@@ -116,6 +127,8 @@ class WarehouseItemResourceIT {
         // Validate the WarehouseItem in the database
         assertIncrementedRepositoryCount(databaseSizeBeforeCreate);
         assertWarehouseItemUpdatableFieldsEquals(returnedWarehouseItem, getPersistedWarehouseItem(returnedWarehouseItem));
+
+        insertedWarehouseItem = returnedWarehouseItem;
     }
 
     @Test
@@ -155,7 +168,7 @@ class WarehouseItemResourceIT {
     @Transactional
     void getAllWarehouseItems() throws Exception {
         // Initialize the database
-        warehouseItemRepository.saveAndFlush(warehouseItem);
+        insertedWarehouseItem = warehouseItemRepository.saveAndFlush(warehouseItem);
 
         // Get all the warehouseItemList
         restWarehouseItemMockMvc
@@ -173,7 +186,7 @@ class WarehouseItemResourceIT {
     @Transactional
     void getWarehouseItem() throws Exception {
         // Initialize the database
-        warehouseItemRepository.saveAndFlush(warehouseItem);
+        insertedWarehouseItem = warehouseItemRepository.saveAndFlush(warehouseItem);
 
         // Get the warehouseItem
         restWarehouseItemMockMvc
@@ -198,7 +211,7 @@ class WarehouseItemResourceIT {
     @Transactional
     void putExistingWarehouseItem() throws Exception {
         // Initialize the database
-        warehouseItemRepository.saveAndFlush(warehouseItem);
+        insertedWarehouseItem = warehouseItemRepository.saveAndFlush(warehouseItem);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -278,7 +291,7 @@ class WarehouseItemResourceIT {
     @Transactional
     void partialUpdateWarehouseItemWithPatch() throws Exception {
         // Initialize the database
-        warehouseItemRepository.saveAndFlush(warehouseItem);
+        insertedWarehouseItem = warehouseItemRepository.saveAndFlush(warehouseItem);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -286,7 +299,7 @@ class WarehouseItemResourceIT {
         WarehouseItem partialUpdatedWarehouseItem = new WarehouseItem();
         partialUpdatedWarehouseItem.setId(warehouseItem.getId());
 
-        partialUpdatedWarehouseItem.code(UPDATED_CODE).description(UPDATED_DESCRIPTION);
+        partialUpdatedWarehouseItem.name(UPDATED_NAME).description(UPDATED_DESCRIPTION);
 
         restWarehouseItemMockMvc
             .perform(
@@ -309,7 +322,7 @@ class WarehouseItemResourceIT {
     @Transactional
     void fullUpdateWarehouseItemWithPatch() throws Exception {
         // Initialize the database
-        warehouseItemRepository.saveAndFlush(warehouseItem);
+        insertedWarehouseItem = warehouseItemRepository.saveAndFlush(warehouseItem);
 
         long databaseSizeBeforeUpdate = getRepositoryCount();
 
@@ -390,7 +403,7 @@ class WarehouseItemResourceIT {
     @Transactional
     void deleteWarehouseItem() throws Exception {
         // Initialize the database
-        warehouseItemRepository.saveAndFlush(warehouseItem);
+        insertedWarehouseItem = warehouseItemRepository.saveAndFlush(warehouseItem);
 
         long databaseSizeBeforeDelete = getRepositoryCount();
 

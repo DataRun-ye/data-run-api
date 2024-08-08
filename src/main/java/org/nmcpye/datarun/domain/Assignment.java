@@ -27,12 +27,16 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
     @Column(name = "id")
     private Long id;
 
+    @NotNull
     @Size(max = 11)
     @Column(name = "uid", length = 11, nullable = false, unique = true)
     private String uid;
 
     @Column(name = "code")
     private String code;
+
+    @Column(name = "name")
+    private String name;
 
     @Column(name = "phase_no")
     private Integer phaseNo;
@@ -54,9 +58,6 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
 
     @Column(name = "subvillage")
     private String subvillage;
-
-    @Column(name = "name")
-    private String name;
 
     @Column(name = "day_id")
     private Integer dayId;
@@ -95,7 +96,7 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
 
     @ManyToOne(optional = false)
     @NotNull
-    @JsonIgnoreProperties(value = { "activity", "operationRoom", "warehouse", "userInfo", "assignments" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "activity", "warehouse", "userInfo", "assignments" }, allowSetters = true)
     private Team team;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -141,6 +142,19 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
 
     public void setCode(String code) {
         this.code = code;
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public Assignment name(String name) {
+        this.setName(name);
+        return this;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public Integer getPhaseNo() {
@@ -232,19 +246,6 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
 
     public void setSubvillage(String subvillage) {
         this.subvillage = subvillage;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
-    public Assignment name(String name) {
-        this.setName(name);
-        return this;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public Integer getDayId() {
@@ -457,6 +458,7 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
             "id=" + getId() +
             ", uid='" + getUid() + "'" +
             ", code='" + getCode() + "'" +
+            ", name='" + getName() + "'" +
             ", phaseNo=" + getPhaseNo() +
             ", districtCode=" + getDistrictCode() +
             ", gov='" + getGov() + "'" +
@@ -464,7 +466,6 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
             ", subdistrict='" + getSubdistrict() + "'" +
             ", village='" + getVillage() + "'" +
             ", subvillage='" + getSubvillage() + "'" +
-            ", name='" + getName() + "'" +
             ", dayId=" + getDayId() +
             ", population=" + getPopulation() +
             ", itnsPlanned=" + getItnsPlanned() +

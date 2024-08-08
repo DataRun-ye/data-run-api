@@ -1,13 +1,10 @@
 package org.nmcpye.datarun.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
-import java.time.Instant;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.springframework.data.domain.Persistable;
 
 /**
  * A WarehouseItem.
@@ -15,9 +12,8 @@ import org.springframework.data.domain.Persistable;
 @Entity
 @Table(name = "warehouse_item")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-@JsonIgnoreProperties(value = { "new" })
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class WarehouseItem extends AbstractAuditingEntity<Long> implements Serializable, Persistable<Long> {
+public class WarehouseItem implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -40,13 +36,6 @@ public class WarehouseItem extends AbstractAuditingEntity<Long> implements Seria
 
     @Column(name = "description")
     private String description;
-
-    // Inherited createdBy definition
-    // Inherited createdDate definition
-    // Inherited lastModifiedBy definition
-    // Inherited lastModifiedDate definition
-    @Transient
-    private boolean isPersisted;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -115,47 +104,6 @@ public class WarehouseItem extends AbstractAuditingEntity<Long> implements Seria
         this.description = description;
     }
 
-    // Inherited createdBy methods
-    public WarehouseItem createdBy(String createdBy) {
-        this.setCreatedBy(createdBy);
-        return this;
-    }
-
-    // Inherited createdDate methods
-    public WarehouseItem createdDate(Instant createdDate) {
-        this.setCreatedDate(createdDate);
-        return this;
-    }
-
-    // Inherited lastModifiedBy methods
-    public WarehouseItem lastModifiedBy(String lastModifiedBy) {
-        this.setLastModifiedBy(lastModifiedBy);
-        return this;
-    }
-
-    // Inherited lastModifiedDate methods
-    public WarehouseItem lastModifiedDate(Instant lastModifiedDate) {
-        this.setLastModifiedDate(lastModifiedDate);
-        return this;
-    }
-
-    @PostLoad
-    @PostPersist
-    public void updateEntityState() {
-        this.setIsPersisted();
-    }
-
-    @Transient
-    @Override
-    public boolean isNew() {
-        return !this.isPersisted;
-    }
-
-    public WarehouseItem setIsPersisted() {
-        this.isPersisted = true;
-        return this;
-    }
-
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
 
     @Override
@@ -184,10 +132,6 @@ public class WarehouseItem extends AbstractAuditingEntity<Long> implements Seria
             ", code='" + getCode() + "'" +
             ", name='" + getName() + "'" +
             ", description='" + getDescription() + "'" +
-            ", createdBy='" + getCreatedBy() + "'" +
-            ", createdDate='" + getCreatedDate() + "'" +
-            ", lastModifiedBy='" + getLastModifiedBy() + "'" +
-            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             "}";
     }
 }

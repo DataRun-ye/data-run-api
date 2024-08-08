@@ -46,11 +46,16 @@ public class UserMapper {
         } else {
             User user = new User();
             user.setId(userDTO.getId());
+            user.setUid(userDTO.getUid());
             user.setLogin(userDTO.getLogin());
             user.setFirstName(userDTO.getFirstName());
             user.setLastName(userDTO.getLastName());
             user.setEmail(userDTO.getEmail());
             user.setImageUrl(userDTO.getImageUrl());
+            user.setCreatedBy(userDTO.getCreatedBy());
+            user.setCreatedDate(userDTO.getCreatedDate());
+            user.setLastModifiedBy(userDTO.getLastModifiedBy());
+            user.setLastModifiedDate(userDTO.getLastModifiedDate());
             user.setActivated(userDTO.isActivated());
             user.setLangKey(userDTO.getLangKey());
             Set<Authority> authorities = this.authoritiesFromStrings(userDTO.getAuthorities());

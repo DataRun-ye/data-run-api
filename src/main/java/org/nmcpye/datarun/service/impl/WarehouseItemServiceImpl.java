@@ -1,13 +1,12 @@
 package org.nmcpye.datarun.service.impl;
 
+import java.util.List;
 import java.util.Optional;
 import org.nmcpye.datarun.domain.WarehouseItem;
 import org.nmcpye.datarun.repository.WarehouseItemRepository;
 import org.nmcpye.datarun.service.WarehouseItemService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class WarehouseItemServiceImpl implements WarehouseItemService {
 
-    private final Logger log = LoggerFactory.getLogger(WarehouseItemServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(WarehouseItemServiceImpl.class);
 
     private final WarehouseItemRepository warehouseItemRepository;
 
@@ -35,7 +34,6 @@ public class WarehouseItemServiceImpl implements WarehouseItemService {
     @Override
     public WarehouseItem update(WarehouseItem warehouseItem) {
         log.debug("Request to update WarehouseItem : {}", warehouseItem);
-        warehouseItem.setIsPersisted();
         return warehouseItemRepository.save(warehouseItem);
     }
 
@@ -58,18 +56,6 @@ public class WarehouseItemServiceImpl implements WarehouseItemService {
                 if (warehouseItem.getDescription() != null) {
                     existingWarehouseItem.setDescription(warehouseItem.getDescription());
                 }
-                if (warehouseItem.getCreatedBy() != null) {
-                    existingWarehouseItem.setCreatedBy(warehouseItem.getCreatedBy());
-                }
-                if (warehouseItem.getCreatedDate() != null) {
-                    existingWarehouseItem.setCreatedDate(warehouseItem.getCreatedDate());
-                }
-                if (warehouseItem.getLastModifiedBy() != null) {
-                    existingWarehouseItem.setLastModifiedBy(warehouseItem.getLastModifiedBy());
-                }
-                if (warehouseItem.getLastModifiedDate() != null) {
-                    existingWarehouseItem.setLastModifiedDate(warehouseItem.getLastModifiedDate());
-                }
 
                 return existingWarehouseItem;
             })
@@ -78,9 +64,9 @@ public class WarehouseItemServiceImpl implements WarehouseItemService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<WarehouseItem> findAll(Pageable pageable) {
+    public List<WarehouseItem> findAll() {
         log.debug("Request to get all WarehouseItems");
-        return warehouseItemRepository.findAll(pageable);
+        return warehouseItemRepository.findAll();
     }
 
     @Override

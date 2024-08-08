@@ -13,7 +13,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -22,7 +21,7 @@ import java.util.Optional;
 public class ProjectServiceCustomImpl
     extends ProjectServiceImpl
     implements ProjectServiceCustom, IdentifiableService<Project> {
-    private final Logger log = LoggerFactory.getLogger(ItnsVillageServiceCustomImpl.class);
+    private final Logger log = LoggerFactory.getLogger(ProjectServiceCustomImpl.class);
 
     final private ProjectRepositoryCustom projectRepository;
 
@@ -55,10 +54,4 @@ public class ProjectServiceCustomImpl
     public Page<Project> findAllWithEagerRelationships(Pageable pageable) {
         return projectRepository.findAll(pageable);
     }
-
-    @Override
-    public List<Project> findAll() {
-        return projectRepository.findAll();
-    }
-
 }

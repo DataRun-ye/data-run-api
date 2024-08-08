@@ -3,11 +3,9 @@ package org.nmcpye.datarun.drun.mongo.domain;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
-import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -58,8 +56,6 @@ public class DataForm
     @Field("defaultLocal")
     private String defaultLocal;
 
-    private Map<String, String> label;
-
     @Field("fields")
     private Set<DataField> fields = new HashSet<>();
 
@@ -84,17 +80,6 @@ public class DataForm
 
     public void setDefaultLocal(String defaultLocal) {
         this.defaultLocal = Objects.requireNonNullElse(defaultLocal, "en");
-    }
-
-    public void setLabel(Map<String, String> label) {
-        this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
-    }
-
-    public Map<String, String> getLabel() {
-        if (this.label == null) {
-            return Map.of("en", this.name);
-        }
-        return label;
     }
 
     public Set<DataFieldRule> getRules() {
@@ -250,6 +235,19 @@ public class DataForm
     public DataForm activity(String activityId) {
         this.setActivity(activityId);
         return this;
+    }
+
+    private Map<String, String> label;
+
+    public void setLabel(Map<String, String> label) {
+        this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
+    }
+
+    public Map<String, String> getLabel() {
+        if (this.label == null) {
+            return Map.of("en", this.name);
+        }
+        return label;
     }
 
     @Override
