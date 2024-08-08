@@ -76,11 +76,11 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
 
     @ManyToOne(fetch = FetchType.LAZY)
     private User userInfo;
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "team")
-    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = { "activity", "organisationUnit", "team", "warehouse" }, allowSetters = true)
-    private Set<Assignment> assignments = new HashSet<>();
+//
+//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "team")
+//    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+//    @JsonIgnoreProperties(value = { "activity", "organisationUnit", "team", "warehouse" }, allowSetters = true)
+//    private Set<Assignment> assignments = new HashSet<>();
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -294,36 +294,36 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
         return this;
     }
 
-    public Set<Assignment> getAssignments() {
-        return this.assignments;
-    }
-
-    public void setAssignments(Set<Assignment> assignments) {
-        if (this.assignments != null) {
-            this.assignments.forEach(i -> i.setTeam(null));
-        }
-        if (assignments != null) {
-            assignments.forEach(i -> i.setTeam(this));
-        }
-        this.assignments = assignments;
-    }
-
-    public Team assignments(Set<Assignment> assignments) {
-        this.setAssignments(assignments);
-        return this;
-    }
-
-    public Team addAssignment(Assignment assignment) {
-        this.assignments.add(assignment);
-        assignment.setTeam(this);
-        return this;
-    }
-
-    public Team removeAssignment(Assignment assignment) {
-        this.assignments.remove(assignment);
-        assignment.setTeam(null);
-        return this;
-    }
+//    public Set<Assignment> getAssignments() {
+//        return this.assignments;
+//    }
+//
+//    public void setAssignments(Set<Assignment> assignments) {
+//        if (this.assignments != null) {
+//            this.assignments.forEach(i -> i.setTeam(null));
+//        }
+//        if (assignments != null) {
+//            assignments.forEach(i -> i.setTeam(this));
+//        }
+//        this.assignments = assignments;
+//    }
+//
+//    public Team assignments(Set<Assignment> assignments) {
+//        this.setAssignments(assignments);
+//        return this;
+//    }
+//
+//    public Team addAssignment(Assignment assignment) {
+//        this.assignments.add(assignment);
+//        assignment.setTeam(this);
+//        return this;
+//    }
+//
+//    public Team removeAssignment(Assignment assignment) {
+//        this.assignments.remove(assignment);
+//        assignment.setTeam(null);
+//        return this;
+//    }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
 

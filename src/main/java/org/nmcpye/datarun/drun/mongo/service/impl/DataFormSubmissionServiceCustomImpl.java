@@ -4,9 +4,8 @@ import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.drun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.drun.mongo.repository.DataFormSubmissionRepositoryCustom;
 import org.nmcpye.datarun.drun.mongo.service.DataFormSubmissionServiceCustom;
-import org.nmcpye.datarun.drun.postgres.repository.ActivityRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
@@ -26,19 +25,19 @@ public class DataFormSubmissionServiceCustomImpl
     private final Logger log = LoggerFactory.getLogger(DataFormSubmissionServiceCustomImpl.class);
 
     private final DataFormSubmissionRepositoryCustom dataFormSubmissionRepository;
-    private final ActivityRepositoryCustom activityRepository;
-    private final AssignmentRepositoryCustom assignmentRepository;
-    private final TeamRepositoryCustom teamRepository;
+    private final ActivityRelationalRepositoryCustom activityRepository;
+//    private final AssignmentRepositoryCustom assignmentRepository;
+    private final TeamRelationalRepositoryCustom teamRepository;
 
     public DataFormSubmissionServiceCustomImpl(
         DataFormSubmissionRepositoryCustom dataFormSubmissionRepository,
-        ActivityRepositoryCustom activityRepository,
-        AssignmentRepositoryCustom assignmentRepository,
-        TeamRepositoryCustom teamRepository) {
+        ActivityRelationalRepositoryCustom activityRepository,
+//        AssignmentRepositoryCustom assignmentRepository,
+        TeamRelationalRepositoryCustom teamRepository) {
         super(dataFormSubmissionRepository);
         this.dataFormSubmissionRepository = dataFormSubmissionRepository;
         this.activityRepository = activityRepository;
-        this.assignmentRepository = assignmentRepository;
+//        this.assignmentRepository = assignmentRepository;
         this.teamRepository = teamRepository;
     }
 
@@ -50,11 +49,11 @@ public class DataFormSubmissionServiceCustomImpl
 
         teamRepository.findByUid(dataFormSubmission.getTeam())
             .orElseThrow(() -> new PropertyNotFoundException("Team not found: " + dataFormSubmission.getTeam()));
-
-        if (dataFormSubmission.getAssignment() != null) {
-            assignmentRepository.findByUid(dataFormSubmission.getAssignment())
-                .orElseThrow(() -> new PropertyNotFoundException("Assignment not found: " + dataFormSubmission.getAssignment()));
-        }
+//
+//        if (dataFormSubmission.getAssignment() != null) {
+//            assignmentRepository.findByUid(dataFormSubmission.getAssignment())
+//                .orElseThrow(() -> new PropertyNotFoundException("Assignment not found: " + dataFormSubmission.getAssignment()));
+//        }
 
 //        // Set the fetched entities
 //        dataFormSubmission.setActivity(activity.getUid());

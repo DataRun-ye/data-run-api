@@ -18,7 +18,7 @@ public class DataFormVersion {
     private String id;
 
     @Size(max = 16)
-    @Field("formUid")
+    @Field("form_uid")
     private String form;
 
     @Version

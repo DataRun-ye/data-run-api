@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.service.impl;
 
-import java.util.Optional;
 import org.nmcpye.datarun.domain.Assignment;
 import org.nmcpye.datarun.repository.AssignmentRepository;
 import org.nmcpye.datarun.service.AssignmentService;
@@ -11,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 /**
  * Service Implementation for managing {@link org.nmcpye.datarun.domain.Assignment}.
  */
@@ -18,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AssignmentServiceImpl implements AssignmentService {
 
-    private static final Logger log = LoggerFactory.getLogger(AssignmentServiceImpl.class);
+    private final Logger log = LoggerFactory.getLogger(AssignmentServiceImpl.class);
 
     private final AssignmentRepository assignmentRepository;
 
@@ -51,51 +52,6 @@ public class AssignmentServiceImpl implements AssignmentService {
                 }
                 if (assignment.getCode() != null) {
                     existingAssignment.setCode(assignment.getCode());
-                }
-                if (assignment.getName() != null) {
-                    existingAssignment.setName(assignment.getName());
-                }
-                if (assignment.getPhaseNo() != null) {
-                    existingAssignment.setPhaseNo(assignment.getPhaseNo());
-                }
-                if (assignment.getDistrictCode() != null) {
-                    existingAssignment.setDistrictCode(assignment.getDistrictCode());
-                }
-                if (assignment.getGov() != null) {
-                    existingAssignment.setGov(assignment.getGov());
-                }
-                if (assignment.getDistrict() != null) {
-                    existingAssignment.setDistrict(assignment.getDistrict());
-                }
-                if (assignment.getSubdistrict() != null) {
-                    existingAssignment.setSubdistrict(assignment.getSubdistrict());
-                }
-                if (assignment.getVillage() != null) {
-                    existingAssignment.setVillage(assignment.getVillage());
-                }
-                if (assignment.getSubvillage() != null) {
-                    existingAssignment.setSubvillage(assignment.getSubvillage());
-                }
-                if (assignment.getDayId() != null) {
-                    existingAssignment.setDayId(assignment.getDayId());
-                }
-                if (assignment.getPopulation() != null) {
-                    existingAssignment.setPopulation(assignment.getPopulation());
-                }
-                if (assignment.getItnsPlanned() != null) {
-                    existingAssignment.setItnsPlanned(assignment.getItnsPlanned());
-                }
-                if (assignment.getTargetType() != null) {
-                    existingAssignment.setTargetType(assignment.getTargetType());
-                }
-                if (assignment.getLongitude() != null) {
-                    existingAssignment.setLongitude(assignment.getLongitude());
-                }
-                if (assignment.getLatitude() != null) {
-                    existingAssignment.setLatitude(assignment.getLatitude());
-                }
-                if (assignment.getStartDate() != null) {
-                    existingAssignment.setStartDate(assignment.getStartDate());
                 }
                 if (assignment.getCreatedBy() != null) {
                     existingAssignment.setCreatedBy(assignment.getCreatedBy());

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1723155357207-18" author="Hamza (generated)">
+        <createTable tableName="assignment">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_assignment"/>
+            </column>
+            <column name="created_by" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="DATETIME"/>
+            <column name="last_modified_by" type="VARCHAR(50)"/>
+            <column name="last_modified_date" type="DATETIME"/>
+            <column name="uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(255)"/>
+            <column name="activity_id" type="BIGINT"/>
+            <column name="org_unit_id" type="BIGINT"/>
+            <column name="team_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="1723155357207-28" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_assignment_uid" tableName="assignment"/>
+    </changeSet>
+    <changeSet id="1723155357207-29" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="activity_id" baseTableName="assignment"
+                                 constraintName="FK_ASSIGNMENT_ON_ACTIVITY" referencedColumnNames="id"
+                                 referencedTableName="activity"/>
+    </changeSet>
+    <changeSet id="1723155357207-30" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="org_unit_id" baseTableName="assignment"
+                                 constraintName="FK_ASSIGNMENT_ON_ORGUNIT" referencedColumnNames="id"
+                                 referencedTableName="org_unit"/>
+    </changeSet>
+    <changeSet id="1723155357207-31" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="team_id" baseTableName="assignment"
+                                 constraintName="FK_ASSIGNMENT_ON_TEAM" referencedColumnNames="id"
+                                 referencedTableName="team"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -17,9 +17,6 @@ public class DataOption implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @MongoId
-    private String id;
-
     // formUid_listName_optionUid
     @Size(max = 11)
     @NotNull
@@ -29,18 +26,14 @@ public class DataOption implements Serializable {
     private String form;
 
     @NotNull
-    @Field("listName")
     private String listName;
 
     @NotNull
-    @Field("name")
     private String name;
 
     @Size(max = 2000)
-    @Field("description")
     private String description;
 
-    @Field("order")
     private Integer order;
 
     public String getForm() {
@@ -49,14 +42,6 @@ public class DataOption implements Serializable {
 
     public void setForm(String form) {
         this.form = form;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public Map<String, String> getLabel() {

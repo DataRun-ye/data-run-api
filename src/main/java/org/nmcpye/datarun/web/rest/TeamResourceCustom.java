@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest;
 
 import org.nmcpye.datarun.domain.Team;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.slf4j.Logger;
@@ -28,10 +28,10 @@ public class TeamResourceCustom extends AbstractResource<Team> {
 
     private final TeamServiceCustom teamService;
 
-    private final TeamRepositoryCustom teamRepository;
+    private final TeamRelationalRepositoryCustom teamRepository;
 
     public TeamResourceCustom(TeamServiceCustom teamServiceCustom,
-                              TeamRepositoryCustom teamRepositoryCustom) {
+                              TeamRelationalRepositoryCustom teamRepositoryCustom) {
         super(teamServiceCustom, teamRepositoryCustom);
         this.teamService = teamServiceCustom;
         this.teamRepository = teamRepositoryCustom;

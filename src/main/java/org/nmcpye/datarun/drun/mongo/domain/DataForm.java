@@ -1,7 +1,10 @@
 package org.nmcpye.datarun.drun.mongo.domain;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.nmcpye.datarun.drun.mongo.mapping.assignment.ActivityDeserializer;
+import org.nmcpye.datarun.drun.mongo.mapping.assignment.OrgUnitSetDeserializer;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -49,22 +52,46 @@ public class DataForm
     private Boolean disabled;
 
     @Field("activity")
+    @JsonDeserialize(using = ActivityDeserializer.class)
     private String activity;
 
     private Integer version;
 
-    @Field("defaultLocal")
+    @Field("default_local")
     private String defaultLocal;
 
     @Field("fields")
     private Set<DataField> fields = new HashSet<>();
 
-    @Field("rules")
-    private Set<DataFieldRule> rules = new HashSet<>();
-
     @Field("options")
     private Set<DataOption> options = new HashSet<>();
 
+    @Field("orgUnits")
+    @JsonDeserialize(using = OrgUnitSetDeserializer.class)
+    private Set<String> orgUnits = new HashSet<>();
+
+    public Set<String> getOrgUnits() {
+        return orgUnits;
+    }
+
+    public void setOrgUnits(Set<String> orgUnits) {
+        this.orgUnits = orgUnits;
+    }
+
+    public DataForm orgUnits(Set<String> orgUnits) {
+        this.setOrgUnits(orgUnits);
+        return this;
+    }
+
+    public DataForm addOrgUnit(String orgUnits) {
+        this.orgUnits.add(orgUnits);
+        return this;
+    }
+
+    public DataForm removeOrgUnit(String orgUnits) {
+        this.orgUnits.remove(orgUnits);
+        return this;
+    }
 
     public Integer getVersion() {
         return version;
@@ -80,29 +107,6 @@ public class DataForm
 
     public void setDefaultLocal(String defaultLocal) {
         this.defaultLocal = Objects.requireNonNullElse(defaultLocal, "en");
-    }
-
-    public Set<DataFieldRule> getRules() {
-        return this.rules;
-    }
-
-    public void setRules(Set<DataFieldRule> dataFieldRules) {
-        this.rules = dataFieldRules;
-    }
-
-    public DataForm rules(Set<DataFieldRule> dataFieldRules) {
-        this.setRules(dataFieldRules);
-        return this;
-    }
-
-    public DataForm addRule(DataFieldRule dataFieldRule) {
-        this.rules.add(dataFieldRule);
-        return this;
-    }
-
-    public DataForm removeRule(DataFieldRule dataFieldRule) {
-        this.rules.remove(dataFieldRule);
-        return this;
     }
 
     public Set<DataOption> getOptions() {

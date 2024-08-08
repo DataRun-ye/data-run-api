@@ -2,12 +2,14 @@ package org.nmcpye.datarun.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import java.io.Serializable;
-import java.time.Instant;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.data.domain.Persistable;
+
+import java.io.Serializable;
+import java.time.Instant;
 
 /**
  * A Assignment.
@@ -27,7 +29,6 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
     @Column(name = "id")
     private Long id;
 
-    @NotNull
     @Size(max = 11)
     @Column(name = "uid", length = 11, nullable = false, unique = true)
     private String uid;
@@ -35,55 +36,6 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
     @Column(name = "code")
     private String code;
 
-    @Column(name = "name")
-    private String name;
-
-    @Column(name = "phase_no")
-    private Integer phaseNo;
-
-    @Column(name = "district_code")
-    private Integer districtCode;
-
-    @Column(name = "gov")
-    private String gov;
-
-    @Column(name = "district")
-    private String district;
-
-    @Column(name = "subdistrict")
-    private String subdistrict;
-
-    @Column(name = "village")
-    private String village;
-
-    @Column(name = "subvillage")
-    private String subvillage;
-
-    @Column(name = "day_id")
-    private Integer dayId;
-
-    @Column(name = "population")
-    private Double population;
-
-    @Column(name = "itns_planned")
-    private Integer itnsPlanned;
-
-    @Column(name = "target_type")
-    private Integer targetType;
-
-    @Column(name = "longitude")
-    private Double longitude;
-
-    @Column(name = "latitude")
-    private Double latitude;
-
-    @Column(name = "start_date")
-    private Instant startDate;
-
-    // Inherited createdBy definition
-    // Inherited createdDate definition
-    // Inherited lastModifiedBy definition
-    // Inherited lastModifiedDate definition
     @Transient
     private boolean isPersisted;
 
@@ -92,16 +44,13 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
     private Activity activity;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    private VillageLocation organisationUnit;
+    private OrgUnit orgUnit;
 
     @ManyToOne(optional = false)
     @NotNull
-    @JsonIgnoreProperties(value = { "activity", "warehouse", "userInfo", "assignments" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "activity", "operationRoom", "warehouse", "userInfo", "assignments" }, allowSetters = true)
     private Team team;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "activity" }, allowSetters = true)
-    private Warehouse warehouse;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -142,201 +91,6 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
 
     public void setCode(String code) {
         this.code = code;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
-    public Assignment name(String name) {
-        this.setName(name);
-        return this;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Integer getPhaseNo() {
-        return this.phaseNo;
-    }
-
-    public Assignment phaseNo(Integer phaseNo) {
-        this.setPhaseNo(phaseNo);
-        return this;
-    }
-
-    public void setPhaseNo(Integer phaseNo) {
-        this.phaseNo = phaseNo;
-    }
-
-    public Integer getDistrictCode() {
-        return this.districtCode;
-    }
-
-    public Assignment districtCode(Integer districtCode) {
-        this.setDistrictCode(districtCode);
-        return this;
-    }
-
-    public void setDistrictCode(Integer districtCode) {
-        this.districtCode = districtCode;
-    }
-
-    public String getGov() {
-        return this.gov;
-    }
-
-    public Assignment gov(String gov) {
-        this.setGov(gov);
-        return this;
-    }
-
-    public void setGov(String gov) {
-        this.gov = gov;
-    }
-
-    public String getDistrict() {
-        return this.district;
-    }
-
-    public Assignment district(String district) {
-        this.setDistrict(district);
-        return this;
-    }
-
-    public void setDistrict(String district) {
-        this.district = district;
-    }
-
-    public String getSubdistrict() {
-        return this.subdistrict;
-    }
-
-    public Assignment subdistrict(String subdistrict) {
-        this.setSubdistrict(subdistrict);
-        return this;
-    }
-
-    public void setSubdistrict(String subdistrict) {
-        this.subdistrict = subdistrict;
-    }
-
-    public String getVillage() {
-        return this.village;
-    }
-
-    public Assignment village(String village) {
-        this.setVillage(village);
-        return this;
-    }
-
-    public void setVillage(String village) {
-        this.village = village;
-    }
-
-    public String getSubvillage() {
-        return this.subvillage;
-    }
-
-    public Assignment subvillage(String subvillage) {
-        this.setSubvillage(subvillage);
-        return this;
-    }
-
-    public void setSubvillage(String subvillage) {
-        this.subvillage = subvillage;
-    }
-
-    public Integer getDayId() {
-        return this.dayId;
-    }
-
-    public Assignment dayId(Integer dayId) {
-        this.setDayId(dayId);
-        return this;
-    }
-
-    public void setDayId(Integer dayId) {
-        this.dayId = dayId;
-    }
-
-    public Double getPopulation() {
-        return this.population;
-    }
-
-    public Assignment population(Double population) {
-        this.setPopulation(population);
-        return this;
-    }
-
-    public void setPopulation(Double population) {
-        this.population = population;
-    }
-
-    public Integer getItnsPlanned() {
-        return this.itnsPlanned;
-    }
-
-    public Assignment itnsPlanned(Integer itnsPlanned) {
-        this.setItnsPlanned(itnsPlanned);
-        return this;
-    }
-
-    public void setItnsPlanned(Integer itnsPlanned) {
-        this.itnsPlanned = itnsPlanned;
-    }
-
-    public Integer getTargetType() {
-        return this.targetType;
-    }
-
-    public Assignment targetType(Integer targetType) {
-        this.setTargetType(targetType);
-        return this;
-    }
-
-    public void setTargetType(Integer targetType) {
-        this.targetType = targetType;
-    }
-
-    public Double getLongitude() {
-        return this.longitude;
-    }
-
-    public Assignment longitude(Double longitude) {
-        this.setLongitude(longitude);
-        return this;
-    }
-
-    public void setLongitude(Double longitude) {
-        this.longitude = longitude;
-    }
-
-    public Double getLatitude() {
-        return this.latitude;
-    }
-
-    public Assignment latitude(Double latitude) {
-        this.setLatitude(latitude);
-        return this;
-    }
-
-    public void setLatitude(Double latitude) {
-        this.latitude = latitude;
-    }
-
-    public Instant getStartDate() {
-        return this.startDate;
-    }
-
-    public Assignment startDate(Instant startDate) {
-        this.setStartDate(startDate);
-        return this;
-    }
-
-    public void setStartDate(Instant startDate) {
-        this.startDate = startDate;
     }
 
     // Inherited createdBy methods
@@ -393,16 +147,16 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
         return this;
     }
 
-    public VillageLocation getOrganisationUnit() {
-        return this.organisationUnit;
+    public OrgUnit getOrgUnit() {
+        return this.orgUnit;
     }
 
-    public void setOrganisationUnit(VillageLocation villageLocation) {
-        this.organisationUnit = villageLocation;
+    public void setOrgUnit(OrgUnit orgUnit) {
+        this.orgUnit = orgUnit;
     }
 
-    public Assignment organisationUnit(VillageLocation villageLocation) {
-        this.setOrganisationUnit(villageLocation);
+    public Assignment organisationUnit(OrgUnit orgUnit) {
+        this.setOrgUnit(orgUnit);
         return this;
     }
 
@@ -416,19 +170,6 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
 
     public Assignment team(Team team) {
         this.setTeam(team);
-        return this;
-    }
-
-    public Warehouse getWarehouse() {
-        return this.warehouse;
-    }
-
-    public void setWarehouse(Warehouse warehouse) {
-        this.warehouse = warehouse;
-    }
-
-    public Assignment warehouse(Warehouse warehouse) {
-        this.setWarehouse(warehouse);
         return this;
     }
 
@@ -458,21 +199,6 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
             "id=" + getId() +
             ", uid='" + getUid() + "'" +
             ", code='" + getCode() + "'" +
-            ", name='" + getName() + "'" +
-            ", phaseNo=" + getPhaseNo() +
-            ", districtCode=" + getDistrictCode() +
-            ", gov='" + getGov() + "'" +
-            ", district='" + getDistrict() + "'" +
-            ", subdistrict='" + getSubdistrict() + "'" +
-            ", village='" + getVillage() + "'" +
-            ", subvillage='" + getSubvillage() + "'" +
-            ", dayId=" + getDayId() +
-            ", population=" + getPopulation() +
-            ", itnsPlanned=" + getItnsPlanned() +
-            ", targetType=" + getTargetType() +
-            ", longitude=" + getLongitude() +
-            ", latitude=" + getLatitude() +
-            ", startDate='" + getStartDate() + "'" +
             ", createdBy='" + getCreatedBy() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
             ", lastModifiedBy='" + getLastModifiedBy() + "'" +

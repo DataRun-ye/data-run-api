@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest;
 
 import org.nmcpye.datarun.domain.Project;
-import org.nmcpye.datarun.drun.postgres.repository.ProjectRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.ProjectRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.ProjectServiceCustom;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.slf4j.Logger;
@@ -22,10 +22,10 @@ public class ProjectResourceCustom extends AbstractResource<Project> {
 
     private final ProjectServiceCustom projectService;
 
-    private final ProjectRepositoryCustom projectRepository;
+    private final ProjectRelationalRepositoryCustom projectRepository;
 
     public ProjectResourceCustom(ProjectServiceCustom projectService,
-                                 ProjectRepositoryCustom projectRepository) {
+                                 ProjectRelationalRepositoryCustom projectRepository) {
         super(projectService, projectRepository);
         this.projectService = projectService;
         this.projectRepository = projectRepository;

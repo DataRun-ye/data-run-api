@@ -5,7 +5,7 @@ import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.drun.mongo.domain.DataForm;
 import org.nmcpye.datarun.drun.mongo.repository.DataFormRepositoryCustom;
 import org.nmcpye.datarun.drun.mongo.service.DataFormServiceCustom;
-import org.nmcpye.datarun.drun.postgres.repository.ActivityRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
@@ -27,9 +27,9 @@ public class DataFormServiceCustomImpl
 
     private final DataFormRepositoryCustom dataFormRepository;
 
-    private final ActivityRepositoryCustom activityRepository;
+    private final ActivityRelationalRepositoryCustom activityRepository;
 
-    public DataFormServiceCustomImpl(DataFormRepositoryCustom dataFormRepository, ActivityRepositoryCustom activityRepository) {
+    public DataFormServiceCustomImpl(DataFormRepositoryCustom dataFormRepository, ActivityRelationalRepositoryCustom activityRepository) {
         super(dataFormRepository);
         this.dataFormRepository = dataFormRepository;
         this.activityRepository = activityRepository;

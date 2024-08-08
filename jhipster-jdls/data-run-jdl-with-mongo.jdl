@@ -1,53 +1,3 @@
-// Define Enums
-enum ValueType {
-    Text,
-    LongText,
-    Letter,
-    PhoneNumber,
-    Email,
-    Boolean,
-    TrueOnly,
-    Date,
-    DateTime,
-    Time,
-    Number,
-    UnitInterval,
-    Percentage,
-    Integer,
-    IntegerPositive,
-    IntegerNegative,
-    IntegerZeroOrPositive,
-    Username,
-    Coordinate,
-    OrganisationUnit,
-    Reference,
-    Age,
-    URL,
-    FileResource,
-    Image,
-    SelectMulti,
-    SelectOne,
-    YesNo,
-    GeoJson,
-    Team,
-    Activity,
-    Warehouse
-}
-
-enum SyncableStatus {
-    ACTIVE
-    COMPLETED
-}
-
-enum RuleAction {
-    Show
-    Hide
-    Error
-    Warning
-    Filter
-    Assign
-}
-
 entity Assignment {
     uid String required unique maxlength(11)
     code String unique
@@ -154,6 +104,55 @@ relationship ManyToMany {
     DataForm{orgUnit(name)} to OrgUnit{form}
 }
 
-
 service * with serviceImpl
 paginate all with pagination
+
+// Define Enums
+enum ValueType {
+    Text,
+    LongText,
+    Letter,
+    PhoneNumber,
+    Email,
+    Boolean,
+    TrueOnly,
+    Date,
+    DateTime,
+    Time,
+    Number,
+    UnitInterval,
+    Percentage,
+    Integer,
+    IntegerPositive,
+    IntegerNegative,
+    IntegerZeroOrPositive,
+    Username,
+    Coordinate,
+    OrganisationUnit,
+    Reference,
+    Age,
+    URL,
+    FileResource,
+    Image,
+    SelectMulti,
+    SelectOne,
+    YesNo,
+    GeoJson,
+    Team,
+    Activity,
+    Warehouse
+}
+
+enum SyncableStatus {
+    ACTIVE
+    COMPLETED
+}
+
+enum RuleAction {
+    Show
+    Hide
+    Error
+    Warning
+    Filter
+    Assign
+}

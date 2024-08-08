@@ -18,7 +18,8 @@ import java.time.Instant;
  */
 @JsonIgnoreProperties(value = {"createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
 @DiffIgnore
-public abstract class AbstractAuditingEntityMongo<T> implements IdentifiableObject<T>, Serializable {
+public abstract class AbstractAuditingEntityMongo<T>
+    implements IdentifiableObject<T>, Serializable {
 
     private static final long serialVersionUID = 1L;
 

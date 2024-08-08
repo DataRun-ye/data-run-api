@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest;
 
 import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.drun.postgres.repository.ActivityRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.ActivityServiceCustom;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.slf4j.Logger;
@@ -28,9 +28,9 @@ public class ActivityResourceCustom extends AbstractResource<Activity> {
 
     private final ActivityServiceCustom activityService;
 
-    private final ActivityRepositoryCustom activityRepository;
+    private final ActivityRelationalRepositoryCustom activityRepository;
 
-    public ActivityResourceCustom(ActivityServiceCustom activityService, ActivityRepositoryCustom activityRepository) {
+    public ActivityResourceCustom(ActivityServiceCustom activityService, ActivityRelationalRepositoryCustom activityRepository) {
         super(activityService, activityRepository);
         this.activityRepository = activityRepository;
         this.activityService = activityService;

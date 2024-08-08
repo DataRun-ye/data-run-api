@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.rest.common;
 
 import jakarta.validation.Valid;
 import org.nmcpye.datarun.domain.common.IdentifiableObject;
-import org.nmcpye.datarun.drun.postgres.service.IdentifiableService;
+import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalService;
 import org.nmcpye.datarun.service.dto.drun.SaveSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,10 +25,10 @@ public abstract class AbstractResource<T extends IdentifiableObject<Long>> {
     @Value("${jhipster.clientApp.name}")
     private String applicationName;
 
-    final protected IdentifiableService<T> identifiableService;
+    final protected IdentifiableRelationalService<T> identifiableService;
     final protected JpaRepository<T, Long> repository;
 
-    protected AbstractResource(IdentifiableService<T> identifiableService,
+    protected AbstractResource(IdentifiableRelationalService<T> identifiableService,
                                JpaRepository<T, Long> repository) {
         this.identifiableService = identifiableService;
         this.repository = repository;

@@ -4,6 +4,7 @@ import java.time.Duration;
 import org.ehcache.config.builders.*;
 import org.ehcache.jsr107.Eh107Configuration;
 import org.hibernate.cache.jcache.ConfigSettings;
+import org.nmcpye.datarun.domain.OrgUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
@@ -54,12 +55,10 @@ public class CacheConfiguration {
             createCache(cm, org.nmcpye.datarun.domain.Project.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Project.class.getName() + ".activities");
             createCache(cm, org.nmcpye.datarun.domain.Activity.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.VillageLocation.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.Assignment.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Team.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Team.class.getName() + ".assignments");
             createCache(cm, org.nmcpye.datarun.domain.Warehouse.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.OrganizationUnit.class.getName());
+            createCache(cm, OrgUnit.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.OuLevel.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.WarehouseItem.class.getName());
             // jhipster-needle-ehcache-add-entry

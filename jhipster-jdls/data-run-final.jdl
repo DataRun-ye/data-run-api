@@ -109,7 +109,7 @@ entity OuLevel {
     level Integer required
 }
 
-entity OrganizationUnit {
+entity OrgUnit {
     uid String unique maxlength(11)
     code String unique
     name String required
@@ -119,7 +119,7 @@ entity OrganizationUnit {
 }
 
 relationship ManyToOne {
-    OrganizationUnit{level(name) required} to OuLevel
+    OrgUnit{level(name) required} to OuLevel
 }
 
 relationship ManyToOne {
@@ -159,4 +159,4 @@ relationship ManyToOne {
 }
 
 service * with serviceImpl
-paginate Project, Activity, Assignment, VillageLocation, Team, Warehouse, OrganizationUnit with pagination
+paginate Project, Activity, Assignment, VillageLocation, Team, Warehouse, OrgUnit with pagination

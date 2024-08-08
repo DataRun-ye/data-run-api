@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest;
 
 import org.nmcpye.datarun.domain.Warehouse;
-import org.nmcpye.datarun.drun.postgres.repository.WarehouseRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.WarehouseRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.WarehouseServiceCustom;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.slf4j.Logger;
@@ -28,10 +28,10 @@ public class WarehouseResourceCustom extends AbstractResource<Warehouse> {
 
     private final WarehouseServiceCustom warehouseService;
 
-    private final WarehouseRepositoryCustom warehouseRepository;
+    private final WarehouseRelationalRepositoryCustom warehouseRepository;
 
     public WarehouseResourceCustom(WarehouseServiceCustom warehouseService,
-                                   WarehouseRepositoryCustom warehouseRepository) {
+                                   WarehouseRelationalRepositoryCustom warehouseRepository) {
         super(warehouseService, warehouseRepository);
         this.warehouseService = warehouseService;
         this.warehouseRepository = warehouseRepository;
