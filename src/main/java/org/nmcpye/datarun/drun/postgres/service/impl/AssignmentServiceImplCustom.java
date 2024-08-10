@@ -5,6 +5,8 @@ import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositor
 import org.nmcpye.datarun.drun.postgres.service.AssignmentServiceCustom;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,5 +22,10 @@ public class AssignmentServiceImplCustom
     public AssignmentServiceImplCustom(AssignmentRelationalRepositoryCustom repositoryCustom) {
         super(repositoryCustom);
         this.repositoryCustom = repositoryCustom;
+    }
+
+    @Override
+    public Page<Assignment> findAllByUser(Pageable pageable) {
+        return repositoryCustom.findAllByStatusAndUser(false, pageable);
     }
 }

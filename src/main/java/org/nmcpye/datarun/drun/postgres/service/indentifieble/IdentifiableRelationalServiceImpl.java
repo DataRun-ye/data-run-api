@@ -30,9 +30,19 @@ public abstract class IdentifiableRelationalServiceImpl<T extends IdentifiableOb
     }
 
     @Override
+    public boolean existsById(Long id) {
+        return repository.findById(id).isPresent();
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Optional<T> findByUid(String uid) {
         return repository.findByUid(uid);
+    }
+
+    @Override
+    public Optional<T> findByCode(String code) {
+        return repository.findByCode(code);
     }
 
     @Override

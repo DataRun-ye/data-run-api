@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -23,6 +24,17 @@ public interface TeamRelationalRepositoryCustom
     default Page<Team> findAllWithEagerRelationshipsByUser(Pageable pageable) {
         return this.findAllWithToOneRelationshipsByUser(pageable);
     }
+
+    @Query(
+        value = "select team from Team team " +
+            "left join team.activity " +
+            "left join team.warehouse " +
+            "left join team.userInfo " +
+            "where team.userInfo.login = ?#{authentication.name}",
+        countQuery = "select count(team) from Team team " +
+            "where team.userInfo.login = ?#{authentication.name}"
+    )
+    List<Team> findAllByUser();
 
     @Query(
         value = "select team from Team team " +

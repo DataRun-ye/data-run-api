@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.drun.mongo.mapping.assignment;
+package org.nmcpye.datarun.drun.mongo.mapping.serialization;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;

@@ -1,10 +1,9 @@
 package org.nmcpye.datarun.drun.mongo.domain;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.nmcpye.datarun.drun.mongo.mapping.assignment.ActivityDeserializer;
-import org.nmcpye.datarun.drun.mongo.mapping.assignment.OrgUnitSetDeserializer;
+import org.nmcpye.datarun.drun.mongo.mapping.serialization.OrgUnitUidsSetSerializer;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -52,7 +51,6 @@ public class DataForm
     private Boolean disabled;
 
     @Field("activity")
-    @JsonDeserialize(using = ActivityDeserializer.class)
     private String activity;
 
     private Integer version;
@@ -67,8 +65,22 @@ public class DataForm
     private Set<DataOption> options = new HashSet<>();
 
     @Field("orgUnits")
-    @JsonDeserialize(using = OrgUnitSetDeserializer.class)
+    @JsonSerialize(using = OrgUnitUidsSetSerializer.class)
     private Set<String> orgUnits = new HashSet<>();
+
+
+    private Map<String, String> label;
+
+    public void setLabel(Map<String, String> label) {
+        this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
+    }
+
+    public Map<String, String> getLabel() {
+        if (this.label == null) {
+            return Map.of("en", this.name);
+        }
+        return label;
+    }
 
     public Set<String> getOrgUnits() {
         return orgUnits;
@@ -239,19 +251,6 @@ public class DataForm
     public DataForm activity(String activityId) {
         this.setActivity(activityId);
         return this;
-    }
-
-    private Map<String, String> label;
-
-    public void setLabel(Map<String, String> label) {
-        this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
-    }
-
-    public Map<String, String> getLabel() {
-        if (this.label == null) {
-            return Map.of("en", this.name);
-        }
-        return label;
     }
 
     @Override

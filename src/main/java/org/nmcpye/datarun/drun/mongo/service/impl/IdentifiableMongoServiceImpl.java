@@ -29,11 +29,6 @@ public abstract class IdentifiableMongoServiceImpl<T extends IdentifiableObject<
     }
 
     @Override
-    public boolean existsByCode(String code) {
-        return repository.findByCode(code).isPresent();
-    }
-
-    @Override
     public boolean existsById(String id) {
         return repository.findById(id).isPresent();
     }
@@ -51,11 +46,6 @@ public abstract class IdentifiableMongoServiceImpl<T extends IdentifiableObject<
     @Override
     public void deleteByUid(String uid) {
         repository.findByUid(uid).ifPresent(repository::delete);
-    }
-
-    @Override
-    public void deleteByCode(String code) {
-        repository.findByCode(code).ifPresent(repository::delete);
     }
 
     @Override
@@ -83,18 +73,18 @@ public abstract class IdentifiableMongoServiceImpl<T extends IdentifiableObject<
     @Override
     public Page<T> findAll(Pageable pageable) {
         log.debug("Request to get all ChvRegisters");
-        return repository.findAllByUser(pageable);
+        return repository.findAll(pageable);
     }
 
     @Override
     public Page<T> findAllWithEagerRelationships(Pageable pageable) {
-        return repository.findAllWithEagerRelationshipsByUser(pageable);
+        return repository.findAll(pageable);
     }
 
     @Override
     public Optional<T> findOne(String id) {
         log.debug("Request to get T : {}", id);
-        return repository.findOneWithEagerRelationshipsByUser(id);
+        return repository.findById(id);
     }
 
     @Override

@@ -1,9 +1,8 @@
-package org.nmcpye.datarun.web.rest;
+package org.nmcpye.datarun.web.rest.postgres;
 
 import org.nmcpye.datarun.domain.Project;
 import org.nmcpye.datarun.drun.postgres.repository.ProjectRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.ProjectServiceCustom;
-import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -16,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/custom/projects")
-public class ProjectResourceCustom extends AbstractResource<Project> {
+public class ProjectResourceCustom extends AbstractRelationalResource<Project> {
 
     private final Logger log = LoggerFactory.getLogger(ProjectResourceCustom.class);
 

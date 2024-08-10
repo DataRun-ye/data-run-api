@@ -1,18 +1,18 @@
-package org.nmcpye.datarun.drun.mongo.mapping.assignment;
+package org.nmcpye.datarun.drun.mongo.mapping.serialization;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import org.nmcpye.datarun.domain.OrgUnit;
-import org.nmcpye.datarun.drun.postgres.service.OrgUnitRelationalServiceCustom;
+import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
 
 import java.io.IOException;
 
 public class OrgUnitDeserializer extends JsonDeserializer<OrgUnit> {
 
-    final private OrgUnitRelationalServiceCustom orgUnitService;  // or a repository to fetch OrgUnit by UID
+    final private OrgUnitServiceCustom orgUnitService;  // or a repository to fetch OrgUnit by UID
 
-    public OrgUnitDeserializer(OrgUnitRelationalServiceCustom orgUnitService) {
+    public OrgUnitDeserializer(OrgUnitServiceCustom orgUnitService) {
         this.orgUnitService = orgUnitService;
     }
 

@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.web.rest;
+package org.nmcpye.datarun.web.rest.postgres;
 
 import jakarta.validation.Valid;
 import org.apache.commons.lang3.StringUtils;

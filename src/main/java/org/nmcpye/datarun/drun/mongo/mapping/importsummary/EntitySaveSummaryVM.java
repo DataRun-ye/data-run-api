@@ -1,11 +1,12 @@
-package org.nmcpye.datarun.service.dto.drun;
+package org.nmcpye.datarun.drun.mongo.mapping.importsummary;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SaveSummary {
+public class EntitySaveSummaryVM implements Serializable {
     public Map<String, String> getFailed() {
         return failed;
     }

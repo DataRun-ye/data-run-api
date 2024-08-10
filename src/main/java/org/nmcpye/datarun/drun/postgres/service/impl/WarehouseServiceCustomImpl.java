@@ -11,13 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Primary
 @Transactional
-public class WarehouseRelationalServiceCustomImpl
+public class WarehouseServiceCustomImpl
     extends IdentifiableRelationalServiceImpl<Warehouse>
     implements WarehouseServiceCustom {
 
     final private WarehouseRelationalRepositoryCustom repositoryCustom;
 
-    public WarehouseRelationalServiceCustomImpl(WarehouseRelationalRepositoryCustom repositoryCustom) {
+    public WarehouseServiceCustomImpl(WarehouseRelationalRepositoryCustom repositoryCustom) {
         super(repositoryCustom);
         this.repositoryCustom = repositoryCustom;
     }

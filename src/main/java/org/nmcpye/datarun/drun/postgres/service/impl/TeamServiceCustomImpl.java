@@ -5,20 +5,27 @@ import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCusto
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Primary
 @Transactional
-public class TeamRelationalServiceCustomImpl
+public class TeamServiceCustomImpl
     extends IdentifiableRelationalServiceImpl<Team>
     implements TeamServiceCustom {
 
-    TeamRelationalRepositoryCustom teamRepository;
+    TeamRelationalRepositoryCustom repositoryCustom;
 
-    public TeamRelationalServiceCustomImpl(TeamRelationalRepositoryCustom teamRepositoryCustom) {
+    public TeamServiceCustomImpl(TeamRelationalRepositoryCustom teamRepositoryCustom) {
         super(teamRepositoryCustom);
-        this.teamRepository = teamRepositoryCustom;
+        this.repositoryCustom = teamRepositoryCustom;
+    }
+
+    @Override
+    public Page<Team> findAllByUser(Pageable pageable) {
+        return repositoryCustom.findAllByUser(pageable);
     }
 }

@@ -14,9 +14,12 @@ public interface IdentifiableService<T extends IdentifiableObject<ID>,
         return save(object);
     }
 
+    boolean existsById(ID id);
     boolean existsByUid(String uid);
 
     Optional<T> findByUid(String uid);
+
+    Optional<T> findByCode(String code);
 
     void deleteByUid(String uid);
 

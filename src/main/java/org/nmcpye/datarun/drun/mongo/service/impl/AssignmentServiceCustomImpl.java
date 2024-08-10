@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 /**
  * Service Implementation for managing {@link AssignmentMongo}.
  */
@@ -34,27 +32,5 @@ public class AssignmentServiceCustomImpl
         this.dataFormRepository = dataFormRepository;
         this.activityRepository = activityRepository;
         this.teamRepository = teamRepository;
-    }
-
-    @Override
-    public Optional<AssignmentMongo> partialUpdate(AssignmentMongo dataForm) {
-        log.debug("Request to partially update Assignment : {}", dataForm);
-
-        return dataFormRepository
-            .findById(dataForm.getId())
-            .map(existingAssignment -> {
-                if (dataForm.getUid() != null) {
-                    existingAssignment.setUid(dataForm.getUid());
-                }
-                if (dataForm.getCode() != null) {
-                    existingAssignment.setCode(dataForm.getCode());
-                }
-                if (dataForm.getDisabled() != null) {
-                    existingAssignment.setDisabled(dataForm.getDisabled());
-                }
-
-                return existingAssignment;
-            })
-            .map(dataFormRepository::save);
     }
 }

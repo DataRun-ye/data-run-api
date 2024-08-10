@@ -2,34 +2,41 @@ package org.nmcpye.datarun.web.rest.common;
 
 import jakarta.validation.Valid;
 import org.nmcpye.datarun.domain.common.IdentifiableObject;
-import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalService;
-import org.nmcpye.datarun.service.dto.drun.SaveSummary;
+import org.nmcpye.datarun.drun.mongo.mapping.importsummary.EntitySaveSummaryVM;
+import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableService;
+import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import tech.jhipster.web.util.HeaderUtil;
+import tech.jhipster.web.util.ResponseUtil;
 
+import java.io.Serializable;
+import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @RequestMapping("/api/custom")
-public abstract class AbstractResource<T extends IdentifiableObject<Long>> {
+public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID extends Serializable> {
 
     private final Logger log = LoggerFactory.getLogger(AbstractResource.class);
 
     @Value("${jhipster.clientApp.name}")
     private String applicationName;
 
-    final protected IdentifiableRelationalService<T> identifiableService;
-    final protected JpaRepository<T, Long> repository;
+    final protected IdentifiableService<T, ID> identifiableService;
+    final protected CrudRepository<T, ID> repository;
 
-    protected AbstractResource(IdentifiableRelationalService<T> identifiableService,
-                               JpaRepository<T, Long> repository) {
+    protected AbstractResource(IdentifiableService<T, ID> identifiableService,
+                               CrudRepository<T, ID> repository) {
         this.identifiableService = identifiableService;
         this.repository = repository;
     }
@@ -72,28 +79,74 @@ public abstract class AbstractResource<T extends IdentifiableObject<Long>> {
     }
 
     @PostMapping("/bulk")
-    public ResponseEntity<SaveSummary> saveAll(@Valid @RequestBody List<T> entities) {
-        SaveSummary summary = new SaveSummary();
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(@Valid @RequestBody List<T> entities) {
+        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         for (T entity : entities) {
-            try {
-                if (identifiableService.existsByUid(entity.getUid())) {
-                    identifiableService.update(entity);
-                    summary.getUpdated().add(entity.getUid());
-                } else {
-                    identifiableService.save(entity);
-                    summary.getCreated().add(entity.getUid());
-                }
-            } catch (Exception e) {
-                summary.getFailed().put(entity.getUid(), e.getMessage());
-            }
+            saveEntity(entity, summary);
         }
         return ResponseEntity.ok(summary);
     }
 
-
     @PostMapping
-    public ResponseEntity<SaveSummary> saveOne(@Valid @RequestBody T entity) {
-        SaveSummary summary = new SaveSummary();
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(@Valid @RequestBody T entity) {
+        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
+        saveEntity(entity, summary);
+        return ResponseEntity.ok(summary);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<T> getActivityById(@PathVariable("id") ID id) {
+        log.debug("REST request to get from {}: {}", getName(), id);
+        Optional<T> activity = identifiableService.findOne(id).or(() -> identifiableService.findByUid(id.toString()));
+        return ResponseUtil.wrapOrNotFound(activity);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteActivityByIdUid(@PathVariable("id") ID id) {
+        log.debug("REST request to delete from {}: {}", getName(), id);
+        identifiableService.findOne(id).ifPresent(repository::delete);
+        return ResponseEntity
+            .noContent()
+            .headers(HeaderUtil
+                .createEntityDeletionAlert(applicationName, true, getName(), id.toString())).build();
+    }
+
+
+    protected Page<T> getList(Pageable pageable, boolean eagerload) {
+        if (eagerload) {
+            return identifiableService.findAllWithEagerRelationships(pageable);
+        }
+        return identifiableService.findAll(pageable);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<T> updateEntity(
+        @PathVariable(value = "id", required = false) final ID id,
+        @Valid @RequestBody T entity
+    ) throws URISyntaxException {
+        log.debug("REST request to delete from {}: {}", getName(), id);
+        if (entity.getId() == null) {
+            throw new BadRequestAlertException("Invalid id", getName(), "idnull");
+        }
+        if (!Objects.equals(id, entity.getId())) {
+            if (!Objects.equals(id, entity.getUid())) {
+                throw new BadRequestAlertException("Invalid ID", getName(), "idinvalid");
+            }
+        }
+
+        if (!identifiableService.existsById(id)) {
+            if (id instanceof String && !identifiableService.existsByUid(id.toString())) {
+                throw new BadRequestAlertException("Entity not found", getName(), "idnotfound");
+            }
+        }
+        entity = identifiableService.update(entity);
+
+        return ResponseEntity.ok()
+            .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), entity.getId().toString()))
+            .body(entity);
+    }
+
+    void saveEntity(T entity, EntitySaveSummaryVM summary) {
         try {
             if (identifiableService.existsByUid(entity.getUid())) {
                 identifiableService.update(entity);
@@ -105,11 +158,7 @@ public abstract class AbstractResource<T extends IdentifiableObject<Long>> {
         } catch (Exception e) {
             summary.getFailed().put(entity.getUid(), e.getMessage());
         }
-        return ResponseEntity.ok(summary);
     }
-
-
-    protected abstract Page<T> getList(Pageable pageable, boolean eagerload);
 
     protected abstract String getName();
 }

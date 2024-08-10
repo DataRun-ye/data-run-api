@@ -39,6 +39,7 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
     @Transient
     private boolean isPersisted;
 
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = { "project" }, allowSetters = true)
     private Activity activity;
