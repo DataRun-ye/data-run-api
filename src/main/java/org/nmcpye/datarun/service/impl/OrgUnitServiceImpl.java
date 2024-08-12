@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.service.impl;
 
-import org.nmcpye.datarun.domain.OrgUnit;
+import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.repository.OrgUnitRepository;
 import org.nmcpye.datarun.service.OrgUnitService;
 import org.slf4j.Logger;
@@ -55,11 +55,11 @@ public class OrgUnitServiceImpl implements OrgUnitService {
                 if (orgUnit.getName() != null) {
                     existingOrgUnit.setName(orgUnit.getName());
                 }
-                if (orgUnit.getOuPath() != null) {
-                    existingOrgUnit.setOuPath(orgUnit.getOuPath());
+                if (orgUnit.getPath() != null) {
+                    existingOrgUnit.setPath(orgUnit.getPath());
                 }
-                if (orgUnit.getParent() != null) {
-                    existingOrgUnit.setParent(orgUnit.getParent());
+                if (orgUnit.getParentUid() != null) {
+                    existingOrgUnit.setParentUid(orgUnit.getParentUid());
                 }
                 if (orgUnit.getParentCode() != null) {
                     existingOrgUnit.setParentCode(orgUnit.getParentCode());

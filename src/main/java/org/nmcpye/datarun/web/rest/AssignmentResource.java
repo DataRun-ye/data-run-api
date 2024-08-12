@@ -2,12 +2,7 @@ package org.nmcpye.datarun.web.rest;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import org.nmcpye.datarun.domain.Assignment;
+import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.repository.AssignmentRepository;
 import org.nmcpye.datarun.service.AssignmentService;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
@@ -24,8 +19,14 @@ import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.PaginationUtil;
 import tech.jhipster.web.util.ResponseUtil;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
 /**
- * REST controller for managing {@link org.nmcpye.datarun.domain.Assignment}.
+ * REST controller for managing {@link Assignment}.
  */
 @RestController
 @RequestMapping("/api/assignments")

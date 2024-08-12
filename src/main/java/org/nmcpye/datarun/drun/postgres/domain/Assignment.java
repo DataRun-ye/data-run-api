@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.domain;
+package org.nmcpye.datarun.drun.postgres.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
@@ -6,6 +6,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.nmcpye.datarun.domain.AbstractAuditingEntity;
+import org.nmcpye.datarun.domain.Activity;
+import org.nmcpye.datarun.domain.Team;
 import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;
@@ -17,7 +20,7 @@ import java.time.Instant;
 @Entity
 @Table(name = "assignment")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-@JsonIgnoreProperties(value = { "new" })
+@JsonIgnoreProperties(value = {"new"})
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Assignment extends AbstractAuditingEntity<Long> implements Serializable, Persistable<Long> {
 
@@ -41,7 +44,7 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "project" }, allowSetters = true)
+    @JsonIgnoreProperties(value = {"project"}, allowSetters = true)
     private Activity activity;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -49,11 +52,8 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
 
     @ManyToOne(optional = false)
     @NotNull
-    @JsonIgnoreProperties(value = { "activity", "operationRoom", "warehouse", "userInfo", "assignments" }, allowSetters = true)
+    @JsonIgnoreProperties(value = {"activity", "operationRoom", "warehouse", "userInfo", "assignments"}, allowSetters = true)
     private Team team;
-
-
-    // jhipster-needle-entity-add-field - JHipster will add fields here
 
     public Long getId() {
         return this.id;

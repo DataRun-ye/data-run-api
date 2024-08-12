@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.service;
 
-import org.nmcpye.datarun.domain.OrgUnit;
+import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

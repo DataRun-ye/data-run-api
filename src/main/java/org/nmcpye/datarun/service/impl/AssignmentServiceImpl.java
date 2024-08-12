@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.service.impl;
 
-import org.nmcpye.datarun.domain.Assignment;
+import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.repository.AssignmentRepository;
 import org.nmcpye.datarun.service.AssignmentService;
 import org.slf4j.Logger;
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 /**
- * Service Implementation for managing {@link org.nmcpye.datarun.domain.Assignment}.
+ * Service Implementation for managing {@link Assignment}.
  */
 @Service
 @Transactional

@@ -1,11 +1,12 @@
 package org.nmcpye.datarun.service;
 
+import org.nmcpye.datarun.drun.postgres.domain.OuLevel;
+
 import java.util.List;
 import java.util.Optional;
-import org.nmcpye.datarun.domain.OuLevel;
 
 /**
- * Service Interface for managing {@link org.nmcpye.datarun.domain.OuLevel}.
+ * Service Interface for managing {@link OuLevel}.
  */
 public interface OuLevelService {
     /**

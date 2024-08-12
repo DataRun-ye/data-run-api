@@ -1,8 +1,6 @@
 package org.nmcpye.datarun.service.impl;
 
-import java.util.List;
-import java.util.Optional;
-import org.nmcpye.datarun.domain.OuLevel;
+import org.nmcpye.datarun.drun.postgres.domain.OuLevel;
 import org.nmcpye.datarun.repository.OuLevelRepository;
 import org.nmcpye.datarun.service.OuLevelService;
 import org.slf4j.Logger;
@@ -10,8 +8,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Optional;
+
 /**
- * Service Implementation for managing {@link org.nmcpye.datarun.domain.OuLevel}.
+ * Service Implementation for managing {@link OuLevel}.
  */
 @Service
 @Transactional

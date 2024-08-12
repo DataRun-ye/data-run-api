@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.domain.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public interface IdentifiableObject<ID> {
 
     void setId(ID id);
@@ -21,7 +23,32 @@ public interface IdentifiableObject<ID> {
 
     }
 
-    default IdentifiableObject<ID> setIsPersisted() {
+    @JsonIgnore
+    default IdentifiableObject<Long> setIsPersisted() {
         return null;
     }
+
+//    default String getName() {
+//        return null;
+//    }
+//
+//    default void setName(String name) {
+//
+//    }
+
+//    String getCreatedBy();
+//
+//    void setCreatedBy(String createdBy);
+//
+//    Instant getCreatedDate();
+//
+//    void setCreatedDate(Instant createdDate);
+//
+//    String getLastModifiedBy();
+//
+//    void setLastModifiedBy(String lastModifiedBy);
+//
+//    Instant getLastModifiedDate();
+//
+//    void setLastModifiedDate(Instant lastModifiedDate);
 }

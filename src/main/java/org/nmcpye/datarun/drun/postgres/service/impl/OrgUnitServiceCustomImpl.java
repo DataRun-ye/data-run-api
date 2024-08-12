@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
-import org.nmcpye.datarun.domain.OrgUnit;
+import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;

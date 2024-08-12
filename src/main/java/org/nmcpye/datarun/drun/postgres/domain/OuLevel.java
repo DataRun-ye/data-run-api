@@ -1,10 +1,12 @@
-package org.nmcpye.datarun.domain;
+package org.nmcpye.datarun.drun.postgres.domain;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import java.io.Serializable;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+
+import java.io.Serializable;
 
 /**
  * A OuLevel.

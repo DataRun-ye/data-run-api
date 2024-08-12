@@ -1,12 +1,13 @@
 package org.nmcpye.datarun.service;
 
-import java.util.Optional;
-import org.nmcpye.datarun.domain.Assignment;
+import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Optional;
+
 /**
- * Service Interface for managing {@link org.nmcpye.datarun.domain.Assignment}.
+ * Service Interface for managing {@link Assignment}.
  */
 public interface AssignmentService {
     /**

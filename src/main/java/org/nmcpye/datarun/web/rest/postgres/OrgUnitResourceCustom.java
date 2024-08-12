@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
-import org.nmcpye.datarun.domain.OrgUnit;
+import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
 import org.slf4j.Logger;

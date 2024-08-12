@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.mongo.mapping.serialization;
 
-import org.nmcpye.datarun.domain.OrgUnit;
+import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -20,8 +20,8 @@ public class OrgUnitReference implements Serializable {
         this.uid = orgUnit.getUid();
         this.code = orgUnit.getCode();
         this.name = orgUnit.getName();
-        this.path = orgUnit.getOuPath();
-        this.parent = orgUnit.getParent();
+        this.path = orgUnit.getPath();
+        this.parent = orgUnit.getParentUid();
         this.level = orgUnit.getLevel().getLevel();
         this.levelName = orgUnit.getLevel().getName();
         this.label = Map.of("en", orgUnit.getName(), "ar", orgUnit.getName());

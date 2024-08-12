@@ -33,5 +33,6 @@
     <include file="config/liquibase/changelog/2024/08/09-01-changelog-assignment.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/db.changelog/10-01-org-unit-audit-properties.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/db.changelog/11-01-assignment-activity-not-null-constraint.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/db.changelog/12-01-changelog-org-unit-parent.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

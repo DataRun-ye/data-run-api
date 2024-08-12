@@ -2,11 +2,11 @@ package org.nmcpye.datarun.drun.mongo.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.domain.Assignment;
-import org.nmcpye.datarun.domain.OrgUnit;
 import org.nmcpye.datarun.drun.mongo.domain.DataForm;
 import org.nmcpye.datarun.drun.mongo.repository.DataFormRepositoryCustom;
 import org.nmcpye.datarun.drun.mongo.service.DataFormServiceCustom;
+import org.nmcpye.datarun.drun.postgres.domain.Assignment;
+import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
