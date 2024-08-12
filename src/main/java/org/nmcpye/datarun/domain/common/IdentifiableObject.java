@@ -2,7 +2,8 @@ package org.nmcpye.datarun.domain.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public interface IdentifiableObject<ID> {
+public interface IdentifiableObject<ID>
+    extends Comparable<IdentifiableObject<ID>> {
 
     void setId(ID id);
 
@@ -22,6 +23,10 @@ public interface IdentifiableObject<ID> {
     default void setCode(String code) {
 
     }
+
+    String getName();
+
+    String getDisplayName();
 
     @JsonIgnore
     default IdentifiableObject<Long> setIsPersisted() {

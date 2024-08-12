@@ -107,6 +107,11 @@ public class AssignmentMongo extends AbstractAuditingEntity<String> implements S
         this.code = code;
     }
 
+    @Override
+    public String getName() {
+        return activity + ":" + orgUnit;
+    }
+
     public Boolean getDisabled() {
         return this.disabled;
     }

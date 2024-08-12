@@ -16,42 +16,65 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @Repository
 public interface OrgUnitRelationalRepositoryCustom
-    extends IdentifiableRelationalRepository<OrgUnit> {
+    extends OrgUnitRepositoryWithBagRelationships, IdentifiableRelationalRepository<OrgUnit> {
 
+    default Page<OrgUnit> findAssignedWithEagerRelation(Pageable pageable) {
+        return this.fetchBagRelationships(this.findAllWithEagerRelation(pageable));
+    }
 
+    default Page<OrgUnit> findAssignedByStatusWithEagerRelation(boolean disabled, Pageable pageable) {
+        return this.fetchBagRelationships(this.findAssignedByStatus(disabled, pageable));
+    }
+
+    default List<OrgUnit> findAssignedWithEagerRelation() {
+        return this.fetchBagRelationships(this.findAllWithEagerRelation());
+    }
+
+    default Optional<OrgUnit> findAssignedByUidWithEagerRelation(String uid) {
+        return this.fetchBagRelationships(this.findOneByUidEager(uid));
+    }
+
+    //
     @Query(
         value = "select distinct orgUnit from OrgUnit orgUnit " +
-            "join Assignment assignment ON assignment.orgUnit = orgUnit " +
-            "where assignment.team.userInfo.login = ?#{authentication.name}",
+            "left join fetch orgUnit.parent " +
+            "join orgUnit.assignments assignments " +
+            "where assignments.activity.disabled=:disabled and " +
+            "assignments.team.disabled=:disabled " +
+            "and assignments.team.userInfo.login = ?#{authentication.name}",
         countQuery = "select count(distinct orgUnit) from OrgUnit orgUnit " +
-            "join Assignment assignment ON assignment.orgUnit = orgUnit " +
-            "where assignment.team.userInfo.login = ?#{authentication.name}"
-    )
-    Page<OrgUnit> findAssigned(Pageable pageable);
-
-    @Query(
-        value = "select distinct orgUnit from OrgUnit orgUnit " +
-            "join Assignment assignment ON assignment.orgUnit = orgUnit " +
-            "where assignment.activity.disabled=:disabled and " +
-            "assignment.team.disabled=:disabled and assignment.team.userInfo.login = ?#{authentication.name}",
-        countQuery = "select count(distinct orgUnit) from OrgUnit orgUnit " +
-            "join Assignment assignment ON assignment.orgUnit = orgUnit " +
-            "where assignment.activity.disabled=:disabled and " +
-            "assignment.team.disabled=:disabled and assignment.team.userInfo.login = ?#{authentication.name}"
+            "join orgUnit.assignments assignments " +
+//            "join Assignment assignment ON assignment.orgUnit = orgUnit " +
+            "where assignments.activity.disabled=:disabled and " +
+            "assignments.team.disabled=:disabled " +
+            "and assignments.team.userInfo.login = ?#{authentication.name}"
     )
     Page<OrgUnit> findAssignedByStatus(boolean disabled, Pageable pageable);
 
     @Query(
         value = "select distinct orgUnit from OrgUnit orgUnit " +
-            "join Assignment assignment ON assignment.orgUnit = orgUnit " +
-            "where assignment.team.userInfo.login = ?#{authentication.name}"
+            "left join fetch orgUnit.parent " +
+            "join orgUnit.assignments assignments " +
+            "where assignments.team.userInfo.login = ?#{authentication.name}",
+        countQuery = "select count(distinct orgUnit) from OrgUnit orgUnit " +
+            "join orgUnit.assignments assignments " +
+            "where assignments.team.userInfo.login = ?#{authentication.name}"
     )
-    List<OrgUnit> findAssigned();
+    Page<OrgUnit> findAllWithEagerRelation(Pageable pageable);
 
     @Query(
         value = "select distinct orgUnit from OrgUnit orgUnit " +
+            "left join fetch orgUnit.parent " /*+
             "join Assignment assignment ON assignment.orgUnit = orgUnit " +
-            "where orgUnit.uid =:uid and assignment.team.userInfo.login = ?#{authentication.name}"
+            "where assignment.team.userInfo.login = ?#{authentication.name}"*/
     )
-    Optional<OrgUnit> findAssignedByUid(@Param("uid") String uid);
+    List<OrgUnit> findAllWithEagerRelation();
+
+    @Query(
+        value = "select distinct orgUnit from OrgUnit orgUnit " +
+            "left join fetch orgUnit.parent " /*+
+            "join Assignment assignment ON assignment.orgUnit = orgUnit " +
+            "where orgUnit.uid =:uid and assignment.team.userInfo.login = ?#{authentication.name}"*/
+    )
+    Optional<OrgUnit> findOneByUidEager(@Param("uid") String uid);
 }

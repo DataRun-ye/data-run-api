@@ -75,4 +75,64 @@ public abstract class AbstractAuditingEntity<T> implements IdentifiableObject<T>
     public void setLastModifiedDate(Instant lastModifiedDate) {
         this.lastModifiedDate = lastModifiedDate;
     }
+
+    // -------------------------------------------------------------------------
+    // hashCode and equals
+    // -------------------------------------------------------------------------
+
+    @Override
+    public int hashCode() {
+        int result = getUid() != null ? getUid().hashCode() : 0;
+        result = 31 * result + (getCode() != null ? getCode().hashCode() : 0);
+//        result = 31 * result + (getUid() != null ? getName().hashCode() : 0);
+
+        return result;
+    }
+
+    @Override
+    public String getDisplayName() {
+//        return getTranslation("NAME", getName());
+        return getName();
+    }
+
+    /**
+     * Compares objects based on display name. A null display name is ordered
+     * after a non-null display name.
+     */
+    @Override
+    public int compareTo(IdentifiableObject<T> object) {
+        if (this.getDisplayName() == null && object != null) {
+            return object.getDisplayName() == null ? 0 : 1;
+        }
+
+        return object == null || object.getDisplayName() == null ? -1 : this.getDisplayName().compareToIgnoreCase(object.getDisplayName());
+    }
+
+    /**
+     * Equality check against typed identifiable object. This method is not
+     * vulnerable to proxy issues, where an uninitialized object class type
+     * fails comparison to a real class.
+     *
+     * @param other the identifiable object to compare this object against.
+     * @return true if equal.
+     */
+    public boolean typedEquals(IdentifiableObject<T> other) {
+        if (other == null) {
+            return false;
+        }
+
+        if (getUid() != null ? !getUid().equals(other.getUid()) : other.getUid() != null) {
+            return false;
+        }
+
+        if (getCode() != null ? !getCode().equals(other.getCode()) : other.getCode() != null) {
+            return false;
+        }
+
+//        if (getName() != null ? !getName().equals(other.getName()) : other.getName() != null) {
+//            return false;
+//        }
+
+        return true;
+    }
 }

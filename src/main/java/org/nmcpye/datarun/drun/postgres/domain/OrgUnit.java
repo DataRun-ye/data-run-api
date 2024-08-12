@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -58,25 +59,30 @@ public class OrgUnit extends AbstractAuditingEntity<Long> implements Serializabl
     @Column(name = "parent_code")
     private String parentCode;
 
-    @ManyToOne(optional = false)
-    @NotNull
-    private OuLevel level;
+//    @ManyToOne(optional = false)
+//    @NotNull
+//    private OuLevel level;
+
+    @JsonIgnore
+//    @JsonProperty(value = "level", access = JsonProperty.Access.READ_ONLY)
+    @Column(name = "level")
+    private Integer hierarchyLevel;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "orgUnit")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"orgUnit"}, allowSetters = true)
     private Set<Assignment> assignments = new HashSet<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
+    @ManyToOne//(fetch = FetchType.LAZY)
     @JsonProperty
-    @JsonSerialize(as = IdentifiableObject.class)
+    @JsonIgnoreProperties(value = {"parent", "assignments", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy" }, allowSetters = true)
+//    @JsonSerialize(as = IdentifiableObject.class)
     private OrgUnit parent;
 
-    @OneToMany(mappedBy = "parent")
-    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonSerialize(contentAs = IdentifiableObject.class)
-    private Set<OrgUnit> children = new HashSet<>();
+//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
+//    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+//    @JsonSerialize(contentAs = IdentifiableObject.class)
+//    private Set<OrgUnit> children = new HashSet<>();
 
     public Set<Assignment> getAssignments() {
         return assignments;
@@ -142,7 +148,7 @@ public class OrgUnit extends AbstractAuditingEntity<Long> implements Serializabl
         return this.path;
     }
 
-    public OrgUnit ouPath(String ouPath) {
+    public OrgUnit path(String ouPath) {
         this.setPath(ouPath);
         return this;
     }
@@ -177,18 +183,18 @@ public class OrgUnit extends AbstractAuditingEntity<Long> implements Serializabl
         this.parentCode = parentCode;
     }
 
-    public OuLevel getLevel() {
-        return this.level;
-    }
-
-    public void setLevel(OuLevel ouLevel) {
-        this.level = ouLevel;
-    }
-
-    public OrgUnit level(OuLevel ouLevel) {
-        this.setLevel(ouLevel);
-        return this;
-    }
+//    public OuLevel getLevel() {
+//        return this.level;
+//    }
+//
+//    public void setLevel(OuLevel ouLevel) {
+//        this.level = ouLevel;
+//    }
+//
+//    public OrgUnit level(OuLevel ouLevel) {
+//        this.setLevel(ouLevel);
+//        return this;
+//    }
 
     public OrgUnit getParent() {
         return parent;
@@ -196,19 +202,6 @@ public class OrgUnit extends AbstractAuditingEntity<Long> implements Serializabl
 
     public void setParent(OrgUnit parent) {
         this.parent = parent;
-    }
-
-    // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof OrgUnit)) {
-            return false;
-        }
-        return getId() != null && getId().equals(((OrgUnit) o).getId());
     }
 
     /**
@@ -253,7 +246,7 @@ public class OrgUnit extends AbstractAuditingEntity<Long> implements Serializabl
 
     /**
      * Returns a string representing the graph of ancestors. The string is delimited
-     * by "/". The ancestors are ordered by root first and represented by names.
+     * by ",". The ancestors are ordered by root first and represented by names.
      *
      * @param roots       the root organisation units, if null using real roots.
      * @param includeThis whether to include this organisation unit in the graph.
@@ -264,11 +257,11 @@ public class OrgUnit extends AbstractAuditingEntity<Long> implements Serializabl
         List<OrgUnit> ancestors = getAncestors(roots);
 
         for (OrgUnit unit : ancestors) {
-            builder.append("/").append(unit.getName());
+            builder.append(PATH_SEP).append(unit.getName());
         }
 
         if (includeThis) {
-            builder.append("/").append(name);
+            builder.append(PATH_SEP).append(name);
         }
 
         return builder.toString();
@@ -291,9 +284,46 @@ public class OrgUnit extends AbstractAuditingEntity<Long> implements Serializabl
     }
 
 //    @JsonProperty(value = "level", access = JsonProperty.Access.READ_ONLY)
-//    public Integer getLevel() {
-//        return StringUtils.countMatches(path, PATH_SEP);
-//    }
+    public Integer getLevel() {
+        return StringUtils.countMatches(path, PATH_SEP);
+    }
+
+    // for Hibernate
+    public void setLevel(Integer ouLevel) {
+        //this.level = ouLevel;
+    }
+
+    /**
+     * Used by persistence layer. Purpose is to have a column for use in database
+     * queries. For application use see {@link OrgUnit#getLevel()} which
+     * has better performance.
+     */
+    public Integer getHierarchyLevel() {
+        Set<String> uids = Sets.newHashSet(uid);
+
+        OrgUnit current = this;
+
+        while ((current = current.getParent()) != null) {
+            boolean add = uids.add(current.getUid());
+
+            if (!add) {
+                break; // Protect against cyclic org unit graphs
+            }
+        }
+
+        hierarchyLevel = uids.size();
+
+        return hierarchyLevel;
+    }
+
+    public OrgUnit hierarchyLevel(Integer hierarchyLevel) {
+        this.setHierarchyLevel(hierarchyLevel);
+        return this;
+    }
+
+    public void setHierarchyLevel(Integer hierarchyLevel) {
+        this.hierarchyLevel = hierarchyLevel;
+    }
 
     /**
      * Returns the list of ancestor organisation units for this organisation unit.
@@ -301,7 +331,7 @@ public class OrgUnit extends AbstractAuditingEntity<Long> implements Serializabl
      *
      * @throws IllegalStateException if circular parent relationships is detected.
      */
-    @JsonProperty("ancestors")
+//    @JsonProperty("ancestors")
     @JsonSerialize(contentAs = IdentifiableObject.class)
     public List<OrgUnit> getAncestors() {
         List<OrgUnit> units = new ArrayList<>();
@@ -350,43 +380,37 @@ public class OrgUnit extends AbstractAuditingEntity<Long> implements Serializabl
         return units;
     }
 
-    @JsonProperty
-    public Set<OrgUnit> getChildren() {
-        return this.children;
-    }
-
-    public void setChildren(Set<OrgUnit> organisationUnits) {
-//        if (this.children != null) {
-//            this.children.forEach(i -> i.setParent(null));
-//        }
-//        if (organisationUnits != null) {
-//            organisationUnits.forEach(i -> i.setParent(this));
-//        }
-        this.children = organisationUnits;
-    }
-
-    public OrgUnit children(Set<OrgUnit> organisationUnits) {
-        this.setChildren(organisationUnits);
-        return this;
-    }
-
-    public OrgUnit addChildren(OrgUnit organisationUnit) {
-        this.children.add(organisationUnit);
-        organisationUnit.setParent(this);
-        return this;
-    }
-
-    public OrgUnit removeChildren(OrgUnit organisationUnit) {
-        this.children.remove(organisationUnit);
-        organisationUnit.setParent(null);
-        return this;
-    }
-
-    @Override
-    public int hashCode() {
-        // see https://vladmihalcea.com/how-to-implement-equals-and-hashcode-using-the-jpa-entity-identifier/
-        return getClass().hashCode();
-    }
+//    @JsonProperty
+//    public Set<OrgUnit> getChildren() {
+//        return this.children;
+//    }
+//
+//    public void setChildren(Set<OrgUnit> organisationUnits) {
+////        if (this.children != null) {
+////            this.children.forEach(i -> i.setParent(null));
+////        }
+////        if (organisationUnits != null) {
+////            organisationUnits.forEach(i -> i.setParent(this));
+////        }
+//        this.children = organisationUnits;
+//    }
+//
+//    public OrgUnit children(Set<OrgUnit> organisationUnits) {
+//        this.setChildren(organisationUnits);
+//        return this;
+//    }
+//
+//    public OrgUnit addChildren(OrgUnit organisationUnit) {
+//        this.children.add(organisationUnit);
+//        organisationUnit.setParent(this);
+//        return this;
+//    }
+//
+//    public OrgUnit removeChildren(OrgUnit organisationUnit) {
+//        this.children.remove(organisationUnit);
+//        organisationUnit.setParent(null);
+//        return this;
+//    }
 
     // prettier-ignore
     @Override

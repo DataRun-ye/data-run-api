@@ -29,16 +29,16 @@ public interface OrgUnitRepository extends JpaRepository<OrgUnit, Long> {
     }
 
     @Query(
-        value = "select orgUnit from OrgUnit orgUnit left join fetch orgUnit.level",
+        value = "select orgUnit from OrgUnit orgUnit",
         countQuery = "select count(orgUnit) from OrgUnit orgUnit"
     )
     Page<OrgUnit> findAllWithToOneRelationships(Pageable pageable);
 
-    @Query("select orgUnit from OrgUnit orgUnit left join fetch orgUnit.level")
+    @Query("select orgUnit from OrgUnit orgUnit")
     List<OrgUnit> findAllWithToOneRelationships();
 
     @Query(
-        "select orgUnit from OrgUnit orgUnit left join fetch orgUnit.level where orgUnit.id =:id"
+        "select orgUnit from OrgUnit orgUnit where orgUnit.id =:id"
     )
     Optional<OrgUnit> findOneWithToOneRelationships(@Param("id") Long id);
 }

@@ -115,6 +115,11 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
         this.code = code;
     }
 
+    @Override
+    public String getName() {
+        return firstName + " " + lastName;
+    }
+
     public String getMobile() {
         return mobile;
     }

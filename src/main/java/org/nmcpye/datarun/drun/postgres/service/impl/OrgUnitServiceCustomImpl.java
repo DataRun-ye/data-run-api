@@ -31,11 +31,11 @@ public class OrgUnitServiceCustomImpl
 
     @Override
     public Page<OrgUnit> findAllByUser(Pageable pageable) {
-        return repositoryCustom.findAssignedByStatus(false, pageable);
+        return repositoryCustom.findAssignedByStatusWithEagerRelation(false, pageable);
     }
 
     @Override
     public Optional<OrgUnit> findAssignedByUid(String uid) {
-        return repositoryCustom.findAssignedByUid(uid);
+        return repositoryCustom.findAssignedByUidWithEagerRelation(uid);
     }
 }

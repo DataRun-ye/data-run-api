@@ -75,6 +75,11 @@ public class DataFormSubmission
         this.uid = uid;
     }
 
+    @Override
+    public String getName() {
+        return activity + ":" + orgUnit + ":" + form + ":" + team;
+    }
+
     public Boolean getDeleted() {
         return this.deleted;
     }

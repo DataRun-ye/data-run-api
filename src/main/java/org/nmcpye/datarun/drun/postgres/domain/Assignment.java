@@ -94,6 +94,11 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
         this.code = code;
     }
 
+    @Override
+    public String getName() {
+        return "";
+    }
+
     // Inherited createdBy methods
     public Assignment createdBy(String createdBy) {
         this.setCreatedBy(createdBy);

@@ -33,11 +33,13 @@ public interface ActivityRelationalRepositoryCustom
 
 
     @Query(
-        value = "select activity from Activity activity left join fetch activity.project",
+        value = "select activity from Activity activity " +
+            "left join fetch activity.project",
         countQuery = "select count(activity) from Activity activity"
     )
     Page<Activity> findAllWithToOneRelationshipsByUser(Pageable pageable);
 
-    @Query("select activity from Activity activity left join fetch activity.project where activity.id =:id")
+    @Query("select activity from Activity activity " +
+        "left join fetch activity.project where activity.id =:id")
     Optional<Activity> findOneWithToOneRelationshipsByUser(@Param("id") Long id);
 }

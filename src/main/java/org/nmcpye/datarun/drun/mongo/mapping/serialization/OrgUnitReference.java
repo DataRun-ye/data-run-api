@@ -13,7 +13,6 @@ public class OrgUnitReference implements Serializable {
     private String path;
     private String parent;
     private Integer level;
-    private String levelName;
     private Map<String, String> label;
 
     public OrgUnitReference(OrgUnit orgUnit) {
@@ -22,8 +21,7 @@ public class OrgUnitReference implements Serializable {
         this.name = orgUnit.getName();
         this.path = orgUnit.getPath();
         this.parent = orgUnit.getParentUid();
-        this.level = orgUnit.getLevel().getLevel();
-        this.levelName = orgUnit.getLevel().getName();
+        this.level = orgUnit.getLevel();
         this.label = Map.of("en", orgUnit.getName(), "ar", orgUnit.getName());
     }
 
@@ -82,14 +80,6 @@ public class OrgUnitReference implements Serializable {
 
     public void setLevel(Integer level) {
         this.level = level;
-    }
-
-    public String getLevelName() {
-        return levelName;
-    }
-
-    public void setLevelName(String levelName) {
-        this.levelName = levelName;
     }
 
     @Override
