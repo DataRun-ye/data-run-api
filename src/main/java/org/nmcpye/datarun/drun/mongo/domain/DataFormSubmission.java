@@ -47,7 +47,7 @@ public class DataFormSubmission
 
     private String team;
 
-    private String assignment;
+    private String orgUnit;
 
     public String getId() {
         return this.id;
@@ -166,16 +166,16 @@ public class DataFormSubmission
         return this;
     }
 
-    public String getAssignment() {
-        return this.assignment;
+    public String getOrgUnit() {
+        return this.orgUnit;
     }
 
-    public void setAssignment(String assignment) {
-        this.assignment = assignment;
+    public void setOrgUnit(String orgUnit) {
+        this.orgUnit = orgUnit;
     }
 
     public DataFormSubmission assignment(String assignment) {
-        this.setAssignment(assignment);
+        this.setOrgUnit(assignment);
         return this;
     }
 

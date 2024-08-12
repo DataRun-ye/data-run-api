@@ -45,17 +45,17 @@ public class DataFormSubmissionServiceCustomImpl
         activityRepository.findByUid(dataFormSubmission.getActivity())
             .ifPresentOrElse((a) -> dataFormSubmission.setActivity(a.getUid()),
                 () -> {
-                    throw new PropertyNotFoundException("Activity not found: " + dataFormSubmission.getAssignment());
+                    throw new PropertyNotFoundException("Activity not found: " + dataFormSubmission.getOrgUnit());
                 });
         teamRepository.findByUid(dataFormSubmission.getTeam())
             .ifPresentOrElse((a) -> dataFormSubmission.setTeam(a.getUid()),
                 () -> {
-                    throw new PropertyNotFoundException("Team not found: " + dataFormSubmission.getAssignment());
+                    throw new PropertyNotFoundException("Team not found: " + dataFormSubmission.getOrgUnit());
                 });
-        assignmentRepository.findByUid(dataFormSubmission.getAssignment())
-            .ifPresentOrElse((a) -> dataFormSubmission.setAssignment(a.getUid()),
+        assignmentRepository.findByUid(dataFormSubmission.getOrgUnit())
+            .ifPresentOrElse((a) -> dataFormSubmission.setOrgUnit(a.getUid()),
                 () -> {
-                    throw new PropertyNotFoundException("Assignment not found: " + dataFormSubmission.getAssignment());
+                    throw new PropertyNotFoundException("Assignment not found: " + dataFormSubmission.getOrgUnit());
                 });
 
 

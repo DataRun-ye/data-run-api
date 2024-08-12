@@ -26,7 +26,7 @@ public class OrgUnitUidsSetSerializer extends JsonSerializer<Collection<String>>
                           JsonGenerator gen,
                           SerializerProvider serializers) throws IOException {
         Set<OrgUnitReference> orgUnits = value.stream()
-            .map(uid -> orgUnitService.findAssignedByUid(uid).orElse(null)) // Handle Optional
+            .map(uid -> orgUnitService.findByUid(uid).orElse(null)) // Handle Optional
             .filter(Objects::nonNull)
             .map(OrgUnitReference::new)
             .collect(Collectors.toSet());
