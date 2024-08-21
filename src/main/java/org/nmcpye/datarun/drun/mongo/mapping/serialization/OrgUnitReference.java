@@ -20,7 +20,6 @@ public class OrgUnitReference implements Serializable {
         this.code = orgUnit.getCode();
         this.name = orgUnit.getName();
         this.path = orgUnit.getPath();
-        this.parent = orgUnit.getParentUid();
         this.level = orgUnit.getLevel();
         this.label = Map.of("en", orgUnit.getName(), "ar", orgUnit.getName());
     }

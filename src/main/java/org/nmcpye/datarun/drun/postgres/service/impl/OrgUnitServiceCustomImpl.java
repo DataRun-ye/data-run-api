@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,4 +62,21 @@ public class OrgUnitServiceCustomImpl
     public Optional<OrgUnit> findAssignedByUid(String uid) {
         return repositoryCustom.findAssignedByUidWithEagerRelation(uid);
     }
+
+    @Override
+    @Transactional
+    public void updatePaths() {
+        repositoryCustom.updatePaths();
+    }
+
+    /**
+     * This is scheduled to get fired everyday, at 01:00 (am).
+     */
+    @Scheduled(cron = "0 0 3 * * ?")
+    @Override
+    @Transactional
+    public void forceUpdatePaths() {
+        repositoryCustom.forceUpdatePaths();
+    }
+
 }

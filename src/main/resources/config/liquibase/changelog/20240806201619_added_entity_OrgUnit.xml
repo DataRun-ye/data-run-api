@@ -22,12 +22,9 @@
                 <constraints nullable="false" />
             </column>
             <column name="path" type="varchar(255)">
-                <constraints nullable="false" />
-            </column>
-            <column name="parent" type="varchar(255)">
                 <constraints nullable="true" />
             </column>
-            <column name="parent_code" type="varchar(255)">
+            <column name="parent" type="varchar(255)">
                 <constraints nullable="true" />
             </column>
             <column name="level" type="integer">

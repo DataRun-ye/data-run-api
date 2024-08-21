@@ -7,6 +7,7 @@ import org.ehcache.jsr107.Eh107Configuration;
 import org.hibernate.cache.jcache.ConfigSettings;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.domain.OuLevel;
+import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
@@ -60,8 +61,8 @@ public class CacheConfiguration {
             createCache(cm, org.nmcpye.datarun.domain.Project.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Project.class.getName() + ".activities");
             createCache(cm, org.nmcpye.datarun.domain.Activity.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.Team.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.Team.class.getName() + ".assignments");
+            createCache(cm, Team.class.getName());
+            createCache(cm, Team.class.getName() + ".assignments");
             createCache(cm, org.nmcpye.datarun.domain.Warehouse.class.getName());
             createCache(cm, OrgUnit.class.getName());
             createCache(cm, OuLevel.class.getName());

@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.domain;
 
+import org.nmcpye.datarun.drun.postgres.domain.Team;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TeamAsserts {

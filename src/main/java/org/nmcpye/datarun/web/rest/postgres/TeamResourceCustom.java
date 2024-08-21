@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
-import org.nmcpye.datarun.domain.Team;
+import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
 import org.slf4j.Logger;

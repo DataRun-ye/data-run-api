@@ -37,6 +37,49 @@ public class OrgUnitRepositoryWithBagRelationshipsImpl
     }
 
     @Override
+    public void updatePaths() {
+        List<OrgUnit> organisationUnits = entityManager
+            .createQuery(
+                "select orgUnit from OrgUnit orgUnit " +
+                    "where orgUnit.path is null or orgUnit.hierarchyLevel is null",
+                OrgUnit.class
+            )
+            .getResultList();
+
+        updatePaths(organisationUnits);
+    }
+
+    @Override
+    public void forceUpdatePaths() {
+        List<OrgUnit> organisationUnits = entityManager
+            .createQuery(
+                "select orgUnit from OrgUnit orgUnit ",
+                OrgUnit.class
+            )
+            .getResultList();
+
+        updatePaths(organisationUnits);
+    }
+
+    private void updatePaths(List<OrgUnit> organisationUnits) {
+
+        int counter = 0;
+
+        for (OrgUnit organisationUnit : organisationUnits) {
+            organisationUnit.setPath(organisationUnit.getPath());
+            organisationUnit.setHierarchyLevel(organisationUnit.getHierarchyLevel());
+
+            entityManager.merge(organisationUnit);
+
+            if ((counter % 400) == 0) {
+                entityManager.flush();
+            }
+
+            counter++;
+        }
+    }
+
+    @Override
     public List<OrgUnit> fetchBagRelationships(List<OrgUnit> orgUnits) {
         return Optional.of(orgUnits).map(this::fetchAssignments).orElse(Collections.emptyList());
     }

@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.repository;
 
-import org.nmcpye.datarun.domain.Team;
+import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -15,7 +15,19 @@ import java.util.Optional;
  */
 @Repository
 public interface TeamRelationalRepositoryCustom
-    extends IdentifiableRelationalRepository<Team> {
+    extends TeamRepositoryWithBagRelationships, IdentifiableRelationalRepository<Team> {
+
+    default Page<Team> findAllByUser(Pageable pageable) {
+        return this.fetchBagRelationships(this.findAllWithEagerRelation(pageable));
+    }
+
+    default List<Team> findAllByUser() {
+        return this.fetchBagRelationships(this.findAllWithEagerRelation());
+    }
+
+    default Optional<Team> findByUidWithEagerRelation(String uid) {
+        return this.fetchBagRelationships(this.findByUid(uid));
+    }
 
     default Optional<Team> findOneWithEagerRelationshipsByUser(Long id) {
         return this.findOneWithToOneRelationshipsByUser(id);
@@ -34,7 +46,7 @@ public interface TeamRelationalRepositoryCustom
         countQuery = "select count(team) from Team team " +
             "where team.userInfo.login = ?#{authentication.name}"
     )
-    List<Team> findAllByUser();
+    List<Team> findAllWithEagerRelation();
 
     @Query(
         value = "select team from Team team " +
@@ -44,7 +56,7 @@ public interface TeamRelationalRepositoryCustom
         countQuery = "select count(team) from Team team " +
             "where team.userInfo.login = ?#{authentication.name}"
     )
-    Page<Team> findAllByUser(Pageable pageable);
+    Page<Team> findAllWithEagerRelation(Pageable pageable);
 
     @Query(
         value = "select team from Team team " +

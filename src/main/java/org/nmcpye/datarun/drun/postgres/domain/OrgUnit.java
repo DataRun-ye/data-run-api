@@ -49,15 +49,8 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
     @Column(name = "name", nullable = false)
     private String name;
 
-    @NotNull
-    @Column(name = "path", nullable = false)
+    @Column(name = "path")
     private String path;
-
-    @Column(name = "parent_uid")
-    private String parentUid;
-
-    @Column(name = "parent_code")
-    private String parentCode;
 
 //    @ManyToOne(optional = false)
 //    @NotNull
@@ -75,7 +68,7 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
 
     @ManyToOne//(fetch = FetchType.LAZY)
     @JsonProperty
-    @JsonIgnoreProperties(value = {"parent", "assignments", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy" }, allowSetters = true)
+    @JsonIgnoreProperties(value = {"parent", "assignments", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
 //    @JsonSerialize(as = IdentifiableObject.class)
     private OrgUnit parent;
 
@@ -144,7 +137,30 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
         this.name = name;
     }
 
+    //    public String getPath() {
+//        return this.path;
+//    }
     public String getPath() {
+        List<String> pathList = new ArrayList<>();
+        Set<String> visitedSet = new HashSet<>();
+        OrgUnit unit = parent;
+
+        pathList.add(uid);
+
+        while (unit != null) {
+            if (!visitedSet.contains(unit.getUid())) {
+                pathList.add(unit.getUid());
+                visitedSet.add(unit.getUid());
+                unit = unit.getParent();
+            } else {
+                unit = null; // Protect against cyclic org unit graphs
+            }
+        }
+
+        Collections.reverse(pathList);
+
+        this.path = PATH_SEP + StringUtils.join(pathList, PATH_SEP);
+
         return this.path;
     }
 
@@ -157,31 +173,6 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
         this.path = path;
     }
 
-    public String getParentUid() {
-        return this.parentUid;
-    }
-
-    public OrgUnit parent(String parent) {
-        this.setParentUid(parent);
-        return this;
-    }
-
-    public void setParentUid(String parentUid) {
-        this.parentUid = parentUid;
-    }
-
-    public String getParentCode() {
-        return this.parentCode;
-    }
-
-    public OrgUnit parentCode(String parentCode) {
-        this.setParentCode(parentCode);
-        return this;
-    }
-
-    public void setParentCode(String parentCode) {
-        this.parentCode = parentCode;
-    }
 
 //    public OuLevel getLevel() {
 //        return this.level;
@@ -283,7 +274,7 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
         return map;
     }
 
-//    @JsonProperty(value = "level", access = JsonProperty.Access.READ_ONLY)
+    //    @JsonProperty(value = "level", access = JsonProperty.Access.READ_ONLY)
     public Integer getLevel() {
         return StringUtils.countMatches(path, PATH_SEP);
     }
@@ -421,8 +412,6 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
             ", code='" + getCode() + "'" +
             ", name='" + getName() + "'" +
             ", ouPath='" + getPath() + "'" +
-            ", parent='" + getParentUid() + "'" +
-            ", parentCode='" + getParentCode() + "'" +
             "}";
     }
 }

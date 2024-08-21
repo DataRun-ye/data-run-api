@@ -58,12 +58,6 @@ public class OrgUnitServiceImpl implements OrgUnitService {
                 if (orgUnit.getPath() != null) {
                     existingOrgUnit.setPath(orgUnit.getPath());
                 }
-                if (orgUnit.getParentUid() != null) {
-                    existingOrgUnit.setParentUid(orgUnit.getParentUid());
-                }
-                if (orgUnit.getParentCode() != null) {
-                    existingOrgUnit.setParentCode(orgUnit.getParentCode());
-                }
 
                 return existingOrgUnit;
             })

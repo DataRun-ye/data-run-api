@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.domain.AbstractAuditingEntity;
 import org.nmcpye.datarun.drun.postgres.common.translation.Translation;
+import org.nmcpye.datarun.drun.postgres.common.translation.TranslationProperty;
 import org.nmcpye.datarun.utils.CodeGenerator;
 
 import java.time.Instant;
@@ -22,6 +23,11 @@ import static org.nmcpye.datarun.drun.postgres.hibernate.HibernateProxyUtils.get
 
 @MappedSuperclass
 public abstract class BaseIdentifiableObject<T> extends AbstractAuditingEntity<T> {
+
+    /**
+     * The i18n variant of the name. Not persisted.
+     */
+    protected transient String displayName;
 
 
     @Type(JsonType.class)
@@ -58,61 +64,11 @@ public abstract class BaseIdentifiableObject<T> extends AbstractAuditingEntity<T
     //    public final static Class TYPE_OF_ID = Long.class; // When using id as aid
 //    public final static Class TYPE_OF_ID = String.class; // when using uid as id
 
-//    @Override
-//    @JsonIgnore
-//    @JsonProperty(value = "id")
-//    @JacksonXmlProperty(localName = "id", isAttribute = true)
-//    @Description("The Unique Identifier for this Object.")
-//    @Property(value = PropertyType.IDENTIFIER, required = Property.Value.FALSE)
-//    public T getId() {
-//        return id;
-//    }
-//
-//    public void setId(T id) {
-//        this.id = id;
-//    }
-//
-//    @Override
-//    @JsonProperty(value = "id")
-//    public String getUid() {
-//        return uid;
-//    }
-//
-//    public void setUid(String uid) {
-//        this.uid = uid;
-//    }
-//
-//    @Override
-//    @JsonProperty
-//    public String getCode() {
-//        return code;
-//    }
-//
-//    public void setCode(String code) {
-//        this.code = code;
-//    }
-//
-//    @Override
-//    @JsonProperty
-//    public String getName() {
-//        return name;
-//    }
-//
-//    public void setName(String name) {
-//        this.name = name;
-//    }
-
-    //    @Override
-    //    @JsonProperty
-    //    public String getDisplayName() {
-    //                displayName = getTranslation( TranslationProperty.NAME, displayName );
-    //        return displayName != null ? displayName : getName();
-    //    }
 
     @Override
-    @JsonProperty
     public String getDisplayName() {
-        return getTranslation("NAME", getName());
+        displayName = getTranslation(TranslationProperty.NAME.getName(), displayName);
+        return displayName != null ? displayName : getName();
     }
 
     @Override

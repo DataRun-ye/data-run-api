@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.service.impl;
 
-import java.util.Optional;
-import org.nmcpye.datarun.domain.Team;
+import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.repository.TeamRepository;
 import org.nmcpye.datarun.service.TeamService;
 import org.slf4j.Logger;
@@ -11,8 +10,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 /**
- * Service Implementation for managing {@link org.nmcpye.datarun.domain.Team}.
+ * Service Implementation for managing {@link Team}.
  */
 @Service
 @Transactional

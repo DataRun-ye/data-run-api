@@ -24,15 +24,6 @@
             <column name="description" type="varchar(255)">
                 <constraints nullable="true" />
             </column>
-            <column name="mobile" type="varchar(255)">
-                <constraints nullable="true" />
-            </column>
-            <column name="workers" type="integer">
-                <constraints nullable="true" />
-            </column>
-            <column name="mobility" type="varchar(255)">
-                <constraints nullable="true" />
-            </column>
             <column name="disabled" type="boolean">
                 <constraints nullable="true" />
             </column>
@@ -52,9 +43,6 @@
                 <constraints nullable="false" />
             </column>
             <column name="activity_id" type="bigint">
-                <constraints nullable="true" />
-            </column>
-            <column name="operation_room_id" type="bigint">
                 <constraints nullable="true" />
             </column>
             <column name="warehouse_id" type="bigint">

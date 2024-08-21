@@ -2,6 +2,8 @@ package org.nmcpye.datarun.drun.mongo.domain;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.nmcpye.datarun.drun.mongo.domain.enumeration.ValueType;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -14,6 +16,8 @@ import java.util.Set;
 /**
  * A DataField.
  */
+@Getter
+@Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataField implements Serializable {
 
@@ -49,6 +53,9 @@ public class DataField implements Serializable {
 
     @Field("listName")
     private String listName;
+
+    @Field("reference")
+    ReferenceInfo reference;
 
     private Map<String, String> label;
 

@@ -1,18 +1,7 @@
 package org.nmcpye.datarun.web.rest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.mockito.Mockito.*;
-import static org.nmcpye.datarun.domain.TeamAsserts.*;
-import static org.nmcpye.datarun.web.rest.TestUtil.createUpdateProxyForBean;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
-import java.util.ArrayList;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nmcpye.datarun.IntegrationTest;
-import org.nmcpye.datarun.domain.Team;
+import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.repository.TeamRepository;
 import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.service.TeamService;
@@ -32,6 +21,18 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.mockito.Mockito.*;
+import static org.nmcpye.datarun.domain.TeamAsserts.*;
+import static org.nmcpye.datarun.web.rest.TestUtil.createUpdateProxyForBean;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * Integration tests for the {@link TeamResource} REST controller.

@@ -8,7 +8,6 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.domain.AbstractAuditingEntity;
 import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.domain.Team;
 import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;

@@ -22,7 +22,8 @@ import java.time.Instant;
 @MappedSuperclass
 @EntityListeners({AuditingEntityListener.class, EntityAuditEventListener.class})
 @JsonIgnoreProperties(value = {"createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
-public abstract class AbstractAuditingEntity<T> implements IdentifiableObject<T>, Serializable {
+public abstract class AbstractAuditingEntity<T>
+    implements IdentifiableObject<T>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
