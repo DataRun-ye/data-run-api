@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.drun.mongo.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
-import org.nmcpye.datarun.domain.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.mongo.repository.IdentifiableMongoRepository;
 import org.nmcpye.datarun.drun.mongo.service.IdentifiableMongoService;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.nmcpye.datarun.utils.CodeGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,8 +72,14 @@ public abstract class IdentifiableMongoServiceImpl<T extends IdentifiableObject<
 
     @Override
     public Page<T> findAll(Pageable pageable) {
-        log.debug("Request to get all ChvRegisters");
+        log.debug("Request to get all MEntities");
         return repository.findAll(pageable);
+    }
+
+    @Override
+    public Page<T> findAllByUser(Pageable pageable) {
+        log.debug("Request to get all MEntities");
+        return this.findAll(pageable);
     }
 
     @Override

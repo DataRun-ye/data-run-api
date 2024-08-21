@@ -13,6 +13,8 @@ import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCu
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -101,9 +103,9 @@ public class DataFormServiceCustomImpl
 
 
     @Override
-    public List<DataForm> findAllByUser() {
+    public Page<DataForm> findAllByUser(Pageable pageable) {
         List<Assignment> assignments = assignmentRepository
-            .findAllByStatusAndUser(false, Pageable.unpaged())
+            .findAllByStatusAndUser(false, pageable)
             .stream()
             .toList();
 
@@ -114,19 +116,13 @@ public class DataFormServiceCustomImpl
                     Collectors.mapping((assignment) -> assignment.getOrgUnit().getUid(),
                         Collectors.toSet())));
 
-//        List<String> orgUnitUids = assignments
-//            .stream()
-//            .map(Assignment::getOrgUnit)
-//            .map(OrgUnit::getUid)
-//            .toList();
-
         List<String> activities = assignments
             .stream()
             .map(Assignment::getActivity)
-            .map(Activity::getUid)
+            .map(Activity::getUid).distinct()
             .toList();
 
-        return activities.stream()
+        List<DataForm> dataForms = activities.stream()
             .flatMap(uid -> repositoryCustom.findAllByActivity(uid).stream())
             .filter(Objects::nonNull)
             .peek(dataForm -> {
@@ -138,6 +134,19 @@ public class DataFormServiceCustomImpl
                 dataForm.setOrgUnits(filteredOrgUnits);
             })
             .collect(Collectors.toList());
+
+        if (!pageable.isPaged()) {
+            return new PageImpl<>(dataForms);
+        }
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), dataForms.size());
+        if (start > end) {
+            return Page.empty(pageable);
+        }
+
+        List<DataForm> sublist = dataForms.subList(start, end);
+        return new PageImpl<>(sublist, pageable, dataForms.size());
     }
 
 //    private List<String> getAssignedOrgUnitsByFormActivity(String activity) {

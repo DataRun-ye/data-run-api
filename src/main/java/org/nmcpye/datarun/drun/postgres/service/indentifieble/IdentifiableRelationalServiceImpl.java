@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.service.indentifieble;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.nmcpye.datarun.domain.common.IdentifiableObject;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.repository.IdentifiableRelationalRepository;
 import org.nmcpye.datarun.utils.CodeGenerator;
 import org.slf4j.Logger;
@@ -76,12 +76,18 @@ public abstract class IdentifiableRelationalServiceImpl<T extends IdentifiableOb
     @Override
     @Transactional(readOnly = true)
     public Page<T> findAll(Pageable pageable) {
-        log.debug("Request to get all ChvRegisters");
+        log.debug("Request to get all entities");
         return repository.findAll(pageable);
     }
 
     public Page<T> findAllWithEagerRelationships(Pageable pageable) {
         return repository.findAll(pageable);
+    }
+
+    @Override
+    public Page<T> findAllByUser(Pageable pageable) {
+        log.debug("Request to get all entities");
+        return this.findAll(pageable);
     }
 
     @Override

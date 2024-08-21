@@ -20,24 +20,26 @@ public interface ActivityRelationalRepositoryCustom
         return this.findOneWithToOneRelationshipsByUser(id);
     }
 
-    default Page<Activity> findAllWithEagerRelationshipsByUser(Pageable pageable) {
-        return this.findAllWithToOneRelationshipsByUser(pageable);
-    }
-
     @Query(
         value = "select activity from Activity activity " +
-            "left join activity.project",
-        countQuery = "select count(activity) from Activity activity"
+            "join Assignment assignment on assignment.activity = activity " +
+            "join Team team on assignment.team = team " +
+            "join User user on team.userInfo = user " +
+            "where user.login = ?#{authentication.name}",
+        countQuery = "select count(activity) from Activity activity " +
+            "join Assignment assignment on assignment.activity = activity " +
+            "join Team team on assignment.team = team " +
+            "join User user on team.userInfo = user " +
+            "where user.login = ?#{authentication.name}"
     )
     Page<Activity> findAllByUser(Pageable pageable);
 
-
-    @Query(
-        value = "select activity from Activity activity " +
-            "left join fetch activity.project",
-        countQuery = "select count(activity) from Activity activity"
-    )
-    Page<Activity> findAllWithToOneRelationshipsByUser(Pageable pageable);
+//    @Query(
+//        value = "select activity from Activity activity " +
+//            "left join fetch activity.project",
+//        countQuery = "select count(activity) from Activity activity"
+//    )
+//    Page<Activity> findAllWithToOneRelationshipsByUser(Pageable pageable);
 
     @Query("select activity from Activity activity " +
         "left join fetch activity.project where activity.id =:id")

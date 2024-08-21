@@ -5,8 +5,6 @@ import org.nmcpye.datarun.drun.postgres.repository.ProjectRelationalRepositoryCu
 import org.nmcpye.datarun.drun.postgres.service.ProjectServiceCustom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,11 +26,6 @@ public class ProjectResourceCustom extends AbstractRelationalResource<Project> {
         super(projectService, projectRepository);
         this.projectService = projectService;
         this.projectRepository = projectRepository;
-    }
-
-    @Override
-    protected Page<Project> getList(Pageable pageable, boolean eagerload) {
-        return projectService.findAll(pageable);
     }
 
     @Override

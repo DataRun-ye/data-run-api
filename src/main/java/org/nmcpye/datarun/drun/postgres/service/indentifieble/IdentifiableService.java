@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.service.indentifieble;
 
-import org.nmcpye.datarun.domain.common.IdentifiableObject;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -54,6 +54,14 @@ public interface IdentifiableService<T extends IdentifiableObject<ID>,
      * @return the list of entities.
      */
     Page<T> findAllWithEagerRelationships(Pageable pageable);
+
+    /**
+     * Get all the chvSessions with eager load of many-to-many relationships.
+     *
+     * @param pageable the pagination information.
+     * @return the list of entities.
+     */
+    Page<T> findAllByUser(Pageable pageable);
 
     /**
      * Get the "id" object.

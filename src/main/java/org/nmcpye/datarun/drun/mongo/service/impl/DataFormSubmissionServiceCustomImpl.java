@@ -2,10 +2,10 @@ package org.nmcpye.datarun.drun.mongo.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.drun.mongo.domain.DataFormSubmission;
-import org.nmcpye.datarun.drun.mongo.repository.AssignmentRepositoryCustom;
 import org.nmcpye.datarun.drun.mongo.repository.DataFormSubmissionRepositoryCustom;
 import org.nmcpye.datarun.drun.mongo.service.DataFormSubmissionServiceCustom;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,18 +25,18 @@ public class DataFormSubmissionServiceCustomImpl
 
     private final DataFormSubmissionRepositoryCustom dataFormSubmissionRepository;
     private final ActivityRelationalRepositoryCustom activityRepository;
-    private final AssignmentRepositoryCustom assignmentRepository;
+    private final OrgUnitRelationalRepositoryCustom orgUnitRelationalRepositoryCustom;
     private final TeamRelationalRepositoryCustom teamRepository;
 
     public DataFormSubmissionServiceCustomImpl(
         DataFormSubmissionRepositoryCustom dataFormSubmissionRepository,
         ActivityRelationalRepositoryCustom activityRepository,
-        AssignmentRepositoryCustom assignmentRepository,
+        OrgUnitRelationalRepositoryCustom orgUnitRelationalRepositoryCustom,
         TeamRelationalRepositoryCustom teamRepository) {
         super(dataFormSubmissionRepository);
         this.dataFormSubmissionRepository = dataFormSubmissionRepository;
         this.activityRepository = activityRepository;
-        this.assignmentRepository = assignmentRepository;
+        this.orgUnitRelationalRepositoryCustom = orgUnitRelationalRepositoryCustom;
         this.teamRepository = teamRepository;
     }
 
@@ -52,10 +52,10 @@ public class DataFormSubmissionServiceCustomImpl
                 () -> {
                     throw new PropertyNotFoundException("Team not found: " + dataFormSubmission.getOrgUnit());
                 });
-        assignmentRepository.findByUid(dataFormSubmission.getOrgUnit())
+        orgUnitRelationalRepositoryCustom.findByUid(dataFormSubmission.getOrgUnit())
             .ifPresentOrElse((a) -> dataFormSubmission.setOrgUnit(a.getUid()),
                 () -> {
-                    throw new PropertyNotFoundException("Assignment not found: " + dataFormSubmission.getOrgUnit());
+                    throw new PropertyNotFoundException("OrgUnit not found: " + dataFormSubmission.getOrgUnit());
                 });
 
 

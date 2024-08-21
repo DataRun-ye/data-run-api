@@ -1,7 +1,7 @@
 //package org.nmcpye.datarun.web.rest.postgres;
 //
 //import jakarta.validation.Valid;
-//import org.nmcpye.datarun.domain.common.IdentifiableObject;
+//import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 //import org.nmcpye.datarun.drun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 //import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalService;
 //import org.nmcpye.datarun.web.rest.common.AbstractResource;

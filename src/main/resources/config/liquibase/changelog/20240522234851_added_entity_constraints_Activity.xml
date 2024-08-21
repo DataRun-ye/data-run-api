@@ -16,5 +16,7 @@
                                  referencedColumnNames="id"
                                  referencedTableName="project"
                                  />
+
+        <addNotNullConstraint columnDataType="BIGINT" columnName="activity_id" tableName="assignment" validate="true"/>
     </changeSet>
 </databaseChangeLog>

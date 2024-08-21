@@ -2,7 +2,7 @@ package org.nmcpye.datarun.drun.mongo.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.javers.core.metamodel.annotation.DiffIgnore;
-import org.nmcpye.datarun.domain.common.IdentifiableObject;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;

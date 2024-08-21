@@ -7,11 +7,15 @@ import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Primary
@@ -31,7 +35,26 @@ public class OrgUnitServiceCustomImpl
 
     @Override
     public Page<OrgUnit> findAllByUser(Pageable pageable) {
-        return repositoryCustom.findAssignedByStatusWithEagerRelation(false, pageable);
+        final List<OrgUnit> userOrgUnits = repositoryCustom
+            .findAssignedWithEagerRelation();
+        final Set<String> uids = userOrgUnits
+            .stream()
+            .flatMap(orgUnit -> orgUnit.getAncestorUids(null).stream())
+            .collect(Collectors.toSet());
+        userOrgUnits.addAll(repositoryCustom.findAllByUidIn(uids));
+
+        if (pageable.isUnpaged()) {
+            return new PageImpl<>(userOrgUnits);
+        }
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), userOrgUnits.size());
+        if (start > end) {
+            return Page.empty(pageable);
+        }
+
+        List<OrgUnit> sublist = userOrgUnits.subList(start, end);
+        return new PageImpl<>(sublist, pageable, userOrgUnits.size());
     }
 
     @Override

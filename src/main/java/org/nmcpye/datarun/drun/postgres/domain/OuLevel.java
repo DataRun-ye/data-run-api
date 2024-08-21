@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.domain.AbstractAuditingEntity;
+import org.nmcpye.datarun.drun.postgres.common.BaseIdentifiableObject;
 
 import java.io.Serializable;
 
@@ -16,7 +16,7 @@ import java.io.Serializable;
 @Table(name = "ou_level")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OuLevel extends AbstractAuditingEntity<Long> implements Serializable {
+public class OuLevel extends BaseIdentifiableObject<Long> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

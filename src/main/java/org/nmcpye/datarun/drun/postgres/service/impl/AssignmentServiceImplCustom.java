@@ -26,6 +26,6 @@ public class AssignmentServiceImplCustom
 
     @Override
     public Page<Assignment> findAllByUser(Pageable pageable) {
-        return repositoryCustom.findAllByStatusAndUser(false, pageable);
+        return repositoryCustom.findAllByUser(pageable);
     }
 }

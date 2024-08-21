@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
-import org.nmcpye.datarun.domain.common.IdentifiableObject;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalService;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.springframework.data.jpa.repository.JpaRepository;

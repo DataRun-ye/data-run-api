@@ -5,8 +5,6 @@ import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryC
 import org.nmcpye.datarun.drun.postgres.service.ActivityServiceCustom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,15 +25,6 @@ public class ActivityResourceCustom extends AbstractRelationalResource<Activity>
         super(activityService, activityRepository);
         this.activityRepository = activityRepository;
         this.activityService = activityService;
-    }
-
-    @Override
-    protected Page<Activity> getList(Pageable pageable, boolean eagerload) {
-        if (eagerload) {
-            return activityService.findAllWithEagerRelationships(pageable);
-        } else {
-            return activityService.findAll(pageable);
-        }
     }
 
     @Override

@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest.mongo;
 
-import org.nmcpye.datarun.domain.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.mongo.service.IdentifiableMongoService;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.web.bind.annotation.RequestMapping;

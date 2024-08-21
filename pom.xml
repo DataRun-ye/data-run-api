@@ -44,7 +44,7 @@
         <jib-maven-plugin.version>3.4.3</jib-maven-plugin.version>
         <lifecycle-mapping.version>1.0.0</lifecycle-mapping.version>
 
-        <liquibase-url>jdbc:postgresql://localhost:5431/dataRunApi</liquibase-url>
+        <liquibase-url>jdbc:postgresql://localhost:5432/dataRunApi</liquibase-url>
         <liquibase-username>dataRunApi</liquibase-username>
         <liquibase-password>dataRunApi</liquibase-password>
 <!--        <liquibase-url>jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}</liquibase-url>-->
@@ -245,6 +245,18 @@
             <groupId>io.mongock</groupId>
             <artifactId>mongodb-springdata-v4-driver</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>0.10.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-62</artifactId>
+            <version>3.8.2</version>
+        </dependency>
+
         <!--  NMC end      -->
         <dependency>
             <groupId>jakarta.annotation</groupId>

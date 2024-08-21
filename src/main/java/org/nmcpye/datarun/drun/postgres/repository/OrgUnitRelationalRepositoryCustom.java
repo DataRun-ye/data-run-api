@@ -22,10 +22,6 @@ public interface OrgUnitRelationalRepositoryCustom
         return this.fetchBagRelationships(this.findAllWithEagerRelation(pageable));
     }
 
-    default Page<OrgUnit> findAssignedByStatusWithEagerRelation(boolean disabled, Pageable pageable) {
-        return this.fetchBagRelationships(this.findAssignedByStatus(disabled, pageable));
-    }
-
     default List<OrgUnit> findAssignedWithEagerRelation() {
         return this.fetchBagRelationships(this.findAllWithEagerRelation());
     }
@@ -33,23 +29,6 @@ public interface OrgUnitRelationalRepositoryCustom
     default Optional<OrgUnit> findAssignedByUidWithEagerRelation(String uid) {
         return this.fetchBagRelationships(this.findOneByUidEager(uid));
     }
-
-    //
-    @Query(
-        value = "select distinct orgUnit from OrgUnit orgUnit " +
-            "left join fetch orgUnit.parent " +
-            "join orgUnit.assignments assignments " +
-            "where assignments.activity.disabled=:disabled and " +
-            "assignments.team.disabled=:disabled " +
-            "and assignments.team.userInfo.login = ?#{authentication.name}",
-        countQuery = "select count(distinct orgUnit) from OrgUnit orgUnit " +
-            "join orgUnit.assignments assignments " +
-//            "join Assignment assignment ON assignment.orgUnit = orgUnit " +
-            "where assignments.activity.disabled=:disabled and " +
-            "assignments.team.disabled=:disabled " +
-            "and assignments.team.userInfo.login = ?#{authentication.name}"
-    )
-    Page<OrgUnit> findAssignedByStatus(boolean disabled, Pageable pageable);
 
     @Query(
         value = "select distinct orgUnit from OrgUnit orgUnit " +

@@ -38,9 +38,8 @@ public interface TeamRelationalRepositoryCustom
 
     @Query(
         value = "select team from Team team " +
-            "left join team.activity " +
-            "left join team.warehouse " +
-            "left join team.userInfo " +
+            "left join fetch team.activity " +
+            "left join fetch team.userInfo " +
             "where team.userInfo.login = ?#{authentication.name}",
         countQuery = "select count(team) from Team team " +
             "where team.userInfo.login = ?#{authentication.name}"
@@ -50,7 +49,6 @@ public interface TeamRelationalRepositoryCustom
     @Query(
         value = "select team from Team team " +
             "left join fetch team.activity " +
-            "left join fetch team.warehouse " +
             "left join fetch team.userInfo " +
             "where team.userInfo.login = ?#{authentication.name}",
         countQuery = "select count(team) from Team team " +

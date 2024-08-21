@@ -12,6 +12,4 @@ public interface DataFormServiceCustom
     extends IdentifiableMongoService<DataForm> {
 
     List<DataForm> findAllByActivity(String uid);
-
-    List<DataForm> findAllByUser();
 }

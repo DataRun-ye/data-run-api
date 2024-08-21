@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.common;
 
 import jakarta.validation.Valid;
-import org.nmcpye.datarun.domain.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.mongo.mapping.importsummary.EntitySaveSummaryVM;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableService;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.slf4j.Logger;
@@ -113,10 +113,11 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
 
 
     protected Page<T> getList(Pageable pageable, boolean eagerload) {
-        if (eagerload) {
-            return identifiableService.findAllWithEagerRelationships(pageable);
-        }
-        return identifiableService.findAll(pageable);
+//        if (eagerload) {
+//            return identifiableService.findAllWithEagerRelationships(pageable);
+//        }
+//        return identifiableService.findAll(pageable);
+        return identifiableService.findAllByUser(pageable);
     }
 
     @PutMapping("/{id}")

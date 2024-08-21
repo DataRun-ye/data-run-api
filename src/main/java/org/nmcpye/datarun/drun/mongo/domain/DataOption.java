@@ -1,9 +1,6 @@
 package org.nmcpye.datarun.drun.mongo.domain;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import org.springframework.data.mongodb.core.mapping.Field;
-import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -17,13 +14,13 @@ public class DataOption implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // formUid_listName_optionUid
-    @Size(max = 11)
-    @NotNull
-    @Field("uid")
-    private String uid;
+//    // formUid_listName_optionUid
+//    @Size(max = 11)
+//    @NotNull
+//    @Field("uid")
+//    private String uid;
 
-    private String form;
+//    private String form;
 
     @NotNull
     private String listName;
@@ -31,18 +28,18 @@ public class DataOption implements Serializable {
     @NotNull
     private String name;
 
-    @Size(max = 2000)
-    private String description;
+//    @Size(max = 2000)
+//    private String description;
 
     private Integer order;
 
-    public String getForm() {
-        return form;
-    }
-
-    public void setForm(String form) {
-        this.form = form;
-    }
+//    public String getForm() {
+//        return form;
+//    }
+//
+//    public void setForm(String form) {
+//        this.form = form;
+//    }
 
     public Map<String, String> getLabel() {
         if (this.label == null) {
@@ -59,18 +56,18 @@ public class DataOption implements Serializable {
         this.order = Objects.requireNonNullElseGet(order, () -> 0);
     }
 
-    public String getUid() {
-        return this.uid;
-    }
+//    public String getUid() {
+//        return this.uid;
+//    }
 
-    public DataOption uid(String uid) {
-        this.setUid(uid);
-        return this;
-    }
+//    public DataOption uid(String uid) {
+//        this.setUid(uid);
+//        return this;
+//    }
 
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
+//    public void setUid(String uid) {
+//        this.uid = uid;
+//    }
 
     public String getListName() {
         return listName;
@@ -91,19 +88,6 @@ public class DataOption implements Serializable {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getDescription() {
-        return this.description;
-    }
-
-    public DataOption description(String description) {
-        this.setDescription(description);
-        return this;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     private Map<String, String> label;
@@ -135,9 +119,9 @@ public class DataOption implements Serializable {
     @Override
     public String toString() {
         return "DataOption{" +
-            ", uid='" + getUid() + "'" +
+//            ", uid='" + getUid() + "'" +
             ", name='" + getName() + "'" +
-            ", description='" + getDescription() + "'" +
+//            ", description='" + getDescription() + "'" +
             "}";
     }
 }

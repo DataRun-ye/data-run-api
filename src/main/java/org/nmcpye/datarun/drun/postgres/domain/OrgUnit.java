@@ -12,8 +12,8 @@ import jakarta.validation.constraints.Size;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.domain.AbstractAuditingEntity;
-import org.nmcpye.datarun.domain.common.IdentifiableObject;
+import org.nmcpye.datarun.drun.postgres.common.BaseIdentifiableObject;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableObjectUtils;
 
 import java.io.Serializable;
@@ -26,7 +26,7 @@ import java.util.*;
 @Table(name = "org_unit")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OrgUnit extends AbstractAuditingEntity<Long> implements Serializable {
+public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

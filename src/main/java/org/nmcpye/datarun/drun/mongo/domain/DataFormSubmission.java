@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -48,6 +49,16 @@ public class DataFormSubmission
     private String team;
 
     private String orgUnit;
+
+    private Map<String, Object> formData = new HashMap<String, Object>();
+
+    public Map<String, Object> getFormData() {
+        return formData;
+    }
+
+    public void setFormData(Map<String, Object> formData) {
+        this.formData = formData;
+    }
 
     public String getId() {
         return this.id;
@@ -184,15 +195,6 @@ public class DataFormSubmission
         return this;
     }
 
-    private Map<String, Object> formData;
-
-    public Map<String, Object> getFormData() {
-        return formData;
-    }
-
-    public void setFormData(Map<String, Object> formData) {
-        this.formData = formData;
-    }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
 

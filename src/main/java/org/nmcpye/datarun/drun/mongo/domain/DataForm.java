@@ -1,9 +1,7 @@
 package org.nmcpye.datarun.drun.mongo.domain;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.nmcpye.datarun.drun.mongo.mapping.serialization.OrgUnitUidsSetSerializer;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -65,7 +63,7 @@ public class DataForm
     private Set<DataOption> options = new HashSet<>();
 
     @Field("orgUnits")
-    @JsonSerialize(using = OrgUnitUidsSetSerializer.class)
+//    @JsonSerialize(using = OrgUnitUidsSetSerializer.class)
     private Set<String> orgUnits = new HashSet<>();
 
 

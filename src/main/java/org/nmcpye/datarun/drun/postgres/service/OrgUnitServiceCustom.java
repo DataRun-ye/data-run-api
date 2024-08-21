@@ -15,5 +15,7 @@ public interface OrgUnitServiceCustom
     extends IdentifiableRelationalService<OrgUnit> {
     Page<OrgUnit> findAllByUser(Pageable pageable);
 
+//    List<OrgUnit> findAllByUserWithAncestors();
+
     Optional<OrgUnit> findAssignedByUid(String uid);
 }

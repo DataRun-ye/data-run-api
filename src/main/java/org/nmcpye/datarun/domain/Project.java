@@ -2,14 +2,16 @@ package org.nmcpye.datarun.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.nmcpye.datarun.drun.postgres.common.BaseIdentifiableObject;
+import org.springframework.data.domain.Persistable;
+
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.springframework.data.domain.Persistable;
 
 /**
  * A Project.
@@ -19,7 +21,7 @@ import org.springframework.data.domain.Persistable;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @JsonIgnoreProperties(value = { "new" })
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class Project extends AbstractAuditingEntity<Long> implements Serializable, Persistable<Long> {
+public class Project extends BaseIdentifiableObject<Long> implements Serializable, Persistable<Long> {
 
     private static final long serialVersionUID = 1L;
 

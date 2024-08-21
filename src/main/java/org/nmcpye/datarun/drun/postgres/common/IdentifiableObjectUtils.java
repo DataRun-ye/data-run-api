@@ -29,7 +29,6 @@ package org.nmcpye.datarun.drun.postgres.common;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.ObjectUtils;
-import org.nmcpye.datarun.domain.common.IdentifiableObject;
 
 import java.util.*;
 import java.util.stream.Collectors;

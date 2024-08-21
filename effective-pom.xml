@@ -144,7 +144,7 @@
     <lettuce.version>6.3.2.RELEASE</lettuce.version>
     <lifecycle-mapping.version>1.0.0</lifecycle-mapping.version>
     <liquibase-plugin.password>dataRunApi</liquibase-plugin.password>
-    <liquibase-plugin.url>jdbc:postgresql://localhost:5431/dataRunApi</liquibase-plugin.url>
+    <liquibase-plugin.url>jdbc:postgresql://localhost:5432/dataRunApi</liquibase-plugin.url>
     <liquibase-plugin.username>dataRunApi</liquibase-plugin.username>
     <liquibase.version>4.24.0</liquibase.version>
     <log4j2.version>2.21.1</log4j2.version>
@@ -8323,7 +8323,7 @@
             <changeLogFile>config/liquibase/master.xml</changeLogFile>
             <diffChangeLogFile>d:\Hamza\Learn\my-projects\jhipster-projects\data-run\data-run-api/src/main/resources/config/liquibase/changelog/20240707141444_changelog.xml</diffChangeLogFile>
             <driver>org.postgresql.Driver</driver>
-            <url>jdbc:postgresql://localhost:5431/dataRunApi</url>
+            <url>jdbc:postgresql://localhost:5432/dataRunApi</url>
             <defaultSchemaName />
             <username>dataRunApi</username>
             <password>dataRunApi</password>
@@ -9430,7 +9430,7 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
-        <liquibase-plugin.url>jdbc:postgresql://localhost:5431/dataRunApi</liquibase-plugin.url>
+        <liquibase-plugin.url>jdbc:postgresql://localhost:5432/dataRunApi</liquibase-plugin.url>
         <liquibase-plugin.password>dataRunApi</liquibase-plugin.password>
         <profile.test>testdev</profile.test>
         <liquibase-plugin.username>dataRunApi</liquibase-plugin.username>
@@ -9540,7 +9540,7 @@
         </plugins>
       </build>
       <properties>
-        <liquibase-plugin.url>jdbc:postgresql://localhost:5431/dataRunApi</liquibase-plugin.url>
+        <liquibase-plugin.url>jdbc:postgresql://localhost:5432/dataRunApi</liquibase-plugin.url>
         <liquibase-plugin.password>dataRunApi</liquibase-plugin.password>
         <profile.test>testprod</profile.test>
         <liquibase-plugin.username>dataRunApi</liquibase-plugin.username>

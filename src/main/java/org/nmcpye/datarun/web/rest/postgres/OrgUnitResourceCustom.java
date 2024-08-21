@@ -5,8 +5,6 @@ import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCu
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,12 +25,6 @@ public class OrgUnitResourceCustom extends AbstractRelationalResource<OrgUnit> {
         super(orgUnitService, orgUnitRepository);
         this.orgUnitRepository = orgUnitRepository;
         this.orgUnitService = orgUnitService;
-    }
-
-    @Override
-    protected Page<OrgUnit> getList(Pageable pageable, boolean eagerload) {
-        return orgUnitService.findAllByUser(pageable);
-
     }
 
     @Override
