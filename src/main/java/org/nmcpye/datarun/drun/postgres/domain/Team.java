@@ -59,15 +59,6 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
     @Column(name = "description")
     private String description;
 
-    @Column(name = "mobile")
-    private String mobile;
-
-    @Column(name = "workers")
-    private Integer workers;
-
-    @Column(name = "mobility")
-    private String mobility;
-
     @Column(name = "disabled")
     private Boolean disabled;
 
@@ -295,9 +286,32 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
         return teams;
     }
 
-    public String getPath() {
-        return path;
+//    public String getPath() {
+//        return path;
+//    }
+public String getPath() {
+    List<String> pathList = new ArrayList<>();
+    Set<String> visitedSet = new HashSet<>();
+    Team team = parent;
+
+    pathList.add(uid);
+
+    while (team != null) {
+        if (!visitedSet.contains(team.getUid())) {
+            pathList.add(team.getUid());
+            visitedSet.add(team.getUid());
+            team = team.getParent();
+        } else {
+            team = null; // Protect against cyclic org unit graphs
+        }
     }
+
+    Collections.reverse(pathList);
+
+    this.path = PATH_SEP + StringUtils.join(pathList, PATH_SEP);
+
+    return this.path;
+}
 
     public void setPath(String path) {
         this.path = path;
@@ -391,44 +405,6 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
         this.description = description;
     }
 
-    public String getMobile() {
-        return this.mobile;
-    }
-
-    public Team mobile(String mobile) {
-        this.setMobile(mobile);
-        return this;
-    }
-
-    public void setMobile(String mobile) {
-        this.mobile = mobile;
-    }
-
-    public Integer getWorkers() {
-        return this.workers;
-    }
-
-    public Team workers(Integer workers) {
-        this.setWorkers(workers);
-        return this;
-    }
-
-    public void setWorkers(Integer workers) {
-        this.workers = workers;
-    }
-
-    public String getMobility() {
-        return this.mobility;
-    }
-
-    public Team mobility(String mobility) {
-        this.setMobility(mobility);
-        return this;
-    }
-
-    public void setMobility(String mobility) {
-        this.mobility = mobility;
-    }
 
     public Boolean getDisabled() {
         return this.disabled;
@@ -595,9 +571,6 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
             ", code='" + getCode() + "'" +
             ", name='" + getName() + "'" +
             ", description='" + getDescription() + "'" +
-            ", mobile='" + getMobile() + "'" +
-            ", workers=" + getWorkers() +
-            ", mobility='" + getMobility() + "'" +
             ", disabled='" + getDisabled() + "'" +
             ", deleteClientData='" + getDeleteClientData() + "'" +
             ", createdBy='" + getCreatedBy() + "'" +

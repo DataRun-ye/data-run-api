@@ -2,8 +2,6 @@ package org.nmcpye.datarun.drun.mongo.domain;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
 import org.nmcpye.datarun.drun.mongo.domain.enumeration.ValueType;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -16,8 +14,6 @@ import java.util.Set;
 /**
  * A DataField.
  */
-@Getter
-@Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataField implements Serializable {
 
@@ -55,9 +51,27 @@ public class DataField implements Serializable {
     private String listName;
 
     @Field("reference")
-    ReferenceInfo reference;
+    ReferenceInfo referenceInfo;
+
+    private String choiceFilter;
 
     private Map<String, String> label;
+
+    public String getChoiceFilter() {
+        return choiceFilter;
+    }
+
+    public void setChoiceFilter(String choiceFilter) {
+        this.choiceFilter = choiceFilter;
+    }
+
+    public ReferenceInfo getReferenceInfo() {
+        return referenceInfo;
+    }
+
+    public void setReferenceInfo(ReferenceInfo referenceInfo) {
+        this.referenceInfo = referenceInfo;
+    }
 
     public void setLabel(Map<String, String> label) {
         this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
@@ -69,8 +83,6 @@ public class DataField implements Serializable {
         }
         return label;
     }
-
-    // jhipster-needle-entity-add-field - JHipster will add fields here
 
     public String getUid() {
         return this.uid;

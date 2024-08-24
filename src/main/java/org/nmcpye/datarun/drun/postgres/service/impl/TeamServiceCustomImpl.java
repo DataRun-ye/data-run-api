@@ -36,9 +36,15 @@ public class TeamServiceCustomImpl
     }
 
     /**
-     * This is scheduled to get fired everyday, at 01:00 (am).
+     * This is scheduled to get fired everyday, at 03:19 (am).
+     * - **`0`**: Second (`0` seconds)
+     * - **`19`**: Minute (`15` minutes)
+     * - **`3`**: Hour (`3` AM)
+     * - **`* *`**: Day of month and Month (`* *` means every day of every month)
+     * - **`?`**: Day of the week (`?` is used when you don't care about the specific day of the week)
      */
-    @Scheduled(cron = "0 0 3 * * ?")
+//    @Scheduled(cron = "0 0 3 * * ?")
+    @Scheduled(cron = "0 19 3 * * ?")
     @Override
     @Transactional
     public void forceUpdatePaths() {

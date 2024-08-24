@@ -38,9 +38,9 @@ public interface AssignmentRelationalRepositoryCustom
 
     @Query(
         value = "select assignment from Assignment assignment " +
-            "left join assignment.activity " +
-            "left join assignment.orgUnit " +
-            "left join assignment.team " +
+            "left join fetch assignment.activity " +
+            "left join fetch assignment.orgUnit " +
+            "left join fetch assignment.team " +
             "where assignment.team.userInfo.login = ?#{authentication.name}",
         countQuery = "select count(assignment) from Assignment assignment " +
             "where assignment.team.userInfo.login = ?#{authentication.name}"
@@ -49,9 +49,9 @@ public interface AssignmentRelationalRepositoryCustom
 
     @Query(
         value = "select assignment from Assignment assignment " +
-            "left join assignment.activity " +
-            "left join assignment.orgUnit " +
-            "left join assignment.team " +
+            "left join fetch assignment.activity " +
+            "left join fetch assignment.orgUnit " +
+            "left join fetch assignment.team " +
             "where assignment.activity.disabled =:disabled and " +
             "assignment.team.disabled =:disabled and assignment.team.userInfo.login = ?#{authentication.name}",
         countQuery = "select count(assignment) from Assignment assignment " +

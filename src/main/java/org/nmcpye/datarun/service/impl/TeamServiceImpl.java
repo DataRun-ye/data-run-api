@@ -59,15 +59,6 @@ public class TeamServiceImpl implements TeamService {
                 if (team.getDescription() != null) {
                     existingTeam.setDescription(team.getDescription());
                 }
-                if (team.getMobile() != null) {
-                    existingTeam.setMobile(team.getMobile());
-                }
-                if (team.getWorkers() != null) {
-                    existingTeam.setWorkers(team.getWorkers());
-                }
-                if (team.getMobility() != null) {
-                    existingTeam.setMobility(team.getMobility());
-                }
                 if (team.getDisabled() != null) {
                     existingTeam.setDisabled(team.getDisabled());
                 }

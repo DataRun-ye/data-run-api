@@ -18,6 +18,7 @@ public interface TeamRelationalRepositoryCustom
     extends TeamRepositoryWithBagRelationships, IdentifiableRelationalRepository<Team> {
 
     default Page<Team> findAllByUser(Pageable pageable) {
+//        return this.findAllWithEagerRelation(pageable);
         return this.fetchBagRelationships(this.findAllWithEagerRelation(pageable));
     }
 
@@ -51,20 +52,24 @@ public interface TeamRelationalRepositoryCustom
     @Query(
         value = "select team from Team team " +
             "left join fetch team.activity " +
-            "left join fetch team.userInfo " +
-            "where team.userInfo.login = ?#{authentication.name}",
+            "left join fetch team.activity " +
+//            "left join team.userInfo " +
+            "left join team.users u " +
+            "where u.login = ?#{authentication.name}",
         countQuery = "select count(team) from Team team " +
-            "where team.userInfo.login = ?#{authentication.name}"
+            "left join team.users u " +
+            "where u.login = ?#{authentication.name}"
     )
     Page<Team> findAllWithEagerRelation(Pageable pageable);
 
     @Query(
         value = "select team from Team team " +
             "left join fetch team.activity " +
-            "left join fetch team.userInfo " +
-            "where team.userInfo.login = ?#{authentication.name}",
+            "left join team.users u " +
+            "where u.login = ?#{authentication.name}",
         countQuery = "select count(team) from Team team " +
-            "where team.userInfo.login = ?#{authentication.name}"
+            "left join team.users u " +
+            "where u.login = ?#{authentication.name}"
     )
     Page<Team> findAllWithToOneRelationshipsByUser(Pageable pageable);
 

@@ -26,6 +26,7 @@ public enum ValueType {
     OrganisationUnit,
     Reference,
     Age,
+    FullName,
     URL,
     FileResource,
     Image,
