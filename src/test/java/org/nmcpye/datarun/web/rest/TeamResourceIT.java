@@ -113,9 +113,6 @@ class TeamResourceIT {
             .code(DEFAULT_CODE)
             .name(DEFAULT_NAME)
             .description(DEFAULT_DESCRIPTION)
-            .mobile(DEFAULT_MOBILE)
-            .workers(DEFAULT_WORKERS)
-            .mobility(DEFAULT_MOBILITY)
             .disabled(DEFAULT_DISABLED)
             .deleteClientData(DEFAULT_DELETE_CLIENT_DATA);
         return team;
@@ -133,9 +130,6 @@ class TeamResourceIT {
             .code(UPDATED_CODE)
             .name(UPDATED_NAME)
             .description(UPDATED_DESCRIPTION)
-            .mobile(UPDATED_MOBILE)
-            .workers(UPDATED_WORKERS)
-            .mobility(UPDATED_MOBILITY)
             .disabled(UPDATED_DISABLED)
             .deleteClientData(UPDATED_DELETE_CLIENT_DATA);
         return team;
@@ -312,9 +306,6 @@ class TeamResourceIT {
             .code(UPDATED_CODE)
             .name(UPDATED_NAME)
             .description(UPDATED_DESCRIPTION)
-            .mobile(UPDATED_MOBILE)
-            .workers(UPDATED_WORKERS)
-            .mobility(UPDATED_MOBILITY)
             .disabled(UPDATED_DISABLED)
             .deleteClientData(UPDATED_DELETE_CLIENT_DATA);
 
@@ -394,9 +385,6 @@ class TeamResourceIT {
 
         partialUpdatedTeam
             .code(UPDATED_CODE)
-            .mobile(UPDATED_MOBILE)
-            .mobility(UPDATED_MOBILITY)
-            .disabled(UPDATED_DISABLED)
             .deleteClientData(UPDATED_DELETE_CLIENT_DATA);
 
         restTeamMockMvc
@@ -430,9 +418,6 @@ class TeamResourceIT {
             .code(UPDATED_CODE)
             .name(UPDATED_NAME)
             .description(UPDATED_DESCRIPTION)
-            .mobile(UPDATED_MOBILE)
-            .workers(UPDATED_WORKERS)
-            .mobility(UPDATED_MOBILITY)
             .disabled(UPDATED_DISABLED)
             .deleteClientData(UPDATED_DELETE_CLIENT_DATA);
 

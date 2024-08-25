@@ -55,9 +55,6 @@ public class TeamAsserts {
             .satisfies(e -> assertThat(e.getCode()).as("check code").isEqualTo(actual.getCode()))
             .satisfies(e -> assertThat(e.getName()).as("check name").isEqualTo(actual.getName()))
             .satisfies(e -> assertThat(e.getDescription()).as("check description").isEqualTo(actual.getDescription()))
-            .satisfies(e -> assertThat(e.getMobile()).as("check mobile").isEqualTo(actual.getMobile()))
-            .satisfies(e -> assertThat(e.getWorkers()).as("check workers").isEqualTo(actual.getWorkers()))
-            .satisfies(e -> assertThat(e.getMobility()).as("check mobility").isEqualTo(actual.getMobility()))
             .satisfies(e -> assertThat(e.getDisabled()).as("check disabled").isEqualTo(actual.getDisabled()))
             .satisfies(e -> assertThat(e.getDeleteClientData()).as("check deleteClientData").isEqualTo(actual.getDeleteClientData()));
     }

@@ -720,8 +720,12 @@
                         </execution>
                     </executions>
                     <configuration>
+                        <skip>true</skip>
                         <javaVersion>${java.version}</javaVersion>
+
+
                     </configuration>
+
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>

@@ -5,10 +5,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.apache.commons.compress.utils.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
@@ -230,7 +230,7 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
      * @param roots the root organisation units, if null using real roots.
      */
     public String getParentGraph(Collection<OrgUnit> roots) {
-        Set<String> rootUids = roots != null ? Sets.newHashSet(IdentifiableObjectUtils.getUids(roots)) : null;
+        Set<String> rootUids = roots != null ? Sets.newHashSet(String.valueOf(IdentifiableObjectUtils.getUids(roots))) : null;
         List<String> ancestors = getAncestorUids(rootUids);
         return StringUtils.join(ancestors, PATH_SEP);
     }

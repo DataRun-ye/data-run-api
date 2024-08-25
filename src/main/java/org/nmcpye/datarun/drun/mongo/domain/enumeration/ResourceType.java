@@ -9,4 +9,5 @@ public enum ResourceType {
     Team,
     Project,
     Warehouse,
+    OrgUnit
 }

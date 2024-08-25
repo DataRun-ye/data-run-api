@@ -30,6 +30,7 @@ public class TeamServiceCustomImpl
         return repositoryCustom.findAllByUser(pageable);
     }
 
+    @Transactional
     @Override
     public void updatePaths() {
         repositoryCustom.updatePaths();

@@ -30,7 +30,7 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
     private final Logger log = LoggerFactory.getLogger(AbstractResource.class);
 
     @Value("${jhipster.clientApp.name}")
-    private String applicationName;
+    protected String applicationName;
 
     final protected IdentifiableService<T, ID> identifiableService;
     final protected CrudRepository<T, ID> repository;
