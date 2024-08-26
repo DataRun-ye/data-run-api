@@ -3,7 +3,6 @@ package org.nmcpye.datarun.drun.postgres.repository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
-import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 
@@ -20,7 +19,6 @@ public class TeamRepositoryWithBagRelationshipsImpl
     implements TeamRepositoryWithBagRelationships {
 
     private static final String ID_PARAMETER = "id";
-    private static final String LOGIN_PARAMETER = "login";
     private static final String TEAMS_PARAMETER = "teams";
 
     @PersistenceContext
@@ -86,34 +84,30 @@ public class TeamRepositoryWithBagRelationshipsImpl
     }
 
     Team fetchUsers(Team result) {
-        final String login = SecurityUtils.getCurrentUserLogin().orElse(null);
-
-        /// assignment.team.userInfo.login = ?#{authentication.name}
         return entityManager
             .createQuery(
                 "select team from Team team " +
+                    "left join fetch team.activity " +
                     "left join fetch team.users user " +
-                    "where team.id = :id and user.login = :login",
+                    "where team.id = :id",
                 Team.class
             )
             .setParameter(ID_PARAMETER, result.getId())
-            .setParameter(LOGIN_PARAMETER, login)
             .getSingleResult();
     }
 
     List<Team> fetchUsers(List<Team> teams) {
         HashMap<Object, Integer> order = new HashMap<>();
-        final String login = SecurityUtils.getCurrentUserLogin().orElse(null);
         IntStream.range(0, teams.size()).forEach(index -> order.put(teams.get(index).getId(), index));
         List<Team> result = entityManager
             .createQuery(
                 "select team from Team team " +
+                    "left join fetch team.activity " +
                     "left join fetch team.users user " +
-                    "where team in :teams and user.login = :login",
+                    "where team in :teams",
                 Team.class
             )
             .setParameter(TEAMS_PARAMETER, teams)
-            .setParameter(LOGIN_PARAMETER, login)
             .getResultList();
         result.sort((o1, o2) -> Integer.compare(order.get(o1.getId()), order.get(o2.getId())));
         return result;

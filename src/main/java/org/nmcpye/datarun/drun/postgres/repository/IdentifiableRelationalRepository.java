@@ -18,12 +18,4 @@ public interface IdentifiableRelationalRepository<T extends IdentifiableObject<L
     List<T> findAllByUidIn(Collection<String> uids);
 
     List<T> findAllByCodeIn(Collection<String> codes);
-
-//    Page<T> findAllByUser(Pageable pageable);
-
-//    //
-//    Page<T> findAllWithEagerRelationshipsByUser(Pageable pageable);
-//
-//    //
-//    Optional<T> findOneWithEagerRelationshipsByUser(Long id);
 }

@@ -1,12 +1,17 @@
 package org.nmcpye.datarun.drun.postgres.repository;
 
 import org.nmcpye.datarun.drun.postgres.domain.Team;
+import org.nmcpye.datarun.drun.postgres.repository.specification.TeamSpecifications;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,15 +20,33 @@ import java.util.Optional;
  */
 @Repository
 public interface TeamRelationalRepositoryCustom
-    extends TeamRepositoryWithBagRelationships, IdentifiableRelationalRepository<Team> {
+    extends TeamRepositoryWithBagRelationships,
+    IdentifiableRelationalRepository<Team>, JpaSpecificationExecutor<Team> {
 
     default Page<Team> findAllByUser(Pageable pageable) {
-//        return this.findAllWithEagerRelation(pageable);
-        return this.fetchBagRelationships(this.findAllWithEagerRelation(pageable));
+        if (!SecurityUtils.isAuthenticated()) {
+            return Page.empty(pageable);
+        }
+
+        String userLogin = SecurityUtils.getCurrentUserLogin().get();
+
+        Specification<Team> specification = Specification.where(TeamSpecifications.hasUser(userLogin))
+            .and(TeamSpecifications.isNotDisabled());
+
+        return this.fetchBagRelationships(this.findAll(specification, pageable));
     }
 
     default List<Team> findAllByUser() {
-        return this.fetchBagRelationships(this.findAllWithEagerRelation());
+        if (!SecurityUtils.isAuthenticated()) {
+            return Collections.emptyList();
+        }
+
+        String userLogin = SecurityUtils.getCurrentUserLogin().get();
+
+        Specification<Team> specification = Specification.where(TeamSpecifications.hasUser(userLogin))
+            .and(TeamSpecifications.isNotDisabled());
+
+        return this.fetchBagRelationships(this.findAll(specification));
     }
 
     default Optional<Team> findByUidWithEagerRelation(String uid) {
@@ -37,6 +60,7 @@ public interface TeamRelationalRepositoryCustom
     default Page<Team> findAllWithEagerRelationshipsByUser(Pageable pageable) {
         return this.findAllWithToOneRelationshipsByUser(pageable);
     }
+
 
     @Query(
         value = "select team from Team team " +
@@ -53,7 +77,6 @@ public interface TeamRelationalRepositoryCustom
         value = "select team from Team team " +
             "left join fetch team.activity " +
             "left join fetch team.activity " +
-//            "left join team.userInfo " +
             "left join team.users u " +
             "where u.login = ?#{authentication.name}",
         countQuery = "select count(team) from Team team " +

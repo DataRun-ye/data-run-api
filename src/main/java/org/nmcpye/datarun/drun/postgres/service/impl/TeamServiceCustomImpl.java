@@ -25,9 +25,23 @@ public class TeamServiceCustomImpl
         this.repositoryCustom = teamRepositoryCustom;
     }
 
+//    @Override
+//    public Page<Team> findAllByUser(Pageable pageable) {
+//        return repositoryCustom.findAllByUser(pageable);
+//    }
+
     @Override
     public Page<Team> findAllByUser(Pageable pageable) {
-        return repositoryCustom.findAllByUser(pageable);
+//        if (!SecurityUtils.isAuthenticated()) {
+//            return Page.empty(pageable);
+//        }
+//
+//        String userLogin = SecurityUtils.getCurrentUserLogin().get();
+//
+//        Specification<Team> specification = Specification.where(TeamSpecifications.hasUser(userLogin))
+//            .and(TeamSpecifications.isNotDisabled());
+
+        return repositoryCustom.findAllByUser(/*specification, */pageable);
     }
 
     @Transactional

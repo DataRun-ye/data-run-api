@@ -1,0 +1,119 @@
+version: '3.4'
+
+services:
+  datarunapi:
+    image: datarunapi
+    container_name: datarunapi
+    environment:
+      - _JAVA_OPTIONS=-Xmx512m -Xms256m
+      - SPRING_PROFILES_ACTIVE=prod,api-docs
+      - MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED=true
+      - SPRING_DATASOURCE_USERNAME=nmcpdb
+      - SPRING_DATASOURCE_PASSWORD=Dedo881*
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/nmcpdb
+      - SPRING_LIQUIBASE_URL=jdbc:postgresql://postgresql:5432/nmcpdb
+      - SPRING_DATA_MONGODB_USERNAME=drunuser
+      - SPRING_DATA_MONGODB_PASSWORD=Dedo881*
+      - SPRING_DATA_MONGODB_URI=mongodb://drunuser:Dedo881*@api.nmcpye.org:27017/dRunMongoDb
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 8080:8080
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:8080/management/health
+      interval: 5s
+      timeout: 5s
+      retries: 40
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - nmcp-network
+  postgresql:
+    image: postgres:16.2
+    container_name: nmcp-db
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+#      - ./nmcpdb_backup.sql:/docker-entrypoint-initdb.d/nmcpdb_backup.sql
+    environment:
+      - POSTGRES_USER=nmcpdb
+      - POSTGRES_PASSWORD=Dedo881*
+      - POSTGRES_DB=nmcpdb
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nmcp-network
+  mongodb:
+    image: mongo:7.0.6
+    container_name: mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=Dedo881*
+      - MONGO_INITDB_DATABASE=dRunMongoDb
+      - MONGO_INITDB_USER=drunuser
+      - MONGO_INITDB_PWD=Dedo881*
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb_data:/data/db/
+      - ./mongo-entrypoint/:/docker-entrypoint-initdb.d/
+    command: mongod
+    healthcheck:
+      test: ['CMD', 'echo', '''db.runCommand("ping").ok''', '|', 'mongo', 'localhost:27017/test', '--quiet']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - nmcp-network
+      
+  mongo-express:
+    image: mongo-express
+    container_name: mongoexpress
+    ports:
+      - 8081:8081
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=Dedo881*
+      - ME_CONFIG_MONGODB_URL=mongodb://root:Dedo881*@mongodb:27017/
+      - ME_CONFIG_BASICAUTH=true
+      - ME_CONFIG_BASICAUTH_USERNAME=nmcp
+      - ME_CONFIG_BASICAUTH_USERNAME=Dedo881*
+    networks:
+      - nmcp-network
+
+  nginx:
+    image: nginx
+    container_name: datarun-nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/certbot:/var/www/certbot
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - nmcp-network
+      
+volumes:
+  mongodb_data:
+  postgis_data:
+  
+networks:
+  nmcp-network:
+    external: true
