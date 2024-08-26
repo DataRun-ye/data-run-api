@@ -10,15 +10,17 @@
             <column name="id" type="BIGINT">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="pk_assignment"/>
             </column>
-            <column name="created_by" type="VARCHAR(50)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="created_date" type="DATETIME"/>
-            <column name="last_modified_by" type="VARCHAR(50)"/>
-            <column name="last_modified_date" type="DATETIME"/>
             <column name="uid" type="VARCHAR(11)">
                 <constraints nullable="false"/>
             </column>
+            <column name="created_by" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified_by" type="VARCHAR(50)"/>
+            <column name="last_modified_date" type="DATETIME"/>
             <column name="code" type="VARCHAR(255)"/>
             <column name="activity_id" type="BIGINT"/>
             <column name="org_unit_id" type="BIGINT"/>
@@ -45,6 +47,7 @@
         <addForeignKeyConstraint baseColumnNames="team_id" baseTableName="assignment"
                                  constraintName="FK_ASSIGNMENT_ON_TEAM" referencedColumnNames="id"
                                  referencedTableName="team"/>
+        <addNotNullConstraint columnDataType="BIGINT" columnName="activity_id" tableName="assignment" validate="true"/>
     </changeSet>
 
 </databaseChangeLog>

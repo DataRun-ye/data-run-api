@@ -30,7 +30,7 @@ public abstract class AbstractAuditingEntity<T>
     public abstract T getId();
 
     @CreatedBy
-    @Column(name = "created_by", length = 50, updatable = false)
+    @Column(name = "created_by", nullable = false, length = 50, updatable = false)
     private String createdBy;
 
     @CreatedDate

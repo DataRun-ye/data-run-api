@@ -30,5 +30,8 @@
                                  referencedColumnNames="id"
                                  referencedTableName="app_user"
                                  />
+
+        <addForeignKeyConstraint baseColumnNames="parent_id" baseTableName="team" constraintName="FK_TEAM_ON_PARENT"
+                                 referencedColumnNames="id" referencedTableName="team"/>
     </changeSet>
 </databaseChangeLog>

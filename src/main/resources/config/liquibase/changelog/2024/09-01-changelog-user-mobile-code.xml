@@ -17,8 +17,4 @@
     <changeSet id="1723151445259-5" author="Hamza (generated)">
         <addUniqueConstraint columnNames="mobile" constraintName="uc_app_user_mobile" tableName="app_user"/>
     </changeSet>
-    <changeSet id="1723151445259-1" author="Hamza (generated)">
-        <modifyDataType columnName="email" newDataType="VARCHAR(254)" tableName="app_user"/>
-    </changeSet>
-
 </databaseChangeLog>

@@ -21,17 +21,15 @@
             <column name="name" type="varchar(255)">
                 <constraints nullable="false" />
             </column>
-            <column name="path" type="varchar(255)">
-                <constraints nullable="true" />
-            </column>
-            <column name="parent" type="varchar(255)">
-                <constraints nullable="true" />
-            </column>
-            <column name="level" type="integer">
+            <column name="level" type="INT"/>
+            <column name="path" type="VARCHAR(255)"/>
+            <column name="parent_id" type="BIGINT"/>
+            <column name="created_by" type="VARCHAR(50)">
                 <constraints nullable="false" />
             </column>
-            <column name="created_by" type="VARCHAR(50)"/>
-            <column name="created_date" type="DATETIME"/>
+            <column name="created_date" type="DATETIME">
+                <constraints nullable="false" />
+            </column>
             <column name="last_modified_by" type="VARCHAR(50)"/>
             <column name="last_modified_date" type="DATETIME"/>
             <!-- jhipster-needle-liquibase-add-column - JHipster will add columns here -->
