@@ -9,12 +9,12 @@ services:
       - SPRING_PROFILES_ACTIVE=prod,api-docs
       - MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED=true
       - SPRING_DATASOURCE_USERNAME=nmcpdb
-      - SPRING_DATASOURCE_PASSWORD=Dedo881*
+      - SPRING_DATASOURCE_PASSWORD=drunpass
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/nmcpdb
       - SPRING_LIQUIBASE_URL=jdbc:postgresql://postgresql:5432/nmcpdb
       - SPRING_DATA_MONGODB_USERNAME=drunuser
-      - SPRING_DATA_MONGODB_PASSWORD=Dedo881*
-      - SPRING_DATA_MONGODB_URI=mongodb://drunuser:Dedo881*@api.nmcpye.org:27017/dRunMongoDb
+      - SPRING_DATA_MONGODB_PASSWORD=drunpass
+      - SPRING_DATA_MONGODB_URI=mongodb://drunuser:drunpass@api.nmcpye.org:27017/dRunMongoDb
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -44,7 +44,7 @@ services:
 #      - ./nmcpdb_backup.sql:/docker-entrypoint-initdb.d/nmcpdb_backup.sql
     environment:
       - POSTGRES_USER=nmcpdb
-      - POSTGRES_PASSWORD=Dedo881*
+      - POSTGRES_PASSWORD=drunpass
       - POSTGRES_DB=nmcpdb
       - POSTGRES_HOST_AUTH_METHOD=trust
     ports:
@@ -61,10 +61,10 @@ services:
     container_name: mongodb
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=Dedo881*
+      - MONGO_INITDB_ROOT_PASSWORD=drunpass
       - MONGO_INITDB_DATABASE=dRunMongoDb
       - MONGO_INITDB_USER=drunuser
-      - MONGO_INITDB_PWD=Dedo881*
+      - MONGO_INITDB_PWD=drunpass
     ports:
       - 27017:27017
     volumes:
@@ -86,11 +86,11 @@ services:
       - 8081:8081
     environment:
       - ME_CONFIG_MONGODB_ADMINUSERNAME=root
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=Dedo881*
-      - ME_CONFIG_MONGODB_URL=mongodb://root:Dedo881*@mongodb:27017/
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=drunpass
+      - ME_CONFIG_MONGODB_URL=mongodb://root:drunpass@mongodb:27017/
       - ME_CONFIG_BASICAUTH=true
       - ME_CONFIG_BASICAUTH_USERNAME=nmcp
-      - ME_CONFIG_BASICAUTH_USERNAME=Dedo881*
+      - ME_CONFIG_BASICAUTH_USERNAME=drunpass
     networks:
       - nmcp-network
 
