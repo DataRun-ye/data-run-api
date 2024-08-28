@@ -1,11 +1,39 @@
+entity Project {
+    uid String unique maxlength(11)
+    code String unique
+    name String
+    disabled Boolean
+}
+
+entity Activity {
+    uid String unique maxlength(11)
+    code String unique
+    name String
+    startDate Instant
+    endDate Instant
+    disabled Boolean
+    deleteClientData Boolean
+}
+
 entity Assignment {
     uid String required unique maxlength(11)
     code String unique
-    @defaultValue("false")
     disabled Boolean
-    activity String required maxlength(11)
-    team String maxlength(11)
-    OrgUnit String maxlength(11)
+}
+
+entity Warehouse {
+    uid String required unique maxlength(11)
+    code String required
+    name String
+    description String
+    gpsCoordinate String
+}
+
+entity WarehouseItem {
+    uid String required unique maxlength(11)
+    code String
+    name String
+    description String
 }
 
 entity DataForm {
@@ -15,28 +43,33 @@ entity DataForm {
     defaultLocal String required
     description String maxlength(2000)
     version Integer
-    activity String required maxlength(11)
 }
 
 @embedded
 entity DataField {
-    uid String unique maxlength(11)
-    code String unique
     name String required unique
     listName String
     description String maxlength(2000)
     type ValueType
-    @defaultValue("false")
     mainField Boolean
-    @defaultValue("false")
     mandatory Boolean
+    choiceFilter String
+    calculation String
+}
+
+@embedded
+entity ReferenceInfo {
+    resource ResourceType
+    resourceId String
+    resourceProperty String
+    description String
+    type ReferenceType
 }
 
 @embedded
 entity DataOption {
     listName String required
     name String required unique
-    @defaultValue(0)
     order Integer
 }
 
@@ -46,17 +79,18 @@ entity DataFieldRule {
     action RuleAction required
 }
 
+@embedded
+entity FilterRuleInfo {
+    optionsToHide String
+    optionsToShow String
+}
+
 entity DataFormSubmission {
     uid String required unique maxlength(11)
     status SyncableStatus
-    form String required maxlength(11)
     version Integer
     startEntryTime Instant
     finishedEntryTime Instant
-    team String maxlength(11)
-    activity String maxlength(11)
-    assignment String maxlength(11)
-    @defaultValue("false")
     deleted Boolean
 }
 
@@ -66,20 +100,34 @@ entity OuLevel {
     level Integer required
 }
 
-entity Group {
+entity OrgUnitGroup {
     uid String unique maxlength(11)
     code String unique
     name String required
-    type String required
+    description String
 }
 
 entity OrgUnit {
     uid String unique maxlength(11)
     code String unique
     name String required
+    level Integer required
     path String required
-    parent String maxlength(11)
-    parentCode String
+}
+
+entity Team {
+    uid String required unique maxlength(11)
+    code String required
+    name String
+    description String
+    disabled Boolean
+    deleteClientData Boolean
+    level Integer required
+    path String required
+}
+
+relationship ManyToOne {
+    DataField{reference} to ReferenceInfo
 }
 
 relationship OneToMany {
@@ -93,53 +141,106 @@ relationship ManyToOne {
 }
 
 relationship ManyToOne {
-    OrgUnit{level(name)} to OuLevel
+    DataFormSubmission{team(code) required} to Team
+}
+
+relationship ManyToOne {
+    DataFormSubmission{activity(name) required} to Activity
+}
+
+relationship ManyToOne {
+    DataFormSubmission{orgUnit(name) required} to OrgUnit
+}
+
+relationship ManyToOne {
+    DataFieldRule{filterInfo} to FilterRuleInfo
 }
 
 relationship ManyToMany {
-    OrgUnit{group(name)} to Group
+    OrgUnit{group(name)} to OrgUnitGroup
 }
 
 relationship ManyToMany {
-    DataForm{orgUnit(name)} to OrgUnit{form}
+    DataForm to OrgUnit
+}
+
+relationship ManyToOne {
+    Warehouse {activity (code)} to Activity
+}
+
+relationship ManyToOne {
+    Assignment {activity (code)} to Activity
+}
+
+relationship ManyToOne {
+    Assignment {orgUnit (uid)} to OrgUnit
+}
+
+relationship ManyToMany {
+    Assignment {team (code) required} to Team {assignment}
+}
+
+relationship ManyToOne {
+    Assignment {warehouse (name)} to Warehouse
+}
+
+relationship ManyToMany {
+    Team{user(login)} to User with builtInEntity
 }
 
 service * with serviceImpl
 paginate all with pagination
 
 // Define Enums
+enum ResourceType {
+    DataFormSubmission
+    Activity
+    Team
+    Project
+    Warehouse
+    OrgUnit
+}
+
+enum ReferenceType {
+    Resource
+    ResourceProperty
+    ResourceCollectionProperty
+}
+
 enum ValueType {
-    Text,
-    LongText,
-    Letter,
-    PhoneNumber,
-    Email,
-    Boolean,
-    TrueOnly,
-    Date,
-    DateTime,
-    Time,
-    Number,
-    UnitInterval,
-    Percentage,
-    Integer,
-    IntegerPositive,
-    IntegerNegative,
-    IntegerZeroOrPositive,
-    Username,
-    Coordinate,
-    OrganisationUnit,
-    Reference,
-    Age,
-    URL,
-    FileResource,
-    Image,
-    SelectMulti,
-    SelectOne,
-    YesNo,
-    GeoJson,
-    Team,
-    Activity,
+    Text
+    LongText
+    Letter
+    PhoneNumber
+    Email
+    Boolean
+    TrueOnly
+    Date
+    DateTime
+    Time
+    Number
+    UnitInterval
+    Percentage
+    Integer
+    IntegerPositive
+    IntegerNegative
+    IntegerZeroOrPositive
+    Username
+    Coordinate
+    OrganisationUnit
+    Reference
+    Age
+    FullName
+    URL
+    FileResource
+    Image
+    SelectMulti
+    SelectOne
+    YesNo
+    GeoJson
+    Team
+    Calculated
+    Activity
     Warehouse
 }
 

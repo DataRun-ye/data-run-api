@@ -1,10 +1,4 @@
 // Define Enums
-enum PublicLocationType {
-    DISTRICT
-    SUBDISTRICT
-    SUBVILLAGE
-}
-
 
 entity Project {
     uid String unique maxlength(11)
@@ -29,44 +23,10 @@ entity Activity {
     deleteClientData Boolean
 }
 
-entity VillageLocation {
-    uid String required unique maxlength(11)
-    code String unique required
-    name String
-    mappingStatus Integer
-    districtCode Integer
-    villageUid String
-    subdistrictName String
-    villageName String
-    subvillageName String
-    urbanRuralId Integer
-    urbanRural String
-    settlement String
-    pop2004 Double
-    pop2022 Double
-    longitude Double
-    latitude Double
-    ppcCodeGis String required
-    level PublicLocationType
-}
-
 entity Assignment {
     uid String required unique maxlength(11)
     code String
     name String
-    phaseNo Integer
-    districtCode Integer
-    gov String
-    district String
-    subdistrict String
-    village String
-    subvillage String
-    dayId Integer
-    population Double
-    itnsPlanned Integer
-    targetType Integer
-    longitude Double
-    latitude Double
     startDate Instant
 }
 
@@ -75,9 +35,6 @@ entity Team {
     code String required
     name String
     description String
-    mobile String
-    workers Integer
-    mobility String
 
     @defaultValue("false")
     disabled Boolean,
@@ -113,9 +70,7 @@ entity OrgUnit {
     uid String unique maxlength(11)
     code String unique
     name String required
-    ouPath String required
-    parent String
-    parentCode String
+    path String required
 }
 
 relationship ManyToOne {
@@ -143,7 +98,7 @@ relationship ManyToOne {
 }
 
 relationship ManyToOne {
-    Assignment {organisationUnit (code)} to VillageLocation
+    Assignment {organisationUnit (code)} to OrgUnit
 }
 
 relationship ManyToOne {
