@@ -1,8 +1,6 @@
 package org.nmcpye.datarun.drun.mongo.domain;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.NotNull;
-import org.nmcpye.datarun.drun.mongo.mapping.serialization.DataOptionDeserializer;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -14,7 +12,7 @@ import java.util.Objects;
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
 //@JsonSerialize(using = DataOptionSerializer.class)
-@JsonDeserialize(using = DataOptionDeserializer.class)
+//@JsonDeserialize(using = DataOptionDeserializer.class)
 public class DataOption implements Serializable {
 
     private static final long serialVersionUID = 1L;
