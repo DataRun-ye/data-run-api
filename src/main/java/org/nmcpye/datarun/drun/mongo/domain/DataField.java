@@ -23,6 +23,9 @@ public class DataField implements Serializable {
     @Field("uid")
     private String uid;
 
+    private Integer order;
+
+
     @Field("code")
     private String code;
 
@@ -56,6 +59,14 @@ public class DataField implements Serializable {
     private String choiceFilter;
 
     private Map<String, String> label;
+
+    public Integer getOrder() {
+        return order;
+    }
+
+    public void setOrder(Integer order) {
+        this.order = Objects.requireNonNullElseGet(order, () -> 0);
+    }
 
     public String getChoiceFilter() {
         return choiceFilter;

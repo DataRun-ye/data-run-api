@@ -36,8 +36,50 @@ entity WarehouseItem {
     description String
 }
 
+
+entity OuLevel {
+    uid String unique maxlength(11)
+    name String
+    level Integer required
+}
+
+entity OrgUnitGroup {
+    uid String unique maxlength(11)
+    code String unique
+    name String required
+    description String
+}
+
+entity OrgUnit {
+    uid String unique maxlength(11)
+    code String unique
+    name String required
+    level Integer required
+    path String required
+}
+
+entity Team {
+    uid String required unique maxlength(11)
+    code String required
+    name String
+    description String
+    disabled Boolean
+    deleteClientData Boolean
+    level Integer required
+    path String required
+}
+
 entity DataForm {
     uid String required unique maxlength(11)
+    code String unique
+    name String required
+    defaultLocal String required
+    description String maxlength(2000)
+    version Integer
+}
+
+entity DataFormInstance {
+    uid String required unique
     code String unique
     name String required
     defaultLocal String required
@@ -94,36 +136,12 @@ entity DataFormSubmission {
     deleted Boolean
 }
 
-entity OuLevel {
-    uid String unique maxlength(11)
-    name String
-    level Integer required
+relationship OneToMany {
+    DataForm{formInstance(name)} to DataFormInstance{form(name) required}
 }
 
-entity OrgUnitGroup {
-    uid String unique maxlength(11)
-    code String unique
-    name String required
-    description String
-}
-
-entity OrgUnit {
-    uid String unique maxlength(11)
-    code String unique
-    name String required
-    level Integer required
-    path String required
-}
-
-entity Team {
-    uid String required unique maxlength(11)
-    code String required
-    name String
-    description String
-    disabled Boolean
-    deleteClientData Boolean
-    level Integer required
-    path String required
+relationship OneToMany {
+    DataField{field(name)} to DataField{section(name)}
 }
 
 relationship ManyToOne {
@@ -208,6 +226,8 @@ enum ReferenceType {
 }
 
 enum ValueType {
+    Section
+    RepeatableSection
     Text
     LongText
     Letter
@@ -244,16 +264,39 @@ enum ValueType {
     Warehouse
 }
 
+enum RuleAction {
+    // Expression must be logical (true, false)
+    Visibility
+    // deprecated, use Visibility
+    Show
+    // deprecated, use Visibility
+    Hide
+
+    // Expression must be logical (true, false)
+    Constraint
+    // deprecated, use Constraint
+    Error
+    // deprecated, use Constraint
+    Warning
+
+    // deprecated, use choice Filter
+    Filter
+
+    // Expression must be logical (true, false)
+    StopRepeat
+
+    // Expression must be logical (true, false)
+    Mandatory
+
+    // Expression result must be numerical >= 0
+    Count
+
+    // Expression result must be a compatible Value with the Field type
+    // i.e for default Value
+    Assign
+}
+
 enum SyncableStatus {
     ACTIVE
     COMPLETED
-}
-
-enum RuleAction {
-    Show
-    Hide
-    Error
-    Warning
-    Filter
-    Assign
 }

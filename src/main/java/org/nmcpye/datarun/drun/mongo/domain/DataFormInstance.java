@@ -12,7 +12,7 @@ import java.util.Set;
 
 @Document(collection = "data_form_version")
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataFormVersion {
+public class DataFormInstance {
 
     @MongoId
     private String id;
@@ -85,7 +85,7 @@ public class DataFormVersion {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        DataFormVersion that = (DataFormVersion) o;
+        DataFormInstance that = (DataFormInstance) o;
         return Objects.equals(form, that.form) && Objects.equals(version, that.version);
     }
 
