@@ -48,6 +48,9 @@
         <liquibase-url>jdbc:postgresql://localhost:5432/dataRunApi</liquibase-url>
         <liquibase-username>dataRunApi</liquibase-username>
         <liquibase-password>dataRunApi</liquibase-password>
+<!--        <liquibase-url>jdbc:postgresql://api.nmcpye.org:5432/nmcpdb</liquibase-url>-->
+<!--        <liquibase-username>nmcpdb</liquibase-username>-->
+<!--        <liquibase-password>Dedo881*</liquibase-password>-->
 <!--        <liquibase-url>jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}</liquibase-url>-->
 <!--        <liquibase-username>${DATABASE_USER}</liquibase-username>-->
 <!--        <liquibase-password>${DATABASE_PASSWORD}</liquibase-password>-->

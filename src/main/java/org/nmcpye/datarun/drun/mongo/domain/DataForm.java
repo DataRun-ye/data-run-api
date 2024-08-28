@@ -48,6 +48,9 @@ public class DataForm
     @Field("disabled")
     private Boolean disabled;
 
+    @Field("repeatable")
+    private Boolean repeatable = false;
+
     @Field("activity")
     private String activity;
 
@@ -78,6 +81,14 @@ public class DataForm
             return Map.of("en", this.name);
         }
         return label;
+    }
+
+    public Boolean getRepeatable() {
+        return repeatable;
+    }
+
+    public void setRepeatable(Boolean repeatable) {
+        this.repeatable = repeatable;
     }
 
     public Set<String> getOrgUnits() {

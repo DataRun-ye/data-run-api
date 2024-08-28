@@ -38,8 +38,12 @@ spring:
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     url: jdbc:postgresql://localhost:5432/dataRunApi
+#    url: jdbc:postgresql://api.nmcpye.org:5432/nmcpdb
     username: dataRunApi
+#    username: nmcpdb
     password: dataRunApi
+#    password: Dedo881*
+
     hikari:
       poolName: Hikari
       auto-commit: false
