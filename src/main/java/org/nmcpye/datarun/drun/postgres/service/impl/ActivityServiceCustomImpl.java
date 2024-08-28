@@ -4,6 +4,8 @@ import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.ActivityServiceCustom;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
+import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +29,9 @@ public class ActivityServiceCustomImpl
 
     @Override
     public Page<Activity> findAllByUser(Pageable pageable) {
+        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+            return repositoryCustom.findAll(pageable);
+        }
         return repositoryCustom.findAllByUser(pageable);
     }
 }

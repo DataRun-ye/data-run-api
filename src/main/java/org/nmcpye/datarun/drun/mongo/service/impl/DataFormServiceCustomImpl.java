@@ -10,6 +10,8 @@ import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
+import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
@@ -104,6 +106,10 @@ public class DataFormServiceCustomImpl
 
     @Override
     public Page<DataForm> findAllByUser(Pageable pageable) {
+        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+            return repositoryCustom.findAll(pageable);
+        }
+
         List<Assignment> assignments = assignmentRepository
             .findAllByStatusAndUser(false, pageable)
             .stream()

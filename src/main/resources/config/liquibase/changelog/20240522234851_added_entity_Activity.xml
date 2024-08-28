@@ -32,9 +32,7 @@
             <column name="created_by" type="varchar(50)">
                 <constraints nullable="false" />
             </column>
-            <column name="created_date" type="${datetimeType}">
-                <constraints nullable="false" />
-            </column>
+            <column name="created_date" type="${datetimeType}"/>
             <column name="last_modified_by" type="varchar(50)"/>
             <column name="last_modified_date" type="${datetimeType}"/>
             <column name="project_id" type="bigint">

@@ -5,6 +5,8 @@ import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositor
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
+import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -36,6 +38,9 @@ public class OrgUnitServiceCustomImpl
 
     @Override
     public Page<OrgUnit> findAllByUser(Pageable pageable) {
+        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+            return repositoryCustom.findAll(pageable);
+        }
         final List<OrgUnit> userOrgUnits = repositoryCustom
             .findAssignedWithEagerRelation();
         final Set<String> uids = userOrgUnits

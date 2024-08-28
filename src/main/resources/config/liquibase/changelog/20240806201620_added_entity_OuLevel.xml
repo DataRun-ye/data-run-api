@@ -15,6 +15,7 @@
             <column name="uid" type="varchar(11)">
                 <constraints nullable="true" unique="true" uniqueConstraintName="ux_ou_level__uid" />
             </column>
+            <column name="code" type="VARCHAR(255)"/>
             <column name="name" type="varchar(255)">
                 <constraints nullable="true" />
             </column>
@@ -24,9 +25,7 @@
             <column name="created_by" type="VARCHAR(50)">
                 <constraints nullable="false" />
             </column>
-            <column name="created_date" type="DATETIME">
-                <constraints nullable="false"/>
-            </column>
+            <column name="created_date" type="DATETIME"/>
             <column name="last_modified_by" type="VARCHAR(50)"/>
             <column name="last_modified_date" type="DATETIME"/>
             <!-- jhipster-needle-liquibase-add-column - JHipster will add columns here -->

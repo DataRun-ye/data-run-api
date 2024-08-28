@@ -27,9 +27,7 @@
             <column name="created_by" type="VARCHAR(50)">
                 <constraints nullable="false" />
             </column>
-            <column name="created_date" type="DATETIME">
-                <constraints nullable="false" />
-            </column>
+            <column name="created_date" type="DATETIME"/>
             <column name="last_modified_by" type="VARCHAR(50)"/>
             <column name="last_modified_date" type="DATETIME"/>
             <!-- jhipster-needle-liquibase-add-column - JHipster will add columns here -->

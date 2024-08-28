@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
-  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd"  objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-  <changeSet id="1724709378651-8" author="Hamza (generated)">
-<modifyDataType columnName="entity_id" newDataType="VARCHAR(255)" tableName="app_entity_audit_event"/>
-</changeSet>
-<changeSet id="1724709378651-9" author="Hamza (generated)">
-<modifyDataType columnName="entity_value" newDataType="VARCHAR(255)" tableName="app_entity_audit_event"/>
-</changeSet>
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1724709378651-8" author="Hamza (generated)">
+        <modifyDataType columnName="entity_id" newDataType="VARCHAR(255)" tableName="app_entity_audit_event"/>
+    </changeSet>
+    <changeSet id="1724709378651-9" author="Hamza (generated)">
+        <modifyDataType columnName="entity_value" newDataType="VARCHAR(255)" tableName="app_entity_audit_event"/>
+    </changeSet>
 
 </databaseChangeLog>

@@ -32,5 +32,7 @@
     <include file="/config/liquibase/changelog/2024/09-01-changelog-assignment.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/2024/15-01-changelog-translation-and-drop-audit-not-null.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/2024/22-01-team-user-table.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/2024/27-02-audit-changelog.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/2024/27-01-date-time-wrapper-changelog.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>
