@@ -87,8 +87,9 @@ entity DataFormInstance {
     version Integer
 }
 
-@embedded
 entity DataField {
+    uid String unique maxlength(11)
+    defaultValue String
     name String required unique
     listName String
     description String maxlength(2000)
@@ -97,16 +98,17 @@ entity DataField {
     mandatory Boolean
     choiceFilter String
     calculation String
+    order Integer
 }
 
-@embedded
-entity ReferenceInfo {
-    resource ResourceType
-    resourceId String
-    resourceProperty String
-    description String
-    type ReferenceType
-}
+//@embedded
+//entity ReferenceInfo {
+//    resource ResourceType
+//    resourceId String
+//    resourceProperty String
+//    description String
+//    type ReferenceType
+//}
 
 @embedded
 entity DataOption {
@@ -142,10 +144,6 @@ relationship OneToMany {
 
 relationship OneToMany {
     DataField{field(name)} to DataField{section(name)}
-}
-
-relationship ManyToOne {
-    DataField{reference} to ReferenceInfo
 }
 
 relationship OneToMany {

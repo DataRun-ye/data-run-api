@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.drun.mongo.domain;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import org.nmcpye.datarun.drun.mongo.domain.enumeration.RuleAction;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -17,13 +16,9 @@ public class DataFieldRule implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Size(max = 11)
-    @Field("uid")
-    private String uid;
-
-    @NotNull
-    @Field("field")
-    private String field;
+//    @Size(max = 11)
+//    @Field("uid")
+//    private String uid;
 
     @NotNull
     @Field("expression")
@@ -49,26 +44,18 @@ public class DataFieldRule implements Serializable {
         this.message = Objects.requireNonNullElseGet(message, () -> Map.of("en", "Error"));
     }
 
-    public String getUid() {
-        return this.uid;
-    }
+//    public String getUid() {
+//        return this.uid;
+//    }
+//
+//    public DataFieldRule uid(String uid) {
+//        this.setUid(uid);
+//        return this;
+//    }
 
-    public DataFieldRule uid(String uid) {
-        this.setUid(uid);
-        return this;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
-
-    public String getField() {
-        return field;
-    }
-
-    public void setField(String field) {
-        this.field = field;
-    }
+//    public void setUid(String uid) {
+//        this.uid = uid;
+//    }
 
     public String getExpression() {
         return this.expression;

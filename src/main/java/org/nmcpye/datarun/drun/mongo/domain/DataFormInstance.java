@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-@Document(collection = "data_form_version")
+@Document(collection = "data_form_instance")
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormInstance {
 

@@ -18,16 +18,15 @@ import java.util.Set;
 public class DataField implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
-    @Size(max = 11)
-    @Field("uid")
-    private String uid;
+//
+//    @Size(max = 11)
+//    @Field("uid")
+//    private String uid;
 
     private Integer order;
 
-
-    @Field("code")
-    private String code;
+//    @Field("code")
+//    private String code;
 
     @NotNull
     @Field("name")
@@ -59,6 +58,50 @@ public class DataField implements Serializable {
     private String choiceFilter;
 
     private Map<String, String> label;
+
+    // repeatable
+    @Field("fields")
+    private Set<DataField> fields = new HashSet<>();
+
+    @Field("calculation")
+    private String calculation;
+
+    @Field("default_value")
+    private String defaultValue;
+
+    public String getDefaultValue() {
+        return this.defaultValue;
+    }
+
+    public void setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    public String getCalculation() {
+        return this.calculation;
+    }
+
+    public void setCalculation(String calculation) {
+        this.calculation = calculation;
+    }
+
+    public Set<DataField> getFields() {
+        return this.fields;
+    }
+
+    public void setFields(Set<DataField> dataFields) {
+        this.fields = dataFields;
+    }
+
+    public DataField addField(DataField dataField) {
+        this.fields.add(dataField);
+        return this;
+    }
+
+    public DataField removeField(DataField dataField) {
+        this.fields.remove(dataField);
+        return this;
+    }
 
     public Integer getOrder() {
         return order;
@@ -94,32 +137,32 @@ public class DataField implements Serializable {
         }
         return label;
     }
+//
+//    public String getUid() {
+//        return this.uid;
+//    }
+//
+//    public DataField uid(String uid) {
+//        this.setUid(uid);
+//        return this;
+//    }
+//
+//    public void setUid(String uid) {
+//        this.uid = uid;
+//    }
+//
+//    public String getCode() {
+//        return this.code;
+//    }
 
-    public String getUid() {
-        return this.uid;
-    }
-
-    public DataField uid(String uid) {
-        this.setUid(uid);
-        return this;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
-
-    public String getCode() {
-        return this.code;
-    }
-
-    public DataField code(String code) {
-        this.setCode(code);
-        return this;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
+//    public DataField code(String code) {
+//        this.setCode(code);
+//        return this;
+//    }
+//
+//    public void setCode(String code) {
+//        this.code = code;
+//    }
 
     public String getName() {
         return this.name;
@@ -236,8 +279,8 @@ public class DataField implements Serializable {
     @Override
     public String toString() {
         return "DataField{" +
-            ", uid='" + getUid() + "'" +
-            ", code='" + getCode() + "'" +
+//            ", uid='" + getUid() + "'" +
+//            ", code='" + getCode() + "'" +
             ", name='" + getName() + "'" +
             ", description='" + getDescription() + "'" +
             ", type='" + getType() + "'" +

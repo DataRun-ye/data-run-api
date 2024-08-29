@@ -1,7 +1,5 @@
 package org.nmcpye.datarun.drun.mongo.domain;
 
-import jakarta.validation.constraints.NotNull;
-
 import java.io.Serializable;
 import java.util.List;
 
@@ -12,9 +10,6 @@ import java.util.List;
 public class FilterRuleInfo implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
-    @NotNull
-    private String fieldToFilter;
 
     private List<String> optionsToHide;
 
@@ -34,14 +29,6 @@ public class FilterRuleInfo implements Serializable {
 
     public void setOptionsToHide(List<String> optionsToHide) {
         this.optionsToHide = optionsToHide;
-    }
-
-    public String getFieldToFilter() {
-        return fieldToFilter;
-    }
-
-    public void setFieldToFilter(String fieldToFilter) {
-        this.fieldToFilter = fieldToFilter;
     }
 
     @Override
@@ -65,7 +52,6 @@ public class FilterRuleInfo implements Serializable {
     @Override
     public String toString() {
         return "FilterRuleInfo{" +
-            ", fieldToFilter='" + getFieldToFilter() + "'" +
             ", optionsToHide='" + getOptionsToHide() + "'" +
             ", optionsToShow='" + getOptionsToShow() + "'" +
             "}";

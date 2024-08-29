@@ -4,6 +4,8 @@ package org.nmcpye.datarun.drun.mongo.domain.enumeration;
  * The ValueType enumeration.
  */
 public enum ValueType {
+    Section,
+    RepeatableSection,
     Text,
     LongText,
     Letter,
