@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
+import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
@@ -34,6 +35,28 @@ public class OrgUnitServiceCustomImpl
         super(orgUnitRepositoryCustom);
         this.repositoryCustom = orgUnitRepositoryCustom;
         this.assignmentRepository = assignmentRepository;
+    }
+
+
+    @Override
+    public OrgUnit saveWithRelations(OrgUnit object) {
+        OrgUnit parent = object.getParent();
+        if (parent != null) {
+            parent = findParent(parent);
+            object.setParent(parent);
+        }
+
+        return repositoryCustom.save(object);
+    }
+
+    private OrgUnit findParent(OrgUnit parent) {
+        return Optional.ofNullable(parent.getId())
+            .flatMap(repositoryCustom::findById)
+            .or(() -> Optional.ofNullable(parent.getUid())
+                .flatMap(repositoryCustom::findByUid))
+            .or(() -> Optional.ofNullable(parent.getCode())
+                .flatMap(repositoryCustom::findByCode))
+            .orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
     }
 
     @Override

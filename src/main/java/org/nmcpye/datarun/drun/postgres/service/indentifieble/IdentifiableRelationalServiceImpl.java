@@ -58,6 +58,11 @@ public abstract class IdentifiableRelationalServiceImpl<T extends IdentifiableOb
         return saveWithRelations(object);
     }
 
+    @Override
+    public T saveWithRelations(T object) {
+        return repository.save(object);
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public T update(T object) {

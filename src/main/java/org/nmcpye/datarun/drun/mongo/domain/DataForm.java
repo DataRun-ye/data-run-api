@@ -69,15 +69,15 @@ public class DataForm
 
     private Map<String, String> label;
 
-    private Set<DataFormInstance> formInstances = new HashSet<>();
+//    private Set<DataFormInstance> formInstances = new HashSet<>();
 
-    public Set<DataFormInstance> getFormInstances() {
-        return formInstances;
-    }
-
-    public void setFormInstances(Set<DataFormInstance> formInstances) {
-        this.formInstances = formInstances;
-    }
+//    public Set<DataFormInstance> getFormInstances() {
+//        return formInstances;
+//    }
+//
+//    public void setFormInstances(Set<DataFormInstance> formInstances) {
+//        this.formInstances = formInstances;
+//    }
 
     public void setLabel(Map<String, String> label) {
         this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));

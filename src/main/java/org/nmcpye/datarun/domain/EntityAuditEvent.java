@@ -3,11 +3,12 @@ package org.nmcpye.datarun.domain;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 @Entity
 @Table(name = "app_entity_audit_event")
@@ -35,6 +36,7 @@ public class EntityAuditEvent implements Serializable {
     @Column(name = "action", length = 20, nullable = false)
     private String action;
 
+    @Size(max = 2048)
     @Column(name = "entity_value")
     private String entityValue;
 

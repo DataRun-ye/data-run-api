@@ -16,6 +16,7 @@ import java.util.Set;
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataField implements Serializable {
+    public static final String PATH_SEP = ".";
 
     private static final long serialVersionUID = 1L;
 //
@@ -24,9 +25,6 @@ public class DataField implements Serializable {
 //    private String uid;
 
     private Integer order;
-
-//    @Field("code")
-//    private String code;
 
     @NotNull
     @Field("name")
@@ -59,31 +57,22 @@ public class DataField implements Serializable {
 
     private Map<String, String> label;
 
-    // repeatable
-    @Field("fields")
-    private Set<DataField> fields = new HashSet<>();
-
     @Field("calculation")
     private String calculation;
 
     @Field("default_value")
     private String defaultValue;
 
-    public String getDefaultValue() {
-        return this.defaultValue;
-    }
+    // repeatable
+    @Field("section")
+    private String section;
 
-    public void setDefaultValue(String defaultValue) {
-        this.defaultValue = defaultValue;
-    }
+    @Field("path")
+    private String path;
 
-    public String getCalculation() {
-        return this.calculation;
-    }
+    @Field("fields")
+    private Set<DataField> fields = new HashSet<>();
 
-    public void setCalculation(String calculation) {
-        this.calculation = calculation;
-    }
 
     public Set<DataField> getFields() {
         return this.fields;
@@ -101,6 +90,38 @@ public class DataField implements Serializable {
     public DataField removeField(DataField dataField) {
         this.fields.remove(dataField);
         return this;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    public String getSection() {
+        return section;
+    }
+
+    public void setSection(String section) {
+        this.section = section;
+    }
+
+    public String getDefaultValue() {
+        return this.defaultValue;
+    }
+
+    public void setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    public String getCalculation() {
+        return this.calculation;
+    }
+
+    public void setCalculation(String calculation) {
+        this.calculation = calculation;
     }
 
     public Integer getOrder() {

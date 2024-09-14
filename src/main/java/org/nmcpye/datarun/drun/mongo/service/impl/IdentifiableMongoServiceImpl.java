@@ -58,6 +58,11 @@ public abstract class IdentifiableMongoServiceImpl<T extends IdentifiableObject<
     }
 
     @Override
+    public T saveWithRelations(T object) {
+        return repository.save(object);
+    }
+
+    @Override
     public T update(T object) {
         T existingEntity = repository
             .findByUid(object.getUid())

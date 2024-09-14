@@ -403,6 +403,10 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
 //        return this;
 //    }
 
+    public OrgUnit parent(OrgUnit parent) {
+        this.setParent(parent);
+        return this;
+    }
     // prettier-ignore
     @Override
     public String toString() {

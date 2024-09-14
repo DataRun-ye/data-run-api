@@ -17,8 +17,10 @@ import org.nmcpye.datarun.web.rest.vm.ManagedUserVM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -26,7 +28,12 @@ import java.util.Optional;
  */
 @RestController
 @RequestMapping("/api/custom")
-public class AccountResourceCustom {
+public class AccountResourceCustom extends AbstractRelationalResource<User> {
+
+    @Override
+    protected String getName() {
+        return "me";
+    }
 
     private static class AccountResourceException extends RuntimeException {
 
@@ -44,27 +51,10 @@ public class AccountResourceCustom {
     private final MailService mailService;
 
     public AccountResourceCustom(UserRepository userRepository, UserService userService, MailService mailService) {
+        super(userService, userRepository);
         this.userRepository = userRepository;
         this.userService = userService;
         this.mailService = mailService;
-    }
-
-    /**
-     * {@code POST  /register} : register the user.
-     *
-     * @param managedUserVM the managed user View Model.
-     * @throws InvalidPasswordException {@code 400 (Bad Request)} if the password is incorrect.
-     * @throws EmailAlreadyUsedException {@code 400 (Bad Request)} if the email is already used.
-     * @throws LoginAlreadyUsedException {@code 400 (Bad Request)} if the login is already used.
-     */
-    @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
-    public void registerAccount(@Valid @RequestBody ManagedUserVM managedUserVM) {
-        if (isPasswordLengthInvalid(managedUserVM.getPassword())) {
-            throw new InvalidPasswordException();
-        }
-        User user = userService.registerUser(managedUserVM, managedUserVM.getPassword());
-        mailService.sendActivationEmail(user);
     }
 
     /**
@@ -100,7 +90,7 @@ public class AccountResourceCustom {
      *
      * @param userDTO the current user information.
      * @throws EmailAlreadyUsedException {@code 400 (Bad Request)} if the email is already used.
-     * @throws RuntimeException {@code 500 (Internal Server Error)} if the user login wasn't found.
+     * @throws RuntimeException          {@code 500 (Internal Server Error)} if the user login wasn't found.
      */
     @PostMapping("/me")
     public void saveAccount(@Valid @RequestBody AdminUserDTO userDTO) {
@@ -159,7 +149,7 @@ public class AccountResourceCustom {
      *
      * @param keyAndPassword the generated key and the new password.
      * @throws InvalidPasswordException {@code 400 (Bad Request)} if the password is incorrect.
-     * @throws RuntimeException {@code 500 (Internal Server Error)} if the password could not be reset.
+     * @throws RuntimeException         {@code 500 (Internal Server Error)} if the password could not be reset.
      */
     @PostMapping(path = "/me/reset-password/finish")
     public void finishPasswordReset(@RequestBody KeyAndPasswordVM keyAndPassword) {
@@ -176,8 +166,46 @@ public class AccountResourceCustom {
     private static boolean isPasswordLengthInvalid(String password) {
         return (
             StringUtils.isEmpty(password) ||
-            password.length() < ManagedUserVM.PASSWORD_MIN_LENGTH ||
-            password.length() > ManagedUserVM.PASSWORD_MAX_LENGTH
+                password.length() < ManagedUserVM.PASSWORD_MIN_LENGTH ||
+                password.length() > ManagedUserVM.PASSWORD_MAX_LENGTH
         );
+    }
+
+
+    /**
+     * {@code POST  /register} : register the user.
+     *
+     * @param managedUserVM the managed user View Model.
+     * @throws InvalidPasswordException  {@code 400 (Bad Request)} if the password is incorrect.
+     * @throws EmailAlreadyUsedException {@code 400 (Bad Request)} if the email is already used.
+     * @throws LoginAlreadyUsedException {@code 400 (Bad Request)} if the login is already used.
+     */
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<?> registerAccount(@Valid @RequestBody ManagedUserVM managedUserVM) {
+        if (isPasswordLengthInvalid(managedUserVM.getPassword())) {
+            throw new InvalidPasswordException();
+        }
+        User user = userService.registerUser(managedUserVM, managedUserVM.getPassword());
+//        mailService.sendActivationEmail(user);
+        return ResponseEntity.ok(user);
+    }
+
+    /**
+     * {@code POST  /register-list} : register a list of users.
+     *
+     * @param managedUserVMList the list of managed user View Models.
+     * @throws InvalidPasswordException  {@code 400 (Bad Request)} if any password is incorrect.
+     * @throws EmailAlreadyUsedException {@code 400 (Bad Request)} if any email is already used.
+     * @throws LoginAlreadyUsedException {@code 400 (Bad Request)} if any login is already used.
+     */
+    @PostMapping("/registerList")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void registerAccountList(@Valid @RequestBody List<ManagedUserVM> managedUserVMList) {
+        userService.registerUserList(managedUserVMList);
+        managedUserVMList.forEach(managedUserVM -> {
+            User user = userService.findUserByLogin(managedUserVM.getLogin()).orElseThrow();
+            mailService.sendActivationEmail(user);
+        });
     }
 }

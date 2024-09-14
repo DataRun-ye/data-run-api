@@ -1,15 +1,20 @@
 package org.nmcpye.datarun.service;
 
+import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.domain.Authority;
 import org.nmcpye.datarun.domain.User;
+import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.nmcpye.datarun.repository.AuthorityRepository;
 import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.service.dto.AdminUserDTO;
 import org.nmcpye.datarun.service.dto.UserDTO;
+import org.nmcpye.datarun.utils.CodeGenerator;
 import org.nmcpye.datarun.web.rest.errors.InvalidPasswordException;
+import org.nmcpye.datarun.web.rest.errors.LoginAlreadyUsedException;
+import org.nmcpye.datarun.web.rest.vm.ManagedUserVM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
@@ -31,7 +36,8 @@ import java.util.stream.Collectors;
  */
 @Service
 @Transactional
-public class UserService {
+public class UserService
+    extends IdentifiableRelationalServiceImpl<User> {
 
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
@@ -49,6 +55,7 @@ public class UserService {
         AuthorityRepository authorityRepository,
         CacheManager cacheManager
     ) {
+        super(userRepository);
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authorityRepository = authorityRepository;
@@ -116,6 +123,9 @@ public class UserService {
         String encryptedPassword = passwordEncoder.encode(password);
         newUser.setLogin(userDTO.getLogin().toLowerCase());
         // new user gets initially a generated password
+        if (userDTO.getUid() == null || userDTO.getUid().isEmpty()) {
+            newUser.setUid(CodeGenerator.generateUid());
+        }
         newUser.setPassword(encryptedPassword);
         newUser.setFirstName(userDTO.getFirstName());
         newUser.setLastName(userDTO.getLastName());
@@ -125,7 +135,7 @@ public class UserService {
         newUser.setImageUrl(userDTO.getImageUrl());
         newUser.setLangKey(userDTO.getLangKey());
         // new user is not active
-        newUser.setActivated(false);
+        newUser.setActivated(userDTO.isActivated());
         // new user gets registration key
         newUser.setActivationKey(RandomUtil.generateActivationKey());
         Set<Authority> authorities = new HashSet<>();
@@ -152,6 +162,7 @@ public class UserService {
         user.setLogin(userDTO.getLogin().toLowerCase());
         user.setFirstName(userDTO.getFirstName());
         user.setLastName(userDTO.getLastName());
+        user.setUid(CodeGenerator.generateUid());
         if (userDTO.getEmail() != null) {
             user.setEmail(userDTO.getEmail().toLowerCase());
         }
@@ -165,7 +176,7 @@ public class UserService {
         user.setPassword(encryptedPassword);
         user.setResetKey(RandomUtil.generateResetKey());
         user.setResetDate(Instant.now());
-        user.setActivated(true);
+        user.setActivated(userDTO.isActivated());
         if (userDTO.getAuthorities() != null) {
             Set<Authority> authorities = userDTO
                 .getAuthorities()
@@ -310,6 +321,7 @@ public class UserService {
 
     /**
      * Gets a list of all the authorities.
+     *
      * @return a list of all the authorities.
      */
     @Transactional(readOnly = true)
@@ -322,5 +334,38 @@ public class UserService {
         if (user.getEmail() != null) {
             Objects.requireNonNull(cacheManager.getCache(UserRepository.USERS_BY_EMAIL_CACHE)).evict(user.getEmail());
         }
+    }
+
+    // Data run extend
+
+    /**
+     * Register a list of users within a single transaction.
+     * If any user fails to register, the entire transaction is rolled back.
+     *
+     * @param managedUserVMList the list of managed user View Models.
+     * @throws InvalidPasswordException                                     if any password is incorrect.
+     * @throws org.nmcpye.datarun.web.rest.errors.EmailAlreadyUsedException if any email is already used.
+     * @throws LoginAlreadyUsedException                                    if any login is already used.
+     */
+
+    public void registerUserList(List<ManagedUserVM> managedUserVMList) {
+        for (ManagedUserVM managedUserVM : managedUserVMList) {
+            if (isPasswordLengthInvalid(managedUserVM.getPassword())) {
+                throw new InvalidPasswordException();
+            }
+            registerUser(managedUserVM, managedUserVM.getPassword());
+        }
+    }
+
+    private static boolean isPasswordLengthInvalid(String password) {
+        return (
+            StringUtils.isEmpty(password) ||
+                password.length() < ManagedUserVM.PASSWORD_MIN_LENGTH ||
+                password.length() > ManagedUserVM.PASSWORD_MAX_LENGTH
+        );
+    }
+
+    public Optional<User> findUserByLogin(String login) {
+        return userRepository.findOneByLogin(login);
     }
 }

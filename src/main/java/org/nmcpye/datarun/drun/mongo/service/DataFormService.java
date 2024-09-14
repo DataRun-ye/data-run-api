@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Service Custom Interface for managing {@link DataForm}.
  */
-public interface DataFormServiceCustom
+public interface DataFormService
     extends IdentifiableMongoService<DataForm> {
 
     List<DataForm> findAllByActivity(String uid);

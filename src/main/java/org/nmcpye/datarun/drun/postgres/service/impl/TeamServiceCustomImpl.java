@@ -1,9 +1,11 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
+import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
+import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.context.annotation.Primary;
@@ -12,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @Primary
@@ -22,12 +26,37 @@ public class TeamServiceCustomImpl
 
     TeamRelationalRepositoryCustom repositoryCustom;
 
-    public TeamServiceCustomImpl(TeamRelationalRepositoryCustom teamRepositoryCustom) {
+    final UserRepository userRepository;
+
+    public TeamServiceCustomImpl(TeamRelationalRepositoryCustom teamRepositoryCustom,
+                                 UserRepository userRepository) {
         super(teamRepositoryCustom);
         this.repositoryCustom = teamRepositoryCustom;
+        this.userRepository = userRepository;
     }
 
-//    @Override
+    @Override
+    public Team saveWithRelations(Team object) {
+        Team parent = object.getParent();
+        if (parent != null) {
+            parent = findParent(parent);
+            object.setParent(parent);
+        }
+
+        return repositoryCustom.save(object);
+    }
+
+    private Team findParent(Team parent) {
+        return Optional.ofNullable(parent.getId())
+            .flatMap(repositoryCustom::findById)
+            .or(() -> Optional.ofNullable(parent.getUid())
+                .flatMap(repositoryCustom::findByUid))
+            .or(() -> Optional.ofNullable(parent.getCode())
+                .flatMap(repositoryCustom::findByCode))
+            .orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
+    }
+
+    //    @Override
 //    public Page<Team> findAllByUser(Pageable pageable) {
 //        return repositoryCustom.findAllByUser(pageable);
 //    }

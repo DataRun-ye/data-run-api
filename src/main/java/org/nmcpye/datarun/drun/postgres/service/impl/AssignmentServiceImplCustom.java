@@ -2,6 +2,8 @@ package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentServiceCustom;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
@@ -19,11 +21,22 @@ public class AssignmentServiceImplCustom
     extends IdentifiableRelationalServiceImpl<Assignment>
     implements AssignmentServiceCustom {
 
-    AssignmentRelationalRepositoryCustom repositoryCustom;
+    final AssignmentRelationalRepositoryCustom repositoryCustom;
+    final TeamRelationalRepositoryCustom teamRepository;
+    final OrgUnitRelationalRepositoryCustom orgUnitRepository;
 
-    public AssignmentServiceImplCustom(AssignmentRelationalRepositoryCustom repositoryCustom) {
+    public AssignmentServiceImplCustom(AssignmentRelationalRepositoryCustom repositoryCustom,
+                                       TeamRelationalRepositoryCustom teamRepository,
+                                       OrgUnitRelationalRepositoryCustom orgUnitRepository) {
         super(repositoryCustom);
         this.repositoryCustom = repositoryCustom;
+        this.teamRepository = teamRepository;
+        this.orgUnitRepository = orgUnitRepository;
+    }
+
+    @Override
+    public Assignment saveWithRelations(Assignment object) {
+        return repositoryCustom.save(object);
     }
 
     @Override

@@ -2,9 +2,10 @@ package org.nmcpye.datarun.drun.mongo.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.domain.Activity;
+import org.nmcpye.datarun.drun.mongo.domain.DataField;
 import org.nmcpye.datarun.drun.mongo.domain.DataForm;
 import org.nmcpye.datarun.drun.mongo.repository.DataFormRepositoryCustom;
-import org.nmcpye.datarun.drun.mongo.service.DataFormServiceCustom;
+import org.nmcpye.datarun.drun.mongo.service.DataFormService;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
@@ -33,11 +34,11 @@ import java.util.stream.Collectors;
 @Service
 @Primary
 @Transactional
-public class DataFormServiceCustomImpl
+public class DataFormServiceImpl
     extends IdentifiableMongoServiceImpl<DataForm>
-    implements DataFormServiceCustom {
+    implements DataFormService {
 
-    private final Logger log = LoggerFactory.getLogger(DataFormServiceCustomImpl.class);
+    private final Logger log = LoggerFactory.getLogger(DataFormServiceImpl.class);
 
     private final DataFormRepositoryCustom repositoryCustom;
 
@@ -47,7 +48,7 @@ public class DataFormServiceCustomImpl
 
     private final OrgUnitRelationalRepositoryCustom orgUnitRepository;
 
-    public DataFormServiceCustomImpl(DataFormRepositoryCustom repositoryCustom, ActivityRelationalRepositoryCustom activityRepository, AssignmentRelationalRepositoryCustom assignmentRepository, OrgUnitRelationalRepositoryCustom orgUnitRepository) {
+    public DataFormServiceImpl(DataFormRepositoryCustom repositoryCustom, ActivityRelationalRepositoryCustom activityRepository, AssignmentRelationalRepositoryCustom assignmentRepository, OrgUnitRelationalRepositoryCustom orgUnitRepository) {
         super(repositoryCustom);
         this.repositoryCustom = repositoryCustom;
         this.activityRepository = activityRepository;
@@ -55,8 +56,22 @@ public class DataFormServiceCustomImpl
         this.orgUnitRepository = orgUnitRepository;
     }
 
+    public void processFields(Set<DataField> fields, String parentPath) {
+        for (DataField field : fields) {
+            String currentPath = parentPath.isEmpty() ? field.getName() : parentPath + DataField.PATH_SEP + field.getName();
+            field.setPath(currentPath);
+            field.setSection(parentPath.isEmpty() ? null : parentPath);
+
+            // Recursively process nested sections
+            if (field.getType().isSectionType() && field.getFields() != null) {
+                processFields(field.getFields(), currentPath);
+            }
+        }
+    }
+
     @Override
     public DataForm saveWithRelations(DataForm dataForm) {
+        processFields(dataForm.getFields(), "");
         Activity activity = activityRepository.findByUid(dataForm.getActivity())
             .orElseThrow(() -> new PropertyNotFoundException("Activity not found: " + dataForm.getActivity()));
         dataForm.setActivity(activity.getUid());

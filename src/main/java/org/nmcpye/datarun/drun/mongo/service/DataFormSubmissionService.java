@@ -5,6 +5,6 @@ import org.nmcpye.datarun.drun.mongo.domain.DataFormSubmission;
 /**
  * Service Interface for managing {@link DataFormSubmission}.
  */
-public interface DataFormSubmissionServiceCustom
+public interface DataFormSubmissionService
     extends IdentifiableMongoService<DataFormSubmission> {
 }

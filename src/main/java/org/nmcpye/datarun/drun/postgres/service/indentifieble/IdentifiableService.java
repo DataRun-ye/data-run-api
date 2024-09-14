@@ -10,9 +10,7 @@ import java.util.Optional;
 public interface IdentifiableService<T extends IdentifiableObject<ID>,
     ID extends Serializable> {
 
-    default T saveWithRelations(T object) {
-        return save(object);
-    }
+    T saveWithRelations(T object);
 
     boolean existsById(ID id);
     boolean existsByUid(String uid);

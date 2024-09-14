@@ -94,11 +94,35 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
         return ResponseEntity.ok(summary);
     }
 
+    @PostMapping("/return")
+    public ResponseEntity<?> saveReturnSaved(@Valid @RequestBody T entity) {
+        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
+        saveEntity(entity, summary);
+        if (entity.getId() != null) {
+            return ResponseEntity.ok(entity);
+        }
+        return ResponseEntity.ok(summary);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<T> getActivityById(@PathVariable("id") ID id) {
         log.debug("REST request to get from {}: {}", getName(), id);
         Optional<T> activity = identifiableService.findOne(id).or(() -> identifiableService.findByUid(id.toString()));
         return ResponseUtil.wrapOrNotFound(activity);
+    }
+
+    void saveEntity(T entity, EntitySaveSummaryVM summary) {
+        try {
+            if (identifiableService.existsByUid(entity.getUid())) {
+                entity = identifiableService.update(entity);
+                summary.getUpdated().add(entity.getUid());
+            } else {
+                entity = identifiableService.save(entity);
+                summary.getCreated().add(entity.getUid());
+            }
+        } catch (Exception e) {
+            summary.getFailed().put(entity.getUid() + ':' + entity.getCode() + ':' + entity.getName(), e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
@@ -145,20 +169,6 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), entity.getId().toString()))
             .body(entity);
-    }
-
-    void saveEntity(T entity, EntitySaveSummaryVM summary) {
-        try {
-            if (identifiableService.existsByUid(entity.getUid())) {
-                identifiableService.update(entity);
-                summary.getUpdated().add(entity.getUid());
-            } else {
-                identifiableService.save(entity);
-                summary.getCreated().add(entity.getUid());
-            }
-        } catch (Exception e) {
-            summary.getFailed().put(entity.getUid(), e.getMessage());
-        }
     }
 
     protected abstract String getName();

@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.rest.mongo;
 
 import org.nmcpye.datarun.drun.mongo.domain.DataForm;
 import org.nmcpye.datarun.drun.mongo.repository.DataFormRepositoryCustom;
-import org.nmcpye.datarun.drun.mongo.service.DataFormServiceCustom;
+import org.nmcpye.datarun.drun.mongo.service.DataFormService;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -13,12 +13,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/custom/dataForms")
 public class DataFormResourceCustom extends AbstractMongoResource<DataForm> {
 
-    final DataFormServiceCustom dataFormServiceCustom;
+    final DataFormService dataFormService;
 
-    public DataFormResourceCustom(DataFormServiceCustom dataFormServiceCustom,
+    public DataFormResourceCustom(DataFormService dataFormService,
                                   DataFormRepositoryCustom dataFormRepositoryCustom) {
-        super(dataFormServiceCustom, dataFormRepositoryCustom);
-        this.dataFormServiceCustom = dataFormServiceCustom;
+        super(dataFormService, dataFormRepositoryCustom);
+        this.dataFormService = dataFormService;
     }
 
     @Override

@@ -44,9 +44,8 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
     @Column(name = "id")
     private Long id;
 
-    @NotNull
     @Size(max = 11)
-    @Column(name = "uid", length = 11, nullable = false, unique = true)
+    @Column(name = "uid", length = 11, unique = true)
     private String uid;
 
     @NotNull
@@ -338,6 +337,11 @@ public String getPath() {
 
     public void setUsers(Set<User> users) {
         this.users = users;
+    }
+
+    public Team users(Set<User> users) {
+        this.setUsers(users);
+        return this;
     }
 
     public Long getId() {

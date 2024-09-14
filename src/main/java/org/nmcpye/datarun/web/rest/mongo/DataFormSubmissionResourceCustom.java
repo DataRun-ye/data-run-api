@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.rest.mongo;
 
 import org.nmcpye.datarun.drun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.drun.mongo.repository.DataFormSubmissionRepositoryCustom;
-import org.nmcpye.datarun.drun.mongo.service.DataFormSubmissionServiceCustom;
+import org.nmcpye.datarun.drun.mongo.service.DataFormSubmissionService;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/custom/dataSubmissions")
 public class DataFormSubmissionResourceCustom extends AbstractMongoResource<DataFormSubmission> {
 
-    public DataFormSubmissionResourceCustom(DataFormSubmissionServiceCustom dataFormSubmissionServiceCustom,
+    public DataFormSubmissionResourceCustom(DataFormSubmissionService dataFormSubmissionService,
                                             DataFormSubmissionRepositoryCustom dataFormSubmissionRepositoryCustom) {
-        super(dataFormSubmissionServiceCustom, dataFormSubmissionRepositoryCustom);
+        super(dataFormSubmissionService, dataFormSubmissionRepositoryCustom);
     }
 
     @Override
