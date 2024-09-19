@@ -39,7 +39,7 @@ public abstract class IdentifiableMongoServiceImpl<T extends IdentifiableObject<
     }
 
     @Override
-    public Optional<T> findByCode(String code) {
+    public Optional<T> findOneByCode(String code) {
         return repository.findByCode(code);
     }
 

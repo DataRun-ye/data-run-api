@@ -10,7 +10,16 @@ import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCusto
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
+
+import java.util.Date;
+import java.util.List;
 
 /**
  * Service Implementation for managing {@link DataFormSubmission}.
@@ -23,21 +32,23 @@ public class DataFormSubmissionServiceImpl
 
     private final Logger log = LoggerFactory.getLogger(DataFormSubmissionServiceImpl.class);
 
-    private final DataFormSubmissionRepositoryCustom dataFormSubmissionRepository;
+    private final DataFormSubmissionRepositoryCustom repository;
     private final ActivityRelationalRepositoryCustom activityRepository;
     private final OrgUnitRelationalRepositoryCustom orgUnitRelationalRepositoryCustom;
     private final TeamRelationalRepositoryCustom teamRepository;
+    final private MongoTemplate mongoTemplate;
 
     public DataFormSubmissionServiceImpl(
-        DataFormSubmissionRepositoryCustom dataFormSubmissionRepository,
+        DataFormSubmissionRepositoryCustom repository,
         ActivityRelationalRepositoryCustom activityRepository,
         OrgUnitRelationalRepositoryCustom orgUnitRelationalRepositoryCustom,
-        TeamRelationalRepositoryCustom teamRepository) {
-        super(dataFormSubmissionRepository);
-        this.dataFormSubmissionRepository = dataFormSubmissionRepository;
+        TeamRelationalRepositoryCustom teamRepository, MongoTemplate mongoTemplate) {
+        super(repository);
+        this.repository = repository;
         this.activityRepository = activityRepository;
         this.orgUnitRelationalRepositoryCustom = orgUnitRelationalRepositoryCustom;
         this.teamRepository = teamRepository;
+        this.mongoTemplate = mongoTemplate;
     }
 
     @Override
@@ -59,6 +70,33 @@ public class DataFormSubmissionServiceImpl
                 });
 
 
-        return dataFormSubmissionRepository.save(dataFormSubmission);
+        return repository.save(dataFormSubmission);
+    }
+
+    @Override
+    public Page<DataFormSubmission> findAllByForm(List<String> forms, Pageable pageable) {
+        Query query = new Query(Criteria.where("form").in(forms));
+        List<DataFormSubmission> submissions = mongoTemplate.find(query, DataFormSubmission.class);
+
+        if (!pageable.isPaged()) {
+            return new PageImpl<>(submissions);
+        }
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), submissions.size());
+        if (start > end) {
+            return Page.empty(pageable);
+        }
+
+        List<DataFormSubmission> sublist = submissions.subList(start, end);
+        return new PageImpl<>(sublist, pageable, submissions.size());
+    }
+
+    @Override
+    public List<String> getTeamsAfterDate(Date createdDate) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("created_date").gte(createdDate));
+
+        return mongoTemplate.findDistinct(query, "team", "data_form_submission", String.class);
     }
 }

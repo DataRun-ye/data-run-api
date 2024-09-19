@@ -34,10 +34,21 @@ public interface OrgUnitRelationalRepositoryCustom
         value = "select distinct orgUnit from OrgUnit orgUnit " +
             "left join fetch orgUnit.parent " +
             "join orgUnit.assignments assignments " +
-            "where assignments.team.userInfo.login = ?#{authentication.name}",
+            "join assignments.team.users user " +
+            "where user.login = ?#{authentication.name}"
+    )
+    List<OrgUnit> findAllWithRelation();
+
+    @Query(
+        value = "select distinct orgUnit from OrgUnit orgUnit " +
+            "left join fetch orgUnit.parent " +
+            "join orgUnit.assignments assignments " +
+            "join assignments.team.users user " +
+            "where user.login = ?#{authentication.name}",
         countQuery = "select count(distinct orgUnit) from OrgUnit orgUnit " +
             "join orgUnit.assignments assignments " +
-            "where assignments.team.userInfo.login = ?#{authentication.name}"
+            "join assignments.team.users user " +
+            "where user.login = ?#{authentication.name}"
     )
     Page<OrgUnit> findAllWithEagerRelation(Pageable pageable);
 

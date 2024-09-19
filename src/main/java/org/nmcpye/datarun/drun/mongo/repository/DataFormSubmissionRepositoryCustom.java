@@ -29,4 +29,10 @@ public interface DataFormSubmissionRepositoryCustom
 
     @Query("{'id': ?0, 'team.userInfo.login' : ?#{authentication.name}}")
     Optional<DataFormSubmission> findOneWithEagerRelationshipsByUser(String id);
+
+    @Query("{'form': ?0}")
+    Page<DataFormSubmission> findAllByForm(String form, Pageable pageable);
+
+    List<DataFormSubmission> findAllByTeamIn(List<String> teams);
+
 }

@@ -49,13 +49,18 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of assignments in body.
      */
     @GetMapping("")
-    public ResponseEntity<PagedResponse<T>> getAllByCurrentUser(@ParameterObject Pageable pageable,
-                                                                @RequestParam(name = "paging", required = false, defaultValue = "true") boolean paging,
-                                                                @RequestParam(name = "eagerload", required = false, defaultValue = "true") boolean eagerload) {
+    public ResponseEntity<PagedResponse<T>> getAllFiltered(@ParameterObject Pageable pageable,
+                                                           @RequestParam(name = "paging", required = false, defaultValue = "true") boolean paging,
+                                                           @RequestParam(name = "eagerload", required = false, defaultValue = "true") boolean eagerload) {
         if (!paging) {
             pageable = Pageable.unpaged();
         }
         Page<T> page = getList(pageable, eagerload);
+        PagedResponse<T> response = initPageResponse(paging, page);
+        return ResponseEntity.ok(response);
+    }
+
+    protected PagedResponse<T> initPageResponse(boolean paging, Page<T> page) {
         PagedResponse<T> response = new PagedResponse<>();
         response.setPaging(paging);
         response.setPage(page.getNumber());
@@ -65,7 +70,7 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
         response.setItems(page.getContent());
         response.setNextPage(createNextPageLink(page));
         response.setEntityName(getName());
-        return ResponseEntity.ok(response);
+        return response;
     }
 
     private String createNextPageLink(Page<?> page) {

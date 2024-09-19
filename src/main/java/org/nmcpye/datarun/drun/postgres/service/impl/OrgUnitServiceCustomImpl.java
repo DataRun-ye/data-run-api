@@ -64,8 +64,11 @@ public class OrgUnitServiceCustomImpl
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repositoryCustom.findAll(pageable);
         }
+//        final List<OrgUnit> userOrgUnits = repositoryCustom
+//            .findAssignedWithEagerRelation();
         final List<OrgUnit> userOrgUnits = repositoryCustom
-            .findAssignedWithEagerRelation();
+            .findAllWithRelation();
+
         final Set<String> uids = userOrgUnits
             .stream()
             .flatMap(orgUnit -> orgUnit.getAncestorUids(null).stream())

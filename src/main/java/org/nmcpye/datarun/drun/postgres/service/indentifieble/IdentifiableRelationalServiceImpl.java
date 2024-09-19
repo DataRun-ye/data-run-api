@@ -41,7 +41,7 @@ public abstract class IdentifiableRelationalServiceImpl<T extends IdentifiableOb
     }
 
     @Override
-    public Optional<T> findByCode(String code) {
+    public Optional<T> findOneByCode(String code) {
         return repository.findByCode(code);
     }
 

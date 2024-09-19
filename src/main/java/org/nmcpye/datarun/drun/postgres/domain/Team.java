@@ -331,6 +331,7 @@ public String getPath() {
     //////////////////
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     public Set<User> getUsers() {
         return users;
     }
@@ -477,6 +478,7 @@ public String getPath() {
         return this;
     }
 
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     public Activity getActivity() {
         return this.activity;
     }
@@ -503,6 +505,7 @@ public String getPath() {
         return this;
     }
 
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     public User getUserInfo() {
         return this.userInfo;
     }

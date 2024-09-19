@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -8,6 +9,7 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.domain.AbstractAuditingEntity;
 import org.nmcpye.datarun.domain.Activity;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;
@@ -43,15 +45,18 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"project"}, allowSetters = true)
+//    @JsonIgnoreProperties(value = {"project"}, allowSetters = true)
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     private Activity activity;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     private OrgUnit orgUnit;
 
     @ManyToOne(optional = false)
     @NotNull
-    @JsonIgnoreProperties(value = {"activity", "operationRoom", "warehouse", "userInfo", "assignments"}, allowSetters = true)
+//    @JsonIgnoreProperties(value = {"activity", "operationRoom", "warehouse", "userInfo", "assignments"}, allowSetters = true)
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     private Team team;
 
     public Long getId() {

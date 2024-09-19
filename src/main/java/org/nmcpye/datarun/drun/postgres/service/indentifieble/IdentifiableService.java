@@ -17,7 +17,7 @@ public interface IdentifiableService<T extends IdentifiableObject<ID>,
 
     Optional<T> findByUid(String uid);
 
-    Optional<T> findByCode(String code);
+    Optional<T> findOneByCode(String code);
 
     void deleteByUid(String uid);
 

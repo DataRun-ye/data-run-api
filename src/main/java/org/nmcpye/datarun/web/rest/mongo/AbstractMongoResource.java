@@ -7,8 +7,8 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @RequestMapping("/api/custom")
-public abstract class AbstractMongoResource
-    <T extends IdentifiableObject<String>> extends AbstractResource<T, String> {
+public abstract class AbstractMongoResource<T extends IdentifiableObject<String>>
+    extends AbstractResource<T, String> {
 
     protected AbstractMongoResource(IdentifiableMongoService<T> identifiableService,
                                     MongoRepository<T, String> repository) {

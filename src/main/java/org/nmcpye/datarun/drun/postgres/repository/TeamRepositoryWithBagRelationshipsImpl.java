@@ -45,6 +45,8 @@ public class TeamRepositoryWithBagRelationshipsImpl
         List<Team> teams = entityManager
             .createQuery(
                 "select team from Team team " +
+                    "left join fetch team.activity " +
+                    "left join fetch team.users users " +
                     "where team.path is null or team.hierarchyLevel is null",
                 Team.class
             )

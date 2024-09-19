@@ -78,7 +78,7 @@ public class DataFormServiceImpl
 
         Set<String> orgUnitUids = dataForm.getOrgUnits(); // Extract from JSON
 
-        List<OrgUnit> validOrgUnits = orgUnitRepository.findAllByUidIn(orgUnitUids);
+        Set<OrgUnit> validOrgUnits = orgUnitRepository.findAllByUidIn(orgUnitUids);
 
         Set<String> foundOrgUnitUids = validOrgUnits.stream()
             .map(OrgUnit::getUid)
@@ -126,7 +126,7 @@ public class DataFormServiceImpl
         }
 
         List<Assignment> assignments = assignmentRepository
-            .findAllByStatusAndUser(false, pageable)
+            .findAllByStatusUser(false)
             .stream()
             .toList();
 
@@ -147,12 +147,13 @@ public class DataFormServiceImpl
             .flatMap(uid -> repositoryCustom.findAllByActivity(uid).stream())
             .filter(Objects::nonNull)
             .peek(dataForm -> {
-                Set<String> filteredOrgUnits = dataForm.getOrgUnits()
-                    .stream()
-                    .filter((orgUnit) ->
-                        orgUnitsUidsByActivity.get(dataForm.getActivity()).contains(orgUnit))
-                    .collect(Collectors.toSet());
-                dataForm.setOrgUnits(filteredOrgUnits);
+//                Set<String> filteredOrgUnits =
+//                    dataForm.getOrgUnits()
+//                    .stream()
+//                    .filter((orgUnit) ->
+//                        orgUnitsUidsByActivity.get(dataForm.getActivity()).contains(orgUnit))
+//                    .collect(Collectors.toSet());
+                dataForm.setOrgUnits(orgUnitsUidsByActivity.get(dataForm.getActivity()));
             })
             .collect(Collectors.toList());
 

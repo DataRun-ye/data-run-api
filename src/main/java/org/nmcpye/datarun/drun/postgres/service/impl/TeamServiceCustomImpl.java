@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
@@ -15,7 +16,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Primary
@@ -42,6 +46,10 @@ public class TeamServiceCustomImpl
             parent = findParent(parent);
             object.setParent(parent);
         }
+
+        Set<Long> usersUids = object.getUsers().stream().map(User::getId).collect(Collectors.toSet());
+        Set<User> users = new HashSet<>(userRepository.findAllById(usersUids));
+        object.setUsers(users);
 
         return repositoryCustom.save(object);
     }

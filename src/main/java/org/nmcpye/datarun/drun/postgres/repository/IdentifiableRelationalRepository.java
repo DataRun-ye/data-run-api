@@ -5,8 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.NoRepositoryBean;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @NoRepositoryBean
 public interface IdentifiableRelationalRepository<T extends IdentifiableObject<Long>>
@@ -15,7 +15,7 @@ public interface IdentifiableRelationalRepository<T extends IdentifiableObject<L
 
     Optional<T> findByCode(String uid);
 
-    List<T> findAllByUidIn(Collection<String> uids);
+    Set<T> findAllByUidIn(Collection<String> uids);
 
-    List<T> findAllByCodeIn(Collection<String> codes);
+    Set<T> findAllByCodeIn(Collection<String> codes);
 }

@@ -23,6 +23,8 @@ public interface TeamRelationalRepositoryCustom
     extends TeamRepositoryWithBagRelationships,
     IdentifiableRelationalRepository<Team>, JpaSpecificationExecutor<Team> {
 
+    Optional<Team> findTeamByCodeAndActivityCode(String code, String activityCode);
+
     default Page<Team> findAllByUser(Pageable pageable) {
         if (!SecurityUtils.isAuthenticated()) {
             return Page.empty(pageable);
@@ -66,10 +68,11 @@ public interface TeamRelationalRepositoryCustom
         value = "select team from Team team " +
             "left join team.activity " +
             "left join team.warehouse " +
-            "left join team.userInfo " +
-            "where team.userInfo.login = ?#{authentication.name}",
+            "left join team.users user " +
+            "where user.login = ?#{authentication.name}",
         countQuery = "select count(team) from Team team " +
-            "where team.userInfo.login = ?#{authentication.name}"
+            "left join team.users user " +
+            "where user.login = ?#{authentication.name}"
     )
     List<Team> findAllWithEagerRelation();
 
@@ -100,8 +103,8 @@ public interface TeamRelationalRepositoryCustom
         "select team from Team team " +
             "left join fetch team.activity " +
             "left join fetch team.warehouse " +
-            "left join fetch team.userInfo " +
-            "where team.id =:id and team.userInfo.login = ?#{authentication.name}"
+            "left join team.users user " +
+            "where team.id =:id and user.login = ?#{authentication.name}"
     )
     Optional<Team> findOneWithToOneRelationshipsByUser(@Param("id") Long id);
 }

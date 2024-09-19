@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -30,9 +31,12 @@ public interface AssignmentRelationalRepositoryCustom
             "left join assignment.activity " +
             "left join assignment.orgUnit " +
             "left join assignment.team " +
-            "where assignment.activity.uid =:activityUid and assignment.team.userInfo.login = ?#{authentication.name}",
-        countQuery = "select count(assignment) from Assignment assignment " +
-            "where assignment.team.userInfo.login = ?#{authentication.name}"
+            "join assignment.team.users user " +
+            "where assignment.activity.uid =:activityUid and user.login = ?#{authentication.name}",
+        countQuery = "select count(assignment) " +
+            "from Assignment assignment " +
+            "join assignment.team.users user " +
+            "where user.login = ?#{authentication.name}"
     )
     Page<Assignment> findAllByActivityAndUser(String activityUid, Pageable pageable);
 
@@ -41,9 +45,11 @@ public interface AssignmentRelationalRepositoryCustom
             "left join fetch assignment.activity " +
             "left join fetch assignment.orgUnit " +
             "left join fetch assignment.team " +
-            "where assignment.team.userInfo.login = ?#{authentication.name}",
+            "join assignment.team.users user " +
+            "where user.login = ?#{authentication.name}",
         countQuery = "select count(assignment) from Assignment assignment " +
-            "where assignment.team.userInfo.login = ?#{authentication.name}"
+            "join assignment.team.users user " +
+            "where user.login = ?#{authentication.name}"
     )
     Page<Assignment> findAllByUser(Pageable pageable);
 
@@ -52,40 +58,58 @@ public interface AssignmentRelationalRepositoryCustom
             "left join fetch assignment.activity " +
             "left join fetch assignment.orgUnit " +
             "left join fetch assignment.team " +
+            "join assignment.team.users user " +
             "where assignment.activity.disabled =:disabled and " +
-            "assignment.team.disabled =:disabled and assignment.team.userInfo.login = ?#{authentication.name}",
-        countQuery = "select count(assignment) from Assignment assignment " +
-            "where assignment.activity.disabled =:disabled and " +
-            "assignment.team.disabled =:disabled and assignment.team.userInfo.login = ?#{authentication.name}"
+            "assignment.team.disabled =:disabled and user.login = ?#{authentication.name}"
     )
-    Page<Assignment> findAllByStatusAndUser(@Param("disabled") boolean disabled, Pageable pageable);
+    List<Assignment> findAllByStatusUser(@Param("disabled") boolean disabled);
+
 
     @Query(
         value = "select assignment from Assignment assignment " +
             "left join fetch assignment.activity " +
             "left join fetch assignment.orgUnit " +
             "left join fetch assignment.team " +
-            "where assignment.team.userInfo.login = ?#{authentication.name}",
+            "join assignment.team.users user " +
+            "where assignment.activity.disabled =:disabled and " +
+            "assignment.team.disabled =:disabled and user.login = ?#{authentication.name}",
         countQuery = "select count(assignment) from Assignment assignment " +
-            "where assignment.team.userInfo.login = ?#{authentication.name}"
+            "join assignment.team.users user " +
+            "where assignment.activity.disabled =:disabled and " +
+            "assignment.team.disabled =:disabled and user.login = ?#{authentication.name}"
+    )
+    Page<Assignment> findAllByStatusAndUser(@Param("disabled") boolean disabled, Pageable pageable);
+
+    @Query(
+        value = "select assignment from Assignment assignment " +
+            "left join assignment.activity " +
+            "left join assignment.orgUnit " +
+            "left join assignment.team " +
+            "join assignment.team.users user " +
+            "where user.login = ?#{authentication.name}",
+        countQuery = "select count(assignment) from Assignment assignment " +
+            "join assignment.team.users user " +
+            "where user.login = ?#{authentication.name}"
     )
     Page<Assignment> findAllWithToOneRelationshipsByUser(Pageable pageable);
 
     @Query(
         "select assignment from Assignment assignment " +
-            "left join fetch assignment.activity " +
-            "left join fetch assignment.orgUnit " +
-            "left join fetch assignment.team " +
-            "where assignment.id =:id and assignment.team.userInfo.login = ?#{authentication.name}"
+            "left join assignment.activity " +
+            "left join assignment.orgUnit " +
+            "left join assignment.team " +
+            "join assignment.team.users user " +
+            "where assignment.id =:id and user.login = ?#{authentication.name}"
     )
     Optional<Assignment> findOneWithToOneRelationshipsByUser(@Param("id") Long id);
 
     @Query(
         "select assignment from Assignment assignment " +
-            "left join fetch assignment.activity " +
-            "left join fetch assignment.orgUnit " +
-            "left join fetch assignment.team " +
-            "where assignment.uid =:uid and assignment.team.userInfo.login = ?#{authentication.name}"
+            "left join assignment.activity " +
+            "left join assignment.orgUnit " +
+            "left join assignment.team " +
+            "join assignment.team.users user " +
+            "where assignment.uid =:uid and user.login = ?#{authentication.name}"
     )
     Optional<Assignment> findOneWithToOneRelationshipsByUser(@Param("uid") String uid);
 }

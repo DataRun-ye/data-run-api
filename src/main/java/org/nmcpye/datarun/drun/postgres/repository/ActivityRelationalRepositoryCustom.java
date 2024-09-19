@@ -24,13 +24,13 @@ public interface ActivityRelationalRepositoryCustom
         value = "select activity from Activity activity " +
             "join Assignment assignment on assignment.activity = activity " +
             "join Team team on assignment.team = team " +
-            "join User user on team.userInfo = user " +
-            "where user.login = ?#{authentication.name}",
+            "join assignment.team.users u " +
+            "where u.login = ?#{authentication.name}",
         countQuery = "select count(activity) from Activity activity " +
             "join Assignment assignment on assignment.activity = activity " +
             "join Team team on assignment.team = team " +
-            "join User user on team.userInfo = user " +
-            "where user.login = ?#{authentication.name}"
+            "join assignment.team.users u " +
+            "where u.login = ?#{authentication.name}"
     )
     Page<Activity> findAllByUser(Pageable pageable);
 
