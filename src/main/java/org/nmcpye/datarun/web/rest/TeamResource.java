@@ -28,8 +28,8 @@ import java.util.Optional;
 /**
  * REST controller for managing {@link Team}.
  */
-@RestController
-@RequestMapping("/api/teams")
+//@RestController
+//@RequestMapping("/api/teams")
 public class TeamResource {
 
     private static final Logger log = LoggerFactory.getLogger(TeamResource.class);

@@ -2,11 +2,6 @@ package org.nmcpye.datarun.web.rest;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.repository.ActivityRepository;
 import org.nmcpye.datarun.service.ActivityService;
@@ -24,11 +19,17 @@ import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.PaginationUtil;
 import tech.jhipster.web.util.ResponseUtil;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
 /**
  * REST controller for managing {@link org.nmcpye.datarun.domain.Activity}.
  */
-@RestController
-@RequestMapping("/api/activities")
+//@RestController
+//@RequestMapping("/api/activities")
 public class ActivityResource {
 
     private static final Logger log = LoggerFactory.getLogger(ActivityResource.class);

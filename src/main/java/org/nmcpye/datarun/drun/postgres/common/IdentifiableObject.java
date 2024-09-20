@@ -43,6 +43,8 @@ public interface IdentifiableObject<ID>
 
     String getName();
 
+    String getCreatedBy();
+
     String getDisplayName();
 
     default Set<Translation> getTranslations() {

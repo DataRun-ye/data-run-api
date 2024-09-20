@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.HeaderUtil;
@@ -56,13 +57,14 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
             pageable = Pageable.unpaged();
         }
         Page<T> page = getList(pageable, eagerload);
-        PagedResponse<T> response = initPageResponse(paging, page);
+        PagedResponse<T> response = initPageResponse(page, paging, false);
         return ResponseEntity.ok(response);
     }
 
-    protected PagedResponse<T> initPageResponse(boolean paging, Page<T> page) {
+    protected PagedResponse<T> initPageResponse(Page<T> page, boolean paging, boolean flatten) {
         PagedResponse<T> response = new PagedResponse<>();
         response.setPaging(paging);
+        response.setFlatten(flatten);
         response.setPage(page.getNumber());
         response.setPageCount(page.getTotalPages());
         response.setTotal(page.getTotalElements());
@@ -73,7 +75,7 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
         return response;
     }
 
-    private String createNextPageLink(Page<?> page) {
+    protected String createNextPageLink(Page<?> page) {
         if (page.hasNext()) {
             return ServletUriComponentsBuilder.fromCurrentRequest()
                 .queryParam("page", page.getNumber() + 2) // page is 0-based, but we display it 1-based
@@ -85,6 +87,7 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
 
     @PostMapping("/bulk")
     public ResponseEntity<EntitySaveSummaryVM> saveAll(@Valid @RequestBody List<T> entities) {
+        log.debug("REST request to saveAll all {}", getName());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         for (T entity : entities) {
             saveEntity(entity, summary);
@@ -126,11 +129,13 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
                 summary.getCreated().add(entity.getUid());
             }
         } catch (Exception e) {
+            log.debug("REST Error Saving submission {}: {}", e.toString(), entity.getCreatedBy());
             summary.getFailed().put(entity.getUid() + ':' + entity.getCode() + ':' + entity.getName(), e.getMessage());
         }
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteActivityByIdUid(@PathVariable("id") ID id) {
         log.debug("REST request to delete from {}: {}", getName(), id);
         identifiableService.findOne(id).ifPresent(repository::delete);
@@ -150,6 +155,7 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<T> updateEntity(
         @PathVariable(value = "id", required = false) final ID id,
         @Valid @RequestBody T entity

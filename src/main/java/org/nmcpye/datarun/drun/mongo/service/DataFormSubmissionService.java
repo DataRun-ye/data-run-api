@@ -13,6 +13,8 @@ import java.util.List;
 public interface DataFormSubmissionService
     extends IdentifiableMongoService<DataFormSubmission> {
 
+    DataFormSubmission saveVersioning(DataFormSubmission submission);
+
     Page<DataFormSubmission> findAllByForm(List<String> forms, Pageable pageable);
 
     List<String> getTeamsAfterDate(Date createdDate);

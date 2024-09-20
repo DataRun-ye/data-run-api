@@ -28,8 +28,8 @@ import java.util.Optional;
 /**
  * REST controller for managing {@link Assignment}.
  */
-@RestController
-@RequestMapping("/api/assignments")
+//@RestController
+//@RequestMapping("/api/assignments")
 public class AssignmentResource {
 
     private final Logger log = LoggerFactory.getLogger(AssignmentResource.class);

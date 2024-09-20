@@ -7,6 +7,7 @@ import java.util.List;
 @JsonSerialize(using = DynamicFieldSerializer.class)
 public class PagedResponse<T> {
     private boolean paging;
+    private boolean flatten;
     private int page;
     private int pageCount;
     private long total;
@@ -79,5 +80,13 @@ public class PagedResponse<T> {
 
     public void setPaging(boolean paging) {
         this.paging = paging;
+    }
+
+    public boolean isFlatten() {
+        return flatten;
+    }
+
+    public void setFlatten(boolean flatten) {
+        this.flatten = flatten;
     }
 }

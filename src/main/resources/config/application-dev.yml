@@ -32,17 +32,17 @@ spring:
       indent-output: true
   data:
     mongodb:
-      uri: mongodb://drunuser:Dedo881*@api.nmcpye.org:27017/dRunMongoDb
-#      uri: mongodb://dataRunApi:dataRunApi@localhost:27017/dataRunApi
+#      uri: mongodb://drunuser:Dedo881*@api.nmcpye.org:27017/dRunMongoDb
+      uri: mongodb://dataRunApi:dataRunApi@localhost:27017/dataRunApi
       auto-index-creation: true
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-#    url: jdbc:postgresql://localhost:5432/dataRunApi
-    url: jdbc:postgresql://api.nmcpye.org:5432/nmcpdb
-#    username: dataRunApi
-    username: nmcpdb
-#    password: dataRunApi
-    password: Dedo881*
+    url: jdbc:postgresql://localhost:5432/dataRunApi
+#    url: jdbc:postgresql://api.nmcpye.org:5432/nmcpdb
+    username: dataRunApi
+#    username: nmcpdb
+    password: dataRunApi
+#    password: Dedo881*
 
     hikari:
       poolName: Hikari

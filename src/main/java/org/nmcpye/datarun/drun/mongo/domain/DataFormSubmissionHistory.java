@@ -3,7 +3,6 @@ package org.nmcpye.datarun.drun.mongo.domain;
 import jakarta.validation.constraints.Size;
 import org.nmcpye.datarun.domain.enumeration.SyncableStatus;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -15,9 +14,9 @@ import java.util.Map;
 /**
  * A DataFormSubmission.
  */
-@Document(collection = "data_form_submission")
+@Document(collection = "data_form_submission_history")
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataFormSubmission
+public class DataFormSubmissionHistory
     extends AbstractAuditingEntityMongo<String> implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -25,22 +24,17 @@ public class DataFormSubmission
     @Id
     private String id;
 
+    private String dataSubmissionId;  // Link to the main document
+
     @Size(max = 11)
     @Field("uid")
-    @Indexed(unique = true, name = "data_submission_uid")
     private String uid;
+
+
+    private int version;
 
     @Field("deleted")
     private Boolean deleted;
-
-    @Field("start_entry_time")
-    private Instant startEntryTime;
-
-    @Field("finished_entry_time")
-    private Instant finishedEntryTime;
-
-    @Field("status")
-    private SyncableStatus status;
 
     private String form;
 
@@ -50,11 +44,24 @@ public class DataFormSubmission
 
     private String orgUnit;
 
+    @Field("status")
+    private SyncableStatus status;
+
     private Map<String, Object> formData = new HashMap<String, Object>();
 
-    @Field("current_version")
-    private int version;  // Reference to the latest version in the version history collection
+    private Instant timestamp;
 
+    public DataFormSubmissionHistory(DataFormSubmission existingDataSubmissionId,  Instant timestamp) {
+        this.dataSubmissionId = existingDataSubmissionId.getId();
+        this.uid = existingDataSubmissionId.getUid();
+        this.form = existingDataSubmissionId.getForm();
+        this.activity = existingDataSubmissionId.getActivity();
+        this.orgUnit = existingDataSubmissionId.getOrgUnit();
+        this.team = existingDataSubmissionId.getTeam();
+        this.formData = existingDataSubmissionId.getFormData();
+        this.status = existingDataSubmissionId.getStatus();
+        this.version = existingDataSubmissionId.getVersion();
+    }
     public Map<String, Object> getFormData() {
         return formData;
     }
@@ -67,7 +74,7 @@ public class DataFormSubmission
         return this.id;
     }
 
-    public DataFormSubmission id(String id) {
+    public DataFormSubmissionHistory id(String id) {
         this.setId(id);
         return this;
     }
@@ -80,7 +87,7 @@ public class DataFormSubmission
         return this.uid;
     }
 
-    public DataFormSubmission uid(String uid) {
+    public DataFormSubmissionHistory uid(String uid) {
         this.setUid(uid);
         return this;
     }
@@ -98,7 +105,7 @@ public class DataFormSubmission
         return this.deleted;
     }
 
-    public DataFormSubmission deleted(Boolean deleted) {
+    public DataFormSubmissionHistory deleted(Boolean deleted) {
         this.setDeleted(deleted);
         return this;
     }
@@ -107,37 +114,11 @@ public class DataFormSubmission
         this.deleted = deleted;
     }
 
-    public Instant getStartEntryTime() {
-        return this.startEntryTime;
-    }
-
-    public DataFormSubmission startEntryTime(Instant startEntryTime) {
-        this.setStartEntryTime(startEntryTime);
-        return this;
-    }
-
-    public void setStartEntryTime(Instant startEntryTime) {
-        this.startEntryTime = startEntryTime;
-    }
-
-    public Instant getFinishedEntryTime() {
-        return this.finishedEntryTime;
-    }
-
-    public DataFormSubmission finishedEntryTime(Instant finishedEntryTime) {
-        this.setFinishedEntryTime(finishedEntryTime);
-        return this;
-    }
-
-    public void setFinishedEntryTime(Instant finishedEntryTime) {
-        this.finishedEntryTime = finishedEntryTime;
-    }
-
     public SyncableStatus getStatus() {
         return this.status;
     }
 
-    public DataFormSubmission status(SyncableStatus status) {
+    public DataFormSubmissionHistory status(SyncableStatus status) {
         this.setStatus(status);
         return this;
     }
@@ -154,7 +135,7 @@ public class DataFormSubmission
         this.form = dataForm;
     }
 
-    public DataFormSubmission form(String dataForm) {
+    public DataFormSubmissionHistory form(String dataForm) {
         this.setForm(dataForm);
         return this;
     }
@@ -167,7 +148,7 @@ public class DataFormSubmission
         this.activity = activity;
     }
 
-    public DataFormSubmission activity(String activity) {
+    public DataFormSubmissionHistory activity(String activity) {
         this.setActivity(activity);
         return this;
     }
@@ -180,7 +161,7 @@ public class DataFormSubmission
         this.team = team;
     }
 
-    public DataFormSubmission team(String team) {
+    public DataFormSubmissionHistory team(String team) {
         this.setTeam(team);
         return this;
     }
@@ -193,7 +174,7 @@ public class DataFormSubmission
         this.orgUnit = orgUnit;
     }
 
-    public DataFormSubmission assignment(String assignment) {
+    public DataFormSubmissionHistory assignment(String assignment) {
         this.setOrgUnit(assignment);
         return this;
     }
@@ -206,10 +187,10 @@ public class DataFormSubmission
         if (this == o) {
             return true;
         }
-        if (!(o instanceof DataFormSubmission)) {
+        if (!(o instanceof DataFormSubmissionHistory)) {
             return false;
         }
-        return getId() != null && getId().equals(((DataFormSubmission) o).getId());
+        return getId() != null && getId().equals(((DataFormSubmissionHistory) o).getId());
     }
 
     @Override
@@ -225,8 +206,6 @@ public class DataFormSubmission
             "id=" + getId() +
             ", uid='" + getUid() + "'" +
             ", deleted='" + getDeleted() + "'" +
-            ", startEntryTime='" + getStartEntryTime() + "'" +
-            ", finishedEntryTime='" + getFinishedEntryTime() + "'" +
             ", status='" + getStatus() + "'" +
             "}";
     }
@@ -237,5 +216,13 @@ public class DataFormSubmission
 
     public void setVersion(int version) {
         this.version = version;
+    }
+
+    public String getDataSubmissionId() {
+        return dataSubmissionId;
+    }
+
+    public void setDataSubmissionId(String dataSubmissionId) {
+        this.dataSubmissionId = dataSubmissionId;
     }
 }
