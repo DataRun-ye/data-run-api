@@ -3,6 +3,7 @@ package org.nmcpye.datarun.web.rest.mongo;
 import org.nmcpye.datarun.drun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.drun.mongo.repository.DataFormSubmissionRepositoryCustom;
 import org.nmcpye.datarun.drun.mongo.service.DataFormSubmissionService;
+import org.nmcpye.datarun.drun.mongo.service.submissionmigration.JsonFlattener;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -33,9 +34,10 @@ public class DataFormSubmissionResourceCustom
 
     @GetMapping("/form")
     public ResponseEntity<PagedResponse<Map<String, Object>>> getByForm(
-        @RequestParam(name = "filter", required = false) String filter,
         @ParameterObject Pageable pageable,
         @RequestParam(name = "paging", required = false, defaultValue = "true") boolean paging,
+        @RequestParam(name = "filter", required = false) String filter,
+        @RequestParam(name = "sn", required = false) Long sn,
         @RequestParam(name = "flatten", required = false, defaultValue = "true") boolean flatten) {
 
         // Handle pageable unpaged condition
@@ -43,11 +45,18 @@ public class DataFormSubmissionResourceCustom
             pageable = Pageable.unpaged();
         }
 
-        // Fetch submissions based on filter or all submissions
         Page<DataFormSubmission> submissionsPage;
         if (filter != null) {
-            submissionsPage = ((DataFormSubmissionService) identifiableService)
-                .findAllByForm(List.of(filter), pageable);
+            if (sn != null) {
+                submissionsPage = ((DataFormSubmissionService) identifiableService)
+                    .findSubmissionsBySerialNumber(sn,
+                        filter, pageable);
+
+            } else {
+                submissionsPage = ((DataFormSubmissionService) identifiableService)
+                    .findAllByForm(List.of(filter), pageable);
+            }
+
         } else {
             submissionsPage = identifiableService.findAllByUser(pageable);
         }
@@ -65,6 +74,36 @@ public class DataFormSubmissionResourceCustom
         return ResponseEntity.ok(response);
     }
 
+//    @GetMapping("/bySerialNumber")
+//    public ResponseEntity<PagedResponse<Map<String, Object>>> getSubmissionsBySerialNumber(
+//        @RequestParam(name = "serialNumber") Long serialNumber,
+//        @ParameterObject Pageable pageable,
+//        @RequestParam(name = "filter", required = false) String filter,
+//        @RequestParam(name = "paging", required = false, defaultValue = "true") boolean paging,
+//        @RequestParam(name = "flatten", required = false, defaultValue = "true") boolean flatten) {
+//
+//        Page<DataFormSubmission> submissionsPage;
+//
+//        if (!paging) {
+//            pageable = Pageable.unpaged();
+//        }
+//
+//        submissionsPage = ((DataFormSubmissionService) identifiableService)
+//            .findSubmissionsBySerialNumber(serialNumber,
+//                filter, pageable);
+//
+//        List<Map<String, Object>> processedSubmissions = submissionsPage.getContent()
+//            .stream()
+//            .map(submission -> processSubmission(submission, flatten))
+//            .collect(Collectors.toList());
+//
+//        PagedResponse<Map<String, Object>> response = buildPagedResponse(
+//            submissionsPage, processedSubmissions, "results");
+//
+//        return ResponseEntity.ok(response);
+//
+//    }
+
     /**
      * Processes a DataFormSubmission object into a map and optionally flattens form data.
      *
@@ -76,7 +115,8 @@ public class DataFormSubmissionResourceCustom
         // Initialize data map with basic fields
         Map<String, Object> data = new HashMap<>();
         data.put("id", submission.getId());
-        data.put("uid", submission.getUid());
+        data.put("submissionUid", submission.getUid());
+        data.put("sn", submission.getSerialNumber());
         data.put("deleted", submission.getDeleted());
         data.put("form", submission.getForm());
         data.put("version", submission.getVersion());

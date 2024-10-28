@@ -1,6 +1,9 @@
 package org.nmcpye.datarun.web.rest.common;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
+import org.nmcpye.datarun.drun.common.IdentifiableRepository;
 import org.nmcpye.datarun.drun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableService;
@@ -19,9 +22,11 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -34,12 +39,22 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
     protected String applicationName;
 
     final protected IdentifiableService<T, ID> identifiableService;
-    final protected CrudRepository<T, ID> repository;
+    final protected IdentifiableRepository<T, ID> repository;
 
     protected AbstractResource(IdentifiableService<T, ID> identifiableService,
-                               CrudRepository<T, ID> repository) {
+                               IdentifiableRepository<T, ID> repository) {
         this.identifiableService = identifiableService;
         this.repository = repository;
+    }
+
+    protected CrudRepository<T, ID> getRepository() {
+        return repository;
+    }
+
+    protected Map<String, Object> parseFilter(String filter) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(filter, new TypeReference<Map<String, Object>>() {
+        });
     }
 
     /**
@@ -50,9 +65,11 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of assignments in body.
      */
     @GetMapping("")
-    public ResponseEntity<PagedResponse<T>> getAllFiltered(@ParameterObject Pageable pageable,
-                                                           @RequestParam(name = "paging", required = false, defaultValue = "true") boolean paging,
-                                                           @RequestParam(name = "eagerload", required = false, defaultValue = "true") boolean eagerload) {
+    protected ResponseEntity<PagedResponse<T>> getAllFiltered(@ParameterObject Pageable pageable,
+                                                              @RequestParam(name = "paging", required = false, defaultValue = "true") boolean paging,
+                                                              @RequestParam(name = "flatten", required = false, defaultValue = "true") boolean flatten,
+                                                              @RequestParam(name = "eagerload", required = false, defaultValue = "true") boolean eagerload,
+                                                              @RequestParam(required = false) Map<String, Object> query) {
         if (!paging) {
             pageable = Pageable.unpaged();
         }
@@ -147,10 +164,6 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
 
 
     protected Page<T> getList(Pageable pageable, boolean eagerload) {
-//        if (eagerload) {
-//            return identifiableService.findAllWithEagerRelationships(pageable);
-//        }
-//        return identifiableService.findAll(pageable);
         return identifiableService.findAllByUser(pageable);
     }
 

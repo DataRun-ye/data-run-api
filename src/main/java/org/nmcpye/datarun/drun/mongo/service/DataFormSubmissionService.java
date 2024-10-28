@@ -17,5 +17,7 @@ public interface DataFormSubmissionService
 
     Page<DataFormSubmission> findAllByForm(List<String> forms, Pageable pageable);
 
+    Page<DataFormSubmission> findSubmissionsBySerialNumber(Long serialNumber, String form, Pageable pageable);
+
     List<String> getTeamsAfterDate(Date createdDate);
 }

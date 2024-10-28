@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.service.indentifieble;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.nmcpye.datarun.drun.common.IdentifiableSpecifications;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.repository.IdentifiableRelationalRepository;
 import org.nmcpye.datarun.utils.CodeGenerator;
@@ -8,12 +9,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Transactional
 public abstract class IdentifiableRelationalServiceImpl<T extends IdentifiableObject<Long>>
+    extends IdentifiableSpecifications<T>
     implements IdentifiableRelationalService<T> {
 
     private static final Logger log = LoggerFactory.getLogger(IdentifiableRelationalServiceImpl.class);
@@ -25,33 +29,57 @@ public abstract class IdentifiableRelationalServiceImpl<T extends IdentifiableOb
     }
 
     @Override
+    public Page<T> findAll(Specification<T> spec, Pageable pageable) {
+        return repository.findAll(spec, pageable);
+    }
+
+    @Override
+    public List<T> findAll(Specification<T> spec) {
+        return repository.findAll(spec);
+    }
+
+    @Override
+    public Optional<T> findOne(Specification<T> spec) {
+        return repository.findOne(spec);
+    }
+
+    @Override
+    public Optional<T> findIdentifiable(IdentifiableObject<Long> identifiableObject) {
+        var spec = hasUid(identifiableObject.getUid())
+            .or(hasId(identifiableObject.getId()))
+            .or(hasCode(identifiableObject.getCode()));
+        return repository.findOne(spec);
+    }
+
+    @Override
     public boolean existsByUid(String uid) {
-        return repository.findByUid(uid).isPresent();
+        return repository.exists(hasUid(uid));
     }
 
     @Override
     public boolean existsById(Long id) {
-        return repository.findById(id).isPresent();
+        return repository.exists(hasId(id));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<T> findByUid(String uid) {
-        return repository.findByUid(uid);
+        return repository.findOne(hasUid(uid));
     }
 
     @Override
     public Optional<T> findOneByCode(String code) {
-        return repository.findByCode(code);
+        return repository.findOne(hasCode(code));
     }
 
     @Override
     public void deleteByUid(String uid) {
-        repository.findByUid(uid).ifPresent(repository::delete);
+        repository.findOne(hasUid(uid)).ifPresent(repository::delete);
     }
 
     @Override
     public T save(T object) {
+        log.debug("Request to save Identifiable T : {}", object.getName());
         if (object.getUid() == null || object.getUid().isEmpty()) {
             object.setUid(CodeGenerator.generateUid());
         }
@@ -66,14 +94,12 @@ public abstract class IdentifiableRelationalServiceImpl<T extends IdentifiableOb
     @SuppressWarnings("unchecked")
     @Override
     public T update(T object) {
-        T existingEntity = repository
-            .findByUid(object.getUid())
+        log.debug("Request to update T : {}", object);
+        T existingEntity = findIdentifiable(object)
             .orElseThrow(() -> new EntityNotFoundException("Entity not found with UID: " + object.getUid()));
 
-        log.debug("Request to update T : {}", object);
-        //            T updatedEntity = existingEntity.get();
         object.setId(existingEntity.getId());
-        // Update fields
+
         object.setIsPersisted();
         return saveWithRelations(object);
     }

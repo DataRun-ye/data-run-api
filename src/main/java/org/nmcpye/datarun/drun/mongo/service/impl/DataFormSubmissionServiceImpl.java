@@ -11,7 +11,7 @@ import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCu
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.web.rest.mongo.JsonFlattener;
+import org.nmcpye.datarun.utils.CodeGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
@@ -24,8 +24,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Service Implementation for managing {@link DataFormSubmission}.
@@ -44,12 +43,13 @@ public class DataFormSubmissionServiceImpl
     private final OrgUnitRelationalRepositoryCustom orgUnitRelationalRepositoryCustom;
     private final TeamRelationalRepositoryCustom teamRepository;
     final private MongoTemplate mongoTemplate;
+    private final SequenceGeneratorService sequenceGeneratorService;
 
     public DataFormSubmissionServiceImpl(
         DataFormSubmissionRepositoryCustom repository, DataFormSubmissionHistoryRepository historyRepository,
         ActivityRelationalRepositoryCustom activityRepository,
         OrgUnitRelationalRepositoryCustom orgUnitRelationalRepositoryCustom,
-        TeamRelationalRepositoryCustom teamRepository, MongoTemplate mongoTemplate) {
+        TeamRelationalRepositoryCustom teamRepository, MongoTemplate mongoTemplate, SequenceGeneratorService sequenceGeneratorService) {
         super(repository);
         this.repository = repository;
         this.historyRepository = historyRepository;
@@ -57,6 +57,7 @@ public class DataFormSubmissionServiceImpl
         this.orgUnitRelationalRepositoryCustom = orgUnitRelationalRepositoryCustom;
         this.teamRepository = teamRepository;
         this.mongoTemplate = mongoTemplate;
+        this.sequenceGeneratorService = sequenceGeneratorService;
     }
 
     @Override
@@ -80,7 +81,9 @@ public class DataFormSubmissionServiceImpl
     }
 
     @Override
-    public DataFormSubmission saveWithRelations(DataFormSubmission dataFormSubmission) {
+    public DataFormSubmission saveWithRelations(DataFormSubmission newSubmission) {
+        final DataFormSubmission dataFormSubmission = createSubmission(newSubmission);
+
         activityRepository.findByUid(dataFormSubmission.getActivity())
             .ifPresentOrElse((a) -> dataFormSubmission.setActivity(a.getUid()),
                 () -> {
@@ -97,19 +100,22 @@ public class DataFormSubmissionServiceImpl
                     throw new PropertyNotFoundException("OrgUnit not found: " + dataFormSubmission.getOrgUnit());
                 });
 
-        return repository.save(dataFormSubmission);
 //        return saveVersioning(dataFormSubmission);
+        return repository.save(dataFormSubmission);
+    }
+
+    @Override
+    public Page<DataFormSubmission> findSubmissionsBySerialNumber(Long serialNumber, String form, Pageable pageable) {
+        if (form != null) {
+            return repository.findBySerialNumberGreaterThanAndForm(serialNumber, form, pageable);
+        }
+        return repository.findBySerialNumberGreaterThan(serialNumber, pageable);
     }
 
     @Override
     public Page<DataFormSubmission> findAllByForm(List<String> forms, Pageable pageable) {
         Query query = new Query(Criteria.where("form").in(forms));
         List<DataFormSubmission> submissions = mongoTemplate.find(query, DataFormSubmission.class);
-
-//        if (flatten) {
-//            List<DataFormSubmission> flattenSubmissions = flattenSubmissions(submissions, false);
-//            return getDataFormSubmissions(pageable, flattenSubmissions);
-//        }
 
         return getDataFormSubmissions(pageable, submissions);
     }
@@ -128,21 +134,6 @@ public class DataFormSubmissionServiceImpl
         }
         return Page.empty(pageable);
     }
-
-    private List<DataFormSubmission> flattenSubmissions(List<DataFormSubmission> submissions, boolean includingArrays) {
-        return submissions
-            .stream()
-            .peek(submission -> {
-                if (includingArrays) {
-                    submission.setFormData(JsonFlattener.flattenIncludingArrays(submission.getFormData()));
-                } else {
-                    submission.setFormData(JsonFlattener.flatten(submission.getFormData()));
-                }
-
-            })
-            .toList();
-    }
-
 
     private static Page<DataFormSubmission> getDataFormSubmissions(Pageable pageable, List<DataFormSubmission> submissions) {
         if (!pageable.isPaged()) {
@@ -165,5 +156,61 @@ public class DataFormSubmissionServiceImpl
         query.addCriteria(Criteria.where("created_date").gte(createdDate));
 
         return mongoTemplate.findDistinct(query, "team", "data_form_submission", String.class);
+    }
+
+    /// temp solution
+    public DataFormSubmission createSubmission(DataFormSubmission submission) {
+
+        Map<String, Object> formData = submission.getFormData();
+
+        // Automatically add group indices to any arrays of objects inside formData
+        Map<String, Object> updatedFormData = addGroupIndicesToFormData(formData);
+        submission.setFormData(updatedFormData);
+
+        if (submission.getSerialNumber() == null) {
+            // Generate a unique serial number for new submissions
+            long serialNumber = sequenceGeneratorService.getNextSequence("dataFormSubmissionId");
+            submission.setSerialNumber(serialNumber);
+        }
+
+        return submission;
+    }
+
+
+    private Map<String, Object> addGroupIndicesToFormData(Map<String, Object> formData) {
+        Map<String, Object> updatedFormData = new HashMap<>();
+        final Object parentId = formData.getOrDefault("uid",
+            CodeGenerator.generateUid() + "_" + CodeGenerator.generateCode(11));
+        formData.putIfAbsent("uid", parentId);
+
+        for (Map.Entry<String, Object> entry : formData.entrySet()) {
+            Object value = entry.getValue();
+
+            // If it's an array of objects, add group indices
+            if (value instanceof List) {
+                List<?> list = (List<?>) value;
+                if (!list.isEmpty() && list.get(0) instanceof Map) {
+                    List<Map<String, Object>> updatedList = new ArrayList<>();
+                    for (int i = 0; i < list.size(); i++) {
+                        Map<String, Object> objectInArray = (Map<String, Object>) list.get(i);
+                        objectInArray.put("repeatIndex", i + 1);  // Add groupIndex (starting from 1)
+                        objectInArray.putIfAbsent("repeatUid", CodeGenerator.generateUid() + "_" + CodeGenerator.generateCode(3));  // Add groupIndex (starting from 1)
+                        objectInArray.putIfAbsent("parentUid", parentId);  // Add groupIndex (starting from 1)
+                        updatedList.add(objectInArray);
+                    }
+                    updatedFormData.put(entry.getKey(), updatedList);
+                } else {
+                    // If it's not an array of objects, just copy as is
+                    updatedFormData.put(entry.getKey(), list);
+                }
+            } else if (value instanceof Map) {
+                // If it's a nested map, recursively process it
+                updatedFormData.put(entry.getKey(), addGroupIndicesToFormData((Map<String, Object>) value));
+            } else {
+                // If it's a simple value, just copy as is
+                updatedFormData.put(entry.getKey(), value);
+            }
+        }
+        return updatedFormData;
     }
 }

@@ -62,6 +62,9 @@ public class DataForm
     @Field("options")
     private Set<DataOption> options = new HashSet<>();
 
+    @Field("option_sets")
+    private Set<OptionSet> optionSets = new HashSet<>();
+
     @Field("orgUnits")
 //    @JsonSerialize(using = OrgUnitUidsSetSerializer.class)
     private Set<String> orgUnits = new HashSet<>();
@@ -69,15 +72,13 @@ public class DataForm
 
     private Map<String, String> label;
 
-//    private Set<DataFormInstance> formInstances = new HashSet<>();
+    public Set<OptionSet> getOptionSets() {
+        return optionSets;
+    }
 
-//    public Set<DataFormInstance> getFormInstances() {
-//        return formInstances;
-//    }
-//
-//    public void setFormInstances(Set<DataFormInstance> formInstances) {
-//        this.formInstances = formInstances;
-//    }
+    public void setOptionSets(Set<OptionSet> optionSets) {
+        this.optionSets = optionSets;
+    }
 
     public void setLabel(Map<String, String> label) {
         this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));

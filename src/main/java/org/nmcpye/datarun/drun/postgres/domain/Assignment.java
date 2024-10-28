@@ -19,7 +19,9 @@ import java.time.Instant;
  * A Assignment.
  */
 @Entity
-@Table(name = "assignment")
+@Table(name = "assignment", uniqueConstraints = {
+    @UniqueConstraint(name = "uc_assignment_activity_id", columnNames = {"activity_id", "orgUnit_id", "team_id"})
+})
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @JsonIgnoreProperties(value = {"new"})
 @SuppressWarnings("common-java:DuplicatedBlocks")

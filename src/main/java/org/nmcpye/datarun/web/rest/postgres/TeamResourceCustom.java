@@ -1,14 +1,20 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
+import org.nmcpye.datarun.drun.common.TeamSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
+import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.exception.PathUpdateException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 
 /**
@@ -28,6 +34,17 @@ public class TeamResourceCustom extends AbstractRelationalResource<Team> {
         super(serviceCustom, repositoryCustom);
         this.serviceCustom = serviceCustom;
         this.repositoryCustom = repositoryCustom;
+    }
+
+    @Override
+    protected Specification<Team> buildSpecification(Map<String, Object> params) {
+        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+            return super.buildSpecification(params);
+        } else if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
+            return null;
+        }
+        return super.buildSpecification(params)
+            .and(TeamSpecifications.hasUser(SecurityUtils.getCurrentUserLogin().get()));
     }
 
     @Override

@@ -28,7 +28,9 @@ import java.util.*;
  * A Team.
  */
 @Entity
-@Table(name = "team")
+@Table(name = "team", uniqueConstraints = {
+    @UniqueConstraint(name = "uc_team_code_activity_id", columnNames = {"code", "activity_id"})
+})
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @JsonIgnoreProperties(value = { "new" })
 @SuppressWarnings("common-java:DuplicatedBlocks")

@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.drun.postgres.repository.specification;
+package org.nmcpye.datarun.drun.common;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -9,6 +9,14 @@ import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.springframework.data.jpa.domain.Specification;
 
 public class TeamSpecifications {
+
+    public static Specification<Team> hasLevel(Integer level) {
+        return (root, query, criteriaBuilder) -> level == null ? null : criteriaBuilder.equal(root.get("level"), level);
+    }
+
+    public static Specification<Team> hasParent(String parent) {
+        return (root, query, criteriaBuilder) -> parent == null ? null : criteriaBuilder.equal(root.get("parent"), parent);
+    }
 
     public static Specification<Team> isNotDisabled() {
         return (root, query, criteriaBuilder) -> {

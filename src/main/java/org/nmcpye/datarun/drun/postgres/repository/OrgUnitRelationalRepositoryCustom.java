@@ -16,7 +16,8 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @Repository
 public interface OrgUnitRelationalRepositoryCustom
-    extends OrgUnitRepositoryWithBagRelationships, IdentifiableRelationalRepository<OrgUnit> {
+    extends OrgUnitRepositoryWithBagRelationships,
+    IdentifiableRelationalRepository<OrgUnit> {
 
     default Page<OrgUnit> findAssignedWithEagerRelation(Pageable pageable) {
         return this.fetchBagRelationships(this.findAllWithEagerRelation(pageable));

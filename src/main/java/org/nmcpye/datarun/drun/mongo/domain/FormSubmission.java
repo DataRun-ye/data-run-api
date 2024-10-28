@@ -17,7 +17,7 @@ import java.util.Map;
  */
 @Document(collection = "data_form_submission")
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataFormSubmission
+public class FormSubmission
     extends AbstractAuditingEntityMongo<String> implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -55,17 +55,6 @@ public class DataFormSubmission
     @Field("current_version")
     private int version;  // Reference to the latest version in the version history collection
 
-//    @Indexed(unique = true)
-    Long serialNumber;
-
-    public Long getSerialNumber() {
-        return serialNumber;
-    }
-
-    public void setSerialNumber(Long serialNumber) {
-        this.serialNumber = serialNumber;
-    }
-
     public Map<String, Object> getFormData() {
         return formData;
     }
@@ -78,7 +67,7 @@ public class DataFormSubmission
         return this.id;
     }
 
-    public DataFormSubmission id(String id) {
+    public FormSubmission id(String id) {
         this.setId(id);
         return this;
     }
@@ -91,7 +80,7 @@ public class DataFormSubmission
         return this.uid;
     }
 
-    public DataFormSubmission uid(String uid) {
+    public FormSubmission uid(String uid) {
         this.setUid(uid);
         return this;
     }
@@ -109,7 +98,7 @@ public class DataFormSubmission
         return this.deleted;
     }
 
-    public DataFormSubmission deleted(Boolean deleted) {
+    public FormSubmission deleted(Boolean deleted) {
         this.setDeleted(deleted);
         return this;
     }
@@ -122,7 +111,7 @@ public class DataFormSubmission
         return this.startEntryTime;
     }
 
-    public DataFormSubmission startEntryTime(Instant startEntryTime) {
+    public FormSubmission startEntryTime(Instant startEntryTime) {
         this.setStartEntryTime(startEntryTime);
         return this;
     }
@@ -135,7 +124,7 @@ public class DataFormSubmission
         return this.finishedEntryTime;
     }
 
-    public DataFormSubmission finishedEntryTime(Instant finishedEntryTime) {
+    public FormSubmission finishedEntryTime(Instant finishedEntryTime) {
         this.setFinishedEntryTime(finishedEntryTime);
         return this;
     }
@@ -148,7 +137,7 @@ public class DataFormSubmission
         return this.status;
     }
 
-    public DataFormSubmission status(SyncableStatus status) {
+    public FormSubmission status(SyncableStatus status) {
         this.setStatus(status);
         return this;
     }
@@ -165,7 +154,7 @@ public class DataFormSubmission
         this.form = dataForm;
     }
 
-    public DataFormSubmission form(String dataForm) {
+    public FormSubmission form(String dataForm) {
         this.setForm(dataForm);
         return this;
     }
@@ -178,7 +167,7 @@ public class DataFormSubmission
         this.activity = activity;
     }
 
-    public DataFormSubmission activity(String activity) {
+    public FormSubmission activity(String activity) {
         this.setActivity(activity);
         return this;
     }
@@ -191,7 +180,7 @@ public class DataFormSubmission
         this.team = team;
     }
 
-    public DataFormSubmission team(String team) {
+    public FormSubmission team(String team) {
         this.setTeam(team);
         return this;
     }
@@ -204,7 +193,7 @@ public class DataFormSubmission
         this.orgUnit = orgUnit;
     }
 
-    public DataFormSubmission assignment(String assignment) {
+    public FormSubmission assignment(String assignment) {
         this.setOrgUnit(assignment);
         return this;
     }
@@ -217,10 +206,10 @@ public class DataFormSubmission
         if (this == o) {
             return true;
         }
-        if (!(o instanceof DataFormSubmission)) {
+        if (!(o instanceof FormSubmission)) {
             return false;
         }
-        return getId() != null && getId().equals(((DataFormSubmission) o).getId());
+        return getId() != null && getId().equals(((FormSubmission) o).getId());
     }
 
     @Override

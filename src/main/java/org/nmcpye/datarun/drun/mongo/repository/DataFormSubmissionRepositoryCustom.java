@@ -18,6 +18,13 @@ import java.util.Optional;
 public interface DataFormSubmissionRepositoryCustom
     extends IdentifiableMongoRepository<DataFormSubmission> {
 
+    @Query("{ 'serialNumber' : { $exists: false } }")
+    List<DataFormSubmission> findBySerialNumberNull();
+
+    Page<DataFormSubmission> findBySerialNumberGreaterThan(Long serialNumber, Pageable pageable);
+
+    Page<DataFormSubmission> findBySerialNumberGreaterThanAndForm(Long serialNumber, String form, Pageable pageable);
+
     @Query("{ 'team.userInfo.login' : ?#{authentication.name} }")
     Page<DataFormSubmission> findAllByUser(Pageable pageable);
 

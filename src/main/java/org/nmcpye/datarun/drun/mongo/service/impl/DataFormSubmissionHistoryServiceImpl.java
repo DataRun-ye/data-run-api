@@ -4,7 +4,7 @@ import org.nmcpye.datarun.drun.mongo.domain.DataFormSubmissionHistory;
 import org.nmcpye.datarun.drun.mongo.repository.DataFormSubmissionHistoryRepository;
 import org.nmcpye.datarun.drun.mongo.repository.DataFormSubmissionRepositoryCustom;
 import org.nmcpye.datarun.drun.mongo.service.DataFormSubmissionHistoryService;
-import org.nmcpye.datarun.web.rest.mongo.JsonFlattener;
+import org.nmcpye.datarun.drun.mongo.service.submissionmigration.JsonFlattener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;

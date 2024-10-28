@@ -1,4 +1,6 @@
-package org.nmcpye.datarun.web.rest.mongo;
+package org.nmcpye.datarun.drun.mongo.service.submissionmigration;
+
+import org.nmcpye.datarun.utils.CodeGenerator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,38 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 public class JsonFlattener {
-
-    public static Map<String, Object> flattenIncludingArrays(Map<String, Object> data) {
-        return flattenMapIncludingArrays(null, data, new HashMap<>());
-    }
-
-    private static Map<String, Object> flattenMapIncludingArrays(String parentKey, Map<String, Object> map, Map<String, Object> result) {
-        for (Map.Entry<String, Object> entry : map.entrySet()) {
-            String key = parentKey != null ? parentKey + "/" + entry.getKey() : entry.getKey();
-            Object value = entry.getValue();
-
-            if (value instanceof Map) {
-                // Recursively flatten objects
-                flattenMapIncludingArrays(key, (Map<String, Object>) value, result);
-            } else if (value instanceof Iterable) {
-                // Keep arrays as is, but flatten objects inside arrays
-                int index = 0;
-                for (Object item : (Iterable<?>) value) {
-                    if (item instanceof Map) {
-                        // Flatten objects inside arrays
-                        flattenMapIncludingArrays(key + "[" + index + "]", (Map<String, Object>) item, result);
-                    } else {
-                        result.put(key + "[" + index + "]", item);
-                    }
-                    index++;
-                }
-            } else {
-                // Add non-object value to result map
-                result.put(key, value);
-            }
-        }
-        return result;
-    }
 
     // Method to flatten objects, but not flatten arrays themselves, only objects within arrays
     public static Map<String, Object> flatten(Map<String, Object> data) {
@@ -69,6 +39,7 @@ public class JsonFlattener {
             if (item instanceof Map) {
                 // Flatten objects inside the array and add them to the result array
                 Map<String, Object> flattenedItem = new HashMap<>();
+                flattenedItem.putIfAbsent("group_uid", CodeGenerator.generateUid());
                 flattenMap(parentKey, (Map<String, Object>) item, flattenedItem);
                 flattenedArray.add(flattenedItem);
             } else if (item instanceof Iterable) {
@@ -80,5 +51,39 @@ public class JsonFlattener {
             }
         }
         return flattenedArray;
+    }
+
+    ///
+
+    public static Map<String, Object> flattenIncludingArrays(Map<String, Object> data) {
+        return flattenMapIncludingArrays(null, data, new HashMap<>());
+    }
+
+    private static Map<String, Object> flattenMapIncludingArrays(String parentKey, Map<String, Object> map, Map<String, Object> result) {
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            String key = parentKey != null ? parentKey + "/" + entry.getKey() : entry.getKey();
+            Object value = entry.getValue();
+
+            if (value instanceof Map) {
+                // Recursively flatten objects
+                flattenMapIncludingArrays(key, (Map<String, Object>) value, result);
+            } else if (value instanceof Iterable) {
+                // Keep arrays as is, but flatten objects inside arrays
+                int index = 0;
+                for (Object item : (Iterable<?>) value) {
+                    if (item instanceof Map) {
+                        // Flatten objects inside arrays
+                        flattenMapIncludingArrays(key + "[" + index + "]", (Map<String, Object>) item, result);
+                    } else {
+                        result.put(key + "[" + index + "]", item);
+                    }
+                    index++;
+                }
+            } else {
+                // Add non-object value to result map
+                result.put(key, value);
+            }
+        }
+        return result;
     }
 }

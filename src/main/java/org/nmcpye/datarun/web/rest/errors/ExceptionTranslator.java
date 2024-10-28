@@ -80,6 +80,9 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
     private ProblemDetailWithCause getProblemDetailWithCause(Throwable ex) {
         if (
+            ex instanceof RequestQueryParsingException
+        ) return (ProblemDetailWithCause) new RequestQueryParsingException().getBody();
+        if (
             ex instanceof UsernameAlreadyUsedException
         ) return (ProblemDetailWithCause) new LoginAlreadyUsedException().getBody();
         if (
