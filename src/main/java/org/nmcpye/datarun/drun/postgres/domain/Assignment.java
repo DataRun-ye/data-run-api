@@ -46,12 +46,12 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
     private boolean isPersisted;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne//(fetch = FetchType.LAZY)
 //    @JsonIgnoreProperties(value = {"project"}, allowSetters = true)
     @JsonSerialize(contentAs = IdentifiableObject.class)
     private Activity activity;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne//(fetch = FetchType.LAZY)
     @JsonSerialize(contentAs = IdentifiableObject.class)
     private OrgUnit orgUnit;
 

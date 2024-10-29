@@ -4,20 +4,19 @@ import jakarta.validation.constraints.Size;
 import lombok.Value;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.util.Set;
 
 /**
- * DTO for {@link org.nmcpye.datarun.domain.Activity}
+ * DTO for {@link org.nmcpye.datarun.domain.Project}
  */
 @Value
-public class ActivityDto implements Serializable {
+public class ProjectDto implements Serializable {
     Long id;
     @Size(max = 11)
     String uid;
     String code;
     String name;
-    Instant startDate;
-    Instant endDate;
     Boolean disabled;
-    Boolean deleteClientData;
+    Set<ActivityDto> activities;
+
 }

@@ -1,12 +1,14 @@
 package org.nmcpye.datarun.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.drun.postgres.common.BaseIdentifiableObject;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;
@@ -61,7 +63,8 @@ public class Activity extends BaseIdentifiableObject<Long> implements Serializab
 
     @ManyToOne(optional = false)
     @NotNull
-    @JsonIgnoreProperties(value = { "activities" }, allowSetters = true)
+//    @JsonIgnoreProperties(value = { "activities" }, allowSetters = true)
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     private Project project;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here

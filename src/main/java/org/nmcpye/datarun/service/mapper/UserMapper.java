@@ -1,7 +1,5 @@
 package org.nmcpye.datarun.service.mapper;
 
-import java.util.*;
-import java.util.stream.Collectors;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -11,9 +9,12 @@ import org.nmcpye.datarun.service.dto.AdminUserDTO;
 import org.nmcpye.datarun.service.dto.UserDTO;
 import org.springframework.stereotype.Service;
 
+import java.util.*;
+import java.util.stream.Collectors;
+
 /**
  * Mapper for the entity {@link User} and its DTO called {@link UserDTO}.
- *
+ * <p>
  * Normal mappers are generated using MapStruct, this one is hand-coded as MapStruct
  * support is still in beta, and requires a manual step with an IDE.
  */
@@ -121,7 +122,10 @@ public class UserMapper {
     @Named("login")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
+    @Mapping(target = "uid", source = "uid")
     @Mapping(target = "login", source = "login")
+    @Mapping(target = "name", source = "name")
+    @Mapping(target = "mobile", source = "mobile")
     public UserDTO toDtoLogin(User user) {
         if (user == null) {
             return null;
@@ -129,6 +133,8 @@ public class UserMapper {
         UserDTO userDto = new UserDTO();
         userDto.setId(user.getId());
         userDto.setLogin(user.getLogin());
+        userDto.setMobile(user.getMobile());
+        userDto.setName(user.getName());
         return userDto;
     }
 

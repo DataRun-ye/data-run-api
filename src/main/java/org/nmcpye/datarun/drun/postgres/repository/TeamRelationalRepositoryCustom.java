@@ -78,7 +78,6 @@ public interface TeamRelationalRepositoryCustom
     @Query(
         value = "select team from Team team " +
             "left join fetch team.activity " +
-            "left join fetch team.activity " +
             "left join team.users u " +
             "where u.login = ?#{authentication.name}",
         countQuery = "select count(team) from Team team " +

@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
@@ -63,13 +62,14 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "orgUnit")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"orgUnit"}, allowSetters = true)
+//    @JsonIgnoreProperties(value = {"orgUnit"}, allowSetters = true)
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     private Set<Assignment> assignments = new HashSet<>();
 
     @ManyToOne//(fetch = FetchType.LAZY)
     @JsonProperty
-    @JsonIgnoreProperties(value = {"parent", "assignments", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
-//    @JsonSerialize(as = IdentifiableObject.class)
+//    @JsonIgnoreProperties(value = {"parent", "assignments", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonSerialize(as = IdentifiableObject.class)
     private OrgUnit parent;
 
 //    @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")

@@ -18,6 +18,7 @@ import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.domain.Warehouse;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableObjectUtils;
+import org.nmcpye.datarun.service.dto.UserDTO;
 import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;
@@ -70,7 +71,8 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
     private boolean isPersisted;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "project" }, allowSetters = true)
+//    @JsonIgnoreProperties(value = { "project" }, allowSetters = true)
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     private Activity activity;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -84,6 +86,7 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
     @JoinTable(name = "team_user",
         joinColumns = @JoinColumn(name = "team_id"),
         inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @JsonSerialize(as = UserDTO.class)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<User> users = new HashSet<>();
 

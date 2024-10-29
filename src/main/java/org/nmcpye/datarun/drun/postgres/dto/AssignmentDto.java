@@ -5,23 +5,18 @@ import jakarta.validation.constraints.Size;
 import lombok.Value;
 
 import java.io.Serializable;
-import java.util.Set;
 
 /**
- * DTO for {@link org.nmcpye.datarun.drun.postgres.domain.Team}
+ * DTO for {@link org.nmcpye.datarun.drun.postgres.domain.Assignment}
  */
 @Value
-public class TeamDto implements Serializable {
+public class AssignmentDto implements Serializable {
     Long id;
     @Size(max = 11)
     String uid;
     @NotNull
-    String code;
-    String name;
-    String description;
-    Boolean disabled;
-    Boolean deleteClientData;
     ActivityDto activity;
-    Set<UserDto> users;
-    Long parentId;
+    OrgUnitDto orgUnit;
+    @NotNull
+    TeamDto team;
 }

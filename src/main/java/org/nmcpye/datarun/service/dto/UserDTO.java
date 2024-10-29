@@ -1,19 +1,22 @@
 package org.nmcpye.datarun.service.dto;
 
-import java.io.Serializable;
-import java.util.Objects;
 import org.nmcpye.datarun.domain.User;
 
+import java.io.Serializable;
+import java.util.Objects;
+
 /**
- * A DTO representing a user, with only the public attributes.
+ * DTO for {@link org.nmcpye.datarun.domain.User}
  */
 public class UserDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     private Long id;
-
+    private String uid;
     private String login;
+    private String name;
+    private String mobile;
 
     public UserDTO() {
         // Empty constructor needed for Jackson.
@@ -22,7 +25,34 @@ public class UserDTO implements Serializable {
     public UserDTO(User user) {
         this.id = user.getId();
         // Customize it here if you need, or not, firstName/lastName/etc
+        this.uid = user.getUid();
         this.login = user.getLogin();
+        this.name = user.getName();
+        this.mobile = user.getMobile();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
+
+    public String getMobile() {
+        return mobile;
+    }
+
+    public void setMobile(String mobile) {
+        this.mobile = mobile;
     }
 
     public Long getId() {

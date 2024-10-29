@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
@@ -11,10 +12,13 @@ import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.config.Constants;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
+import org.nmcpye.datarun.drun.postgres.domain.Team;
 
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
 
@@ -27,6 +31,19 @@ import java.util.Set;
 public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
+
+    @ManyToMany(mappedBy = "users")
+    @JsonSerialize(contentAs = IdentifiableObject.class)
+    private Set<Team> teams = new LinkedHashSet<>();
+
+    public Set<Team> getTeams() {
+        return teams;
+    }
+
+    public void setTeams(Set<Team> teams) {
+        this.teams = teams;
+    }
 
     @Size(max = 11)
     @Column(name = "uid", length = 11, unique = true)
