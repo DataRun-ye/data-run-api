@@ -7,18 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public interface IdentifiableObject<ID>
-    extends Comparable<IdentifiableObject<ID>> {
-
-    void setId(ID id);
-
-    ID getId();
-
-    /**
-     * @return external unique ID of the object as used in the RESTful API
-     */
-    String getUid();
-
-    void setUid(String uid);
+    extends Identifiable<ID>, Comparable<IdentifiableObject<ID>> {
 
     default String getCode() {
         return null;
@@ -55,28 +44,4 @@ public interface IdentifiableObject<ID>
     default IdentifiableObject<Long> setIsPersisted() {
         return null;
     }
-
-//    default String getName() {
-//        return null;
-//    }
-//
-//    default void setName(String name) {
-//
-//    }
-
-//    String getCreatedBy();
-//
-//    void setCreatedBy(String createdBy);
-//
-//    Instant getCreatedDate();
-//
-//    void setCreatedDate(Instant createdDate);
-//
-//    String getLastModifiedBy();
-//
-//    void setLastModifiedBy(String lastModifiedBy);
-//
-//    Instant getLastModifiedDate();
-//
-//    void setLastModifiedDate(Instant lastModifiedDate);
 }

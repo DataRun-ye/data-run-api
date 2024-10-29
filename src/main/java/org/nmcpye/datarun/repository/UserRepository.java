@@ -30,6 +30,7 @@ public interface UserRepository extends IdentifiableRelationalRepository<User> {
 
     Optional<User> findOneByEmailIgnoreCase(String email);
 
+    @EntityGraph(attributePaths = "authorities")
     Optional<User> findOneByLogin(String login);
 
     @EntityGraph(attributePaths = "authorities")

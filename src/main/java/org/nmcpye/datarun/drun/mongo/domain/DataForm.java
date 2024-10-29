@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -69,8 +70,15 @@ public class DataForm
 //    @JsonSerialize(using = OrgUnitUidsSetSerializer.class)
     private Set<String> orgUnits = new HashSet<>();
 
+    @DBRef
+    @Field("assignments")
+    private final Set<AssignmentMongo> assignments = new HashSet<>();
 
     private Map<String, String> label;
+
+    public Set<AssignmentMongo> getAssignments() {
+        return assignments;
+    }
 
     public Set<OptionSet> getOptionSets() {
         return optionSets;

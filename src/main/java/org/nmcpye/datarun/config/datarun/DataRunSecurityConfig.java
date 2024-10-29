@@ -2,12 +2,10 @@ package org.nmcpye.datarun.config.datarun;
 
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -77,8 +75,8 @@ public class DataRunSecurityConfig {
                         .accessDeniedHandler(new BearerTokenAccessDeniedHandler())
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(withDefaults())).addFilterBefore(
-                new CustomBasicAuthenticationFilter
-                    (authenticationManagerBuilder.getObject()), UsernamePasswordAuthenticationFilter.class)
+                new CustomUsernamePasswordAuthenticationFilter
+                    (/*authenticationManagerBuilder.getObject()*/), UsernamePasswordAuthenticationFilter.class)
             .httpBasic(Customizer.withDefaults());
         return http.build();
     }

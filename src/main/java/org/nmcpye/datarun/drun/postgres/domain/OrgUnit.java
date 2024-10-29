@@ -56,26 +56,112 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
 //    private OuLevel level;
 
     @JsonIgnore
-//    @JsonProperty(value = "level", access = JsonProperty.Access.READ_ONLY)
     @Column(name = "level")
     private Integer hierarchyLevel;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "orgUnit")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-//    @JsonIgnoreProperties(value = {"orgUnit"}, allowSetters = true)
     @JsonSerialize(contentAs = IdentifiableObject.class)
     private Set<Assignment> assignments = new HashSet<>();
 
     @ManyToOne//(fetch = FetchType.LAZY)
     @JsonProperty
-//    @JsonIgnoreProperties(value = {"parent", "assignments", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     @JsonSerialize(as = IdentifiableObject.class)
     private OrgUnit parent;
 
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
-//    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-//    @JsonSerialize(contentAs = IdentifiableObject.class)
-//    private Set<OrgUnit> children = new HashSet<>();
+    @ManyToMany(mappedBy = "members")
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    @JsonSerialize(contentAs = IdentifiableObject.class)
+    private Set<OrgUnitGroup> groups = new HashSet<>();
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    @JsonSerialize(contentAs = IdentifiableObject.class)
+    private Set<OrgUnit> children = new HashSet<>();
+
+    @PreRemove
+    private void removeOuGroupsFromOu() {
+        for (OrgUnitGroup g : groups) {
+            g.getMembers().remove(this);
+        }
+        if (parent != null) {
+            parent.getChildren().remove(this);
+        }
+    }
+
+    public void removeOrganisationUnitGroup(OrgUnitGroup organisationUnitGroup) {
+        groups.remove(organisationUnitGroup);
+        organisationUnitGroup.getMembers().remove(this);
+    }
+
+    public void removeAllOrganisationUnitGroups() {
+        for (OrgUnitGroup organisationUnitGroup : groups) {
+            organisationUnitGroup.getMembers().remove(this);
+        }
+
+        groups.clear();
+    }
+
+    public void updateParent(OrgUnit newParent) {
+        if (this.parent != null && this.parent.getChildren() != null) {
+            this.parent.getChildren().remove(this);
+        }
+
+        this.parent = newParent;
+
+        newParent.getChildren().add(this);
+    }
+
+    public Set<OrgUnit> getChildren() {
+        return this.children;
+    }
+
+    public void setChildren(Set<OrgUnit> organisationUnits) {
+        this.children = organisationUnits;
+    }
+
+    public OrgUnit children(Set<OrgUnit> organisationUnits) {
+        this.setChildren(organisationUnits);
+        return this;
+    }
+
+    public OrgUnit addChildren(OrgUnit organisationUnit) {
+        this.children.add(organisationUnit);
+        organisationUnit.setParent(this);
+        return this;
+    }
+
+    public OrgUnit removeChildren(OrgUnit organisationUnit) {
+        this.children.remove(organisationUnit);
+        organisationUnit.setParent(null);
+        return this;
+    }
+
+    public Set<OrgUnitGroup> getGroups() {
+        return this.groups;
+    }
+
+    public void setGroups(Set<OrgUnitGroup> organisationUnitGroups) {
+        this.groups = organisationUnitGroups;
+    }
+
+    public OrgUnit groups(Set<OrgUnitGroup> organisationUnitGroups) {
+        this.setGroups(organisationUnitGroups);
+        return this;
+    }
+
+    public OrgUnit addGroup(OrgUnitGroup organisationUnitGroup) {
+        this.groups.add(organisationUnitGroup);
+        organisationUnitGroup.getMembers().add(this);
+        return this;
+    }
+
+    public OrgUnit removeGroup(OrgUnitGroup organisationUnitGroup) {
+        this.groups.remove(organisationUnitGroup);
+        organisationUnitGroup.getMembers().remove(this);
+        return this;
+    }
+
 
     public Set<Assignment> getAssignments() {
         return assignments;

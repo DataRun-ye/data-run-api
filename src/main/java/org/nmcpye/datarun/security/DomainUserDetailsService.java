@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.security;
 
-import java.util.*;
 import org.hibernate.validator.internal.constraintvalidators.hv.EmailValidator;
 import org.nmcpye.datarun.domain.Authority;
 import org.nmcpye.datarun.domain.User;
@@ -13,6 +12,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Authenticate a user from the database.
@@ -41,6 +44,9 @@ public class DomainUserDetailsService implements UserDetailsService {
         }
 
         String lowercaseLogin = login.toLowerCase(Locale.ENGLISH);
+
+        final Optional<User> userf = userRepository
+            .findOneWithAuthoritiesByLogin(lowercaseLogin);
         return userRepository
             .findOneWithAuthoritiesByLogin(lowercaseLogin)
             .map(user -> createSpringSecurityUser(lowercaseLogin, user))
