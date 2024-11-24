@@ -2,14 +2,12 @@ package org.nmcpye.datarun.drun.mongo.domain;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.nmcpye.datarun.drun.mongo.domain.enumeration.MetadataResourceType;
 import org.nmcpye.datarun.drun.mongo.domain.enumeration.ValueType;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A DataField.
@@ -19,10 +17,6 @@ public class DataField implements Serializable {
     public static final String PATH_SEP = ".";
 
     private static final long serialVersionUID = 1L;
-//
-//    @Size(max = 11)
-//    @Field("uid")
-//    private String uid;
 
     private Integer order;
 
@@ -34,15 +28,13 @@ public class DataField implements Serializable {
     @Field("description")
     private String description;
 
-    @NotNull
-    @Field("type")
-    private ValueType type;
-
     @Field("mandatory")
     private Boolean mandatory;
 
     @Field("mainField")
     private Boolean mainField;
+
+    private Boolean readOnly;
 
     @Field("rules")
     private Set<DataFieldRule> rules = new HashSet<>();
@@ -50,8 +42,17 @@ public class DataField implements Serializable {
     @Field("listName")
     private String listName;
 
-    @Field("reference")
-    ReferenceInfo referenceInfo;
+    @NotNull
+    @Field("type")
+    private ValueType type;
+
+    // OrgUnit, Activity, Team
+    @Field("resourceType")
+    private MetadataResourceType resourceType;
+
+    @Field("resourceMetadataSchema")
+    private String resourceMetadataSchema;
+
 
     private String choiceFilter;
 
@@ -73,6 +74,53 @@ public class DataField implements Serializable {
     @Field("fields")
     private Set<DataField> fields = new HashSet<>();
 
+    private Map<String, Object> properties;
+
+    public List<DataField> flattenFields() {
+        List<DataField> flatList = new ArrayList<>();
+        for (DataField field : this.fields) {
+            flatList.add(field);
+            if (field.getFields() != null && !field.getFields().isEmpty()) {
+                flatList.addAll(field.flattenFields());
+            }
+        }
+        return flatList;
+    }
+
+    public MetadataResourceType getResourceType() {
+        return resourceType;
+    }
+
+    public boolean ofReferenceType() {
+        return type == ValueType.Reference;
+    }
+    public void setResourceType(MetadataResourceType resourceType) {
+        this.resourceType = resourceType;
+    }
+
+    public String getResourceMetadataSchema() {
+        return resourceMetadataSchema;
+    }
+
+    public void setResourceMetadataSchema(String resourceMetadataSchema) {
+        this.resourceMetadataSchema = resourceMetadataSchema;
+    }
+
+    public Boolean getReadOnly() {
+        return readOnly;
+    }
+
+    public void setReadOnly(Boolean readOnly) {
+        this.readOnly = readOnly;
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
+    }
 
     public Set<DataField> getFields() {
         return this.fields;
@@ -138,14 +186,6 @@ public class DataField implements Serializable {
 
     public void setChoiceFilter(String choiceFilter) {
         this.choiceFilter = choiceFilter;
-    }
-
-    public ReferenceInfo getReferenceInfo() {
-        return referenceInfo;
-    }
-
-    public void setReferenceInfo(ReferenceInfo referenceInfo) {
-        this.referenceInfo = referenceInfo;
     }
 
     public void setLabel(Map<String, String> label) {

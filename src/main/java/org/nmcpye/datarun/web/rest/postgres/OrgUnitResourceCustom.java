@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
 import org.nmcpye.datarun.drun.common.OrgUnitSpecifications;
+import org.nmcpye.datarun.drun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
@@ -12,8 +13,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,6 +25,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/custom/orgUnits")
+@PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class OrgUnitResourceCustom extends AbstractRelationalResource<OrgUnit> {
 
     private final Logger log = LoggerFactory.getLogger(OrgUnitResourceCustom.class);
@@ -78,5 +83,35 @@ public class OrgUnitResourceCustom extends AbstractRelationalResource<OrgUnit> {
     public ResponseEntity<String> handlePathUpdateException(PathUpdateException ex) {
         log.error("Handling PathUpdateException: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+    }
+
+    @Override
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    public ResponseEntity<OrgUnit> updateEntity(Long aLong, OrgUnit entity) throws URISyntaxException {
+        return super.updateEntity(aLong, entity);
+    }
+
+    @Override
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    public ResponseEntity<Void> deleteActivityByIdUid(Long aLong) {
+        return super.deleteActivityByIdUid(aLong);
+    }
+
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @Override
+    public ResponseEntity<?> saveReturnSaved(OrgUnit entity) {
+        return super.saveReturnSaved(entity);
+    }
+
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @Override
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(OrgUnit entity) {
+        return super.saveOne(entity);
+    }
+
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @Override
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<OrgUnit> entities) {
+        return super.saveAll(entities);
     }
 }

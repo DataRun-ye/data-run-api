@@ -46,8 +46,7 @@ public abstract class IdentifiableRelationalServiceImpl<T extends IdentifiableOb
     @Override
     public Optional<T> findIdentifiable(IdentifiableObject<Long> identifiableObject) {
         var spec = hasUid(identifiableObject.getUid())
-            .or(hasId(identifiableObject.getId()))
-            .or(hasCode(identifiableObject.getCode()));
+            .or(hasId(identifiableObject.getId()));
         return repository.findOne(spec);
     }
 

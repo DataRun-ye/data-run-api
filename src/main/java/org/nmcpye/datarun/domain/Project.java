@@ -55,7 +55,7 @@ public class Project extends BaseIdentifiableObject<Long> implements Serializabl
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "project")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-//    @JsonIgnoreProperties(value = { "project" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "project" }, allowSetters = true)
     @JsonSerialize(contentAs = IdentifiableObject.class)
     private Set<Activity> activities = new HashSet<>();
 

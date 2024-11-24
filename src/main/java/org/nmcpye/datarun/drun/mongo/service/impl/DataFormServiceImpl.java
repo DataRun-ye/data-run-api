@@ -4,7 +4,8 @@ import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.drun.mongo.domain.DataField;
 import org.nmcpye.datarun.drun.mongo.domain.DataForm;
-import org.nmcpye.datarun.drun.mongo.repository.DataFormRepositoryCustom;
+import org.nmcpye.datarun.drun.mongo.repository.DataFormRepository;
+import org.nmcpye.datarun.drun.mongo.repository.MetadataSchemaRepository;
 import org.nmcpye.datarun.drun.mongo.service.DataFormService;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
@@ -40,7 +41,9 @@ public class DataFormServiceImpl
 
     private final Logger log = LoggerFactory.getLogger(DataFormServiceImpl.class);
 
-    private final DataFormRepositoryCustom repositoryCustom;
+    private final DataFormRepository repositoryCustom;
+
+    private final MetadataSchemaRepository metadataSchemaRepository;
 
     private final ActivityRelationalRepositoryCustom activityRepository;
 
@@ -48,9 +51,10 @@ public class DataFormServiceImpl
 
     private final OrgUnitRelationalRepositoryCustom orgUnitRepository;
 
-    public DataFormServiceImpl(DataFormRepositoryCustom repositoryCustom, ActivityRelationalRepositoryCustom activityRepository, AssignmentRelationalRepositoryCustom assignmentRepository, OrgUnitRelationalRepositoryCustom orgUnitRepository) {
+    public DataFormServiceImpl(DataFormRepository repositoryCustom, MetadataSchemaRepository metadataSchemaRepository, ActivityRelationalRepositoryCustom activityRepository, AssignmentRelationalRepositoryCustom assignmentRepository, OrgUnitRelationalRepositoryCustom orgUnitRepository) {
         super(repositoryCustom);
         this.repositoryCustom = repositoryCustom;
+        this.metadataSchemaRepository = metadataSchemaRepository;
         this.activityRepository = activityRepository;
         this.assignmentRepository = assignmentRepository;
         this.orgUnitRepository = orgUnitRepository;
@@ -61,7 +65,16 @@ public class DataFormServiceImpl
             String currentPath = parentPath.isEmpty() ? field.getName() : parentPath + DataField.PATH_SEP + field.getName();
             field.setPath(currentPath);
             field.setSection(parentPath.isEmpty() ? null : parentPath);
+            if (field.ofReferenceType()) {
+                if (field.getResourceType() == null || field.getResourceMetadataSchema() == null) {
+                    throw new IllegalArgumentException(field.getName() + ": is of Reference type but does not specify Resource Type [OrgUnit, Team, Activity...etc] or ResourceMetadataSchema (The form used to submit the metadata of the reference type)");
+                }
 
+                if (metadataSchemaRepository.findByUid(field.getResourceMetadataSchema()).isEmpty()) {
+                    throw new IllegalArgumentException("Field: " + field.getName() + ": Specified ResourceMetadataSchema " + field.getResourceMetadataSchema() + " does not exist");
+                }
+
+            }
             // Recursively process nested sections
             if (field.getType().isSectionType() && field.getFields() != null) {
                 processFields(field.getFields(), currentPath);
@@ -72,6 +85,8 @@ public class DataFormServiceImpl
     @Override
     public DataForm saveWithRelations(DataForm dataForm) {
         processFields(dataForm.getFields(), "");
+        dataForm.updateFlattenedFields();
+
         Activity activity = activityRepository.findByUid(dataForm.getActivity())
             .orElseThrow(() -> new PropertyNotFoundException("Activity not found: " + dataForm.getActivity()));
         dataForm.setActivity(activity.getUid());
@@ -108,8 +123,11 @@ public class DataFormServiceImpl
     @Override
     public DataForm update(DataForm object) {
         final Integer version =
-            Objects.requireNonNullElse(object.getVersion(), 0) + 1;
+            Objects.requireNonNullElse(repositoryCustom
+                .findByUid(object.getUid())
+                .get().getVersion(), 0) + 1;
         object.setVersion(version);
+
         return super.update(object);
     }
 
@@ -168,8 +186,10 @@ public class DataFormServiceImpl
         }
 
         List<DataForm> sublist = dataForms.subList(start, end);
+        var pp = new PageImpl<>(sublist, pageable, dataForms.size());
         return new PageImpl<>(sublist, pageable, dataForms.size());
     }
+
 
 //    private List<String> getAssignedOrgUnitsByFormActivity(String activity) {
 //        return assignmentRepository

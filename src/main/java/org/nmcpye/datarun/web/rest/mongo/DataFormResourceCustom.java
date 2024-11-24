@@ -1,28 +1,66 @@
 package org.nmcpye.datarun.web.rest.mongo;
 
 import org.nmcpye.datarun.drun.mongo.domain.DataForm;
-import org.nmcpye.datarun.drun.mongo.repository.DataFormRepositoryCustom;
+import org.nmcpye.datarun.drun.mongo.mapping.importsummary.EntitySaveSummaryVM;
+import org.nmcpye.datarun.drun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.drun.mongo.service.DataFormService;
+import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.net.URISyntaxException;
+import java.util.List;
 
 /**
  * REST controller for managing {@link DataForm}.
  */
 @RestController
 @RequestMapping("/api/custom/dataForms")
+@PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class DataFormResourceCustom extends AbstractMongoResource<DataForm> {
 
     final DataFormService dataFormService;
 
     public DataFormResourceCustom(DataFormService dataFormService,
-                                  DataFormRepositoryCustom dataFormRepositoryCustom) {
-        super(dataFormService, dataFormRepositoryCustom);
+                                  DataFormRepository dataFormRepository) {
+        super(dataFormService, dataFormRepository);
         this.dataFormService = dataFormService;
     }
 
     @Override
     protected String getName() {
         return "dataForms";
+    }
+
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @Override
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<DataForm> entities) {
+        return super.saveAll(entities);
+    }
+
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @Override
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(DataForm entity) {
+        return super.saveOne(entity);
+    }
+
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @Override
+    public ResponseEntity<?> saveReturnSaved(DataForm entity) {
+        return super.saveReturnSaved(entity);
+    }
+
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @Override
+    public ResponseEntity<Void> deleteActivityByIdUid(String s) {
+        return super.deleteActivityByIdUid(s);
+    }
+
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @Override
+    public ResponseEntity<DataForm> updateEntity(String s, DataForm entity) throws URISyntaxException {
+        return super.updateEntity(s, entity);
     }
 }

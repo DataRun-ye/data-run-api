@@ -62,31 +62,6 @@ AbstractRelationalResource<T extends IdentifiableObject<Long>>
         };
     }
 
-//    @Override
-//    protected ResponseEntity<PagedResponse<T>> getAllFiltered(
-//        Pageable pageable,
-//        boolean paging, boolean flatten,
-//        boolean eagerload, Map<String, Object> query) {
-//
-//
-//
-//        if (!paging
-//            && !SecurityUtils.
-//            hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-//            pageable = Pageable.unpaged();
-//        }
-//
-//        Specification<T> spec;
-//        try {
-//            spec = buildSpecification(query);
-//        } catch (Exception e) {
-//            throw new RequestQueryParsingException();
-//        }
-//        Page<T> results = getRepository().findAll(spec, pageable);
-//        PagedResponse<T> response = initPageResponse(results, paging, false);
-//        return ResponseEntity.ok(response);
-//    }
-
     @GetMapping("entities")
     public ResponseEntity<Page<T>> getEntities(@ParameterObject Pageable pageable,
                                                @RequestParam(name = "paging", required = false, defaultValue = "true")

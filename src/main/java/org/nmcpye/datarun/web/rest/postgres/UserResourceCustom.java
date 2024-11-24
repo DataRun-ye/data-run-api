@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.web.rest;
+package org.nmcpye.datarun.web.rest.postgres;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
@@ -38,7 +38,7 @@ import java.util.Optional;
 /**
  * REST controller for managing users.
  * <p>
- * This class accesses the {@link org.nmcpye.datarun.domain.User} entity, and needs to fetch its collection of authorities.
+ * This class accesses the {@link User} entity, and needs to fetch its collection of authorities.
  * <p>
  * For a normal use-case, it would be better to have an eager relationship between User and Authority,
  * and send everything to the client side: there would be no View Model and DTO, a lot less code, and an outer-join
@@ -59,9 +59,10 @@ import java.util.Optional;
  * <p>
  * Another option would be to have a specific JPA entity graph to handle this case.
  */
-//@RestController
-//@RequestMapping("/api/admin")
-public class UserResource {
+@RestController
+@RequestMapping("/api/custom/admin")
+@PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
+public class UserResourceCustom {
 
     private static final List<String> ALLOWED_ORDERED_PROPERTIES = Collections.unmodifiableList(
         Arrays.asList(
@@ -79,7 +80,7 @@ public class UserResource {
         )
     );
 
-    private static final Logger log = LoggerFactory.getLogger(UserResource.class);
+    private static final Logger log = LoggerFactory.getLogger(UserResourceCustom.class);
 
     @Value("${jhipster.clientApp.name}")
     private String applicationName;
@@ -90,7 +91,7 @@ public class UserResource {
 
     private final MailService mailService;
 
-    public UserResource(UserService userService, UserRepository userRepository, MailService mailService) {
+    public UserResourceCustom(UserService userService, UserRepository userRepository, MailService mailService) {
         this.userService = userService;
         this.userRepository = userRepository;
         this.mailService = mailService;
@@ -137,22 +138,30 @@ public class UserResource {
      * @throws EmailAlreadyUsedException {@code 400 (Bad Request)} if the email is already in use.
      * @throws LoginAlreadyUsedException {@code 400 (Bad Request)} if the login is already in use.
      */
-    @PutMapping({ "/users", "/users/{login}" })
+    @PutMapping({"/users", "/users/{login}"})
     @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<AdminUserDTO> updateUser(
         @PathVariable(name = "login", required = false) @Pattern(regexp = Constants.LOGIN_REGEX) String login,
         @Valid @RequestBody ManagedUserVM userDTO
     ) {
         log.debug("REST request to update User : {}", userDTO);
+//        Optional<User> existingUser = userRepository.findOneByLogin(userDTO.getLogin());
+//        Optional<User> existingUserLogin = userRepository.findOneByLogin(login);
+//        if (existingUser.isPresent()) {
+//            throw new UsernameNotFoundException(userDTO.getLogin());
+//        }
+
+        log.debug("REST request to update User : {}", userDTO);
         Optional<User> existingUser = userRepository.findOneByEmailIgnoreCase(userDTO.getEmail());
-//        if (existingUser.isPresent() && (!existingUser.orElseThrow().getId().equals(userDTO.getId()))) {
-//            throw new EmailAlreadyUsedException();
-//        }
-//        existingUser = userRepository.findOneByLogin(userDTO.getLogin().toLowerCase());
-//        if (existingUser.isPresent() && (!existingUser.orElseThrow().getId().equals(userDTO.getId()))) {
-//            throw new LoginAlreadyUsedException();
-//        }
-        Optional<AdminUserDTO> updatedUser = userService.updateUser(userDTO);
+        if (existingUser.isPresent() && (!existingUser.orElseThrow().getId().equals(userDTO.getId()))) {
+            throw new EmailAlreadyUsedException();
+        }
+        existingUser = userRepository.findOneByLogin(userDTO.getLogin().toLowerCase());
+        if (existingUser.isPresent() && (!existingUser.orElseThrow().getId().equals(userDTO.getId()))) {
+            throw new LoginAlreadyUsedException();
+        }
+
+        Optional<AdminUserDTO> updatedUser = userService.updateUser(userDTO, userDTO.getPassword());
 
         return ResponseUtil.wrapOrNotFound(
             updatedUser,

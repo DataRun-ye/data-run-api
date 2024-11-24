@@ -141,7 +141,10 @@ public class UserMapper {
     @Named("loginSet")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
+    @Mapping(target = "uid", source = "uid")
     @Mapping(target = "login", source = "login")
+    @Mapping(target = "name", source = "name")
+    @Mapping(target = "mobile", source = "mobile")
     public Set<UserDTO> toDtoLoginSet(Set<User> users) {
         if (users == null) {
             return Collections.emptySet();

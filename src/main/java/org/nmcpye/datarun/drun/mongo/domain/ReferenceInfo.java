@@ -4,8 +4,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.nmcpye.datarun.drun.mongo.domain.enumeration.MetadataResourceType;
 import org.nmcpye.datarun.drun.mongo.domain.enumeration.ReferenceType;
-import org.nmcpye.datarun.drun.mongo.domain.enumeration.ResourceType;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.io.Serializable;
@@ -25,7 +25,7 @@ public class ReferenceInfo implements Serializable {
      */
     @NotNull
     @Field("resource")
-    private ResourceType resource;
+    private MetadataResourceType resource;
 
     /**
      * A Resource uid
@@ -50,11 +50,11 @@ public class ReferenceInfo implements Serializable {
     @Field("type")
     private ReferenceType type;
 
-    public ResourceType getResource() {
+    public MetadataResourceType getResource() {
         return resource;
     }
 
-    public void setResource(ResourceType resource) {
+    public void setResource(MetadataResourceType resource) {
         this.resource = resource;
     }
 

@@ -1,14 +1,16 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import org.apache.commons.lang3.StringUtils;
+import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.repository.UserRepository;
+import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.service.MailService;
 import org.nmcpye.datarun.service.UserService;
 import org.nmcpye.datarun.service.dto.AdminUserDTO;
-import org.nmcpye.datarun.service.dto.PasswordChangeDTO;
 import org.nmcpye.datarun.web.rest.errors.EmailAlreadyUsedException;
 import org.nmcpye.datarun.web.rest.errors.InvalidPasswordException;
 import org.nmcpye.datarun.web.rest.errors.LoginAlreadyUsedException;
@@ -18,7 +20,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
+import tech.jhipster.web.util.HeaderUtil;
+import tech.jhipster.web.util.ResponseUtil;
 
 import java.util.List;
 import java.util.Optional;
@@ -58,20 +64,6 @@ public class AccountResourceCustom extends AbstractRelationalResource<User> {
     }
 
     /**
-     * {@code GET  /activate} : activate the registered user.
-     *
-     * @param key the activation key.
-     * @throws RuntimeException {@code 500 (Internal Server Error)} if the user couldn't be activated.
-     */
-    @GetMapping("/activate")
-    public void activateAccount(@RequestParam(value = "key") String key) {
-        Optional<User> user = userService.activateRegistration(key);
-        if (!user.isPresent()) {
-            throw new AccountResourceException("No user was found for this activation key");
-        }
-    }
-
-    /**
      * {@code GET  /me} : get the current user.
      *
      * @return the current user.
@@ -79,6 +71,10 @@ public class AccountResourceCustom extends AbstractRelationalResource<User> {
      */
     @GetMapping("/me")
     public AdminUserDTO getAccount() {
+        final var user = userService
+            .getUserWithAuthorities()
+            .map(AdminUserDTO::new);
+        log.debug("Created Information for User: {}", user);
         return userService
             .getUserWithAuthorities()
             .map(AdminUserDTO::new)
@@ -111,37 +107,6 @@ public class AccountResourceCustom extends AbstractRelationalResource<User> {
             userDTO.getLangKey(),
             userDTO.getImageUrl()
         );
-    }
-
-    /**
-     * {@code POST  /me/change-password} : changes the current user's password.
-     *
-     * @param passwordChangeDto current and new password.
-     * @throws InvalidPasswordException {@code 400 (Bad Request)} if the new password is incorrect.
-     */
-    @PostMapping(path = "/me/change-password")
-    public void changePassword(@RequestBody PasswordChangeDTO passwordChangeDto) {
-        if (isPasswordLengthInvalid(passwordChangeDto.getNewPassword())) {
-            throw new InvalidPasswordException();
-        }
-        userService.changePassword(passwordChangeDto.getCurrentPassword(), passwordChangeDto.getNewPassword());
-    }
-
-    /**
-     * {@code POST   /me/reset-password/init} : Send an email to reset the password of the user.
-     *
-     * @param mail the mail of the user.
-     */
-    @PostMapping(path = "/me/reset-password/init")
-    public void requestPasswordReset(@RequestBody String mail) {
-        Optional<User> user = userService.requestPasswordReset(mail);
-        if (user.isPresent()) {
-            mailService.sendPasswordResetMail(user.orElseThrow());
-        } else {
-            // Pretend the request has been successful to prevent checking which emails really exist
-            // but log that an invalid attempt has been made
-            log.warn("Password reset requested for non existing mail");
-        }
     }
 
     /**
@@ -187,7 +152,6 @@ public class AccountResourceCustom extends AbstractRelationalResource<User> {
             throw new InvalidPasswordException();
         }
         User user = userService.registerUser(managedUserVM, managedUserVM.getPassword());
-//        mailService.sendActivationEmail(user);
         return ResponseEntity.ok(user);
     }
 
@@ -207,5 +171,37 @@ public class AccountResourceCustom extends AbstractRelationalResource<User> {
             User user = userService.findUserByLogin(managedUserVM.getLogin()).orElseThrow();
             mailService.sendActivationEmail(user);
         });
+    }
+
+    /**
+     * {@code PUT /admin/users} : Updates an existing User.
+     *
+     * @param userDTO the user to update.
+     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated user.
+     * @throws EmailAlreadyUsedException {@code 400 (Bad Request)} if the email is already in use.
+     * @throws LoginAlreadyUsedException {@code 400 (Bad Request)} if the login is already in use.
+     */
+    @PutMapping({"/users", "/users/{login}"})
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    public ResponseEntity<AdminUserDTO> updateUser(
+        @PathVariable(name = "login", required = false) @Pattern(regexp = Constants.LOGIN_REGEX) String login,
+        @Valid @RequestBody ManagedUserVM userDTO
+    ) {
+        log.debug("REST request to update User : {}", userDTO);
+        Optional<User> existingUser = userRepository.findOneByLogin(userDTO.getLogin());
+        if (existingUser.isEmpty()) {
+            throw new UsernameNotFoundException(userDTO.getLogin());
+        }
+//        existingUser = userRepository.findOneByLogin(userDTO.getLogin().toLowerCase());
+//        if (existingUser.isPresent() && (!existingUser.orElseThrow().getId().equals(userDTO.getId()))) {
+//            throw new LoginAlreadyUsedException();
+//        }
+
+        Optional<AdminUserDTO> updatedUser = userService.updateUser(userDTO, userDTO.getPassword());
+
+        return ResponseUtil.wrapOrNotFound(
+            updatedUser,
+            HeaderUtil.createAlert(applicationName, "userManagement.updated", userDTO.getLogin())
+        );
     }
 }

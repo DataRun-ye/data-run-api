@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -47,6 +48,7 @@ public class OrgUnitGroupSet
         inverseJoinColumns = @JoinColumn(name = "org_unit_group_id")
     )
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    @JsonIgnoreProperties(value = { "groupSets", "members" }, allowSetters = true)
     @JsonSerialize(contentAs = IdentifiableObject.class)
     private Set<OrgUnitGroup> orgUnitGroups = new HashSet<>();
 

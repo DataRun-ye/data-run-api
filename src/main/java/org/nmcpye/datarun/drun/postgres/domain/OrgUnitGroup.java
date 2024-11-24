@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
@@ -56,11 +57,13 @@ public class OrgUnitGroup extends BaseIdentifiableObject<Long> implements Serial
         joinColumns = @JoinColumn(name = "org_unit_group_id"),
         inverseJoinColumns = @JoinColumn(name = "member_id")
     )
+
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<OrgUnit> members = new HashSet<>();
 
     @ManyToMany(mappedBy = "orgUnitGroups")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    @JsonIgnoreProperties(value = { "orgUnitGroups", "translations" }, allowSetters = true)
     @JsonSerialize(contentAs = IdentifiableObject.class)
     private Set<OrgUnitGroupSet> groupSets = new HashSet<>();
 

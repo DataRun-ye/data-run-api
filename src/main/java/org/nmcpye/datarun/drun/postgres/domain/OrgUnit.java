@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
@@ -71,6 +72,7 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
 
     @ManyToMany(mappedBy = "members")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    @JsonIgnoreProperties(value = { "groupSets", "translations" }, allowSetters = true)
     @JsonSerialize(contentAs = IdentifiableObject.class)
     private Set<OrgUnitGroup> groups = new HashSet<>();
 

@@ -3,11 +3,10 @@ package org.nmcpye.datarun.drun.mongo.domain.enumeration;
 /**
  * The ReferenceType enumeration.
  */
-public enum ResourceType {
+public enum MetadataResourceType {
     DataFormSubmission,
     Activity,
     Team,
-    Project,
-    Warehouse,
-    OrgUnit
+    OrgUnit,
+    Assignment
 }

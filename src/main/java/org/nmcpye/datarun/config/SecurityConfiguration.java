@@ -3,11 +3,9 @@ package org.nmcpye.datarun.config;
 import org.nmcpye.datarun.config.datarun.CustomBasicAuthenticationFilter;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -22,8 +20,8 @@ import tech.jhipster.config.JHipsterProperties;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
-@Configuration
-@EnableMethodSecurity(securedEnabled = true)
+//@Configuration
+//@EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfiguration {
 
     private final JHipsterProperties jHipsterProperties;

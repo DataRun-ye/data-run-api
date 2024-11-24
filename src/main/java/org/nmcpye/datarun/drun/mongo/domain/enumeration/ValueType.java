@@ -6,7 +6,7 @@ import java.util.List;
  * The ValueType enumeration.
  */
 public enum ValueType {
-    Section, RepeatableSection, Text,
+    ScannedCode, Section, RepeatableSection, Text,
     LongText, Letter, PhoneNumber,
     Email, Boolean, TrueOnly,
     Date, DateTime, Time,

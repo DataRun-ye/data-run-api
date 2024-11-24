@@ -47,18 +47,18 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
 
     @NotNull
     @ManyToOne//(fetch = FetchType.LAZY)
-//    @JsonIgnoreProperties(value = {"project"}, allowSetters = true)
-    @JsonSerialize(contentAs = IdentifiableObject.class)
+    @JsonIgnoreProperties(value = {"project", "translations"}, allowSetters = true)
     private Activity activity;
 
     @ManyToOne//(fetch = FetchType.LAZY)
-    @JsonSerialize(contentAs = IdentifiableObject.class)
+//    @JsonSerialize(contentAs = IdentifiableObject.class)
+    @JsonIgnoreProperties(value = {"parent", "children", "groups","assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private OrgUnit orgUnit;
 
     @ManyToOne(optional = false)
     @NotNull
-//    @JsonIgnoreProperties(value = {"activity", "operationRoom", "warehouse", "userInfo", "assignments"}, allowSetters = true)
-    @JsonSerialize(contentAs = IdentifiableObject.class)
+    @JsonIgnoreProperties(value = {"activity", "operationRoom", "warehouse", "userInfo", "assignments", "users", "ancestors", "translations"}, allowSetters = true)
+//    @JsonSerialize(contentAs = IdentifiableObject.class)
     private Team team;
 
     public Long getId() {
@@ -146,6 +146,7 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
         return this;
     }
 
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     public Activity getActivity() {
         return this.activity;
     }
@@ -159,6 +160,7 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
         return this;
     }
 
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     public OrgUnit getOrgUnit() {
         return this.orgUnit;
     }
@@ -172,6 +174,7 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
         return this;
     }
 
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     public Team getTeam() {
         return this.team;
     }

@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
 import org.nmcpye.datarun.drun.common.TeamSpecifications;
+import org.nmcpye.datarun.drun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
@@ -12,8 +13,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Map;
 
 
@@ -22,6 +26,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/custom/teams")
+@PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class TeamResourceCustom extends AbstractRelationalResource<Team> {
     private final Logger log = LoggerFactory.getLogger(TeamResourceCustom.class);
 
@@ -58,6 +63,7 @@ public class TeamResourceCustom extends AbstractRelationalResource<Team> {
      * @param forceUpdate force update paths of all.
      */
     @GetMapping("/updatePaths")
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<String> updateTeam(
         @RequestParam(name = "forceUpdate", required = false, defaultValue = "false") boolean forceUpdate) {
         log.debug("REST request to update orgUnit Paths");
@@ -79,5 +85,35 @@ public class TeamResourceCustom extends AbstractRelationalResource<Team> {
     public ResponseEntity<String> handlePathUpdateException(PathUpdateException ex) {
         log.error("Handling PathUpdateException: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+    }
+
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @Override
+    public ResponseEntity<Team> updateEntity(Long aLong, Team entity) throws URISyntaxException {
+        return super.updateEntity(aLong, entity);
+    }
+
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @Override
+    public ResponseEntity<Void> deleteActivityByIdUid(Long aLong) {
+        return super.deleteActivityByIdUid(aLong);
+    }
+
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @Override
+    public ResponseEntity<?> saveReturnSaved(Team entity) {
+        return super.saveReturnSaved(entity);
+    }
+
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @Override
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(Team entity) {
+        return super.saveOne(entity);
+    }
+
+    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    @Override
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<Team> entities) {
+        return super.saveAll(entities);
     }
 }

@@ -1,7 +1,5 @@
 package org.nmcpye.datarun.web.rest;
 
-import java.util.*;
-import java.util.Collections;
 import org.nmcpye.datarun.service.UserService;
 import org.nmcpye.datarun.service.dto.UserDTO;
 import org.slf4j.Logger;
@@ -12,12 +10,16 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.PaginationUtil;
 
-@RestController
-@RequestMapping("/api")
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+//@RestController
+//@RequestMapping("/api")
 public class PublicUserResource {
 
     private static final List<String> ALLOWED_ORDERED_PROPERTIES = Collections.unmodifiableList(

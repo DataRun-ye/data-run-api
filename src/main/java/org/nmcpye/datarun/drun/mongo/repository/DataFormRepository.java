@@ -2,6 +2,7 @@ package org.nmcpye.datarun.drun.mongo.repository;
 
 import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.drun.mongo.domain.DataForm;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -11,18 +12,9 @@ import java.util.List;
  */
 @Repository
 @JaversSpringDataAuditable
-public interface DataFormRepositoryCustom
+public interface DataFormRepository
     extends IdentifiableMongoRepository<DataForm> {
 
+    @Query("{'activity': ?0}")
     List<DataForm> findAllByActivity(String activity);
-
-
-//    @Query("{}")
-//    Page<DataForm> findAllWithEagerRelationshipsByUser(Pageable pageable);
-//
-//    @Query("{}")
-//    List<DataForm> findAllWithEagerRelationshipsByUser();
-//
-//    @Query("{'id': ?0}")
-//    Optional<DataForm> findOneWithEagerRelationshipsByUser(String id);
 }

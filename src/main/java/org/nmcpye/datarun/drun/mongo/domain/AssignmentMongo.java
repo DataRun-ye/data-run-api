@@ -7,14 +7,12 @@ import org.nmcpye.datarun.domain.AbstractAuditingEntity;
 import org.nmcpye.datarun.drun.mongo.mapping.serialization.ActivityDeserializer;
 import org.nmcpye.datarun.drun.mongo.mapping.serialization.OrgUnitDeserializer;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * A Assignment.
@@ -48,10 +46,10 @@ public class AssignmentMongo
 //    @Field("team")
 //    @JsonDeserialize(using = TeamDeserializer.class)
 //    private String team;
-
-    @DBRef
-    @Field("team")
-    private TeamMongo team;
+//
+//    @DBRef
+//    @Field("team")
+//    private TeamMongo team;
 
 
     @Size(max = 11)
@@ -104,13 +102,13 @@ public class AssignmentMongo
         this.activity = activity;
     }
 
-    public TeamMongo getTeam() {
-        return team;
-    }
-
-    public void setTeam(TeamMongo team) {
-        this.team = team;
-    }
+//    public TeamMongo getTeam() {
+//        return team;
+//    }
+//
+//    public void setTeam(TeamMongo team) {
+//        this.team = team;
+//    }
 
     public String getOrgUnit() {
         return orgUnit;
@@ -128,15 +126,15 @@ public class AssignmentMongo
         this.properties = properties;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AssignmentMongo that)) return false;
-        return Objects.equals(getUid(), that.getUid()) && Objects.equals(getCode(), that.getCode()) && Objects.equals(getActivity(), that.getActivity()) && Objects.equals(getTeam(), that.getTeam()) && Objects.equals(getOrgUnit(), that.getOrgUnit()) && Objects.equals(getProperties(), that.getProperties());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), getUid(), getCode(), getActivity(), getTeam(), getOrgUnit(), getProperties());
-    }
+//    @Override
+//    public boolean equals(Object o) {
+//        if (this == o) return true;
+//        if (!(o instanceof AssignmentMongo that)) return false;
+//        return Objects.equals(getUid(), that.getUid()) && Objects.equals(getCode(), that.getCode()) && Objects.equals(getActivity(), that.getActivity()) && Objects.equals(getTeam(), that.getTeam()) && Objects.equals(getOrgUnit(), that.getOrgUnit()) && Objects.equals(getProperties(), that.getProperties());
+//    }
+//
+//    @Override
+//    public int hashCode() {
+//        return Objects.hash(super.hashCode(), getUid(), getCode(), getActivity(), getTeam(), getOrgUnit(), getProperties());
+//    }
 }

@@ -71,15 +71,16 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
     private boolean isPersisted;
 
     @ManyToOne(fetch = FetchType.LAZY)
-//    @JsonIgnoreProperties(value = { "project" }, allowSetters = true)
-    @JsonSerialize(contentAs = IdentifiableObject.class)
+    @JsonIgnoreProperties(value = { "project" , "translations"}, allowSetters = true)
+//    @JsonSerialize(contentAs = IdentifiableObject.class)
     private Activity activity;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "activity" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "activity", "translations" }, allowSetters = true)
     private Warehouse warehouse;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = { "teams", "password", "authorities" , "translations" }, allowSetters = true)
     private User userInfo;
 
     @ManyToMany//(fetch = FetchType.LAZY)
@@ -87,6 +88,7 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
         joinColumns = @JoinColumn(name = "team_id"),
         inverseJoinColumns = @JoinColumn(name = "user_id"))
     @JsonSerialize(as = UserDTO.class)
+    @JsonIgnoreProperties(value = { "teams", "password", "authorities", "translations" }, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<User> users = new HashSet<>();
 
@@ -106,7 +108,7 @@ public class Team extends AbstractAuditingEntity<Long> implements Serializable, 
 
     @ManyToOne//(fetch = FetchType.LAZY)
     @JsonProperty
-    @JsonIgnoreProperties(value = {"parent", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy" }, allowSetters = true)
+    @JsonIgnoreProperties(value = {"parent", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "translations" }, allowSetters = true)
     private Team parent;
 
     public Team addUser(User user) {

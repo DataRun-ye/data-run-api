@@ -1,8 +1,10 @@
 package org.nmcpye.datarun.web.rest.mongo;
 
 import org.nmcpye.datarun.drun.mongo.domain.DataFormSubmission;
-import org.nmcpye.datarun.drun.mongo.repository.DataFormSubmissionRepositoryCustom;
-import org.nmcpye.datarun.drun.mongo.service.DataFormSubmissionService;
+import org.nmcpye.datarun.drun.mongo.domain.MetadataSubmission;
+import org.nmcpye.datarun.drun.mongo.repository.MetadataSubmissionGranularRepository;
+import org.nmcpye.datarun.drun.mongo.repository.MetadataSubmissionRepositoryCustom;
+import org.nmcpye.datarun.drun.mongo.service.MetadataSubmissionService;
 import org.nmcpye.datarun.drun.mongo.service.submissionmigration.JsonFlattener;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
@@ -22,21 +24,75 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * REST controller for managing {@link org.nmcpye.datarun.drun.mongo.domain.DataFormSubmission}.
+ * REST controller for managing {@link DataFormSubmission}.
  */
 @RestController
-@RequestMapping("/api/custom/dataSubmissions")
+@RequestMapping("/api/custom/metadataSubmissions")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class DataFormSubmissionResourceCustom
-    extends AbstractMongoResource<DataFormSubmission> {
+public class MetadataSubmissionResourceCustom
+    extends AbstractMongoResource<MetadataSubmission> {
 
-    public DataFormSubmissionResourceCustom(DataFormSubmissionService dataFormSubmissionService,
-                                            DataFormSubmissionRepositoryCustom dataFormSubmissionRepositoryCustom) {
-        super(dataFormSubmissionService, dataFormSubmissionRepositoryCustom);
+    private final MetadataSubmissionGranularRepository metadataSubmissionGranularRepository;
+
+    public MetadataSubmissionResourceCustom(MetadataSubmissionService metadataSubmissionService,
+                                            MetadataSubmissionRepositoryCustom metadataSubmissionRepositoryCustom, MetadataSubmissionGranularRepository metadataSubmissionGranularRepository) {
+        super(metadataSubmissionService, metadataSubmissionRepositoryCustom);
+        this.metadataSubmissionGranularRepository = metadataSubmissionGranularRepository;
+    }
+
+    @Override
+    protected Page<MetadataSubmission> getList(Pageable pageable, boolean eagerload) {
+        return metadataSubmissionGranularRepository.getReferencedMetadataSubmissions(pageable);
     }
 
     @GetMapping("/form")
     public ResponseEntity<PagedResponse<Map<String, Object>>> getByForm(
+        @ParameterObject Pageable pageable,
+        @RequestParam(name = "paging", required = false, defaultValue = "true") boolean paging,
+        @RequestParam(name = "filter", required = false) String filter,
+        @RequestParam(name = "sn", required = false) Long sn,
+        @RequestParam(name = "resourceType", required = false) String resourceType,
+        @RequestParam(name = "flatten", required = false, defaultValue = "true") boolean flatten) {
+
+        // Handle pageable unpaged condition
+        if (!paging) {
+            pageable = Pageable.unpaged();
+        }
+
+        Page<MetadataSubmission> submissionsPage;
+        if (filter != null) {
+            if (sn != null) {
+                submissionsPage = ((MetadataSubmissionService) identifiableService)
+                    .findSubmissionsBySerialNumber(sn,
+                        filter, pageable);
+
+            } else if (resourceType != null) {
+                submissionsPage = ((MetadataSubmissionService) identifiableService)
+                    .findAllByResourceType(resourceType, pageable);
+            } else {
+                submissionsPage = ((MetadataSubmissionService) identifiableService)
+                    .findAllByForm(List.of(filter), pageable);
+            }
+
+        } else {
+            submissionsPage = metadataSubmissionGranularRepository.getReferencedMetadataSubmissions(pageable);
+        }
+
+        // Process each submission based on the flattening requirement
+        List<Map<String, Object>> processedSubmissions = submissionsPage.getContent()
+            .stream()
+            .map(submission -> processSubmission(submission, flatten))
+            .collect(Collectors.toList());
+
+        // Build paged response
+        PagedResponse<Map<String, Object>> response = buildPagedResponse(
+            submissionsPage, processedSubmissions, "results");
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/entity")
+    public ResponseEntity<PagedResponse<Map<String, Object>>> getByEntity(
         @ParameterObject Pageable pageable,
         @RequestParam(name = "paging", required = false, defaultValue = "true") boolean paging,
         @RequestParam(name = "filter", required = false) String filter,
@@ -48,20 +104,20 @@ public class DataFormSubmissionResourceCustom
             pageable = Pageable.unpaged();
         }
 
-        Page<DataFormSubmission> submissionsPage;
+        Page<MetadataSubmission> submissionsPage;
         if (filter != null) {
             if (sn != null) {
-                submissionsPage = ((DataFormSubmissionService) identifiableService)
+                submissionsPage = ((MetadataSubmissionService) identifiableService)
                     .findSubmissionsBySerialNumber(sn,
                         filter, pageable);
 
             } else {
-                submissionsPage = ((DataFormSubmissionService) identifiableService)
-                    .findAllByForm(List.of(filter), pageable);
+                submissionsPage = ((MetadataSubmissionService) identifiableService)
+                    .findAllByEntity(List.of(filter), pageable);
             }
 
         } else {
-            submissionsPage = identifiableService.findAllByUser(pageable);
+            submissionsPage = metadataSubmissionGranularRepository.getReferencedMetadataSubmissions(pageable);
         }
 
         // Process each submission based on the flattening requirement
@@ -84,24 +140,20 @@ public class DataFormSubmissionResourceCustom
      * @param flatten    whether to flatten the formData or not
      * @return the processed map representing the submission
      */
-    private Map<String, Object> processSubmission(DataFormSubmission submission, boolean flatten) {
+    private Map<String, Object> processSubmission(MetadataSubmission submission, boolean flatten) {
         // Initialize data map with basic fields
         Map<String, Object> data = new HashMap<>();
         data.put("id", submission.getId());
-        data.put("submissionUid", submission.getUid());
+        data.put("uid", submission.getUid());
         data.put("sn", submission.getSerialNumber());
-        data.put("deleted", submission.getDeleted());
-        data.put("form", submission.getForm());
+        data.put("form", submission.getMetadataSchema());
         data.put("version", submission.getVersion());
-        data.put("orgUnit", submission.getOrgUnit());
-        data.put("activity", submission.getActivity());
-        data.put("team", submission.getTeam());
+        data.put("entityType", submission.getResourceType());
+        data.put("entityUid", submission.getResourceId());
         data.put("createdBy", submission.getCreatedBy());
         data.put("createdDate", submission.getCreatedDate());
         data.put("lastModifiedBy", submission.getLastModifiedBy());
         data.put("lastModifiedDate", submission.getLastModifiedDate());
-        data.put("finishedEntryTime", submission.getFinishedEntryTime());
-        data.put("startEntryTime", submission.getStartEntryTime());
 
         // Retrieve and optionally flatten the formData
         Map<String, Object> formData = submission.getFormData();
@@ -123,7 +175,7 @@ public class DataFormSubmissionResourceCustom
      * @param entityName           the entity name for the response
      * @return the paged response
      */
-    private PagedResponse<Map<String, Object>> buildPagedResponse(Page<DataFormSubmission> submissionsPage,
+    private PagedResponse<Map<String, Object>> buildPagedResponse(Page<MetadataSubmission> submissionsPage,
                                                                   List<Map<String, Object>> processedSubmissions,
                                                                   String entityName) {
         PagedResponse<Map<String, Object>> response = new PagedResponse<>();
@@ -140,6 +192,6 @@ public class DataFormSubmissionResourceCustom
 
     @Override
     protected String getName() {
-        return "dataSubmissions";
+        return "metadataSubmissions";
     }
 }

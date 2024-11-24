@@ -1,18 +1,16 @@
 package org.nmcpye.datarun.drun.mongo.domain;
 
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A DataForm.
@@ -70,14 +68,31 @@ public class DataForm
 //    @JsonSerialize(using = OrgUnitUidsSetSerializer.class)
     private Set<String> orgUnits = new HashSet<>();
 
-    @DBRef
-    @Field("assignments")
-    private final Set<AssignmentMongo> assignments = new HashSet<>();
-
     private Map<String, String> label;
 
-    public Set<AssignmentMongo> getAssignments() {
-        return assignments;
+    @Field("flattenedFields")
+    private List<DataField> flattenedFields = new ArrayList<>();
+
+
+    @PrePersist
+    @PreUpdate
+    public void updateFlattenedFields() {
+        this.flattenedFields = this.flattenFields();
+    }
+
+    public List<DataField> flattenFields() {
+        List<DataField> flatList = new ArrayList<>();
+        for (DataField field : this.fields) {
+            flatList.add(field);
+            if (field.getFields() != null && !field.getFields().isEmpty()) {
+                flatList.addAll(field.flattenFields());
+            }
+        }
+        return flatList;
+    }
+
+    public boolean hasReferenceFields() {
+        return flattenedFields.stream().anyMatch(DataField::ofReferenceType);
     }
 
     public Set<OptionSet> getOptionSets() {
@@ -97,6 +112,18 @@ public class DataForm
             return Map.of("en", this.name);
         }
         return label;
+    }
+
+    public List<DataField> getFlattenedFields() {
+        if (flattenedFields.isEmpty()) {
+            return flattenFields();
+        }
+
+        return flattenedFields;
+    }
+
+    public void setFlattenedFields(List<DataField> flattenedFields) {
+        this.flattenedFields = flattenedFields;
     }
 
     public Set<String> getOrgUnits() {
@@ -269,6 +296,67 @@ public class DataForm
         this.setActivity(activityId);
         return this;
     }
+
+//    /**
+//     * Flattens all DataFields into a single list.
+//     */
+//    public void flattenFields() {
+//        this.flattenedFields = flattenFieldsRecursively(fields, "");
+//    }
+
+//    private List<DataField> flattenFieldsRecursively(Set<DataField> fields, String parentPath) {
+//        List<DataField> flatList = new ArrayList<>();
+//        for (DataField field : fields) {
+//            // Generate the full path for the field
+//            String currentPath = parentPath.isEmpty() ? field.getName() : parentPath + DataField.PATH_SEP + field.getName();
+//            field.setPath(currentPath);
+//            flatList.add(field);
+//
+//            // Recursively process nested fields
+//            if (field.getFields() != null && !field.getFields().isEmpty()) {
+//                flatList.addAll(flattenFieldsRecursively(field.getFields(), currentPath));
+//            }
+//        }
+//        return flatList;
+//    }
+
+//    private List<DataField> flattenFieldsRecursively(Set<DataField> fields, String parentPath) {
+//        List<DataField> flatList = new ArrayList<>();
+//
+//        for (DataField field : fields) {
+//            // Determine the current path: Start with the field name if parentPath is null or empty
+//            String currentPath = (parentPath == null || parentPath.isEmpty())
+//                ? field.getName()
+//                : parentPath + DataField.PATH_SEP + field.getName();
+//
+//            field.setPath(currentPath);
+//            flatList.add(field);
+//
+//            // Recursively process nested fields if present
+//            if (field.getFields() != null && !field.getFields().isEmpty()) {
+//                flatList.addAll(flattenFieldsRecursively(field.getFields(), currentPath));
+//            }
+//        }
+//
+//        return flatList;
+//    }
+
+//
+//    public List<DataField> getFlattenFields() {
+//        List<DataField> flatList = new ArrayList<>();
+//        for (DataField field : fields) {
+//            flattenField(field, flatList);
+//        }
+//        return flatList;
+//    }
+
+
+//    private void flattenField(DataField field, List<DataField> flatList) {
+//        flatList.add(field);
+//        for (DataField nestedField : field.getFields()) {
+//            flattenField(nestedField, flatList);
+//        }
+//    }
 
     @Override
     public boolean equals(Object o) {

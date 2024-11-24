@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -35,6 +36,7 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     @ManyToMany(mappedBy = "users")
     @JsonSerialize(contentAs = IdentifiableObject.class)
+    @JsonIgnoreProperties(value = {"users", "activity", "assignments", "userInfo", "translations", "ancestors", "parent"}, allowSetters = true)
     private Set<Team> teams = new LinkedHashSet<>();
 
     public Set<Team> getTeams() {
@@ -115,8 +117,8 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
     @ManyToMany
     @JoinTable(
         name = "app_user_authority",
-        joinColumns = { @JoinColumn(name = "user_id", referencedColumnName = "id") },
-        inverseJoinColumns = { @JoinColumn(name = "authority_name", referencedColumnName = "name") }
+        joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
+        inverseJoinColumns = {@JoinColumn(name = "authority_name", referencedColumnName = "name")}
     )
     @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
     @BatchSize(size = 20)

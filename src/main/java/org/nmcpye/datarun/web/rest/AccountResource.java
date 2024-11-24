@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.web.rest;
 
 import jakarta.validation.Valid;
-import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.repository.UserRepository;
@@ -10,7 +9,9 @@ import org.nmcpye.datarun.service.MailService;
 import org.nmcpye.datarun.service.UserService;
 import org.nmcpye.datarun.service.dto.AdminUserDTO;
 import org.nmcpye.datarun.service.dto.PasswordChangeDTO;
-import org.nmcpye.datarun.web.rest.errors.*;
+import org.nmcpye.datarun.web.rest.errors.EmailAlreadyUsedException;
+import org.nmcpye.datarun.web.rest.errors.InvalidPasswordException;
+import org.nmcpye.datarun.web.rest.errors.LoginAlreadyUsedException;
 import org.nmcpye.datarun.web.rest.vm.KeyAndPasswordVM;
 import org.nmcpye.datarun.web.rest.vm.ManagedUserVM;
 import org.slf4j.Logger;
@@ -18,11 +19,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 /**
  * REST controller for managing the current user's account.
  */
-@RestController
-@RequestMapping("/api")
+//@RestController
+//@RequestMapping("/api")
 public class AccountResource {
 
     private static class AccountResourceException extends RuntimeException {
