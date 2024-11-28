@@ -7,7 +7,6 @@ import org.nmcpye.datarun.drun.mongo.repository.DataFormSubmissionHistoryReposit
 import org.nmcpye.datarun.drun.mongo.repository.DataFormSubmissionRepositoryCustom;
 import org.nmcpye.datarun.drun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -40,7 +39,6 @@ public class DataFormSubmissionServiceImpl
     private final DataFormSubmissionRepositoryCustom repository;
     final DataFormSubmissionHistoryRepository historyRepository;
     private final ActivityRelationalRepositoryCustom activityRepository;
-    private final OrgUnitRelationalRepositoryCustom orgUnitRelationalRepositoryCustom;
     private final TeamRelationalRepositoryCustom teamRepository;
     final private MongoTemplate mongoTemplate;
     private final SequenceGeneratorService sequenceGeneratorService;
@@ -48,13 +46,12 @@ public class DataFormSubmissionServiceImpl
     public DataFormSubmissionServiceImpl(
         DataFormSubmissionRepositoryCustom repository, DataFormSubmissionHistoryRepository historyRepository,
         ActivityRelationalRepositoryCustom activityRepository,
-        OrgUnitRelationalRepositoryCustom orgUnitRelationalRepositoryCustom,
-        TeamRelationalRepositoryCustom teamRepository, MongoTemplate mongoTemplate, SequenceGeneratorService sequenceGeneratorService) {
+        TeamRelationalRepositoryCustom teamRepository, MongoTemplate mongoTemplate,
+        SequenceGeneratorService sequenceGeneratorService) {
         super(repository);
         this.repository = repository;
         this.historyRepository = historyRepository;
         this.activityRepository = activityRepository;
-        this.orgUnitRelationalRepositoryCustom = orgUnitRelationalRepositoryCustom;
         this.teamRepository = teamRepository;
         this.mongoTemplate = mongoTemplate;
         this.sequenceGeneratorService = sequenceGeneratorService;
@@ -94,11 +91,11 @@ public class DataFormSubmissionServiceImpl
                 () -> {
                     throw new PropertyNotFoundException("Team not found: " + dataFormSubmission.getOrgUnit());
                 });
-        orgUnitRelationalRepositoryCustom.findByUid(dataFormSubmission.getOrgUnit())
-            .ifPresentOrElse((a) -> dataFormSubmission.setOrgUnit(a.getUid()),
-                () -> {
-                    throw new PropertyNotFoundException("OrgUnit not found: " + dataFormSubmission.getOrgUnit());
-                });
+//        orgUnitRelationalRepositoryCustom.findByUid(dataFormSubmission.getOrgUnit())
+//            .ifPresentOrElse((a) -> dataFormSubmission.setOrgUnit(a.getUid()),
+//                () -> {
+//                    throw new PropertyNotFoundException("OrgUnit not found: " + dataFormSubmission.getOrgUnit());
+//                });
 
 //        return saveVersioning(dataFormSubmission);
         return repository.save(dataFormSubmission);

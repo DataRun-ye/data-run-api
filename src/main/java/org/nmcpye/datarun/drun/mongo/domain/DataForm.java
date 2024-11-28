@@ -26,7 +26,7 @@ public class DataForm
     private String id;
 
     @Size(max = 11)
-    @NotNull
+//    @NotNull
     @Field("uid")
     @Indexed(unique = true, name = "form_uid")
     private String uid;
@@ -46,6 +46,9 @@ public class DataForm
 
     @Field("disabled")
     private Boolean disabled;
+
+    @Field("deleted")
+    private boolean deleted;
 
     @Field("activity")
     private String activity;
@@ -93,6 +96,14 @@ public class DataForm
 
     public boolean hasReferenceFields() {
         return flattenedFields.stream().anyMatch(DataField::ofReferenceType);
+    }
+
+    public Boolean getDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(Boolean deleted) {
+        this.deleted = deleted;
     }
 
     public Set<OptionSet> getOptionSets() {

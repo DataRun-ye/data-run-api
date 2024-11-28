@@ -33,7 +33,15 @@ public class DataFieldRule implements Serializable {
 
     private FilterRuleInfo filterInfo;
 
-    // jhipster-needle-entity-add-field - JHipster will add fields here
+    private String assignedValue;
+
+    public String getAssignedValue() {
+        return assignedValue;
+    }
+
+    public void setAssignedValue(String assignedValue) {
+        this.assignedValue = assignedValue;
+    }
 
     public Map<String, String> getMessage() {
         return message;
@@ -43,19 +51,6 @@ public class DataFieldRule implements Serializable {
     public void setMessage(Map<String, String> message) {
         this.message = Objects.requireNonNullElseGet(message, () -> Map.of("en", "Error"));
     }
-
-//    public String getUid() {
-//        return this.uid;
-//    }
-//
-//    public DataFieldRule uid(String uid) {
-//        this.setUid(uid);
-//        return this;
-//    }
-
-//    public void setUid(String uid) {
-//        this.uid = uid;
-//    }
 
     public String getExpression() {
         return this.expression;
