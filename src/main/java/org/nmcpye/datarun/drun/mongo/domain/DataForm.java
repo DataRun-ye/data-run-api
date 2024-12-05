@@ -1,15 +1,19 @@
 package org.nmcpye.datarun.drun.mongo.domain;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.AbstractField;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.FieldDeserializer;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.Repeat;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.Section;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -18,7 +22,7 @@ import java.util.*;
 @Document(collection = "data_form")
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataForm
-    extends AbstractAuditingEntityMongo<String> implements Serializable {
+    extends AbstractAuditingEntityMongo<String> {
 
     private static final long serialVersionUID = 1L;
 
@@ -55,17 +59,21 @@ public class DataForm
 
     private Integer version;
 
-    @Field("default_local")
+    @Field("defaultLocal")
     private String defaultLocal;
 
+//    @Field("fields")
+//    private List<DataField> fields = new ArrayList<>();
+
     @Field("fields")
-    private Set<DataField> fields = new HashSet<>();
+    @JsonDeserialize(contentUsing = FieldDeserializer.class)
+    private List<AbstractField> fields = new ArrayList<>();
 
     @Field("options")
-    private Set<DataOption> options = new HashSet<>();
+    private List<DataOption> options = new ArrayList<>();
 
-    @Field("option_sets")
-    private Set<OptionSet> optionSets = new HashSet<>();
+    @Field("optionSets")
+    private List<OptionSet> optionSets = new ArrayList<>();
 
     @Field("orgUnits")
 //    @JsonSerialize(using = OrgUnitUidsSetSerializer.class)
@@ -74,7 +82,7 @@ public class DataForm
     private Map<String, String> label;
 
     @Field("flattenedFields")
-    private List<DataField> flattenedFields = new ArrayList<>();
+    private List<AbstractField> flattenedFields = new ArrayList<>();
 
 
     @PrePersist
@@ -83,19 +91,30 @@ public class DataForm
         this.flattenedFields = this.flattenFields();
     }
 
-    public List<DataField> flattenFields() {
-        List<DataField> flatList = new ArrayList<>();
-        for (DataField field : this.fields) {
+    public List<AbstractField> flattenFields() {
+        List<AbstractField> flatList = new ArrayList<>();
+        for (AbstractField field : this.fields) {
             flatList.add(field);
-            if (field.getFields() != null && !field.getFields().isEmpty()) {
-                flatList.addAll(field.flattenFields());
+            if (field instanceof Repeat repeatSection) {
+                flatList.addAll(flattenSectionFields(repeatSection.getFields()));
+            } else if (field instanceof Section section) {
+                flatList.addAll(flattenSectionFields(section.getFields()));
             }
         }
         return flatList;
     }
 
-    public boolean hasReferenceFields() {
-        return flattenedFields.stream().anyMatch(DataField::ofReferenceType);
+    private List<AbstractField> flattenSectionFields(List<AbstractField> fields) {
+        List<AbstractField> flatList = new ArrayList<>();
+        for (AbstractField field : fields) {
+            flatList.add(field);
+            if (field instanceof Repeat repeatSection) {
+                flatList.addAll(flattenSectionFields(repeatSection.getFields()));
+            } else if (field instanceof Section section) {
+                flatList.addAll(flattenSectionFields(section.getFields()));
+            }
+        }
+        return flatList;
     }
 
     public Boolean getDeleted() {
@@ -106,11 +125,11 @@ public class DataForm
         this.deleted = deleted;
     }
 
-    public Set<OptionSet> getOptionSets() {
+    public List<OptionSet> getOptionSets() {
         return optionSets;
     }
 
-    public void setOptionSets(Set<OptionSet> optionSets) {
+    public void setOptionSets(List<OptionSet> optionSets) {
         this.optionSets = optionSets;
     }
 
@@ -125,7 +144,7 @@ public class DataForm
         return label;
     }
 
-    public List<DataField> getFlattenedFields() {
+    public List<AbstractField> getFlattenedFields() {
         if (flattenedFields.isEmpty()) {
             return flattenFields();
         }
@@ -133,7 +152,7 @@ public class DataForm
         return flattenedFields;
     }
 
-    public void setFlattenedFields(List<DataField> flattenedFields) {
+    public void setFlattenedFields(List<AbstractField> flattenedFields) {
         this.flattenedFields = flattenedFields;
     }
 
@@ -176,11 +195,11 @@ public class DataForm
         this.defaultLocal = Objects.requireNonNullElse(defaultLocal, "en");
     }
 
-    public Set<DataOption> getOptions() {
+    public List<DataOption> getOptions() {
         return options;
     }
 
-    public void setOptions(Set<DataOption> options) {
+    public void setOptions(List<DataOption> options) {
         this.options = options;
     }
 
@@ -272,25 +291,25 @@ public class DataForm
         this.disabled = disabled;
     }
 
-    public Set<DataField> getFields() {
+    public List<AbstractField> getFields() {
         return this.fields;
     }
 
-    public void setFields(Set<DataField> dataFields) {
+    public void setFields(List<AbstractField> dataFields) {
         this.fields = dataFields;
     }
 
-    public DataForm fields(Set<DataField> dataFields) {
+    public DataForm fields(List<AbstractField> dataFields) {
         this.setFields(dataFields);
         return this;
     }
 
-    public DataForm addField(DataField dataField) {
+    public DataForm addField(AbstractField dataField) {
         this.fields.add(dataField);
         return this;
     }
 
-    public DataForm removeField(DataField dataField) {
+    public DataForm removeField(AbstractField dataField) {
         this.fields.remove(dataField);
         return this;
     }
@@ -308,79 +327,18 @@ public class DataForm
         return this;
     }
 
-//    /**
-//     * Flattens all DataFields into a single list.
-//     */
-//    public void flattenFields() {
-//        this.flattenedFields = flattenFieldsRecursively(fields, "");
-//    }
-
-//    private List<DataField> flattenFieldsRecursively(Set<DataField> fields, String parentPath) {
-//        List<DataField> flatList = new ArrayList<>();
-//        for (DataField field : fields) {
-//            // Generate the full path for the field
-//            String currentPath = parentPath.isEmpty() ? field.getName() : parentPath + DataField.PATH_SEP + field.getName();
-//            field.setPath(currentPath);
-//            flatList.add(field);
-//
-//            // Recursively process nested fields
-//            if (field.getFields() != null && !field.getFields().isEmpty()) {
-//                flatList.addAll(flattenFieldsRecursively(field.getFields(), currentPath));
-//            }
-//        }
-//        return flatList;
-//    }
-
-//    private List<DataField> flattenFieldsRecursively(Set<DataField> fields, String parentPath) {
-//        List<DataField> flatList = new ArrayList<>();
-//
-//        for (DataField field : fields) {
-//            // Determine the current path: Start with the field name if parentPath is null or empty
-//            String currentPath = (parentPath == null || parentPath.isEmpty())
-//                ? field.getName()
-//                : parentPath + DataField.PATH_SEP + field.getName();
-//
-//            field.setPath(currentPath);
-//            flatList.add(field);
-//
-//            // Recursively process nested fields if present
-//            if (field.getFields() != null && !field.getFields().isEmpty()) {
-//                flatList.addAll(flattenFieldsRecursively(field.getFields(), currentPath));
-//            }
-//        }
-//
-//        return flatList;
-//    }
-
-//
-//    public List<DataField> getFlattenFields() {
-//        List<DataField> flatList = new ArrayList<>();
-//        for (DataField field : fields) {
-//            flattenField(field, flatList);
-//        }
-//        return flatList;
-//    }
-
-
-//    private void flattenField(DataField field, List<DataField> flatList) {
-//        flatList.add(field);
-//        for (DataField nestedField : field.getFields()) {
-//            flattenField(nestedField, flatList);
-//        }
-//    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         DataForm dataForm = (DataForm) o;
-        return getUid().equals(dataForm.getUid());
+        return (id != null && id.equals(dataForm.id)) ||
+            (uid != null && uid.equals(dataForm.uid));
     }
 
     @Override
     public int hashCode() {
-        return getUid().hashCode();
+        return id != null ? id.hashCode() : (uid != null ? uid.hashCode() : 0);
     }
 
     // prettier-ignore

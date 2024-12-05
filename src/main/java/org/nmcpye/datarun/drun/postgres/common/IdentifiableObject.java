@@ -3,11 +3,12 @@ package org.nmcpye.datarun.drun.postgres.common;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.nmcpye.datarun.drun.postgres.common.translation.Translation;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
 public interface IdentifiableObject<ID>
-    extends Identifiable<ID>, Comparable<IdentifiableObject<ID>> {
+    extends Identifiable<ID>, Comparable<IdentifiableObject<ID>>, Serializable {
 
     default String getCode() {
         return null;

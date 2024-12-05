@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.common;
 
-public interface Identifiable<ID> {
+public interface Identifiable<ID>  {
 
     void setId(ID id);
 

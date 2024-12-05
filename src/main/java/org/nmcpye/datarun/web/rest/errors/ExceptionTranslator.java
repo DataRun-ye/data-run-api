@@ -3,6 +3,9 @@ package org.nmcpye.datarun.web.rest.errors;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.service.UsernameAlreadyUsedException;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequestValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.ConcurrencyFailureException;
@@ -15,6 +18,7 @@ import org.springframework.http.converter.HttpMessageConversionException;
 import org.springframework.lang.Nullable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -40,6 +44,7 @@ import static org.springframework.core.annotation.AnnotatedElementUtils.findMerg
  */
 @ControllerAdvice
 public class ExceptionTranslator extends ResponseEntityExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(ExceptionTranslator.class);
 
     private static final String FIELD_ERRORS_KEY = "fieldErrors";
     private static final String MESSAGE_KEY = "message";
@@ -70,6 +75,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         HttpStatusCode statusCode,
         WebRequest request
     ) {
+        log.error("Exception handled: {}", ex.getMessage(), ex);
         body = body == null ? wrapAndCustomizeProblem((Throwable) ex, (NativeWebRequest) request) : body;
         return super.handleExceptionInternal(ex, body, headers, statusCode, request);
     }
@@ -95,6 +101,20 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         if (
             ex instanceof ErrorResponseException exp && exp.getBody() instanceof ProblemDetailWithCause problemDetailWithCause
         ) return problemDetailWithCause;
+
+        // nmc
+        if (ex instanceof AuthenticationException) {
+            return ProblemDetailWithCauseBuilder.instance()
+                .withStatus(HttpStatus.UNAUTHORIZED.value())
+                .withTitle("Unauthorized")
+                .withDetail("Authentication failed. Please check your credentials.")
+                .build();
+        }
+
+        if (ex instanceof QueryRequestValidationException validationException) {
+            return validationException.toProblemDetail();
+        }
+
         return ProblemDetailWithCauseBuilder.instance().withStatus(toStatus(ex).value()).build();
     }
 

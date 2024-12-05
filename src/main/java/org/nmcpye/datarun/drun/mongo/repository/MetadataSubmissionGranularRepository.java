@@ -1,8 +1,9 @@
 package org.nmcpye.datarun.drun.mongo.repository;
 
 import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.drun.mongo.domain.DataField;
 import org.nmcpye.datarun.drun.mongo.domain.MetadataSubmission;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.AbstractField;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.ResourceField;
 import org.nmcpye.datarun.drun.mongo.domain.enumeration.MetadataResourceType;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
@@ -75,12 +76,14 @@ public class MetadataSubmissionGranularRepository {
             .collect(Collectors.toList());
     }
 
-    public List<DataField> getUserFieldsOfReferenceType() {
+    public List<ResourceField> getUserFieldsOfResourceType() {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return dataFormRepository.findAll()
                 .stream()
                 .flatMap(form -> form.getFlattenedFields().stream())
-                .filter(DataField::ofReferenceType).toList();
+                .filter(AbstractField::isResourceTypeField)
+                .map(ResourceField.class::cast)
+                .toList();
         }
 
         var assignments = getAssignedAssignments();
@@ -92,10 +95,12 @@ public class MetadataSubmissionGranularRepository {
             .distinct()
             .toList();
 
-        List<DataField> typeReferenceFields = activityUids.stream()
+        List<ResourceField> typeReferenceFields = activityUids.stream()
             .flatMap(uid -> dataFormRepository.findAllByActivity(uid).stream())
             .flatMap(form -> form.getFlattenedFields().stream())
-            .filter(DataField::ofReferenceType).toList();
+            .filter(AbstractField::isResourceTypeField)
+            .map(ResourceField.class::cast)
+            .toList();
 
         return typeReferenceFields;
     }
@@ -103,7 +108,7 @@ public class MetadataSubmissionGranularRepository {
     public Page<MetadataSubmission> getReferencedMetadataSubmissions(Pageable pageable) {
         Set<MetadataSubmission> metadataSubmissions = new HashSet<>();
 
-        for (DataField field : getUserFieldsOfReferenceType()) {
+        for (var field : getUserFieldsOfResourceType()) {
 
             MetadataResourceType resourceType = field.getResourceType();
             String metadataSchema = field.getResourceMetadataSchema();

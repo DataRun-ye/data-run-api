@@ -29,16 +29,22 @@ public class DataOption implements Serializable {
 
     private Map<String, Object> properties = new HashMap<>();
 
-    public Map<String, Object> getProperties() {
-        return properties;
+
+    public String getName() {
+        return this.name;
     }
 
-    public void setProperties(Map<String, Object> properties) {
-        this.properties = properties;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public void addProperty(String key, Object name) {
-        this.properties.put(key, name);
+
+    public String getListName() {
+        return listName;
+    }
+
+    public void setListName(String listName) {
+        this.listName = listName;
     }
 
     public Map<String, String> getLabel() {
@@ -46,6 +52,18 @@ public class DataOption implements Serializable {
             return Map.of("en", this.name);
         }
         return label;
+    }
+
+    public void setLabel(Map<String, String> label) {
+        this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
     }
 
     public Integer getOrder() {
@@ -56,55 +74,17 @@ public class DataOption implements Serializable {
         this.order = Objects.requireNonNullElseGet(order, () -> 0);
     }
 
-    public String getListName() {
-        return listName;
-    }
-
-    public void setListName(String listName) {
-        this.listName = listName;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
-    public DataOption name(String name) {
-        this.setName(name);
-        return this;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setLabel(Map<String, String> label) {
-        this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
-    }
-
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof DataOption)) {
-            return false;
-        }
-        return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DataOption that = (DataOption) o;
+        return listName.equals(that.listName) && name.equals(that.name);
     }
 
     @Override
     public int hashCode() {
-        // see https://vladmihalcea.com/how-to-implement-equals-and-hashcode-using-the-jpa-entity-identifier/
-        return getClass().hashCode();
+        return Objects.hash(listName, name);
     }
 
-    // prettier-ignore
-    @Override
-    public String toString() {
-        return "DataOption{" +
-//            ", uid='" + getUid() + "'" +
-            ", name='" + getName() + "'" +
-//            ", description='" + getDescription() + "'" +
-            "}";
-    }
 }

@@ -31,4 +31,6 @@ public class JacksonConfiguration {
     public Hibernate6Module hibernate6Module() {
         return new Hibernate6Module().configure(Feature.SERIALIZE_IDENTIFIER_FOR_LAZY_NOT_LOADED_OBJECTS, true);
     }
+
+
 }

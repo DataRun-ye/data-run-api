@@ -1,9 +1,11 @@
 package org.nmcpye.datarun.drun.mongo.service.impl;
 
 import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.drun.mongo.domain.DataField;
 import org.nmcpye.datarun.drun.mongo.domain.DataForm;
 import org.nmcpye.datarun.drun.mongo.domain.MetadataSchema;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.AbstractField;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.ResourceField;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.Section;
 import org.nmcpye.datarun.drun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.drun.mongo.repository.MetadataSchemaRepository;
 import org.nmcpye.datarun.drun.mongo.service.MetadataSchemaService;
@@ -26,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Service Implementation for managing {@link DataForm}.
@@ -64,15 +65,15 @@ public class MetadataSchemaServiceImpl
         this.orgUnitRepository = orgUnitRepository;
     }
 
-    public void processFields(Set<DataField> fields, String parentPath) {
-        for (DataField field : fields) {
-            String currentPath = parentPath.isEmpty() ? field.getName() : parentPath + DataField.PATH_SEP + field.getName();
+    public void processFields(List<AbstractField> fields, String parentPath) {
+        for (AbstractField field : fields) {
+            String currentPath = parentPath.isEmpty() ? field.getName() : parentPath + AbstractField.PATH_SEP + field.getName();
             field.setPath(currentPath);
-            field.setSection(parentPath.isEmpty() ? null : parentPath);
+//            field.setSection(parentPath.isEmpty() ? null : parentPath);
 
             // Recursively process nested sections
-            if (field.getType().isSectionType() && field.getFields() != null) {
-                processFields(field.getFields(), currentPath);
+            if (field instanceof Section section && section.getFields() != null) {
+                processFields(section.getFields(), currentPath);
             }
         }
     }
@@ -117,16 +118,19 @@ public class MetadataSchemaServiceImpl
             .distinct()
             .toList();
 
-        List<DataField> typeReferenceFields = activityUids.stream()
-            .flatMap(uid -> dataFormRepository.findAllByActivity(uid).stream())
-            .flatMap(form -> form.getFlattenedFields().stream())
-            .filter(DataField::ofReferenceType).toList();
+//        List<ResourceField> typeReferenceFields = activityUids.stream()
+//            .flatMap(uid -> dataFormRepository.findAllByActivity(uid).stream())
+//            .flatMap(form -> form.getFlattenedFields().stream())
+//            .filter(AbstractField::isResourceTypeField)
+//            .map(ResourceField.class::cast)
+//            .toList();
         // Collect referenced metadata schemas from fields
         List<MetadataSchema> schemas = activityUids.stream()
             .flatMap(uid -> dataFormRepository.findAllByActivity(uid).stream())
             .flatMap(form -> form.getFlattenedFields().stream())
-            .filter(DataField::ofReferenceType)
-            .map(DataField::getResourceMetadataSchema)
+            .filter(AbstractField::isResourceTypeField)
+            .map(ResourceField.class::cast)
+            .map(ResourceField::getResourceMetadataSchema)
             .distinct()
             .map(repositoryCustom::findByUid)
             .flatMap(Optional::stream) // Unwrap only present values

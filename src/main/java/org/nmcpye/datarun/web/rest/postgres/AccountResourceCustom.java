@@ -54,13 +54,13 @@ public class AccountResourceCustom extends AbstractRelationalResource<User> {
 
     private final UserService userService;
 
-    private final MailService mailService;
+//    private final MailService mailService;
 
     public AccountResourceCustom(UserRepository userRepository, UserService userService, MailService mailService) {
         super(userService, userRepository);
         this.userRepository = userRepository;
         this.userService = userService;
-        this.mailService = mailService;
+//        this.mailService = mailService;
     }
 
     /**
@@ -169,7 +169,7 @@ public class AccountResourceCustom extends AbstractRelationalResource<User> {
         userService.registerUserList(managedUserVMList);
         managedUserVMList.forEach(managedUserVM -> {
             User user = userService.findUserByLogin(managedUserVM.getLogin()).orElseThrow();
-            mailService.sendActivationEmail(user);
+//            mailService.sendActivationEmail(user);
         });
     }
 

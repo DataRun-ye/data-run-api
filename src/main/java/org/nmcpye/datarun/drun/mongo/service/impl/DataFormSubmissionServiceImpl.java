@@ -10,13 +10,12 @@ import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryC
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.utils.CodeGenerator;
+import org.nmcpye.datarun.web.rest.mongo.submission.MongoQueryBuilder;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -176,9 +175,10 @@ public class DataFormSubmissionServiceImpl
 
     private Map<String, Object> addGroupIndicesToFormData(Map<String, Object> formData) {
         Map<String, Object> updatedFormData = new HashMap<>();
-        final Object parentId = formData.getOrDefault("uid",
-            CodeGenerator.generateUid() + "_" + CodeGenerator.generateCode(11));
-        formData.putIfAbsent("uid", parentId);
+        // _formDataUid generated at frontend/app
+//        final Object parentId = formData.getOrDefault("_formDataUid",
+//            CodeGenerator.generateUid() + "-" + CodeGenerator.generateUid());
+//        formData.putIfAbsent("_formDataUid", parentId);
 
         for (Map.Entry<String, Object> entry : formData.entrySet()) {
             Object value = entry.getValue();
@@ -190,9 +190,9 @@ public class DataFormSubmissionServiceImpl
                     List<Map<String, Object>> updatedList = new ArrayList<>();
                     for (int i = 0; i < list.size(); i++) {
                         Map<String, Object> objectInArray = (Map<String, Object>) list.get(i);
-                        objectInArray.put("repeatIndex", i + 1);  // Add groupIndex (starting from 1)
-                        objectInArray.putIfAbsent("repeatUid", CodeGenerator.generateUid() + "_" + CodeGenerator.generateCode(3));  // Add groupIndex (starting from 1)
-                        objectInArray.putIfAbsent("parentUid", parentId);  // Add groupIndex (starting from 1)
+                        objectInArray.put("index", i + 1);  // Add groupIndex (starting from 1)
+//                        objectInArray.putIfAbsent("id", CodeGenerator.generateUid() + "-" + CodeGenerator.generateCode(3));  // Add groupIndex (starting from 1)
+//                        objectInArray.putIfAbsent("parent", parentId);  // Add groupIndex (starting from 1)
                         updatedList.add(objectInArray);
                     }
                     updatedFormData.put(entry.getKey(), updatedList);
@@ -209,5 +209,19 @@ public class DataFormSubmissionServiceImpl
             }
         }
         return updatedFormData;
+    }
+
+    public Page<DataFormSubmission> getSubmissions(QueryRequest queryRequest) {
+        Query query = MongoQueryBuilder.buildQuery(queryRequest.getFilters());
+
+        // Add pagination and sorting
+        Pageable pageable = PageRequest.of(queryRequest.getPage(), queryRequest.getSize(),
+            Sort.by(queryRequest.getSort()));
+        query.with(pageable);
+
+        List<DataFormSubmission> submissions = mongoTemplate.find(query, DataFormSubmission.class);
+        long total = mongoTemplate.count(query, DataFormSubmission.class);
+
+        return new PageImpl<>(submissions, pageable, total);
     }
 }

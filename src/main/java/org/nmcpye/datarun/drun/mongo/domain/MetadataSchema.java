@@ -4,6 +4,9 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.AbstractField;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.Repeat;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.Section;
 import org.nmcpye.datarun.drun.mongo.domain.enumeration.MetadataResourceType;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -11,7 +14,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * A DataForm.
@@ -53,24 +59,24 @@ public class MetadataSchema
     private String defaultLocal;
 
     @Field("fields")
-    private Set<DataField> fields = new HashSet<>();
+    private List<AbstractField> fields = new ArrayList<>();
 
     @Field("option_sets")
-    private Set<OptionSet> optionSets = new HashSet<>();
+    private List<OptionSet> optionSets = new ArrayList<>();
 
     private Map<String, String> label;
     @Field("flattenedFields")
-    private List<DataField> flattenedFields = new ArrayList<>();
+    private List<AbstractField> flattenedFields = new ArrayList<>();
 
-    public List<DataField> getFlattenedFields() {
-        if(flattenedFields.isEmpty()) {
+    public List<AbstractField> getFlattenedFields() {
+        if (flattenedFields.isEmpty()) {
             return flattenFields();
         }
 
         return flattenedFields;
     }
 
-    public void setFlattenedFields(List<DataField> flattenedFields) {
+    public void setFlattenedFields(List<AbstractField> flattenedFields) {
         this.flattenedFields = flattenedFields;
     }
 
@@ -80,22 +86,37 @@ public class MetadataSchema
         this.flattenedFields = this.flattenFields();
     }
 
-    public List<DataField> flattenFields() {
-        List<DataField> flatList = new ArrayList<>();
-        for (DataField field : this.fields) {
+    public List<AbstractField> flattenFields() {
+        List<AbstractField> flatList = new ArrayList<>();
+        for (AbstractField field : this.fields) {
             flatList.add(field);
-            if (field.getFields() != null && !field.getFields().isEmpty()) {
-                flatList.addAll(field.flattenFields());
+            if (field instanceof Repeat repeatSection) {
+                flatList.addAll(flattenSectionFields(repeatSection.getFields()));
+            } else if (field instanceof Section section) {
+                flatList.addAll(flattenSectionFields(section.getFields()));
             }
         }
         return flatList;
     }
 
-    public Set<OptionSet> getOptionSets() {
+    private List<AbstractField> flattenSectionFields(List<AbstractField> fields) {
+        List<AbstractField> flatList = new ArrayList<>();
+        for (AbstractField field : fields) {
+            flatList.add(field);
+            if (field instanceof Repeat repeatSection) {
+                flatList.addAll(flattenSectionFields(repeatSection.getFields()));
+            } else if (field instanceof Section section) {
+                flatList.addAll(flattenSectionFields(section.getFields()));
+            }
+        }
+        return flatList;
+    }
+
+    public List<OptionSet> getOptionSets() {
         return optionSets;
     }
 
-    public void setOptionSets(Set<OptionSet> optionSets) {
+    public void setOptionSets(List<OptionSet> optionSets) {
         this.optionSets = optionSets;
     }
 
@@ -191,25 +212,20 @@ public class MetadataSchema
         this.disabled = disabled;
     }
 
-    public Set<DataField> getFields() {
+    public List<AbstractField> getFields() {
         return this.fields;
     }
 
-    public void setFields(Set<DataField> dataFields) {
+    public void setFields(List<AbstractField> dataFields) {
         this.fields = dataFields;
     }
 
-    public MetadataSchema fields(Set<DataField> dataFields) {
-        this.setFields(dataFields);
-        return this;
-    }
-
-    public MetadataSchema addField(DataField dataField) {
+    public MetadataSchema addField(AbstractField dataField) {
         this.fields.add(dataField);
         return this;
     }
 
-    public MetadataSchema removeField(DataField dataField) {
+    public MetadataSchema removeField(AbstractField dataField) {
         this.fields.remove(dataField);
         return this;
     }
@@ -226,14 +242,14 @@ public class MetadataSchema
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         MetadataSchema dataForm = (MetadataSchema) o;
-        return getUid().equals(dataForm.getUid());
+        return (id != null && id.equals(dataForm.id)) ||
+            (uid != null && uid.equals(dataForm.uid));
     }
 
     @Override
     public int hashCode() {
-        return getUid().hashCode();
+        return id != null ? id.hashCode() : (uid != null ? uid.hashCode() : 0);
     }
 
     // prettier-ignore

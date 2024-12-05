@@ -2,8 +2,10 @@ package org.nmcpye.datarun.drun.mongo.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.drun.mongo.domain.DataField;
 import org.nmcpye.datarun.drun.mongo.domain.DataForm;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.AbstractField;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.ResourceField;
+import org.nmcpye.datarun.drun.mongo.domain.datafield.Section;
 import org.nmcpye.datarun.drun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.drun.mongo.repository.MetadataSchemaRepository;
 import org.nmcpye.datarun.drun.mongo.service.DataFormService;
@@ -60,24 +62,24 @@ public class DataFormServiceImpl
         this.orgUnitRepository = orgUnitRepository;
     }
 
-    public void processFields(Set<DataField> fields, String parentPath) {
-        for (DataField field : fields) {
-            String currentPath = parentPath.isEmpty() ? field.getName() : parentPath + DataField.PATH_SEP + field.getName();
+    public <T extends AbstractField> void processFields(List<T> fields, String parentPath) {
+        for (AbstractField field : fields) {
+            String currentPath = parentPath.isEmpty() ? field.getName() : parentPath + AbstractField.PATH_SEP + field.getName();
             field.setPath(currentPath);
-            field.setSection(parentPath.isEmpty() ? null : parentPath);
-            if (field.ofReferenceType()) {
-                if (field.getResourceType() == null || field.getResourceMetadataSchema() == null) {
+//            field.setSection(parentPath.isEmpty() ? null : parentPath);
+            if (field instanceof ResourceField resourceField) {
+                if (resourceField.getResourceType() == null || resourceField.getResourceMetadataSchema() == null) {
                     throw new IllegalArgumentException(field.getName() + ": is of Reference type but does not specify Resource Type [OrgUnit, Team, Activity...etc] or ResourceMetadataSchema (The form used to submit the metadata of the reference type)");
                 }
 
-                if (metadataSchemaRepository.findByUid(field.getResourceMetadataSchema()).isEmpty()) {
-                    throw new IllegalArgumentException("Field: " + field.getName() + ": Specified ResourceMetadataSchema " + field.getResourceMetadataSchema() + " does not exist");
+                if (metadataSchemaRepository.findByUid(resourceField.getResourceMetadataSchema()).isEmpty()) {
+                    throw new IllegalArgumentException("Field: " + field.getName() + ": Specified ResourceMetadataSchema " + resourceField.getResourceMetadataSchema() + " does not exist");
                 }
 
             }
             // Recursively process nested sections
-            if (field.getType().isSectionType() && field.getFields() != null) {
-                processFields(field.getFields(), currentPath);
+            if (field instanceof Section section && section.getFields() != null) {
+                processFields(section.getFields(), currentPath);
             }
         }
     }

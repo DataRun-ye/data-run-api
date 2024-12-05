@@ -16,10 +16,6 @@ public class DataFieldRule implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-//    @Size(max = 11)
-//    @Field("uid")
-//    private String uid;
-
     @NotNull
     @Field("expression")
     private String expression;
@@ -30,8 +26,6 @@ public class DataFieldRule implements Serializable {
 
     @Field("message")
     private Map<String, String> message;
-
-    private FilterRuleInfo filterInfo;
 
     private String assignedValue;
 
@@ -49,7 +43,7 @@ public class DataFieldRule implements Serializable {
 
 
     public void setMessage(Map<String, String> message) {
-        this.message = Objects.requireNonNullElseGet(message, () -> Map.of("en", "Error"));
+        this.message = action == RuleAction.Error ? Objects.requireNonNullElseGet(message, () -> Map.of("en", "Field with error, check")) : null;
     }
 
     public String getExpression() {
@@ -78,24 +72,16 @@ public class DataFieldRule implements Serializable {
         this.action = action;
     }
 
-    public FilterRuleInfo getFilterInfo() {
-        return filterInfo;
-    }
-
-    public void setFilterInfo(FilterRuleInfo filterInfo) {
-        this.filterInfo = filterInfo;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DataFieldRule that = (DataFieldRule) o;
-        return Objects.equals(expression, that.expression) && action == that.action && Objects.equals(message, that.message);
+        return Objects.equals(expression, that.expression) && action == that.action;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(expression, action, message);
+        return Objects.hash(expression, action);
     }
 }
