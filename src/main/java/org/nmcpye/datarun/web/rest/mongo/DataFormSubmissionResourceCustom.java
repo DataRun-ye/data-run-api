@@ -9,11 +9,14 @@ import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.submission.GenericQueryService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequestValidator;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
@@ -49,7 +52,16 @@ public class DataFormSubmissionResourceCustom
             .map(submission -> {
                 Map<String, Object> formData = submission.getFormData();
                 if (queryRequest.isFlatten()) {
-                    formData = JsonFlattener.flatten(formData);
+                    formData.put("serialNumber", submission.getSerialNumber());
+                    formData.put("deleted", submission.getDeleted());
+                    formData.put("createdBy", submission.getCreatedBy());
+                    formData.put("createdDate", submission.getCreatedDate());
+                    formData.put("lastModifiedBy", submission.getLastModifiedBy());
+                    formData.put("lastModifiedDate", submission.getLastModifiedDate());
+                    formData.put("finishedEntryTime", submission.getFinishedEntryTime());
+                    formData.put("startEntryTime", submission.getStartEntryTime());
+                    formData.put("id", submission.getId());
+                    formData = JsonFlattener.flatten(formData, submission.getId());
                 }
                 return formData;
             }).collect(Collectors.toList());
@@ -68,47 +80,48 @@ public class DataFormSubmissionResourceCustom
     }
 
 
-//    @GetMapping("/form")
-//    public ResponseEntity<PagedResponse<Map<String, Object>>> getByForm(
-//        @ParameterObject Pageable pageable,
-//        @RequestParam(name = "paging", required = false, defaultValue = "true") boolean paging,
-//        @RequestParam(name = "filter", required = false) String filter,
-//        @RequestParam(name = "sn", required = false) Long sn,
-//        @RequestParam(name = "flatten", required = false, defaultValue = "true") boolean flatten) {
-//
-//        // Handle pageable unpaged condition
-//        if (!paging) {
-//            pageable = Pageable.unpaged();
-//        }
-//
-//        Page<DataFormSubmission> submissionsPage;
-//        if (filter != null) {
-//            if (sn != null) {
-//                submissionsPage = ((DataFormSubmissionService) identifiableService)
-//                    .findSubmissionsBySerialNumber(sn,
-//                        filter, pageable);
-//
-//            } else {
-//                submissionsPage = ((DataFormSubmissionService) identifiableService)
-//                    .findAllByForm(List.of(filter), pageable);
-//            }
-//
-//        } else {
-//            submissionsPage = identifiableService.findAllByUser(pageable);
-//        }
-//
-//        // Process each submission based on the flattening requirement
-//        List<Map<String, Object>> processedSubmissions = submissionsPage.getContent()
-//            .stream()
-//            .map(submission -> processSubmission(submission, flatten))
-//            .collect(Collectors.toList());
-//
-//        // Build paged response
-//        PagedResponse<Map<String, Object>> response = buildPagedResponse(
-//            submissionsPage, processedSubmissions, "results");
-//
-//        return ResponseEntity.ok(response);
-//    }
+    @Deprecated
+    @GetMapping("/form")
+    public ResponseEntity<PagedResponse<Map<String, Object>>> getByForm(
+        @ParameterObject Pageable pageable,
+        @RequestParam(name = "paging", required = false, defaultValue = "true") boolean paging,
+        @RequestParam(name = "filter", required = false) String filter,
+        @RequestParam(name = "sn", required = false) Long sn,
+        @RequestParam(name = "flatten", required = false, defaultValue = "true") boolean flatten) {
+
+        // Handle pageable unpaged condition
+        if (!paging) {
+            pageable = Pageable.unpaged();
+        }
+
+        Page<DataFormSubmission> submissionsPage;
+        if (filter != null) {
+            if (sn != null) {
+                submissionsPage = ((DataFormSubmissionService) identifiableService)
+                    .findSubmissionsBySerialNumber(sn,
+                        filter, pageable);
+
+            } else {
+                submissionsPage = ((DataFormSubmissionService) identifiableService)
+                    .findAllByForm(List.of(filter), pageable);
+            }
+
+        } else {
+            submissionsPage = identifiableService.findAllByUser(pageable);
+        }
+
+        // Process each submission based on the flattening requirement
+        List<Map<String, Object>> processedSubmissions = submissionsPage.getContent()
+            .stream()
+            .map(submission -> processSubmission(submission, flatten))
+            .collect(Collectors.toList());
+
+        // Build paged response
+        PagedResponse<Map<String, Object>> response = buildPagedResponse(
+            submissionsPage, processedSubmissions, "results");
+
+        return ResponseEntity.ok(response);
+    }
 
     /**
      * Processes a DataFormSubmission object into a map and optionally flattens form data.
@@ -139,7 +152,7 @@ public class DataFormSubmissionResourceCustom
         // Retrieve and optionally flatten the formData
         Map<String, Object> formData = submission.getFormData();
         if (flatten) {
-            formData = JsonFlattener.flatten(formData);
+            formData = JsonFlattener.flatten(formData, submission.getId());
         }
 
         // Merge formData into data

@@ -50,7 +50,6 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
     @JsonIgnoreProperties(value = {"project", "translations"}, allowSetters = true)
     private Activity activity;
 
-    @ManyToOne//(fetch = FetchType.LAZY)
 //    @JsonSerialize(contentAs = IdentifiableObject.class)
     @JsonIgnoreProperties(value = {"parent", "children", "groups","assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private OrgUnit orgUnit;

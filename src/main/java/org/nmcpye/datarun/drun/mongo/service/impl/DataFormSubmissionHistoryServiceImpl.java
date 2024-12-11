@@ -56,7 +56,7 @@ public class DataFormSubmissionHistoryServiceImpl
                 if (includingArrays) {
                     submission.setFormData(JsonFlattener.flattenIncludingArrays(submission.getFormData()));
                 } else {
-                    submission.setFormData(JsonFlattener.flatten(submission.getFormData()));
+                    submission.setFormData(JsonFlattener.flatten(submission.getFormData(), submission.getId()));
                 }
 
             })

@@ -50,8 +50,15 @@ public class DataFormSubmissionMigrationService {
         for (DataFormSubmission submission : submissions) {
             Map<String, Object> formData = submission.getFormData();
 
+            final Object id = CodeGenerator.generateCode(15);
+            formData.put("_id", id);
+            formData.remove("uid");
+            formData.remove("_uid");
+            formData.remove("_uuid");
+            formData.remove("_formDataUid");
+
             // Recursively process formData to add group indices to arrays of objects
-            Map<String, Object> updatedFormData = addGroupIndicesToFormData(formData);
+            Map<String, Object> updatedFormData = addGroupIndicesToFormData(formData, id);
 
             // Update formData in submission
             submission.setFormData(updatedFormData);
@@ -61,11 +68,8 @@ public class DataFormSubmissionMigrationService {
         }
     }
 
-    private Map<String, Object> addGroupIndicesToFormData(Map<String, Object> formData) {
+    private Map<String, Object> addGroupIndicesToFormData(Map<String, Object> formData, Object parentId) {
         Map<String, Object> updatedFormData = new HashMap<>();
-        final Object parentId = formData.getOrDefault("uid", CodeGenerator.generateUid() + "_" + CodeGenerator.generateCode(11));
-        formData.putIfAbsent("uid", parentId);
-
         for (Map.Entry<String, Object> entry : formData.entrySet()) {
             Object value = entry.getValue();
 
@@ -76,10 +80,17 @@ public class DataFormSubmissionMigrationService {
                     List<Map<String, Object>> updatedList = new ArrayList<>();
                     for (int i = 0; i < list.size(); i++) {
                         Map<String, Object> objectInArray = (Map<String, Object>) list.get(i);
-                        objectInArray.putIfAbsent("repeatIndex", i + 1);  // Add repeatIndex (starting from 1)
-                        objectInArray.putIfAbsent("repeatUid", CodeGenerator.generateUid() + "_" + CodeGenerator.generateCode(5));  // Add groupIndex (s
+                        objectInArray.put("_parentId", parentId);
+                        objectInArray.put("_id", CodeGenerator.generateCode(16));  // Add groupIndex (s
                         // Add groupIndex (starting from 1)
-                        objectInArray.putIfAbsent("parentUid", parentId);
+                        objectInArray.put("_index", i + 1);  // Add repeatIndex (starting from 1)
+
+                        objectInArray.remove("repeatUid");  // Add repeatIndex (starting from 1)
+                        objectInArray.remove("index");  // Add repeatIndex (starting from 1)
+                        objectInArray.remove("repeatIndex");  // Add repeatIndex (starting from 1)
+                        objectInArray.remove("parentUid");  // Add repeatIndex (starting from 1)
+                        objectInArray.remove("_formDataUid");  // Add repeatIndex (starting from 1)
+
                         updatedList.add(objectInArray);
                     }
                     updatedFormData.put(entry.getKey(), updatedList);
@@ -89,7 +100,11 @@ public class DataFormSubmissionMigrationService {
                 }
             } else if (value instanceof Map) {
                 // If it's a nested map, recursively process it
-                updatedFormData.put(entry.getKey(), addGroupIndicesToFormData((Map<String, Object>) value));
+                ((Map<String, Object>) value).remove("uid");
+                ((Map<String, Object>) value).remove("_uid");
+                ((Map<String, Object>) value).remove("_uuid");
+                ((Map<String, Object>) value).remove("_formDataUid");
+                updatedFormData.put(entry.getKey(), addGroupIndicesToFormData((Map<String, Object>) value, parentId));
             } else {
                 // If it's a simple value, just copy as is
                 updatedFormData.put(entry.getKey(), value);

@@ -158,7 +158,7 @@ public class MetadataSubmissionResourceCustom
         // Retrieve and optionally flatten the formData
         Map<String, Object> formData = submission.getFormData();
         if (flatten) {
-            formData = JsonFlattener.flatten(formData);
+            formData = JsonFlattener.flatten(formData, submission.getId());
         }
 
         // Merge formData into data

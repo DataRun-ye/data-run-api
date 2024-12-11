@@ -10,6 +10,7 @@ import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryC
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.utils.CodeGenerator;
 import org.nmcpye.datarun.web.rest.mongo.submission.MongoQueryBuilder;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
@@ -83,20 +84,18 @@ public class DataFormSubmissionServiceImpl
         activityRepository.findByUid(dataFormSubmission.getActivity())
             .ifPresentOrElse((a) -> dataFormSubmission.setActivity(a.getUid()),
                 () -> {
-                    throw new PropertyNotFoundException("Activity not found: " + dataFormSubmission.getOrgUnit());
+                    throw new PropertyNotFoundException("Activity not found: " + dataFormSubmission.getTeam());
                 });
         teamRepository.findByUid(dataFormSubmission.getTeam())
             .ifPresentOrElse((a) -> dataFormSubmission.setTeam(a.getUid()),
                 () -> {
-                    throw new PropertyNotFoundException("Team not found: " + dataFormSubmission.getOrgUnit());
+                    throw new PropertyNotFoundException("Team not found: " + dataFormSubmission.getTeam());
                 });
 //        orgUnitRelationalRepositoryCustom.findByUid(dataFormSubmission.getOrgUnit())
 //            .ifPresentOrElse((a) -> dataFormSubmission.setOrgUnit(a.getUid()),
 //                () -> {
 //                    throw new PropertyNotFoundException("OrgUnit not found: " + dataFormSubmission.getOrgUnit());
 //                });
-
-//        return saveVersioning(dataFormSubmission);
         return repository.save(dataFormSubmission);
     }
 
@@ -124,7 +123,7 @@ public class DataFormSubmissionServiceImpl
 
         if (SecurityUtils.getCurrentUserLogin().isPresent()) {
             String login = SecurityUtils.getCurrentUserLogin().get();
-            Query query = new Query(Criteria.where("createdBy").is(login));
+            Query query = new Query(Criteria.where("created_by").is(login));
             List<DataFormSubmission> submissions = mongoTemplate.find(query, DataFormSubmission.class);
             return getDataFormSubmissions(pageable, submissions);
         }
@@ -149,7 +148,7 @@ public class DataFormSubmissionServiceImpl
     @Override
     public List<String> getTeamsAfterDate(Date createdDate) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("created_date").gte(createdDate));
+        query.addCriteria(Criteria.where("createdDate").gte(createdDate));
 
         return mongoTemplate.findDistinct(query, "team", "data_form_submission", String.class);
     }
@@ -159,8 +158,14 @@ public class DataFormSubmissionServiceImpl
 
         Map<String, Object> formData = submission.getFormData();
 
-        // Automatically add group indices to any arrays of objects inside formData
-        Map<String, Object> updatedFormData = addGroupIndicesToFormData(formData);
+        final Object id = CodeGenerator.generateCode(16);
+        formData.put("_id", id);
+        formData.remove("_uid");
+        formData.remove("uid");
+        formData.remove("_uuid");
+        formData.remove("_formDataUid");
+
+        Map<String, Object> updatedFormData = addGroupIndicesToFormData(formData, id);
         submission.setFormData(updatedFormData);
 
         if (submission.getSerialNumber() == null) {
@@ -173,13 +178,8 @@ public class DataFormSubmissionServiceImpl
     }
 
 
-    private Map<String, Object> addGroupIndicesToFormData(Map<String, Object> formData) {
+    private Map<String, Object> addGroupIndicesToFormData(Map<String, Object> formData, Object parentId) {
         Map<String, Object> updatedFormData = new HashMap<>();
-        // _formDataUid generated at frontend/app
-//        final Object parentId = formData.getOrDefault("_formDataUid",
-//            CodeGenerator.generateUid() + "-" + CodeGenerator.generateUid());
-//        formData.putIfAbsent("_formDataUid", parentId);
-
         for (Map.Entry<String, Object> entry : formData.entrySet()) {
             Object value = entry.getValue();
 
@@ -190,9 +190,17 @@ public class DataFormSubmissionServiceImpl
                     List<Map<String, Object>> updatedList = new ArrayList<>();
                     for (int i = 0; i < list.size(); i++) {
                         Map<String, Object> objectInArray = (Map<String, Object>) list.get(i);
-                        objectInArray.put("index", i + 1);  // Add groupIndex (starting from 1)
-//                        objectInArray.putIfAbsent("id", CodeGenerator.generateUid() + "-" + CodeGenerator.generateCode(3));  // Add groupIndex (starting from 1)
-//                        objectInArray.putIfAbsent("parent", parentId);  // Add groupIndex (starting from 1)
+                        objectInArray.put("_parentId", parentId);
+                        objectInArray.put("_id", CodeGenerator.generateCode(16));  // Add groupIndex (s
+                        // Add groupIndex (starting from 1)
+                        objectInArray.put("_index", i + 1);  // Add repeatIndex (starting from 1)
+
+                        objectInArray.remove("repeatUid");  // Add repeatIndex (starting from 1)
+                        objectInArray.remove("index");  // Add repeatIndex (starting from 1)
+                        objectInArray.remove("repeatIndex");  // Add repeatIndex (starting from 1)
+                        objectInArray.remove("parentUid");  // Add repeatIndex (starting from 1)
+                        objectInArray.remove("_formDataUid");  // Add repeatIndex (starting from 1)
+
                         updatedList.add(objectInArray);
                     }
                     updatedFormData.put(entry.getKey(), updatedList);
@@ -202,7 +210,10 @@ public class DataFormSubmissionServiceImpl
                 }
             } else if (value instanceof Map) {
                 // If it's a nested map, recursively process it
-                updatedFormData.put(entry.getKey(), addGroupIndicesToFormData((Map<String, Object>) value));
+                ((Map<String, Object>) value).remove("uid");
+                ((Map<String, Object>) value).remove("_uid");
+                ((Map<String, Object>) value).remove("_uuid");
+                updatedFormData.put(entry.getKey(), addGroupIndicesToFormData((Map<String, Object>) value, parentId));
             } else {
                 // If it's a simple value, just copy as is
                 updatedFormData.put(entry.getKey(), value);

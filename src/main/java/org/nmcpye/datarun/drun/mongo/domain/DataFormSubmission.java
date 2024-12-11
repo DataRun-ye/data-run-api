@@ -55,7 +55,7 @@ public class DataFormSubmission
     @Field("current_version")
     private int version;  // Reference to the latest version in the version history collection
 
-//    @Indexed(unique = true)
+    @Indexed(unique = true)
     Long serialNumber;
 
     public Long getSerialNumber() {
