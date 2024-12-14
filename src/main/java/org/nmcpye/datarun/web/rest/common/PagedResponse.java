@@ -1,54 +1,96 @@
 package org.nmcpye.datarun.web.rest.common;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
 @JsonSerialize(using = DynamicFieldSerializer.class)
 public class PagedResponse<T> {
-    private boolean paging;
-    private boolean flatten;
-    private int page;
-    private int pageCount;
-    private long total;
-    private int pageSize;
+    private Page<T> page;
+//    private int page;
+//    private int size;
+//    private long totalElements;
+//    private boolean paged;
+//    private boolean flatten;
+//    private int totalPages;
+//    private boolean first;
+//    private boolean last;
+//    private boolean empty;
     private String nextPage;
-    private List<T> items;
+//    private List<T> items;
     private String entityName;
 
-    // Getters and Setters
+    public PagedResponse(Page<T> page, String contentName, String nextPage) {
+//        this.items = page.getContent();
+//        this.totalElements = page.getTotalElements();
+//        this.totalPages = page.getTotalPages();
+//        this.page = page.getNumber();
+        this.page = page;
+//        this.size = page.getSize();
+//        this.first = page.isFirst();
+//        this.last = page.isLast();
+//        this.empty = page.isEmpty();
+        this.entityName = contentName;
+        this.nextPage = nextPage;
+    }
+
 
     public int getPage() {
-        return page;
+        return page.getNumber();
     }
 
-    public void setPage(int page) {
-        this.page = page;
+//    public void setPage(int page) {
+//        this.page = page;
+//    }
+
+    public int getSize() {
+        return page.getSize();
     }
 
-    public int getPageCount() {
-        return pageCount;
+//    public void setSize(int size) {
+//        this.size = size;
+//    }
+
+    public long getTotalElements() {
+        return page.getTotalElements();
     }
 
-    public void setPageCount(int pageCount) {
-        this.pageCount = pageCount;
+//    public void setTotalElements(long totalElements) {
+//        this.totalElements = totalElements;
+//    }
+
+    public int getTotalPages() {
+        return page.getTotalPages();
     }
 
-    public long getTotal() {
-        return total;
+//    public void setTotalPages(int totalPages) {
+//        this.totalPages = totalPages;
+//    }
+
+    public boolean isFirst() {
+        return page.isFirst();
     }
 
-    public void setTotal(long total) {
-        this.total = total;
+//    public void setFirst(boolean first) {
+//        this.first = first;
+//    }
+
+    public boolean isLast() {
+        return page.isLast();
     }
 
-    public int getPageSize() {
-        return pageSize;
+//    public void setLast(boolean last) {
+//        this.last = last;
+//    }
+
+    public boolean isEmpty() {
+        return page.isEmpty();
     }
 
-    public void setPageSize(int pageSize) {
-        this.pageSize = pageSize;
-    }
+//    public void setEmpty(boolean empty) {
+//        this.empty = empty;
+//    }
 
     public String getNextPage() {
         return nextPage;
@@ -59,12 +101,12 @@ public class PagedResponse<T> {
     }
 
     public List<T> getItems() {
-        return items;
+        return page.getContent();
     }
 
-    public void setItems(List<T> items) {
-        this.items = items;
-    }
+//    public void setItems(List<T> items) {
+//        this.items = items;
+//    }
 
     public String getEntityName() {
         return entityName;
@@ -74,19 +116,7 @@ public class PagedResponse<T> {
         this.entityName = entityName;
     }
 
-    public boolean isPaging() {
-        return paging;
-    }
-
-    public void setPaging(boolean paging) {
-        this.paging = paging;
-    }
-
-    public boolean isFlatten() {
-        return flatten;
-    }
-
-    public void setFlatten(boolean flatten) {
-        this.flatten = flatten;
+    public Boolean isPaged() {
+        return page.getPageable().isPaged();
     }
 }

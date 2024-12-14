@@ -1,126 +1,47 @@
 package org.nmcpye.datarun.drun.postgres.common;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.hypersistence.utils.hibernate.type.json.JsonType;
-import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.domain.AbstractAuditingEntity;
-import org.nmcpye.datarun.drun.postgres.common.translation.Translation;
-import org.nmcpye.datarun.drun.postgres.common.translation.TranslationProperty;
 import org.nmcpye.datarun.utils.CodeGenerator;
 
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.nmcpye.datarun.drun.postgres.hibernate.HibernateProxyUtils.getRealClass;
 
 @MappedSuperclass
-public abstract class BaseIdentifiableObject<T> extends AbstractAuditingEntity<T> {
+public abstract class BaseIdentifiableObject<T>
+    extends AbstractAuditingEntity<T>
+    implements IdentifiableObject<T> {
 
-    /**
-     * The i18n variant of the name. Not persisted.
-     */
-    protected transient String displayName;
+//    @Type(JsonType.class)
+//    @Column(name = "metadata", columnDefinition = "jsonb")
+//    protected Map<String, Object> metadata = new HashMap<>();
+//
+//    @JsonProperty
+//    public Map<String, Object> getMetadata() {
+//
+//        if (metadata == null) {
+//            metadata = new HashMap<>();
+//        }
+//
+//        return metadata;
+//    }
+//
+//    /**
+//     * Clears out cache when setting metadata.
+//     */
+//    public void setMetadata(Map<String, Object> metadata) {
+//
+//        this.metadata = metadata;
+//    }
+//
 
-
-    @Type(JsonType.class)
-    @Column(name = "translations", columnDefinition = "jsonb")
-    protected Set<Translation> translations = new HashSet<>();
-
-    /**
-     * Cache for object translations, where the cache key is a combination of
-     * locale and translation property, and value is the translated value.
-     */
-    protected transient Map<String, String> translationCache = new ConcurrentHashMap<>();
-
-    // -------------------------------------------------------------------------
-    // Comparable implementation
-    // -------------------------------------------------------------------------
-
-    /**
-     * Compares objects based on display name. A null display name is ordered
-     * after a non-null display name.
-     */
-    @Override
-    public int compareTo(IdentifiableObject object) {
-        if (this.getDisplayName() == null) {
-            return object.getDisplayName() == null ? 0 : 1;
-        }
-
-        return object.getDisplayName() == null ? -1 : this.getDisplayName().compareToIgnoreCase(object.getDisplayName());
-    }
-
-    // -------------------------------------------------------------------------
-    // Setters and getters
-    // -------------------------------------------------------------------------
-
-    //    public final static Class TYPE_OF_ID = Long.class; // When using id as aid
-//    public final static Class TYPE_OF_ID = String.class; // when using uid as id
-
-
-    @Override
-    public String getDisplayName() {
-        displayName = getTranslation(TranslationProperty.NAME.getName(), displayName);
-        return displayName != null ? displayName : getName();
-    }
-
-    @Override
-    @JsonProperty
-    public Set<Translation> getTranslations() {
-
-        if (translations == null) {
-            translations = new HashSet<>();
-        }
-
-        return translations;
-    }
-
-    /**
-     * Clears out cache when setting translations.
-     */
-    public void setTranslations(Set<Translation> translations) {
-        this.translationCache.clear();
-        this.translations = translations;
-    }
-
-    /**
-     * Returns a translated value for this object for the given property. The
-     * current locale is read from the user context.
-     *
-     * @param translationKey the translation key.
-     * @param defaultValue   the value to use if there are no translations.
-     * @return a translated value.
-     */
-    protected String getTranslation(String translationKey, String defaultValue) {
-        Locale locale = new Locale("ar");
-//            CurrentUserUtil.getUserSetting(UserSettingKey.DB_LOCALE);
-
-        final String defaultTranslation = defaultValue != null ? defaultValue.trim() : null;
-
-        if (locale == null || translationKey == null || CollectionUtils.isEmpty(translations)) {
-            return defaultValue;
-        }
-
-        return translationCache.computeIfAbsent(Translation.getCacheKey(locale.toString(), translationKey),
-            key -> getTranslationValue(locale.toString(), translationKey, defaultTranslation));
-    }
     // -------------------------------------------------------------------------
     // hashCode and equals
     // -------------------------------------------------------------------------
-
     @Override
     public int hashCode() {
         int result = getUid() != null ? getUid().hashCode() : 0;
-        result = 31 * result + (getCode() != null ? getCode().hashCode() : 0);
-        result = 31 * result + (getName() != null ? getName().hashCode() : 0);
-
         return result;
     }
 
@@ -151,15 +72,6 @@ public abstract class BaseIdentifiableObject<T> extends AbstractAuditingEntity<T
         if (getUid() != null ? !getUid().equals(other.getUid()) : other.getUid() != null) {
             return false;
         }
-
-        if (getCode() != null ? !getCode().equals(other.getCode()) : other.getCode() != null) {
-            return false;
-        }
-
-        if (getName() != null ? !getName().equals(other.getName()) : other.getName() != null) {
-            return false;
-        }
-
         return true;
     }
 
@@ -172,7 +84,7 @@ public abstract class BaseIdentifiableObject<T> extends AbstractAuditingEntity<T
      * Set auto-generated fields on save or update
      */
     public void setAutoFields() {
-        if (getUid() == null || getUid().length() == 0) {
+        if (getUid() == null || getUid().isEmpty()) {
             setUid(CodeGenerator.generateUid());
         }
 
@@ -192,32 +104,11 @@ public abstract class BaseIdentifiableObject<T> extends AbstractAuditingEntity<T
                 "\"uid\":\"" +
                 getUid() +
                 "\", " +
-                "\"code\":\"" +
-                getCode() +
                 "\", " +
-                "\"name\":\"" +
-                getName() +
                 "\", " +
                 "\"created\":\"" +
                 "\" " +
                 "}"
         );
-    }
-
-    /**
-     * Get Translation value from {@code Set<Translation>} by given locale and
-     * translationKey
-     *
-     * @return Translation value if exists, otherwise return default value.
-     */
-    private String getTranslationValue(String locale, String translationKey, String defaultValue) {
-        for (Translation translation : getTranslations()) {
-            if (locale.equals(translation.getLocale()) && translationKey.equals(translation.getProperty()) &&
-                !StringUtils.isEmpty(translation.getValue())) {
-                return translation.getValue();
-            }
-        }
-
-        return defaultValue;
     }
 }

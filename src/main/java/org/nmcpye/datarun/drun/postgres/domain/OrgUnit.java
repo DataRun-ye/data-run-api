@@ -13,7 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.drun.postgres.common.BaseIdentifiableObject;
-import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
+import org.nmcpye.datarun.drun.postgres.common.Identifiable;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableObjectUtils;
 
 import java.io.Serializable;
@@ -62,23 +62,23 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "orgUnit")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonSerialize(contentAs = IdentifiableObject.class)
+    @JsonSerialize(contentAs = Identifiable.class)
+    @JsonIgnoreProperties(value = {"orgUnit"}, allowSetters = true)
     private Set<Assignment> assignments = new HashSet<>();
 
     @ManyToOne//(fetch = FetchType.LAZY)
     @JsonProperty
-    @JsonSerialize(as = IdentifiableObject.class)
+    @JsonIgnoreProperties(value = {"parent", "children", "groups", "assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private OrgUnit parent;
 
     @ManyToMany(mappedBy = "members")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = { "groupSets", "translations" }, allowSetters = true)
-    @JsonSerialize(contentAs = IdentifiableObject.class)
+    @JsonIgnoreProperties(value = {"groupSets", "members", "translations"}, allowSetters = true)
     private Set<OrgUnitGroup> groups = new HashSet<>();
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonSerialize(contentAs = IdentifiableObject.class)
+    @JsonIgnoreProperties(value = {"parent", "children", "groups", "assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private Set<OrgUnit> children = new HashSet<>();
 
     @PreRemove
@@ -411,7 +411,8 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
      * @throws IllegalStateException if circular parent relationships is detected.
      */
 //    @JsonProperty("ancestors")
-    @JsonSerialize(contentAs = IdentifiableObject.class)
+    @JsonIgnoreProperties(value = {"parent", "children", "groups", "assignments", "hierarchyLevel", "ancestors", "translations", "path"}, allowSetters = true)
+//    @JsonSerialize(contentAs = Identifiable.class)
     public List<OrgUnit> getAncestors() {
         List<OrgUnit> units = new ArrayList<>();
         Set<OrgUnit> visitedUnits = new HashSet<>();
@@ -495,6 +496,7 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
         this.setParent(parent);
         return this;
     }
+
     // prettier-ignore
     @Override
     public String toString() {

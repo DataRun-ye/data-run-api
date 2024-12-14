@@ -65,14 +65,6 @@ public class AdminUserDTO implements Serializable {
         // Empty constructor needed for Jackson.
     }
 
-//    public Set<Team> getTeams() {
-//        return teams;
-//    }
-//
-//    public void setTeams(Set<Team> teams) {
-//        this.teams = teams;
-//    }
-
     public AdminUserDTO(User user) {
         this.uid = user.getUid() != null && !user.getUid().isEmpty() ? user.getUid() : CodeGenerator.generateUid();
         this.id = user.getId();
@@ -90,6 +82,14 @@ public class AdminUserDTO implements Serializable {
 //        this.teams = user.getTeams();
         this.authorities = user.getAuthorities().stream().map(Authority::getName).collect(Collectors.toSet());
     }
+
+//    public Set<Team> getTeams() {
+//        return teams;
+//    }
+//
+//    public void setTeams(Set<Team> teams) {
+//        this.teams = teams;
+//    }
 
     public Long getId() {
         return id;

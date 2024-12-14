@@ -2,11 +2,12 @@ package org.nmcpye.datarun.web.rest.postgres;
 
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
-import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
+import org.nmcpye.datarun.drun.postgres.common.Identifiable;
 import org.nmcpye.datarun.drun.postgres.repository.IdentifiableRelationalRepository;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalService;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
 import org.nmcpye.datarun.web.rest.errors.RequestQueryParsingException;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springdoc.core.annotations.ParameterObject;
@@ -15,16 +16,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-@RequestMapping("/api/custom")
+//@RequestMapping("/api/custom")
 public abstract class
-AbstractRelationalResource<T extends IdentifiableObject<Long>>
+AbstractRelationalResource<T extends Identifiable<Long>>
     extends AbstractResource<T, Long> {
 
     private final Logger log = LoggerFactory.getLogger(AbstractRelationalResource.class);
@@ -39,11 +37,11 @@ AbstractRelationalResource<T extends IdentifiableObject<Long>>
         return (IdentifiableRelationalRepository<T>) super.getRepository();
     }
 
-    protected Specification<T> buildSpecification(Map<String, Object> params) {
+    protected Specification<T> buildSpecification(QueryRequest queryRequest) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            params.forEach((key, value) -> {
+            queryRequest.getFilters().forEach((key, value) -> {
                 if (key.contains(".")) {
                     // Handle nested properties, for example: parent.uid
                     String[] parts = key.split("\\.");
@@ -64,17 +62,16 @@ AbstractRelationalResource<T extends IdentifiableObject<Long>>
 
     @GetMapping("entities")
     public ResponseEntity<Page<T>> getEntities(@ParameterObject Pageable pageable,
-                                               @RequestParam(name = "paging", required = false, defaultValue = "true")
-                                               boolean paging,
-                                               @RequestParam(required = false) Map<String, Object> query) {
-        query.remove("paging");
-        if (!paging) {
+                                               QueryRequest queryRequest) {
+
+//        query.remove("paging");
+        if (!queryRequest.isPaged()) {
             pageable = Pageable.unpaged();
         }
 
         Specification<T> spec;
         try {
-            spec = buildSpecification(query);
+            spec = buildSpecification(queryRequest);
         } catch (Exception e) {
             throw new RequestQueryParsingException();
         }

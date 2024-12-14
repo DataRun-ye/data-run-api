@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import org.nmcpye.datarun.domain.Project;
+import org.nmcpye.datarun.drun.postgres.common.DefaultIdentifiableSpecifications;
 import org.nmcpye.datarun.drun.postgres.repository.ProjectRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.ProjectServiceCustom;
-import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Primary
 @Transactional
 public class ProjectServiceCustomImpl
-    extends IdentifiableRelationalServiceImpl<Project>
+    extends DefaultIdentifiableSpecifications<Project>
     implements ProjectServiceCustom {
     final private ProjectRelationalRepositoryCustom repositoryCustom;
 

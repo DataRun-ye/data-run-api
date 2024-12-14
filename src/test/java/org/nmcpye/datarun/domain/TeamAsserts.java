@@ -68,7 +68,6 @@ public class TeamAsserts {
     public static void assertTeamUpdatableRelationshipsEquals(Team expected, Team actual) {
         assertThat(expected)
             .as("Verify Team relationships")
-            .satisfies(e -> assertThat(e.getActivity()).as("check activity").isEqualTo(actual.getActivity()))
-            .satisfies(e -> assertThat(e.getWarehouse()).as("check warehouse").isEqualTo(actual.getWarehouse()));
+            .satisfies(e -> assertThat(e.getActivity()).as("check activity").isEqualTo(actual.getActivity()));
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Spring Data JPA repository for the {@link User} entity.
@@ -32,6 +33,8 @@ public interface UserRepository extends IdentifiableRelationalRepository<User> {
 
     @EntityGraph(attributePaths = "authorities")
     Optional<User> findOneByLogin(String login);
+
+    List<User> findByLoginIn(Set<String> logins);
 
     @EntityGraph(attributePaths = "authorities")
     @Cacheable(cacheNames = USERS_BY_LOGIN_CACHE)

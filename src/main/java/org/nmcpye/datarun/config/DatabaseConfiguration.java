@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @Configuration
 @EnableJpaRepositories({"org.nmcpye.datarun.repository",
-    "org.nmcpye.datarun.drun.common",
+    "org.nmcpye.datarun.common",
     "org.nmcpye.datarun.drun.postgres.repository"})
 @EnableJpaAuditing(auditorAwareRef = "springSecurityAuditorAware")
 @EnableTransactionManagement

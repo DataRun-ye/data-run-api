@@ -1,14 +1,12 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.drun.postgres.common.BaseIdentifiableObject;
-import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -49,7 +47,7 @@ public class OrgUnitGroupSet
     )
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = { "groupSets", "members" }, allowSetters = true)
-    @JsonSerialize(contentAs = IdentifiableObject.class)
+//    @JsonSerialize(contentAs = IdentifiableObject.class)
     private Set<OrgUnitGroup> orgUnitGroups = new HashSet<>();
 
     public boolean hasOrgUnitGroups() {

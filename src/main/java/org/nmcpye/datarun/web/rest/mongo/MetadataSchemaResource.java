@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.web.rest.mongo;
 
-import org.nmcpye.datarun.drun.mongo.domain.DataFormSubmission;
-import org.nmcpye.datarun.drun.mongo.domain.MetadataSchema;
-import org.nmcpye.datarun.drun.mongo.repository.MetadataSchemaRepository;
-import org.nmcpye.datarun.drun.mongo.repository.MetadataSubmissionGranularRepository;
-import org.nmcpye.datarun.drun.mongo.service.MetadataSchemaService;
+import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
+import org.nmcpye.datarun.mongo.domain.MetadataSchema;
+import org.nmcpye.datarun.mongo.repository.MetadataSchemaRepository;
+import org.nmcpye.datarun.mongo.repository.MetadataSubmissionGranularRepository;
+import org.nmcpye.datarun.mongo.service.MetadataSchemaService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;

@@ -5,9 +5,6 @@ import org.ehcache.config.builders.ExpiryPolicyBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.jsr107.Eh107Configuration;
 import org.hibernate.cache.jcache.ConfigSettings;
-import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
-import org.nmcpye.datarun.drun.postgres.domain.OuLevel;
-import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
@@ -57,16 +54,30 @@ public class CacheConfiguration {
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Authority.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".authorities");
+            createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".teams");
             createCache(cm, org.nmcpye.datarun.domain.EntityAuditEvent.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Project.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Project.class.getName() + ".activities");
             createCache(cm, org.nmcpye.datarun.domain.Activity.class.getName());
-            createCache(cm, Team.class.getName());
-            createCache(cm, Team.class.getName() + ".assignments");
-            createCache(cm, org.nmcpye.datarun.domain.Warehouse.class.getName());
-            createCache(cm, OrgUnit.class.getName());
-            createCache(cm, OuLevel.class.getName());
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Assignment.class.getName());
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName());
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName() + ".assignments");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName() + ".users");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName() + ".managedTeams");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName() + ".managedByTeams");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName());
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName() + ".assignments");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName() + ".groups");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName() + ".children");
+
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OuLevel.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.WarehouseItem.class.getName());
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup.class.getName());
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup.class.getName() + ".members");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup.class.getName() + ".groupSets");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet.class.getName());
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet.class.getName() + ".orgUnitGroups");
+
             // jhipster-needle-ehcache-add-entry
         };
     }

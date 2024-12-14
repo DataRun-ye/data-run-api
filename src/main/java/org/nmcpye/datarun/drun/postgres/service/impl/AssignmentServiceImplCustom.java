@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.drun.postgres.common.AssignmentSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
@@ -8,9 +9,9 @@ import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositor
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentServiceCustom;
-import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +24,7 @@ import java.util.Optional;
 @Primary
 @Transactional
 public class AssignmentServiceImplCustom
-    extends IdentifiableRelationalServiceImpl<Assignment>
+    extends AssignmentSpecifications
     implements AssignmentServiceCustom {
 
     final AssignmentRelationalRepositoryCustom repositoryCustom;
@@ -63,7 +64,7 @@ public class AssignmentServiceImplCustom
             .or(() -> Optional.ofNullable(team.getUid())
                 .flatMap(teamRepository::findByUid))
             .or(() -> Optional.ofNullable(team.getCode())
-                .flatMap((code) -> teamRepository.findTeamByCodeAndActivityCode(code, team.getActivity().getCode())))
+                .flatMap((code) -> teamRepository.findByCodeAndActivityUid(code, team.getActivity().getUid())))
             .orElseThrow(() -> new PropertyNotFoundException("Team not found: " + team));
     }
 
@@ -78,11 +79,12 @@ public class AssignmentServiceImplCustom
     }
 
     @Override
-    public Page<Assignment> findAllByUser(Pageable pageable) {
+    public Page<Assignment> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repositoryCustom.findAll(pageable);
         }
-        return repositoryCustom.findAllByUser(pageable);
+
+        return repositoryCustom.findAll(hasAccess(), pageable);
     }
 
 //    @Override

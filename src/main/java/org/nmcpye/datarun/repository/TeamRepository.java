@@ -16,8 +16,8 @@ import java.util.Optional;
  */
 @Repository
 public interface TeamRepository extends JpaRepository<Team, Long> {
-    @Query("select team from Team team where team.userInfo.login = ?#{authentication.name}")
-    List<Team> findByUserInfoIsCurrentUser();
+//    @Query("select team from Team team where team.userInfo.login = ?#{authentication.name}")
+//    List<Team> findByUserInfoIsCurrentUser();
 
     default Optional<Team> findOneWithEagerRelationships(Long id) {
         return this.findOneWithToOneRelationships(id);
@@ -32,16 +32,16 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     }
 
     @Query(
-        value = "select team from Team team left join fetch team.activity left join fetch team.warehouse left join fetch team.userInfo",
+        value = "select team from Team team left join fetch team.activity",
         countQuery = "select count(team) from Team team"
     )
     Page<Team> findAllWithToOneRelationships(Pageable pageable);
 
-    @Query("select team from Team team left join fetch team.activity left join fetch team.warehouse left join fetch team.userInfo")
+    @Query("select team from Team team left join fetch team.activity")
     List<Team> findAllWithToOneRelationships();
 
     @Query(
-        "select team from Team team left join fetch team.activity left join fetch team.warehouse left join fetch team.userInfo where team.id =:id"
+        "select team from Team team left join fetch team.activity where team.id =:id"
     )
     Optional<Team> findOneWithToOneRelationships(@Param("id") Long id);
 }

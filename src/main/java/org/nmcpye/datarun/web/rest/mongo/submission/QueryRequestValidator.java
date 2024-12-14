@@ -9,7 +9,6 @@ public class QueryRequestValidator {
     );
 
     public static void validate(QueryRequest request) {
-        // Validate filters
         request.getFilters().forEach((key, value) -> {
             String[] parts = key.split("__");
             if (parts.length == 0) {
@@ -19,26 +18,21 @@ public class QueryRequestValidator {
             String field = parts[0];
             String operator = parts.length > 1 ? parts[1] : "eq";
 
-            // Validate field name
             if (!field.matches("^[a-zA-Z0-9._]+$")) {
                 throw new QueryRequestValidationException("Invalid field name format", key, operator, value.toString());
             }
 
-            // Validate operator
             if (!SUPPORTED_OPERATORS.contains(operator)) {
                 throw new QueryRequestValidationException("Unsupported operator", key, operator, value.toString());
             }
 
-            // Validate value (specific checks can be added per operator)
             validateValue(operator, value, key);
         });
 
-        // Validate sort
         if (request.getSort() != null && !request.getSort().matches("^[a-zA-Z0-9._]+,(asc|desc)$")) {
             throw new QueryRequestValidationException("Invalid sort format", "sort");
         }
 
-        // Validate fields for projections
         if (request.getFields() != null && !request.getFields().matches("^[a-zA-Z0-9.,_]+$")) {
             throw new QueryRequestValidationException("Invalid fields format", "fields");
         }
@@ -56,7 +50,6 @@ public class QueryRequestValidator {
                     throw new QueryRequestValidationException("Value for 'in' must be a list", key, operator, value.toString());
                 }
                 break;
-            // Add further validations as necessary
         }
     }
 }

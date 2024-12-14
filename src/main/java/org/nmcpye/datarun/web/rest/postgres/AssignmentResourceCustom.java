@@ -1,12 +1,14 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
-import org.nmcpye.datarun.drun.common.AssignmentSpecifications;
-import org.nmcpye.datarun.drun.mongo.mapping.importsummary.EntitySaveSummaryVM;
+import org.nmcpye.datarun.drun.postgres.common.Identifiable;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentServiceCustom;
+import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
@@ -17,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.Map;
 
 /**
  * REST Extended controller for managing {@link Assignment}.
@@ -40,14 +41,15 @@ public class AssignmentResourceCustom extends AbstractRelationalResource<Assignm
     }
 
     @Override
-    protected Specification<Assignment> buildSpecification(Map<String, Object> params) {
+    protected Specification<Assignment> buildSpecification(QueryRequest queryRequest) {
+        Specification<Assignment> spec = super.buildSpecification(queryRequest);
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return super.buildSpecification(params);
+            return spec;
         } else if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
             return null;
         }
-        return super.buildSpecification(params)
-            .and(AssignmentSpecifications.hasUserWithUsername(SecurityUtils.getCurrentUserLogin().get()));
+        return spec
+            .and(assignmentService.hasAccess());
     }
 
     @Override
@@ -55,23 +57,24 @@ public class AssignmentResourceCustom extends AbstractRelationalResource<Assignm
         return "assignments";
     }
 
-
     @Override
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<EntitySaveSummaryVM> saveOne(Assignment entity) {
+        log.debug("REST request to saveOne {}", getName());
+        if (entity.getId() != null) {
+            throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + entity.getId().toString(), "idexists");
+        }
         return super.saveOne(entity);
     }
 
     @Override
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<?> saveReturnSaved(Assignment entity) {
+        log.debug("REST request to saveOne, return saved {}", getName());
+        if (entity.getId() != null) {
+            throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + entity.getId().toString(), "idexists");
+        }
         return super.saveReturnSaved(entity);
-    }
-
-    @Override
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<Void> deleteActivityByIdUid(Long aLong) {
-        return super.deleteActivityByIdUid(aLong);
     }
 
     @Override
@@ -83,6 +86,12 @@ public class AssignmentResourceCustom extends AbstractRelationalResource<Assignm
     @Override
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<EntitySaveSummaryVM> saveAll(List<Assignment> entities) {
+        log.debug("REST request to saveAll {}", getName());
+        var withIds = entities.stream().filter((entity) -> entity.getId() != null).map(Identifiable::getId).toList();
+        if (!withIds.isEmpty()) {
+            throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + withIds, "idexists");
+        }
+
         return super.saveAll(entities);
     }
 }

@@ -12,8 +12,8 @@ public interface TeamRepositoryWithBagRelationships {
     List<Team> fetchBagRelationships(List<Team> teams);
 
     Page<Team> fetchBagRelationships(Page<Team> teams);
-
-    void updatePaths();
-
-    void forceUpdatePaths();
+//
+//    void updatePaths();
+//
+//    void forceUpdatePaths();
 }

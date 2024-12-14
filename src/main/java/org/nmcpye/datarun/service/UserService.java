@@ -4,7 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.domain.Authority;
 import org.nmcpye.datarun.domain.User;
-import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
+import org.nmcpye.datarun.drun.postgres.common.DefaultIdentifiableSpecifications;
 import org.nmcpye.datarun.repository.AuthorityRepository;
 import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class UserService
-    extends IdentifiableRelationalServiceImpl<User> {
+    extends DefaultIdentifiableSpecifications<User> {
 
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 

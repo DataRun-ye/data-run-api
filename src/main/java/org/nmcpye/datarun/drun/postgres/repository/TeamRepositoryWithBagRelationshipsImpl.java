@@ -40,50 +40,50 @@ public class TeamRepositoryWithBagRelationshipsImpl
     }
 
 
-    @Override
-    public void updatePaths() {
-        List<Team> teams = entityManager
-            .createQuery(
-                "select team from Team team " +
-                    "left join fetch team.activity " +
-                    "left join fetch team.users users " +
-                    "where team.path is null or team.hierarchyLevel is null",
-                Team.class
-            )
-            .getResultList();
-
-        updatePaths(teams);
-    }
-
-    @Override
-    public void forceUpdatePaths() {
-        List<Team> teams = entityManager
-            .createQuery(
-                "select team from Team team ",
-                Team.class
-            )
-            .getResultList();
-
-        updatePaths(teams);
-    }
-
-    private void updatePaths(List<Team> teams) {
-
-        int counter = 0;
-
-        for (Team team : teams) {
-            team.setPath(team.getPath());
-            team.setHierarchyLevel(team.getHierarchyLevel());
-
-            entityManager.merge(team);
-
-            if ((counter % 400) == 0) {
-                entityManager.flush();
-            }
-
-            counter++;
-        }
-    }
+//    @Override
+//    public void updatePaths() {
+//        List<Team> teams = entityManager
+//            .createQuery(
+//                "select team from Team team " +
+//                    "left join fetch team.activity " +
+//                    "left join fetch team.users users " +
+//                    "where team.path is null or team.hierarchyLevel is null",
+//                Team.class
+//            )
+//            .getResultList();
+//
+//        updatePaths(teams);
+//    }
+//
+//    @Override
+//    public void forceUpdatePaths() {
+//        List<Team> teams = entityManager
+//            .createQuery(
+//                "select team from Team team ",
+//                Team.class
+//            )
+//            .getResultList();
+//
+//        updatePaths(teams);
+//    }
+//
+//    private void updatePaths(List<Team> teams) {
+//
+//        int counter = 0;
+//
+//        for (Team team : teams) {
+//            team.setPath(team.getPath());
+//            team.setHierarchyLevel(team.getHierarchyLevel());
+//
+//            entityManager.merge(team);
+//
+//            if ((counter % 400) == 0) {
+//                entityManager.flush();
+//            }
+//
+//            counter++;
+//        }
+//    }
 
     Team fetchUsers(Team result) {
         return entityManager

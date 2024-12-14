@@ -2,18 +2,17 @@ package org.nmcpye.datarun.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.config.Constants;
-import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 
 import java.io.Serializable;
@@ -35,8 +34,9 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
 
     @ManyToMany(mappedBy = "users")
-    @JsonSerialize(contentAs = IdentifiableObject.class)
-    @JsonIgnoreProperties(value = {"users", "activity", "assignments", "userInfo", "translations", "ancestors", "parent"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"managedTeams", "managedTeams", "users", "assignments",
+        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<Team> teams = new LinkedHashSet<>();
 
     public Set<Team> getTeams() {
@@ -124,17 +124,14 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
     @BatchSize(size = 20)
     private Set<Authority> authorities = new HashSet<>();
 
-    @Override
     public String getCode() {
         return code;
     }
 
-    @Override
     public void setCode(String code) {
         this.code = code;
     }
 
-    @Override
     public String getName() {
         return firstName + " " + lastName;
     }
@@ -265,21 +262,102 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
         this.authorities = authorities;
     }
 
+    /**
+     * Indicates whether this user can manage the given user.
+     *
+     * @param user the user to test.
+     * @return true if the given user can be managed by this user, false if not.
+     */
+    public boolean canManage(User user) {
+        for (Team team : user.getTeams()) {
+            if (canManage(team)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @JsonIgnore
+    public Set<Team> getManagedTeams() {
+        Set<Team> managedTeams = new HashSet<>();
+
+        for (Team team : teams) {
+            managedTeams.addAll(team.getManagedTeams());
+        }
+
+        return managedTeams;
+    }
+
+    public boolean hasManagedTeams() {
+        for (Team team : teams) {
+            if (team != null && team.getManagedTeams() != null && !team.getManagedTeams().isEmpty()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Indicates whether this user can manage the given user group.
+     *
+     * @param team the user group to test.
+     * @return true if the given user group can be managed by this user, false
+     * if not.
+     */
+    public boolean canManage(Team team) {
+        return team != null && CollectionUtils.containsAny(teams, team.getManagedByTeams());
+    }
+
+    /**
+     * Indicates whether this user is managed by the given user group.
+     *
+     * @param team the user group to test.
+     * @return true if the given user group is managed by this user, false if
+     * not.
+     */
+    public boolean isManagedBy(Team team) {
+        return team != null && CollectionUtils.containsAny(teams, team.getManagedTeams());
+    }
+
+    /**
+     * Indicates whether this user is managed by the given user.
+     *
+     * @param user the user to test.
+     * @return true if the given user is managed by this user, false if not.
+     */
+    public boolean isManagedBy(User user) {
+        for (Team team : user.getTeams()) {
+            if (isManagedBy(team)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+//    public Set<Assignment> getActiveAssignment() {
+//        Set<Assignment> assignments = new HashSet<>();
+//
+//        for (Team team : teams) {
+//            assignments.addAll(team.getAssignments());
+//        }
+//
+//        return assignments;
+//    }
+
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof User)) {
-            return false;
-        }
-        return id != null && id.equals(((User) o).id);
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return (getId() != null && getId().equals(user.getId())) ||
+            (getUid() != null && getUid().equals(user.getUid()));
     }
 
     @Override
     public int hashCode() {
-        // see https://vladmihalcea.com/how-to-implement-equals-and-hashcode-using-the-jpa-entity-identifier/
-        return getClass().hashCode();
+        return getId() != null ? getId().hashCode() : (getUid() != null ? getUid().hashCode() : 0);
     }
 
     // prettier-ignore

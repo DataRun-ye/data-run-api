@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.config.datarun;
 
-import io.mongock.runner.springboot.EnableMongock;
 import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,7 +10,6 @@ import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import org.springframework.data.mongodb.core.mapping.event.ValidatingMongoEventListener;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import tech.jhipster.config.JHipsterConstants;
 import tech.jhipster.domain.util.JSR310DateConverters.DateToZonedDateTimeConverter;
@@ -21,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
-@EnableMongoRepositories({"org.nmcpye.datarun.drun.mongo.repository"})
+@EnableMongoRepositories({"org.nmcpye.datarun.mongo.repository"})
 @Profile("!" + JHipsterConstants.SPRING_PROFILE_CLOUD)
 @Import(value = MongoAutoConfiguration.class)
 @EnableMongoAuditing(auditorAwareRef = "springSecurityAuditorAware")

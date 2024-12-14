@@ -1,18 +1,17 @@
 package org.nmcpye.datarun.web.rest.common;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
-import org.nmcpye.datarun.drun.common.IdentifiableRepository;
-import org.nmcpye.datarun.drun.mongo.mapping.importsummary.EntitySaveSummaryVM;
-import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
+import org.nmcpye.datarun.common.IdentifiableRepository;
+import org.nmcpye.datarun.drun.postgres.common.Identifiable;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableService;
+import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.ResponseEntity;
@@ -22,18 +21,18 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
 
-import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-@RequestMapping("/api/custom")
-public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID extends Serializable> {
+//@RequestMapping("/api/custom")
+public abstract class AbstractResource<T extends Identifiable<ID>, ID extends Serializable> {
 
-    private final Logger log = LoggerFactory.getLogger(AbstractResource.class);
+    protected final Logger log = LoggerFactory.getLogger(AbstractResource.class);
 
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
@@ -51,43 +50,32 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
         return repository;
     }
 
-    protected Map<String, Object> parseFilter(String filter) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(filter, new TypeReference<Map<String, Object>>() {
-        });
-    }
-
     /**
      * {@code GET  /Ts} : get all the entities.
      *
-     * @param pageable  the pagination information.
-     * @param eagerload flag to eager load entities from relationships (This is for internal use only and should not be set by clients)
+     * @param queryRequest the query request parameters.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of assignments in body.
      */
     @GetMapping("")
-    protected ResponseEntity<PagedResponse<T>> getAllFiltered(@ParameterObject Pageable pageable,
-                                                              @RequestParam(name = "paging", required = false, defaultValue = "true") boolean paging,
-                                                              @RequestParam(name = "flatten", required = false, defaultValue = "true") boolean flatten,
-                                                              @RequestParam(name = "eagerload", required = false, defaultValue = "true") boolean eagerload,
-                                                              @RequestParam(required = false) Map<String, Object> query) {
-        if (!paging) {
+    protected ResponseEntity<PagedResponse<?>> getAll(
+        QueryRequest queryRequest) {
+        Pageable pageable = PageRequest.of(queryRequest.getPage(), queryRequest.getSize());
+
+        if (!queryRequest.isPaged()) {
             pageable = Pageable.unpaged();
         }
-        Page<T> page = getList(pageable, eagerload);
-        PagedResponse<T> response = initPageResponse(page, paging, false);
+
+        Page<T> processedPage = getList(pageable, queryRequest);
+
+        String next = createNextPageLink(processedPage);
+
+        PagedResponse<T> response = initPageResponse(processedPage, next);
         return ResponseEntity.ok(response);
     }
 
-    protected PagedResponse<T> initPageResponse(Page<T> page, boolean paging, boolean flatten) {
-        PagedResponse<T> response = new PagedResponse<>();
-        response.setPaging(paging);
-        response.setFlatten(flatten);
-        response.setPage(page.getNumber());
-        response.setPageCount(page.getTotalPages());
-        response.setTotal(page.getTotalElements());
-        response.setPageSize(page.getSize());
-        response.setItems(page.getContent());
-        response.setNextPage(createNextPageLink(page));
+    protected PagedResponse<T> initPageResponse(Page<T> page, String next) {
+        PagedResponse<T> response = new PagedResponse<>(page, getName(), next);
+        response.setNextPage(next);
         response.setEntityName(getName());
         return response;
     }
@@ -95,11 +83,23 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
     protected String createNextPageLink(Page<?> page) {
         if (page.hasNext()) {
             return ServletUriComponentsBuilder.fromCurrentRequest()
-                .queryParam("page", page.getNumber() + 2) // page is 0-based, but we display it 1-based
+                .queryParam("page", page.getNumber() + 1) // page is 0-based, but we display it 1-based
                 .toUriString();
         } else {
             return null;
         }
+    }
+
+    private Class<T> entityClass;
+
+    protected final Class<T> getEntityClass() {
+        if (entityClass == null) {
+            Type[] actualTypeArguments = ((ParameterizedType) getClass().getGenericSuperclass())
+                .getActualTypeArguments();
+            entityClass = (Class<T>) actualTypeArguments[0];
+        }
+
+        return entityClass;
     }
 
     @PostMapping("/bulk")
@@ -130,7 +130,7 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<T> getActivityById(@PathVariable("id") ID id) {
+    public ResponseEntity<T> getById(@PathVariable("id") ID id) {
         log.debug("REST request to get from {}: {}", getName(), id);
         Optional<T> activity = identifiableService.findOne(id).or(() -> identifiableService.findByUid(id.toString()));
         return ResponseUtil.wrapOrNotFound(activity);
@@ -147,24 +147,24 @@ public abstract class AbstractResource<T extends IdentifiableObject<ID>, ID exte
             }
         } catch (Exception e) {
             log.debug("REST Error Saving submission {}: {}", e.toString(), entity.getCreatedBy());
-            summary.getFailed().put(entity.getUid() + ':' + entity.getCode() + ':' + entity.getName(), e.getMessage());
+            summary.getFailed().put(entity.getUid(), e.getMessage());
         }
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{uid}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
-    public ResponseEntity<Void> deleteActivityByIdUid(@PathVariable("id") ID id) {
-        log.debug("REST request to delete from {}: {}", getName(), id);
-        identifiableService.findOne(id).ifPresent(repository::delete);
+    public ResponseEntity<Void> deleteByIdUid(@PathVariable("uid") String uid) {
+        log.debug("REST request to delete from {}: {}", getName(), uid);
+        identifiableService.findByUid(uid).ifPresent((entity) -> identifiableService.deleteByUid(entity.getUid()));
         return ResponseEntity
             .noContent()
             .headers(HeaderUtil
-                .createEntityDeletionAlert(applicationName, true, getName(), id.toString())).build();
+                .createEntityDeletionAlert(applicationName, true, getName(), uid.toString())).build();
     }
 
 
-    protected Page<T> getList(Pageable pageable, boolean eagerload) {
-        return identifiableService.findAllByUser(pageable);
+    protected Page<T> getList(Pageable pageable, QueryRequest queryRequest) {
+        return identifiableService.findAllByUser(pageable, queryRequest);
     }
 
     @PutMapping("/{id}")

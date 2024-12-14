@@ -66,6 +66,11 @@ public class OuLevel extends BaseIdentifiableObject<Long> implements Serializabl
         this.uid = uid;
     }
 
+    @Override
+    public String getCreatedBy() {
+        return null;
+    }
+
     public String getCode() {
         return code;
     }

@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public interface Identifiable<ID>  {
 
     void setId(ID id);
@@ -12,4 +14,11 @@ public interface Identifiable<ID>  {
     String getUid();
 
     void setUid(String uid);
+
+    String getCreatedBy();
+
+    @JsonIgnore
+    default Identifiable<ID> setIsPersisted() {
+        return null;
+    }
 }

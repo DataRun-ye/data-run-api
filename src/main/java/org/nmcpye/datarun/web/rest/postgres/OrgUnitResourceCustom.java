@@ -1,13 +1,13 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
-import org.nmcpye.datarun.drun.common.OrgUnitSpecifications;
-import org.nmcpye.datarun.drun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
+import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.exception.PathUpdateException;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.Map;
 
 /**
  * REST Extended controller for managing {@link OrgUnit}.
@@ -41,14 +40,14 @@ public class OrgUnitResourceCustom extends AbstractRelationalResource<OrgUnit> {
     }
 
     @Override
-    protected Specification<OrgUnit> buildSpecification(Map<String, Object> params) {
+    protected Specification<OrgUnit> buildSpecification(QueryRequest queryRequest) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return super.buildSpecification(params);
+            return super.buildSpecification(queryRequest);
         } else if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
             return null;
         }
-        return super.buildSpecification(params)
-            .and(OrgUnitSpecifications.hasUserWithUsername(SecurityUtils.getCurrentUserLogin().get()));
+        return super.buildSpecification(queryRequest)
+            .and(serviceCustom.hasAccess());
     }
 
     @Override
@@ -89,12 +88,6 @@ public class OrgUnitResourceCustom extends AbstractRelationalResource<OrgUnit> {
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<OrgUnit> updateEntity(Long aLong, OrgUnit entity) throws URISyntaxException {
         return super.updateEntity(aLong, entity);
-    }
-
-    @Override
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<Void> deleteActivityByIdUid(Long aLong) {
-        return super.deleteActivityByIdUid(aLong);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")

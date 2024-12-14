@@ -1,13 +1,14 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.drun.postgres.common.OrgUnitSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
-import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 @Primary
 @Transactional
 public class OrgUnitServiceCustomImpl
-    extends IdentifiableRelationalServiceImpl<OrgUnit>
+    extends OrgUnitSpecifications
     implements OrgUnitServiceCustom {
 
     final OrgUnitRelationalRepositoryCustom repositoryCustom;
@@ -60,12 +61,10 @@ public class OrgUnitServiceCustomImpl
     }
 
     @Override
-    public Page<OrgUnit> findAllByUser(Pageable pageable) {
+    public Page<OrgUnit> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repositoryCustom.findAll(pageable);
         }
-//        final List<OrgUnit> userOrgUnits = repositoryCustom
-//            .findAssignedWithEagerRelation();
         final List<OrgUnit> userOrgUnits = repositoryCustom
             .findAllWithRelation();
 
@@ -90,12 +89,24 @@ public class OrgUnitServiceCustomImpl
     }
 
     @Override
-    public Optional<OrgUnit> findAssignedByUid(String uid) {
-        return repositoryCustom.findAssignedByUidWithEagerRelation(uid);
+    public Set<OrgUnit> getUserTeamsOrganisationUnits() {
+
+        return Set.of();
+    }
+
+    @Override
+    public Set<OrgUnit> getUserManagedTeamsOrganisationUnits() {
+        return Set.of();
+    }
+
+    @Override
+    public Set<OrgUnit> getAllUserAccessibleOrganisationUnits() {
+        return Set.of();
     }
 
     @Override
     @Transactional
+    @Scheduled(cron = "0 0 3 * * ?")
     public void updatePaths() {
         repositoryCustom.updatePaths();
     }
@@ -103,7 +114,6 @@ public class OrgUnitServiceCustomImpl
     /**
      * This is scheduled to get fired everyday, at 01:00 (am).
      */
-    @Scheduled(cron = "0 0 3 * * ?")
     @Override
     @Transactional
     public void forceUpdatePaths() {

@@ -1,0 +1,171 @@
+package org.nmcpye.datarun.mongo.service.impl;
+
+import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
+import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
+import org.nmcpye.datarun.mongo.domain.DataFormSubmissionHistory;
+import org.nmcpye.datarun.mongo.repository.DataFormSubmissionHistoryRepository;
+import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepositoryCustom;
+import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
+import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Primary;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Service Implementation for managing {@link DataFormSubmission}.
+ */
+@Service
+@Primary
+public class DataFormSubmissionServiceImpl
+    extends IdentifiableMongoServiceImpl<DataFormSubmission>
+    implements DataFormSubmissionService {
+
+    private final Logger log = LoggerFactory.getLogger(DataFormSubmissionServiceImpl.class);
+
+    private final DataFormSubmissionRepositoryCustom repository;
+    final DataFormSubmissionHistoryRepository historyRepository;
+    private final ActivityRelationalRepositoryCustom activityRepository;
+    private final TeamRelationalRepositoryCustom teamRepository;
+    private final SequenceGeneratorService sequenceGeneratorService;
+    private static final int MAX_HISTORY_VERSIONS = 3; // Keep only the last 10 versions
+
+    public DataFormSubmissionServiceImpl(
+        DataFormSubmissionRepositoryCustom repository,
+        DataFormSubmissionHistoryRepository historyRepository,
+        ActivityRelationalRepositoryCustom activityRepository,
+        TeamRelationalRepositoryCustom teamRepository,
+        MongoTemplate mongoTemplate,
+        SequenceGeneratorService sequenceGeneratorService) {
+        super(repository, mongoTemplate);
+        this.repository = repository;
+        this.historyRepository = historyRepository;
+        this.activityRepository = activityRepository;
+        this.teamRepository = teamRepository;
+        this.sequenceGeneratorService = sequenceGeneratorService;
+    }
+
+    @Override
+    public DataFormSubmission saveVersioning(DataFormSubmission submission) {
+        DataFormSubmission existingSubmission = repository.findById(submission.getId()).orElse(null);
+        if (existingSubmission != null) {
+            // Create a new version of the current data
+            DataFormSubmissionHistory history = new DataFormSubmissionHistory(
+                existingSubmission,
+                Instant.now()
+            );
+
+            // Save the old version in the history collection
+            historyRepository.save(history);
+
+            // Increment version number and update the current document
+            submission.setVersion(existingSubmission.getVersion() + 1);
+
+            // Prune old versions
+            pruneOldVersions(existingSubmission.getId());
+        }
+
+        return repository.save(submission);
+    }
+
+    @Override
+    public DataFormSubmission saveWithRelations(DataFormSubmission newSubmission) {
+
+        activityRepository.findByUid(newSubmission.getActivity())
+            .ifPresentOrElse((a) -> newSubmission.setActivity(a.getUid()),
+                () -> {
+                    log.error("submission by: {}, for form: {}, with activity: {} not in the system", SecurityUtils.getCurrentUserLogin().get(), newSubmission.getForm(), newSubmission.getActivity());
+                    throw new PropertyNotFoundException("Activity not found: " + newSubmission.getTeam());
+                });
+        teamRepository.findByUid(newSubmission.getTeam())
+            .ifPresentOrElse((a) -> newSubmission.setTeam(a.getUid()),
+                () -> {
+                    log.error("submission by: {}, for form: {}, with team: {} not in the system", SecurityUtils.getCurrentUserLogin().get(), newSubmission.getTeam(), newSubmission.getActivity());
+                    throw new PropertyNotFoundException("Team not found: " + newSubmission.getTeam());
+                });
+
+        if (newSubmission.getSerialNumber() == null) {
+            // Generate a unique serial number for new submissions
+            long serialNumber = sequenceGeneratorService.getNextSequence("dataFormSubmissionId");
+            newSubmission.setSerialNumber(serialNumber);
+        }
+
+        final DataFormSubmission dataFormSubmission = newSubmission
+            .createSubmission()
+            .populateFormDataAttributes();
+
+        return saveVersioning(dataFormSubmission);
+    }
+
+    private void pruneOldVersions(String submissionId) {
+        Query query = new Query(Criteria.where("submissionId").is(submissionId));
+        query.with(Sort.by(Sort.Direction.DESC, "timestamp")); // Sort by timestamp in descending order
+
+        List<DataFormSubmissionHistory> historyList = mongoTemplate.find(query, DataFormSubmissionHistory.class);
+        if (historyList.size() > MAX_HISTORY_VERSIONS) {
+            List<String> idsToRemove = historyList.stream()
+                .skip(MAX_HISTORY_VERSIONS)
+                .map(DataFormSubmissionHistory::getId)
+                .collect(Collectors.toList());
+
+            Query removeQuery = new Query(Criteria.where("_id").in(idsToRemove));
+            mongoTemplate.remove(removeQuery, DataFormSubmissionHistory.class);
+        }
+    }
+
+    @Override
+    public void deleteByUid(String uid) {
+        log.debug("request to soft delete DataFormSubmission : {}", uid);
+        DataFormSubmission submission = repository.findByUid(uid).orElseThrow(() -> new IllegalArgumentException("Invalid id: " + uid));
+
+        // soft delete by marking the entity as deleted
+        submission.setDeleted(true);
+        saveVersioning(submission);
+    }
+
+//    @Override
+//    public Page<DataFormSubmission> findSubmissionsBySerialNumber(Long serialNumber,
+//                                                                  String form, Pageable pageable, boolean includeDeleted) {
+//        Query query = new Query(Criteria.where("form").is(form));
+//        query.addCriteria(Criteria.where("serialNumber").is(serialNumber));
+//        List<DataFormSubmission> submissions = getFormSubmissions(query, includeDeleted);
+//        long total = submissions.size();
+//
+//        return new PageImpl<>(submissions, pageable, total);
+//    }
+
+//    @Override
+//    public Page<DataFormSubmission> findAllByForm(List<String> forms, Pageable pageable, boolean includeDeleted) {
+//        Query query = new Query(Criteria.where("form").in(forms));
+//        query.with(pageable);
+//        List<DataFormSubmission> submissions = getFormSubmissions(query, includeDeleted);
+//        long total = submissions.size();
+//
+//        return new PageImpl<>(submissions, pageable, total);
+//    }
+
+    @Override
+    public Page<DataFormSubmission> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+        Query query = new Query();
+        query.with(pageable);
+        List<DataFormSubmission> submissions = getFormSubmissions(query, queryRequest);
+        long total = submissions.size();
+
+        return new PageImpl<>(submissions, pageable, total);
+    }
+
+}

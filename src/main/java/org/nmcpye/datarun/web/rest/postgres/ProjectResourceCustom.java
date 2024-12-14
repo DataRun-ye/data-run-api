@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
 import org.nmcpye.datarun.domain.Project;
-import org.nmcpye.datarun.drun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.drun.postgres.repository.ProjectRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.ProjectServiceCustom;
+import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,12 +45,6 @@ public class ProjectResourceCustom extends AbstractRelationalResource<Project> {
     @Override
     public ResponseEntity<Project> updateEntity(Long aLong, Project entity) throws URISyntaxException {
         return super.updateEntity(aLong, entity);
-    }
-
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    @Override
-    public ResponseEntity<Void> deleteActivityByIdUid(Long aLong) {
-        return super.deleteActivityByIdUid(aLong);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")

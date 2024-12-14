@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -9,7 +8,6 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.domain.AbstractAuditingEntity;
 import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.drun.postgres.common.IdentifiableObject;
 import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;
@@ -20,12 +18,15 @@ import java.time.Instant;
  */
 @Entity
 @Table(name = "assignment", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_assignment_activity_id", columnNames = {"activity_id", "orgUnit_id", "team_id"})
+    @UniqueConstraint(name = "uc_assignment_activity_id",
+        columnNames = {"activity_id", "orgUnit_id", "team_id"})
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @JsonIgnoreProperties(value = {"new"})
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class Assignment extends AbstractAuditingEntity<Long> implements Serializable, Persistable<Long> {
+public class Assignment
+    extends AbstractAuditingEntity<Long>
+    implements Serializable, Persistable<Long> {
 
     private static final long serialVersionUID = 1L;
 
@@ -50,14 +51,15 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
     @JsonIgnoreProperties(value = {"project", "translations"}, allowSetters = true)
     private Activity activity;
 
+    @ManyToOne//(fetch = FetchType.LAZY)
 //    @JsonSerialize(contentAs = IdentifiableObject.class)
     @JsonIgnoreProperties(value = {"parent", "children", "groups","assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private OrgUnit orgUnit;
 
     @ManyToOne(optional = false)
     @NotNull
-    @JsonIgnoreProperties(value = {"activity", "operationRoom", "warehouse", "userInfo", "assignments", "users", "ancestors", "translations"}, allowSetters = true)
-//    @JsonSerialize(contentAs = IdentifiableObject.class)
+    @JsonIgnoreProperties(value = {"managedTeams", "managedTeams", "users", "assignments",
+        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
     private Team team;
 
     public Long getId() {
@@ -97,11 +99,6 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
 
     public void setCode(String code) {
         this.code = code;
-    }
-
-    @Override
-    public String getName() {
-        return "";
     }
 
     // Inherited createdBy methods
@@ -145,7 +142,7 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
         return this;
     }
 
-    @JsonSerialize(contentAs = IdentifiableObject.class)
+//    @JsonSerialize(contentAs = IdentifiableObject.class)
     public Activity getActivity() {
         return this.activity;
     }
@@ -159,7 +156,7 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
         return this;
     }
 
-    @JsonSerialize(contentAs = IdentifiableObject.class)
+//    @JsonSerialize(contentAs = IdentifiableObject.class)
     public OrgUnit getOrgUnit() {
         return this.orgUnit;
     }
@@ -173,7 +170,7 @@ public class Assignment extends AbstractAuditingEntity<Long> implements Serializ
         return this;
     }
 
-    @JsonSerialize(contentAs = IdentifiableObject.class)
+//    @JsonSerialize(contentAs = IdentifiableObject.class)
     public Team getTeam() {
         return this.team;
     }

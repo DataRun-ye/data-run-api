@@ -19,24 +19,26 @@ public interface OrgUnitRelationalRepositoryCustom
     extends OrgUnitRepositoryWithBagRelationships,
     IdentifiableRelationalRepository<OrgUnit> {
 
-    default Page<OrgUnit> findAssignedWithEagerRelation(Pageable pageable) {
-        return this.fetchBagRelationships(this.findAllWithEagerRelation(pageable));
-    }
+    Optional<OrgUnit> findByCode(String code);
 
-    default List<OrgUnit> findAssignedWithEagerRelation() {
-        return this.fetchBagRelationships(this.findAllWithEagerRelation());
-    }
+//    default Page<OrgUnit> findAssignedWithEagerRelation(Pageable pageable) {
+//        return this.fetchBagRelationships(this.findAllWithEagerRelation(pageable));
+//    }
+//
+//    default List<OrgUnit> findAssignedWithEagerRelation() {
+//        return this.fetchBagRelationships(this.findAllWithEagerRelation());
+//    }
 
-    default Optional<OrgUnit> findAssignedByUidWithEagerRelation(String uid) {
-        return this.fetchBagRelationships(this.findOneByUidEager(uid));
-    }
+//    default Optional<OrgUnit> findAssignedByUidWithEagerRelation(String uid) {
+//        return this.fetchBagRelationships(this.findOneByUidEager(uid));
+//    }
 
     @Query(
         value = "select distinct orgUnit from OrgUnit orgUnit " +
             "left join fetch orgUnit.parent " +
             "join orgUnit.assignments assignments " +
-            "join assignments.team.users user " +
-            "where user.login = ?#{authentication.name}"
+            "join assignments.team.users u " +
+            "where u.login = ?#{authentication.name}"
     )
     List<OrgUnit> findAllWithRelation();
 

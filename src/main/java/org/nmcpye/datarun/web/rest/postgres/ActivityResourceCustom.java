@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
 import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.drun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.ActivityServiceCustom;
+import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,12 +50,6 @@ public class ActivityResourceCustom extends AbstractRelationalResource<Activity>
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<?> saveReturnSaved(Activity entity) {
         return super.saveReturnSaved(entity);
-    }
-
-    @Override
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<Void> deleteActivityByIdUid(Long aLong) {
-        return super.deleteActivityByIdUid(aLong);
     }
 
     @Override
