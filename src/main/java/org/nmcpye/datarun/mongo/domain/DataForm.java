@@ -30,7 +30,6 @@ public class DataForm
     private String id;
 
     @Size(max = 11)
-//    @NotNull
     @Field("uid")
     @Indexed(unique = true, name = "form_uid")
     private String uid;
@@ -62,9 +61,6 @@ public class DataForm
     @Field("defaultLocal")
     private String defaultLocal;
 
-//    @Field("fields")
-//    private List<DataField> fields = new ArrayList<>();
-
     @Field("fields")
     @JsonDeserialize(contentUsing = FieldDeserializer.class)
     private List<AbstractField> fields = new ArrayList<>();
@@ -76,8 +72,11 @@ public class DataForm
     private List<OptionSet> optionSets = new ArrayList<>();
 
     @Field("orgUnits")
-//    @JsonSerialize(using = OrgUnitUidsSetSerializer.class)
     private Set<String> orgUnits = new HashSet<>();
+
+    //    @ReadOnlyProperty
+//    @DocumentReference(lookup="{'dataFormId':?#{#self._id} }")
+//    Set<String> assignments;
 
     private Map<String, String> label;
 
@@ -91,6 +90,14 @@ public class DataForm
         this.flattenedFields = this.flattenFields();
     }
 
+    /**
+     * Flattens the hierarchical structure of fields in the DataForm.
+     * This method traverses through all fields, including nested fields within Repeat and Section instances,
+     * and creates a flat list of all fields.
+     *
+     * @return A List of AbstractField objects representing all fields in the form, including nested fields,
+     * in a flattened structure.
+     */
     public List<AbstractField> flattenFields() {
         List<AbstractField> flatList = new ArrayList<>();
         for (AbstractField field : this.fields) {
@@ -326,6 +333,22 @@ public class DataForm
         this.setActivity(activityId);
         return this;
     }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
+//    public Set<String> getAssignments() {
+//        return assignments;
+//    }
+//
+//    public void setAssignments(Set<String> assignments) {
+//        this.assignments = assignments;
+//    }
 
     @Override
     public boolean equals(Object o) {

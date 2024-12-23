@@ -1,17 +1,27 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.Lists;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.apache.commons.compress.utils.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.domain.AbstractAuditingEntity;
 import org.nmcpye.datarun.domain.Activity;
+import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableObjectUtils;
 import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A Assignment.
@@ -29,6 +39,7 @@ public class Assignment
     implements Serializable, Persistable<Long> {
 
     private static final long serialVersionUID = 1L;
+    private static final String PATH_SEP = ",";
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
@@ -52,15 +63,32 @@ public class Assignment
     private Activity activity;
 
     @ManyToOne//(fetch = FetchType.LAZY)
-//    @JsonSerialize(contentAs = IdentifiableObject.class)
-    @JsonIgnoreProperties(value = {"parent", "children", "groups","assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"parent", "children", "groups", "assignments",
+        "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private OrgUnit orgUnit;
 
     @ManyToOne(optional = false)
     @NotNull
-    @JsonIgnoreProperties(value = {"managedTeams", "managedTeams", "users", "assignments",
+    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
     private Team team;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    private Set<Assignment> children = new HashSet<>();
+
+    @Column(name = "path")
+    private String path;
+
+    @JsonIgnore
+    @Column(name = "level")
+    private Integer hierarchyLevel;
+
+    @ManyToOne//(fetch = FetchType.LAZY)
+    @JsonProperty
+    @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    private Assignment parent;
 
     public Long getId() {
         return this.id;
@@ -101,25 +129,21 @@ public class Assignment
         this.code = code;
     }
 
-    // Inherited createdBy methods
     public Assignment createdBy(String createdBy) {
         this.setCreatedBy(createdBy);
         return this;
     }
 
-    // Inherited createdDate methods
     public Assignment createdDate(Instant createdDate) {
         this.setCreatedDate(createdDate);
         return this;
     }
 
-    // Inherited lastModifiedBy methods
     public Assignment lastModifiedBy(String lastModifiedBy) {
         this.setLastModifiedBy(lastModifiedBy);
         return this;
     }
 
-    // Inherited lastModifiedDate methods
     public Assignment lastModifiedDate(Instant lastModifiedDate) {
         this.setLastModifiedDate(lastModifiedDate);
         return this;
@@ -142,7 +166,6 @@ public class Assignment
         return this;
     }
 
-//    @JsonSerialize(contentAs = IdentifiableObject.class)
     public Activity getActivity() {
         return this.activity;
     }
@@ -156,7 +179,6 @@ public class Assignment
         return this;
     }
 
-//    @JsonSerialize(contentAs = IdentifiableObject.class)
     public OrgUnit getOrgUnit() {
         return this.orgUnit;
     }
@@ -170,7 +192,6 @@ public class Assignment
         return this;
     }
 
-//    @JsonSerialize(contentAs = IdentifiableObject.class)
     public Team getTeam() {
         return this.team;
     }
@@ -184,26 +205,242 @@ public class Assignment
         return this;
     }
 
-    // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
+    /**
+     * Returns the list of ancestor assignment UIDs up to any of the given
+     * roots for this assignment. Does not include itself. The list is
+     * ordered by root first.
+     *
+     * @param rootUids the root activities, if null using real roots.
+     */
+    public List<String> getAncestorUids(Set<String> rootUids) {
+        if (path == null || path.isEmpty()) {
+            return Lists.newArrayList();
         }
-        if (!(o instanceof Assignment)) {
+
+        String[] ancestors = path.substring(1).split(PATH_SEP); // Skip first delimiter, root assignment first
+        int lastIndex = ancestors.length - 2; // Skip this assignment
+        List<String> uids = Lists.newArrayList();
+
+        for (int i = lastIndex; i >= 0; i--) {
+            String uid = ancestors[i];
+            uids.add(0, uid);
+
+            if (rootUids != null && rootUids.contains(uid)) {
+                break;
+            }
+        }
+
+        return uids;
+    }
+
+    /**
+     * Returns a string representing the graph of ancestors. The string is delimited
+     * by "/". The ancestors are ordered by root first and represented by UIDs.
+     *
+     * @param roots the root activities, if null using real roots.
+     */
+    public String getParentGraph(Collection<Assignment> roots) {
+        Set<String> rootUids = roots != null ? Sets.newHashSet(String.valueOf(IdentifiableObjectUtils.getUids(roots))) : null;
+        List<String> ancestors = getAncestorUids(rootUids);
+        return StringUtils.join(ancestors, PATH_SEP);
+    }
+
+    /**
+     * Returns a mapping between the uid and the uid parent graph of the given
+     * activities.
+     */
+    public static Map<String, String> getParentGraphMap(List<Assignment> activities, Collection<Assignment> roots) {
+        Map<String, String> map = new HashMap<>();
+
+        if (activities != null) {
+            for (Assignment assignment : activities) {
+                map.put(assignment.getUid(), assignment.getParentGraph(roots));
+            }
+        }
+
+        return map;
+    }
+
+    public Set<Assignment> getChildren() {
+        return children;
+    }
+
+    public void setChildren(Set<Assignment> children) {
+        this.children = children;
+    }
+
+    @JsonProperty(value = "level", access = JsonProperty.Access.READ_ONLY)
+    public Integer getLevel() {
+        return StringUtils.countMatches(path, PATH_SEP);
+    }
+
+    // for Hibernate
+    public void setLevel(Integer ouLevel) {
+        //this.level = ouLevel;
+    }
+
+    /**
+     * Used by persistence layer. Purpose is to have a column for use in database
+     * queries. For application use see {@link Assignment#getLevel()} which
+     * has better performance.
+     */
+    public Integer getHierarchyLevel() {
+        Set<String> uids = Sets.newHashSet(uid);
+
+        Assignment current = this;
+
+        while ((current = current.getParent()) != null) {
+            boolean add = uids.add(current.getUid());
+
+            if (!add) {
+                break; // Protect against cyclic org assignment graphs
+            }
+        }
+
+        hierarchyLevel = uids.size();
+
+        return hierarchyLevel;
+    }
+
+    public Assignment hierarchyLevel(Integer hierarchyLevel) {
+        this.setHierarchyLevel(hierarchyLevel);
+        return this;
+    }
+
+    /**
+     * Returns the list of ancestor activities for this assignment.
+     * Does not include itself. The list is ordered by root first.
+     *
+     * @throws IllegalStateException if circular parent relationships is detected.
+     */
+//    @JsonProperty("ancestors")
+    @JsonSerialize(contentAs = Identifiable.class)
+    public List<Assignment> getAncestors() {
+        List<Assignment> activities = new ArrayList<>();
+        Set<Assignment> visitedActivities = new HashSet<>();
+
+        Assignment assignment = parent;
+
+        while (assignment != null) {
+            if (!visitedActivities.add(assignment)) {
+                throw new IllegalStateException(
+                    "Assignment '" + this.toString() + "' has circular parent relationships: '" + assignment + "'"
+                );
+            }
+
+            activities.add(assignment);
+            assignment = assignment.getParent();
+        }
+
+        Collections.reverse(activities);
+        return activities;
+    }
+
+    /**
+     * Returns the list of ancestor activities up to any of the given roots
+     * for this assignment. Does not include itself. The list is ordered by
+     * root first.
+     *
+     * @param roots the root activities, if null using real roots.
+     */
+    public List<Assignment> getAncestors(Collection<Assignment> roots) {
+        List<Assignment> activities = new ArrayList<>();
+        Assignment assignment = parent;
+
+        while (assignment != null) {
+            activities.add(assignment);
+
+            if (roots != null && roots.contains(assignment)) {
+                break;
+            }
+
+            assignment = assignment.getParent();
+        }
+
+        Collections.reverse(activities);
+        return activities;
+    }
+
+    //    public String getPath() {
+//        return path;
+//    }
+    public String getPath() {
+        List<String> pathList = new ArrayList<>();
+        Set<String> visitedSet = new HashSet<>();
+        Assignment assignment = parent;
+
+        pathList.add(uid);
+
+        while (assignment != null) {
+            if (!visitedSet.contains(assignment.getUid())) {
+                pathList.add(assignment.getUid());
+                visitedSet.add(assignment.getUid());
+                assignment = assignment.getParent();
+            } else {
+                assignment = null; // Protect against cyclic org unit graphs
+            }
+        }
+
+        Collections.reverse(pathList);
+
+        this.path = PATH_SEP + StringUtils.join(pathList, PATH_SEP);
+
+        return this.path;
+    }
+
+    public boolean isDescendant(Assignment ancestor) {
+        if (ancestor == null) {
             return false;
         }
-        return getId() != null && getId().equals(((Assignment) o).getId());
+
+        Assignment unit = this;
+
+        while (unit != null) {
+            if (ancestor.equals(unit)) {
+                return true;
+            }
+
+            unit = unit.getParent();
+        }
+
+        return false;
     }
 
-    @Override
-    public int hashCode() {
-        // see https://vladmihalcea.com/how-to-implement-equals-and-hashcode-using-the-jpa-entity-identifier/
-        return getClass().hashCode();
+    @JsonIgnore
+    public boolean isDescendant(Set<Assignment> ancestors) {
+        if (ancestors == null || ancestors.isEmpty()) {
+            return false;
+        }
+        Set<String> ancestorsUid = ancestors.stream().map(Assignment::getUid).collect(Collectors.toSet());
+
+        Assignment unit = this;
+
+        while (unit != null) {
+            if (ancestorsUid.contains(unit.getUid())) {
+                return true;
+            }
+
+            unit = unit.getParent();
+        }
+
+        return false;
+    }
+    public void setPath(String path) {
+        this.path = path;
     }
 
-    // prettier-ignore
+    public void setHierarchyLevel(Integer hierarchyLevel) {
+        this.hierarchyLevel = hierarchyLevel;
+    }
+
+    public Assignment getParent() {
+        return parent;
+    }
+
+    public void setParent(Assignment parent) {
+        this.parent = parent;
+    }
+
     @Override
     public String toString() {
         return "Assignment{" +

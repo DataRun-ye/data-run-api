@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -83,14 +82,14 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
         joinColumns = @JoinColumn(name = "team_id"),
         inverseJoinColumns = @JoinColumn(name = "managed_team_id")
     )
-    @JsonIgnoreProperties(value = {"managedTeams", "managedTeams", "users", "assignments",
+    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<Team> managedTeams = new HashSet<>();
 
     @ManyToMany(mappedBy = "managedTeams")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"managedTeams", "managedTeams", "users", "assignments",
+    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
     private Set<Team> managedByTeams = new HashSet<>();
 
@@ -103,33 +102,8 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
     ///////////////////////////////////
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "team")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"activity", "orgUnit", "team"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Set<Assignment> assignments = new HashSet<>();
-
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JsonIgnoreProperties(value = {"activity", "translations"}, allowSetters = true)
-//    private Warehouse warehouse;
-//
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JsonIgnore//Properties(value = {"teams", "password", "authorities", "translations"}, allowSetters = true)
-//    private User userInfo;
-//
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
-//    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-//    @JsonIgnoreProperties(value = {"parent", "users", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "translations"}, allowSetters = true)
-//    private Set<Team> children = new HashSet<>();
-
-//    @Column(name = "path")
-//    private String path;
-//
-//    @JsonIgnore
-//    @Column(name = "level")
-//    private Integer hierarchyLevel;
-//
-//    @ManyToOne//(fetch = FetchType.LAZY)
-//    @JsonProperty
-//    @JsonIgnoreProperties(value = {"parent", "users", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "translations"}, allowSetters = true)
-//    private Team parent;
 
     public Team addUser(User user) {
         this.users.add(user);
@@ -160,8 +134,6 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
     }
 
 
-    @JsonProperty("managedGroups")
-    @JsonSerialize(contentAs = BaseIdentifiableObject.class)
     public Set<Team> getManagedTeams() {
         return this.managedTeams;
     }
@@ -187,8 +159,6 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
         return this;
     }
 
-    @JsonProperty("managedByGroups")
-    @JsonSerialize(contentAs = BaseIdentifiableObject.class)
     public Set<Team> getManagedByTeams() {
         return this.managedByTeams;
     }
@@ -656,24 +626,6 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
 //    }
     //////////////////
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Team)) {
-            return false;
-        }
-        return getId() != null && getId().equals(((Team) o).getId());
-    }
-
-    @Override
-    public int hashCode() {
-        // see https://vladmihalcea.com/how-to-implement-equals-and-hashcode-using-the-jpa-entity-identifier/
-        return getClass().hashCode();
-    }
-
-    // prettier-ignore
     @Override
     public String toString() {
         return "Team{" + "id=" + getId() + ", uid='" + getUid() + "'" + ", code='" + getCode() + "'" + ", name='" + getName() + "'" + ", description='" + getDescription() + "'" + ", disabled='" + getDisabled() + "'" + ", deleteClientData='" + getDeleteClientData() + "'" + ", createdBy='" + getCreatedBy() + "'" + ", createdDate='" + getCreatedDate() + "'" + ", lastModifiedBy='" + getLastModifiedBy() + "'" + ", lastModifiedDate='" + getLastModifiedDate() + "'" + "}";

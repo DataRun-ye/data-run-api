@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.web.rest.mongo;
 
 import org.nmcpye.datarun.mongo.domain.DataForm;
+import org.nmcpye.datarun.mongo.mapping.FormTemplateSchema;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.mongo.service.DataFormService;
@@ -17,21 +18,23 @@ import java.util.List;
  * REST controller for managing {@link DataForm}.
  */
 @RestController
-@RequestMapping("/api/custom/dataForms")
+@RequestMapping("/api/custom/dataForm")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class DataFormResourceCustom extends AbstractMongoResource<DataForm> {
 
     final DataFormService dataFormService;
+    private final FormTemplateSchema formTemplateSchema;
 
     public DataFormResourceCustom(DataFormService dataFormService,
-                                  DataFormRepository dataFormRepository) {
+                                  DataFormRepository dataFormRepository, FormTemplateSchema formTemplateSchema) {
         super(dataFormService, dataFormRepository);
         this.dataFormService = dataFormService;
+        this.formTemplateSchema = formTemplateSchema;
     }
 
     @Override
     protected String getName() {
-        return "dataForms";
+        return "dataForm";
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
@@ -43,8 +46,21 @@ public class DataFormResourceCustom extends AbstractMongoResource<DataForm> {
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
     public ResponseEntity<EntitySaveSummaryVM> saveOne(DataForm entity) {
+//        var sc = formTemplateSchema.generateSchema(entity);
+//        Document document = sc.toDocument();
+//        var bson = sc.toDocument().toBsonDocument();
+//        var json = document.toJson();
+//        var json2 = bson.toJson();
+//        log.debug(document.toJson());
+//        log.debug(json2);
         return super.saveOne(entity);
     }
+
+//    public void saveEntity(MyEntity entity) {
+//        String schema = loadSchemaFromResources(); // Load your schema
+//        validateDynamicProperty(entity.getDynamicProperty(), schema);
+//        repository.save(entity);
+//    }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override

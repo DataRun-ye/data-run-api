@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import org.nmcpye.datarun.domain.AbstractAuditingEntity;
 import org.nmcpye.datarun.mongo.mapping.serialization.ActivityDeserializer;
 import org.nmcpye.datarun.mongo.mapping.serialization.OrgUnitDeserializer;
+import org.nmcpye.datarun.mongo.mapping.serialization.TeamDeserializer;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -39,10 +40,10 @@ public class AssignmentMongo
     @JsonDeserialize(using = ActivityDeserializer.class)
     private String activity;
 
-//    @Size(max = 11)
-//    @Field("team")
-//    @JsonDeserialize(using = TeamDeserializer.class)
-//    private String team;
+    @Size(max = 11)
+    @Field("team")
+    @JsonDeserialize(using = TeamDeserializer.class)
+    private String team;
 //
 //    @DBRef
 //    @Field("team")

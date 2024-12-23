@@ -8,8 +8,9 @@ import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositor
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
-import org.nmcpye.datarun.mongo.repository.MetadataSubmissionRepositoryCustom;
-import org.nmcpye.datarun.mongo.service.MetadataSubmissionService;
+import org.nmcpye.datarun.mongo.domain.MetadataSubmissionUpdate;
+import org.nmcpye.datarun.mongo.repository.MetadataSubmissionUpdateRepositoryCustom;
+import org.nmcpye.datarun.mongo.service.MetadataSubmissionUpdateService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -33,13 +34,13 @@ import java.util.stream.Collectors;
  */
 @Service
 @Primary
-public class MetadataSubmissionServiceImpl
-    extends IdentifiableMongoServiceImpl<MetadataSubmission>
-    implements MetadataSubmissionService {
+public class MetadataSubmissionUpdateServiceImpl
+    extends IdentifiableMongoServiceImpl<MetadataSubmissionUpdate>
+    implements MetadataSubmissionUpdateService {
 
-    private final Logger log = LoggerFactory.getLogger(MetadataSubmissionServiceImpl.class);
+    private final Logger log = LoggerFactory.getLogger(MetadataSubmissionUpdateServiceImpl.class);
 
-    private final MetadataSubmissionRepositoryCustom repository;
+    private final MetadataSubmissionUpdateRepositoryCustom repository;
     private final TeamRelationalRepositoryCustom teamRepository;
     private final ActivityRelationalRepositoryCustom activityRepository;
     private final AssignmentRelationalRepositoryCustom assignmentRepository;
@@ -48,8 +49,8 @@ public class MetadataSubmissionServiceImpl
     final private MongoTemplate mongoTemplate;
     private final SequenceGeneratorService sequenceGeneratorService;
 
-    public MetadataSubmissionServiceImpl(
-        MetadataSubmissionRepositoryCustom repository, ActivityRelationalRepositoryCustom activityRepository, TeamRelationalRepositoryCustom teamRepository, AssignmentRelationalRepositoryCustom assignmentRepository,
+    public MetadataSubmissionUpdateServiceImpl(
+        MetadataSubmissionUpdateRepositoryCustom repository, ActivityRelationalRepositoryCustom activityRepository, TeamRelationalRepositoryCustom teamRepository, AssignmentRelationalRepositoryCustom assignmentRepository,
         OrgUnitRelationalRepositoryCustom orgUnitRelationalRepositoryCustom,
         MongoTemplate mongoTemplate, SequenceGeneratorService sequenceGeneratorService) {
         super(repository, mongoTemplate);
@@ -64,7 +65,7 @@ public class MetadataSubmissionServiceImpl
 
 
     @Override
-    public MetadataSubmission saveWithRelations(MetadataSubmission newSubmission) {
+    public MetadataSubmissionUpdate saveWithRelations(MetadataSubmissionUpdate newSubmission) {
 //        final MetadataSubmission metadataSubmission = createSubmission(newSubmission);
 
         switch (newSubmission.getResourceType()) {
@@ -93,23 +94,14 @@ public class MetadataSubmissionServiceImpl
                 throw new NotImplementedException(newSubmission.getResourceType().toString() + "not Implemented");
         }
 
-        if (newSubmission.getSerialNumber() == null) {
-            // Generate a unique serial number for new submissions
-            long serialNumber = sequenceGeneratorService.getNextSequence("metadataSubmissionId");
-            newSubmission.setSerialNumber(serialNumber);
-        }
 
-        final MetadataSubmission dataFormSubmission = newSubmission
-            .createSubmission()
-            .populateFormDataAttributes();
-
-        return repository.save(dataFormSubmission);
+        return repository.save(newSubmission);
     }
 
-    public Page<MetadataSubmission> findAllByEntity(String uid, Pageable pageable) {
+    public Page<MetadataSubmissionUpdate> findAllByEntity(String uid, Pageable pageable) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             Query query = new Query(Criteria.where("entityUid").is(uid));
-            List<MetadataSubmission> submissions = mongoTemplate.find(query, MetadataSubmission.class);
+            List<MetadataSubmissionUpdate> submissions = mongoTemplate.find(query, MetadataSubmissionUpdate.class);
 
             return getMetadataSubmissions(pageable, submissions);
         }
@@ -118,7 +110,7 @@ public class MetadataSubmissionServiceImpl
     }
 
     @Override
-    public Page<MetadataSubmission> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+    public Page<MetadataSubmissionUpdate> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repository.findAll(pageable);
         }
@@ -134,7 +126,7 @@ public class MetadataSubmissionServiceImpl
         if (SecurityUtils.getCurrentUserLogin().isPresent()) {
             String login = SecurityUtils.getCurrentUserLogin().get();
             Query query = new Query(Criteria.where("entityUid").in(uids));
-            List<MetadataSubmission> submissions = mongoTemplate.find(query, MetadataSubmission.class);
+            List<MetadataSubmissionUpdate> submissions = mongoTemplate.find(query, MetadataSubmissionUpdate.class);
 
             return getMetadataSubmissions(pageable, submissions);
         }
@@ -142,7 +134,7 @@ public class MetadataSubmissionServiceImpl
 
     }
 
-    private static Page<MetadataSubmission> getMetadataSubmissions(Pageable pageable, List<MetadataSubmission> submissions) {
+    private static Page<MetadataSubmissionUpdate> getMetadataSubmissions(Pageable pageable, List<MetadataSubmissionUpdate> submissions) {
         if (!pageable.isPaged()) {
             return new PageImpl<>(submissions);
         }
@@ -153,7 +145,7 @@ public class MetadataSubmissionServiceImpl
             return Page.empty(pageable);
         }
 
-        List<MetadataSubmission> sublist = submissions.subList(start, end);
+        List<MetadataSubmissionUpdate> sublist = submissions.subList(start, end);
         return new PageImpl<>(sublist, pageable, submissions.size());
     }
 }

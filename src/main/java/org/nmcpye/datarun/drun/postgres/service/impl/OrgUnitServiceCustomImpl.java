@@ -2,10 +2,13 @@ package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.drun.postgres.common.OrgUnitSpecifications;
+import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
+import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
+import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -17,9 +20,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,11 +32,13 @@ public class OrgUnitServiceCustomImpl
 
     final OrgUnitRelationalRepositoryCustom repositoryCustom;
     final AssignmentRelationalRepositoryCustom assignmentRepository;
+    final UserRepository userRepository;
 
-    public OrgUnitServiceCustomImpl(OrgUnitRelationalRepositoryCustom orgUnitRepositoryCustom, AssignmentRelationalRepositoryCustom assignmentRepository) {
+    public OrgUnitServiceCustomImpl(OrgUnitRelationalRepositoryCustom orgUnitRepositoryCustom, AssignmentRelationalRepositoryCustom assignmentRepository, UserRepository userRepository) {
         super(orgUnitRepositoryCustom);
         this.repositoryCustom = orgUnitRepositoryCustom;
         this.assignmentRepository = assignmentRepository;
+        this.userRepository = userRepository;
     }
 
 
@@ -90,8 +93,18 @@ public class OrgUnitServiceCustomImpl
 
     @Override
     public Set<OrgUnit> getUserTeamsOrganisationUnits() {
-
-        return Set.of();
+        var userLogin = SecurityUtils.getCurrentUserLogin();
+        if (userLogin.isPresent()) {
+            var user = userRepository.findOneByLogin(userLogin.get());
+            return user.stream().flatMap(u -> u.getTeams().stream())
+                .filter(team -> !team.getDisabled())
+                .filter(team -> !team.getActivity().getDisabled())
+                .map(Team::getAssignments)
+                .flatMap(Collection::stream)
+                .map(Assignment::getOrgUnit)
+                .collect(Collectors.toSet());
+        }
+        return new HashSet<>();
     }
 
     @Override
@@ -104,6 +117,12 @@ public class OrgUnitServiceCustomImpl
         return Set.of();
     }
 
+    /**
+     * Updates the paths of organization units in the system.
+     * This method is scheduled to run automatically at 3:00 AM every day.
+     * It ensures that the hierarchical paths of organization units are kept up-to-date.
+     * The method is transactional to ensure data consistency during the update process.
+     */
     @Override
     @Transactional
     @Scheduled(cron = "0 0 3 * * ?")
@@ -111,9 +130,6 @@ public class OrgUnitServiceCustomImpl
         repositoryCustom.updatePaths();
     }
 
-    /**
-     * This is scheduled to get fired everyday, at 01:00 (am).
-     */
     @Override
     @Transactional
     public void forceUpdatePaths() {

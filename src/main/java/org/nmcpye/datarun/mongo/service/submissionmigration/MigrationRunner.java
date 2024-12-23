@@ -1,20 +1,20 @@
 package org.nmcpye.datarun.mongo.service.submissionmigration;
 
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
 
-@Component
+//@Component
 public class MigrationRunner implements CommandLineRunner {
 
-    private final DataFormSubmissionMigrationService migrationService;
+    private final SubmissionMaintenanceService migrationService;
 
-    public MigrationRunner(DataFormSubmissionMigrationService migrationService) {
+    public MigrationRunner(SubmissionMaintenanceService migrationService) {
         this.migrationService = migrationService;
     }
 
     @Override
     public void run(String... args) throws Exception {
-//        migrationService.migrateAndAssignSerialNumbers();
-//        migrationService.migrateAndAddGroupIndices();
+//        migrationService.findAndFixFormDataSerialNumbers();
+//        migrationService.findAndFixRepeatItemsIndices();
+
     }
 }

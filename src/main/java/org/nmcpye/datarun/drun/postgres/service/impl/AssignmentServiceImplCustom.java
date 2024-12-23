@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.common.AssignmentSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
@@ -9,6 +10,7 @@ import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositor
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentServiceCustom;
+import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -18,7 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Primary
@@ -30,14 +32,16 @@ public class AssignmentServiceImplCustom
     final AssignmentRelationalRepositoryCustom repositoryCustom;
     final TeamRelationalRepositoryCustom teamRepository;
     final OrgUnitRelationalRepositoryCustom orgUnitRepository;
+    final UserRepository userRepository;
 
     public AssignmentServiceImplCustom(AssignmentRelationalRepositoryCustom repositoryCustom,
                                        TeamRelationalRepositoryCustom teamRepository,
-                                       OrgUnitRelationalRepositoryCustom orgUnitRepository) {
+                                       OrgUnitRelationalRepositoryCustom orgUnitRepository, UserRepository userRepository) {
         super(repositoryCustom);
         this.repositoryCustom = repositoryCustom;
         this.teamRepository = teamRepository;
         this.orgUnitRepository = orgUnitRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -87,8 +91,37 @@ public class AssignmentServiceImplCustom
         return repositoryCustom.findAll(hasAccess(), pageable);
     }
 
-//    @Override
-//    public Assignment update(Assignment object) {
-//        return super.update(object);
-//    }
+    @Transactional(readOnly = true)
+    public List<Assignment> getAllUserAssignedAssignments(User user) {
+        return repositoryCustom.findAll(canRead(user.getLogin()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Assignment> getAllUserAssignedAssignmentsHierarchy(User user) {
+        List<Assignment> allAssignments = getAllUserAssignedAssignments(user);
+        return buildHierarchy(allAssignments);
+    }
+
+    private List<Assignment> buildHierarchy(List<Assignment> allAssignments) {
+        Map<Long, Assignment> assignmentMap = new HashMap<>();
+        List<Assignment> rootAssignments = new ArrayList<>();
+
+        // First pass: map all assignments by their ID
+        for (Assignment assignment : allAssignments) {
+            assignmentMap.put(assignment.getId(), assignment);
+        }
+
+        // Second pass: build the hierarchy
+        for (Assignment assignment : allAssignments) {
+            Assignment parent = assignment.getParent();
+            if (parent == null || !assignmentMap.containsKey(parent.getId())) {
+                rootAssignments.add(assignment);
+            } else {
+                Assignment parentAssignment = assignmentMap.get(parent.getId());
+                parentAssignment.getChildren().add(assignment);
+            }
+        }
+
+        return rootAssignments;
+    }
 }

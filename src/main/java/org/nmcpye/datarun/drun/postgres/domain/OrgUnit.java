@@ -63,7 +63,7 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "orgUnit")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonSerialize(contentAs = Identifiable.class)
-    @JsonIgnoreProperties(value = {"orgUnit"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Set<Assignment> assignments = new HashSet<>();
 
     @ManyToOne//(fetch = FetchType.LAZY)
@@ -80,6 +80,9 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"parent", "children", "groups", "assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private Set<OrgUnit> children = new HashSet<>();
+
+    @Transient
+    private OrgUnitScope orgUnitScope;
 
     @PreRemove
     private void removeOuGroupsFromOu() {
@@ -410,9 +413,6 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
      *
      * @throws IllegalStateException if circular parent relationships is detected.
      */
-//    @JsonProperty("ancestors")
-    @JsonIgnoreProperties(value = {"parent", "children", "groups", "assignments", "hierarchyLevel", "ancestors", "translations", "path"}, allowSetters = true)
-//    @JsonSerialize(contentAs = Identifiable.class)
     public List<OrgUnit> getAncestors() {
         List<OrgUnit> units = new ArrayList<>();
         Set<OrgUnit> visitedUnits = new HashSet<>();
@@ -460,41 +460,17 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
         return units;
     }
 
-//    @JsonProperty
-//    public Set<OrgUnit> getChildren() {
-//        return this.children;
-//    }
-//
-//    public void setChildren(Set<OrgUnit> organisationUnits) {
-////        if (this.children != null) {
-////            this.children.forEach(i -> i.setParent(null));
-////        }
-////        if (organisationUnits != null) {
-////            organisationUnits.forEach(i -> i.setParent(this));
-////        }
-//        this.children = organisationUnits;
-//    }
-//
-//    public OrgUnit children(Set<OrgUnit> organisationUnits) {
-//        this.setChildren(organisationUnits);
-//        return this;
-//    }
-//
-//    public OrgUnit addChildren(OrgUnit organisationUnit) {
-//        this.children.add(organisationUnit);
-//        organisationUnit.setParent(this);
-//        return this;
-//    }
-//
-//    public OrgUnit removeChildren(OrgUnit organisationUnit) {
-//        this.children.remove(organisationUnit);
-//        organisationUnit.setParent(null);
-//        return this;
-//    }
-
     public OrgUnit parent(OrgUnit parent) {
         this.setParent(parent);
         return this;
+    }
+
+    public OrgUnitScope getOrgUnitScope() {
+        return orgUnitScope;
+    }
+
+    public void setOrgUnitScope(OrgUnitScope orgUnitScope) {
+        this.orgUnitScope = orgUnitScope;
     }
 
     // prettier-ignore

@@ -21,7 +21,7 @@ import java.util.Map;
  * REST controller for managing {@link DataFormSubmission}.
  */
 @RestController
-@RequestMapping("/api/custom/dataSubmissions")
+@RequestMapping("/api/custom/dataSubmission")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class DataFormSubmissionResourceCustom
     extends AbstractMongoResource<DataFormSubmission> {
@@ -57,6 +57,6 @@ public class DataFormSubmissionResourceCustom
 
     @Override
     protected String getName() {
-        return "dataSubmissions";
+        return "dataSubmission";
     }
 }

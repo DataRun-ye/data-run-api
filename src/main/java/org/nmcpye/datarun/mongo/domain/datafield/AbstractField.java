@@ -132,6 +132,14 @@ public class AbstractField implements Serializable {
         return Objects.hash(name, type, path != null ? path.hashCode() : 0);
     }
 
+    /**
+     * Determines if the given field is of type ResourceField.
+     * This static method checks whether the provided AbstractField instance
+     * is specifically an instance of the ResourceField class.
+     *
+     * @param field The AbstractField instance to be checked.
+     * @return true if the field is an instance of ResourceField, false otherwise.
+     */
     public static boolean isResourceTypeField(AbstractField field) {
         return field instanceof ResourceField;
     }

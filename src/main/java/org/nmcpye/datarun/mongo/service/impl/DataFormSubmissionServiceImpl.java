@@ -8,6 +8,7 @@ import org.nmcpye.datarun.mongo.domain.DataFormSubmissionHistory;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionHistoryRepository;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepositoryCustom;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
+import org.nmcpye.datarun.mongo.service.submissionmigration.SubmissionMaintenanceService;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
@@ -20,7 +21,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -38,10 +41,11 @@ public class DataFormSubmissionServiceImpl
     private final Logger log = LoggerFactory.getLogger(DataFormSubmissionServiceImpl.class);
 
     private final DataFormSubmissionRepositoryCustom repository;
-    final DataFormSubmissionHistoryRepository historyRepository;
+    private final DataFormSubmissionHistoryRepository historyRepository;
     private final ActivityRelationalRepositoryCustom activityRepository;
     private final TeamRelationalRepositoryCustom teamRepository;
     private final SequenceGeneratorService sequenceGeneratorService;
+    private final SubmissionMaintenanceService maintenanceService;
     private static final int MAX_HISTORY_VERSIONS = 3; // Keep only the last 10 versions
 
     public DataFormSubmissionServiceImpl(
@@ -50,13 +54,14 @@ public class DataFormSubmissionServiceImpl
         ActivityRelationalRepositoryCustom activityRepository,
         TeamRelationalRepositoryCustom teamRepository,
         MongoTemplate mongoTemplate,
-        SequenceGeneratorService sequenceGeneratorService) {
+        SequenceGeneratorService sequenceGeneratorService, SubmissionMaintenanceService maintenanceService) {
         super(repository, mongoTemplate);
         this.repository = repository;
         this.historyRepository = historyRepository;
         this.activityRepository = activityRepository;
         this.teamRepository = teamRepository;
         this.sequenceGeneratorService = sequenceGeneratorService;
+        this.maintenanceService = maintenanceService;
     }
 
     @Override
@@ -108,7 +113,8 @@ public class DataFormSubmissionServiceImpl
             .createSubmission()
             .populateFormDataAttributes();
 
-        return saveVersioning(dataFormSubmission);
+//        return saveVersioning(dataFormSubmission);
+        return repository.save(dataFormSubmission);
     }
 
     private void pruneOldVersions(String submissionId) {
@@ -128,37 +134,6 @@ public class DataFormSubmissionServiceImpl
     }
 
     @Override
-    public void deleteByUid(String uid) {
-        log.debug("request to soft delete DataFormSubmission : {}", uid);
-        DataFormSubmission submission = repository.findByUid(uid).orElseThrow(() -> new IllegalArgumentException("Invalid id: " + uid));
-
-        // soft delete by marking the entity as deleted
-        submission.setDeleted(true);
-        saveVersioning(submission);
-    }
-
-//    @Override
-//    public Page<DataFormSubmission> findSubmissionsBySerialNumber(Long serialNumber,
-//                                                                  String form, Pageable pageable, boolean includeDeleted) {
-//        Query query = new Query(Criteria.where("form").is(form));
-//        query.addCriteria(Criteria.where("serialNumber").is(serialNumber));
-//        List<DataFormSubmission> submissions = getFormSubmissions(query, includeDeleted);
-//        long total = submissions.size();
-//
-//        return new PageImpl<>(submissions, pageable, total);
-//    }
-
-//    @Override
-//    public Page<DataFormSubmission> findAllByForm(List<String> forms, Pageable pageable, boolean includeDeleted) {
-//        Query query = new Query(Criteria.where("form").in(forms));
-//        query.with(pageable);
-//        List<DataFormSubmission> submissions = getFormSubmissions(query, includeDeleted);
-//        long total = submissions.size();
-//
-//        return new PageImpl<>(submissions, pageable, total);
-//    }
-
-    @Override
     public Page<DataFormSubmission> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         Query query = new Query();
         query.with(pageable);
@@ -168,4 +143,21 @@ public class DataFormSubmissionServiceImpl
         return new PageImpl<>(submissions, pageable, total);
     }
 
+    @Override
+    public void deleteByUid(String uid) {
+        log.debug("request to soft delete DataFormSubmission : {}", uid);
+        DataFormSubmission submission = repository.findByUid(uid).orElseThrow(() -> new IllegalArgumentException("Invalid id: " + uid));
+
+        // soft delete by marking the entity as deleted
+        submission.setDeleted(true);
+        repository.save(submission);
+//        saveVersioning(submission);
+    }
+
+    @Override
+    @Transactional
+    @Scheduled(cron = "0 0 3 * * ?")
+    public void findAndFixFormDataSerialNumbers() {
+        maintenanceService.findAndFixFormDataSerialNumbers();
+    }
 }

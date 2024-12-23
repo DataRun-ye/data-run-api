@@ -109,7 +109,9 @@ public class TeamServiceCustomImpl
 //        if (!SecurityUtils.isAuthenticated()) {
 //            return Collections.emptyList();
 //        }
-        return repository.findAll(spec);
+
+        return repository.fetchBagRelationships(this.findAll(spec));
+//        return repository.findAll(spec);
 
 //        return repository.fetchBagRelationships(this.findAll(hasAccess()));
     }

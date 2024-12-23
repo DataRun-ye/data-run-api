@@ -56,10 +56,13 @@ public class DataFormSubmission
     private Map<String, Object> formData = new HashMap<String, Object>();
 
     @Field("currentVersion")
-    private int version;  // Reference to the latest version in the version history collection
+    private int version;
 
     @Indexed(unique = true)
     Long serialNumber;
+
+//    @Field("submissionVersion")
+//    private int submissionVersion;  // Reference to the latest version in the version history collection
 
     public Long getSerialNumber() {
         return serialNumber;
@@ -102,11 +105,6 @@ public class DataFormSubmission
     public void setUid(String uid) {
         this.uid = uid;
     }
-
-//    @Override
-//    public String getName() {
-//        return activity + ":" + orgUnit + ":" + form + ":" + team;
-//    }
 
     public Boolean getDeleted() {
         return this.deleted;
@@ -212,6 +210,14 @@ public class DataFormSubmission
         return this;
     }
 
+    /**
+     * Populates the form data attributes with additional metadata.
+     * This method enriches the form data with various attributes such as submission UID,
+     * serial number, submission time, and version information.
+     *
+     * @throws PropertyNotFoundException if any of the main attributes (activity, team, or form) is not set
+     * @return The current DataFormSubmission instance with updated form data
+     */
     public DataFormSubmission populateFormDataAttributes() {
 
         if (Objects.isNull(activity) || Objects.isNull(team) || Objects.isNull(form)) {
@@ -220,19 +226,11 @@ public class DataFormSubmission
 
         Map<String, Object> formData = this.getFormData();
 
-        formData.remove("_uid");
-        formData.remove("uid");
-        formData.remove("_uuid");
-        formData.remove("_formDataUid");
-
         Map<String, ?> map = Map.ofEntries(
             entry("_deleted", this.getDeleted()),
             entry("_submissionUid", this.getUid()),
             entry("_serialNumber", this.getSerialNumber()),
-//            entry("_createdBy", Objects.requireNonNullElse(this.getCreatedBy(), SecurityUtils.getCurrentUserLogin().get())),
             entry("_submissionTime", Objects.requireNonNullElse(this.getCreatedDate(), Instant.now())),
-//            entry("_lastModifiedBy", Objects.requireNonNullElse(this.getLastModifiedBy(),
-//                SecurityUtils.getCurrentUserLogin().get())),
             entry("_lastModifiedDate", Objects.requireNonNullElse(this.getLastModifiedDate(), Instant.now())),
             entry("_version", this.getVersion())
         );
@@ -250,11 +248,12 @@ public class DataFormSubmission
 
         Map<String, Object> formData = this.getFormData();
 
-        final Object id = CodeGenerator.generateCode(16);
+        final Object id = Objects.requireNonNullElse(formData.get("_id"), CodeGenerator.generateCode(16));
 
-        formData.putIfAbsent("_id", id);
+        formData.put("_id", id);
 
         Map<String, Object> updatedFormData = addGroupIndicesToFormData(formData, id);
+
         this.setFormData(updatedFormData);
 
         return this;
@@ -269,32 +268,27 @@ public class DataFormSubmission
             if (value instanceof List) {
                 List<?> list = (List<?>) value;
                 if (!list.isEmpty() && list.get(0) instanceof Map) {
-                    List<Map<String, Object>> updatedList = new ArrayList<>();
-                    for (int i = 0; i < list.size(); i++) {
-                        Map<String, Object> objectInArray = (Map<String, Object>) list.get(i);
-                        objectInArray.put("_parentId", parentId);
-                        objectInArray.put("_id", CodeGenerator.generateCode(16));  // Add groupIndex (s
-                        // Add groupIndex (starting from 1)
-                        objectInArray.put("_index", i + 1);  // Add repeatIndex (starting from 1)
-
-                        objectInArray.remove("repeatUid");  // Add repeatIndex (starting from 1)
-                        objectInArray.remove("index");  // Add repeatIndex (starting from 1)
-                        objectInArray.remove("repeatIndex");  // Add repeatIndex (starting from 1)
-                        objectInArray.remove("parentUid");  // Add repeatIndex (starting from 1)
-                        objectInArray.remove("_formDataUid");  // Add repeatIndex (starting from 1)
-
-                        updatedList.add(objectInArray);
+                    if (containUnidentifiedRepeatItem((List<Map<String, Object>>) list)) {
+                        List<Map<String, Object>> updatedList = new ArrayList<>();
+                        for (int i = 0; i < list.size(); i++) {
+                            Map<String, Object> objectInArray = (Map<String, Object>) list.get(i);
+                            objectInArray.put("_parentId", parentId);
+                            objectInArray.put("_id", CodeGenerator.generateCode(16));  // Add groupIndex (s
+                            // Add groupIndex (starting from 1)
+                            objectInArray.put("_index", i + 1);  // Add repeatIndex (starting from 1)
+                            updatedList.add(objectInArray);
+                        }
+                        updatedFormData.put(entry.getKey(), updatedList);
                     }
-                    updatedFormData.put(entry.getKey(), updatedList);
                 } else {
                     // If it's not an array of objects, just copy as is
                     updatedFormData.put(entry.getKey(), list);
                 }
             } else if (value instanceof Map) {
-                // If it's a nested map, recursively process it
-                ((Map<String, Object>) value).remove("uid");
-                ((Map<String, Object>) value).remove("_uid");
-                ((Map<String, Object>) value).remove("_uuid");
+//                // If it's a nested map, recursively process it
+//                ((Map<String, Object>) value).remove("uid");
+//                ((Map<String, Object>) value).remove("_uid");
+//                ((Map<String, Object>) value).remove("_uuid");
                 updatedFormData.put(entry.getKey(), addGroupIndicesToFormData((Map<String, Object>) value, parentId));
             } else {
                 // If it's a simple value, just copy as is
@@ -302,6 +296,14 @@ public class DataFormSubmission
             }
         }
         return updatedFormData;
+    }
+
+    public boolean containUnidentifiedRepeatItem(List<Map<String, Object>> items) {
+        return items
+            .stream()
+            .anyMatch(obj -> obj.get("_parentId") == null
+                || obj.get("_id") == null
+                || obj.get("_index") == null);
     }
 
     @Override
@@ -332,6 +334,11 @@ public class DataFormSubmission
             "}";
     }
 
+    /**
+     * form version
+     *
+     * @return The form version of the submission,
+     */
     public int getVersion() {
         return version;
     }

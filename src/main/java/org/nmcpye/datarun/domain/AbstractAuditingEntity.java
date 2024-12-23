@@ -14,6 +14,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Base abstract class for entities which will hold definitions for created, last modified, created by,
@@ -85,13 +86,13 @@ public abstract class AbstractAuditingEntity<T>
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        AbstractAuditingEntity auditingEntity = (AbstractAuditingEntity) o;
-        return (getId() != null && getId() .equals(auditingEntity.getId() )) ||
-            (getUid() != null && getUid().equals(auditingEntity.getUid()));
+        AbstractAuditingEntity<?> that = (AbstractAuditingEntity<?>) o;
+        return Objects.equals(getId(), that.getId()) ||
+            (getId() == null && Objects.equals(getUid(), that.getUid()));
     }
 
     @Override
     public int hashCode() {
-        return getId() != null ? getId().hashCode() : (getUid() != null ? getUid().hashCode() : 0);
+        return getId() != null ? getId().hashCode() : getUid().hashCode();
     }
 }

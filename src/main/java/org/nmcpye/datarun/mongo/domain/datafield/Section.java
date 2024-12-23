@@ -9,7 +9,6 @@ import java.util.List;
 public class Section extends DefaultField {
     @Field("fields")
     @JsonDeserialize(contentUsing = FieldDeserializer.class)
-//    @JsonDeserialize(using = FieldDeserializer.class)
     private List<AbstractField> fields = new ArrayList<>();
 
     public List<AbstractField> getFields() {
@@ -20,6 +19,15 @@ public class Section extends DefaultField {
         this.fields = fields;
     }
 
+    /**
+     * Flattens the hierarchical structure of fields within this section and its subsections.
+     * This method recursively traverses through all fields, including nested sections,
+     * and creates a flat list of all fields.
+     *
+     * @return A List of AbstractField objects representing all fields in this section
+     *         and its subsections in a flattened structure. The list maintains the order
+     *         of fields as they appear in the hierarchical structure.
+     */
     public List<AbstractField> flattenFields() {
         List<AbstractField> flatList = new ArrayList<>();
         for (AbstractField field : this.fields) {

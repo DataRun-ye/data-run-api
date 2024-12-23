@@ -17,11 +17,12 @@ import java.time.Instant;
 @Entity
 @Table(name = "activity")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-@JsonIgnoreProperties(value = { "new" })
+@JsonIgnoreProperties(value = {"new"})
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Activity extends AbstractAuditingEntity<Long> implements Serializable, Persistable<Long> {
 
     private static final long serialVersionUID = 1L;
+    private static final String PATH_SEP = ",";
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
@@ -51,20 +52,13 @@ public class Activity extends AbstractAuditingEntity<Long> implements Serializab
     @Column(name = "delete_client_data")
     private Boolean deleteClientData;
 
-    // Inherited createdBy definition
-    // Inherited createdDate definition
-    // Inherited lastModifiedBy definition
-    // Inherited lastModifiedDate definition
     @Transient
     private boolean isPersisted;
 
     @ManyToOne(optional = false)
     @NotNull
-    @JsonIgnoreProperties(value = { "activities" }, allowSetters = true)
-//    @JsonSerialize(contentAs = Identifiable.class)
+    @JsonIgnoreProperties(value = {"activities"}, allowSetters = true)
     private Project project;
-
-    // jhipster-needle-entity-add-field - JHipster will add fields here
 
     public Long getId() {
         return this.id;
@@ -170,19 +164,16 @@ public class Activity extends AbstractAuditingEntity<Long> implements Serializab
         this.deleteClientData = deleteClientData;
     }
 
-    // Inherited createdBy methods
     public Activity createdBy(String createdBy) {
         this.setCreatedBy(createdBy);
         return this;
     }
 
-    // Inherited createdDate methods
     public Activity createdDate(Instant createdDate) {
         this.setCreatedDate(createdDate);
         return this;
     }
 
-    // Inherited lastModifiedBy methods
     public Activity lastModifiedBy(String lastModifiedBy) {
         this.setLastModifiedBy(lastModifiedBy);
         return this;
@@ -222,25 +213,6 @@ public class Activity extends AbstractAuditingEntity<Long> implements Serializab
     public Activity project(Project project) {
         this.setProject(project);
         return this;
-    }
-
-    // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Activity)) {
-            return false;
-        }
-        return getId() != null && getId().equals(((Activity) o).getId());
-    }
-
-    @Override
-    public int hashCode() {
-        // see https://vladmihalcea.com/how-to-implement-equals-and-hashcode-using-the-jpa-entity-identifier/
-        return getClass().hashCode();
     }
 
     // prettier-ignore

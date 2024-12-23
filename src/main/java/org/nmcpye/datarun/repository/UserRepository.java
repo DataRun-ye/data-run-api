@@ -34,6 +34,8 @@ public interface UserRepository extends IdentifiableRelationalRepository<User> {
     @EntityGraph(attributePaths = "authorities")
     Optional<User> findOneByLogin(String login);
 
+    User findUserByLogin(String login);
+
     List<User> findByLoginIn(Set<String> logins);
 
     @EntityGraph(attributePaths = "authorities")
