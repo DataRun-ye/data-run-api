@@ -18,6 +18,7 @@ import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -158,10 +159,14 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
     }
 
     public Set<String> getFormsWithPermission(FormPermission permission) {
-        return this.formPermissions.stream()
-            .filter(entry -> entry.getPermissions().contains(permission))
-            .map(TeamFormPermissions::getForm)
-            .collect(Collectors.toSet());
+        // for old saved and not migrated teams, who have formPermissions == null
+        if (this.formPermissions != null) {
+            return this.formPermissions.stream()
+                .filter(entry -> entry.getPermissions().contains(permission))
+                .map(TeamFormPermissions::getForm)
+                .collect(Collectors.toSet());
+        }
+        return Collections.emptySet();
     }
 
 //    public void setFormPermissions(Set<TeamFormPermission> formPermissions) {
