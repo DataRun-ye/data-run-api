@@ -17,4 +17,11 @@ public interface DataFormRepository
 
     @Query("{'activity': ?0}")
     List<DataForm> findAllByActivity(String activity);
+
+    //    @Query(value = "{ 'form': { $in: ?0 }, 'permissions': ?1 }", fields = "{ 'form': 1, '_id': 0 }")
+//    List<String> findByFormsAndPermission(List<String> form, String permission);
+//    @Query(value = "{ 'uid': { $in: ?0 }}")
+//    Page<DataForm> findAllByUidIn(List<String> uids, Pageable pageable);
+//
+    List<DataForm> findAllByUidIn(List<String> uids);
 }

@@ -53,8 +53,8 @@ public class DataForm
     @Field("deleted")
     private boolean deleted;
 
-    @Field("activity")
-    private String activity;
+//    @Field("activity")
+//    private String activity;
 
     private Integer version;
 
@@ -74,8 +74,8 @@ public class DataForm
     @Field("orgUnits")
     private Set<String> orgUnits = new HashSet<>();
 
-    //    @ReadOnlyProperty
-//    @DocumentReference(lookup="{'dataFormId':?#{#self._id} }")
+//    @ReadOnlyProperty
+//    @DocumentReference(lookup = "{'dataFormId':?#{#self._id} }")
 //    Set<String> assignments;
 
     private Map<String, String> label;
@@ -321,18 +321,18 @@ public class DataForm
         return this;
     }
 
-    public String getActivity() {
-        return this.activity;
-    }
+//    public String getActivity() {
+//        return this.activity;
+//    }
+//
+//    public void setActivity(String activity) {
+//        this.activity = activity;
+//    }
 
-    public void setActivity(String activity) {
-        this.activity = activity;
-    }
-
-    public DataForm activity(String activityId) {
-        this.setActivity(activityId);
-        return this;
-    }
+//    public DataForm activity(String activityId) {
+//        this.setActivity(activityId);
+//        return this;
+//    }
 
     public boolean isDeleted() {
         return deleted;

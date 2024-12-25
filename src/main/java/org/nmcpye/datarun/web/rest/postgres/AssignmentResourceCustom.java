@@ -8,13 +8,18 @@ import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
+import org.nmcpye.datarun.web.rest.exception.PathUpdateException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URISyntaxException;
@@ -38,6 +43,11 @@ public class AssignmentResourceCustom extends AbstractRelationalResource<Assignm
         super(assignmentService, assignmentRepository);
         this.assignmentRepository = assignmentRepository;
         this.assignmentService = assignmentService;
+    }
+
+    @Override
+    protected Page<Assignment> getList(Pageable pageable, QueryRequest queryRequest) {
+        return assignmentService.getAllUserAccessible(pageable);
     }
 
     @Override
@@ -93,5 +103,23 @@ public class AssignmentResourceCustom extends AbstractRelationalResource<Assignm
         }
 
         return super.saveAll(entities);
+    }
+
+    @GetMapping("/updatePaths")
+    public ResponseEntity<String> updatePaths(
+        @RequestParam(name = "forceUpdate", required = false, defaultValue = "false") boolean forceUpdate) {
+        log.debug("REST request to update orgUnit Paths");
+
+        try {
+            if (forceUpdate) {
+                assignmentService.forceUpdatePaths();
+            } else {
+                assignmentService.updatePaths();
+            }
+            return ResponseEntity.ok("Paths updated successfully");
+        } catch (Exception e) {
+            log.error("Error occurred while updating paths", e);
+            throw new PathUpdateException("Failed to update paths", e);
+        }
     }
 }

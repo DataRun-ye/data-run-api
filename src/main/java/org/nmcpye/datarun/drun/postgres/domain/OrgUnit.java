@@ -82,7 +82,7 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
     private Set<OrgUnit> children = new HashSet<>();
 
     @Transient
-    private OrgUnitScope orgUnitScope;
+    private EntityScope entityScope;
 
     @PreRemove
     private void removeOuGroupsFromOu() {
@@ -465,12 +465,12 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
         return this;
     }
 
-    public OrgUnitScope getOrgUnitScope() {
-        return orgUnitScope;
+    public EntityScope getEntityScope() {
+        return entityScope;
     }
 
-    public void setOrgUnitScope(OrgUnitScope orgUnitScope) {
-        this.orgUnitScope = orgUnitScope;
+    public void setEntityScope(EntityScope entityScope) {
+        this.entityScope = entityScope;
     }
 
     // prettier-ignore

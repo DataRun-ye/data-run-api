@@ -31,12 +31,13 @@ public class AllocatedResource
 
     @NotNull
     @Column(name = "resource_type")
+    @Enumerated(EnumType.STRING)
     private ResourceType resourceType;
 
-    @Column(name = "quantity")
-    private double quantity;
+    @Column(name = "value")
+    private double value;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     @JsonIgnoreProperties(value = {"parent", "children", "activity", "team", "orgUnit", "ancestors", "translations"}, allowSetters = true)
     private Assignment assignment;
 
@@ -56,12 +57,12 @@ public class AllocatedResource
         this.resourceType = resourceType;
     }
 
-    public double getQuantity() {
-        return quantity;
+    public double getValue() {
+        return value;
     }
 
-    public void setQuantity(double quantity) {
-        this.quantity = quantity;
+    public void setValue(double value) {
+        this.value = value;
     }
 
     public Assignment getAssignment() {
@@ -76,11 +77,11 @@ public class AllocatedResource
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof AllocatedResource that)) return false;
-        return Double.compare(quantity, that.quantity) == 0 && resourceType == that.resourceType && Objects.equals(assignment, that.assignment);
+        return Double.compare(value, that.value) == 0 && resourceType == that.resourceType && Objects.equals(assignment, that.assignment);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(resourceType, quantity, assignment);
+        return Objects.hash(resourceType, value, assignment);
     }
 }

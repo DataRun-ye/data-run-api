@@ -1,12 +1,9 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
-import jakarta.el.PropertyNotFoundException;
-import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
-import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.domain.Team;
+import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
+import org.nmcpye.datarun.drun.postgres.repository.*;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.ResourceField;
@@ -25,6 +22,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,18 +56,27 @@ public class DataFormServiceImpl
 
     private final OrgUnitRelationalRepositoryCustom orgUnitRepository;
 
+    private final TeamRelationalRepositoryCustom teamRepository;
+
+    private final UserRepository userRepository;
+
+    private final TeamFormPermissionRepository permissionRepository;
+
     public DataFormServiceImpl(DataFormRepository repositoryCustom,
                                MetadataSchemaRepository metadataSchemaRepository,
                                ActivityRelationalRepositoryCustom activityRepository,
                                AssignmentRelationalRepositoryCustom assignmentRepository,
                                OrgUnitRelationalRepositoryCustom orgUnitRepository,
-                               MongoTemplate mongoTemplate, UserRepository userRepository) {
+                               MongoTemplate mongoTemplate, UserRepository userRepository, TeamRelationalRepositoryCustom teamRepository, UserRepository userRepository1, TeamFormPermissionRepository permissionRepository) {
         super(repositoryCustom, mongoTemplate);
         this.repositoryCustom = repositoryCustom;
         this.metadataSchemaRepository = metadataSchemaRepository;
         this.activityRepository = activityRepository;
         this.assignmentRepository = assignmentRepository;
         this.orgUnitRepository = orgUnitRepository;
+        this.teamRepository = teamRepository;
+        this.userRepository = userRepository1;
+        this.permissionRepository = permissionRepository;
     }
 
     public <T extends AbstractField> void processFields(List<T> fields, String parentPath) {
@@ -96,9 +105,9 @@ public class DataFormServiceImpl
         processFields(dataForm.getFields(), "");
         dataForm.updateFlattenedFields();
 
-        Activity activity = activityRepository.findByUid(dataForm.getActivity())
-            .orElseThrow(() -> new PropertyNotFoundException("Activity not found: " + dataForm.getActivity()));
-        dataForm.setActivity(activity.getUid());
+//        Activity activity = activityRepository.findByUid(dataForm.getActivity())
+//            .orElseThrow(() -> new PropertyNotFoundException("Activity not found: " + dataForm.getActivity()));
+//        dataForm.setActivity(activity.getUid());
 
         Set<String> orgUnitUids = dataForm.getOrgUnits(); // Extract from JSON
 
@@ -140,47 +149,29 @@ public class DataFormServiceImpl
         return super.update(object);
     }
 
-    @Override
-    public List<DataForm> findAllByActivity(String activity) {
-        return repositoryCustom.findAllByActivity(activity);
-    }
+//    @Override
+//    public List<DataForm> getAccessibleForms(String teamId, Permission permission) {
+//        // Fetch form template IDs for which the team has the specified permission
+//        List<String> formTemplateIds = permissionRepository.findFormsByTeamAndPermission(teamId, permission.getName());
+//
+//        // Fetch and return the full form templates
+//        return repositoryCustom.findAllById(formTemplateIds);
+//    }
 
 
     @Override
-    public Page<DataForm> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
-        if (!SecurityUtils.isAuthenticated()) {
-            return Page.empty(pageable);
-        }
-
-        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return repositoryCustom.findAll(pageable);
-        }
-
-        List<Assignment> assignments = assignmentRepository
-            .findAllByStatusUser(false)
-            .stream()
+    public Page<DataForm> getAccessibleForms(Pageable pageable) {
+        // Fetch form template IDs for which the team has the specified permission
+        List<Long> userTeams = teamRepository
+            .findAllWithEagerRelation()
+            .stream().map(Team::getId)
             .toList();
 
-        var orgUnitsUidsByActivity = assignments.stream()
-            .filter((assignment) -> Objects.nonNull(assignment.getOrgUnit()))
-            .collect(Collectors
-                .groupingBy((assignment) -> assignment.getActivity().getUid(),
-                    Collectors.mapping((assignment) -> assignment.getOrgUnit().getUid(),
-                        Collectors.toSet())));
+        Set<String> formTemplateIds = teamRepository
+            .findAllWithEagerRelation().stream().flatMap((team) -> team.getFormsWithPermission(
+                FormPermission.ADD_SUBMISSIONS).stream()).collect(Collectors.toSet());
 
-        List<String> activities = assignments
-            .stream()
-            .map(Assignment::getActivity)
-            .map(Activity::getUid).distinct()
-            .toList();
-
-        List<DataForm> dataForms = activities.stream()
-            .flatMap(uid -> repositoryCustom.findAllByActivity(uid).stream())
-            .filter(Objects::nonNull)
-            .peek(dataForm -> {
-                dataForm.setOrgUnits(orgUnitsUidsByActivity.get(dataForm.getActivity()));
-            })
-            .collect(Collectors.toList());
+        var dataForms = repositoryCustom.findAllByUidIn(formTemplateIds.stream().toList());
 
         if (!pageable.isPaged()) {
             return new PageImpl<>(dataForms);
@@ -197,12 +188,39 @@ public class DataFormServiceImpl
     }
 
 
-//    private List<String> getAssignedOrgUnitsByFormActivity(String activity) {
-//        return assignmentRepository
-//            .findAllByActivityAndUser(activity, Pageable.unpaged())
-//            .stream()
-//            .map(Assignment::getOrgUnit)
-//            .map(OrgUnit::getUid)
-//            .toList();
-//    }
+    @Override
+    public Page<DataForm> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+
+        if (!SecurityUtils.isAuthenticated()) {
+            return Page.empty(pageable);
+        }
+
+        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+            return repositoryCustom.findAll(pageable);
+        }
+
+        Set<String> userForms = teamRepository
+            .findAllWithEagerRelation().stream().flatMap((team) -> team.getFormsWithPermission(
+                FormPermission.ADD_SUBMISSIONS).stream()).collect(Collectors.toSet());
+
+        Query query = new Query();
+        query = query.addCriteria(Criteria.where("uid").in(userForms));
+
+        if (!queryRequest.isIncludeDeleted()) {
+            query.addCriteria(Criteria.where("deleted").is(false));
+        }
+
+        query.with(pageable);
+
+        final Query totalQuery = Query.of(query).limit(-1).skip(-1);
+
+        List<DataForm> results = mongoTemplate.find(query, DataForm.class);
+
+        Page<DataForm> resultsPage = PageableExecutionUtils.getPage(
+            results,
+            pageable,
+            () -> mongoTemplate.count(totalQuery, DataForm.class));
+
+        return resultsPage;
+    }
 }

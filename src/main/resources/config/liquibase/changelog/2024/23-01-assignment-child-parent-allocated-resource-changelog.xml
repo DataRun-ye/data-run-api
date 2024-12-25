@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1734924578707--drop-wh-table-fk" author="Hamza (generated)">
+        <dropForeignKeyConstraint baseTableName="warehouse" constraintName="fk_warehouse__activity_id"/>
+    </changeSet>
+    <changeSet id="1734924578707-create-assignment-parent-child-relation" author="Hamza (generated)">
+        <addColumn tableName="assignment">
+            <column name="level" type="INT"/>
+            <column name="parent_id" type="BIGINT"/>
+            <column name="path" type="VARCHAR(255)"/>
+            <column name="start_day" type="INT"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1734924578707-create-assignment-parent-child-relation-constraints" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="parent_id" baseTableName="assignment"
+                                 constraintName="FK_ASSIGNMENT_ON_PARENT" referencedColumnNames="id"
+                                 referencedTableName="assignment"/>
+    </changeSet>
+    <changeSet id="1734924578707-drop-wh-table" author="Hamza (generated)">
+        <dropTable cascadeConstraints="true" tableName="warehouse"/>
+    </changeSet>
+
+</databaseChangeLog>

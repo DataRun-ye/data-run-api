@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
-public enum OrgUnitScope {
+public enum EntityScope {
     Assigned,
     Managed
 }

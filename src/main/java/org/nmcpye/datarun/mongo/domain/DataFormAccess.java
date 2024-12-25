@@ -2,7 +2,6 @@
 //
 //import jakarta.validation.constraints.NotNull;
 //import jakarta.validation.constraints.Size;
-//import org.bson.types.ObjectId;
 //import org.springframework.data.annotation.Id;
 //import org.springframework.data.mongodb.core.index.CompoundIndex;
 //import org.springframework.data.mongodb.core.index.CompoundIndexes;
@@ -11,6 +10,7 @@
 //
 //import java.io.Serial;
 //import java.io.Serializable;
+//import java.util.List;
 //import java.util.Objects;
 //
 ///**
@@ -18,10 +18,10 @@
 // */
 //@Document(collection = "assignment_data_form")
 //@CompoundIndexes(
-//    @CompoundIndex(name = "assignment_data_form_index", def = "{'dataForm' : 1, 'assignment' : 1}", unique = true)
+//    @CompoundIndex(name = "assignment_data_form_index", def = "{'dataForm' : 1, 'team' : 1}", unique = true)
 //)
 //@SuppressWarnings("common-java:DuplicatedBlocks")
-//public class AssignmentDataForm
+//public class DataFormAccess
 //    implements Serializable {
 //
 //    @Serial
@@ -30,18 +30,18 @@
 //    @Id
 //    private String id;
 //
-////    @Size(max = 11)
-////    @Field("dataForm")
-////    @Field("dataForm")
-////    @DocumentReference(lookup = "{ 'uid' : ?#{#target} }")
+//    @Size(max = 11)
+//    @Field("dataForm")
 //    private String dataForm;
 //
-//    ObjectId dataFormId;
+//    @Size(max = 11)
+//    @Field("team")
+//    private String team;
 //
 //    @NotNull
 //    @Size(max = 11)
 //    @Field("assignment")
-//    private String assignment;
+//    private List<String> assignment;
 //
 //    public String getId() {
 //        return id;
@@ -59,18 +59,26 @@
 //        this.dataForm = dataForm;
 //    }
 //
-//    public String getAssignment() {
+//    public String getTeam() {
+//        return team;
+//    }
+//
+//    public void setTeam(String team) {
+//        this.team = team;
+//    }
+//
+//    public List<String> getAssignment() {
 //        return assignment;
 //    }
 //
-//    public void setAssignment(String assignment) {
+//    public void setAssignment(List<String> assignment) {
 //        this.assignment = assignment;
 //    }
 //
 //    @Override
 //    public boolean equals(Object o) {
 //        if (this == o) return true;
-//        if (!(o instanceof AssignmentDataForm that)) return false;
+//        if (!(o instanceof DataFormAccess that)) return false;
 //        return Objects.equals(dataForm, that.dataForm) && Objects.equals(assignment, that.assignment);
 //    }
 //

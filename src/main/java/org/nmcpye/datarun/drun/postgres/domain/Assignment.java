@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -12,6 +13,7 @@ import org.apache.commons.compress.utils.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.domain.AbstractAuditingEntity;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.drun.postgres.common.Identifiable;
@@ -62,6 +64,9 @@ public class Assignment
     @JsonIgnoreProperties(value = {"project", "translations"}, allowSetters = true)
     private Activity activity;
 
+    @Column(name = "start_day")
+    private Integer startDay;
+
     @ManyToOne//(fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = {"parent", "children", "groups", "assignments",
         "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
@@ -72,6 +77,17 @@ public class Assignment
     @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
     private Team team;
+
+//    @OneToMany(fetch = FetchType.EAGER, mappedBy = "assignment")
+//    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+//    @JsonIgnoreProperties(value = {"assignment"}, allowSetters = true)
+//    private Set<AllocatedResource> allocatedResources = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "allocated_resource", joinColumns = @JoinColumn(name = "assignment_id"))
+    @MapKeyColumn(name = "resource_type")
+    @Column(name = "value")
+    private Map<String, Integer> allocatedResources = new HashMap<>();
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
@@ -89,6 +105,34 @@ public class Assignment
     @JsonProperty
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Assignment parent;
+
+    //    @ElementCollection(fetch = FetchType.EAGER)
+//    @CollectionTable(name = "assignment_forms", joinColumns = @JoinColumn(name = "assignment_id"))
+//    @Column(name = "form_uid", length = 11)
+    @Type(JsonType.class)
+    @Column(name = "forms", columnDefinition = "jsonb")
+    private Set<String> forms = new HashSet<>();
+
+    @JsonProperty
+    @Transient
+    private EntityScope entityScope;
+
+    @JsonProperty
+    public EntityScope getEntityScope() {
+        return entityScope;
+    }
+
+    public void setEntityScope(EntityScope entityScope) {
+        this.entityScope = entityScope;
+    }
+
+    public Set<String> getForms() {
+        return forms;
+    }
+
+    public void setForms(Set<String> forms) {
+        this.forms = forms;
+    }
 
     public Long getId() {
         return this.id;
@@ -110,6 +154,30 @@ public class Assignment
     public Assignment uid(String uid) {
         this.setUid(uid);
         return this;
+    }
+
+    public Integer getStartDay() {
+        return startDay;
+    }
+
+    public void setStartDay(Integer startDay) {
+        this.startDay = startDay;
+    }
+
+//    public Set<AllocatedResource> getAllocatedResources() {
+//        return allocatedResources;
+//    }
+//
+//    public void setAllocatedResources(Set<AllocatedResource> allocatedResources) {
+//        this.allocatedResources = allocatedResources;
+//    }
+
+    public Map<String, Integer> getResourceAllocated() {
+        return allocatedResources;
+    }
+
+    public void setResourceAllocated(Map<String, Integer> allocatedResources) {
+        this.allocatedResources = allocatedResources;
     }
 
     public void setUid(String uid) {
@@ -425,6 +493,7 @@ public class Assignment
 
         return false;
     }
+
     public void setPath(String path) {
         this.path = path;
     }

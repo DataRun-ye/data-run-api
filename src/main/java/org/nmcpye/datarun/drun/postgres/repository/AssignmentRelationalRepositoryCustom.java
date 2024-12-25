@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @Repository
 public interface AssignmentRelationalRepositoryCustom
-    extends IdentifiableRelationalRepository<Assignment> {
+    extends IdentifiableRelationalRepository<Assignment>, AssignmentRepositoryWithBagRelationships {
 
     default Optional<Assignment> findOneByUser(Long id) {
         return this.findOneWithToOneRelationshipsByUser(id);
@@ -25,6 +25,16 @@ public interface AssignmentRelationalRepositoryCustom
     default Page<Assignment> findAllWithEagerRelationshipsByUser(Pageable pageable) {
         return this.findAllWithToOneRelationshipsByUser(pageable);
     }
+
+    @Query(
+        value = "select assignment from Assignment assignment " +
+            "join fetch assignment.parent p " +
+            "join assignment.activity " +
+            "join assignment.orgUnit " +
+            "join assignment.team " +
+            "where p.uid IN :parents"
+    )
+    List<Assignment> findAllByParentIn(@Param("parents") List<String> parents);
 
     @Query(
         value = "select assignment from Assignment assignment " +
@@ -105,11 +115,11 @@ public interface AssignmentRelationalRepositoryCustom
 
     @Query(
         "select assignment from Assignment assignment " +
-                "left join assignment.activity " +
-                "left join assignment.orgUnit " +
-                "left join assignment.team " +
-                "join assignment.team.users user " +
-                "where assignment.uid =:uid and user.login = ?#{authentication.name}"
+            "left join assignment.activity " +
+            "left join assignment.orgUnit " +
+            "left join assignment.team " +
+            "join assignment.team.users user " +
+            "where assignment.uid =:uid and user.login = ?#{authentication.name}"
     )
     Optional<Assignment> findOneWithToOneRelationshipsByUser(@Param("uid") String uid);
 }

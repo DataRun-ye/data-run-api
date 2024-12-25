@@ -1,10 +1,12 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.TeamFormPermissionRepository;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
 import org.nmcpye.datarun.repository.UserRepository;
@@ -32,33 +34,76 @@ public class TeamServiceCustomImpl
     implements TeamServiceCustom {
     private static final Logger log = LoggerFactory.getLogger(TeamServiceCustomImpl.class);
 
-    TeamRelationalRepositoryCustom repository;
+    final private TeamRelationalRepositoryCustom repository;
 
-    final UserRepository userRepository;
-    final ActivityRelationalRepositoryCustom activityRepository;
+    final private UserRepository userRepository;
+    final private ActivityRelationalRepositoryCustom activityRepository;
+    final private TeamFormPermissionRepository teamFormPermissionRepository;
 
     public TeamServiceCustomImpl(TeamRelationalRepositoryCustom repository,
-                                 UserRepository userRepository, ActivityRelationalRepositoryCustom activityRepository) {
+                                 UserRepository userRepository,
+                                 ActivityRelationalRepositoryCustom activityRepository, TeamFormPermissionRepository teamFormPermissionRepository) {
         super(repository);
         this.repository = repository;
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
+        this.teamFormPermissionRepository = teamFormPermissionRepository;
     }
 
     @Override
     public Team saveWithRelations(Team object) {
-//        Team parent = object.getParent();
-//        if (parent != null) {
-//            parent = findTeam(parent);
-//            object.setParent(parent);
-//        }
+        Activity activity = null;
+
+        if (object.getActivity() != null) {
+            activity = findActivity(object.getActivity());
+        }
+
+        Set<Team> managedTeams = object.getManagedTeams();
+        if (!managedTeams.isEmpty()) {
+            Set<Team> teamsManaged = managedTeams.stream().map(this::findTeam).collect(Collectors.toSet());
+            object.setManagedTeams(teamsManaged);
+        }
+
+        object.setActivity(activity);
 
         Set<Long> usersUids = object.getUsers().stream().map(User::getId).collect(Collectors.toSet());
         Set<User> users = new HashSet<>(userRepository.findAllById(usersUids));
         object.setUsers(users);
 
+//        Set<TeamFormPermission> updatedPermissions = new HashSet<>();
+//        for (TeamFormPermission permission : object.getFormPermissions()) {
+//            TeamFormPermission existingPermission = teamFormPermissionRepository
+//                .findByTeamIdAndForm(object.getId(), permission.getForm())
+//                .orElse(null);
+//
+//            if (existingPermission != null) {
+//                existingPermission.setPermissions(permission.getPermissions());
+//                updatedPermissions.add(teamFormPermissionRepository.save(existingPermission));
+//            } else {
+//                TeamFormPermission newPermission = new TeamFormPermission(object, permission.getForm(), permission.getPermissions());
+//                updatedPermissions.add(teamFormPermissionRepository.save(newPermission));
+//            }
+//        }
+//
+//        object.setFormPermissions(updatedPermissions);
         return repository.save(object);
     }
+
+    private Activity findActivity(Activity activity) {
+        return Optional.ofNullable(activity.getId())
+            .flatMap(activityRepository::findById)
+            .or(() -> Optional.ofNullable(activity.getUid())
+                .flatMap(activityRepository::findByUid))
+            .orElseThrow(() -> new PropertyNotFoundException("Activity uid not found: " + activity.getUid() + "activity:"));
+    }
+
+//    private User findUser(User user) {
+//        return Optional.ofNullable(user.getId())
+//            .flatMap(user::findById)
+//            .or(() -> Optional.ofNullable(user.getUid())
+//                .flatMap(activityRepository::findByUid))
+//            .orElseThrow(() -> new PropertyNotFoundException("OrgUniy not found: " + user));
+//    }
 
     private Team findTeam(Team parent) {
         return Optional.ofNullable(parent.getUid())
@@ -82,7 +127,7 @@ public class TeamServiceCustomImpl
     @Override
     public Page<Team> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         Specification<Team> spec = hasAccess();
-        if(!queryRequest.isIncludeDisabled()) {
+        if (!queryRequest.isIncludeDisabled()) {
             spec = spec.and(isNotDisabled());
         }
 //        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
@@ -99,7 +144,7 @@ public class TeamServiceCustomImpl
     @Override
     public List<Team> findAllByUser(QueryRequest queryRequest) {
         Specification<Team> spec = hasAccess();
-        if(!queryRequest.isIncludeDisabled()) {
+        if (!queryRequest.isIncludeDisabled()) {
             spec = spec.and(isNotDisabled());
         }
 //

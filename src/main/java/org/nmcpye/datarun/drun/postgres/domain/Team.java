@@ -2,21 +2,26 @@ package org.nmcpye.datarun.drun.postgres.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.common.BaseIdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.common.NameableObject;
+import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
 import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A Team.
@@ -76,7 +81,7 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
     private Set<User> users = new HashSet<>();
 
     /////
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "team_managed_teams",
         joinColumns = @JoinColumn(name = "team_id"),
@@ -104,6 +109,76 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Set<Assignment> assignments = new HashSet<>();
+
+    //    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+//    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+//    @JsonIgnoreProperties(value = {"team"}, allowSetters = true)
+//    private Set<TeamFormPermission> formPermissions = new HashSet<>();
+    @Type(JsonType.class)
+    @Column(name = "form_permissions", columnDefinition = "jsonb")
+    private Set<TeamFormPermissions> formPermissions = new HashSet<>();
+//    private Map<String, List<FormPermission>> formPermissions = new HashMap<>();
+
+    //    public Set<TeamFormPermission> getFormPermissions() {
+//        return formPermissions;
+//    }
+//
+//    public Set<String> getFormWithPermissions(FormPermission permission) {
+//        return formPermissions.stream()
+//            .filter(p -> p.getPermissions().contains(permission))
+//            .map(TeamFormPermission::getForm)
+//            .collect(Collectors.toSet());
+//    }
+    public Set<TeamFormPermissions> getFormPermissions() {
+        return formPermissions;
+    }
+
+    public void setFormPermissions(Set<TeamFormPermissions> formPermissions) {
+        this.formPermissions = formPermissions;
+    }
+
+    public void addFormPermission(TeamFormPermissions permission) {
+        this.formPermissions.add(permission);
+    }
+
+//    public void removeFormPermission(String formId, FormPermission permission) {
+//        Set<FormPermission> permissions = this.formPermissions.stream().filter((t)-> Objects.equals(t.getForm(), formId));
+//        if (permissions != null) {
+//            permissions.remove(permission);
+//            if (permissions.isEmpty()) {
+//                this.formPermissions.remove(formId);
+//            }
+//        }
+//    }
+
+    public boolean hasFormPermission(String formId, FormPermission permission) {
+        var permissions = this.formPermissions.stream().filter(teamFormPermissions ->
+            Objects.equals(teamFormPermissions.getForm(), formId)).findFirst();
+        return permissions.isPresent() && permissions.get().getPermissions().contains(permission);
+    }
+
+    public Set<String> getFormsWithPermission(FormPermission permission) {
+        return this.formPermissions.stream()
+            .filter(entry -> entry.getPermissions().contains(permission))
+            .map(TeamFormPermissions::getForm)
+            .collect(Collectors.toSet());
+    }
+
+//    public void setFormPermissions(Set<TeamFormPermission> formPermissions) {
+//        this.formPermissions = formPermissions;
+//    }
+//
+//    public Team addFormPermission(TeamFormPermission formPermission) {
+//        this.formPermissions.add(formPermission);
+//        formPermission.setTeam(this);
+//        return this;
+//    }
+//
+//    public Team removeFormPermission(TeamFormPermission formPermission) {
+//        this.formPermissions.remove(formPermission);
+//        formPermission.setTeam(null);
+//        return this;
+//    }
 
     public Team addUser(User user) {
         this.users.add(user);
@@ -330,7 +405,7 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
         return this;
     }
 
-//    @JsonSerialize(contentAs = Identifiable.class)
+    //    @JsonSerialize(contentAs = Identifiable.class)
     public Activity getActivity() {
         return this.activity;
     }

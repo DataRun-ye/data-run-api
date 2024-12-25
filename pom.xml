@@ -249,10 +249,15 @@
             <groupId>io.mongock</groupId>
             <artifactId>mongodb-springdata-v4-driver</artifactId>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.hypersistence</groupId>-->
+<!--            <artifactId>hypersistence-utils-hibernate-62</artifactId>-->
+<!--            <version>3.8.2</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>io.hypersistence</groupId>
             <artifactId>hypersistence-utils-hibernate-62</artifactId>
-            <version>3.8.2</version>
+            <version>3.9.0</version>
         </dependency>
 
         <!--  NMC end      -->

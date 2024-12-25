@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mongo.domain;
 
 import jakarta.validation.constraints.Size;
-import org.nmcpye.datarun.domain.enumeration.SyncableStatus;
+import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -42,10 +42,10 @@ public class DataFormSubmissionHistory
 
     private String team;
 
-    private String orgUnit;
+    private String assignment;
 
     @Field("status")
-    private SyncableStatus status;
+    private AssignmentStatus status;
 
     private Map<String, Object> formData = new HashMap<String, Object>();
 
@@ -55,11 +55,11 @@ public class DataFormSubmissionHistory
         this.dataSubmissionId = existingDataSubmissionId.getId();
         this.uid = existingDataSubmissionId.getUid();
         this.form = existingDataSubmissionId.getForm();
-        this.activity = existingDataSubmissionId.getActivity();
-        this.orgUnit = existingDataSubmissionId.getOrgUnit();
+//        this.activity = existingDataSubmissionId.getActivity();
+        this.assignment = existingDataSubmissionId.getAssignment();
+        this.status = existingDataSubmissionId.getStatus();
         this.team = existingDataSubmissionId.getTeam();
         this.formData = existingDataSubmissionId.getFormData();
-        this.status = existingDataSubmissionId.getStatus();
         this.version = existingDataSubmissionId.getVersion();
     }
     public Map<String, Object> getFormData() {
@@ -114,16 +114,16 @@ public class DataFormSubmissionHistory
         this.deleted = deleted;
     }
 
-    public SyncableStatus getStatus() {
+    public AssignmentStatus getStatus() {
         return this.status;
     }
 
-    public DataFormSubmissionHistory status(SyncableStatus status) {
+    public DataFormSubmissionHistory status(AssignmentStatus status) {
         this.setStatus(status);
         return this;
     }
 
-    public void setStatus(SyncableStatus status) {
+    public void setStatus(AssignmentStatus status) {
         this.status = status;
     }
 
@@ -166,16 +166,16 @@ public class DataFormSubmissionHistory
         return this;
     }
 
-    public String getOrgUnit() {
-        return this.orgUnit;
+    public String getAssignment() {
+        return this.assignment;
     }
 
-    public void setOrgUnit(String orgUnit) {
-        this.orgUnit = orgUnit;
+    public void setAssignment(String assignment) {
+        this.assignment = assignment;
     }
 
     public DataFormSubmissionHistory assignment(String assignment) {
-        this.setOrgUnit(assignment);
+        this.setAssignment(assignment);
         return this;
     }
 

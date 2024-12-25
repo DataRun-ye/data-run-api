@@ -2,8 +2,8 @@ package org.nmcpye.datarun.mongo.service;
 
 
 import org.nmcpye.datarun.mongo.domain.DataForm;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Service Custom Interface for managing {@link DataForm}.
@@ -11,5 +11,5 @@ import java.util.List;
 public interface DataFormService
     extends IdentifiableMongoService<DataForm> {
 
-    List<DataForm> findAllByActivity(String uid);
+    Page<DataForm> getAccessibleForms(Pageable pageable);
 }

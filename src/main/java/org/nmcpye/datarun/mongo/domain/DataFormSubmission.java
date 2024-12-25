@@ -2,7 +2,7 @@ package org.nmcpye.datarun.mongo.domain;
 
 import jakarta.el.PropertyNotFoundException;
 import jakarta.validation.constraints.Size;
-import org.nmcpye.datarun.domain.enumeration.SyncableStatus;
+import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 import org.nmcpye.datarun.utils.CodeGenerator;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -42,16 +42,19 @@ public class DataFormSubmission
     @Field("finishedEntryTime")
     private Instant finishedEntryTime;
 
-    @Field("status")
-    private SyncableStatus status;
+
+//    private SyncableStatus status;
 
     private String form;
 
-    private String activity;
+//    private String activity;
 
     private String team;
 
-    private String orgUnit;
+    private String assignment;
+
+    @Field("status")
+    private AssignmentStatus status;
 
     private Map<String, Object> formData = new HashMap<String, Object>();
 
@@ -145,16 +148,16 @@ public class DataFormSubmission
         this.finishedEntryTime = finishedEntryTime;
     }
 
-    public SyncableStatus getStatus() {
+    public AssignmentStatus getStatus() {
         return this.status;
     }
 
-    public DataFormSubmission status(SyncableStatus status) {
+    public DataFormSubmission status(AssignmentStatus status) {
         this.setStatus(status);
         return this;
     }
 
-    public void setStatus(SyncableStatus status) {
+    public void setStatus(AssignmentStatus status) {
         this.status = status;
     }
 
@@ -171,18 +174,18 @@ public class DataFormSubmission
         return this;
     }
 
-    public String getActivity() {
-        return this.activity;
-    }
+//    public String getActivity() {
+//        return this.activity;
+//    }
+//
+//    public void setActivity(String activity) {
+//        this.activity = activity;
+//    }
 
-    public void setActivity(String activity) {
-        this.activity = activity;
-    }
-
-    public DataFormSubmission activity(String activity) {
-        this.setActivity(activity);
-        return this;
-    }
+//    public DataFormSubmission activity(String activity) {
+//        this.setActivity(activity);
+//        return this;
+//    }
 
     public String getTeam() {
         return this.team;
@@ -197,16 +200,16 @@ public class DataFormSubmission
         return this;
     }
 
-    public String getOrgUnit() {
-        return this.orgUnit;
+    public String getAssignment() {
+        return this.assignment;
     }
 
-    public void setOrgUnit(String orgUnit) {
-        this.orgUnit = orgUnit;
+    public void setAssignment(String assignment) {
+        this.assignment = assignment;
     }
 
     public DataFormSubmission assignment(String assignment) {
-        this.setOrgUnit(assignment);
+        this.setAssignment(assignment);
         return this;
     }
 
@@ -220,7 +223,7 @@ public class DataFormSubmission
      */
     public DataFormSubmission populateFormDataAttributes() {
 
-        if (Objects.isNull(activity) || Objects.isNull(team) || Objects.isNull(form)) {
+        if (Objects.isNull(team) || Objects.isNull(form)) {
             throw new PropertyNotFoundException("one or more of the MainAttributes activity, team, or form is not set");
         }
 
@@ -228,6 +231,7 @@ public class DataFormSubmission
 
         Map<String, ?> map = Map.ofEntries(
             entry("_deleted", this.getDeleted()),
+            entry("_assignment", this.getAssignment()),
             entry("_submissionUid", this.getUid()),
             entry("_serialNumber", this.getSerialNumber()),
             entry("_submissionTime", Objects.requireNonNullElse(this.getCreatedDate(), Instant.now())),

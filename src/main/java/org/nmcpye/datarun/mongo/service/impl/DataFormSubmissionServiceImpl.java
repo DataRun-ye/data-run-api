@@ -2,6 +2,7 @@ package org.nmcpye.datarun.mongo.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionHistory;
@@ -43,6 +44,7 @@ public class DataFormSubmissionServiceImpl
     private final DataFormSubmissionRepositoryCustom repository;
     private final DataFormSubmissionHistoryRepository historyRepository;
     private final ActivityRelationalRepositoryCustom activityRepository;
+    private final AssignmentRelationalRepositoryCustom assignmentRepository;
     private final TeamRelationalRepositoryCustom teamRepository;
     private final SequenceGeneratorService sequenceGeneratorService;
     private final SubmissionMaintenanceService maintenanceService;
@@ -51,7 +53,7 @@ public class DataFormSubmissionServiceImpl
     public DataFormSubmissionServiceImpl(
         DataFormSubmissionRepositoryCustom repository,
         DataFormSubmissionHistoryRepository historyRepository,
-        ActivityRelationalRepositoryCustom activityRepository,
+        ActivityRelationalRepositoryCustom activityRepository, AssignmentRelationalRepositoryCustom assignmentRepository,
         TeamRelationalRepositoryCustom teamRepository,
         MongoTemplate mongoTemplate,
         SequenceGeneratorService sequenceGeneratorService, SubmissionMaintenanceService maintenanceService) {
@@ -59,6 +61,7 @@ public class DataFormSubmissionServiceImpl
         this.repository = repository;
         this.historyRepository = historyRepository;
         this.activityRepository = activityRepository;
+        this.assignmentRepository = assignmentRepository;
         this.teamRepository = teamRepository;
         this.sequenceGeneratorService = sequenceGeneratorService;
         this.maintenanceService = maintenanceService;
@@ -90,16 +93,22 @@ public class DataFormSubmissionServiceImpl
     @Override
     public DataFormSubmission saveWithRelations(DataFormSubmission newSubmission) {
 
-        activityRepository.findByUid(newSubmission.getActivity())
-            .ifPresentOrElse((a) -> newSubmission.setActivity(a.getUid()),
-                () -> {
-                    log.error("submission by: {}, for form: {}, with activity: {} not in the system", SecurityUtils.getCurrentUserLogin().get(), newSubmission.getForm(), newSubmission.getActivity());
-                    throw new PropertyNotFoundException("Activity not found: " + newSubmission.getTeam());
-                });
+        if(newSubmission.getAssignment() != null) {
+            assignmentRepository.findByUid(newSubmission.getAssignment())
+                .ifPresentOrElse((a) -> newSubmission.setAssignment(a.getUid()),
+                    () -> {
+                        log.error("submission by: {}, for form: {}, with assignment: {} not in the system",
+                            SecurityUtils.getCurrentUserLogin().get(), newSubmission.getForm(),
+                            newSubmission.getAssignment());
+                        throw new PropertyNotFoundException("Assignment not found: " + newSubmission.getTeam());
+                    });
+        }
+
         teamRepository.findByUid(newSubmission.getTeam())
             .ifPresentOrElse((a) -> newSubmission.setTeam(a.getUid()),
                 () -> {
-                    log.error("submission by: {}, for form: {}, with team: {} not in the system", SecurityUtils.getCurrentUserLogin().get(), newSubmission.getTeam(), newSubmission.getActivity());
+                    log.error("submission by: {}, for form: {}, with team: {} not in the system",
+                        SecurityUtils.getCurrentUserLogin().get(), newSubmission.getForm(), newSubmission.getTeam());
                     throw new PropertyNotFoundException("Team not found: " + newSubmission.getTeam());
                 });
 
