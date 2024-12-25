@@ -13,7 +13,7 @@ import java.util.Objects;
 @Entity
 @Table(name = "allocated_resource", uniqueConstraints = {
     @UniqueConstraint(name = "uc_assignment_allocated_resource",
-        columnNames = {"assignment_id", "resourceType"})
+        columnNames = {"assignment_id", "resource_type"})
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @JsonIgnoreProperties(value = {"new"})

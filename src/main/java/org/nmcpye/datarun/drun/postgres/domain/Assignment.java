@@ -3,7 +3,6 @@ package org.nmcpye.datarun.drun.postgres.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
@@ -16,7 +15,6 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.domain.AbstractAuditingEntity;
 import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableObjectUtils;
 import org.springframework.data.domain.Persistable;
 
@@ -381,8 +379,9 @@ public class Assignment
      *
      * @throws IllegalStateException if circular parent relationships is detected.
      */
+    @JsonIgnore
 //    @JsonProperty("ancestors")
-    @JsonSerialize(contentAs = Identifiable.class)
+//    @JsonSerialize(contentAs = Identifiable.class)
     public List<Assignment> getAncestors() {
         List<Assignment> activities = new ArrayList<>();
         Set<Assignment> visitedActivities = new HashSet<>();

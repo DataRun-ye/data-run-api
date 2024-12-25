@@ -19,10 +19,6 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet id="1735097497380-2" author="Hamza (generated)">
-        <addUniqueConstraint columnNames="assignment_id" constraintName="uc_assignment_allocated_resource"
-                             tableName="allocated_resource"/>
-    </changeSet>
     <changeSet id="1735097497380-3" author="Hamza (generated)">
         <addForeignKeyConstraint baseColumnNames="assignment_id" baseTableName="allocated_resource"
                                  constraintName="FK_ALLOCATED_RESOURCE_ON_ASSIGNMENT" referencedColumnNames="id"
