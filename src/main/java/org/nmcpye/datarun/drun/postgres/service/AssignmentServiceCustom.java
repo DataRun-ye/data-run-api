@@ -23,6 +23,4 @@ public interface AssignmentServiceCustom
     List<Assignment> getAllUserAccessible(User user);
 
     Page<Assignment> getAllUserAccessible(Pageable pageable);
-
-//    List<Assignment> getUserManaged();
 }

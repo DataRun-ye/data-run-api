@@ -18,6 +18,4 @@ public interface IdentifiableRepository<T extends Identifiable<ID>, ID>
     Optional<T> findByUid(String uid);
 
     Set<T> findAllByUidIn(Collection<String> uids);
-
-//    Set<T> findAllByCodeIn(Collection<String> codes);
 }

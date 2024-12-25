@@ -135,33 +135,6 @@ public class AssignmentServiceImplCustom
         return new PageImpl<>(combinedContent, pageable, assignedPage.getTotalElements() + managed.size());
     }
 
-//    @Override
-//    @Transactional(readOnly = true)
-//    public Page<Assignment> getAllUserAccessible(Pageable pageable) {
-//        Page<Assignment> assignedPage = repositoryCustom.findAll(hasAccess(), pageable);
-//        List<Assignment> assigned = assignedPage.getContent().stream()
-//            .peek(assignment -> assignment.setEntityScope(EntityScope.Assigned))
-//            .toList();
-//
-//        List<String> assignedUids = assigned.stream().map(Assignment::getUid).collect(Collectors.toList());
-//        List<Assignment> managed = repositoryCustom.findAllByParentIn(assignedUids).stream()
-//            .peek(assignment -> assignment.setEntityScope(EntityScope.Managed))
-//            .toList();
-//
-//        List<Assignment> combinedContent = Stream.concat(assigned.stream(), managed.stream())
-//            .collect(Collectors.toList());
-//
-//        return new PageImpl<>(combinedContent, pageable, assignedPage.getTotalElements() + managed.size());
-//    }
-
-//    @Override
-//    @Transactional(readOnly = true)
-//    public List<Assignment> getUserManaged() {
-//        List<String> userAssigned = getAllUserAccessible().stream().map(Assignment::getUid).toList();
-//
-//        return repositoryCustom.findAllByParentIn(userAssigned);
-//    }
-
     @Transactional(readOnly = true)
     public List<Assignment> getAllUserAccessibleHierarchy(User user) {
         List<Assignment> allAssignments = getAllUserAccessible(user);

@@ -69,23 +69,6 @@ public class TeamServiceCustomImpl
         Set<Long> usersUids = object.getUsers().stream().map(User::getId).collect(Collectors.toSet());
         Set<User> users = new HashSet<>(userRepository.findAllById(usersUids));
         object.setUsers(users);
-
-//        Set<TeamFormPermission> updatedPermissions = new HashSet<>();
-//        for (TeamFormPermission permission : object.getFormPermissions()) {
-//            TeamFormPermission existingPermission = teamFormPermissionRepository
-//                .findByTeamIdAndForm(object.getId(), permission.getForm())
-//                .orElse(null);
-//
-//            if (existingPermission != null) {
-//                existingPermission.setPermissions(permission.getPermissions());
-//                updatedPermissions.add(teamFormPermissionRepository.save(existingPermission));
-//            } else {
-//                TeamFormPermission newPermission = new TeamFormPermission(object, permission.getForm(), permission.getPermissions());
-//                updatedPermissions.add(teamFormPermissionRepository.save(newPermission));
-//            }
-//        }
-//
-//        object.setFormPermissions(updatedPermissions);
         return repository.save(object);
     }
 
@@ -94,25 +77,20 @@ public class TeamServiceCustomImpl
             .flatMap(activityRepository::findById)
             .or(() -> Optional.ofNullable(activity.getUid())
                 .flatMap(activityRepository::findByUid))
-            .orElseThrow(() -> new PropertyNotFoundException("Activity uid not found: " + activity.getUid() + "activity:"));
+            .orElseThrow(() -> {
+                log.error("Activity not found: " + activity.getUid());
+                return new PropertyNotFoundException("Activity uid not found: " + activity.getUid() + "activity:");
+            });
     }
 
-//    private User findUser(User user) {
-//        return Optional.ofNullable(user.getId())
-//            .flatMap(user::findById)
-//            .or(() -> Optional.ofNullable(user.getUid())
-//                .flatMap(activityRepository::findByUid))
-//            .orElseThrow(() -> new PropertyNotFoundException("OrgUniy not found: " + user));
-//    }
-
-    private Team findTeam(Team parent) {
-        return Optional.ofNullable(parent.getUid())
+    private Team findTeam(Team team) {
+        return Optional.ofNullable(team.getUid())
             .flatMap(repository::findByUid)
-            .or(() -> Optional.ofNullable(parent.getId())
+            .or(() -> Optional.ofNullable(team.getId())
                 .flatMap(repository::findById))
             .or(() -> {
-                String code = parent.getCode();
-                var activity = parent.getActivity();
+                String code = team.getCode();
+                var activity = team.getActivity();
                 String activityUid;
                 if (activity != null) {
                     activityUid = activity.getUid();
@@ -121,7 +99,10 @@ public class TeamServiceCustomImpl
                 }
                 return repository.findByCodeAndActivityUid(code, activityUid);
             })
-            .orElseThrow(() -> new PropertyNotFoundException("Team not found: " + parent));
+            .orElseThrow(() -> {
+                log.error("Team not found: " + team.getUid());
+                return new PropertyNotFoundException("Team not found: " + team);
+            });
     }
 
     @Override
@@ -130,13 +111,6 @@ public class TeamServiceCustomImpl
         if (!queryRequest.isIncludeDisabled()) {
             spec = spec.and(isNotDisabled());
         }
-//        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-//
-//            return repository.findAll(spec, pageable);
-//        }
-//        if (!SecurityUtils.isAuthenticated()) {
-//            return Page.empty(pageable);
-//        }
 
         return repository.fetchBagRelationships(this.findAll(spec, pageable));
     }
@@ -147,18 +121,8 @@ public class TeamServiceCustomImpl
         if (!queryRequest.isIncludeDisabled()) {
             spec = spec.and(isNotDisabled());
         }
-//
-//        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-//            return repository.findAll();
-//        }
-//        if (!SecurityUtils.isAuthenticated()) {
-//            return Collections.emptyList();
-//        }
 
         return repository.fetchBagRelationships(this.findAll(spec));
-//        return repository.findAll(spec);
-
-//        return repository.fetchBagRelationships(this.findAll(hasAccess()));
     }
 
     @Override
@@ -169,10 +133,6 @@ public class TeamServiceCustomImpl
             .or(() -> repository
                 .findById(team.getId()))
             .map(existingTeam -> {
-//                if (team.getParent() != null) {
-//                    existingTeam.setParent(findTeam(existingTeam.getParent()));
-//                }
-
                 if (!team.getUsers().isEmpty()) {
                     Set<String> usersLogins = team.getUsers().stream()
                         .map(User::getLogin)
@@ -223,27 +183,4 @@ public class TeamServiceCustomImpl
             })
             .map(repository::save);
     }
-
-//    @Transactional
-//    @Override
-//    public void updatePaths() {
-//        repository.updatePaths();
-//    }
-
-//    /**
-//     * This is scheduled to get fired everyday, at 03:19 (am).
-//     * - **`0`**: Second (`0` seconds)
-//     * - **`19`**: Minute (`15` minutes)
-//     * - **`3`**: Hour (`3` AM)
-//     * - **`* *`**: Day of month and Month (`* *` means every day of every month)
-//     * - **`?`**: Day of the week (`?` is used when you don't care about the specific day of the week)
-//     */
-////    @Scheduled(cron = "0 0 3 * * ?")
-//    @Scheduled(cron = "0 19 3 * * ?")
-//    @Override
-//    @Transactional
-//    public void forceUpdatePaths() {
-//        repository.forceUpdatePaths();
-//    }
-//
 }

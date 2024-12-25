@@ -15,10 +15,5 @@ public interface IdentifiableRelationalRepository<T extends Identifiable<Long>>
     extends JpaRepository<T, Long>,
     JpaSpecificationExecutor<T>, IdentifiableRepository<T, Long> {
     Optional<T> findByUid(String uid);
-
-//    Optional<T> findByCode(String uid);
-
     Set<T> findAllByUidIn(Collection<String> uids);
-
-//    Set<T> findAllByCodeIn(Collection<String> codes);
 }
