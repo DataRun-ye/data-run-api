@@ -6,7 +6,6 @@ import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.TeamFormPermissionRepository;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
 import org.nmcpye.datarun.repository.UserRepository;
@@ -38,16 +37,14 @@ public class TeamServiceCustomImpl
 
     final private UserRepository userRepository;
     final private ActivityRelationalRepositoryCustom activityRepository;
-    final private TeamFormPermissionRepository teamFormPermissionRepository;
 
     public TeamServiceCustomImpl(TeamRelationalRepositoryCustom repository,
                                  UserRepository userRepository,
-                                 ActivityRelationalRepositoryCustom activityRepository, TeamFormPermissionRepository teamFormPermissionRepository) {
+                                 ActivityRelationalRepositoryCustom activityRepository) {
         super(repository);
         this.repository = repository;
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
-        this.teamFormPermissionRepository = teamFormPermissionRepository;
     }
 
     @Override

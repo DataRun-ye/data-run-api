@@ -3,7 +3,10 @@ package org.nmcpye.datarun.mongo.service.impl;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
-import org.nmcpye.datarun.drun.postgres.repository.*;
+import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.ResourceField;
@@ -60,14 +63,14 @@ public class DataFormServiceImpl
 
     private final UserRepository userRepository;
 
-    private final TeamFormPermissionRepository permissionRepository;
-
     public DataFormServiceImpl(DataFormRepository repositoryCustom,
                                MetadataSchemaRepository metadataSchemaRepository,
                                ActivityRelationalRepositoryCustom activityRepository,
                                AssignmentRelationalRepositoryCustom assignmentRepository,
                                OrgUnitRelationalRepositoryCustom orgUnitRepository,
-                               MongoTemplate mongoTemplate, UserRepository userRepository, TeamRelationalRepositoryCustom teamRepository, UserRepository userRepository1, TeamFormPermissionRepository permissionRepository) {
+                               MongoTemplate mongoTemplate,
+                               UserRepository userRepository,
+                               TeamRelationalRepositoryCustom teamRepository) {
         super(repositoryCustom, mongoTemplate);
         this.repositoryCustom = repositoryCustom;
         this.metadataSchemaRepository = metadataSchemaRepository;
@@ -75,8 +78,7 @@ public class DataFormServiceImpl
         this.assignmentRepository = assignmentRepository;
         this.orgUnitRepository = orgUnitRepository;
         this.teamRepository = teamRepository;
-        this.userRepository = userRepository1;
-        this.permissionRepository = permissionRepository;
+        this.userRepository = userRepository;
     }
 
     public <T extends AbstractField> void processFields(List<T> fields, String parentPath) {
