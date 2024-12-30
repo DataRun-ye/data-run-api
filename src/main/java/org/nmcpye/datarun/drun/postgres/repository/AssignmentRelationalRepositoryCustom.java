@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.repository;
 
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
+import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -25,6 +26,10 @@ public interface AssignmentRelationalRepositoryCustom
     default Page<Assignment> findAllWithEagerRelationshipsByUser(Pageable pageable) {
         return this.findAllWithToOneRelationshipsByUser(pageable);
     }
+
+    Page<Assignment> findAllByTeamIn(List<Team> teamIds, Pageable pageable);
+
+    List<Assignment> findAllByTeamIn(List<Team> teamIds);
 
     @Query(
         value = "select assignment from Assignment assignment " +

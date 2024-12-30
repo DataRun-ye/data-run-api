@@ -4,7 +4,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.domain.Authority;
 import org.nmcpye.datarun.domain.User;
-import org.nmcpye.datarun.drun.postgres.common.DefaultIdentifiableSpecifications;
+import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.nmcpye.datarun.repository.AuthorityRepository;
 import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,11 +41,13 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class UserService
-    extends DefaultIdentifiableSpecifications<User> {
+    extends IdentifiableRelationalServiceImpl<User> {
 
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
+
+    private final TeamRelationalRepositoryCustom teamRepository;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -52,13 +56,14 @@ public class UserService
     private final CacheManager cacheManager;
 
     public UserService(
-        UserRepository userRepository,
+        UserRepository userRepository, TeamRelationalRepositoryCustom teamRepository,
         PasswordEncoder passwordEncoder,
         AuthorityRepository authorityRepository,
         CacheManager cacheManager
     ) {
         super(userRepository);
         this.userRepository = userRepository;
+        this.teamRepository = teamRepository;
         this.passwordEncoder = passwordEncoder;
         this.authorityRepository = authorityRepository;
         this.cacheManager = cacheManager;
@@ -364,6 +369,7 @@ public class UserService
 
     @Transactional(readOnly = true)
     public Page<AdminUserDTO> getAllManagedUsers(Pageable pageable) {
+        // TODO return managed users for a user managed teams
         return userRepository.findAll(pageable).map(AdminUserDTO::new);
     }
 
@@ -446,5 +452,10 @@ public class UserService
 
     public Optional<User> findUserByLogin(String login) {
         return userRepository.findOneByLogin(login);
+    }
+
+    @Override
+    public Specification<User> canRead() {
+        return null;
     }
 }

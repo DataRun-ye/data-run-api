@@ -76,17 +76,6 @@ public class Assignment
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
     private Team team;
 
-//    @OneToMany(fetch = FetchType.EAGER, mappedBy = "assignment")
-//    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-//    @JsonIgnoreProperties(value = {"assignment"}, allowSetters = true)
-//    private Set<AllocatedResource> allocatedResources = new HashSet<>();
-
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "allocated_resource", joinColumns = @JoinColumn(name = "assignment_id"))
-    @MapKeyColumn(name = "resource_type")
-    @Column(name = "value")
-    private Map<String, Integer> allocatedResources = new HashMap<>();
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
@@ -110,6 +99,19 @@ public class Assignment
     @Type(JsonType.class)
     @Column(name = "forms", columnDefinition = "jsonb")
     private Set<String> forms = new HashSet<>();
+
+    //    @OneToMany(fetch = FetchType.EAGER, mappedBy = "assignment")
+//    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+//    @JsonIgnoreProperties(value = {"assignment"}, allowSetters = true)
+//    private Set<AllocatedResource> allocatedResources = new HashSet<>();
+
+    //    @ElementCollection(fetch = FetchType.EAGER)
+//    @CollectionTable(name = "allocated_resource", joinColumns = @JoinColumn(name = "assignment_id"))
+//    @MapKeyColumn(name = "resource_type")
+//    @Column(name = "value")
+    @Type(JsonType.class)
+    @Column(name = "allocated_resources", columnDefinition = "jsonb")
+    private Map<String, Integer> allocatedResources = new HashMap<>();
 
     @JsonProperty
     @Transient
@@ -162,19 +164,13 @@ public class Assignment
         this.startDay = startDay;
     }
 
-//    public Set<AllocatedResource> getAllocatedResources() {
-//        return allocatedResources;
-//    }
-//
-//    public void setAllocatedResources(Set<AllocatedResource> allocatedResources) {
-//        this.allocatedResources = allocatedResources;
-//    }
 
-    public Map<String, Integer> getResourceAllocated() {
+    @JsonProperty
+    public Map<String, Integer> getAllocatedResources() {
         return allocatedResources;
     }
 
-    public void setResourceAllocated(Map<String, Integer> allocatedResources) {
+    public void setAllocatedResources(Map<String, Integer> allocatedResources) {
         this.allocatedResources = allocatedResources;
     }
 
@@ -404,18 +400,18 @@ public class Assignment
     }
 
     /**
-     * Returns the list of ancestor activities up to any of the given roots
+     * Returns the list of ancestors up to any of the given roots
      * for this assignment. Does not include itself. The list is ordered by
      * root first.
      *
      * @param roots the root activities, if null using real roots.
      */
     public List<Assignment> getAncestors(Collection<Assignment> roots) {
-        List<Assignment> activities = new ArrayList<>();
+        List<Assignment> assignments = new ArrayList<>();
         Assignment assignment = parent;
 
         while (assignment != null) {
-            activities.add(assignment);
+            assignments.add(assignment);
 
             if (roots != null && roots.contains(assignment)) {
                 break;
@@ -424,8 +420,8 @@ public class Assignment
             assignment = assignment.getParent();
         }
 
-        Collections.reverse(activities);
-        return activities;
+        Collections.reverse(assignments);
+        return assignments;
     }
 
     //    public String getPath() {

@@ -8,7 +8,9 @@ import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
+import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.nmcpye.datarun.repository.UserRepository;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,17 +21,17 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.nmcpye.datarun.drun.postgres.common.TeamSpecifications.canRead;
+import static org.nmcpye.datarun.drun.postgres.common.TeamSpecifications.isEnabled;
 
 @Service
 @Primary
 @Transactional
 public class TeamServiceCustomImpl
-    extends TeamSpecifications
+    extends IdentifiableRelationalServiceImpl<Team>
     implements TeamServiceCustom {
     private static final Logger log = LoggerFactory.getLogger(TeamServiceCustomImpl.class);
 
@@ -104,22 +106,56 @@ public class TeamServiceCustomImpl
 
     @Override
     public Page<Team> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
-        Specification<Team> spec = hasAccess();
+        Specification<Team> spec = canRead();
         if (!queryRequest.isIncludeDisabled()) {
-            spec = spec.and(isNotDisabled());
+            spec = spec.and(isEnabled());
         }
 
-        return repository.fetchBagRelationships(this.findAll(spec, pageable));
+        return repository.fetchBagRelationships(repository.findAll(spec, pageable));
     }
 
     @Override
     public List<Team> findAllByUser(QueryRequest queryRequest) {
-        Specification<Team> spec = hasAccess();
+        Specification<Team> spec = canRead();
         if (!queryRequest.isIncludeDisabled()) {
-            spec = spec.and(isNotDisabled());
+            spec = spec.and(isEnabled());
         }
 
-        return repository.fetchBagRelationships(this.findAll(spec));
+        return repository.fetchBagRelationships(repository.findAll(spec));
+    }
+
+    @Override
+    public Page<Team> findAllManagedByUser(Pageable pageable) {
+        if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
+            return Page.empty();
+        }
+
+        Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLogin().get());
+
+
+        var userTeams = repository.findAll(canRead().and(isEnabled()));
+
+        Specification<Team> spec3 = TeamSpecifications.getManagedTeamsForTeams(userTeams.stream()
+            .flatMap(team -> team.getManagedTeams().stream()
+                .distinct()).map(Team::getId).toList());
+
+        // getManagedTeamsForTeams
+        var managedTeams = repository.fetchBagRelationships(repository.findAll(spec, pageable));
+        var managedTeams3 = repository.fetchBagRelationships(repository.findAll(spec3, pageable));
+
+
+        return repository.fetchBagRelationships(repository.findAll(spec, pageable));
+    }
+
+    @Override
+    public List<Team> findAllManagedByUser() {
+        if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
+            return Collections.emptyList();
+        }
+        Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLogin().get());
+//            .and(isNotDisabled());
+
+        return repository.fetchBagRelationships(repository.findAll(spec));
     }
 
     @Override

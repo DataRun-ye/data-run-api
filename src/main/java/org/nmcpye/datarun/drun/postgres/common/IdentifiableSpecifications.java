@@ -13,7 +13,7 @@ public interface IdentifiableSpecifications<T extends Identifiable<Long>> {
 //        return (root, query, criteriaBuilder) -> code == null ? null : criteriaBuilder.equal(root.get("code"), code);
 //    }
 
-    Specification<T> canRead(String logIn);
+//    Specification<T> canRead(String logIn);
 
-    Specification<T> hasAccess();
+//    Specification<T> hasAccess();
 }

@@ -256,19 +256,18 @@ public class DataFormSubmission
 
         formData.put("_id", id);
 
-        Map<String, Object> updatedFormData = addGroupIndicesToFormData(formData, id);
+        Map<String, Object> updatedFormData = addGroupIndices(formData, id);
 
         this.setFormData(updatedFormData);
 
         return this;
     }
 
-    private Map<String, Object> addGroupIndicesToFormData(Map<String, Object> formData, Object parentId) {
+    private Map<String, Object> addGroupIndices(Map<String, Object> formData, Object parentId) {
         Map<String, Object> updatedFormData = new HashMap<>();
         for (Map.Entry<String, Object> entry : formData.entrySet()) {
             Object value = entry.getValue();
 
-            // If it's an array of objects, add group indices
             if (value instanceof List) {
                 List<?> list = (List<?>) value;
                 if (!list.isEmpty() && list.get(0) instanceof Map) {
@@ -278,24 +277,17 @@ public class DataFormSubmission
                             Map<String, Object> objectInArray = (Map<String, Object>) list.get(i);
                             objectInArray.put("_parentId", parentId);
                             objectInArray.put("_id", CodeGenerator.generateCode(16));  // Add groupIndex (s
-                            // Add groupIndex (starting from 1)
                             objectInArray.put("_index", i + 1);  // Add repeatIndex (starting from 1)
                             updatedList.add(objectInArray);
                         }
                         updatedFormData.put(entry.getKey(), updatedList);
                     }
                 } else {
-                    // If it's not an array of objects, just copy as is
                     updatedFormData.put(entry.getKey(), list);
                 }
             } else if (value instanceof Map) {
-//                // If it's a nested map, recursively process it
-//                ((Map<String, Object>) value).remove("uid");
-//                ((Map<String, Object>) value).remove("_uid");
-//                ((Map<String, Object>) value).remove("_uuid");
-                updatedFormData.put(entry.getKey(), addGroupIndicesToFormData((Map<String, Object>) value, parentId));
+                updatedFormData.put(entry.getKey(), addGroupIndices((Map<String, Object>) value, parentId));
             } else {
-                // If it's a simple value, just copy as is
                 updatedFormData.put(entry.getKey(), value);
             }
         }

@@ -201,6 +201,9 @@ public class DataFormServiceImpl
             return repositoryCustom.findAll(pageable);
         }
 
+        List<Team> userTeams = teamRepository
+            .findAllWithEagerRelation();
+
         Set<String> userForms = teamRepository
             .findAllWithEagerRelation().stream().flatMap((team) -> team.getFormsWithPermission(
                 FormPermission.ADD_SUBMISSIONS).stream()).collect(Collectors.toSet());

@@ -1,8 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
-import org.nmcpye.datarun.domain.User;
-import org.nmcpye.datarun.drun.postgres.common.AssignmentSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.EntityScope;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
@@ -11,6 +9,7 @@ import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositor
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentServiceCustom;
+import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -27,11 +26,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.nmcpye.datarun.drun.postgres.common.AssignmentSpecifications.isEnabled;
+
 @Service
 @Primary
 @Transactional
 public class AssignmentServiceImplCustom
-    extends AssignmentSpecifications
+    extends IdentifiableRelationalServiceImpl<Assignment>
     implements AssignmentServiceCustom {
 
     final AssignmentRelationalRepositoryCustom repositoryCustom;
@@ -107,20 +108,21 @@ public class AssignmentServiceImplCustom
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repositoryCustom.findAll(pageable);
         }
-        return repositoryCustom.findAll(hasAccess(), pageable);
+        return repositoryCustom.findAll(canRead().and(isEnabled()), pageable);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<Assignment> getAllUserAccessible(User user) {
-        return repositoryCustom.findAll(canReadWithChildren(user.getLogin()));
-    }
+//    @Override
+//    @Transactional(readOnly = true)
+//    public List<Assignment> getAllUserAccessible(User user) {
+//        return repositoryCustom.findAll(canReadWithChildren(user.getLogin()));
+//    }
 
     @Override
     @Transactional(readOnly = true)
     public Page<Assignment> getAllUserAccessible(Pageable pageable) {
-        Page<Assignment> assignedPage = repositoryCustom.findAll(hasAccess(), pageable);
+        Page<Assignment> assignedPage = repositoryCustom.findAll(canRead().and(isEnabled()), pageable);
         List<Assignment> assigned = assignedPage.getContent().stream()
+            .filter(assignment -> !assignment.getActivity().getDisabled())
             .peek(assignment -> assignment.setEntityScope(EntityScope.Assigned))
             .toList();
 
@@ -129,17 +131,22 @@ public class AssignmentServiceImplCustom
             .peek(assignment -> assignment.setEntityScope(EntityScope.Managed))
             .toList();
 
+//        List<Assignment> managed = assigned.stream()
+//            .filter(assignment -> !assignment.getActivity().getDisabled())
+//            .peek(assignment -> assignment.setEntityScope(EntityScope.Managed))
+//            .toList();
+
         List<Assignment> combinedContent = Stream.concat(assigned.stream(), managed.stream())
             .collect(Collectors.toList());
 
         return new PageImpl<>(combinedContent, pageable, assignedPage.getTotalElements() + managed.size());
     }
 
-    @Transactional(readOnly = true)
-    public List<Assignment> getAllUserAccessibleHierarchy(User user) {
-        List<Assignment> allAssignments = getAllUserAccessible(user);
-        return buildHierarchy(allAssignments);
-    }
+//    @Transactional(readOnly = true)
+//    public List<Assignment> getAllUserAccessibleHierarchy(User user) {
+//        List<Assignment> allAssignments = getAllUserAccessible(user);
+//        return buildHierarchy(allAssignments);
+//    }
 
     private List<Assignment> buildHierarchy(List<Assignment> allAssignments) {
         Map<Long, Assignment> assignmentMap = new HashMap<>();

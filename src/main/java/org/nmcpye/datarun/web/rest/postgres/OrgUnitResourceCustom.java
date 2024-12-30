@@ -47,7 +47,7 @@ public class OrgUnitResourceCustom extends AbstractRelationalResource<OrgUnit> {
             return null;
         }
         return super.buildSpecification(queryRequest)
-            .and(serviceCustom.hasAccess());
+            .and(serviceCustom.canRead());
     }
 
     @Override

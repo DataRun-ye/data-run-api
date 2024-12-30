@@ -59,7 +59,7 @@ public class AssignmentResourceCustom extends AbstractRelationalResource<Assignm
             return null;
         }
         return spec
-            .and(assignmentService.hasAccess());
+            .and(assignmentService.canRead());
     }
 
     @Override

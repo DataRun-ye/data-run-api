@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.drun.postgres.common.DefaultIdentifiableSpecifications;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.ActivityServiceCustom;
+import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Primary
 @Transactional
 public class ActivityServiceCustomImpl
-    extends DefaultIdentifiableSpecifications<Activity>
+    extends IdentifiableRelationalServiceImpl<Activity>
     implements ActivityServiceCustom {
 
     private final ActivityRelationalRepositoryCustom repositoryCustom;

@@ -107,7 +107,7 @@ public abstract class IdentifiableMongoServiceImpl<T extends Identifiable<String
     }
 
     @Override
-    public <Q extends QueryRequest> Page<T> findAllByUser(Pageable pageable, Q queryRequest) {
+    public Page<T> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         Query query = new Query();
 
         List<T> submissions = getFormSubmissions(query, queryRequest);
@@ -117,7 +117,7 @@ public abstract class IdentifiableMongoServiceImpl<T extends Identifiable<String
     }
 
     @Override
-    public <Q extends QueryRequest> List<T> findAllByUser(Q queryRequest) {
+    public List<T> findAllByUser(QueryRequest queryRequest) {
         log.debug("Request to get all MEntities");
         Query query = new Query();
         var allEntities = getFormSubmissions(query, queryRequest);

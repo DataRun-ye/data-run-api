@@ -6,12 +6,13 @@ import org.nmcpye.datarun.drun.postgres.common.Identifiable;
 import org.nmcpye.datarun.drun.postgres.repository.IdentifiableRelationalRepository;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalService;
 import org.nmcpye.datarun.web.rest.common.AbstractResource;
+import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.errors.RequestQueryParsingException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
@@ -61,10 +62,10 @@ AbstractRelationalResource<T extends Identifiable<Long>>
     }
 
     @GetMapping("entities")
-    public ResponseEntity<Page<T>> getEntities(@ParameterObject Pageable pageable,
-                                               QueryRequest queryRequest) {
+    protected ResponseEntity<PagedResponse<?>> getEntities(
+        QueryRequest queryRequest) {
+        Pageable pageable = PageRequest.of(queryRequest.getPage(), queryRequest.getSize());
 
-//        query.remove("paging");
         if (!queryRequest.isPaged()) {
             pageable = Pageable.unpaged();
         }
@@ -75,9 +76,29 @@ AbstractRelationalResource<T extends Identifiable<Long>>
         } catch (Exception e) {
             throw new RequestQueryParsingException();
         }
-        Page<T> results = getRepository().findAll(spec, pageable);
-        return ResponseEntity.ok(results);
+
+        Page<T> processedPage = getRepository().findAll(spec, pageable);
+
+        String next = createNextPageLink(processedPage);
+
+        PagedResponse<T> response = initPageResponse(processedPage, next);
+        return ResponseEntity.ok(response);
     }
+//    public ResponseEntity<Page<T>> getEntities(@ParameterObject Pageable pageable,
+//                                               QueryRequest queryRequest) {
+//        if (!queryRequest.isPaged()) {
+//            pageable = Pageable.unpaged();
+//        }
+//
+//        Specification<T> spec;
+//        try {
+//            spec = buildSpecification(queryRequest);
+//        } catch (Exception e) {
+//            throw new RequestQueryParsingException();
+//        }
+//        Page<T> results = getRepository().findAll(spec, pageable);
+//        return ResponseEntity.ok(results);
+//    }
 //    @GetMapping("")
 //    public ResponseEntity<Page<T>> getEntities(@ParameterObject Pageable pageable,
 //                                               @RequestParam(name = "paging", required = false, defaultValue = "true")

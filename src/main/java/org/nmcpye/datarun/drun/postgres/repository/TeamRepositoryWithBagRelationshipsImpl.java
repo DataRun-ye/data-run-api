@@ -24,9 +24,35 @@ public class TeamRepositoryWithBagRelationshipsImpl
     @PersistenceContext
     private EntityManager entityManager;
 
+//    public List<Team> findAllWithManagedInfo() {
+//        String currentUserLogin = SecurityUtils.getCurrentUserLogin()
+//            .orElseThrow(() -> new IllegalStateException("Current user not found"));
+//
+//        String jpql = "SELECT DISTINCT t, " +
+//            "CASE WHEN EXISTS (" +
+//            "    SELECT 1 FROM Team mt " +
+//            "    JOIN mt.users u " +
+//            "    WHERE mt MEMBER OF t.managedByTeams AND u.login = :currentUserLogin" +
+//            ") THEN true ELSE false END as isManaged " +
+//            "FROM Team t " +
+//            "LEFT JOIN FETCH t.activity " +
+//            "LEFT JOIN FETCH t.users";
+//
+//        List<Object[]> results = entityManager.createQuery(jpql, Object[].class)
+//            .setParameter("currentUserLogin", currentUserLogin)
+//            .getResultList();
+//
+//        return results.stream().map(result -> {
+//            Team team = (Team) result[0];
+//            Boolean isManaged = (Boolean) result[1];
+//            team.setIsManaged(isManaged);
+//            return team;
+//        }).collect(Collectors.toList());
+//    }
+
     @Override
     public Optional<Team> fetchBagRelationships(Optional<Team> team) {
-        return team.map(this::fetchUsers);
+        return team.map(this::fetchTeams);
     }
 
     @Override
@@ -36,56 +62,10 @@ public class TeamRepositoryWithBagRelationshipsImpl
 
     @Override
     public List<Team> fetchBagRelationships(List<Team> teams) {
-        return Optional.of(teams).map(this::fetchUsers).orElse(Collections.emptyList());
+        return Optional.of(teams).map(this::fetchTeams).orElse(Collections.emptyList());
     }
 
-
-//    @Override
-//    public void updatePaths() {
-//        List<Team> teams = entityManager
-//            .createQuery(
-//                "select team from Team team " +
-//                    "left join fetch team.activity " +
-//                    "left join fetch team.users users " +
-//                    "where team.path is null or team.hierarchyLevel is null",
-//                Team.class
-//            )
-//            .getResultList();
-//
-//        updatePaths(teams);
-//    }
-//
-//    @Override
-//    public void forceUpdatePaths() {
-//        List<Team> teams = entityManager
-//            .createQuery(
-//                "select team from Team team ",
-//                Team.class
-//            )
-//            .getResultList();
-//
-//        updatePaths(teams);
-//    }
-//
-//    private void updatePaths(List<Team> teams) {
-//
-//        int counter = 0;
-//
-//        for (Team team : teams) {
-//            team.setPath(team.getPath());
-//            team.setHierarchyLevel(team.getHierarchyLevel());
-//
-//            entityManager.merge(team);
-//
-//            if ((counter % 400) == 0) {
-//                entityManager.flush();
-//            }
-//
-//            counter++;
-//        }
-//    }
-
-    Team fetchUsers(Team result) {
+    Team fetchTeams(Team result) {
         return entityManager
             .createQuery(
                 "select team from Team team " +
@@ -98,7 +78,7 @@ public class TeamRepositoryWithBagRelationshipsImpl
             .getSingleResult();
     }
 
-    List<Team> fetchUsers(List<Team> teams) {
+    List<Team> fetchTeams(List<Team> teams) {
         HashMap<Object, Integer> order = new HashMap<>();
         IntStream.range(0, teams.size()).forEach(index -> order.put(teams.get(index).getId(), index));
         List<Team> result = entityManager

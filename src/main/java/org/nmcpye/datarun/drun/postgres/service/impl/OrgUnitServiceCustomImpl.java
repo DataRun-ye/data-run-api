@@ -1,13 +1,13 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
-import org.nmcpye.datarun.drun.postgres.common.OrgUnitSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
+import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 @Primary
 @Transactional
 public class OrgUnitServiceCustomImpl
-    extends OrgUnitSpecifications
+    extends IdentifiableRelationalServiceImpl<OrgUnit>
     implements OrgUnitServiceCustom {
 
     final OrgUnitRelationalRepositoryCustom repositoryCustom;
@@ -63,32 +63,114 @@ public class OrgUnitServiceCustomImpl
             .orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
     }
 
+//    @Override
+//    public Page<OrgUnit> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+//        if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
+//            return Page.empty();
+//        }
+//
+//        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+//            return repositoryCustom.findAll(pageable);
+//        }
+//
+////        assignmentRepository
+////        var allUserAssignments = assignmentRepository
+////            .findAll(canReadWithChildren(
+////                SecurityUtils.getCurrentUserLogin().get())
+////                .and(isEnabled()));
+//
+//        final List<OrgUnit> userOrgUnits = repositoryCustom
+//            .findAll(canRead());
+//
+//        var userDirectIndirectAssignments = assignmentRepository.findAll(AssignmentSpecifications.canRead());
+////        final Set<String> uids = userOrgUnits
+////            .stream()
+////            .flatMap(orgUnit -> orgUnit.getAncestorUids(null).stream())
+////            .collect(Collectors.toSet());
+////        userOrgUnits.addAll(repositoryCustom.findAllByUidIn(uids));
+//
+//        final Set<OrgUnit> ancestors = userOrgUnits
+//            .stream()
+//            .flatMap(orgUnit -> orgUnit.getAncestors().stream())
+//            .collect(Collectors.toSet());
+//
+//        userOrgUnits.addAll(ancestors);
+//
+//        if (pageable.isUnpaged()) {
+//            return new PageImpl<>(userOrgUnits);
+//        }
+//
+//        int start = (int) pageable.getOffset();
+//        int end = Math.min((start + pageable.getPageSize()), userOrgUnits.size());
+//        if (start > end) {
+//            return Page.empty(pageable);
+//        }
+//
+//        List<OrgUnit> sublist = userOrgUnits.subList(start, end);
+//        return new PageImpl<>(sublist, pageable, userOrgUnits.size());
+//    }
+
     @Override
     public Page<OrgUnit> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+        if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
+            return Page.empty();
+        }
+
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repositoryCustom.findAll(pageable);
         }
-        final List<OrgUnit> userOrgUnits = repositoryCustom
-            .findAllWithRelation();
 
-        final Set<String> uids = userOrgUnits
-            .stream()
-            .flatMap(orgUnit -> orgUnit.getAncestorUids(null).stream())
+        String currentUserLogin = SecurityUtils.getCurrentUserLogin().get();
+
+        // Get user's direct teams
+        List<Team> userDirectTeams = userRepository.findOneByLogin(currentUserLogin)
+            .map(user -> user.getTeams().stream()
+                .filter(team -> !team.getDisabled())
+                .filter(team -> !team.getActivity().getDisabled())
+                .collect(Collectors.toList()))
+            .orElse(Collections.emptyList());
+
+        // Get user's indirect teams (managed teams of direct teams)
+        List<Team> userIndirectTeams = userDirectTeams.stream()
+            .flatMap(team -> team.getManagedTeams().stream())
+            .filter(team -> !team.getDisabled())
+            .filter(team -> !team.getActivity().getDisabled())
+            .toList();
+
+        // Combine direct and indirect teams
+        List<Team> allUserTeams = new ArrayList<>(userDirectTeams);
+        allUserTeams.addAll(userIndirectTeams);
+
+        // Get assignments for all teams
+        List<Assignment> userAssignments = assignmentRepository.findAllByTeamIn(allUserTeams);
+
+        // Extract OrgUnits from assignments
+        Set<OrgUnit> userOrgUnits = userAssignments.stream()
+            .map(Assignment::getOrgUnit)
             .collect(Collectors.toSet());
-        userOrgUnits.addAll(repositoryCustom.findAllByUidIn(uids));
+
+        // Add ancestors of the user's OrgUnits
+        Set<OrgUnit> ancestors = userOrgUnits.stream()
+            .flatMap(orgUnit -> orgUnit.getAncestors().stream())
+            .collect(Collectors.toSet());
+
+        userOrgUnits.addAll(ancestors);
+
+        List<OrgUnit> sortedOrgUnits = new ArrayList<>(userOrgUnits);
+        sortedOrgUnits.sort(Comparator.comparing(OrgUnit::getName));
 
         if (pageable.isUnpaged()) {
-            return new PageImpl<>(userOrgUnits);
+            return new PageImpl<>(sortedOrgUnits);
         }
 
         int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), userOrgUnits.size());
+        int end = Math.min((start + pageable.getPageSize()), sortedOrgUnits.size());
         if (start > end) {
             return Page.empty(pageable);
         }
 
-        List<OrgUnit> sublist = userOrgUnits.subList(start, end);
-        return new PageImpl<>(sublist, pageable, userOrgUnits.size());
+        List<OrgUnit> sublist = sortedOrgUnits.subList(start, end);
+        return new PageImpl<>(sublist, pageable, sortedOrgUnits.size());
     }
 
     @Override

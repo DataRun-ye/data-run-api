@@ -28,10 +28,11 @@ public interface IdentifiableService<T extends Identifiable<ID>,
      * @param pageable the pagination information.
      * @return the list of entities.
      */
-    <Q extends QueryRequest> Page<T> findAllByUser(Pageable pageable, Q queryRequest);
+    Page<T> findAllByUser(Pageable pageable, QueryRequest queryRequest);
 
 
-    <Q extends QueryRequest> List<T> findAllByUser(Q queryRequest);
+    List<T> findAllByUser(QueryRequest queryRequest);
+
     /**
      * Save an object.
      *
@@ -54,9 +55,9 @@ public interface IdentifiableService<T extends Identifiable<ID>,
      * @param pageable the pagination information.
      * @return the list of entities.
      */
-    <Q extends QueryRequest> Page<T> findAll(Pageable pageable, Q queryRequest);
+    Page<T> findAll(Pageable pageable, QueryRequest queryRequest);
 
-    <Q extends QueryRequest> List<T> findAll(Q queryRequest);
+    List<T> findAll(QueryRequest queryRequest);
 
     /**
      * Get the "id" object.

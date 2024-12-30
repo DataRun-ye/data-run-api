@@ -6,10 +6,14 @@ import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCusto
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,7 +56,7 @@ public class TeamResourceCustom extends AbstractRelationalResource<Team> {
             return null;
         }
         return spec
-            .and(serviceCustom.hasAccess());
+            .and(serviceCustom.canRead());
     }
 
     @Override
@@ -60,53 +64,27 @@ public class TeamResourceCustom extends AbstractRelationalResource<Team> {
         return "teams";
     }
 
-//    @ExceptionHandler(PathUpdateException.class)
-//    public ResponseEntity<String> handlePathUpdateException(PathUpdateException ex) {
-//        log.error("Handling PathUpdateException: {}", ex.getMessage());
-//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
-//    }
-//
-//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    @Override
-//    public ResponseEntity<Team> updateEntity(Long aLong, Team entity) throws URISyntaxException {
-//        return super.updateEntity(aLong, entity);
-//    }
-//
-//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    @Override
-//    public ResponseEntity<?> saveReturnSaved(Team entity) {
-//        log.debug("REST request to saveOne, return saved {}", getName());
-//        if (entity.getId() != null) {
-//            throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + entity.getId().toString(), "idexists");
-//        }
-//        return super.saveReturnSaved(entity);
-//    }
-//
-//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    @Override
-//    public ResponseEntity<EntitySaveSummaryVM> saveOne(Team entity) {
-//        log.debug("REST request to saveOne {}", getName());
-//        if (entity.getId() != null) {
-//            throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + entity.getId().toString(), "idexists");
-//        }
-//        return super.saveOne(entity);
-//    }
-//
-//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    @Override
-//    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<Team> entities) {
-//        log.debug("REST request to saveAll {}", getName());
-//        var withIds = entities.stream().filter((entity) -> entity.getId() != null).map(Identifiable::getId).toList();
-//        if (!withIds.isEmpty()) {
-//            throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + withIds, "idexists");
-//        }
-//        return super.saveAll(entities);
-//    }
+    @GetMapping("managed")
+    protected ResponseEntity<PagedResponse<?>> getAllManaged(
+        QueryRequest queryRequest) {
+        Pageable pageable = PageRequest.of(queryRequest.getPage(), queryRequest.getSize());
+
+        if (!queryRequest.isPaged()) {
+            pageable = Pageable.unpaged();
+        }
+
+        Page<Team> processedPage = serviceCustom.findAllManagedByUser(pageable);
+
+        String next = createNextPageLink(processedPage);
+
+        PagedResponse<Team> response = initPageResponse(processedPage, next);
+        return ResponseEntity.ok(response);
+    }
 
     /**
      * {@code PATCH  /teams/:id} : Partial updates given fields of an existing team, field will ignore if it is null
      *
-     * @param uid   the id of the team to save.
+     * @param uid  the id of the team to save.
      * @param team the team to update.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated team,
      * or with status {@code 400 (Bad Request)} if the team is not valid,

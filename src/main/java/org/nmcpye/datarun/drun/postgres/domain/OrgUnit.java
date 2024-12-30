@@ -413,6 +413,7 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
      *
      * @throws IllegalStateException if circular parent relationships is detected.
      */
+    @JsonIgnoreProperties(value = {"parent", "children", "ancestors", "groups", "assignments", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     public List<OrgUnit> getAncestors() {
         List<OrgUnit> units = new ArrayList<>();
         Set<OrgUnit> visitedUnits = new HashSet<>();

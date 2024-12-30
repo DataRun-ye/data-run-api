@@ -54,13 +54,10 @@ public class AccountResourceCustom extends AbstractRelationalResource<User> {
 
     private final UserService userService;
 
-//    private final MailService mailService;
-
     public AccountResourceCustom(UserRepository userRepository, UserService userService, MailService mailService) {
         super(userService, userRepository);
         this.userRepository = userRepository;
         this.userService = userService;
-//        this.mailService = mailService;
     }
 
     /**

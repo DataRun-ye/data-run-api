@@ -120,6 +120,17 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
     private Set<TeamFormPermissions> formPermissions = new HashSet<>();
 //    private Map<String, List<FormPermission>> formPermissions = new HashMap<>();
 
+    @Transient
+    private EntityScope entityScope;
+
+    public EntityScope getEntityScope() {
+        return entityScope;
+    }
+
+    public void setEntityScope(EntityScope entityScope) {
+        this.entityScope = entityScope;
+    }
+
     //    public Set<TeamFormPermission> getFormPermissions() {
 //        return formPermissions;
 //    }
@@ -247,7 +258,7 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
         this.managedByTeams = teams;
     }
 
-    public Team managedByGroups(Set<Team> teams) {
+    public Team managedByTeams(Set<Team> teams) {
         this.setManagedByTeams(teams);
         return this;
     }

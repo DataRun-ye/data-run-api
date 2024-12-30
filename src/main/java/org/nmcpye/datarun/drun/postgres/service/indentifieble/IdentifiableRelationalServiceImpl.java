@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -29,28 +28,9 @@ public abstract class IdentifiableRelationalServiceImpl<T extends Identifiable<L
         this.repository = repository;
     }
 
-    public Specification<T> hasAccess() {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
-    }
-
     @Override
-    public Page<T> findAll(Specification<T> spec, Pageable pageable) {
-        return repository.findAll(spec.and(hasAccess()), pageable);
-    }
-
-    @Override
-    public <Q extends QueryRequest> List<T> findAll(Q queryRequest) {
+    public List<T> findAll(QueryRequest queryRequest) {
         return repository.findAll();
-    }
-
-    @Override
-    public List<T> findAll(Specification<T> spec) {
-        return repository.findAll(spec.and(hasAccess()));
-    }
-
-    @Override
-    public Optional<T> findOne(Specification<T> spec) {
-        return repository.findOne(spec.and(hasAccess()));
     }
 
     @Override
@@ -81,21 +61,21 @@ public abstract class IdentifiableRelationalServiceImpl<T extends Identifiable<L
     }
 
     @Override
-    public <Q extends QueryRequest> Page<T> findAllByUser(Pageable pageable, Q queryRequest) {
+    public Page<T> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repository.findAll(pageable);
         }
         log.debug("Request to get all entities");
-        return repository.findAll(hasAccess(), pageable);
+        return repository.findAll(canRead(), pageable);
     }
 
     @Override
-    public <Q extends QueryRequest> List<T> findAllByUser(Q queryRequest) {
+    public List<T> findAllByUser(QueryRequest queryRequest) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repository.findAll();
         }
         log.debug("Request to get all entities");
-        return repository.findAll(hasAccess());
+        return repository.findAll(canRead());
     }
 
     @Override

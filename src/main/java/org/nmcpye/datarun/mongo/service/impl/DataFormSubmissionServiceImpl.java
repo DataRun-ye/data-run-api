@@ -95,13 +95,16 @@ public class DataFormSubmissionServiceImpl
 
         if(newSubmission.getAssignment() != null) {
             assignmentRepository.findByUid(newSubmission.getAssignment())
-                .ifPresentOrElse((a) -> newSubmission.setAssignment(a.getUid()),
+                .ifPresentOrElse((a) -> {
+                        newSubmission.setAssignment(a.getUid());
+                    },
                     () -> {
                         log.error("submission by: {}, for form: {}, with assignment: {} not in the system",
                             SecurityUtils.getCurrentUserLogin().get(), newSubmission.getForm(),
                             newSubmission.getAssignment());
                         throw new PropertyNotFoundException("Assignment not found: " + newSubmission.getTeam());
                     });
+
         }
 
         teamRepository.findByUid(newSubmission.getTeam())
@@ -157,7 +160,6 @@ public class DataFormSubmissionServiceImpl
         log.debug("request to soft delete DataFormSubmission : {}", uid);
         DataFormSubmission submission = repository.findByUid(uid).orElseThrow(() -> new IllegalArgumentException("Invalid id: " + uid));
 
-        // soft delete by marking the entity as deleted
         submission.setDeleted(true);
         repository.save(submission);
 //        saveVersioning(submission);

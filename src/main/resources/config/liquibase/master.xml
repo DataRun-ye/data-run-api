@@ -39,10 +39,8 @@
     <include file="config/liquibase/changelog/2024/29-01-org-unit-group-and-groupset.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/13-01-remove-hierarchy-uinfo-wh-identifiabletrans-add-managed-teams.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/23-01-assignment-child-parent-allocated-resource-changelog.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/25-04-changelog-allocated-resource-add.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/25-04-changelog-assignment-forms-relation.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/25-04-changelog-team-form-permission-add.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/25-01-changelog-team-form-permissions-json.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/26-01-changelog-allocated-resource.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/2024/29-01-changelog-assignment-add-allocated_resources-jsonb.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

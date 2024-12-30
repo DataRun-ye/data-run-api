@@ -1,72 +1,18 @@
 package org.nmcpye.datarun.drun.postgres.common;
 
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.*;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
-import org.nmcpye.datarun.drun.postgres.repository.IdentifiableRelationalRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.data.jpa.domain.Specification;
 
-public abstract class TeamSpecifications extends DefaultIdentifiableSpecifications<Team> {
+import java.util.List;
 
-    public TeamSpecifications(IdentifiableRelationalRepository<Team> repository) {
-        super(repository);
-    }
+public abstract class TeamSpecifications {
 
-    public Specification<Team> hasLevel(Integer level) {
-        return (root, query, criteriaBuilder) -> level == null ? null : criteriaBuilder.equal(root.get("level"), level);
-    }
-
-    public Specification<Team> hasParent(String parent) {
-        return (root, query, criteriaBuilder) -> parent == null ? null : criteriaBuilder.equal(root.get("parent"), parent);
-    }
-
-    public Specification<Team> isNotDisabled() {
-        return (root, query, criteriaBuilder) -> {
-            Join<Team, Activity> activityJoin = root.join("activity", JoinType.LEFT);
-
-            Predicate teamNotDisabled = criteriaBuilder.isFalse(root.get("disabled"));
-            Predicate activityNotDisabled = criteriaBuilder.isFalse(activityJoin.get("disabled"));
-
-            return criteriaBuilder.and(teamNotDisabled, activityNotDisabled);
-        };
-    }
-
-    public Specification<Team> canRead(String login) {
-        return (root, query, criteriaBuilder) -> {
-            if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-                // Admin users can read all teams
-                return criteriaBuilder.conjunction();
-            } else if (!SecurityUtils.isAuthenticated()) {
-                // Unauthenticated users can't read any teams
-                return criteriaBuilder.disjunction();
-            } else {
-                // Regular users can only read teams they're associated with
-                Join<Team, User> userJoin = root.join("users", JoinType.INNER);
-                return criteriaBuilder.equal(userJoin.get("login"), login);
-            }
-        };
-    }
-
-    // New Specification to check if a specific user is associated with a team
-//    public Specification<Team> canRead(String logIn) {
-//        if(SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-//            return (root, query, criteriaBuilder) -> criteriaBuilder.disjunction();
-//        }
-//
-//        return (root, query, criteriaBuilder) -> {
-//            // Join Team with the users
-//            Join<Team, User> userJoin = root.join("users", JoinType.INNER);
-//
-//            // Check if the userId matches
-//            return criteriaBuilder.equal(userJoin.get("login"), logIn);
-//        };
-//    }
-    public Specification<Team> hasAccess() {
+    public static Specification<Team> canRead() {
         return (root, query, criteriaBuilder) -> {
             if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
                 return criteriaBuilder.conjunction();
@@ -81,12 +27,85 @@ public abstract class TeamSpecifications extends DefaultIdentifiableSpecificatio
         };
     }
 
-//    public Specification<Team> hasAccess() {
-//        if (SecurityUtils.isAuthenticated()) {
-//            return canRead(SecurityUtils.getCurrentUserLogin().get());
-//        } else {
-//            return (root, query, criteriaBuilder) -> criteriaBuilder.disjunction();
-//        }
+    public static Specification<Team> isEnabled() {
+        return (root, query, criteriaBuilder) -> {
+            Join<Team, Activity> activityJoin = root.join("activity", JoinType.LEFT);
+
+            Predicate teamNotDisabled = criteriaBuilder.isFalse(root.get("disabled"));
+            Predicate activityNotDisabled = criteriaBuilder.isFalse(activityJoin.get("disabled"));
+
+            return criteriaBuilder.and(teamNotDisabled, activityNotDisabled);
+        };
+    }
+
+    // Specification to get managed teams for specific teams
+    public static Specification<Team> getManagedTeamsForTeams(List<Long> teamIds) {
+        return (root, query, cb) -> root.get("id").in(teamIds);
+    }
+
+    // Specification to get teams and their managed teams for a specific user login
+    public static Specification<Team> getTeamsAndManagedTeamsForUser(String userLogin) {
+        return (root, query, cb) -> {
+            Subquery<Team> managedTeamsSubquery = query.subquery(Team.class);
+            Root<Team> managedTeamRoot = managedTeamsSubquery.from(Team.class);
+            Join<Team, Team> managedByJoin = managedTeamRoot.join("managedByTeams", JoinType.INNER);
+            Join<Team, User> userJoin = managedByJoin.join("users", JoinType.INNER);
+
+            managedTeamsSubquery.select(managedTeamRoot)
+                .where(cb.equal(userJoin.get("login"), userLogin));
+
+            Join<Team, User> rootUserJoin = root.join("users", JoinType.LEFT);
+            return cb.or(
+                cb.equal(rootUserJoin.get("login"), userLogin),
+                root.in(managedTeamsSubquery)
+            );
+        };
+    }
+
+    // Specification to get teams managed by teams that a user is part of
+    public static Specification<Team> getManagedTeamsByUserTeams(String userLogin) {
+        return (root, query, cb) -> {
+            Subquery<Team> userTeamsSubquery = query.subquery(Team.class);
+            Root<Team> userTeamRoot = userTeamsSubquery.from(Team.class);
+            Join<Team, User> userJoin = userTeamRoot.join("users", JoinType.INNER);
+
+            userTeamsSubquery.select(userTeamRoot)
+                .where(cb.equal(userJoin.get("login"), userLogin));
+
+            Join<Team, Team> managedByJoin = root.join("managedByTeams", JoinType.INNER);
+            return managedByJoin.in(userTeamsSubquery);
+        };
+    }
+
+    // Specification to get teams that are not managed by any other team
+    public static Specification<Team> getTopLevelTeams() {
+        return (root, query, cb) -> cb.isEmpty(root.get("managedByTeams"));
+    }
+
+    // Specification to get teams that manage at least one other team
+    public static Specification<Team> getTeamsWithManagedTeams() {
+        return (root, query, cb) -> cb.isNotEmpty(root.get("managedTeams"));
+    }
+
+    // Specification to get teams managed by a specific team
+    public static Specification<Team> getManagedTeamsByTeam(Long teamId) {
+        return (root, query, cb) -> {
+            Join<Team, Team> managedByJoin = root.join("managedByTeams", JoinType.INNER);
+            return cb.equal(managedByJoin.get("id"), teamId);
+        };
+    }
+
+
+    // Specification to get managed teams for a specific user login
+//    public static Specification<Team> getManagedTeamsForUser(String userLogin) {
+//        return (root, query, cb) -> {
+//            Join<Team, User> userJoin = root.join("users", JoinType.INNER);
+//            Join<Team, Team> managedTeamsJoin = root.join("managedTeams", JoinType.INNER);
+//            return cb.and(
+//                cb.equal(userJoin.get("login"), userLogin),
+//                cb.isNotEmpty(root.get("managedTeams"))
+//            );
+//        };
 //    }
 
 //    @Override
