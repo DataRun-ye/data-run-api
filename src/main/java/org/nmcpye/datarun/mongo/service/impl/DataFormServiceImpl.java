@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
-import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
@@ -31,7 +30,6 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -111,23 +109,23 @@ public class DataFormServiceImpl
 //            .orElseThrow(() -> new PropertyNotFoundException("Activity not found: " + dataForm.getActivity()));
 //        dataForm.setActivity(activity.getUid());
 
-        Set<String> orgUnitUids = dataForm.getOrgUnits(); // Extract from JSON
+//        Set<String> orgUnitUids = dataForm.getOrgUnits(); // Extract from JSON
 
-        Set<OrgUnit> validOrgUnits = orgUnitRepository.findAllByUidIn(orgUnitUids);
+//        Set<OrgUnit> validOrgUnits = orgUnitRepository.findAllByUidIn(orgUnitUids);
 
-        Set<String> foundOrgUnitUids = validOrgUnits.stream()
-            .map(OrgUnit::getUid)
-            .collect(Collectors.toSet());
+//        Set<String> foundOrgUnitUids = validOrgUnits.stream()
+//            .map(OrgUnit::getUid)
+//            .collect(Collectors.toSet());
 
-        Set<String> missingOrgUnitUids = new HashSet<>(orgUnitUids);
-        missingOrgUnitUids.removeAll(foundOrgUnitUids);
-
-        if (!missingOrgUnitUids.isEmpty()) {
+//        Set<String> missingOrgUnitUids = new HashSet<>(orgUnitUids);
+//        missingOrgUnitUids.removeAll(foundOrgUnitUids);
+//
+//        if (!missingOrgUnitUids.isEmpty()) {
 //            throw new MissingFormOrgUnitUidsException(
 //                dataForm.getUid() + ',' + dataForm.getName(),
 //                missingOrgUnitUids);
-            dataForm.setOrgUnits(foundOrgUnitUids);
-        }
+//            dataForm.setOrgUnits(foundOrgUnitUids);
+//        }
 
         return repositoryCustom.save(dataForm);
     }

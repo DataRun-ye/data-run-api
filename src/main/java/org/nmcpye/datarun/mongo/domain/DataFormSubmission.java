@@ -42,12 +42,7 @@ public class DataFormSubmission
     @Field("finishedEntryTime")
     private Instant finishedEntryTime;
 
-
-//    private SyncableStatus status;
-
     private String form;
-
-//    private String activity;
 
     private String team;
 
@@ -64,8 +59,49 @@ public class DataFormSubmission
     @Indexed(unique = true)
     Long serialNumber;
 
-//    @Field("submissionVersion")
-//    private int submissionVersion;  // Reference to the latest version in the version history collection
+    @Field("reassignedTo")
+    private String reassignedTo;
+
+    @Field("rescheduledTo")
+    private String rescheduledTo;
+
+    @Field("mergedWith")
+    private String mergedWith;
+
+    @Field("cancelReason")
+    private String cancelReason;
+
+    public String getReassignedTo() {
+        return reassignedTo;
+    }
+
+    public void setReassignedTo(String reassignedTo) {
+        this.reassignedTo = reassignedTo;
+    }
+
+    public String getRescheduledTo() {
+        return rescheduledTo;
+    }
+
+    public void setRescheduledTo(String rescheduledTo) {
+        this.rescheduledTo = rescheduledTo;
+    }
+
+    public String getMergedWith() {
+        return mergedWith;
+    }
+
+    public void setMergedWith(String mergedWith) {
+        this.mergedWith = mergedWith;
+    }
+
+    public String getCancelReason() {
+        return cancelReason;
+    }
+
+    public void setCancelReason(String cancelReason) {
+        this.cancelReason = cancelReason;
+    }
 
     public Long getSerialNumber() {
         return serialNumber;
@@ -174,19 +210,6 @@ public class DataFormSubmission
         return this;
     }
 
-//    public String getActivity() {
-//        return this.activity;
-//    }
-//
-//    public void setActivity(String activity) {
-//        this.activity = activity;
-//    }
-
-//    public DataFormSubmission activity(String activity) {
-//        this.setActivity(activity);
-//        return this;
-//    }
-
     public String getTeam() {
         return this.team;
     }
@@ -218,8 +241,8 @@ public class DataFormSubmission
      * This method enriches the form data with various attributes such as submission UID,
      * serial number, submission time, and version information.
      *
-     * @throws PropertyNotFoundException if any of the main attributes (activity, team, or form) is not set
      * @return The current DataFormSubmission instance with updated form data
+     * @throws PropertyNotFoundException if any of the main attributes (activity, team, or form) is not set
      */
     public DataFormSubmission populateFormDataAttributes() {
 
@@ -231,7 +254,8 @@ public class DataFormSubmission
 
         Map<String, ?> map = Map.ofEntries(
             entry("_deleted", this.getDeleted()),
-            entry("_assignment", this.getAssignment()),
+//            entry("_assignment", this.getAssignment()),
+            entry("_form", this.getForm()),
             entry("_submissionUid", this.getUid()),
             entry("_serialNumber", this.getSerialNumber()),
             entry("_submissionTime", Objects.requireNonNullElse(this.getCreatedDate(), Instant.now())),
@@ -239,6 +263,9 @@ public class DataFormSubmission
             entry("_version", this.getVersion())
         );
 
+        if (assignment != null) {
+            formData.put("_assignment", this.getAssignment());
+        }
         formData.putIfAbsent("_startEntryTime", this.getStartEntryTime());
         formData.putIfAbsent("_finishedEntryTime", this.getFinishedEntryTime());
         formData.putAll(map);

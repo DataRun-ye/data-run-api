@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.nmcpye.datarun.drun.postgres.common.TeamSpecifications.canRead;
 import static org.nmcpye.datarun.drun.postgres.common.TeamSpecifications.isEnabled;
 
 @Service
@@ -130,19 +129,19 @@ public class TeamServiceCustomImpl
             return Page.empty();
         }
 
-        Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLogin().get());
+        Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLogin().get()).and(isEnabled());
 
 
-        var userTeams = repository.findAll(canRead().and(isEnabled()));
+//        var userTeams = repository.findAll(canRead().and(isEnabled()));
 
-        Specification<Team> spec3 = TeamSpecifications.getManagedTeamsForTeams(userTeams.stream()
-            .flatMap(team -> team.getManagedTeams().stream()
-                .distinct()).map(Team::getId).toList());
+//        Specification<Team> spec3 = TeamSpecifications.getManagedTeamsForTeams(userTeams.stream()
+//            .flatMap(team -> team.getManagedTeams().stream()
+//                .distinct()).map(Team::getId).toList());
 
-        // getManagedTeamsForTeams
-        var managedTeams = repository.fetchBagRelationships(repository.findAll(spec, pageable));
-        var managedTeams3 = repository.fetchBagRelationships(repository.findAll(spec3, pageable));
-
+//        var managedTeams = repository.fetchBagRelationships(repository.findAll(spec, pageable));
+//        var managedTeams1 = repository.fetchBagRelationships(repository.findAll(spec.and(isEnabled()), pageable));
+//        var managedTeams3 = repository.fetchBagRelationships(repository.findAll(spec3, pageable));
+//
 
         return repository.fetchBagRelationships(repository.findAll(spec, pageable));
     }

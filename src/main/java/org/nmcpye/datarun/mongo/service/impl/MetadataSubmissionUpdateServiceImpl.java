@@ -116,7 +116,7 @@ public class MetadataSubmissionUpdateServiceImpl
         }
 
         final List<OrgUnit> userOrgUnits = orgUnitRelationalRepositoryCustom
-            .findAllWithEagerRelation();
+            .findAllWithRelation();
 
         final Set<String> uids = userOrgUnits
             .stream()
@@ -124,7 +124,7 @@ public class MetadataSubmissionUpdateServiceImpl
             .collect(Collectors.toSet());
 
         if (SecurityUtils.getCurrentUserLogin().isPresent()) {
-            String login = SecurityUtils.getCurrentUserLogin().get();
+//            String login = SecurityUtils.getCurrentUserLogin().get();
             Query query = new Query(Criteria.where("entityUid").in(uids));
             List<MetadataSubmissionUpdate> submissions = mongoTemplate.find(query, MetadataSubmissionUpdate.class);
 

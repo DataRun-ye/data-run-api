@@ -1,15 +1,19 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.EntityScope;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
+import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentServiceCustom;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
+import org.nmcpye.datarun.mongo.domain.AssignmentSubmissionHistory;
+import org.nmcpye.datarun.mongo.repository.AssignmentSubmissionHistoryRepository;
 import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -18,6 +22,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,15 +44,17 @@ public class AssignmentServiceImplCustom
     final TeamRelationalRepositoryCustom teamRepository;
     final OrgUnitRelationalRepositoryCustom orgUnitRepository;
     final UserRepository userRepository;
+    private final AssignmentSubmissionHistoryRepository assignmentHistoryRepository;
 
     public AssignmentServiceImplCustom(AssignmentRelationalRepositoryCustom repositoryCustom,
                                        TeamRelationalRepositoryCustom teamRepository,
-                                       OrgUnitRelationalRepositoryCustom orgUnitRepository, UserRepository userRepository) {
+                                       OrgUnitRelationalRepositoryCustom orgUnitRepository, UserRepository userRepository, AssignmentSubmissionHistoryRepository assignmentHistoryRepository) {
         super(repositoryCustom);
         this.repositoryCustom = repositoryCustom;
         this.teamRepository = teamRepository;
         this.orgUnitRepository = orgUnitRepository;
         this.userRepository = userRepository;
+        this.assignmentHistoryRepository = assignmentHistoryRepository;
     }
 
     @Override
@@ -59,6 +66,7 @@ public class AssignmentServiceImplCustom
         if (object.getTeam() != null) {
             team = findTeam(object.getTeam());
         }
+
         if (object.getOrgUnit() != null) {
             orgUnit = findOrgUnit(object.getOrgUnit());
         }
@@ -103,19 +111,47 @@ public class AssignmentServiceImplCustom
             .orElseThrow(() -> new PropertyNotFoundException("OrgUniy not found: " + orgUnit));
     }
 
-    @Override
-    public Page<Assignment> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+    private Page<Assignment> findWithStatus(Page<Assignment> assignments) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return repositoryCustom.findAll(pageable);
+            assignments.forEach(assignment -> {
+                assignmentHistoryRepository.findLastEntryByUidAndAssignedTeam(assignment.getUid(),
+                        assignment.getTeam().getUid())
+                    .flatMap(history -> history.getEntries().stream()
+                        .max(Comparator.comparing(AssignmentSubmissionHistory.HistoryEntry::getEntryDate)))
+                    .ifPresentOrElse(lastEntry -> {
+                        assignment.setStatus(lastEntry.getSubmissionStatus());
+                        assignment.setLastEntryDate(lastEntry.getEntryDate());
+                        assignment.setLastEntryBy(lastEntry.getSubmissionUser());
+                    }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
+            });
+        } else {
+            String currentUserLogin = SecurityUtils.getCurrentUserLogin().orElse(null);
+            assignments.forEach(assignment -> {
+                assignmentHistoryRepository.findLastEntryByUidAndUser(assignment.getUid(), currentUserLogin)
+                    .flatMap(history -> history.getEntries().stream()
+                        .max(Comparator.comparing(AssignmentSubmissionHistory.HistoryEntry::getEntryDate)))
+                    .ifPresentOrElse(lastEntry -> {
+                        assignment.setStatus(lastEntry.getSubmissionStatus());
+                        assignment.setLastEntryDate(lastEntry.getEntryDate());
+                        assignment.setLastEntryBy(lastEntry.getSubmissionUser());
+                    }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
+            });
         }
-        return repositoryCustom.findAll(canRead().and(isEnabled()), pageable);
+        return assignments;
     }
 
-//    @Override
-//    @Transactional(readOnly = true)
-//    public List<Assignment> getAllUserAccessible(User user) {
-//        return repositoryCustom.findAll(canReadWithChildren(user.getLogin()));
-//    }
+    @Override
+    public Page<Assignment> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+        Page<Assignment> assignments;
+        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+            assignments = repositoryCustom.findAll(pageable);
+        } else {
+            assignments = repositoryCustom.findAll(canRead().and(isEnabled()), pageable);
+        }
+
+        // TODO Create AssignmentHistory in app and fetch all and sort the latest out on the app
+        return findWithStatus(assignments);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -126,20 +162,40 @@ public class AssignmentServiceImplCustom
             .peek(assignment -> assignment.setEntityScope(EntityScope.Assigned))
             .toList();
 
-        List<String> assignedUids = assigned.stream().map(Assignment::getUid).collect(Collectors.toList());
-        List<Assignment> managed = repositoryCustom.findAllByParentIn(assignedUids).stream()
-            .peek(assignment -> assignment.setEntityScope(EntityScope.Managed))
-            .toList();
+        List<String> assignedUids = assigned.stream().map(Assignment::getUid).toList();
 
-//        List<Assignment> managed = assigned.stream()
-//            .filter(assignment -> !assignment.getActivity().getDisabled())
+//        List<Assignment> managed = repositoryCustom.findAllByParentIn(assignedUids).stream()
 //            .peek(assignment -> assignment.setEntityScope(EntityScope.Managed))
 //            .toList();
+
+        List<Assignment> managed = getManagedTeamsAssignmentsWithChildren().stream()
+            .peek(assignment -> assignment.setEntityScope(EntityScope.Managed))
+            .toList();
 
         List<Assignment> combinedContent = Stream.concat(assigned.stream(), managed.stream())
             .collect(Collectors.toList());
 
-        return new PageImpl<>(combinedContent, pageable, assignedPage.getTotalElements() + managed.size());
+        // TODO Create AssignmentHistory in app and fetch all and sort the latest out on the app
+        Page<Assignment> assignments = findWithStatus(new PageImpl<>(combinedContent, pageable, assignedPage.getTotalElements() + managed.size()));
+
+        return assignments;
+    }
+
+    List<Assignment> getAssignmentsWithChildren(Collection<String> uids) {
+        List<Assignment> assignments = new ArrayList<>();
+        for (String uid : uids) {
+            assignments.addAll(repositoryCustom.findAllByPathContaining(uid));
+        }
+        return assignments;
+    }
+
+    List<Assignment> getManagedTeamsAssignmentsWithChildren() {
+        Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLogin().get()).and(TeamSpecifications.isEnabled());
+        List<String> managedAssignmentsUids = teamRepository
+            .findAll(spec)
+            .stream()
+            .flatMap(team -> team.getAssignments().stream()).map(Assignment::getUid).toList();
+        return getAssignmentsWithChildren(managedAssignmentsUids);
     }
 
 //    @Transactional(readOnly = true)

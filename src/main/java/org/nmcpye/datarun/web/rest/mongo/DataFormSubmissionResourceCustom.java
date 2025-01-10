@@ -12,6 +12,7 @@ import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequestValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -51,6 +52,30 @@ public class DataFormSubmissionResourceCustom
         String next = createNextPageLink(processedPage);
 
         PagedResponse<Map<String, Object>> response = new
+            PagedResponse<>(processedPage, getName(), next);
+        return ResponseEntity.ok(response);
+    }
+
+
+    // temporary returning the submission object instead of just the submission formData map
+    @GetMapping("objects")
+    public ResponseEntity<PagedResponse<?>> getObjectSubmissions(QueryRequest queryRequest) {
+        QueryRequestValidator.validate(queryRequest);
+
+        Page<DataFormSubmission> resultPage = queryService.query(queryRequest, getEntityClass());
+
+        Page<DataFormSubmission> processedPage = resultPage.map(submission -> {
+            Map<String, Object> formData = submission.getFormData();
+            if (queryRequest.isFlatten()) {
+                formData = JsonFlattener.flatten(formData);
+            }
+            submission.setFormData(formData);
+            return submission;
+        });
+
+        String next = createNextPageLink(processedPage);
+
+        PagedResponse<DataFormSubmission> response = new
             PagedResponse<>(processedPage, getName(), next);
         return ResponseEntity.ok(response);
     }

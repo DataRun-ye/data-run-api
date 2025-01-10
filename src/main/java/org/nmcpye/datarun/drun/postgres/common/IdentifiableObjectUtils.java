@@ -3,6 +3,7 @@ package org.nmcpye.datarun.drun.postgres.common;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -21,7 +22,7 @@ public class IdentifiableObjectUtils {
      * @return a list of uids.
      */
     public static <T extends Identifiable> List<String> getUids(Collection<T> objects) {
-        return objects != null ? objects.stream().filter(o -> o != null).map(o -> o.getUid()).collect(Collectors.toList()) : null;
+        return objects != null ? objects.stream().filter(Objects::nonNull).map(o -> o.getUid()).collect(Collectors.toList()) : null;
     }
 //
 //    /**

@@ -31,6 +31,9 @@ public interface AssignmentRelationalRepositoryCustom
 
     List<Assignment> findAllByTeamIn(List<Team> teamIds);
 
+//    @Query("select assignment from Assignment assignment where assignment.path like concat(:path, '%')")
+    List<Assignment> findAllByPathContaining(String path);
+
     @Query(
         value = "select assignment from Assignment assignment " +
             "join fetch assignment.parent p " +

@@ -8,9 +8,11 @@ import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionHistory;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionHistoryRepository;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepositoryCustom;
+import org.nmcpye.datarun.mongo.service.AssignmentSubmissionHistoryService;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.mongo.service.submissionmigration.SubmissionMaintenanceService;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.web.rest.exception.PathUpdateException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +50,7 @@ public class DataFormSubmissionServiceImpl
     private final TeamRelationalRepositoryCustom teamRepository;
     private final SequenceGeneratorService sequenceGeneratorService;
     private final SubmissionMaintenanceService maintenanceService;
+    private final AssignmentSubmissionHistoryService historyService;
     private static final int MAX_HISTORY_VERSIONS = 3; // Keep only the last 10 versions
 
     public DataFormSubmissionServiceImpl(
@@ -56,7 +59,7 @@ public class DataFormSubmissionServiceImpl
         ActivityRelationalRepositoryCustom activityRepository, AssignmentRelationalRepositoryCustom assignmentRepository,
         TeamRelationalRepositoryCustom teamRepository,
         MongoTemplate mongoTemplate,
-        SequenceGeneratorService sequenceGeneratorService, SubmissionMaintenanceService maintenanceService) {
+        SequenceGeneratorService sequenceGeneratorService, SubmissionMaintenanceService maintenanceService, AssignmentSubmissionHistoryService historyService) {
         super(repository, mongoTemplate);
         this.repository = repository;
         this.historyRepository = historyRepository;
@@ -65,6 +68,7 @@ public class DataFormSubmissionServiceImpl
         this.teamRepository = teamRepository;
         this.sequenceGeneratorService = sequenceGeneratorService;
         this.maintenanceService = maintenanceService;
+        this.historyService = historyService;
     }
 
     @Override
@@ -92,8 +96,7 @@ public class DataFormSubmissionServiceImpl
 
     @Override
     public DataFormSubmission saveWithRelations(DataFormSubmission newSubmission) {
-
-        if(newSubmission.getAssignment() != null) {
+        if (newSubmission.getAssignment() != null) {
             assignmentRepository.findByUid(newSubmission.getAssignment())
                 .ifPresentOrElse((a) -> {
                         newSubmission.setAssignment(a.getUid());
@@ -104,7 +107,6 @@ public class DataFormSubmissionServiceImpl
                             newSubmission.getAssignment());
                         throw new PropertyNotFoundException("Assignment not found: " + newSubmission.getTeam());
                     });
-
         }
 
         teamRepository.findByUid(newSubmission.getTeam())
@@ -125,8 +127,22 @@ public class DataFormSubmissionServiceImpl
             .createSubmission()
             .populateFormDataAttributes();
 
-//        return saveVersioning(dataFormSubmission);
-        return repository.save(dataFormSubmission);
+        DataFormSubmission savedSubmission = repository.save(dataFormSubmission);
+
+        if (savedSubmission.getAssignment() != null) {
+            addEntryToHistory(savedSubmission);
+        }
+
+        return savedSubmission;
+    }
+
+    private void addEntryToHistory(DataFormSubmission dataFormSubmission) {
+        try {
+            historyService.updateSubmissionHistory(dataFormSubmission);
+        } catch (Exception e) {
+            log.error("Error saving submission history,  {}:", dataFormSubmission.getUid(), e);
+            throw new PathUpdateException("Failed to update paths", e);
+        }
     }
 
     private void pruneOldVersions(String submissionId) {

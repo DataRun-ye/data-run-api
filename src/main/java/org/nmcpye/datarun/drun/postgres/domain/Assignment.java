@@ -16,6 +16,7 @@ import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.domain.AbstractAuditingEntity;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableObjectUtils;
+import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;
@@ -111,11 +112,49 @@ public class Assignment
 //    @Column(name = "value")
     @Type(JsonType.class)
     @Column(name = "allocated_resources", columnDefinition = "jsonb")
-    private Map<String, Integer> allocatedResources = new HashMap<>();
+    private Map<String, Object> allocatedResources = new HashMap<>();
 
     @JsonProperty
     @Transient
     private EntityScope entityScope;
+
+    @JsonProperty
+    @Transient
+    private AssignmentStatus status;
+
+    @JsonProperty
+    @Transient
+    private Instant lastEntryDate;
+
+    @JsonProperty
+    @Transient
+    private String lastEntryBy;
+
+
+    @JsonProperty
+    public AssignmentStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AssignmentStatus status) {
+        this.status = status;
+    }
+
+    public Instant getLastEntryDate() {
+        return lastEntryDate;
+    }
+
+    public void setLastEntryDate(Instant lastEntryDate) {
+        this.lastEntryDate = lastEntryDate;
+    }
+
+    public String getLastEntryBy() {
+        return lastEntryBy;
+    }
+
+    public void setLastEntryBy(String lastEntryBy) {
+        this.lastEntryBy = lastEntryBy;
+    }
 
     @JsonProperty
     public EntityScope getEntityScope() {
@@ -166,11 +205,11 @@ public class Assignment
 
 
     @JsonProperty
-    public Map<String, Integer> getAllocatedResources() {
+    public Map<String, Object> getAllocatedResources() {
         return allocatedResources;
     }
 
-    public void setAllocatedResources(Map<String, Integer> allocatedResources) {
+    public void setAllocatedResources(Map<String, Object> allocatedResources) {
         this.allocatedResources = allocatedResources;
     }
 

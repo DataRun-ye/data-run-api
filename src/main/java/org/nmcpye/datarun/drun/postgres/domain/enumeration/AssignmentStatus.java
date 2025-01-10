@@ -6,7 +6,7 @@ package org.nmcpye.datarun.drun.postgres.domain.enumeration;
 public enum AssignmentStatus {
     NOT_STARTED,
     IN_PROGRESS,
-    COMPLETED,
+    DONE,
     RESCHEDULED,
     MERGED,
     REASSIGNED,

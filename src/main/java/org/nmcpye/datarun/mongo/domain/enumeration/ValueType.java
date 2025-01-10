@@ -35,6 +35,9 @@ public enum ValueType {
     Username,
     Image,
     OrganisationUnit,
+    Task,
+    Team,
+    Progress,
     Reference,
     FileResource,
     Calculated,
@@ -47,5 +50,13 @@ public enum ValueType {
 
     public boolean isSectionType() {
         return SectionTypes().contains(this);
+    }
+
+    public boolean isSection() {
+        return this == Section;
+    }
+
+    public boolean isRepeat() {
+        return this == RepeatableSection;
     }
 }

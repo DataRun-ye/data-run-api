@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.mongo.repository;
 
-import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
+import org.nmcpye.datarun.drun.postgres.domain.TeamFormPermissions;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
@@ -19,7 +19,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -28,7 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Repository
-@Transactional
+
 public class MetadataSubmissionGranularRepository {
 
     final private MongoTemplate mongoTemplate;
@@ -88,17 +87,19 @@ public class MetadataSubmissionGranularRepository {
                 .toList();
         }
 
-        var assignments = getAssignedAssignments();
-
-        // Get a list of distinct activity UIDs
-        List<String> activityUids = assignments.stream()
-            .map(Assignment::getActivity)
-            .map(Activity::getUid)
+        var forms = getAssignedAssignments().stream()
+            .filter(assignment -> !assignment.getActivity().getDisabled())
+            .map(Assignment::getTeam)
+            .filter(team -> !team.getDisabled())
+            .distinct()
+            .flatMap(team -> team.getFormPermissions().stream())
+            .map(TeamFormPermissions::getForm)
             .distinct()
             .toList();
 
-        List<ResourceField> typeReferenceFields = activityUids.stream()
-            .flatMap(uid -> dataFormRepository.findAllByActivity(uid).stream())
+
+        List<ResourceField> typeReferenceFields = forms.stream()
+            .flatMap(uid -> dataFormRepository.findByUid(uid).stream())
             .flatMap(form -> form.getFlattenedFields().stream())
             .filter(AbstractField::isResourceTypeField)
             .map(ResourceField.class::cast)
