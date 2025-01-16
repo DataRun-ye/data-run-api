@@ -18,9 +18,6 @@ public interface MetadataSchemaRepository
     @Query("{ 'team.userInfo.login' : ?#{authentication.name} }")
     Page<DataFormSubmission> findAllByUser(Pageable pageable);
 
-    @Query("{resourceType: ?0, resourceId :  ?0}")
-    Page<MetadataSchema> findAllByResourceTypeAndResourceId(String resourceType, String resourceId, Pageable pageable);
-
-    @Query("{'resourceId' :  ?0}")
-    Page<MetadataSchema> findAllByResourceId(String resourceId, Pageable pageable);
+    @Query("{resourceType: ?0}")
+    Page<MetadataSchema> findAllByResourceTypeAndResourceId(String resourceType, Pageable pageable);
 }

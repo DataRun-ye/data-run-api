@@ -7,8 +7,8 @@ import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositor
 import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
-import org.nmcpye.datarun.mongo.domain.datafield.ResourceField;
-import org.nmcpye.datarun.mongo.domain.enumeration.MetadataResourceType;
+import org.nmcpye.datarun.mongo.domain.datafield.ReferenceField;
+import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -77,13 +77,13 @@ public class MetadataSubmissionGranularRepository {
             .collect(Collectors.toList());
     }
 
-    public List<ResourceField> getUserFieldsOfResourceType() {
+    public List<ReferenceField> getUserFieldsOfResourceType() {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return dataFormRepository.findAll()
                 .stream()
                 .flatMap(form -> form.getFlattenedFields().stream())
                 .filter(AbstractField::isResourceTypeField)
-                .map(ResourceField.class::cast)
+                .map(ReferenceField.class::cast)
                 .toList();
         }
 
@@ -98,11 +98,11 @@ public class MetadataSubmissionGranularRepository {
             .toList();
 
 
-        List<ResourceField> typeReferenceFields = forms.stream()
+        List<ReferenceField> typeReferenceFields = forms.stream()
             .flatMap(uid -> dataFormRepository.findByUid(uid).stream())
             .flatMap(form -> form.getFlattenedFields().stream())
             .filter(AbstractField::isResourceTypeField)
-            .map(ResourceField.class::cast)
+            .map(ReferenceField.class::cast)
             .toList();
 
         return typeReferenceFields;
@@ -113,7 +113,7 @@ public class MetadataSubmissionGranularRepository {
 
         for (var field : getUserFieldsOfResourceType()) {
 
-            MetadataResourceType resourceType = field.getResourceType();
+            ReferenceType resourceType = field.getResourceType();
             String metadataSchema = field.getResourceMetadataSchema();
             List<String> resourceIds = getResourceUids(resourceType, queryRequest);
             List<MetadataSubmission> resourceMetadataSubmissions = resourceIds.stream()
@@ -125,7 +125,7 @@ public class MetadataSubmissionGranularRepository {
         return getMetadataSubmissions(pageable, metadataSubmissions.stream().toList());
     }
 
-    private List<String> getResourceUids(MetadataResourceType resourceType, QueryRequest queryRequest) {
+    private List<String> getResourceUids(ReferenceType resourceType, QueryRequest queryRequest) {
         List<String> uids = new ArrayList<>();
         switch (resourceType) {
             case Activity -> uids.addAll(getAssignedActivities());

@@ -141,7 +141,7 @@ public class AbstractField implements Serializable {
      * @return true if the field is an instance of ResourceField, false otherwise.
      */
     public static boolean isResourceTypeField(AbstractField field) {
-        return field instanceof ResourceField;
+        return field instanceof ReferenceField;
     }
 
 

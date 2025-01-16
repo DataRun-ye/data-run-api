@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.Repeat;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;
-import org.nmcpye.datarun.mongo.domain.enumeration.MetadataResourceType;
+import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -49,9 +49,10 @@ public class MetadataSchema
     @Field("disabled")
     private Boolean disabled;
 
+    // TODO rename to referenceType
     @NotNull
     @Field("resourceType")
-    private MetadataResourceType resourceType;
+    private ReferenceType resourceType;
 
     private Integer version;
 
@@ -230,11 +231,11 @@ public class MetadataSchema
         return this;
     }
 
-    public MetadataResourceType getResourceType() {
+    public ReferenceType getResourceType() {
         return resourceType;
     }
 
-    public void setResourceType(MetadataResourceType resourceType) {
+    public void setResourceType(ReferenceType resourceType) {
         this.resourceType = resourceType;
     }
 

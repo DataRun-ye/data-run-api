@@ -7,15 +7,18 @@ import org.nmcpye.datarun.mongo.service.IdentifiableMongoService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.utils.CodeGenerator;
+import org.nmcpye.datarun.web.rest.mongo.submission.MongoQueryBuilder;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.support.PageableExecutionUtils;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.List;
@@ -110,18 +113,44 @@ public abstract class IdentifiableMongoServiceImpl<T extends Identifiable<String
     public Page<T> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         Query query = new Query();
 
-        List<T> submissions = getFormSubmissions(query, queryRequest);
-        long total = submissions.size();
-
-        return new PageImpl<>(submissions, pageable, total);
+//        List<T> submissions = getFormSubmissions(query, queryRequest);
+//        long total = submissions.size();
+//        return new PageImpl<>(submissions, pageable, total);
+        Page<T> submissions = query(queryRequest);
+        return submissions;
     }
 
     @Override
     public List<T> findAllByUser(QueryRequest queryRequest) {
         log.debug("Request to get all MEntities");
         Query query = new Query();
+//        var allEntities = getFormSubmissions(query, queryRequest);
         var allEntities = getFormSubmissions(query, queryRequest);
         return allEntities;
+    }
+
+    public Page<T> query(QueryRequest request) {
+        Query query = MongoQueryBuilder.buildQuery(request.parseFilters());
+        query = MongoQueryBuilder.addProjections(query, request.getFields());
+
+//        if (!request.isIncludeDeleted()) {
+//            query.addCriteria(Criteria.where("deleted").is(false));
+//        }
+
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
+        query.with(pageable);
+
+        final Query totalQuery = Query.of(query).limit(-1).skip(-1);
+
+        List<T> results = mongoTemplate.find(query, getClazz());
+
+        Page<T> resultsPage = PageableExecutionUtils.getPage(
+            results,
+            pageable,
+            () -> mongoTemplate.count(totalQuery, getClazz()));
+
+
+        return resultsPage;
     }
 
     protected List<T> getFormSubmissions(Query query, QueryRequest queryRequest) {

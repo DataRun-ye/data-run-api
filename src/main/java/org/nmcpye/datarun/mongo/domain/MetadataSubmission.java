@@ -3,7 +3,7 @@ package org.nmcpye.datarun.mongo.domain;
 import jakarta.el.PropertyNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.nmcpye.datarun.mongo.domain.enumeration.MetadataResourceType;
+import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
 import org.nmcpye.datarun.utils.CodeGenerator;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -44,7 +44,7 @@ public class MetadataSubmission
 
     @NotNull
     @Field("resourceType")
-    private MetadataResourceType resourceType;
+    private ReferenceType resourceType;
 
     @NotNull
     @Field("resourceId")
@@ -78,11 +78,11 @@ public class MetadataSubmission
         this.deleted = deleted;
     }
 
-    public MetadataResourceType getResourceType() {
+    public ReferenceType getResourceType() {
         return resourceType;
     }
 
-    public void setResourceType(MetadataResourceType resourceType) {
+    public void setResourceType(ReferenceType resourceType) {
         this.resourceType = resourceType;
     }
 

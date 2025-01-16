@@ -8,7 +8,7 @@ import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCu
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
-import org.nmcpye.datarun.mongo.domain.datafield.ResourceField;
+import org.nmcpye.datarun.mongo.domain.datafield.ReferenceField;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;
 import org.nmcpye.datarun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.mongo.repository.MetadataSchemaRepository;
@@ -83,13 +83,13 @@ public class DataFormServiceImpl
         for (AbstractField field : fields) {
             String currentPath = parentPath.isEmpty() ? field.getName() : parentPath + AbstractField.PATH_SEP + field.getName();
             field.setPath(currentPath);
-            if (field instanceof ResourceField resourceField) {
-                if (resourceField.getResourceType() == null || resourceField.getResourceMetadataSchema() == null) {
+            if (field instanceof ReferenceField referenceField) {
+                if (referenceField.getResourceType() == null || referenceField.getResourceMetadataSchema() == null) {
                     throw new IllegalArgumentException(field.getName() + ": is of Reference type but does not specify Resource Type [OrgUnit, Team, Activity...etc] or ResourceMetadataSchema (The form used to submit the metadata of the reference type)");
                 }
 
-                if (metadataSchemaRepository.findByUid(resourceField.getResourceMetadataSchema()).isEmpty()) {
-                    throw new IllegalArgumentException("Field: " + field.getName() + ": Specified ResourceMetadataSchema " + resourceField.getResourceMetadataSchema() + " does not exist");
+                if (metadataSchemaRepository.findByUid(referenceField.getResourceMetadataSchema()).isEmpty()) {
+                    throw new IllegalArgumentException("Field: " + field.getName() + ": Specified ResourceMetadataSchema " + referenceField.getResourceMetadataSchema() + " does not exist");
                 }
 
             }

@@ -2,7 +2,7 @@ package org.nmcpye.datarun.mongo.domain;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.nmcpye.datarun.mongo.domain.enumeration.MetadataResourceType;
+import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -40,7 +40,7 @@ public class MetadataSubmissionUpdate
 
     @NotNull
     @Field("resourceType")
-    private MetadataResourceType resourceType;
+    private ReferenceType resourceType;
 
 
     @NotNull
@@ -50,11 +50,11 @@ public class MetadataSubmissionUpdate
     @NotNull
     private Map<String, Object> formData = new HashMap<>();
 
-    public MetadataResourceType getResourceType() {
+    public ReferenceType getResourceType() {
         return resourceType;
     }
 
-    public void setResourceType(MetadataResourceType resourceType) {
+    public void setResourceType(ReferenceType resourceType) {
         this.resourceType = resourceType;
     }
 
