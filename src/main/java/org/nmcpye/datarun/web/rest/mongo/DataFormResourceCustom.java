@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.web.rest.mongo;
 
 import org.nmcpye.datarun.mongo.domain.DataForm;
-import org.nmcpye.datarun.mongo.mapping.FormTemplateSchema;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.mongo.service.DataFormService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.utils.FormTemplateSchema;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;

@@ -1,8 +1,7 @@
-package org.nmcpye.datarun.mongo.mapping;
+package org.nmcpye.datarun.utils;
 
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
-import org.nmcpye.datarun.mongo.domain.datafield.DefaultField;
 import org.springframework.data.mongodb.core.schema.JsonSchemaObject;
 import org.springframework.data.mongodb.core.schema.JsonSchemaProperty;
 import org.springframework.data.mongodb.core.schema.MongoJsonSchema;
@@ -45,9 +44,9 @@ public class FormTemplateSchema {
         for (var field : fields) {
 
             var mappedField = mapFieldType(field);
-            if (((DefaultField) field).isMandatory()) {
-                mappedField.isRequired();
-            }
+//            if (((DefaultField) field).isMandatory()) {
+//                mappedField.isRequired();
+//            }
             properties.add(mappedField);
         }
 

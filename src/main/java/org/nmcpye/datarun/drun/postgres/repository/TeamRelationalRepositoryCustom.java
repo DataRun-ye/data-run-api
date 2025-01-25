@@ -58,7 +58,6 @@ public interface TeamRelationalRepositoryCustom
         return this.findAllWithToOneRelationshipsByUser(pageable);
     }
 
-
     @Query(
         value = "select team from Team team " +
             "left join team.activity " +
@@ -66,6 +65,14 @@ public interface TeamRelationalRepositoryCustom
             "where user.login = ?#{authentication.name}"
     )
     List<Team> findAllWithEagerRelation();
+
+    @Query(
+        "select team from Team team " +
+            "left join fetch team.activity a " +
+            "left join team.users user " +
+            "where team.disabled =:includeDisabled and a.disabled =:includeDisabled and user.login =:login"
+    )
+    List<Team> findAllByUserLogin(@Param("login") String userLogin, boolean includeDisabled);
 
     @Query(
         value = "select team from Team team " +

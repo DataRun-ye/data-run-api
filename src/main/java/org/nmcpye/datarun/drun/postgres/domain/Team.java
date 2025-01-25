@@ -18,10 +18,7 @@ import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -135,12 +132,20 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
 //        return formPermissions;
 //    }
 //
-//    public Set<String> getFormWithPermissions(FormPermission permission) {
-//        return formPermissions.stream()
-//            .filter(p -> p.getPermissions().contains(permission))
-//            .map(TeamFormPermission::getForm)
-//            .collect(Collectors.toSet());
-//    }
+    public Set<String> getFormWithPermission(FormPermission permission) {
+        return formPermissions.stream()
+            .filter(p -> p.getPermissions().contains(permission))
+            .map(TeamFormPermissions::getForm)
+            .collect(Collectors.toSet());
+    }
+
+    public Set<String> getFormWithAnyPermission(List<FormPermission> permissionList) {
+        return formPermissions.stream()
+            .filter(fp -> fp.getPermissions().stream().anyMatch((permissionList::contains)))
+            .map(TeamFormPermissions::getForm)
+            .collect(Collectors.toSet());
+    }
+
     public Set<TeamFormPermissions> getFormPermissions() {
         return formPermissions;
     }
@@ -167,6 +172,13 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
         var permissions = this.formPermissions.stream().filter(teamFormPermissions ->
             Objects.equals(teamFormPermissions.getForm(), formId)).findFirst();
         return permissions.isPresent() && permissions.get().getPermissions().contains(permission);
+    }
+
+    public boolean hasAnyOfFormPermission(String formId, List<FormPermission> permissionsList) {
+        var permissions = this.formPermissions.stream().filter(teamFormPermissions ->
+            Objects.equals(teamFormPermissions.getForm(), formId)).findFirst();
+        return permissions.isPresent() && permissions.get().getPermissions()
+            .stream().anyMatch(permissionsList::contains);
     }
 
     public Set<String> getFormsWithPermission(FormPermission permission) {

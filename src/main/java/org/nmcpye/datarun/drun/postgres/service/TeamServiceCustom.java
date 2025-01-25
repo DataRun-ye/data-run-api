@@ -15,6 +15,7 @@ import java.util.Optional;
  */
 public interface TeamServiceCustom
     extends IdentifiableRelationalService<Team> {
+
     @Override
     default Specification<Team> canRead() {
         return TeamSpecifications.canRead();

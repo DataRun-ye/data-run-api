@@ -5,6 +5,8 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
+import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.FieldDeserializer;
 import org.nmcpye.datarun.mongo.domain.datafield.Repeat;
@@ -12,6 +14,7 @@ import org.nmcpye.datarun.mongo.domain.datafield.Section;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DocumentReference;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.*;
@@ -48,13 +51,10 @@ public class DataForm
     private String description;
 
     @Field("disabled")
-    private Boolean disabled;
+    private boolean disabled;
 
     @Field("deleted")
     private boolean deleted;
-
-//    @Field("activity")
-//    private String activity;
 
     private Integer version;
 
@@ -68,21 +68,25 @@ public class DataForm
     @Field("options")
     private List<DataOption> options = new ArrayList<>();
 
+    @DocumentReference
     @Field("optionSets")
     private List<OptionSet> optionSets = new ArrayList<>();
-
-    @Field("orgUnits")
-    private Set<String> orgUnits = new HashSet<>();
-
-//    @ReadOnlyProperty
-//    @DocumentReference(lookup = "{'dataFormId':?#{#self._id} }")
-//    Set<String> assignments;
 
     private Map<String, String> label;
 
     @Field("flattenedFields")
     private List<AbstractField> flattenedFields = new ArrayList<>();
 
+    // field.uid, fieldConfigs
+    @Field("fieldsConf")
+    private List<FormDataElementConf> fieldsConf = new ArrayList<>();
+
+    @Field("sections")
+    private List<FormSectionConf> sections = new ArrayList<>();
+
+//    public DataForm() {
+//        setAutoFields();
+//    }
 
     @PrePersist
     @PreUpdate
@@ -124,11 +128,11 @@ public class DataForm
         return flatList;
     }
 
-    public Boolean getDeleted() {
+    public boolean getDeleted() {
         return deleted;
     }
 
-    public void setDeleted(Boolean deleted) {
+    public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }
 
@@ -141,14 +145,11 @@ public class DataForm
     }
 
     public void setLabel(Map<String, String> label) {
-        this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
+        this.label = Objects.requireNonNullElseGet(label, () -> Map.of(getDefaultLocal(), this.name));
     }
 
     public Map<String, String> getLabel() {
-        if (this.label == null) {
-            return Map.of("en", this.name);
-        }
-        return label;
+        return Optional.ofNullable(this.label).orElse(Map.of(getDefaultLocal(), this.name));
     }
 
     public List<AbstractField> getFlattenedFields() {
@@ -163,27 +164,20 @@ public class DataForm
         this.flattenedFields = flattenedFields;
     }
 
-    public Set<String> getOrgUnits() {
-        return orgUnits;
+    public List<FormDataElementConf> getFieldsConf() {
+        return fieldsConf;
     }
 
-    public void setOrgUnits(Set<String> orgUnits) {
-        this.orgUnits = orgUnits;
+    public void setFieldsConf(List<FormDataElementConf> fieldsConf) {
+        this.fieldsConf = fieldsConf;
     }
 
-    public DataForm orgUnits(Set<String> orgUnits) {
-        this.setOrgUnits(orgUnits);
-        return this;
+    public List<FormSectionConf> getSections() {
+        return sections;
     }
 
-    public DataForm addOrgUnit(String orgUnits) {
-        this.orgUnits.add(orgUnits);
-        return this;
-    }
-
-    public DataForm removeOrgUnit(String orgUnits) {
-        this.orgUnits.remove(orgUnits);
-        return this;
+    public void setSections(List<FormSectionConf> sections) {
+        this.sections = sections;
     }
 
     public Integer getVersion() {
@@ -195,7 +189,7 @@ public class DataForm
     }
 
     public String getDefaultLocal() {
-        return defaultLocal;
+        return Optional.ofNullable(defaultLocal).orElse("en");
     }
 
     public void setDefaultLocal(String defaultLocal) {
@@ -286,7 +280,7 @@ public class DataForm
     }
 
     public Boolean getDisabled() {
-        return this.disabled;
+        return Optional.ofNullable(this.disabled).orElse(false);
     }
 
     public DataForm disabled(Boolean disabled) {
@@ -295,15 +289,15 @@ public class DataForm
     }
 
     public void setDisabled(Boolean disabled) {
-        this.disabled = disabled;
+        this.disabled = Optional.ofNullable(disabled).orElse(false);
     }
 
     public List<AbstractField> getFields() {
         return this.fields;
     }
 
-    public void setFields(List<AbstractField> dataFields) {
-        this.fields = dataFields;
+    public void setFields(List<AbstractField> fields) {
+        this.fields = fields;
     }
 
     public DataForm fields(List<AbstractField> dataFields) {
@@ -320,35 +314,6 @@ public class DataForm
         this.fields.remove(dataField);
         return this;
     }
-
-//    public String getActivity() {
-//        return this.activity;
-//    }
-//
-//    public void setActivity(String activity) {
-//        this.activity = activity;
-//    }
-
-//    public DataForm activity(String activityId) {
-//        this.setActivity(activityId);
-//        return this;
-//    }
-
-    public boolean isDeleted() {
-        return deleted;
-    }
-
-    public void setDeleted(boolean deleted) {
-        this.deleted = deleted;
-    }
-
-//    public Set<String> getAssignments() {
-//        return assignments;
-//    }
-//
-//    public void setAssignments(Set<String> assignments) {
-//        this.assignments = assignments;
-//    }
 
     @Override
     public boolean equals(Object o) {

@@ -9,11 +9,13 @@ import org.nmcpye.datarun.utils.CodeGenerator;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Transactional
@@ -22,60 +24,63 @@ public abstract class IdentifiableRelationalServiceImpl<T extends Identifiable<L
 
     private static final Logger log = LoggerFactory.getLogger(IdentifiableRelationalServiceImpl.class);
 
-    protected final IdentifiableRelationalRepository<T> repository;
+    protected final IdentifiableRelationalRepository<T> identifiableRepository;
 
-    public IdentifiableRelationalServiceImpl(IdentifiableRelationalRepository<T> repository) {
-        this.repository = repository;
+    private final CacheManager cacheManager;
+
+    public IdentifiableRelationalServiceImpl(IdentifiableRelationalRepository<T> identifiableRepository, CacheManager cacheManager) {
+        this.identifiableRepository = identifiableRepository;
+        this.cacheManager = cacheManager;
     }
 
     @Override
     public List<T> findAll(QueryRequest queryRequest) {
-        return repository.findAll();
+        return identifiableRepository.findAll();
     }
 
     @Override
     public Optional<T> findIdentifiable(Identifiable<Long> identifiableObject) {
-        return repository.findByUid(identifiableObject.getUid()).or(() -> repository.findById(identifiableObject.getId()));
+        return identifiableRepository.findByUid(identifiableObject.getUid()).or(() -> identifiableRepository.findById(identifiableObject.getId()));
 
     }
 
     @Override
     public boolean existsByUid(String uid) {
-        return repository.findByUid(uid).isPresent();
+        return identifiableRepository.findByUid(uid).isPresent();
     }
 
     @Override
     public boolean existsById(Long id) {
-        return repository.findById(id).isPresent();
+        return identifiableRepository.findById(id).isPresent();
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<T> findByUid(String uid) {
-        return repository.findByUid(uid);
+        return identifiableRepository.findByUid(uid);
     }
 
     @Override
     public void deleteByUid(String uid) {
-        repository.findByUid(uid).ifPresent(repository::delete);
+        identifiableRepository.findByUid(uid).ifPresent(identifiableRepository::delete);
     }
 
     @Override
     public Page<T> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return repository.findAll(pageable);
+            return identifiableRepository.findAll(pageable);
         }
         log.debug("Request to get all entities");
-        return repository.findAll(canRead(), pageable);
+        return identifiableRepository.findAll(canRead(), pageable);
     }
 
     @Override
     public List<T> findAllByUser(QueryRequest queryRequest) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return repository.findAll();
+            return identifiableRepository.findAll();
         }
         log.debug("Request to get all entities");
-        return repository.findAll(canRead());
+        return identifiableRepository.findAll(canRead());
     }
 
     @Override
@@ -89,7 +94,7 @@ public abstract class IdentifiableRelationalServiceImpl<T extends Identifiable<L
 
     @Override
     public T saveWithRelations(T object) {
-        return repository.save(object);
+        return identifiableRepository.save(object);
     }
 
     @SuppressWarnings("unchecked")
@@ -109,19 +114,25 @@ public abstract class IdentifiableRelationalServiceImpl<T extends Identifiable<L
     @Transactional(readOnly = true)
     public Page<T> findAll(Pageable pageable, QueryRequest queryRequest) {
         log.debug("Request to get all entities");
-        return repository.findAll(pageable);
+        return identifiableRepository.findAll(pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<T> findOne(Long id) {
         log.debug("Request to get T : {}", id);
-        return repository.findById(id);
+        return identifiableRepository.findById(id);
     }
 
     @Override
     public void delete(Long id) {
         log.debug("Request to delete T : {}", id);
-        repository.findById(id).ifPresent(repository::delete);
+        identifiableRepository.findById(id).ifPresent(identifiableRepository::delete);
+    }
+
+    protected void clearCaches(String name, String key) {
+        if (name != null && key != null) {
+            Objects.requireNonNull(cacheManager.getCache(name)).evict(key);
+        }
     }
 }

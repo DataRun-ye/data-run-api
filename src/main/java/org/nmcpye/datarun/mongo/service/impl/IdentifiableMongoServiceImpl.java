@@ -6,7 +6,6 @@ import org.nmcpye.datarun.mongo.repository.IdentifiableMongoRepository;
 import org.nmcpye.datarun.mongo.service.IdentifiableMongoService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.utils.CodeGenerator;
 import org.nmcpye.datarun.web.rest.mongo.submission.MongoQueryBuilder;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
@@ -36,6 +35,7 @@ public abstract class IdentifiableMongoServiceImpl<T extends Identifiable<String
     public IdentifiableMongoServiceImpl(IdentifiableMongoRepository<T> repository, MongoTemplate mongoTemplate) {
         this.repository = repository;
         this.mongoTemplate = mongoTemplate;
+
         this.entityType = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     }
 
@@ -65,10 +65,6 @@ public abstract class IdentifiableMongoServiceImpl<T extends Identifiable<String
 
     @Override
     public T save(T object) {
-        if (object.getUid() == null || object.getUid().isEmpty()) {
-            object.setUid(CodeGenerator.generateUid());
-        }
-
         return saveWithRelations(object);
     }
 

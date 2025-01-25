@@ -7,6 +7,7 @@ import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelati
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,19 +21,20 @@ public class ActivityServiceCustomImpl
     extends IdentifiableRelationalServiceImpl<Activity>
     implements ActivityServiceCustom {
 
-    private final ActivityRelationalRepositoryCustom repositoryCustom;
+    private final ActivityRelationalRepositoryCustom repository;
 
 
-    public ActivityServiceCustomImpl(ActivityRelationalRepositoryCustom repositoryCustom) {
-        super(repositoryCustom);
-        this.repositoryCustom = repositoryCustom;
+    public ActivityServiceCustomImpl(ActivityRelationalRepositoryCustom repository,
+                                     CacheManager cacheManager) {
+        super(repository, cacheManager);
+        this.repository = repository;
     }
 
     @Override
     public Page<Activity> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return repositoryCustom.findAll(pageable);
+            return repository.findAll(pageable);
         }
-        return repositoryCustom.findAllByUser(pageable);
+        return repository.findAllByUser(pageable);
     }
 }

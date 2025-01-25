@@ -10,7 +10,6 @@ public class FormFieldFactory {
             case Section -> Section.class;
             case ScannedCode -> ScannedCodeField.class;
             case Reference -> ReferenceField.class;
-            case Resource -> ResourceField.class;
             default -> DefaultField.class;
         };
     }

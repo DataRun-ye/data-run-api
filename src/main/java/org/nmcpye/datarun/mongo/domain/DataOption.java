@@ -38,6 +38,16 @@ public class DataOption implements Serializable {
         this.name = name;
     }
 
+    public DataOption name(String name) {
+        this.setName(name);
+        return this;
+    }
+
+    public DataOption listName(String listName) {
+        this.setListName(listName);
+        return this;
+    }
+
 
     public String getListName() {
         return listName;

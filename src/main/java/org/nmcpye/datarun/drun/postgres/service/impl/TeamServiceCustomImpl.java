@@ -14,6 +14,7 @@ import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,33 +42,36 @@ public class TeamServiceCustomImpl
 
     public TeamServiceCustomImpl(TeamRelationalRepositoryCustom repository,
                                  UserRepository userRepository,
-                                 ActivityRelationalRepositoryCustom activityRepository) {
-        super(repository);
+                                 ActivityRelationalRepositoryCustom activityRepository,
+                                 CacheManager cacheManager) {
+        super(repository, cacheManager);
         this.repository = repository;
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
     }
 
     @Override
-    public Team saveWithRelations(Team object) {
+    public Team saveWithRelations(Team team) {
         Activity activity = null;
 
-        if (object.getActivity() != null) {
-            activity = findActivity(object.getActivity());
+        if (team.getActivity() != null) {
+            activity = findActivity(team.getActivity());
         }
 
-        Set<Team> managedTeams = object.getManagedTeams();
+        Set<Team> managedTeams = team.getManagedTeams();
         if (!managedTeams.isEmpty()) {
             Set<Team> teamsManaged = managedTeams.stream().map(this::findTeam).collect(Collectors.toSet());
-            object.setManagedTeams(teamsManaged);
+            team.setManagedTeams(teamsManaged);
         }
 
-        object.setActivity(activity);
+        team.setActivity(activity);
 
-        Set<Long> usersUids = object.getUsers().stream().map(User::getId).collect(Collectors.toSet());
+        Set<Long> usersUids = team.getUsers().stream().map(User::getId).collect(Collectors.toSet());
         Set<User> users = new HashSet<>(userRepository.findAllById(usersUids));
-        object.setUsers(users);
-        return repository.save(object);
+        team.setUsers(users);
+
+        this.clearTeamCaches(team);
+        return repository.save(team);
     }
 
     private Activity findActivity(Activity activity) {
@@ -131,18 +135,6 @@ public class TeamServiceCustomImpl
 
         Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLogin().get()).and(isEnabled());
 
-
-//        var userTeams = repository.findAll(canRead().and(isEnabled()));
-
-//        Specification<Team> spec3 = TeamSpecifications.getManagedTeamsForTeams(userTeams.stream()
-//            .flatMap(team -> team.getManagedTeams().stream()
-//                .distinct()).map(Team::getId).toList());
-
-//        var managedTeams = repository.fetchBagRelationships(repository.findAll(spec, pageable));
-//        var managedTeams1 = repository.fetchBagRelationships(repository.findAll(spec.and(isEnabled()), pageable));
-//        var managedTeams3 = repository.fetchBagRelationships(repository.findAll(spec3, pageable));
-//
-
         return repository.fetchBagRelationships(repository.findAll(spec, pageable));
     }
 
@@ -163,8 +155,9 @@ public class TeamServiceCustomImpl
 
         return repository.findByUid(team.getUid())
             .or(() -> repository
-                .findById(team.getId()))
+                .findById(Objects.requireNonNull(team.getId())))
             .map(existingTeam -> {
+                this.clearTeamCaches(existingTeam);
                 if (!team.getUsers().isEmpty()) {
                     Set<String> usersLogins = team.getUsers().stream()
                         .map(User::getLogin)
@@ -214,5 +207,12 @@ public class TeamServiceCustomImpl
                 return existingTeam;
             })
             .map(repository::save);
+    }
+
+    private void clearTeamCaches(Team team) {
+        team.getUsers().forEach(user -> {
+            this.clearCaches(UserRepository.USERS_BY_LOGIN_CACHE, user.getLogin());
+            this.clearCaches(UserRepository.USERS_BY_EMAIL_CACHE, user.getEmail());
+        });
     }
 }

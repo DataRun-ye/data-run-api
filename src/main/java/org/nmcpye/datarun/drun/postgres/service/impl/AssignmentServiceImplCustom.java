@@ -18,6 +18,7 @@ import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -40,17 +41,20 @@ public class AssignmentServiceImplCustom
     extends IdentifiableRelationalServiceImpl<Assignment>
     implements AssignmentServiceCustom {
 
-    final AssignmentRelationalRepositoryCustom repositoryCustom;
+    final AssignmentRelationalRepositoryCustom repository;
     final TeamRelationalRepositoryCustom teamRepository;
     final OrgUnitRelationalRepositoryCustom orgUnitRepository;
     final UserRepository userRepository;
     private final AssignmentSubmissionHistoryRepository assignmentHistoryRepository;
 
-    public AssignmentServiceImplCustom(AssignmentRelationalRepositoryCustom repositoryCustom,
+    public AssignmentServiceImplCustom(AssignmentRelationalRepositoryCustom repository,
                                        TeamRelationalRepositoryCustom teamRepository,
-                                       OrgUnitRelationalRepositoryCustom orgUnitRepository, UserRepository userRepository, AssignmentSubmissionHistoryRepository assignmentHistoryRepository) {
-        super(repositoryCustom);
-        this.repositoryCustom = repositoryCustom;
+                                       OrgUnitRelationalRepositoryCustom orgUnitRepository,
+                                       UserRepository userRepository,
+                                       AssignmentSubmissionHistoryRepository assignmentHistoryRepository,
+                                       CacheManager cacheManager) {
+        super(repository, cacheManager);
+        this.repository = repository;
         this.teamRepository = teamRepository;
         this.orgUnitRepository = orgUnitRepository;
         this.userRepository = userRepository;
@@ -80,14 +84,14 @@ public class AssignmentServiceImplCustom
         object.setTeam(team);
         object.setOrgUnit(orgUnit);
 
-        return repositoryCustom.save(object);
+        return repository.save(object);
     }
 
     private Assignment findParent(Assignment parent) {
         return Optional.ofNullable(parent.getId())
-            .flatMap(repositoryCustom::findById)
+            .flatMap(repository::findById)
             .or(() -> Optional.ofNullable(parent.getUid())
-                .flatMap(repositoryCustom::findByUid))
+                .flatMap(repository::findByUid))
             .orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
     }
 
@@ -144,9 +148,9 @@ public class AssignmentServiceImplCustom
     public Page<Assignment> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         Page<Assignment> assignments;
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            assignments = repositoryCustom.findAll(pageable);
+            assignments = repository.findAll(pageable);
         } else {
-            assignments = repositoryCustom.findAll(canRead().and(isEnabled()), pageable);
+            assignments = repository.findAll(canRead().and(isEnabled()), pageable);
         }
 
         // TODO Create AssignmentHistory in app and fetch all and sort the latest out on the app
@@ -156,7 +160,7 @@ public class AssignmentServiceImplCustom
     @Override
     @Transactional(readOnly = true)
     public Page<Assignment> getAllUserAccessible(Pageable pageable) {
-        Page<Assignment> assignedPage = repositoryCustom.findAll(canRead().and(isEnabled()), pageable);
+        Page<Assignment> assignedPage = repository.findAll(canRead().and(isEnabled()), pageable);
         List<Assignment> assigned = assignedPage.getContent().stream()
             .filter(assignment -> !assignment.getActivity().getDisabled())
             .peek(assignment -> assignment.setEntityScope(EntityScope.Assigned))
@@ -184,7 +188,7 @@ public class AssignmentServiceImplCustom
     List<Assignment> getAssignmentsWithChildren(Collection<String> uids) {
         List<Assignment> assignments = new ArrayList<>();
         for (String uid : uids) {
-            assignments.addAll(repositoryCustom.findAllByPathContaining(uid));
+            assignments.addAll(repository.findAllByPathContaining(uid));
         }
         return assignments;
     }
@@ -237,12 +241,12 @@ public class AssignmentServiceImplCustom
     @Transactional
     @Scheduled(cron = "0 0 3 * * ?")
     public void updatePaths() {
-        repositoryCustom.updatePaths();
+        repository.updatePaths();
     }
 
     @Override
     @Transactional
     public void forceUpdatePaths() {
-        repositoryCustom.forceUpdatePaths();
+        repository.forceUpdatePaths();
     }
 }

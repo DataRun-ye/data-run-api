@@ -40,7 +40,6 @@ public enum ValueType {
     Progress,
     Reference,
     FileResource,
-    Resource,
     Calculated,
     Coordinate,
     GeoJson;
@@ -57,11 +56,15 @@ public enum ValueType {
         return this == Section;
     }
 
-    public boolean isResource() {
-        return this == Resource;
+    public boolean isReference() {
+        return this == Reference;
     }
 
     public boolean isRepeat() {
         return this == RepeatableSection;
+    }
+
+    public boolean isOptionsType() {
+        return this == SelectOne || this == SelectMulti;
     }
 }

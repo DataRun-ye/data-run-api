@@ -12,6 +12,7 @@ import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -30,13 +31,15 @@ public class OrgUnitServiceCustomImpl
     extends IdentifiableRelationalServiceImpl<OrgUnit>
     implements OrgUnitServiceCustom {
 
-    final OrgUnitRelationalRepositoryCustom repositoryCustom;
+    final OrgUnitRelationalRepositoryCustom repository;
     final AssignmentRelationalRepositoryCustom assignmentRepository;
     final UserRepository userRepository;
 
-    public OrgUnitServiceCustomImpl(OrgUnitRelationalRepositoryCustom orgUnitRepositoryCustom, AssignmentRelationalRepositoryCustom assignmentRepository, UserRepository userRepository) {
-        super(orgUnitRepositoryCustom);
-        this.repositoryCustom = orgUnitRepositoryCustom;
+    public OrgUnitServiceCustomImpl(OrgUnitRelationalRepositoryCustom repository, AssignmentRelationalRepositoryCustom assignmentRepository,
+                                    UserRepository userRepository,
+                                    CacheManager cacheManager) {
+        super(repository, cacheManager);
+        this.repository = repository;
         this.assignmentRepository = assignmentRepository;
         this.userRepository = userRepository;
     }
@@ -50,16 +53,16 @@ public class OrgUnitServiceCustomImpl
             object.setParent(parent);
         }
 
-        return repositoryCustom.save(object);
+        return repository.save(object);
     }
 
     private OrgUnit findParent(OrgUnit parent) {
         return Optional.ofNullable(parent.getId())
-            .flatMap(repositoryCustom::findById)
+            .flatMap(repository::findById)
             .or(() -> Optional.ofNullable(parent.getUid())
-                .flatMap(repositoryCustom::findByUid))
+                .flatMap(repository::findByUid))
             .or(() -> Optional.ofNullable(parent.getCode())
-                .flatMap(repositoryCustom::findByCode))
+                .flatMap(repository::findByCode))
             .orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
     }
 
@@ -117,7 +120,7 @@ public class OrgUnitServiceCustomImpl
         }
 
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return repositoryCustom.findAll(pageable);
+            return repository.findAll(pageable);
         }
 
         String currentUserLogin = SecurityUtils.getCurrentUserLogin().get();
@@ -209,13 +212,13 @@ public class OrgUnitServiceCustomImpl
     @Transactional
     @Scheduled(cron = "0 0 3 * * ?")
     public void updatePaths() {
-        repositoryCustom.updatePaths();
+        repository.updatePaths();
     }
 
     @Override
     @Transactional
     public void forceUpdatePaths() {
-        repositoryCustom.forceUpdatePaths();
+        repository.forceUpdatePaths();
     }
 
 }

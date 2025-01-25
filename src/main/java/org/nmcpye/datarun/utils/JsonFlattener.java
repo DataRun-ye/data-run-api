@@ -1,9 +1,6 @@
-package org.nmcpye.datarun.mongo.service.submissionmigration;
+package org.nmcpye.datarun.utils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class JsonFlattener {
 
@@ -54,12 +51,13 @@ public class JsonFlattener {
     ///
 
     public static Map<String, Object> flattenIncludingArrays(Map<String, Object> data) {
-        return flattenMapIncludingArrays(null, data, new HashMap<>());
+        Map<String, Object> flatMap = flattenMapIncludingArrays(null, data, new HashMap<>());
+        return new TreeMap<>(flatMap);
     }
 
     private static Map<String, Object> flattenMapIncludingArrays(String parentKey, Map<String, Object> map, Map<String, Object> result) {
         for (Map.Entry<String, Object> entry : map.entrySet()) {
-            String key = parentKey != null ? parentKey + "/" + entry.getKey() : entry.getKey();
+            String key = parentKey != null ? parentKey + "." + entry.getKey() : entry.getKey();
             Object value = entry.getValue();
 
             if (value instanceof Map) {

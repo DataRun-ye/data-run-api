@@ -3,8 +3,9 @@ package org.nmcpye.datarun.web.rest.mongo;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepositoryCustom;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
-import org.nmcpye.datarun.mongo.service.submissionmigration.JsonFlattener;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.utils.FormSubmissionDataUtil;
+import org.nmcpye.datarun.utils.JsonFlattener;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.submission.GenericQueryService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -67,7 +68,7 @@ public class DataFormSubmissionResourceCustom
         Page<DataFormSubmission> processedPage = resultPage.map(submission -> {
             Map<String, Object> formData = submission.getFormData();
             if (queryRequest.isFlatten()) {
-                formData = JsonFlattener.flatten(formData);
+                formData = FormSubmissionDataUtil.flatten(formData, false, true);
             }
             submission.setFormData(formData);
             return submission;

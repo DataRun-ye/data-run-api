@@ -21,7 +21,7 @@ public class DefaultField extends AbstractField {
         this.defaultValue = defaultValue;
     }
 
-    public boolean isMandatory() {
+    public boolean getMandatory() {
         return mandatory;
     }
 
@@ -29,7 +29,7 @@ public class DefaultField extends AbstractField {
         this.mandatory = mandatory;
     }
 
-    public boolean isReadOnly() {
+    public boolean getReadOnly() {
         return readOnly;
     }
 
@@ -61,7 +61,7 @@ public class DefaultField extends AbstractField {
         this.constraintMessage = constraintMessage;
     }
 
-    public boolean isMainField() {
+    public boolean getMainField() {
         return mainField;
     }
 

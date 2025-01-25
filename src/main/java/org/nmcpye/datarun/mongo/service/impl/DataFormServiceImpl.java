@@ -2,9 +2,6 @@ package org.nmcpye.datarun.mongo.service.impl;
 
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
-import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
@@ -13,7 +10,6 @@ import org.nmcpye.datarun.mongo.domain.datafield.Section;
 import org.nmcpye.datarun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.mongo.repository.MetadataSchemaRepository;
 import org.nmcpye.datarun.mongo.service.DataFormService;
-import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -51,32 +47,17 @@ public class DataFormServiceImpl
 
     private final MetadataSchemaRepository metadataSchemaRepository;
 
-    private final ActivityRelationalRepositoryCustom activityRepository;
-
-    private final AssignmentRelationalRepositoryCustom assignmentRepository;
-
-    private final OrgUnitRelationalRepositoryCustom orgUnitRepository;
-
     private final TeamRelationalRepositoryCustom teamRepository;
 
-    private final UserRepository userRepository;
 
     public DataFormServiceImpl(DataFormRepository repositoryCustom,
                                MetadataSchemaRepository metadataSchemaRepository,
-                               ActivityRelationalRepositoryCustom activityRepository,
-                               AssignmentRelationalRepositoryCustom assignmentRepository,
-                               OrgUnitRelationalRepositoryCustom orgUnitRepository,
                                MongoTemplate mongoTemplate,
-                               UserRepository userRepository,
                                TeamRelationalRepositoryCustom teamRepository) {
         super(repositoryCustom, mongoTemplate);
         this.repositoryCustom = repositoryCustom;
         this.metadataSchemaRepository = metadataSchemaRepository;
-        this.activityRepository = activityRepository;
-        this.assignmentRepository = assignmentRepository;
-        this.orgUnitRepository = orgUnitRepository;
         this.teamRepository = teamRepository;
-        this.userRepository = userRepository;
     }
 
     public <T extends AbstractField> void processFields(List<T> fields, String parentPath) {

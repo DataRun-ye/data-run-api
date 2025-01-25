@@ -30,7 +30,6 @@ import tech.jhipster.security.RandomUtil;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -53,20 +52,18 @@ public class UserService
 
     private final AuthorityRepository authorityRepository;
 
-    private final CacheManager cacheManager;
-
     public UserService(
         UserRepository userRepository, TeamRelationalRepositoryCustom teamRepository,
         PasswordEncoder passwordEncoder,
         AuthorityRepository authorityRepository,
         CacheManager cacheManager
     ) {
-        super(userRepository);
+        super(userRepository, cacheManager);
         this.userRepository = userRepository;
         this.teamRepository = teamRepository;
         this.passwordEncoder = passwordEncoder;
         this.authorityRepository = authorityRepository;
-        this.cacheManager = cacheManager;
+//        this.cacheManager = cacheManager;
     }
 
     public Optional<User> activateRegistration(String key) {
@@ -415,10 +412,8 @@ public class UserService
     }
 
     private void clearUserCaches(User user) {
-        Objects.requireNonNull(cacheManager.getCache(UserRepository.USERS_BY_LOGIN_CACHE)).evict(user.getLogin());
-        if (user.getEmail() != null) {
-            Objects.requireNonNull(cacheManager.getCache(UserRepository.USERS_BY_EMAIL_CACHE)).evict(user.getEmail());
-        }
+        this.clearCaches(UserRepository.USERS_BY_LOGIN_CACHE, user.getLogin());
+        this.clearCaches(UserRepository.USERS_BY_EMAIL_CACHE, user.getEmail());
     }
 
     // Data run extend
