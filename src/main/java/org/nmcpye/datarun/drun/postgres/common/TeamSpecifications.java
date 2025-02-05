@@ -27,6 +27,44 @@ public abstract class TeamSpecifications {
         };
     }
 
+    // Specification to get teams managed by teams that a user is part of
+    public static Specification<Team> getManagedTeamsByCurrentUserTeams() {
+        return (root, query, cb) -> {
+            if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+                return cb.conjunction();
+            } else if (!SecurityUtils.isAuthenticated()) {
+                return cb.disjunction();
+            } else {
+                String userLogin = SecurityUtils.getCurrentUserLogin()
+                    .orElseThrow(() -> new IllegalStateException("Current user login not found"));
+                Subquery<Team> userTeamsSubquery = query.subquery(Team.class);
+                Root<Team> userTeamRoot = userTeamsSubquery.from(Team.class);
+                Join<Team, User> userJoin = userTeamRoot.join("users", JoinType.INNER);
+
+                userTeamsSubquery.select(userTeamRoot)
+                    .where(cb.equal(userJoin.get("login"), userLogin));
+
+                Join<Team, Team> managedByJoin = root.join("managedByTeams", JoinType.INNER);
+                return managedByJoin.in(userTeamsSubquery);
+            }
+        };
+    }
+
+    // Specification to get teams managed by teams that a user is part of
+    public static Specification<Team> getManagedTeamsByUserTeams(String userLogin) {
+        return (root, query, cb) -> {
+            Subquery<Team> userTeamsSubquery = query.subquery(Team.class);
+            Root<Team> userTeamRoot = userTeamsSubquery.from(Team.class);
+            Join<Team, User> userJoin = userTeamRoot.join("users", JoinType.INNER);
+
+            userTeamsSubquery.select(userTeamRoot)
+                .where(cb.equal(userJoin.get("login"), userLogin));
+
+            Join<Team, Team> managedByJoin = root.join("managedByTeams", JoinType.INNER);
+            return managedByJoin.in(userTeamsSubquery);
+        };
+    }
+
     public static Specification<Team> isEnabled() {
         return (root, query, criteriaBuilder) -> {
             Join<Team, Activity> activityJoin = root.join("activity", JoinType.LEFT);
@@ -59,21 +97,6 @@ public abstract class TeamSpecifications {
                 cb.equal(rootUserJoin.get("login"), userLogin),
                 root.in(managedTeamsSubquery)
             );
-        };
-    }
-
-    // Specification to get teams managed by teams that a user is part of
-    public static Specification<Team> getManagedTeamsByUserTeams(String userLogin) {
-        return (root, query, cb) -> {
-            Subquery<Team> userTeamsSubquery = query.subquery(Team.class);
-            Root<Team> userTeamRoot = userTeamsSubquery.from(Team.class);
-            Join<Team, User> userJoin = userTeamRoot.join("users", JoinType.INNER);
-
-            userTeamsSubquery.select(userTeamRoot)
-                .where(cb.equal(userJoin.get("login"), userLogin));
-
-            Join<Team, Team> managedByJoin = root.join("managedByTeams", JoinType.INNER);
-            return managedByJoin.in(userTeamsSubquery);
         };
     }
 

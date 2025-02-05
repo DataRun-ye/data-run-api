@@ -158,6 +158,20 @@ public class AssignmentServiceImplCustom
     }
 
     @Override
+    public Page<Assignment> findAllByUser(Specification<Assignment> spec, Pageable pageable) {
+        Page<Assignment> assignments = super.findAllByUser(spec.and(isEnabled()), pageable);
+//        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+//            assignments = repository.findAll(pageable);
+//        } else {
+//
+//            assignments = repository.findAll(canRead().and(isEnabled()), pageable);
+//        }
+
+        // TODO Create AssignmentHistory in app and fetch all and sort the latest out on the app
+        return findWithStatus(assignments);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Page<Assignment> getAllUserAccessible(Pageable pageable) {
         Page<Assignment> assignedPage = repository.findAll(canRead().and(isEnabled()), pageable);
@@ -194,7 +208,10 @@ public class AssignmentServiceImplCustom
     }
 
     List<Assignment> getManagedTeamsAssignmentsWithChildren() {
-        Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLogin().get()).and(TeamSpecifications.isEnabled());
+        Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(
+                SecurityUtils.getCurrentUserLogin().get())
+            .and(TeamSpecifications.isEnabled());
+
         List<String> managedAssignmentsUids = teamRepository
             .findAll(spec)
             .stream()

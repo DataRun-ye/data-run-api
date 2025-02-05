@@ -24,35 +24,9 @@ public class TeamRepositoryWithBagRelationshipsImpl
     @PersistenceContext
     private EntityManager entityManager;
 
-//    public List<Team> findAllWithManagedInfo() {
-//        String currentUserLogin = SecurityUtils.getCurrentUserLogin()
-//            .orElseThrow(() -> new IllegalStateException("Current user not found"));
-//
-//        String jpql = "SELECT DISTINCT t, " +
-//            "CASE WHEN EXISTS (" +
-//            "    SELECT 1 FROM Team mt " +
-//            "    JOIN mt.users u " +
-//            "    WHERE mt MEMBER OF t.managedByTeams AND u.login = :currentUserLogin" +
-//            ") THEN true ELSE false END as isManaged " +
-//            "FROM Team t " +
-//            "LEFT JOIN FETCH t.activity " +
-//            "LEFT JOIN FETCH t.users";
-//
-//        List<Object[]> results = entityManager.createQuery(jpql, Object[].class)
-//            .setParameter("currentUserLogin", currentUserLogin)
-//            .getResultList();
-//
-//        return results.stream().map(result -> {
-//            Team team = (Team) result[0];
-//            Boolean isManaged = (Boolean) result[1];
-//            team.setIsManaged(isManaged);
-//            return team;
-//        }).collect(Collectors.toList());
-//    }
-
     @Override
-    public Optional<Team> fetchBagRelationships(Optional<Team> team) {
-        return team.map(this::fetchTeams);
+    public Optional<Team> fetchBagRelationships(Team team) {
+        return Optional.ofNullable(team).map(this::fetchTeams);
     }
 
     @Override

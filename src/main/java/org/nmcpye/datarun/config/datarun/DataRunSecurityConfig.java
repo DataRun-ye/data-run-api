@@ -59,6 +59,7 @@ public class DataRunSecurityConfig {
                         .requestMatchers(mvc.pattern("/api/custom/activate")).permitAll()
                         .requestMatchers(mvc.pattern("/api/custom/me/reset-password/init")).permitAll()
                         .requestMatchers(mvc.pattern("/api/custom/me/reset-password/finish")).permitAll()
+                        .requestMatchers(mvc.pattern("/api/custom/admin/**")).hasAuthority(AuthoritiesConstants.ADMIN)
 
                         .requestMatchers(mvc.pattern("/api/register")).permitAll()
                         .requestMatchers(mvc.pattern("/api/activate")).permitAll()

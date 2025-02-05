@@ -1,11 +1,14 @@
 package org.nmcpye.datarun.mongo.domain.datafield;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ScannedCodeProperties {
+public class ScannedCodeProperties implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private List<String> allowedItemTypes = new ArrayList<String>();
     private List<String> gtin = new ArrayList<String>();
     private String batchLot;

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1737846685829-2-data-element-create-table" author="Hamza (generated)">
+        <createTable tableName="data_element">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_data_element"/>
+            </column>
+            <column name="created_by" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="DATETIME"/>
+            <column name="last_modified_by" type="VARCHAR(50)"/>
+            <column name="last_modified_date" type="DATETIME"/>
+            <column name="uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(255)"/>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(2000)"/>
+            <column name="default_value" type="VARCHAR(255)"/>
+            <column name="mandatory" type="BOOLEAN"/>
+            <column name="option_set_id" type="BIGINT"/>
+            <column name="reference_type" type="VARCHAR(255)"/>
+            <column name="reference_metadata_schema" type="VARCHAR(255)"/>
+            <column name="gs1_enabled" type="BOOLEAN"/>
+            <column name="label" type="jsonb"/>
+            <column name="properties" type="jsonb"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1737846685829-4-data-element-constraint" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="code" constraintName="uc_data_element_code" tableName="data_element"/>
+    </changeSet>
+    <changeSet id="1737846685829-5-data-element-constraint" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="name" constraintName="uc_data_element_name" tableName="data_element"/>
+    </changeSet>
+    <changeSet id="1737846685829-6-data-element-constraint" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_data_element_uid" tableName="data_element"/>
+    </changeSet>
+
+</databaseChangeLog>

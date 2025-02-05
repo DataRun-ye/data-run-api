@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.domain.Authority;
 import org.nmcpye.datarun.domain.User;
+import org.nmcpye.datarun.drun.postgres.common.UserSpecifications;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalServiceImpl;
 import org.nmcpye.datarun.repository.AuthorityRepository;
@@ -163,8 +164,8 @@ public class UserService
         } else {
             user.setLangKey(userDTO.getLangKey());
         }
-        String encryptedPassword = passwordEncoder.encode(RandomUtil.generatePassword());
-        user.setPassword(encryptedPassword);
+//        String encryptedPassword = passwordEncoder.encode(password);
+        user.setPassword(passwordEncoder.encode(password));
         user.setResetKey(RandomUtil.generateResetKey());
         user.setResetDate(Instant.now());
         user.setActivated(userDTO.isActivated());
@@ -451,6 +452,6 @@ public class UserService
 
     @Override
     public Specification<User> canRead() {
-        return null;
+        return UserSpecifications.canRead();
     }
 }

@@ -17,6 +17,9 @@ public abstract class FormElementConf implements Serializable {
 
     private String parent;
 
+    @Field("code")
+    private String code;
+
     @NotNull
     @Field("name")
     private String name;
@@ -52,6 +55,13 @@ public abstract class FormElementConf implements Serializable {
         this.parent = parent;
     }
 
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
 
     public String getName() {
         return name;

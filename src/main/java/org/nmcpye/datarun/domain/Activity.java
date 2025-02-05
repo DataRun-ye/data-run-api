@@ -6,10 +6,13 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * A Activity.
@@ -59,6 +62,11 @@ public class Activity extends AbstractAuditingEntity<Long> implements Serializab
     @NotNull
     @JsonIgnoreProperties(value = {"activities"}, allowSetters = true)
     private Project project;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "activity")
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    private Set<Assignment> assignments = new HashSet<>();
 
     public Long getId() {
         return this.id;
@@ -213,6 +221,14 @@ public class Activity extends AbstractAuditingEntity<Long> implements Serializab
     public Activity project(Project project) {
         this.setProject(project);
         return this;
+    }
+
+    public Set<Assignment> getAssignments() {
+        return assignments;
+    }
+
+    public void setAssignments(Set<Assignment> assignments) {
+        this.assignments = assignments;
     }
 
     // prettier-ignore

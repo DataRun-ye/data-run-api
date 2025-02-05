@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -72,6 +73,16 @@ public abstract class IdentifiableRelationalServiceImpl<T extends Identifiable<L
         }
         log.debug("Request to get all entities");
         return identifiableRepository.findAll(canRead(), pageable);
+    }
+
+    @Override
+    public Page<T> findAllByUser(Specification<T> spec, Pageable pageable) {
+        log.debug("Request to get all entities");
+        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+            return identifiableRepository.findAll(spec, pageable);
+        }
+
+        return identifiableRepository.findAll(appendReadSpecification(spec), pageable);
     }
 
     @Override

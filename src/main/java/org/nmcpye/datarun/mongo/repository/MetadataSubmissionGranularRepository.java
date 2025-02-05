@@ -20,10 +20,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
@@ -92,7 +89,7 @@ public class MetadataSubmissionGranularRepository {
             .map(Assignment::getTeam)
             .filter(team -> !team.getDisabled())
             .distinct()
-            .flatMap(team -> team.getFormPermissions().stream())
+            .flatMap(team -> Objects.requireNonNullElse(team.getFormPermissions(), new HashSet<TeamFormPermissions>()).stream())
             .map(TeamFormPermissions::getForm)
             .distinct()
             .toList();
@@ -100,7 +97,7 @@ public class MetadataSubmissionGranularRepository {
 
         List<ReferenceField> typeReferenceFields = forms.stream()
             .flatMap(uid -> dataFormRepository.findByUid(uid).stream())
-            .flatMap(form -> form.getFlattenedFields().stream())
+            .flatMap(form -> form.flattenFields().stream())
             .filter(AbstractField::isResourceTypeField)
             .map(ReferenceField.class::cast)
             .toList();

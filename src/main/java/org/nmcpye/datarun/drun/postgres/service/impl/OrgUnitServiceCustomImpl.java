@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -121,6 +122,69 @@ public class OrgUnitServiceCustomImpl
 
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repository.findAll(pageable);
+        }
+
+        String currentUserLogin = SecurityUtils.getCurrentUserLogin().get();
+
+        // Get user's direct teams
+        List<Team> userDirectTeams = userRepository.findOneByLogin(currentUserLogin)
+            .map(user -> user.getTeams().stream()
+                .filter(team -> !team.getDisabled())
+                .filter(team -> !team.getActivity().getDisabled())
+                .collect(Collectors.toList()))
+            .orElse(Collections.emptyList());
+
+        // Get user's indirect teams (managed teams of direct teams)
+        List<Team> userIndirectTeams = userDirectTeams.stream()
+            .flatMap(team -> team.getManagedTeams().stream())
+            .filter(team -> !team.getDisabled())
+            .filter(team -> !team.getActivity().getDisabled())
+            .toList();
+
+        // Combine direct and indirect teams
+        List<Team> allUserTeams = new ArrayList<>(userDirectTeams);
+        allUserTeams.addAll(userIndirectTeams);
+
+        // Get assignments for all teams
+        List<Assignment> userAssignments = assignmentRepository.findAllByTeamIn(allUserTeams);
+
+        // Extract OrgUnits from assignments
+        Set<OrgUnit> userOrgUnits = userAssignments.stream()
+            .map(Assignment::getOrgUnit)
+            .collect(Collectors.toSet());
+
+        // Add ancestors of the user's OrgUnits
+        Set<OrgUnit> ancestors = userOrgUnits.stream()
+            .flatMap(orgUnit -> orgUnit.getAncestors().stream())
+            .collect(Collectors.toSet());
+
+        userOrgUnits.addAll(ancestors);
+
+        List<OrgUnit> sortedOrgUnits = new ArrayList<>(userOrgUnits);
+        sortedOrgUnits.sort(Comparator.comparing(OrgUnit::getName));
+
+        if (pageable.isUnpaged()) {
+            return new PageImpl<>(sortedOrgUnits);
+        }
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), sortedOrgUnits.size());
+        if (start > end) {
+            return Page.empty(pageable);
+        }
+
+        List<OrgUnit> sublist = sortedOrgUnits.subList(start, end);
+        return new PageImpl<>(sublist, pageable, sortedOrgUnits.size());
+    }
+
+    @Override
+    public Page<OrgUnit> findAllByUser(Specification<OrgUnit> spec, Pageable pageable) {
+        if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
+            return Page.empty();
+        }
+
+        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+            return repository.findAll(spec, pageable);
         }
 
         String currentUserLogin = SecurityUtils.getCurrentUserLogin().get();

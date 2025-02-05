@@ -20,34 +20,8 @@ public interface TeamRelationalRepositoryCustom
 
     Optional<Team> findByCodeAndActivityUid(String code, String activityUid);
 
-//    default Page<Team> findAllByUser(Pageable pageable) {
-//        if (!SecurityUtils.isAuthenticated()) {
-//            return Page.empty(pageable);
-//        }
-//
-//        String userLogin = SecurityUtils.getCurrentUserLogin().get();
-//
-//        Specification<Team> specification = Specification.where(TeamSpecifications.canRead(userLogin))
-//            .and(TeamSpecifications.isNotDisabled());
-//
-//        return this.fetchBagRelationships(this.findAll(specification, pageable));
-//    }
-
-//    default List<Team> findAllByUser() {
-//        if (!SecurityUtils.isAuthenticated()) {
-//            return Collections.emptyList();
-//        }
-//
-//        String userLogin = SecurityUtils.getCurrentUserLogin().get();
-//
-//        Specification<Team> specification = Specification.where(TeamSpecifications.canRead(userLogin))
-//            .and(TeamSpecifications.isNotDisabled());
-//
-//        return this.fetchBagRelationships(this.findAll(specification));
-//    }
-
     default Optional<Team> findByUidWithEagerRelation(String uid) {
-        return this.fetchBagRelationships(this.findByUid(uid));
+        return this.findByUid(uid).flatMap(this::fetchBagRelationships);
     }
 
     default Optional<Team> findOneWithEagerRelationshipsByUser(Long id) {

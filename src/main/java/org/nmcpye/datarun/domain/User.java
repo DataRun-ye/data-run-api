@@ -2,6 +2,7 @@ package org.nmcpye.datarun.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
@@ -14,6 +15,7 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
+import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -31,21 +33,6 @@ import java.util.Set;
 public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
-
-    @ManyToMany(mappedBy = "users")
-    @JsonIgnoreProperties(value = {"managedTeams", "managedTeams", "users", "assignments",
-        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
-    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    private Set<Team> teams = new LinkedHashSet<>();
-
-    public Set<Team> getTeams() {
-        return teams;
-    }
-
-    public void setTeams(Set<Team> teams) {
-        this.teams = teams;
-    }
 
     @Size(max = 11)
     @Column(name = "uid", length = 11, unique = true)
@@ -124,6 +111,16 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
     @BatchSize(size = 20)
     private Set<Authority> authorities = new HashSet<>();
 
+    @ManyToMany(mappedBy = "users")
+    @JsonIgnoreProperties(value = {"managedTeams", "managedTeams", "users", "assignments",
+        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    private Set<Team> teams = new LinkedHashSet<>();
+
+    @ManyToMany(mappedBy = "users", fetch = FetchType.EAGER)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    private Set<UserGroup> groups = new HashSet<>();
+
     public String getCode() {
         return code;
     }
@@ -174,6 +171,7 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
         this.login = StringUtils.lowerCase(login, Locale.ENGLISH);
     }
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public String getPassword() {
         return password;
     }
@@ -262,19 +260,43 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
         this.authorities = authorities;
     }
 
-    /**
-     * Indicates whether this user can manage the given user.
-     *
-     * @param user the user to test.
-     * @return true if the given user can be managed by this user, false if not.
-     */
-    public boolean canManage(User user) {
-        for (Team team : user.getTeams()) {
-            if (canManage(team)) {
-                return true;
-            }
+    public Set<Team> getTeams() {
+        return teams;
+    }
+
+    public void setTeams(Set<Team> teams) {
+        this.teams = teams;
+    }
+
+    public Set<UserGroup> getGroups() {
+        return this.groups;
+    }
+
+    public void setGroups(Set<UserGroup> userGroups) {
+        if (this.groups != null) {
+            this.groups.forEach(i -> i.removeMember(this));
         }
-        return false;
+        if (userGroups != null) {
+            userGroups.forEach(i -> i.addMember(this));
+        }
+        this.groups = userGroups;
+    }
+
+    public User groups(Set<UserGroup> userGroups) {
+        this.setGroups(userGroups);
+        return this;
+    }
+
+    public User addGroup(UserGroup userGroup) {
+        this.groups.add(userGroup);
+        userGroup.getUsers().add(this);
+        return this;
+    }
+
+    public User removeGroup(UserGroup userGroup) {
+        this.groups.remove(userGroup);
+        userGroup.getUsers().remove(this);
+        return this;
     }
 
     @JsonIgnore
@@ -326,7 +348,23 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
      * @param user the user to test.
      * @return true if the given user is managed by this user, false if not.
      */
+    /**
+     * Indicates whether this user is managed by the given user.
+     *
+     * @param user the user to test.
+     * @return true if the given user is managed by this user, false if not.
+     */
     public boolean isManagedBy(User user) {
+        if (user == null || user.getGroups() == null) {
+            return false;
+        }
+
+        for (UserGroup group : user.getGroups()) {
+            if (isManagedBy(group)) {
+                return true;
+            }
+        }
+
         for (Team team : user.getTeams()) {
             if (isManagedBy(team)) {
                 return true;
@@ -336,15 +374,72 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
         return false;
     }
 
-//    public Set<Assignment> getActiveAssignment() {
-//        Set<Assignment> assignments = new HashSet<>();
-//
-//        for (Team team : teams) {
-//            assignments.addAll(team.getAssignments());
-//        }
-//
-//        return assignments;
-//    }
+    /**
+     * Indicates whether this user is managed by the given user group.
+     *
+     * @param userGroup the user group to test.
+     * @return true if the given user group is managed by this user, false if
+     * not.
+     */
+    public boolean isManagedBy(UserGroup userGroup) {
+        return userGroup != null && CollectionUtils.containsAny(groups, userGroup.getManagedGroups());
+    }
+
+    public Set<UserGroup> getManagedGroups() {
+        Set<UserGroup> managedGroups = new HashSet<>();
+
+        for (UserGroup group : groups) {
+            managedGroups.addAll(group.getManagedGroups());
+        }
+
+        return managedGroups;
+    }
+
+    public boolean hasManagedGroups() {
+        for (UserGroup group : groups) {
+            if (group != null && group.getManagedGroups() != null && !group.getManagedGroups().isEmpty()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Indicates whether this user can manage the given user group.
+     *
+     * @param userGroup the user group to test.
+     * @return true if the given user group can be managed by this user, false
+     * if not.
+     */
+    public boolean canManage(UserGroup userGroup) {
+        return userGroup != null && CollectionUtils.containsAny(groups, userGroup.getManagedByGroups());
+    }
+
+    /**
+     * Indicates whether this user can manage the given user.
+     *
+     * @param user the user to test.
+     * @return true if the given user can be managed by this user, false if not.
+     */
+    public boolean canManage(User user) {
+        if (user == null || user.getGroups() == null) {
+            return false;
+        }
+
+        for (UserGroup group : user.getGroups()) {
+            if (canManage(group)) {
+                return true;
+            }
+        }
+
+        for (Team team : user.getTeams()) {
+            if (canManage(team)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     public boolean equals(Object o) {

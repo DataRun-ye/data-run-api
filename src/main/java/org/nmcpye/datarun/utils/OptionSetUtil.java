@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.utils;
 
+import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
 import org.nmcpye.datarun.mongo.domain.DataOption;
-import org.nmcpye.datarun.mongo.domain.OptionSet;
 
 import java.util.*;
 import java.util.stream.Collectors;

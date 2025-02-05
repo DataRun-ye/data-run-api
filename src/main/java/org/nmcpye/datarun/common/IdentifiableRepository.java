@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.common;
 
 import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.NoRepositoryBean;
 
@@ -18,4 +20,6 @@ public interface IdentifiableRepository<T extends Identifiable<ID>, ID>
     Optional<T> findByUid(String uid);
 
     Set<T> findAllByUidIn(Collection<String> uids);
+
+    Page<T> findAllByUidIn(Collection<String> uids, Pageable pageable);
 }

@@ -1,16 +1,13 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
-import jakarta.persistence.criteria.Path;
-import jakarta.persistence.criteria.Predicate;
 import org.nmcpye.datarun.drun.postgres.common.Identifiable;
 import org.nmcpye.datarun.drun.postgres.repository.IdentifiableRelationalRepository;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalService;
-import org.nmcpye.datarun.web.rest.common.AbstractResource;
+import org.nmcpye.datarun.web.rest.common.AbstractResourceReadWrite;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
+import org.nmcpye.datarun.web.rest.common.QuerySpecification;
 import org.nmcpye.datarun.web.rest.errors.RequestQueryParsingException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,19 +15,17 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import java.util.ArrayList;
-import java.util.List;
-
 //@RequestMapping("/api/custom")
 public abstract class
 AbstractRelationalResource<T extends Identifiable<Long>>
-    extends AbstractResource<T, Long> {
+    extends AbstractResourceReadWrite<T, Long> implements QuerySpecification<T> {
 
-    private final Logger log = LoggerFactory.getLogger(AbstractRelationalResource.class);
+    private final IdentifiableRelationalService<T> relationalService;
 
     protected AbstractRelationalResource(IdentifiableRelationalService<T> identifiableService,
                                          IdentifiableRelationalRepository<T> repository) {
         super(identifiableService, repository);
+        this.relationalService = identifiableService;
     }
 
     @Override
@@ -38,27 +33,16 @@ AbstractRelationalResource<T extends Identifiable<Long>>
         return (IdentifiableRelationalRepository<T>) super.getRepository();
     }
 
-    protected Specification<T> buildSpecification(QueryRequest queryRequest) {
-        return (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
+    @Override
+    protected Page<T> getList(Pageable pageable, QueryRequest queryRequest) {
+        Specification<T> spec;
+        try {
+            spec = buildSpecification(queryRequest);
+        } catch (Exception e) {
+            throw new RequestQueryParsingException();
+        }
 
-            queryRequest.getFilters().forEach((key, value) -> {
-                if (key.contains(".")) {
-                    // Handle nested properties, for example: parent.uid
-                    String[] parts = key.split("\\.");
-                    Path<Object> path = root.get(parts[0]);
-                    for (int i = 1; i < parts.length; i++) {
-                        path = path.get(parts[i]);
-                    }
-                    predicates.add(cb.equal(path, value));
-                } else {
-                    // Handle simple properties
-                    predicates.add(cb.equal(root.get(key), value));
-                }
-            });
-
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
+        return relationalService.findAllByUser(spec, pageable);
     }
 
     @GetMapping("entities")
@@ -72,7 +56,7 @@ AbstractRelationalResource<T extends Identifiable<Long>>
 
         Specification<T> spec;
         try {
-            spec = buildSpecification(queryRequest);
+            spec = buildSpecification(queryRequest).and(relationalService.canRead());
         } catch (Exception e) {
             throw new RequestQueryParsingException();
         }

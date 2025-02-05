@@ -7,7 +7,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -22,8 +21,6 @@ public interface TeamServiceCustom
     }
 
     Page<Team> findAllManagedByUser(Pageable pageable);
-
-    List<Team> findAllManagedByUser();
 
     Optional<Team> partialUpdate(Team team);
 }

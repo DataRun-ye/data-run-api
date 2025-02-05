@@ -12,7 +12,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import java.util.*;
 
 /**
- * A DataForm.
+ * A DataFormTemplate.
  */
 @Document(collection = "data_form_template")
 @SuppressWarnings("common-java:DuplicatedBlocks")
@@ -198,7 +198,7 @@ public class DataFormTemplate
     // prettier-ignore
     @Override
     public String toString() {
-        return "DataForm{" +
+        return "DataFormTemplate{" +
             "id=" + getId() +
             ", uid='" + getUid() + "'" +
             ", name='" + getName() + "'" +

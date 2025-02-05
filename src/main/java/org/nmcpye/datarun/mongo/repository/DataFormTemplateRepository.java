@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Spring Data MongoDB repository for the DataForm entity.
+ * Spring Data MongoDB repository for the DataFormTemplate entity.
  */
 @Repository
 @JaversSpringDataAuditable

@@ -25,8 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.nmcpye.datarun.drun.postgres.common.TeamSpecifications.isEnabled;
-
 @Service
 @Primary
 @Transactional
@@ -111,17 +109,23 @@ public class TeamServiceCustomImpl
     public Page<Team> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         Specification<Team> spec = canRead();
         if (!queryRequest.isIncludeDisabled()) {
-            spec = spec.and(isEnabled());
+            spec = spec.and(TeamSpecifications.isEnabled());
         }
 
         return repository.fetchBagRelationships(repository.findAll(spec, pageable));
     }
 
     @Override
+    public Page<Team> findAllByUser(Specification<Team> spec, Pageable pageable) {
+        Page<Team> teams = super.findAllByUser(spec.and(TeamSpecifications.isEnabled()), pageable);
+        return repository.fetchBagRelationships(teams);
+    }
+
+    @Override
     public List<Team> findAllByUser(QueryRequest queryRequest) {
         Specification<Team> spec = canRead();
         if (!queryRequest.isIncludeDisabled()) {
-            spec = spec.and(isEnabled());
+            spec = spec.and(TeamSpecifications.isEnabled());
         }
 
         return repository.fetchBagRelationships(repository.findAll(spec));
@@ -133,20 +137,11 @@ public class TeamServiceCustomImpl
             return Page.empty();
         }
 
-        Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLogin().get()).and(isEnabled());
+        Specification<Team> specManage = TeamSpecifications
+            .getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLogin().get())
+            .and(TeamSpecifications.isEnabled());
 
-        return repository.fetchBagRelationships(repository.findAll(spec, pageable));
-    }
-
-    @Override
-    public List<Team> findAllManagedByUser() {
-        if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
-            return Collections.emptyList();
-        }
-        Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLogin().get());
-//            .and(isNotDisabled());
-
-        return repository.fetchBagRelationships(repository.findAll(spec));
+        return repository.fetchBagRelationships(repository.findAll(specManage, pageable));
     }
 
     @Override

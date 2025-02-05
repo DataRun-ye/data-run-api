@@ -42,5 +42,9 @@
     <include file="config/liquibase/changelog/2024/25-04-changelog-assignment-forms-relation.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/25-01-changelog-team-form-permissions-json.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/29-01-changelog-assignment-add-allocated_resources-jsonb.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/2024/26-01-changelog-data-element-create.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/2024/26-01-changelog-option-set-create.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/2024/26-02-changelog-app-entity-audit-modifyDataType.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/2024/05-01-changelog-add-user_group.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

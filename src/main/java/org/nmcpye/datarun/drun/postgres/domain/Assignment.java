@@ -94,22 +94,10 @@ public class Assignment
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Assignment parent;
 
-    //    @ElementCollection(fetch = FetchType.EAGER)
-//    @CollectionTable(name = "assignment_forms", joinColumns = @JoinColumn(name = "assignment_id"))
-//    @Column(name = "form_uid", length = 11)
     @Type(JsonType.class)
     @Column(name = "forms", columnDefinition = "jsonb")
     private Set<String> forms = new HashSet<>();
 
-    //    @OneToMany(fetch = FetchType.EAGER, mappedBy = "assignment")
-//    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-//    @JsonIgnoreProperties(value = {"assignment"}, allowSetters = true)
-//    private Set<AllocatedResource> allocatedResources = new HashSet<>();
-
-    //    @ElementCollection(fetch = FetchType.EAGER)
-//    @CollectionTable(name = "allocated_resource", joinColumns = @JoinColumn(name = "assignment_id"))
-//    @MapKeyColumn(name = "resource_type")
-//    @Column(name = "value")
     @Type(JsonType.class)
     @Column(name = "allocated_resources", columnDefinition = "jsonb")
     private Map<String, Object> allocatedResources = new HashMap<>();

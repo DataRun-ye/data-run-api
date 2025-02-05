@@ -1,16 +1,20 @@
 package org.nmcpye.datarun.mongo.service.submissionmigration;
 
+import jakarta.persistence.EntityNotFoundException;
+import org.nmcpye.datarun.drun.postgres.domain.DataElement;
+import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
+import org.nmcpye.datarun.drun.postgres.repository.DataElementRepository;
+import org.nmcpye.datarun.drun.postgres.repository.OptionSetRepository;
+import org.nmcpye.datarun.mongo.domain.DataFieldRule;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.DataOption;
-import org.nmcpye.datarun.mongo.domain.OptionSet;
-import org.nmcpye.datarun.mongo.domain.dataelement.DataElement;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
 import org.nmcpye.datarun.mongo.domain.datafield.*;
-import org.nmcpye.datarun.mongo.repository.DataElementRepository;
+import org.nmcpye.datarun.mongo.domain.enumeration.RuleAction;
 import org.nmcpye.datarun.mongo.repository.DataFormRepository;
-import org.nmcpye.datarun.mongo.repository.OptionSetRepository;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -18,9 +22,9 @@ import static org.nmcpye.datarun.utils.OptionSetUtil.createOptionMap;
 import static org.nmcpye.datarun.utils.PathUtil.getDirectParent;
 import static org.nmcpye.datarun.utils.PathUtil.replaceLastElement;
 
-//@Component
-//@Transactional
-public class DataFormMigrationService implements CommandLineRunner {
+@Component
+@Transactional
+public class DataFormMigrationService /*implements CommandLineRunner*/ {
 
     private final DataFormRepository formRepository;
     private final DataElementRepository dataElementRepository;
@@ -34,7 +38,7 @@ public class DataFormMigrationService implements CommandLineRunner {
         this.optionSetRepository = optionSetRepository;
     }
 
-    @Override
+//    @Override
     public void run(String... args) throws Exception {
         List<DataForm> dataForms = formRepository.findAll();
         for (DataForm dataForm : dataForms) {
@@ -45,19 +49,17 @@ public class DataFormMigrationService implements CommandLineRunner {
     private void migrateDataForm(DataForm dataForm) {
         // Extract fields and create DataElement documents
         final DataForm template = createDataFormTemplate(dataForm);
-        for (AbstractField field : dataForm.getFlattenedFields()) {
+        for (AbstractField field : dataForm.flattenFields()) {
             if (field instanceof Section section) {
                 // Create DataFormSectionConf for section fields
                 FormSectionConf sectionConf = createSectionConf(section);
-
-//                template.getSections().put(sectionConf.getId(), sectionConf);
                 template.getSections().add(sectionConf);
-            } else {
-                // Update DataForm with DataElement configurations
-                DataElement dataElement = createDataElement((DefaultField) field, dataForm);
-                FormDataElementConf elementConf = createDataElementConf((DefaultField) field, dataElement.getUid());
-//                template.getFields().put(dataElement.getUid(), elementConf);
+            } else if (field instanceof DefaultField formField) {
+                DataElement dataElement = dataElementRepository.findByNameIgnoreCase(formField.getName()).orElseThrow();
+                FormDataElementConf elementConf = createDataElementConf(formField, dataElement.getUid(), dataElement.getCode());
                 template.getFieldsConf().add(elementConf);
+            } else {
+                throw new EntityNotFoundException("DataElement not found: " + field.getName() + ", type: " + field.getType().name());
             }
         }
 
@@ -79,20 +81,24 @@ public class DataFormMigrationService implements CommandLineRunner {
         template.setVersion(form.getVersion());
         template.setLabel(form.getLabel());
         template.setDefaultLocal(form.getDefaultLocal());
+        template.getFieldsConf().clear();
+        template.getSections().clear();
         return template;
     }
 
     private DataElement createDataElement(DefaultField element, DataForm dataForm) {
-        DataElement dataElement = dataElementRepository.findFirstByNameIgnoreCase(element.getName()).orElse(new DataElement());
+        DataElement dataElement = dataElementRepository.findByNameIgnoreCase(element.getName()).orElse(new DataElement());
         dataElement.setName(element.getName().toLowerCase());
         dataElement.setType(element.getType());
         dataElement.setDescription(element.getDescription());
-        dataElement.setDefaultValue(element.getDefaultValue());
+        if (dataElement.getDefaultValue() != null) {
+            dataElement.setDefaultValue(element.getDefaultValue().toString());
+        }
         dataElement.setMandatory(element.getMandatory());
         dataElement.setLabel(element.getLabel());
         if (element instanceof OptionField field) {
             final OptionSet optionSet = createOptionSet(field, dataForm.getOptions());
-            dataElement.setOptionSet(optionSet.getUid());
+            dataElement.setOptionSet(optionSet);
         }
 
         if (element instanceof ScannedCodeField field) {
@@ -109,17 +115,18 @@ public class DataFormMigrationService implements CommandLineRunner {
     }
 
     private OptionSet createOptionSet(OptionField field, List<DataOption> options) {
-        final OptionSet optionSet = optionSetRepository.findFirstByNameIgnoreCase(field.getListName()).orElse(new OptionSet());
+        final OptionSet optionSet = optionSetRepository.findByNameIgnoreCase(field.getListName()).orElse(new OptionSet());
         final List<DataOption> optionSetOptions = createOptionMap(options).get(field.getListName());
         optionSet.setOptions(optionSetOptions);
         optionSet.setName(field.getListName().toLowerCase());
         return optionSetRepository.save(optionSet);
     }
 
-    private FormDataElementConf createDataElementConf(DefaultField element, String dataElementUid) {
+    private FormDataElementConf createDataElementConf(DefaultField element, String dataElementUid, String dataElementCode) {
         FormDataElementConf elementConf = new FormDataElementConf();
         elementConf.setId(dataElementUid);
         elementConf.setName(element.getName());
+        elementConf.setCode(dataElementCode);
         elementConf.setParent(getDirectParent(element.getPath()));
         elementConf.setPath(replaceLastElement(element.getPath(), dataElementUid));
         elementConf.setType(element.getType());
@@ -132,6 +139,13 @@ public class DataFormMigrationService implements CommandLineRunner {
         elementConf.setCalculation(element.getCalculation());
         elementConf.setConstraint(element.getConstraint());
         elementConf.setConstraintMessage(element.getConstraintMessage());
+
+        final var errorRules = getErrorRules(element);
+        if(!errorRules.isEmpty()) {
+            elementConf.setConstraint(errorRules.stream().findFirst().orElseThrow().getExpression());
+            elementConf.setConstraintMessage(errorRules.stream().findFirst().orElseThrow().getMessage());
+        }
+
         elementConf.setRules(element.getRules());
         elementConf.setMainField(element.getMainField());
         elementConf.setOrder(element.getOrder());
@@ -139,7 +153,7 @@ public class DataFormMigrationService implements CommandLineRunner {
 
         if (element instanceof OptionField field) {
             final var de = dataElementRepository.findByUid(dataElementUid).orElseThrow();
-            elementConf.setOptionSet(de.getOptionSet());
+            elementConf.setOptionSet(de.getOptionSet().getUid());
             elementConf.setChoiceFilter(field.getChoiceFilter());
         }
 
@@ -154,6 +168,10 @@ public class DataFormMigrationService implements CommandLineRunner {
         }
 
         return elementConf;
+    }
+
+    private List<DataFieldRule> getErrorRules(DefaultField element) {
+        return element.getRules().stream().filter(r -> r.getAction() == RuleAction.Error).toList();
     }
 
     private FormSectionConf createSectionConf(Section section) {

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1737846685829-3-option-set-create-table" author="Hamza (generated)">
+        <createTable tableName="option_set">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_option_set"/>
+            </column>
+            <column name="created_by" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="DATETIME"/>
+            <column name="last_modified_by" type="VARCHAR(50)"/>
+            <column name="last_modified_date" type="DATETIME"/>
+            <column name="uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(255)"/>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="options" type="jsonb"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1737846685829-7-option-set-constraint" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="code" constraintName="uc_option_set_code" tableName="option_set"/>
+    </changeSet>
+    <changeSet id="1737846685829-8-option-set-constraint" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="name" constraintName="uc_option_set_name" tableName="option_set"/>
+    </changeSet>
+    <changeSet id="1737846685829-10-option-set-constraint" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="option_set_id" baseTableName="data_element"
+                                 constraintName="FK_DATA_ELEMENT_ON_OPTIONSET" referencedColumnNames="id"
+                                 referencedTableName="option_set"/>
+    </changeSet>
+    <changeSet id="1737846685829-9-option-set-data-element-constraint" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_option_set_uid" tableName="option_set"/>
+    </changeSet>
+
+</databaseChangeLog>

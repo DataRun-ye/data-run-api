@@ -1,16 +1,17 @@
 package org.nmcpye.datarun.security.jwt;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import org.nmcpye.datarun.config.SecurityConfiguration;
 import org.nmcpye.datarun.config.SecurityJwtConfiguration;
 import org.nmcpye.datarun.config.WebConfigurer;
 import org.nmcpye.datarun.management.SecurityMetersService;
-import org.nmcpye.datarun.web.rest.AuthenticateController;
+import org.nmcpye.datarun.web.rest.postgres.authenticate.AuthenticateController;
 import org.springframework.boot.test.context.SpringBootTest;
 import tech.jhipster.config.JHipsterProperties;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

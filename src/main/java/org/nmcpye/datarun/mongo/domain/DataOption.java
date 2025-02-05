@@ -3,14 +3,12 @@ package org.nmcpye.datarun.mongo.domain;
 import jakarta.validation.constraints.NotNull;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 /**
  * A DataOption.
  */
-@SuppressWarnings("common-java:DuplicatedBlocks")
 //@JsonSerialize(using = DataOptionSerializer.class)
 //@JsonDeserialize(using = DataOptionDeserializer.class)
 public class DataOption implements Serializable {
@@ -27,7 +25,7 @@ public class DataOption implements Serializable {
 
     private Map<String, String> label;
 
-    private Map<String, Object> properties = new HashMap<>();
+    private Map<String, Object> properties;
 
 
     public String getName() {
