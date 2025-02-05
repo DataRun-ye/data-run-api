@@ -4,8 +4,6 @@ import jakarta.persistence.MappedSuperclass;
 import org.nmcpye.datarun.domain.AbstractAuditingEntity;
 import org.nmcpye.datarun.utils.CodeGenerator;
 
-import java.time.Instant;
-
 import static org.nmcpye.datarun.drun.postgres.hibernate.HibernateProxyUtils.getRealClass;
 
 @MappedSuperclass
@@ -87,8 +85,6 @@ public abstract class BaseIdentifiableObject<T>
         if (getUid() == null || getUid().isEmpty()) {
             setUid(CodeGenerator.generateUid());
         }
-
-        Instant date = Instant.now();
     }
 
     @Override

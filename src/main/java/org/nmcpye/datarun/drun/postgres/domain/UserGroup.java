@@ -33,14 +33,14 @@ public class UserGroup extends BaseIdentifiableObject<Long> implements Serializa
     private Long id;
 
     @Size(max = 11)
-    @Column(name = "uid", length = 11, unique = true)
+    @Column(name = "uid", length = 11, unique = true, nullable = false)
     private String uid;
 
     @NotNull
-    @Column(name = "code", nullable = false, unique = true)
+    @Column(name = "code", unique = true)
     private String code;
 
-    @Column(name = "name")
+    @Column(name = "name", nullable = false)
     private String name;
 
     @Column(name = "description")

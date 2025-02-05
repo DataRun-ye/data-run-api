@@ -40,6 +40,10 @@ public class OuLevel extends BaseIdentifiableObject<Long> implements Serializabl
     @Column(name = "level", nullable = false)
     private Integer level;
 
+    public OuLevel() {
+        this.setAutoFields();
+    }
+
     public Long getId() {
         return this.id;
     }

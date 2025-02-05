@@ -36,7 +36,6 @@
     <include file="/config/liquibase/changelog/2024/27-01-date-time-wrapper-changelog.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/2024/04-01-changelog-drop-team-not-null-uid.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/28-01-changelog.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/29-01-org-unit-group-and-groupset.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/13-01-remove-hierarchy-uinfo-wh-identifiabletrans-add-managed-teams.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/23-01-assignment-child-parent-allocated-resource-changelog.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/25-04-changelog-assignment-forms-relation.xml" relativeToChangelogFile="false"/>
@@ -45,6 +44,7 @@
     <include file="config/liquibase/changelog/2024/26-01-changelog-data-element-create.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/26-01-changelog-option-set-create.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/26-02-changelog-app-entity-audit-modifyDataType.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/2024/29-01-org-unit-group-and-groupset.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/2024/05-01-changelog-add-user_group.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

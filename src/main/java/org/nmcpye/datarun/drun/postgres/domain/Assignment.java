@@ -119,6 +119,10 @@ public class Assignment
     private String lastEntryBy;
 
 
+    public Assignment() {
+        this.setAutoFields();
+    }
+
     @JsonProperty
     public AssignmentStatus getStatus() {
         return status;

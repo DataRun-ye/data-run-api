@@ -29,7 +29,7 @@ public class OrgUnitGroupSet
     private Long id;
 
     @Size(max = 11)
-    @Column(name = "uid", length = 11, unique = true)
+    @Column(name = "uid", length = 11, unique = true, nullable = false)
     private String uid;
 
     @Column(name = "code", unique = true)
@@ -49,6 +49,10 @@ public class OrgUnitGroupSet
     @JsonIgnoreProperties(value = { "groupSets", "members" }, allowSetters = true)
 //    @JsonSerialize(contentAs = IdentifiableObject.class)
     private Set<OrgUnitGroup> orgUnitGroups = new HashSet<>();
+
+    public OrgUnitGroupSet() {
+        this.setAutoFields();
+    }
 
     public boolean hasOrgUnitGroups() {
         return orgUnitGroups != null && orgUnitGroups.size() > 0;

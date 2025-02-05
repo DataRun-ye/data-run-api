@@ -120,6 +120,10 @@ public class Team extends BaseIdentifiableObject<Long> implements Serializable, 
     @Transient
     private EntityScope entityScope;
 
+    public Team() {
+        this.setAutoFields();
+    }
+
     public EntityScope getEntityScope() {
         return entityScope;
     }

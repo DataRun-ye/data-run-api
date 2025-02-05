@@ -29,7 +29,7 @@ public class OrgUnitGroup extends BaseIdentifiableObject<Long> implements Serial
     private Long id;
 
     @Size(max = 11)
-    @Column(name = "uid", length = 11, unique = true)
+    @Column(name = "uid", length = 11, unique = true, nullable = false)
     private String uid;
 
     @Column(name = "code", unique = true)
@@ -65,6 +65,10 @@ public class OrgUnitGroup extends BaseIdentifiableObject<Long> implements Serial
     @JsonIgnoreProperties(value = { "orgUnitGroups", "translations" }, allowSetters = true)
 //    @JsonSerialize(contentAs = IdentifiableObject.class)
     private Set<OrgUnitGroupSet> groupSets = new HashSet<>();
+
+    public OrgUnitGroup() {
+        this.setAutoFields();
+    }
 
     public boolean addOrgUnit(OrgUnit orgUnit) {
         members.add(orgUnit);
