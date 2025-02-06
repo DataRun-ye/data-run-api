@@ -52,13 +52,13 @@ public class UserGroup extends BaseIdentifiableObject<Long> implements Serializa
     @Transient
     private boolean isPersisted;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "user_group_users",
         joinColumns = @JoinColumn(name = "user_group_id"),
         inverseJoinColumns = @JoinColumn(name = "user_id")
     )
-    @JsonIgnoreProperties(value = {"teams", "password", "authorities", "translations"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"teams", "password", "authorities", "groups", "managedGroups"}, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<User> users = new HashSet<>();
 

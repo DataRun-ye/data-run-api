@@ -119,6 +119,7 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     @ManyToMany(mappedBy = "users", fetch = FetchType.EAGER)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    @JsonIgnoreProperties(value = {"users", "managedGroups", "managedByGroups"}, allowSetters = true)
     private Set<UserGroup> groups = new HashSet<>();
 
     public String getCode() {

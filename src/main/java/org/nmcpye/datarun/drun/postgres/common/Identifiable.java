@@ -16,6 +16,7 @@ public interface Identifiable<ID> extends SystemIdentifiable {
 //    void setUid(String uid);
 
     String getCreatedBy();
+    void setCreatedBy(String user);
 
     @JsonIgnore
     default Identifiable<ID> setIsPersisted() {

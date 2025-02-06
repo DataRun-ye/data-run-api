@@ -5,7 +5,6 @@ import org.nmcpye.datarun.drun.postgres.common.Identifiable;
 import org.nmcpye.datarun.drun.postgres.repository.IdentifiableRelationalRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.utils.CodeGenerator;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,9 +96,6 @@ public abstract class IdentifiableRelationalServiceImpl<T extends Identifiable<L
     @Override
     public T save(T object) {
         log.debug("Request to save Identifiable T : {}", object.getUid());
-        if (object.getUid() == null || object.getUid().isEmpty()) {
-            object.setUid(CodeGenerator.generateUid());
-        }
         return saveWithRelations(object);
     }
 
@@ -116,6 +112,7 @@ public abstract class IdentifiableRelationalServiceImpl<T extends Identifiable<L
             .orElseThrow(() -> new EntityNotFoundException("Entity not found with UID: " + object.getUid()));
 
         object.setId(existingEntity.getId());
+        object.setCreatedBy(existingEntity.getCreatedBy());
 
         object.setIsPersisted();
         return saveWithRelations(object);

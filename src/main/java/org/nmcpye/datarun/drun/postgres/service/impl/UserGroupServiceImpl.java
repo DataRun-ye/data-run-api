@@ -21,7 +21,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -54,8 +57,7 @@ public class UserGroupServiceImpl
             userGroup.setManagedGroups(teamsManaged);
         }
 
-        Set<Long> usersUids = userGroup.getUsers().stream().map(User::getId).collect(Collectors.toSet());
-        Set<User> users = new HashSet<>(userRepository.findAllById(usersUids));
+        Set<User> users = userGroup.getUsers().stream().map(this::findUser).collect(Collectors.toSet());
         userGroup.setUsers(users);
 
         this.clearGroupCaches(userGroup);
@@ -72,6 +74,19 @@ public class UserGroupServiceImpl
             .orElseThrow(() -> {
                 log.error("UserGroup not found: " + userGroup.getUid());
                 return new PropertyNotFoundException("UserGroup not found: " + userGroup);
+            });
+    }
+
+    private User findUser(User user) {
+        return Optional.ofNullable(user.getUid())
+            .flatMap(userRepository::findByUid)
+            .or(() -> Optional.ofNullable(user.getLogin())
+                .flatMap(userRepository::findOneByLogin))
+            .or(() -> Optional.ofNullable(user.getId())
+                .flatMap(userRepository::findById))
+            .orElseThrow(() -> {
+                log.error("User not found: " + user.getUid());
+                return new PropertyNotFoundException("UserGroup not found: " + user);
             });
     }
 

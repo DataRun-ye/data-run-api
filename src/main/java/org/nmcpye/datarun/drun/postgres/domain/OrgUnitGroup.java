@@ -55,7 +55,6 @@ public class OrgUnitGroup extends BaseIdentifiableObject<Long> implements Serial
         joinColumns = @JoinColumn(name = "org_unit_group_id"),
         inverseJoinColumns = @JoinColumn(name = "member_id")
     )
-
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"parent", "children", "groups", "assignments", "hierarchyLevel", "ancestors", "translations", "path"}, allowSetters = true)
     private Set<OrgUnit> members = new HashSet<>();
