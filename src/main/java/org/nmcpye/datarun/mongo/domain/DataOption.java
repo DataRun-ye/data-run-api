@@ -21,9 +21,12 @@ public class DataOption implements Serializable {
     @NotNull
     private String name;
 
+
     private Integer order;
 
     private Map<String, String> label;
+
+    private String filterExpression;
 
     private Map<String, Object> properties;
 
@@ -66,20 +69,28 @@ public class DataOption implements Serializable {
         this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
     }
 
-    public Map<String, Object> getProperties() {
-        return properties;
-    }
-
-    public void setProperties(Map<String, Object> properties) {
-        this.properties = properties;
-    }
-
     public Integer getOrder() {
         return order;
     }
 
     public void setOrder(Integer order) {
         this.order = Objects.requireNonNullElseGet(order, () -> 0);
+    }
+
+    public String getFilterExpression() {
+        return filterExpression;
+    }
+
+    public void setFilterExpression(String filterExpression) {
+        this.filterExpression = filterExpression;
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
     }
 
     @Override

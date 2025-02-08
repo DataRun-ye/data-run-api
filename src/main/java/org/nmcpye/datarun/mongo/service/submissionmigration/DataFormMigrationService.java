@@ -24,7 +24,7 @@ import static org.nmcpye.datarun.utils.PathUtil.replaceLastElement;
 
 @Component
 @Transactional
-public class DataFormMigrationService /*implements CommandLineRunner*/ {
+public class DataFormMigrationService {
 
     private final DataFormRepository formRepository;
     private final DataElementRepository dataElementRepository;
@@ -38,7 +38,6 @@ public class DataFormMigrationService /*implements CommandLineRunner*/ {
         this.optionSetRepository = optionSetRepository;
     }
 
-//    @Override
     public void run(String... args) throws Exception {
         List<DataForm> dataForms = formRepository.findAll();
         for (DataForm dataForm : dataForms) {
@@ -141,7 +140,7 @@ public class DataFormMigrationService /*implements CommandLineRunner*/ {
         elementConf.setConstraintMessage(element.getConstraintMessage());
 
         final var errorRules = getErrorRules(element);
-        if(!errorRules.isEmpty()) {
+        if (!errorRules.isEmpty()) {
             elementConf.setConstraint(errorRules.stream().findFirst().orElseThrow().getExpression());
             elementConf.setConstraintMessage(errorRules.stream().findFirst().orElseThrow().getMessage());
         }

@@ -15,7 +15,8 @@ import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.domain.enumeration.RuleAction;
 import org.nmcpye.datarun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,9 +26,9 @@ import static org.nmcpye.datarun.utils.OptionSetUtil.createOptionMap;
 import static org.nmcpye.datarun.utils.PathUtil.getDirectParent;
 import static org.nmcpye.datarun.utils.PathUtil.replaceLastElement;
 
-//@Component
-//@Transactional
-public class DataFormTemplateMigrationService implements CommandLineRunner {
+@Component
+@Transactional
+public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
 
     private final DataFormRepository dataFormRepository;
     private final DataFormTemplateRepository dataFormTemplateRepository;
@@ -46,8 +47,8 @@ public class DataFormTemplateMigrationService implements CommandLineRunner {
         this.dataFormMigrationService = dataFormMigrationService;
     }
 
-    @Override
-    public void run(String... args) throws Exception {
+    //    @Override
+    public void runForDataFormTemplates(String... args) throws Exception {
         List<DataForm> dataForms = dataFormRepository.findAll();
         for (DataForm dataForm : dataForms) {
             migrateOptionSets(dataForm);
