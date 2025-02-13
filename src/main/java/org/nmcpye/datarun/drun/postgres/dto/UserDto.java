@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Value;
 
 import java.io.Serializable;
@@ -12,10 +14,12 @@ import java.io.Serializable;
  * DTO for {@link org.nmcpye.datarun.domain.User}
  */
 @Value
+@Builder
+@AllArgsConstructor
 public class UserDto implements Serializable {
+    Long id;
     @Size(max = 11)
     String uid;
-    Long id;
     @NotNull
     @Size(min = 1, max = 50)
     @Pattern(regexp = "^(?>[a-zA-Z0-9!$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)$")
