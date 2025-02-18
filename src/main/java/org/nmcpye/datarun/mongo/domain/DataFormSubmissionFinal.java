@@ -18,9 +18,9 @@ import static java.util.Map.entry;
 /**
  * A DataFormSubmission.
  */
-@Document(collection = "data_form_submission")
+@Document(collection = "data_form_submission_final")
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataFormSubmission
+public class DataFormSubmissionFinal
     extends AbstractAuditingEntityMongo<String> implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -30,7 +30,7 @@ public class DataFormSubmission
 
     @Size(max = 11)
     @Field("uid")
-    @Indexed(unique = true, name = "data_submission_uid")
+    @Indexed(unique = true, name = "data_submission_final_uid")
     private String uid;
 
     @Field("deleted")
@@ -41,9 +41,12 @@ public class DataFormSubmission
 
     @Field("finishedEntryTime")
     private Instant finishedEntryTime;
+    private String orgUnit;
 
     private String form;
 
+    @Field("teamOld")
+    private String teamOld;
     private String team;
 
     private String activity;
@@ -125,9 +128,17 @@ public class DataFormSubmission
         return this.id;
     }
 
-    public DataFormSubmission id(String id) {
+    public DataFormSubmissionFinal id(String id) {
         this.setId(id);
         return this;
+    }
+
+    public String getOrgUnit() {
+        return orgUnit;
+    }
+
+    public void setOrgUnit(String orgUnit) {
+        this.orgUnit = orgUnit;
     }
 
     public void setId(String id) {
@@ -138,7 +149,7 @@ public class DataFormSubmission
         return this.uid;
     }
 
-    public DataFormSubmission uid(String uid) {
+    public DataFormSubmissionFinal uid(String uid) {
         this.setUid(uid);
         return this;
     }
@@ -151,7 +162,7 @@ public class DataFormSubmission
         return this.deleted;
     }
 
-    public DataFormSubmission deleted(Boolean deleted) {
+    public DataFormSubmissionFinal deleted(Boolean deleted) {
         this.setDeleted(deleted);
         return this;
     }
@@ -164,7 +175,7 @@ public class DataFormSubmission
         return this.startEntryTime;
     }
 
-    public DataFormSubmission startEntryTime(Instant startEntryTime) {
+    public DataFormSubmissionFinal startEntryTime(Instant startEntryTime) {
         this.setStartEntryTime(startEntryTime);
         return this;
     }
@@ -177,7 +188,7 @@ public class DataFormSubmission
         return this.finishedEntryTime;
     }
 
-    public DataFormSubmission finishedEntryTime(Instant finishedEntryTime) {
+    public DataFormSubmissionFinal finishedEntryTime(Instant finishedEntryTime) {
         this.setFinishedEntryTime(finishedEntryTime);
         return this;
     }
@@ -190,7 +201,7 @@ public class DataFormSubmission
         return this.status;
     }
 
-    public DataFormSubmission status(AssignmentStatus status) {
+    public DataFormSubmissionFinal status(AssignmentStatus status) {
         this.setStatus(status);
         return this;
     }
@@ -207,9 +218,17 @@ public class DataFormSubmission
         this.form = dataForm;
     }
 
-    public DataFormSubmission form(String dataForm) {
+    public DataFormSubmissionFinal form(String dataForm) {
         this.setForm(dataForm);
         return this;
+    }
+
+    public String getTeamOld() {
+        return teamOld;
+    }
+
+    public void setTeamOld(String teamOld) {
+        this.teamOld = teamOld;
     }
 
     public String getTeam() {
@@ -220,7 +239,7 @@ public class DataFormSubmission
         this.team = team;
     }
 
-    public DataFormSubmission team(String team) {
+    public DataFormSubmissionFinal team(String team) {
         this.setTeam(team);
         return this;
     }
@@ -233,7 +252,7 @@ public class DataFormSubmission
         this.assignment = assignment;
     }
 
-    public DataFormSubmission assignment(String assignment) {
+    public DataFormSubmissionFinal assignment(String assignment) {
         this.setAssignment(assignment);
         return this;
     }
@@ -254,7 +273,7 @@ public class DataFormSubmission
      * @return The current DataFormSubmission instance with updated form data
      * @throws PropertyNotFoundException if any of the main attributes (activity, team, or form) is not set
      */
-    public DataFormSubmission populateFormDataAttributes() {
+    public DataFormSubmissionFinal populateFormDataAttributes() {
 
         if (Objects.isNull(team) || Objects.isNull(form)) {
             throw new PropertyNotFoundException("one or more of the MainAttributes activity, team, or form is not set");
@@ -285,7 +304,7 @@ public class DataFormSubmission
         return this;
     }
 
-    public DataFormSubmission createSubmission() {
+    public DataFormSubmissionFinal createSubmission() {
 
         Map<String, Object> formData = this.getFormData();
 
@@ -343,7 +362,7 @@ public class DataFormSubmission
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        DataFormSubmission dataFormSubmission = (DataFormSubmission) o;
+        DataFormSubmissionFinal dataFormSubmission = (DataFormSubmissionFinal) o;
         return (id != null && id.equals(dataFormSubmission.id)) ||
             (uid != null && uid.equals(dataFormSubmission.uid));
     }

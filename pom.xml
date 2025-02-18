@@ -12,7 +12,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.1</version>
+        <version>3.4.2</version>
         <relativePath/>
         <!-- lookup parent from repository -->
     </parent>
@@ -35,10 +35,13 @@
         <run.addResources>false</run.addResources>
         <spring-boot.version>${project.parent.version}</spring-boot.version>
         <archunit-junit5.version>1.3.0</archunit-junit5.version>
-        <checkstyle.version>10.17.0</checkstyle.version>
-        <git-commit-id-maven-plugin.version>9.0.0</git-commit-id-maven-plugin.version>
+        <checkstyle.version>10.21.2</checkstyle.version>
+        <config.version>1.4.3</config.version>
+        <cucumber-bom.version>7.21.1</cucumber-bom.version>
+        <git-commit-id-maven-plugin.version>9.0.1</git-commit-id-maven-plugin.version>
+        <jackson-databind-nullable.version>0.2.6</jackson-databind-nullable.version>
         <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
-        <jhipster-framework.version>8.6.0</jhipster-framework.version>
+        <jhipster-framework.version>8.9.0</jhipster-framework.version>
         <jib-maven-plugin.architecture>amd64</jib-maven-plugin.architecture>
         <jib-maven-plugin.image>eclipse-temurin:17-jre-focal</jib-maven-plugin.image>
         <jib-maven-plugin.version>3.3.2</jib-maven-plugin.version>
@@ -47,38 +50,37 @@
         <liquibase-url>jdbc:postgresql://localhost:5432/dataRunApi</liquibase-url>
         <liquibase-username>dataRunApi</liquibase-username>
         <liquibase-password>dataRunApi</liquibase-password>
-        <mapstruct.version>1.5.5.Final</mapstruct.version>
-        <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
+        <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
         <maven-clean-plugin.version>3.4.0</maven-clean-plugin.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
-        <maven-failsafe-plugin.version>3.3.0</maven-failsafe-plugin.version>
+        <maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
         <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
-        <maven-javadoc-plugin.version>3.7.0</maven-javadoc-plugin.version>
+        <maven-javadoc-plugin.version>3.11.2</maven-javadoc-plugin.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
-        <maven-site-plugin.version>3.12.1</maven-site-plugin.version>
-        <maven-surefire-plugin.version>3.3.0</maven-surefire-plugin.version>
+        <maven-site-plugin.version>3.21.0</maven-site-plugin.version>
+        <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
-        <modernizer-maven-plugin.version>2.9.0</modernizer-maven-plugin.version>
+        <modernizer-maven-plugin.version>3.1.0</modernizer-maven-plugin.version>
         <nohttp-checkstyle.version>0.0.11</nohttp-checkstyle.version>
 
-        <!-- GraphQl   -->
-<!--        <graphql-spring-boot-starter.version>15.0.0</graphql-spring-boot-starter.version>-->
-<!--        <graphql-java-tools.version>5.2.4</graphql-java-tools.version>-->
-<!--        <graphql-java-extended-scalars.version>21.0</graphql-java-extended-scalars.version>-->
-        <version.debezium>3.0.7.Final</version.debezium>
         <profile.api-docs/>
         <profile.e2e/>
         <profile.no-liquibase/>
         <profile.test/>
         <profile.tls/>
         <properties-maven-plugin.version>1.2.1</properties-maven-plugin.version>
-        <sonar-maven-plugin.version>4.0.0.4121</sonar-maven-plugin.version>
-        <spotless-maven-plugin.version>2.43.0</spotless-maven-plugin.version>
-        <springdoc-openapi-starter-webmvc-api.version>2.5.0</springdoc-openapi-starter-webmvc-api.version>
+        <resource.delimiter>@</resource.delimiter>
+        <sonar-maven-plugin.version>5.0.0.4389</sonar-maven-plugin.version>
+        <spotless-maven-plugin.version>2.44.2</spotless-maven-plugin.version>
+        <springdoc-openapi-starter-webmvc-api.version>2.7.0</springdoc-openapi-starter-webmvc-api.version>
+
         <!--  NMC      -->
+        <!--  Override driver due to conflict with debezium -->
         <javers-spring-boot-starter-mongo.version>7.7.0</javers-spring-boot-starter-mongo.version>
         <mongock-bom.version>5.5.0</mongock-bom.version>
+        <version.debezium>3.1.0.Alpha1</version.debezium>
     </properties>
 
     <dependencyManagement>
@@ -124,42 +126,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
-
-        <!-- NMC   -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-mongodb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <!--            <version>1.7.30</version>-->
-        </dependency>
-        <!-- debezium   -->
-        <dependency>
-            <groupId>io.debezium</groupId>
-            <artifactId>debezium-api</artifactId>
-            <version>${version.debezium}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.debezium</groupId>
-            <artifactId>debezium-embedded</artifactId>
-            <version>${version.debezium}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.debezium</groupId>
-            <artifactId>debezium-connector-mongodb</artifactId>
-            <version>${version.debezium}</version>
-        </dependency>
-
-        <!--   javers    -->
-        <dependency>
-            <groupId>org.javers</groupId>
-            <artifactId>javers-spring-boot-starter-mongo</artifactId>
-            <version>${javers-spring-boot-starter-mongo.version}</version>
-        </dependency>
-        <!--  NMC end      -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-logging</artifactId>
@@ -253,6 +219,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
+            <version>${config.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
         </dependency>
@@ -260,32 +231,6 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
         </dependency>
-        <!-- NMC    -->
-        <dependency>
-            <groupId>io.mongock</groupId>
-            <artifactId>mongock-springboot-v3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.mongock</groupId>
-            <artifactId>mongodb-springdata-v4-driver</artifactId>
-        </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.hypersistence</groupId>-->
-<!--            <artifactId>hypersistence-utils-hibernate-62</artifactId>-->
-<!--            <version>3.8.2</version>-->
-<!--        </dependency>-->
-        <dependency>
-            <groupId>io.hypersistence</groupId>
-            <artifactId>hypersistence-utils-hibernate-62</artifactId>
-            <version>3.9.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok-mapstruct-binding</artifactId>
-            <version>0.2.0</version> <!-- Check for latest version -->
-            <scope>provided</scope>
-        </dependency>
-        <!--  NMC end      -->
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
@@ -365,16 +310,76 @@
             <artifactId>testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- NMC   -->
+        <!-- NMC    -->
+        <dependency>
+            <groupId>io.mongock</groupId>
+            <artifactId>mongock-springboot-v3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.mongock</groupId>
+            <artifactId>mongodb-springdata-v4-driver</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-62</artifactId>
+            <version>3.9.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok-mapstruct-binding</artifactId>
+            <version>0.2.0</version> <!-- Check for latest version -->
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <!--            <version>1.7.30</version>-->
+        </dependency>
+        <!-- debezium   -->
+        <dependency>
+            <groupId>io.debezium</groupId>
+            <artifactId>debezium-api</artifactId>
+            <version>${version.debezium}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.debezium</groupId>
+            <artifactId>debezium-embedded</artifactId>
+            <version>${version.debezium}</version>
+        </dependency>
 <!--        <dependency>-->
-<!--            <groupId>org.projectlombok</groupId>-->
-<!--            <artifactId>lombok</artifactId>-->
-<!--            <scope>provided</scope>-->
+<!--            <groupId>io.debezium</groupId>-->
+<!--            <artifactId>debezium-storage-jdbc</artifactId>-->
+<!--            <version>${version.debezium}</version>-->
 <!--        </dependency>-->
+        <dependency>
+            <groupId>io.debezium</groupId>
+            <artifactId>debezium-connector-mongodb</artifactId>
+            <version>${version.debezium}</version>
+        </dependency>
+
+        <!--   javers    -->
+        <dependency>
+            <groupId>org.javers</groupId>
+            <artifactId>javers-spring-boot-starter-mongo</artifactId>
+            <version>${javers-spring-boot-starter-mongo.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.jayway.jsonpath</groupId>
+            <artifactId>json-path</artifactId>
+            <version>2.9.0</version>
+        </dependency>
+        <!--  NMC end      -->
     </dependencies>
 
     <build>

@@ -1,0 +1,11 @@
+package org.nmcpye.datarun.mongo.service;
+
+import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
+import org.nmcpye.datarun.mongo.domain.DataFormSubmissionBu;
+
+/**
+ * Service Interface for managing {@link DataFormSubmission}.
+ */
+public interface DataFormSubmissionBuService
+    extends IdentifiableMongoService<DataFormSubmissionBu> {
+}

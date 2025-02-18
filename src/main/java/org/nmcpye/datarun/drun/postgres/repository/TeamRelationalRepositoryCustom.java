@@ -42,6 +42,15 @@ public interface TeamRelationalRepositoryCustom
 
     @Query(
         "select team from Team team " +
+            "left join team.activity a " +
+            "left join team.users user " +
+            "where a.uid =:activity and user.login =:userLogin and a.disabled = false"
+    )
+    Optional<Team> findFirstByActivityAndUser(@Param("activity") String activity,
+                                                 @Param("userLogin") String userLogin);
+
+    @Query(
+        "select team from Team team " +
             "left join fetch team.activity a " +
             "left join team.users user " +
             "where team.disabled =:includeDisabled and a.disabled =:includeDisabled and user.login =:login"

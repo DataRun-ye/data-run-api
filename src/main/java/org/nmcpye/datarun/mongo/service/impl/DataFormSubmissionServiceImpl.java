@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
+import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
@@ -11,6 +13,7 @@ import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepositoryCustom;
 import org.nmcpye.datarun.mongo.service.AssignmentSubmissionHistoryService;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.mongo.service.submissionmigration.SubmissionMaintenanceService;
+import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.exception.PathUpdateException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -21,6 +24,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -163,9 +167,23 @@ public class DataFormSubmissionServiceImpl
 
     @Override
     public Page<DataFormSubmission> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+        Specification<Team> spec = TeamSpecifications.canRead();
+        if (!queryRequest.isIncludeDisabled()) {
+            spec = spec.and(TeamSpecifications.isEnabled());
+        }
         Query query = new Query();
+        if (!SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+            final var userTeams = teamRepository.fetchBagRelationships(teamRepository.findAll(spec)).stream().map(Team::getUid).toList();
+            final var username = SecurityUtils.getCurrentUserLogin();
+            query = Query.query(Criteria.where("team").in(userTeams));
+
+            if (username.isPresent()) {
+                query = Query.query(Criteria.where("team").in(userTeams).orOperator(Criteria.where("formData._username").is(username.get())));
+            }
+        }
+
         query.with(pageable);
-        List<DataFormSubmission> submissions = getFormSubmissions(query, queryRequest);
+        List<DataFormSubmission> submissions = mongoTemplate.find(query, getClazz());
         long total = submissions.size();
 
         return new PageImpl<>(submissions, pageable, total);

@@ -79,7 +79,7 @@ public abstract class AbstractAuditingEntityMongo<T>
 
     @Override
     public int hashCode() {
-        int result = getUid() != null ? getUid().hashCode() : 0;
+        int result = getUid() != null ? getUid().hashCode() : getId().hashCode();
 //        result = 31 * result + (getCode() != null ? getCode().hashCode() : 0);
 //        result = 31 * result + (getUid() != null ? getName().hashCode() : 0);
 

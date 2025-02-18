@@ -32,7 +32,8 @@ spring:
       indent-output: true
   data:
     mongodb:
-      uri: mongodb://dataRunApi:dataRunApi@localhost:27017/dataRunApi
+      uri: mongodb://dRunUser:dRunUser@localhost:27017/dataRunApi
+#      uri: mongodb://dRunUser:dRunUser@mongod1:27017,mongod2:27017,mongod3:27017/dataRunApi?replicaSet=dbrs
       auto-index-creation: true
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
@@ -55,8 +56,26 @@ spring:
   thymeleaf:
     cache: false
 
+#debezium:
+#  connectors:
+#    mongodb:
+#      name: submissions-cdc
+#      connector.class: MongoDbConnector
+#      tasks.max: 1
+#      database.hosts: mongodb:27017
+#      database.user: cdc_user
+#      database.password: s3cr3t
+#      database.include.list: datarun
+#      collection.include.list: datarun.submissions
+#      transforms: unwrap, flatten
+#      transforms.unwrap.type: io.debezium.transforms.ExtractNewRecordState
+#      transforms.flatten.type: org.apache.kafka.connect.transforms.Flatten$Value
+
 server:
   port: 8080
+  # From the jhipster new upgrade
+  # make sure requests the proxy uri instead of the server one
+#  forward-headers-strategy: native
 
 # ===================================================================
 # JHipster specific properties

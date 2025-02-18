@@ -31,8 +31,28 @@ public interface AssignmentRelationalRepositoryCustom
 
     List<Assignment> findAllByTeamIn(List<Team> teamIds);
 
-//    @Query("select assignment from Assignment assignment where assignment.path like concat(:path, '%')")
+    //    @Query("select assignment from Assignment assignment where assignment.path like concat(:path, '%')")
     List<Assignment> findAllByPathContaining(String path);
+
+//        @Query(
+//        value = "select assignment from Assignment assignment " +
+//            "left join assignment.team t " +
+//            "left join assignment.orgUnit ou " +
+//            "where t.id =:teamId and ou.id =:orgUnitId " +
+//            "order by assignment.id limit 1"
+//    )
+//    Optional<Assignment> findFirstByTeamAndOrgUnit(@Param("teamId") Long team, @Param("orgUnitId") Long orgUnitUid);
+//
+
+    @Query(
+        "select assignment from Assignment assignment " +
+            "left join  assignment.team t " +
+            "left join assignment.orgUnit ou " +
+            "left join assignment.activity a " +
+            "where t.uid =:team and ou.uid =:orgUnit and a.uid =:activity order by a.id Limit 1"
+    )
+    Optional<Assignment> findFirstByTeamAndOrgUnit(@Param("team") String team,
+                                              @Param("orgUnit") String orgUnit, @Param("activity") String activity);
 
     @Query(
         value = "select assignment from Assignment assignment " +
