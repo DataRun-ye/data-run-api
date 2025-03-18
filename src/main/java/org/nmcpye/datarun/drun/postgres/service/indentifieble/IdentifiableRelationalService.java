@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.service.indentifieble;
 
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -8,7 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.Optional;
 
 public interface IdentifiableRelationalService
-    <T extends Identifiable<Long>>
+    <T extends IdentifiableEntity<Long>>
     extends IdentifiableService<T, Long> {
 
     Specification<T> canRead();
@@ -19,5 +19,5 @@ public interface IdentifiableRelationalService
 
     Page<T> findAllByUser(Specification<T> spec, Pageable pageable);
 
-    Optional<T> findIdentifiable(Identifiable<Long> identifiableObject);
+    Optional<T> findIdentifiable(IdentifiableEntity<Long> identifiableObject);
 }

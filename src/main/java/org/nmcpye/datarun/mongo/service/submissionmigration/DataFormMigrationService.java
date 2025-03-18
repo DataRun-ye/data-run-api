@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.mongo.service.submissionmigration;
 
-import jakarta.persistence.EntityNotFoundException;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.drun.postgres.domain.DataElement;
 import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
 import org.nmcpye.datarun.drun.postgres.repository.DataElementRepository;
@@ -58,15 +59,9 @@ public class DataFormMigrationService {
                 FormDataElementConf elementConf = createDataElementConf(formField, dataElement.getUid(), dataElement.getCode());
                 template.getFieldsConf().add(elementConf);
             } else {
-                throw new EntityNotFoundException("DataElement not found: " + field.getName() + ", type: " + field.getType().name());
+                throw new IllegalQueryException(ErrorCode.E1130, "DataElement Type: " + field.getType().name() + "not found ");
             }
         }
-
-//        dataForm.setOptionSets(createOptionSets(dataForm.getOptions()));
-        // Clear old fields
-        // dataForm.getFields().clear();
-//        dataFormTemplateRepository.save();
-        // Save updated DataForm
         formRepository.save(template);
     }
 
@@ -90,24 +85,15 @@ public class DataFormMigrationService {
         dataElement.setName(element.getName().toLowerCase());
         dataElement.setType(element.getType());
         dataElement.setDescription(element.getDescription());
-        if (dataElement.getDefaultValue() != null) {
-            dataElement.setDefaultValue(element.getDefaultValue().toString());
-        }
-        dataElement.setMandatory(element.getMandatory());
+//        dataElement.setMandatory(element.getMandatory());
         dataElement.setLabel(element.getLabel());
         if (element instanceof OptionField field) {
             final OptionSet optionSet = createOptionSet(field, dataForm.getOptions());
             dataElement.setOptionSet(optionSet);
         }
 
-        if (element instanceof ScannedCodeField field) {
-            dataElement.setGs1Enabled(field.getGs1Enabled());
-            dataElement.setProperties(field.getProperties());
-        }
-
         if (element instanceof ReferenceField field) {
             dataElement.setResourceType(field.getResourceType());
-            dataElement.setResourceMetadataSchema(field.getResourceMetadataSchema());
         }
 
         return dataElementRepository.save(dataElement);
@@ -173,11 +159,11 @@ public class DataFormMigrationService {
         return element.getRules().stream().filter(r -> r.getAction() == RuleAction.Error).toList();
     }
 
+
     private FormSectionConf createSectionConf(Section section) {
         final FormSectionConf sectionConf = new FormSectionConf();
         sectionConf.setPath(section.getPath());
         sectionConf.setName(section.getName());
-        sectionConf.setId(section.getName());
         sectionConf.setAppearance(section.getAppearance());
         sectionConf.setDescription(section.getDescription());
         sectionConf.setLabel(section.getLabel());

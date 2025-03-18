@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest.common;
 
 import org.nmcpye.datarun.common.IdentifiableRepository;
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
@@ -23,7 +23,7 @@ import java.lang.reflect.Type;
 import java.util.Optional;
 
 //@RequestMapping("/api/custom")
-public abstract class AbstractResourceRead<T extends Identifiable<ID>, ID extends Serializable> {
+public abstract class AbstractResourceRead<T extends IdentifiableEntity<ID>, ID extends Serializable> {
 
     protected final Logger log = LoggerFactory.getLogger(AbstractResourceRead.class);
 
@@ -96,10 +96,10 @@ public abstract class AbstractResourceRead<T extends Identifiable<ID>, ID extend
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<T> getById(@PathVariable("id") ID id) {
+    public ResponseEntity<T> getById(@PathVariable("id") String id) {
         log.debug("REST request to get from {}: {}", getName(), id);
-        Optional<T> activity = identifiableService.findOne(id).or(() -> identifiableService.findByUid(id.toString()));
-        return ResponseUtil.wrapOrNotFound(activity);
+        Optional<T> entity = identifiableService.findByUid(id);
+        return ResponseUtil.wrapOrNotFound(entity);
     }
 
     protected Page<T> getList(Pageable pageable, QueryRequest queryRequest) {

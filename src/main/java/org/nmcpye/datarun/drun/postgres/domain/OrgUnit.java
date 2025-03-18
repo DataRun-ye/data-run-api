@@ -13,7 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.drun.postgres.common.BaseIdentifiableObject;
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableObjectUtils;
 
 import java.io.Serializable;
@@ -62,7 +62,7 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "orgUnit")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonSerialize(contentAs = Identifiable.class)
+    @JsonSerialize(contentAs = IdentifiableEntity.class)
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Set<Assignment> assignments = new HashSet<>();
 

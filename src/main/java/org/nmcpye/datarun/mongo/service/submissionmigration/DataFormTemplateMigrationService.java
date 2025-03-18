@@ -121,10 +121,10 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
         dataElement.setCode(element.getName().toLowerCase());
         dataElement.setType(element.getType());
         dataElement.setDescription(element.getDescription());
-        if (dataElement.getDefaultValue() != null) {
-            dataElement.setDefaultValue(element.getDefaultValue().toString());
-        }
-        dataElement.setMandatory(element.getMandatory());
+//        if (dataElement.getDefaultValue() != null) {
+//            dataElement.setDefaultValue(element.getDefaultValue().toString());
+//        }
+//        dataElement.setMandatory(element.getMandatory());
         dataElement.setLabel(element.getLabel());
         if (element.getType().isOptionsType()) {
             final OptionSet optionSet = optionSetRepository.findByNameIgnoreCase(((OptionField) element)
@@ -132,14 +132,14 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
             dataElement.setOptionSet(optionSet);
         }
 
-        if (element instanceof ScannedCodeField field) {
-            dataElement.setGs1Enabled(field.getGs1Enabled());
-            dataElement.setProperties(field.getProperties());
-        }
+//        if (element instanceof ScannedCodeField field) {
+//            dataElement.setGs1Enabled(field.getGs1Enabled());
+//            dataElement.setProperties(field.getProperties());
+//        }
 
         if (element instanceof ReferenceField field) {
             dataElement.setResourceType(field.getResourceType());
-            dataElement.setResourceMetadataSchema(field.getResourceMetadataSchema());
+//            dataElement.setResourceMetadataSchema(field.getResourceMetadataSchema());
         }
 
         return dataElement;
@@ -207,7 +207,6 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
         final FormSectionConf sectionConf = new FormSectionConf();
         sectionConf.setPath(section.getPath());
         sectionConf.setName(section.getName());
-        sectionConf.setId(section.getName());
         sectionConf.setAppearance(section.getAppearance());
         sectionConf.setDescription(section.getDescription());
         sectionConf.setLabel(section.getLabel());

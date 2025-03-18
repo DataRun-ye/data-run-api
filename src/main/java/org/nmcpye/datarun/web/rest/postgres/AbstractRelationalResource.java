@@ -1,12 +1,14 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.nmcpye.datarun.drun.postgres.repository.IdentifiableRelationalRepository;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableRelationalService;
 import org.nmcpye.datarun.web.rest.common.AbstractResourceReadWrite;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.common.QuerySpecification;
-import org.nmcpye.datarun.web.rest.errors.RequestQueryParsingException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,7 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 //@RequestMapping("/api/custom")
 public abstract class
-AbstractRelationalResource<T extends Identifiable<Long>>
+AbstractRelationalResource<T extends IdentifiableEntity<Long>>
     extends AbstractResourceReadWrite<T, Long> implements QuerySpecification<T> {
 
     private final IdentifiableRelationalService<T> relationalService;
@@ -39,7 +41,7 @@ AbstractRelationalResource<T extends Identifiable<Long>>
         try {
             spec = buildSpecification(queryRequest);
         } catch (Exception e) {
-            throw new RequestQueryParsingException();
+            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2050, e.getMessage()));
         }
 
         return relationalService.findAllByUser(spec, pageable);
@@ -58,7 +60,7 @@ AbstractRelationalResource<T extends Identifiable<Long>>
         try {
             spec = buildSpecification(queryRequest).and(relationalService.canRead());
         } catch (Exception e) {
-            throw new RequestQueryParsingException();
+            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2050, e.getMessage()));
         }
 
         Page<T> processedPage = getRepository().findAll(spec, pageable);

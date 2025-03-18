@@ -3,12 +3,18 @@ package org.nmcpye.datarun.web.rest.mongo.submission;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
+import lombok.Setter;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Getter
+@Setter
 public class QueryRequest {
 
     @Schema(description = "Filters in format field__operator=value, e.g., status__eq=completed. " +
@@ -53,6 +59,9 @@ public class QueryRequest {
     @Schema(description = "Flag to enable eagerLoad of nested objects")
     private boolean eagerload = false;
 
+    @Schema(description = "Flag to merge DataFormTemplate elements and sections")
+    private boolean mergeElements = false;
+
 
     public Map<String, Object> parseFilters() {
         return filters.entrySet().stream().collect(Collectors.toMap(
@@ -67,39 +76,11 @@ public class QueryRequest {
         });
     }
 
-    public Map<String, Object> getFilters() {
-        return filters;
-    }
-
-    public void setFilters(Map<String, Object> filters) {
-        this.filters = filters;
-    }
-
-    public String getFields() {
-        return fields;
-    }
-
-    public void setFields(String fields) {
-        this.fields = fields;
-    }
-
-    public boolean isPaged() {
-        return paged;
-    }
-
-    public void setPaged(boolean paged) {
-        this.paged = paged;
-    }
-
     public int getSize() {
         if (!isPaged()) {
             return Integer.MAX_VALUE;
         }
         return size;
-    }
-
-    public void setSize(int size) {
-        this.size = size;
     }
 
     public int getPage() {
@@ -109,61 +90,8 @@ public class QueryRequest {
         return page;
     }
 
-    public void setPage(int page) {
-        this.page = page;
-    }
-
-    public String getSort() {
-        return sort;
-    }
-
-    public void setSort(String sort) {
-        this.sort = sort;
-    }
-
-    public boolean isFlatten() {
-        return flatten;
-    }
-
-    public void setFlatten(boolean flatten) {
-        this.flatten = flatten;
-    }
-    public boolean isAggregate() {
-        return aggregate;
-    }
-
-    public void setAggregate(boolean aggregate) {
-        this.aggregate = aggregate;
-    }
-
-
-    public boolean isIncludeDeleted() {
-        return includeDeleted;
-    }
-
-    public void setIncludeDeleted(boolean includeDeleted) {
-        this.includeDeleted = includeDeleted;
-    }
-
-    public boolean isIncludeDisabled() {
-        return includeDisabled;
-    }
-
-    public void setIncludeDisabled(boolean includeDisabled) {
-        this.includeDisabled = includeDisabled;
-    }
-
-    public boolean isEagerload() {
-        return eagerload;
-    }
-
-    public void setEagerload(boolean eagerload) {
-        this.eagerload = eagerload;
-    }
-
     private Object parseValue(String key, Object value) {
-        if (value instanceof String) {
-            String strValue = (String) value;
+        if (value instanceof String strValue) {
             try {
                 if (key.endsWith("__eq") || key.endsWith("__ne")) {
                     return parseTypedValue(strValue);
@@ -178,7 +106,7 @@ public class QueryRequest {
                     return strValue;
                 }
             } catch (Exception e) {
-                throw new IllegalArgumentException("Failed to parse filter value for key: " + key, e);
+                throw new IllegalQueryException(ErrorCode.E2014, "Failed to parse filter value for key: " + key + " " + e);
             }
         }
         return value;
@@ -197,7 +125,7 @@ public class QueryRequest {
                 return value;
             }
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid value format: " + value, e);
+            throw new IllegalQueryException(ErrorCode.E2014, "Invalid value format: " + value);
         }
     }
 
@@ -209,7 +137,7 @@ public class QueryRequest {
                 return Long.parseLong(value);
             }
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid numeric value: " + value, e);
+            throw new IllegalQueryException(ErrorCode.E2014, "Invalid numeric value: " + value);
         }
     }
 

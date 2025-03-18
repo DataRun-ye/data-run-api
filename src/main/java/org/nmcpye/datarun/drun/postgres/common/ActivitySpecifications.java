@@ -2,6 +2,8 @@ package org.nmcpye.datarun.drun.postgres.common;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
@@ -17,8 +19,8 @@ public abstract class ActivitySpecifications {
             Join<Assignment, Team> teamJoin = assignmentJoin.join("team", JoinType.INNER);
             Join<Team, User> userJoin = teamJoin.join("users", JoinType.INNER);
 
-            String currentUserLogin = SecurityUtils.getCurrentUserLogin()
-                .orElseThrow(() -> new IllegalStateException("Current user login not found"));
+            String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow(
+                new ErrorMessage(ErrorCode.E3004, Activity.class.getName()));
 
             return criteriaBuilder.equal(userJoin.get("login"), currentUserLogin);
         };

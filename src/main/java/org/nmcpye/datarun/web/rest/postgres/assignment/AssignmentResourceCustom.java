@@ -1,13 +1,15 @@
 package org.nmcpye.datarun.web.rest.postgres.assignment;
 
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentServiceCustom;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
-import org.nmcpye.datarun.web.rest.exception.PathUpdateException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.nmcpye.datarun.web.rest.postgres.AbstractRelationalResource;
 import org.slf4j.Logger;
@@ -101,7 +103,7 @@ public class AssignmentResourceCustom
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<EntitySaveSummaryVM> saveAll(List<Assignment> entities) {
         log.debug("REST request to saveAll {}", getName());
-        var withIds = entities.stream().filter((entity) -> entity.getId() != null).map(Identifiable::getId).toList();
+        var withIds = entities.stream().filter((entity) -> entity.getId() != null).map(IdentifiableEntity::getId).toList();
         if (!withIds.isEmpty()) {
             throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + withIds, "idexists");
         }
@@ -123,7 +125,7 @@ public class AssignmentResourceCustom
             return ResponseEntity.ok("Paths updated successfully");
         } catch (Exception e) {
             log.error("Error occurred while updating paths", e);
-            throw new PathUpdateException("Failed to update paths", e);
+            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1003, e.getMessage()));
         }
     }
 }

@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.service.indentifieble;
 
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,7 +9,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 
-public interface IdentifiableService<T extends Identifiable<ID>,
+public interface IdentifiableService<T extends IdentifiableEntity<ID>,
     ID extends Serializable> {
 
     T saveWithRelations(T object);

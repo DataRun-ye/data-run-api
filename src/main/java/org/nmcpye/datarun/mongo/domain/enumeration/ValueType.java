@@ -6,9 +6,12 @@ import java.util.List;
  * The ValueType enumeration.
  */
 public enum ValueType {
+    @Deprecated(since = "Remove for Value Type rendering")
     ScannedCode,
-    Section,
+    @Deprecated(since = "Remove for boolean repeatable in section")
     RepeatableSection,
+    Section,
+    @Deprecated(since = "Remove for boolean isMulti with select one")
     SelectMulti,
     SelectOne,
     Age,
@@ -38,6 +41,7 @@ public enum ValueType {
     Task,
     Team,
     Progress,
+
     Reference,
     FileResource,
     Calculated,
@@ -56,12 +60,12 @@ public enum ValueType {
         return this == Section;
     }
 
-    public boolean isReference() {
-        return this == Reference;
-    }
-
     public boolean isRepeat() {
         return this == RepeatableSection;
+    }
+
+    public boolean isReference() {
+        return this == Reference;
     }
 
     public boolean isOptionsType() {

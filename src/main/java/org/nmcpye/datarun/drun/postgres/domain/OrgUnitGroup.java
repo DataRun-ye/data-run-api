@@ -20,7 +20,8 @@ import java.util.Set;
 @Table(name = "org_unit_group")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OrgUnitGroup extends BaseIdentifiableObject<Long> implements Serializable {
+public class OrgUnitGroup extends
+    BaseIdentifiableObject<Long> implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
@@ -200,8 +201,6 @@ public class OrgUnitGroup extends BaseIdentifiableObject<Long> implements Serial
         this.inactive = inactive;
     }
 
-//    @JsonProperty("orgUnits")
-//    @JsonSerialize(contentAs = BaseIdentifiableObject.class)
     public Set<OrgUnit> getMembers() {
         return this.members;
     }

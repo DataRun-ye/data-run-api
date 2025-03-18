@@ -1,24 +1,27 @@
 package org.nmcpye.datarun.mongo.domain.dataelement;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class FormSectionConf extends FormElementConf {
 
-    private Boolean repeatable;
+    private Boolean repeatable = false;
 
     @Override
     public String getId() {
-        return this.getName();
+        return getName();
     }
 
-    @Override
-    public void setId(String id) {
-        this.setName(id);
-    }
-
-    public Boolean getRepeatable() {
-        return repeatable;
-    }
-
-    public void setRepeatable(Boolean repeatable) {
-        this.repeatable = repeatable;
-    }
+//    public FormSectionConf() {
+//        if (getId() == null || getId().isEmpty()) {
+//            setId(CodeGenerator.generateUid());
+//        }
+//    }
+//
+//    public FormElementConf id(String id) {
+//        this.setName(id);
+//        return this;
+//    }
 }

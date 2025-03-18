@@ -1,7 +1,9 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
-import jakarta.el.PropertyNotFoundException;
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.nmcpye.datarun.mongo.repository.IdentifiableMongoRepository;
 import org.nmcpye.datarun.mongo.service.IdentifiableMongoService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
@@ -23,7 +25,7 @@ import java.lang.reflect.ParameterizedType;
 import java.util.List;
 import java.util.Optional;
 
-public abstract class IdentifiableMongoServiceImpl<T extends Identifiable<String>>
+public abstract class IdentifiableMongoServiceImpl<T extends IdentifiableEntity<String>>
     implements IdentifiableMongoService<T> {
     private final Logger log = LoggerFactory.getLogger(IdentifiableMongoServiceImpl.class);
 
@@ -77,9 +79,8 @@ public abstract class IdentifiableMongoServiceImpl<T extends Identifiable<String
     public T update(T object) {
         T existingEntity = repository
             .findByUid(object.getUid())
-//            .or(() -> repository
-//                .findById(object.getId()))
-            .orElseThrow(() -> new PropertyNotFoundException("Entity not found with UID: " + object.getUid()));
+            .orElseThrow(() ->
+                new IllegalQueryException(new ErrorMessage(ErrorCode.E1106, "Id", object.getUid())));
 
         log.debug("Request to update T : {}", object);
         object.setId(existingEntity.getId());
@@ -107,11 +108,6 @@ public abstract class IdentifiableMongoServiceImpl<T extends Identifiable<String
 
     @Override
     public Page<T> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
-        Query query = new Query();
-
-//        List<T> submissions = getFormSubmissions(query, queryRequest);
-//        long total = submissions.size();
-//        return new PageImpl<>(submissions, pageable, total);
         Page<T> submissions = query(queryRequest);
         return submissions;
     }
@@ -120,7 +116,6 @@ public abstract class IdentifiableMongoServiceImpl<T extends Identifiable<String
     public List<T> findAllByUser(QueryRequest queryRequest) {
         log.debug("Request to get all MEntities");
         Query query = new Query();
-//        var allEntities = getFormSubmissions(query, queryRequest);
         var allEntities = getFormSubmissions(query, queryRequest);
         return allEntities;
     }
@@ -128,10 +123,6 @@ public abstract class IdentifiableMongoServiceImpl<T extends Identifiable<String
     public Page<T> query(QueryRequest request) {
         Query query = MongoQueryBuilder.buildQuery(request.parseFilters());
         query = MongoQueryBuilder.addProjections(query, request.getFields());
-
-//        if (!request.isIncludeDeleted()) {
-//            query.addCriteria(Criteria.where("deleted").is(false));
-//        }
 
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
         query.with(pageable);
@@ -163,14 +154,9 @@ public abstract class IdentifiableMongoServiceImpl<T extends Identifiable<String
             return;
         }
 
-        Optional<String> currentUserLogin = SecurityUtils.getCurrentUserLogin();
-        if (currentUserLogin.isPresent()) {
-            String login = currentUserLogin.get();
-            query.addCriteria(Criteria.where("createdBy").is(login));
-        } else {
-            // Handle the case where no user is logged in, if necessary
-            throw new SecurityException("User is not authenticated");
-        }
+        String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow();
+        String login = currentUserLogin;
+        query.addCriteria(Criteria.where("createdBy").is(login));
     }
 
     @Override

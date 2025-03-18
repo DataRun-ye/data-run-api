@@ -23,6 +23,18 @@ public class Translation implements Serializable {
         this.value = value;
     }
 
+    /**
+     * Creates a cache key.
+     *
+     * @param locale   the locale string, i.e. Locale.toString().
+     * @param property the translation property.
+     * @return a unique cache key valid for a given translated objects, or null
+     * if either locale or property is null.
+     */
+    public static String getCacheKey(String locale, String property) {
+        return locale != null && property != null ? (locale + property) : null;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(locale, property, value);
@@ -45,18 +57,6 @@ public class Translation implements Serializable {
                 Objects.equals(this.property, other.property) &&
                 Objects.equals(this.value, other.value)
         );
-    }
-
-    /**
-     * Creates a cache key.
-     *
-     * @param locale   the locale string, i.e. Locale.toString().
-     * @param property the translation property.
-     * @return a unique cache key valid for a given translated objects, or null
-     * if either locale or property is null.
-     */
-    public static String getCacheKey(String locale, String property) {
-        return locale != null && property != null ? (locale + property) : null;
     }
 
     // -------------------------------------------------------------------------------

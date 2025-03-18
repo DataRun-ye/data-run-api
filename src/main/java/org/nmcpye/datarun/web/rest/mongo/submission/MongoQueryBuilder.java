@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.web.rest.mongo.submission;
 
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -30,7 +32,7 @@ public class MongoQueryBuilder {
                 case "gte" -> Criteria.where(field).gte(value);
                 case "lt" -> Criteria.where(field).lt(value);
                 case "lte" -> Criteria.where(field).lte(value);
-                default -> throw new QueryRequestValidationException("Unsupported operator", field, operator, value.toString());
+                default -> throw new QueryRequestValidationException(new ErrorMessage(ErrorCode.E2035, operator));
             };
 
             query.addCriteria(criteria);

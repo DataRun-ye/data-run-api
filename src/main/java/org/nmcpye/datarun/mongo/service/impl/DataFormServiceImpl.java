@@ -1,5 +1,8 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
@@ -66,11 +69,16 @@ public class DataFormServiceImpl
             field.setPath(currentPath);
             if (field instanceof ReferenceField referenceField) {
                 if (referenceField.getResourceType() == null || referenceField.getResourceMetadataSchema() == null) {
-                    throw new IllegalArgumentException(field.getName() + ": is of Reference type but does not specify Resource Type [OrgUnit, Team, Activity...etc] or ResourceMetadataSchema (The form used to submit the metadata of the reference type)");
+                    throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1102, field.getName()));
+                }
+
+                if (referenceField.getResourceMetadataSchema() == null) {
+                    throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1103, field.getName()));
                 }
 
                 if (metadataSchemaRepository.findByUid(referenceField.getResourceMetadataSchema()).isEmpty()) {
-                    throw new IllegalArgumentException("Field: " + field.getName() + ": Specified ResourceMetadataSchema " + referenceField.getResourceMetadataSchema() + " does not exist");
+                    throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1104,
+                        referenceField.getResourceMetadataSchema(), field.getName()));
                 }
 
             }
@@ -85,29 +93,6 @@ public class DataFormServiceImpl
     public DataForm saveWithRelations(DataForm dataForm) {
         processFields(dataForm.getFields(), "");
         dataForm.updateFlattenedFields();
-
-//        Activity activity = activityRepository.findByUid(dataForm.getActivity())
-//            .orElseThrow(() -> new PropertyNotFoundException("Activity not found: " + dataForm.getActivity()));
-//        dataForm.setActivity(activity.getUid());
-
-//        Set<String> orgUnitUids = dataForm.getOrgUnits(); // Extract from JSON
-
-//        Set<OrgUnit> validOrgUnits = orgUnitRepository.findAllByUidIn(orgUnitUids);
-
-//        Set<String> foundOrgUnitUids = validOrgUnits.stream()
-//            .map(OrgUnit::getUid)
-//            .collect(Collectors.toSet());
-
-//        Set<String> missingOrgUnitUids = new HashSet<>(orgUnitUids);
-//        missingOrgUnitUids.removeAll(foundOrgUnitUids);
-//
-//        if (!missingOrgUnitUids.isEmpty()) {
-//            throw new MissingFormOrgUnitUidsException(
-//                dataForm.getUid() + ',' + dataForm.getName(),
-//                missingOrgUnitUids);
-//            dataForm.setOrgUnits(foundOrgUnitUids);
-//        }
-
         return repositoryCustom.save(dataForm);
     }
 
@@ -129,16 +114,6 @@ public class DataFormServiceImpl
 
         return super.update(object);
     }
-
-//    @Override
-//    public List<DataForm> getAccessibleForms(String teamId, Permission permission) {
-//        // Fetch form template IDs for which the team has the specified permission
-//        List<String> formTemplateIds = permissionRepository.findFormsByTeamAndPermission(teamId, permission.getName());
-//
-//        // Fetch and return the full form templates
-//        return repositoryCustom.findAllById(formTemplateIds);
-//    }
-
 
     @Override
     public Page<DataForm> getAccessibleForms(Pageable pageable) {

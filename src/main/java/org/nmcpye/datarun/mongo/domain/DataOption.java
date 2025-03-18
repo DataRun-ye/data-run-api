@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.mongo.domain;
 
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -9,6 +11,8 @@ import java.util.Objects;
 /**
  * A DataOption.
  */
+@Getter
+@Setter
 //@JsonSerialize(using = DataOptionSerializer.class)
 //@JsonDeserialize(using = DataOptionDeserializer.class)
 public class DataOption implements Serializable {
@@ -30,15 +34,6 @@ public class DataOption implements Serializable {
 
     private Map<String, Object> properties;
 
-
-    public String getName() {
-        return this.name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public DataOption name(String name) {
         this.setName(name);
         return this;
@@ -47,50 +42,6 @@ public class DataOption implements Serializable {
     public DataOption listName(String listName) {
         this.setListName(listName);
         return this;
-    }
-
-
-    public String getListName() {
-        return listName;
-    }
-
-    public void setListName(String listName) {
-        this.listName = listName;
-    }
-
-    public Map<String, String> getLabel() {
-        if (this.label == null) {
-            return Map.of("en", this.name);
-        }
-        return label;
-    }
-
-    public void setLabel(Map<String, String> label) {
-        this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
-    }
-
-    public Integer getOrder() {
-        return order;
-    }
-
-    public void setOrder(Integer order) {
-        this.order = Objects.requireNonNullElseGet(order, () -> 0);
-    }
-
-    public String getFilterExpression() {
-        return filterExpression;
-    }
-
-    public void setFilterExpression(String filterExpression) {
-        this.filterExpression = filterExpression;
-    }
-
-    public Map<String, Object> getProperties() {
-        return properties;
-    }
-
-    public void setProperties(Map<String, Object> properties) {
-        this.properties = properties;
     }
 
     @Override

@@ -2,7 +2,7 @@ package org.nmcpye.datarun.drun.postgres.common;
 
 import org.springframework.data.jpa.domain.Specification;
 
-public interface IdentifiableSpecifications<T extends Identifiable<Long>> {
+public interface IdentifiableSpecifications<T extends IdentifiableEntity<Long>> {
     Specification<T> hasNameLike(String name);
 
     Specification<T> hasId(Long id);

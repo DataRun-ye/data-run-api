@@ -2,7 +2,6 @@ package org.nmcpye.datarun.drun.postgres.common;
 
 import jakarta.persistence.MappedSuperclass;
 import org.nmcpye.datarun.domain.AbstractAuditingEntity;
-import org.nmcpye.datarun.utils.CodeGenerator;
 
 import static org.nmcpye.datarun.drun.postgres.hibernate.HibernateProxyUtils.getRealClass;
 
@@ -11,29 +10,9 @@ public abstract class BaseIdentifiableObject<T>
     extends AbstractAuditingEntity<T>
     implements IdentifiableObject<T> {
 
-//    @Type(JsonType.class)
-//    @Column(name = "metadata", columnDefinition = "jsonb")
-//    protected Map<String, Object> metadata = new HashMap<>();
-//
-//    @JsonProperty
-//    public Map<String, Object> getMetadata() {
-//
-//        if (metadata == null) {
-//            metadata = new HashMap<>();
-//        }
-//
-//        return metadata;
+    //    public BaseIdentifiableObject() {
+//      setAutoFields();
 //    }
-//
-//    /**
-//     * Clears out cache when setting metadata.
-//     */
-//    public void setMetadata(Map<String, Object> metadata) {
-//
-//        this.metadata = metadata;
-//    }
-//
-
     // -------------------------------------------------------------------------
     // hashCode and equals
     // -------------------------------------------------------------------------
@@ -76,16 +55,6 @@ public abstract class BaseIdentifiableObject<T>
     // -------------------------------------------------------------------------
     // Logic
     // -------------------------------------------------------------------------
-
-
-    /**
-     * Set auto-generated fields on save or update
-     */
-    public void setAutoFields() {
-        if (getUid() == null || getUid().isEmpty()) {
-            setUid(CodeGenerator.generateUid());
-        }
-    }
 
     @Override
     public String toString() {

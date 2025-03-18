@@ -3,6 +3,8 @@ package org.nmcpye.datarun.drun.postgres.common;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
@@ -46,8 +48,8 @@ public abstract class OrgUnitSpecification {
                 Predicate teamNotDisabled = criteriaBuilder.isFalse(teamJoin.get("disabled"));
                 Predicate activityNotDisabled = criteriaBuilder.isFalse(assignmentActivityJoin.get("disabled"));
 
-                String currentUserLogin = SecurityUtils.getCurrentUserLogin()
-                    .orElseThrow(() -> new IllegalStateException("Current user login not found"));
+                String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow(
+                    new ErrorMessage(ErrorCode.E3004, OrgUnit.class.getName()));
                 query.distinct(true);
                 return criteriaBuilder.and(criteriaBuilder.equal(userJoin.get("login"), currentUserLogin),
                     activityNotDisabled,

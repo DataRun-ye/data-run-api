@@ -4,12 +4,13 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class Section extends DefaultField {
     @Field("fields")
     @JsonDeserialize(contentUsing = FieldDeserializer.class)
-    private List<AbstractField> fields = new ArrayList<>();
+    private List<AbstractField> fields = new LinkedList<>();
 
     public List<AbstractField> getFields() {
         return fields;

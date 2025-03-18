@@ -45,6 +45,11 @@ public class DataFormSubmission
     private String form;
 
     private String team;
+    private String teamCode;
+
+    private String orgUnit;
+    private String orgUnitCode;
+    private String orgUnitName;
 
     private String activity;
 
@@ -53,7 +58,8 @@ public class DataFormSubmission
     @Field("status")
     private AssignmentStatus status;
 
-    private Map<String, Object> formData = new HashMap<String, Object>();
+    private Map<String, Object> formData = new LinkedHashMap<String, Object>();
+    private Map<String, Object> metadata = new LinkedHashMap<>();
 
     @Field("currentVersion")
     private int version;
@@ -72,6 +78,10 @@ public class DataFormSubmission
 
     @Field("cancelReason")
     private String cancelReason;
+
+    public DataFormSubmission() {
+        setAutoFields();
+    }
 
     public String getReassignedTo() {
         return reassignedTo;
@@ -238,12 +248,52 @@ public class DataFormSubmission
         return this;
     }
 
+    public String getTeamCode() {
+        return teamCode;
+    }
+
+    public void setTeamCode(String teamCode) {
+        this.teamCode = teamCode;
+    }
+
+    public String getOrgUnit() {
+        return orgUnit;
+    }
+
+    public void setOrgUnit(String orgUnit) {
+        this.orgUnit = orgUnit;
+    }
+
+    public String getOrgUnitCode() {
+        return orgUnitCode;
+    }
+
+    public void setOrgUnitCode(String orgUnitCode) {
+        this.orgUnitCode = orgUnitCode;
+    }
+
+    public String getOrgUnitName() {
+        return orgUnitName;
+    }
+
+    public void setOrgUnitName(String orgUnitName) {
+        this.orgUnitName = orgUnitName;
+    }
+
     public String getActivity() {
         return activity;
     }
 
     public void setActivity(String activity) {
         this.activity = activity;
+    }
+
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
     }
 
     /**
@@ -260,27 +310,31 @@ public class DataFormSubmission
             throw new PropertyNotFoundException("one or more of the MainAttributes activity, team, or form is not set");
         }
 
-        Map<String, Object> formData = this.getFormData();
-
-        Map<String, ?> map = Map.ofEntries(
+        final String activity = (String) this.getFormData().get("_activity");
+        Map<String, Object> map = Map.ofEntries(
+            entry("_id", this.getUid()),
             entry("_deleted", this.getDeleted()),
-//            entry("_assignment", this.getAssignment()),
             entry("_form", this.getForm()),
-            entry("_submissionUid", this.getUid()),
+            entry("_activity", activity),
+            entry("_orgUnit", orgUnit),
+            entry("_orgUnitCode", orgUnitCode),
+            entry("_orgUnitName", orgUnitName),
+            entry("_team", this.getTeam()),
             entry("_serialNumber", this.getSerialNumber()),
             entry("_submissionTime", Objects.requireNonNullElse(this.getCreatedDate(), Instant.now())),
             entry("_lastModifiedDate", Objects.requireNonNullElse(this.getLastModifiedDate(), Instant.now())),
             entry("_version", this.getVersion())
         );
 
-        if (assignment != null) {
-            formData.put("_assignment", this.getAssignment());
-        }
-        formData.putIfAbsent("_startEntryTime", this.getStartEntryTime());
-        formData.putIfAbsent("_finishedEntryTime", this.getFinishedEntryTime());
-        formData.putAll(map);
+        this.setActivity(activity);
 
-        this.setFormData(formData);
+        Map<String, Object> metadata = new LinkedHashMap<>(map);
+
+        if (assignment != null) {
+            metadata.put("_assignment", this.getAssignment());
+        }
+
+        this.setMetadata(metadata);
 
         return this;
     }
@@ -289,11 +343,11 @@ public class DataFormSubmission
 
         Map<String, Object> formData = this.getFormData();
 
-        final Object id = Objects.requireNonNullElse(formData.get("_id"), CodeGenerator.generateCode(16));
+//        final Object id = Objects.requireNonNullElse(formData.get("_submissionUid"), CodeGenerator.generateCode(16));
 
-        formData.put("_id", id);
+//        final Object id = formData.putIfAbsent("_id", getUid());
 
-        Map<String, Object> updatedFormData = addGroupIndices(formData, id);
+        Map<String, Object> updatedFormData = addGroupIndices(formData, getUid());
 
         this.setFormData(updatedFormData);
 
@@ -312,8 +366,9 @@ public class DataFormSubmission
                         List<Map<String, Object>> updatedList = new ArrayList<>();
                         for (int i = 0; i < list.size(); i++) {
                             Map<String, Object> objectInArray = (Map<String, Object>) list.get(i);
-                            objectInArray.put("_parentId", parentId);
                             objectInArray.put("_id", CodeGenerator.generateCode(16));  // Add groupIndex (s
+                            objectInArray.put("_parentId", parentId);
+                            objectInArray.put("_submissionUid", this.getUid());
                             objectInArray.put("_index", i + 1);  // Add repeatIndex (starting from 1)
                             updatedList.add(objectInArray);
                         }

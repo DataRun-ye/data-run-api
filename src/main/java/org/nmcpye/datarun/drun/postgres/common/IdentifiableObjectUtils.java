@@ -21,7 +21,7 @@ public class IdentifiableObjectUtils {
      * @param objects the list of IdentifiableObjects.
      * @return a list of uids.
      */
-    public static <T extends Identifiable> List<String> getUids(Collection<T> objects) {
+    public static <T extends IdentifiableEntity> List<String> getUids(Collection<T> objects) {
         return objects != null ? objects.stream().filter(Objects::nonNull).map(o -> o.getUid()).collect(Collectors.toList()) : null;
     }
 //

@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.common;
 
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -14,8 +16,8 @@ public abstract class UserSpecifications {
             } else if (!SecurityUtils.isAuthenticated()) {
                 return cb.disjunction();
             } else {
-                String currentUserLogin = SecurityUtils.getCurrentUserLogin()
-                    .orElseThrow(() -> new IllegalStateException("Current user login not found"));
+                String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow(
+                    new ErrorMessage(ErrorCode.E3004, User.class.getName()));
 
                 return cb.equal(root.get("login"), currentUserLogin);
             }

@@ -1,25 +1,19 @@
 package org.nmcpye.datarun.drun.postgres.common;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.nmcpye.datarun.utils.CodeGenerator;
 
-public interface Identifiable<ID> extends SystemIdentifiable {
+public interface Identifiable {
+    /**
+     * @return external unique ID of the object as used in the RESTful API
+     */
+    String getUid();
 
-    void setId(ID id);
+    void setUid(String uid);
 
-    ID getId();
-
-//    /**
-//     * @return external unique ID of the object as used in the RESTful API
-//     */
-//    String getUid();
-//
-//    void setUid(String uid);
-
-    String getCreatedBy();
-    void setCreatedBy(String user);
-
-    @JsonIgnore
-    default Identifiable<ID> setIsPersisted() {
-        return null;
+    default void setAutoFields() {
+        if (getUid() == null || getUid().isEmpty()) {
+            setUid(CodeGenerator.generateUid());
+        }
     }
+
 }

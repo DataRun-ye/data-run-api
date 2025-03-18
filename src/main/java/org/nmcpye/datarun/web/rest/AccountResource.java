@@ -2,6 +2,8 @@ package org.nmcpye.datarun.web.rest;
 
 import jakarta.validation.Valid;
 import org.apache.commons.lang3.StringUtils;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.repository.UserRepository;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -104,8 +106,8 @@ public class AccountResource {
      */
     @PostMapping("/account")
     public void saveAccount(@Valid @RequestBody AdminUserDTO userDTO) {
-        String userLogin = SecurityUtils.getCurrentUserLogin()
-            .orElseThrow(() -> new AccountResourceException("Current user login not found"));
+        String userLogin = SecurityUtils.getCurrentUserLoginOrThrow(
+            new ErrorMessage(ErrorCode.E3004, getClass().getName()));
         Optional<User> existingUser = userRepository.findOneByEmailIgnoreCase(userDTO.getEmail());
         if (existingUser.isPresent() && (!existingUser.orElseThrow().getLogin().equalsIgnoreCase(userLogin))) {
             throw new EmailAlreadyUsedException();

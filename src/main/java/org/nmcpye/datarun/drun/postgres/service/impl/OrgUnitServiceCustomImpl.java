@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
@@ -116,15 +118,12 @@ public class OrgUnitServiceCustomImpl
 
     @Override
     public Page<OrgUnit> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
-        if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
-            return Page.empty();
-        }
-
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repository.findAll(pageable);
         }
 
-        String currentUserLogin = SecurityUtils.getCurrentUserLogin().get();
+        String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow(
+            new ErrorMessage(ErrorCode.E3004, getClass().getName()));
 
         // Get user's direct teams
         List<Team> userDirectTeams = userRepository.findOneByLogin(currentUserLogin)
@@ -179,15 +178,12 @@ public class OrgUnitServiceCustomImpl
 
     @Override
     public Page<OrgUnit> findAllByUser(Specification<OrgUnit> spec, Pageable pageable) {
-        if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
-            return Page.empty();
-        }
-
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repository.findAll(spec, pageable);
         }
 
-        String currentUserLogin = SecurityUtils.getCurrentUserLogin().get();
+        String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow(
+            new ErrorMessage(ErrorCode.E3004, getClass().getName()));
 
         // Get user's direct teams
         List<Team> userDirectTeams = userRepository.findOneByLogin(currentUserLogin)
@@ -242,9 +238,10 @@ public class OrgUnitServiceCustomImpl
 
     @Override
     public Set<OrgUnit> getUserTeamsOrganisationUnits() {
-        var userLogin = SecurityUtils.getCurrentUserLogin();
-        if (userLogin.isPresent()) {
-            var user = userRepository.findOneByLogin(userLogin.get());
+        var userLogin = SecurityUtils.getCurrentUserLoginOrThrow(
+            new ErrorMessage(ErrorCode.E3004, getClass().getName()));
+
+            var user = userRepository.findOneByLogin(userLogin);
             return user.stream().flatMap(u -> u.getTeams().stream())
                 .filter(team -> !team.getDisabled())
                 .filter(team -> !team.getActivity().getDisabled())
@@ -252,8 +249,6 @@ public class OrgUnitServiceCustomImpl
                 .flatMap(Collection::stream)
                 .map(Assignment::getOrgUnit)
                 .collect(Collectors.toSet());
-        }
-        return new HashSet<>();
     }
 
     @Override

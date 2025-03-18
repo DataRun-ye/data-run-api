@@ -1,5 +1,8 @@
 package org.nmcpye.datarun.web.rest.postgres.orgunit;
 
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
@@ -61,7 +64,7 @@ public class OrgUnitResourceCustom extends AbstractRelationalResource<OrgUnit> {
             return ResponseEntity.ok("Paths updated successfully");
         } catch (Exception e) {
             log.error("Error occurred while updating paths", e);
-            throw new PathUpdateException("Failed to update paths", e);
+            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1003, e.getMessage()));
         }
     }
 

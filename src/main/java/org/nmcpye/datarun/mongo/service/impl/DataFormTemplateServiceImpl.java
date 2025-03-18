@@ -3,9 +3,9 @@ package org.nmcpye.datarun.mongo.service.impl;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
-import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.DataFormTemplateService;
+import org.nmcpye.datarun.mongo.service.formcomfiguration.FormElementConfigService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -37,34 +37,32 @@ public class DataFormTemplateServiceImpl
 
     private final TeamRelationalRepositoryCustom teamRepository;
 
-    private final FormElementService formElementService;
+    private final FormElementConfigService formElementConfigService;
 
     public DataFormTemplateServiceImpl(
         DataFormTemplateRepository repository,
         MongoTemplate mongoTemplate,
-        TeamRelationalRepositoryCustom teamRepository, FormElementService formElementService) {
+        TeamRelationalRepositoryCustom teamRepository, FormElementConfigService formElementConfigService) {
         super(repository, mongoTemplate);
         this.repository = repository;
         this.teamRepository = teamRepository;
-        this.formElementService = formElementService;
+        this.formElementConfigService = formElementConfigService;
+    }
+
+    private Integer createOrUpdateVersion(DataFormTemplate source) {
+        return repository.findByUid(source.getUid())
+            .map(DataFormTemplate::getVersion)
+            .orElse(0);
     }
 
     @Override
     public DataFormTemplate saveWithRelations(DataFormTemplate formTemplate) {
-        return formElementService.createDataForm(formTemplate);
+        return formElementConfigService.createDataForm(formTemplate
+            .version(createOrUpdateVersion(formTemplate) + 1));
     }
 
     @Override
-    public List<DataFormTemplate> findTemplatesByFieldType(ValueType type) {
-        // Create query criteria
-        Criteria criteria = Criteria.where("fields.type").is(type);
-        Query query = new Query(criteria);
-
-        // Execute query
-        return mongoTemplate.find(query, DataFormTemplate.class);
-    }
-
-    @Override
+    @Transactional(readOnly = true)
     public Page<DataFormTemplate> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
 
         if (!SecurityUtils.isAuthenticated()) {
@@ -97,6 +95,10 @@ public class DataFormTemplateServiceImpl
             results,
             pageable,
             () -> mongoTemplate.count(totalQuery, DataFormTemplate.class));
+
+        if (queryRequest.isMergeElements()) {
+            resultsPage.forEach(formElementConfigService::mergeFormElements);
+        }
 
         return resultsPage;
     }

@@ -2,7 +2,8 @@ package org.nmcpye.datarun.web.rest.common;
 
 import jakarta.validation.Valid;
 import org.nmcpye.datarun.common.IdentifiableRepository;
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
@@ -20,7 +21,7 @@ import java.util.List;
 import java.util.Objects;
 
 //@RequestMapping("/api/custom")
-public abstract class AbstractResourceReadWrite<T extends Identifiable<ID>, ID extends Serializable>
+public abstract class AbstractResourceReadWrite<T extends IdentifiableEntity<ID>, ID extends Serializable>
     extends AbstractResourceRead<T, ID> {
 
     protected final Logger log = LoggerFactory.getLogger(AbstractResourceReadWrite.class);
@@ -72,6 +73,7 @@ public abstract class AbstractResourceReadWrite<T extends Identifiable<ID>, ID e
         } catch (Exception e) {
             log.debug("REST Error Saving submission {}: {}", e.toString(), entity.getCreatedBy());
             summary.getFailed().put(entity.getUid(), e.getMessage());
+            throw new IllegalQueryException(e.getMessage());
         }
     }
 

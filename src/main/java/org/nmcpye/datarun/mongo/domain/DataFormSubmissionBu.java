@@ -36,14 +36,7 @@ public class DataFormSubmissionBu
     @Field("deleted")
     private Boolean deleted;
 
-    @Field("startEntryTime")
-    private Instant startEntryTime;
-
-    @Field("finishedEntryTime")
-    private Instant finishedEntryTime;
     private String orgUnit;
-
-    private String form;
 
     @Field("teamOld")
     private String teamOld;
@@ -56,7 +49,14 @@ public class DataFormSubmissionBu
     @Field("status")
     private AssignmentStatus status;
 
-    private Map<String, Object> formData = new HashMap<String, Object>();
+    private Map<String, Object> formData = new HashMap<>();
+
+    @Field("startEntryTime")
+    private Instant startEntryTime;
+
+    @Field("finishedEntryTime")
+    private Instant finishedEntryTime;
+    private String form;
 
     @Field("currentVersion")
     private int version;
@@ -79,6 +79,8 @@ public class DataFormSubmissionBu
     private String errorMessage;
     private String errorStackTrace;
     private Long failedAt;
+    private Long lastProcessedAt;
+    private Boolean processed;
 
     public String getErrorMessage() {
         return errorMessage;
@@ -102,6 +104,22 @@ public class DataFormSubmissionBu
 
     public void setFailedAt(Long failedAt) {
         this.failedAt = failedAt;
+    }
+
+    public Long getLastProcessedAt() {
+        return lastProcessedAt;
+    }
+
+    public void setLastProcessedAt(Long lastProcessedAt) {
+        this.lastProcessedAt = lastProcessedAt;
+    }
+
+    public Boolean getProcessed() {
+        return processed;
+    }
+
+    public void setProcessed(Boolean processed) {
+        this.processed = processed;
     }
 
     public String getReassignedTo() {

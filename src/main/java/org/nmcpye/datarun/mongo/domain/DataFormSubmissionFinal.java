@@ -36,28 +36,37 @@ public class DataFormSubmissionFinal
     @Field("deleted")
     private Boolean deleted;
 
+    private String activity;
+
+    private String assignment;
+
+    @Field("teamOld")
+    private String teamOld;
+
+    private String team;
+
+    private String teamCode;
+
+    private String orgUnit;
+    private String orgUnitCode;
+    private String orgUnitName;
+
+    private String workDay;
+
+    @Field("status")
+    private AssignmentStatus status;
+
+    private Map<String, Object> formData = new LinkedHashMap<>();
+
+    private Map<String, Object> metadata = new LinkedHashMap<>();
+
     @Field("startEntryTime")
     private Instant startEntryTime;
 
     @Field("finishedEntryTime")
     private Instant finishedEntryTime;
-    private String orgUnit;
 
     private String form;
-
-    @Field("teamOld")
-    private String teamOld;
-    private String team;
-
-    private String activity;
-
-    private String assignment;
-
-    @Field("status")
-    private AssignmentStatus status;
-
-    private Map<String, Object> formData = new HashMap<String, Object>();
-
     @Field("currentVersion")
     private int version;
 
@@ -124,6 +133,14 @@ public class DataFormSubmissionFinal
         this.formData = formData;
     }
 
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
+    }
+
     public String getId() {
         return this.id;
     }
@@ -139,6 +156,30 @@ public class DataFormSubmissionFinal
 
     public void setOrgUnit(String orgUnit) {
         this.orgUnit = orgUnit;
+    }
+
+    public String getOrgUnitCode() {
+        return orgUnitCode;
+    }
+
+    public void setOrgUnitCode(String orgUnitCode) {
+        this.orgUnitCode = orgUnitCode;
+    }
+
+    public String getOrgUnitName() {
+        return orgUnitName;
+    }
+
+    public void setOrgUnitName(String orgUnitName) {
+        this.orgUnitName = orgUnitName;
+    }
+
+    public String getWorkDay() {
+        return workDay;
+    }
+
+    public void setWorkDay(String workDay) {
+        this.workDay = workDay;
     }
 
     public void setId(String id) {
@@ -242,6 +283,14 @@ public class DataFormSubmissionFinal
     public DataFormSubmissionFinal team(String team) {
         this.setTeam(team);
         return this;
+    }
+
+    public String getTeamCode() {
+        return teamCode;
+    }
+
+    public void setTeamCode(String teamCode) {
+        this.teamCode = teamCode;
     }
 
     public String getAssignment() {

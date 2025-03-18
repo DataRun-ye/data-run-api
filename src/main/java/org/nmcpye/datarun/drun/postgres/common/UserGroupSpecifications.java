@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.drun.postgres.common;
 
 import jakarta.persistence.criteria.*;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
@@ -16,8 +18,8 @@ public abstract class UserGroupSpecifications {
             } else if (!SecurityUtils.isAuthenticated()) {
                 return criteriaBuilder.disjunction();
             } else {
-                String currentUserLogin = SecurityUtils.getCurrentUserLogin()
-                    .orElseThrow(() -> new IllegalStateException("Current user login not found"));
+                String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow(
+                    new ErrorMessage(ErrorCode.E3004, UserGroup.class.getName()));
                 Join<UserGroup, User> userJoin = root.join("users", JoinType.INNER);
                 return criteriaBuilder.equal(userJoin.get("login"), currentUserLogin);
             }

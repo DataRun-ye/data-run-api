@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup;
@@ -78,15 +80,13 @@ public class OrgUnitGroupServiceImpl
 
     @Override
     public Page<OrgUnitGroup> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
-        if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
-            return Page.empty();
-        }
 
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repository.findAll(pageable);
         }
 
-        String currentUserLogin = SecurityUtils.getCurrentUserLogin().get();
+        String currentUserLogin =  SecurityUtils.getCurrentUserLoginOrThrow(
+            new ErrorMessage(ErrorCode.E3004, getClass().getName()));
 
         // Get user's direct teams
         List<Team> userDirectTeams = userRepository.findOneByLogin(currentUserLogin)
@@ -140,15 +140,12 @@ public class OrgUnitGroupServiceImpl
 
     @Override
     public Page<OrgUnitGroup> findAllByUser(Specification<OrgUnitGroup> spec, Pageable pageable) {
-        if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
-            return Page.empty();
-        }
-
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repository.findAll(spec, pageable);
         }
 
-        String currentUserLogin = SecurityUtils.getCurrentUserLogin().get();
+        String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow(
+            new ErrorMessage(ErrorCode.E3004, getClass().getName()));
 
         // Get user's direct teams
         List<Team> userDirectTeams = userRepository.findOneByLogin(currentUserLogin)

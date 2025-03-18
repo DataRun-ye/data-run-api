@@ -2,7 +2,7 @@ package org.nmcpye.datarun.mongo.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.javers.core.metamodel.annotation.DiffIgnore;
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -19,7 +19,7 @@ import java.time.Instant;
 @JsonIgnoreProperties(value = {"createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
 @DiffIgnore
 public abstract class AbstractAuditingEntityMongo<T>
-    implements Identifiable<T>, /*Comparable<IdentifiableObject<T>>,*/ Serializable {
+    implements IdentifiableEntity<T>, /*Comparable<IdentifiableObject<T>>,*/ Serializable {
 
     private static final long serialVersionUID = 1L;
 

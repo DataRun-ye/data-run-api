@@ -2,6 +2,9 @@ package org.nmcpye.datarun.web.rest.postgres.user;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.repository.UserRepository;
@@ -12,7 +15,6 @@ import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.common.QuerySpecification;
 import org.nmcpye.datarun.web.rest.errors.EmailAlreadyUsedException;
 import org.nmcpye.datarun.web.rest.errors.LoginAlreadyUsedException;
-import org.nmcpye.datarun.web.rest.errors.RequestQueryParsingException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.nmcpye.datarun.web.rest.vm.ManagedUserVM;
 import org.slf4j.Logger;
@@ -114,7 +116,7 @@ public class UserResourceCustom extends AbstractResourceRead<User, Long>
         try {
             spec = buildSpecification(queryRequest);
         } catch (Exception e) {
-            throw new RequestQueryParsingException();
+            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2050, e.getMessage()));
         }
 
         Page<User> processedPage = userRepository.findAll(spec, pageable);
@@ -131,7 +133,7 @@ public class UserResourceCustom extends AbstractResourceRead<User, Long>
         try {
             spec = buildSpecification(queryRequest);
         } catch (Exception e) {
-            throw new RequestQueryParsingException();
+            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2050, e.getMessage()));
         }
 
         return userService.findAllByUser(spec, pageable);

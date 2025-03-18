@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.common.translation;
 
 /**
- *
  * This enum defined a translatable property. The value of this enum is used for
  * mapping this translation with the object property name. The capitol Enum
  * string is used as a key when storing translation in Jsonb format.

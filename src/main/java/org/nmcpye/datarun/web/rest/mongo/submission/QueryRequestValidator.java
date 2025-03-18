@@ -1,5 +1,8 @@
 package org.nmcpye.datarun.web.rest.mongo.submission;
 
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
+
 import java.util.List;
 
 public class QueryRequestValidator {
@@ -12,29 +15,30 @@ public class QueryRequestValidator {
         request.getFilters().forEach((key, value) -> {
             String[] parts = key.split("__");
             if (parts.length == 0) {
-                throw new QueryRequestValidationException("Invalid filter format", key, null, value.toString());
+                throw new QueryRequestValidationException(new ErrorMessage(ErrorCode.E2016));
             }
 
             String field = parts[0];
             String operator = parts.length > 1 ? parts[1] : "eq";
 
             if (!field.matches("^[a-zA-Z0-9._]+$")) {
-                throw new QueryRequestValidationException("Invalid field name format", key, operator, value.toString());
+                throw new QueryRequestValidationException(
+                    "Invalid field name format: " + key + " " + operator);
             }
 
             if (!SUPPORTED_OPERATORS.contains(operator)) {
-                throw new QueryRequestValidationException("Unsupported operator", key, operator, value.toString());
+                throw new QueryRequestValidationException(new ErrorMessage(ErrorCode.E2035, operator));
             }
 
             validateValue(operator, value, key);
         });
 
         if (request.getSort() != null && !request.getSort().matches("^[a-zA-Z0-9._]+,(asc|desc)$")) {
-            throw new QueryRequestValidationException("Invalid sort format", "sort");
+            throw new QueryRequestValidationException(new ErrorMessage(ErrorCode.E2015, "Invalid sort format"));
         }
 
         if (request.getFields() != null && !request.getFields().matches("^[a-zA-Z0-9.,_]+$")) {
-            throw new QueryRequestValidationException("Invalid fields format", "fields");
+            throw new QueryRequestValidationException(new ErrorMessage(ErrorCode.E2016));
         }
     }
 
@@ -42,12 +46,12 @@ public class QueryRequestValidator {
         switch (operator) {
             case "exists":
                 if (!(value instanceof Boolean)) {
-                    throw new QueryRequestValidationException("Value for 'exists' must be true or false", key, operator, value.toString());
+                    throw new QueryRequestValidationException(new ErrorMessage(ErrorCode.E2018, "exists", "true or false"));
                 }
                 break;
             case "in":
                 if (!(value instanceof List)) {
-                    throw new QueryRequestValidationException("Value for 'in' must be a list", key, operator, value.toString());
+                    throw new QueryRequestValidationException(new ErrorMessage(ErrorCode.E2018, "in", "list"));
                 }
                 break;
         }

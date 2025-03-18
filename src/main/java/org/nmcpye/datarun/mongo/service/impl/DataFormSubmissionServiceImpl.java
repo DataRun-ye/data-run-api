@@ -1,9 +1,10 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
-import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
-import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
@@ -15,7 +16,6 @@ import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.mongo.service.submissionmigration.SubmissionMaintenanceService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.web.rest.exception.PathUpdateException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,6 @@ public class DataFormSubmissionServiceImpl
 
     private final DataFormSubmissionRepositoryCustom repository;
     private final DataFormSubmissionHistoryRepository historyRepository;
-    private final ActivityRelationalRepositoryCustom activityRepository;
     private final AssignmentRelationalRepositoryCustom assignmentRepository;
     private final TeamRelationalRepositoryCustom teamRepository;
     private final SequenceGeneratorService sequenceGeneratorService;
@@ -60,14 +59,13 @@ public class DataFormSubmissionServiceImpl
     public DataFormSubmissionServiceImpl(
         DataFormSubmissionRepositoryCustom repository,
         DataFormSubmissionHistoryRepository historyRepository,
-        ActivityRelationalRepositoryCustom activityRepository, AssignmentRelationalRepositoryCustom assignmentRepository,
+        AssignmentRelationalRepositoryCustom assignmentRepository,
         TeamRelationalRepositoryCustom teamRepository,
         MongoTemplate mongoTemplate,
         SequenceGeneratorService sequenceGeneratorService, SubmissionMaintenanceService maintenanceService, AssignmentSubmissionHistoryService historyService) {
         super(repository, mongoTemplate);
         this.repository = repository;
         this.historyRepository = historyRepository;
-        this.activityRepository = activityRepository;
         this.assignmentRepository = assignmentRepository;
         this.teamRepository = teamRepository;
         this.sequenceGeneratorService = sequenceGeneratorService;
@@ -104,21 +102,29 @@ public class DataFormSubmissionServiceImpl
             assignmentRepository.findByUid(newSubmission.getAssignment())
                 .ifPresentOrElse((a) -> {
                         newSubmission.setAssignment(a.getUid());
+                        newSubmission.setOrgUnit(a.getOrgUnit().getUid());
+                        newSubmission.setOrgUnitCode(a.getOrgUnit().getCode());
+                        newSubmission.setOrgUnitName(a.getOrgUnit().getName());
                     },
                     () -> {
-                        log.error("submission by: {}, for form: {}, with assignment: {} not in the system",
-                            SecurityUtils.getCurrentUserLogin().get(), newSubmission.getForm(),
+                        log.error("submission by: for form: {}, with assignment: {} not in the system",
+                            newSubmission.getForm(),
                             newSubmission.getAssignment());
-                        throw new PropertyNotFoundException("Assignment not found: " + newSubmission.getTeam());
+                        throw new IllegalQueryException(
+                            new ErrorMessage(ErrorCode.E1106, "Assignment", newSubmission.getAssignment()));
                     });
         }
 
         teamRepository.findByUid(newSubmission.getTeam())
-            .ifPresentOrElse((a) -> newSubmission.setTeam(a.getUid()),
+            .ifPresentOrElse((a) -> {
+                    newSubmission.setTeam(a.getUid());
+                    newSubmission.setTeamCode(a.getCode());
+                },
                 () -> {
-                    log.error("submission by: {}, for form: {}, with team: {} not in the system",
-                        SecurityUtils.getCurrentUserLogin().get(), newSubmission.getForm(), newSubmission.getTeam());
-                    throw new PropertyNotFoundException("Team not found: " + newSubmission.getTeam());
+                    log.error("submission by for form: {}, with team: {} not in the system",
+                        newSubmission.getForm(), newSubmission.getTeam());
+                    throw new IllegalQueryException(
+                        new ErrorMessage(ErrorCode.E1106, "Team", newSubmission.getTeam()));
                 });
 
         if (newSubmission.getSerialNumber() == null) {
@@ -145,7 +151,7 @@ public class DataFormSubmissionServiceImpl
             historyService.updateSubmissionHistory(dataFormSubmission);
         } catch (Exception e) {
             log.error("Error saving submission history,  {}:", dataFormSubmission.getUid(), e);
-            throw new PathUpdateException("Failed to update paths", e);
+            throw new IllegalQueryException("Failed to update paths");
         }
     }
 
@@ -192,11 +198,12 @@ public class DataFormSubmissionServiceImpl
     @Override
     public void deleteByUid(String uid) {
         log.debug("request to soft delete DataFormSubmission : {}", uid);
-        DataFormSubmission submission = repository.findByUid(uid).orElseThrow(() -> new IllegalArgumentException("Invalid id: " + uid));
+        DataFormSubmission submission = repository.findByUid(uid)
+            .orElseThrow(() ->
+                new IllegalQueryException(new ErrorMessage(ErrorCode.E1106, "Id", uid)));
 
         submission.setDeleted(true);
         repository.save(submission);
-//        saveVersioning(submission);
     }
 
     @Override

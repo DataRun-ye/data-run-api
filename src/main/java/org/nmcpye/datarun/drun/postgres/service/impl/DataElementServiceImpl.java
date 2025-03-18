@@ -66,7 +66,8 @@ public class DataElementServiceImpl
             return repository.findAll(pageable);
         }
 
-        List<String> userDataElements = userAccessService.getUserFormsWithWritePermission(SecurityUtils.getCurrentUserLogin().get())
+        List<String> userDataElements = userAccessService
+            .getUserFormsWithWritePermission(SecurityUtils.getCurrentUserLoginOrThrow())
             .stream()
             .flatMap((form) -> form.getFields().stream())
             .map(FormDataElementConf::getId).toList();
@@ -87,7 +88,8 @@ public class DataElementServiceImpl
             return repository.findAll(spec, pageable);
         }
 
-        List<String> userDataElements = userAccessService.getUserFormsWithWritePermission(SecurityUtils.getCurrentUserLogin().get())
+        List<String> userDataElements = userAccessService.getUserFormsWithWritePermission(
+            SecurityUtils.getCurrentUserLoginOrThrow())
             .stream()
             .flatMap((form) -> form.getFields().stream())
             .map(FormDataElementConf::getId).toList();

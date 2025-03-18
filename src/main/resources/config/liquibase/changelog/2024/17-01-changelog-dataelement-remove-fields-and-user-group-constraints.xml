@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1742181293356-4-dataelement-remove-form-configurable-fields" author="Hamza (generated)">
+        <dropColumn columnName="default_value" tableName="data_element"/>
+
+        <dropColumn columnName="gs1_enabled" tableName="data_element"/>
+
+        <dropColumn columnName="mandatory" tableName="data_element"/>
+
+        <dropColumn columnName="properties" tableName="data_element"/>
+
+        <dropColumn columnName="reference_metadata_schema" tableName="data_element"/>
+    </changeSet>
+    <changeSet id="1742181293356-1" author="Hamza (generated)-user-group-set-non-null-constraint">
+        <addNotNullConstraint columnDataType="VARCHAR(255)" columnName="code" tableName="user_group" validate="true"/>
+    </changeSet>
+
+</databaseChangeLog>

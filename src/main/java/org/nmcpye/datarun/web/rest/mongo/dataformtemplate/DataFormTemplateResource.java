@@ -1,5 +1,8 @@
 package org.nmcpye.datarun.web.rest.mongo.dataformtemplate;
 
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
@@ -7,8 +10,6 @@ import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.DataFormTemplateService;
 import org.nmcpye.datarun.mongo.service.submissionmigration.DataFormTemplateMigrationService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.utils.FormTemplateSchema;
-import org.nmcpye.datarun.web.rest.exception.PathUpdateException;
 import org.nmcpye.datarun.web.rest.mongo.AbstractMongoResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,14 +29,16 @@ import java.util.List;
 public class DataFormTemplateResource extends AbstractMongoResource<DataFormTemplate> {
 
     final DataFormTemplateService templateService;
-    private final FormTemplateSchema formTemplateSchema;
+    //    private final FormTemplateSchema formTemplateSchema;
     private final DataFormTemplateMigrationService dataFormTemplateMigrationService;
 
     public DataFormTemplateResource(DataFormTemplateService templateService,
-                                    DataFormTemplateRepository dataFormRepository, FormTemplateSchema formTemplateSchema, DataFormTemplateMigrationService dataFormTemplateMigrationService) {
+                                    DataFormTemplateRepository dataFormRepository,
+//                                    FormTemplateSchema formTemplateSchema,
+                                    DataFormTemplateMigrationService dataFormTemplateMigrationService) {
         super(templateService, dataFormRepository);
         this.templateService = templateService;
-        this.formTemplateSchema = formTemplateSchema;
+//        this.formTemplateSchema = formTemplateSchema;
         this.dataFormTemplateMigrationService = dataFormTemplateMigrationService;
     }
 
@@ -62,12 +65,6 @@ public class DataFormTemplateResource extends AbstractMongoResource<DataFormTemp
 //        log.debug(json2);
         return super.saveOne(entity);
     }
-
-//    public void saveEntity(MyEntity entity) {
-//        String schema = loadSchemaFromResources(); // Load your schema
-//        validateDynamicProperty(entity.getDynamicProperty(), schema);
-//        repository.save(entity);
-//    }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
@@ -96,7 +93,7 @@ public class DataFormTemplateResource extends AbstractMongoResource<DataFormTemp
             return ResponseEntity.ok("Paths updated successfully");
         } catch (Exception e) {
             log.error("Error occurred while updating paths", e);
-            throw new PathUpdateException("Failed to update paths", e);
+            throw new IllegalQueryException( new ErrorMessage(ErrorCode.E1000,e.getMessage(), "Failed to update paths"));
         }
     }
 }

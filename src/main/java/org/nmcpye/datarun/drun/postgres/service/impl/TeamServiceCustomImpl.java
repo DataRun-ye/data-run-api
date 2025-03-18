@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
@@ -133,12 +135,10 @@ public class TeamServiceCustomImpl
 
     @Override
     public Page<Team> findAllManagedByUser(Pageable pageable) {
-        if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
-            return Page.empty();
-        }
 
         Specification<Team> specManage = TeamSpecifications
-            .getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLogin().get())
+            .getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLoginOrThrow(
+                new ErrorMessage(ErrorCode.E3004, getClass().getName())))
             .and(TeamSpecifications.isEnabled());
 
         return repository.fetchBagRelationships(repository.findAll(specManage, pageable));

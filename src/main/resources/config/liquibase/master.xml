@@ -46,5 +46,6 @@
     <include file="config/liquibase/changelog/2024/26-02-changelog-app-entity-audit-modifyDataType.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/2024/05-01-changelog-add-user_group.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/29-01-org-unit-group-and-groupset.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/2024/17-01-changelog-dataelement-remove-fields-and-user-group-constraints.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

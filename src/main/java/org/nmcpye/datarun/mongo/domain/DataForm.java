@@ -64,26 +64,26 @@ public class DataForm
 
     @Field("fields")
     @JsonDeserialize(contentUsing = FieldDeserializer.class)
-    private List<AbstractField> fields = new ArrayList<>();
+    private List<AbstractField> fields = new LinkedList<>();
 
     @Field("options")
-    private List<DataOption> options = new ArrayList<>();
+    private List<DataOption> options = new LinkedList<>();
 
     @DocumentReference
     @Field("optionSets")
-    private List<OptionSet> optionSets = new ArrayList<>();
+    private List<OptionSet> optionSets = new LinkedList<>();
 
     private Map<String, String> label;
 
     @Field("flattenedFields")
-    private List<AbstractField> flattenedFields = new ArrayList<>();
+    private List<AbstractField> flattenedFields = new LinkedList<>();
 
     // field.uid, fieldConfigs
     @Field("fieldsConf")
-    private List<FormDataElementConf> fieldsConf = new ArrayList<>();
+    private List<FormDataElementConf> fieldsConf = new LinkedList<>();
 
     @Field("sections")
-    private List<FormSectionConf> sections = new ArrayList<>();
+    private List<FormSectionConf> sections = new LinkedList<>();
 
 //    public DataForm() {
 //        setAutoFields();

@@ -129,7 +129,7 @@ public class AssignmentServiceImplCustom
                     }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
             });
         } else {
-            String currentUserLogin = SecurityUtils.getCurrentUserLogin().orElse(null);
+            String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow();
             assignments.forEach(assignment -> {
                 assignmentHistoryRepository.findLastEntryByUidAndUser(assignment.getUid(), currentUserLogin)
                     .flatMap(history -> history.getEntries().stream()
@@ -209,7 +209,7 @@ public class AssignmentServiceImplCustom
 
     List<Assignment> getManagedTeamsAssignmentsWithChildren() {
         Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(
-                SecurityUtils.getCurrentUserLogin().get())
+                SecurityUtils.getCurrentUserLoginOrThrow())
             .and(TeamSpecifications.isEnabled());
 
         List<String> managedAssignmentsUids = teamRepository

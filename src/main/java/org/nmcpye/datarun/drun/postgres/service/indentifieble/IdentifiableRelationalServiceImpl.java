@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.service.indentifieble;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.nmcpye.datarun.drun.postgres.repository.IdentifiableRelationalRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -19,7 +19,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Transactional
-public abstract class IdentifiableRelationalServiceImpl<T extends Identifiable<Long>>
+public abstract class IdentifiableRelationalServiceImpl<T extends IdentifiableEntity<Long>>
     implements IdentifiableRelationalService<T> {
 
     private static final Logger log = LoggerFactory.getLogger(IdentifiableRelationalServiceImpl.class);
@@ -39,7 +39,7 @@ public abstract class IdentifiableRelationalServiceImpl<T extends Identifiable<L
     }
 
     @Override
-    public Optional<T> findIdentifiable(Identifiable<Long> identifiableObject) {
+    public Optional<T> findIdentifiable(IdentifiableEntity<Long> identifiableObject) {
         return identifiableRepository.findByUid(identifiableObject.getUid()).or(() -> identifiableRepository.findById(identifiableObject.getId()));
 
     }

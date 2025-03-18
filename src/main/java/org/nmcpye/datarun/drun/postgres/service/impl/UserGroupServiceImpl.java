@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.common.UserGroupSpecifications;
@@ -21,7 +23,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -112,12 +113,9 @@ public class UserGroupServiceImpl
 
     @Override
     public Page<UserGroup> findAllManagedByUser(Pageable pageable) {
-        if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
-            return Page.empty();
-        }
-
         Specification<UserGroup> spec = UserGroupSpecifications
-            .getManagedGroupsByUserGroups(SecurityUtils.getCurrentUserLogin().get())
+            .getManagedGroupsByUserGroups(SecurityUtils.getCurrentUserLoginOrThrow(
+                new ErrorMessage(ErrorCode.E3004, getClass().getName())))
             .and(UserGroupSpecifications.isEnabled());
 
         return repository.fetchBagRelationships(repository.findAll(spec, pageable));
@@ -125,11 +123,9 @@ public class UserGroupServiceImpl
 
     @Override
     public List<UserGroup> findAllManagedByUser() {
-        if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
-            return Collections.emptyList();
-        }
         Specification<UserGroup> spec = UserGroupSpecifications
-            .getManagedGroupsByUserGroups(SecurityUtils.getCurrentUserLogin().get());
+            .getManagedGroupsByUserGroups(SecurityUtils.getCurrentUserLoginOrThrow(
+                new ErrorMessage(ErrorCode.E3004, getClass().getName())));
 //            .and(isNotDisabled());
 
         return repository.fetchBagRelationships(repository.findAll(spec));

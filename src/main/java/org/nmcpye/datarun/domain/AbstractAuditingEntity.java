@@ -5,7 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import org.nmcpye.datarun.audit.EntityAuditEventListener;
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -24,7 +24,7 @@ import java.util.Objects;
 @EntityListeners({AuditingEntityListener.class, EntityAuditEventListener.class})
 @JsonIgnoreProperties(value = {"createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
 public abstract class AbstractAuditingEntity<T>
-    implements Identifiable<T>, Serializable {
+    implements IdentifiableEntity<T>, Serializable {
 
     private static final long serialVersionUID = 1L;
 

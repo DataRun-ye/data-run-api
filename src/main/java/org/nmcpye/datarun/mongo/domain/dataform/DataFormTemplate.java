@@ -3,13 +3,17 @@ package org.nmcpye.datarun.mongo.domain.dataform;
 import jakarta.validation.constraints.Size;
 import org.nmcpye.datarun.mongo.domain.AbstractAuditingEntityMongo;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
+import org.nmcpye.datarun.mongo.domain.dataelement.FormElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * A DataFormTemplate.
@@ -36,7 +40,7 @@ public class DataFormTemplate
     private String description;
 
     @Field("disabled")
-    private boolean disabled;
+    private Boolean disabled = false;
 
     @Field("deleted")
     private boolean deleted;
@@ -48,11 +52,14 @@ public class DataFormTemplate
 
     private Map<String, String> label;
 
+    @Field("elements")
+    private List<FormElementConf> elements;
+
     @Field("fields")
-    private List<FormDataElementConf> fields = new ArrayList<>();
+    private List<FormDataElementConf> fields = new LinkedList<>();
 
     @Field("sections")
-    private List<FormSectionConf> sections = new ArrayList<>();
+    private List<FormSectionConf> sections = new LinkedList<>();
 
     public DataFormTemplate() {
         setAutoFields();
@@ -120,7 +127,7 @@ public class DataFormTemplate
     }
 
     public void setDisabled(Boolean disabled) {
-        this.disabled = Optional.ofNullable(disabled).orElse(false);
+        this.disabled = disabled;
     }
 
     public Integer getVersion() {
@@ -131,7 +138,12 @@ public class DataFormTemplate
         this.version = version;
     }
 
-    public boolean getDeleted() {
+    public DataFormTemplate version(Integer version) {
+        this.setVersion(version);
+        return this;
+    }
+
+    public boolean isDeleted() {
         return deleted;
     }
 
@@ -140,7 +152,7 @@ public class DataFormTemplate
     }
 
     public void setLabel(Map<String, String> label) {
-        this.label = Objects.requireNonNullElseGet(label, () -> Map.of(getDefaultLocale(), this.name));
+        this.label = label;
     }
 
     public Map<String, String> getLabel() {
@@ -148,11 +160,19 @@ public class DataFormTemplate
     }
 
     public String getDefaultLocale() {
-        return Optional.ofNullable(defaultLocale).orElse("en");
+        return defaultLocale;
     }
 
     public void setDefaultLocale(String defaultLocale) {
-        this.defaultLocale = Objects.requireNonNullElse(defaultLocale, "en");
+        this.defaultLocale = defaultLocale;
+    }
+
+    public List<FormElementConf> getElements() {
+        return elements;
+    }
+
+    public void setElements(List<FormElementConf> elements) {
+        this.elements = elements;
     }
 
     public List<FormDataElementConf> getFields() {

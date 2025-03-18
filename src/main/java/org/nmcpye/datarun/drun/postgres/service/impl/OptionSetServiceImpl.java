@@ -48,8 +48,8 @@ public class OptionSetServiceImpl
             return repository.findAll(pageable);
         }
 
-        userAccessService.getUserOptionSets(SecurityUtils.getCurrentUserLogin().get());
-        var userOptionSets = getUserOptionSets(SecurityUtils.getCurrentUserLogin().get())
+        userAccessService.getUserOptionSets(SecurityUtils.getCurrentUserLoginOrThrow());
+        var userOptionSets = getUserOptionSets(SecurityUtils.getCurrentUserLoginOrThrow())
             .stream().map(OptionSet::getUid).toList();
 
 
@@ -69,8 +69,8 @@ public class OptionSetServiceImpl
             return repository.findAll(spec, pageable);
         }
 
-        userAccessService.getUserOptionSets(SecurityUtils.getCurrentUserLogin().get());
-        var userOptionSets = getUserOptionSets(SecurityUtils.getCurrentUserLogin().get())
+        userAccessService.getUserOptionSets(SecurityUtils.getCurrentUserLoginOrThrow());
+        var userOptionSets = getUserOptionSets(SecurityUtils.getCurrentUserLoginOrThrow())
             .stream().map(OptionSet::getUid).toList();
 
 

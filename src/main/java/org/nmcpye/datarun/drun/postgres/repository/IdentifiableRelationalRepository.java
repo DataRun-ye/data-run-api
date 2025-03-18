@@ -1,13 +1,13 @@
 package org.nmcpye.datarun.drun.postgres.repository;
 
 import org.nmcpye.datarun.common.IdentifiableRepository;
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.NoRepositoryBean;
 
 @NoRepositoryBean
-public interface IdentifiableRelationalRepository<T extends Identifiable<Long>>
+public interface IdentifiableRelationalRepository<T extends IdentifiableEntity<Long>>
     extends JpaRepository<T, Long>,
     JpaSpecificationExecutor<T>,
     IdentifiableRepository<T, Long> {
