@@ -63,35 +63,36 @@ public class DataFormServiceImpl
         this.teamRepository = teamRepository;
     }
 
-    public <T extends AbstractField> void processFields(List<T> fields, String parentPath) {
+    public <T extends AbstractField> void processFields(List<T> fields, String parentPath, DataForm dataForm) {
         for (AbstractField field : fields) {
             String currentPath = parentPath.isEmpty() ? field.getName() : parentPath + AbstractField.PATH_SEP + field.getName();
             field.setPath(currentPath);
             if (field instanceof ReferenceField referenceField) {
                 if (referenceField.getResourceType() == null || referenceField.getResourceMetadataSchema() == null) {
-                    throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1102, field.getName()));
+                    throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1102, dataForm.getUid(), field.getName()));
                 }
 
                 if (referenceField.getResourceMetadataSchema() == null) {
-                    throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1103, field.getName()));
+                    throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1103, dataForm.getUid(), field.getName()));
                 }
 
                 if (metadataSchemaRepository.findByUid(referenceField.getResourceMetadataSchema()).isEmpty()) {
-                    throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1104,
-                        referenceField.getResourceMetadataSchema(), field.getName()));
+                    throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1104, dataForm.getUid(),
+                        field.getName(),
+                        referenceField.getResourceMetadataSchema()));
                 }
 
             }
             // Recursively process nested sections
             if (field instanceof Section section && section.getFields() != null) {
-                processFields(section.getFields(), currentPath);
+                processFields(section.getFields(), currentPath, dataForm);
             }
         }
     }
 
     @Override
     public DataForm saveWithRelations(DataForm dataForm) {
-        processFields(dataForm.getFields(), "");
+        processFields(dataForm.getFields(), "", dataForm);
         dataForm.updateFlattenedFields();
         return repositoryCustom.save(dataForm);
     }

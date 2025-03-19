@@ -5,7 +5,6 @@ import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCusto
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.DataFormTemplateService;
-import org.nmcpye.datarun.mongo.service.formcomfiguration.FormElementConfigService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -37,28 +36,25 @@ public class DataFormTemplateServiceImpl
 
     private final TeamRelationalRepositoryCustom teamRepository;
 
-    private final FormElementConfigService formElementConfigService;
 
     public DataFormTemplateServiceImpl(
         DataFormTemplateRepository repository,
         MongoTemplate mongoTemplate,
-        TeamRelationalRepositoryCustom teamRepository, FormElementConfigService formElementConfigService) {
+        TeamRelationalRepositoryCustom teamRepository) {
         super(repository, mongoTemplate);
         this.repository = repository;
         this.teamRepository = teamRepository;
-        this.formElementConfigService = formElementConfigService;
-    }
-
-    private Integer createOrUpdateVersion(DataFormTemplate source) {
-        return repository.findByUid(source.getUid())
-            .map(DataFormTemplate::getVersion)
-            .orElse(0);
     }
 
     @Override
     public DataFormTemplate saveWithRelations(DataFormTemplate formTemplate) {
-        return formElementConfigService.createDataForm(formTemplate
-            .version(createOrUpdateVersion(formTemplate) + 1));
+//        final var sections = formElementConfigService.configureSectionsPath(formTemplate.getSections());
+//        formTemplate.setSections(sections);
+//        final var fields = formElementConfigService
+//            .configureAndValidateFields(formTemplate.getFields(), sections);
+//        formTemplate.version(createOrUpdateVersion(formTemplate) + 1);
+//        formTemplate.setFields(fields);
+        return repository.save(formTemplate);
     }
 
     @Override
@@ -96,9 +92,9 @@ public class DataFormTemplateServiceImpl
             pageable,
             () -> mongoTemplate.count(totalQuery, DataFormTemplate.class));
 
-        if (queryRequest.isMergeElements()) {
-            resultsPage.forEach(formElementConfigService::mergeFormElements);
-        }
+//        if (queryRequest.isMergeElements()) {
+//            resultsPage.forEach(formElementConfigService::mergeFormElements);
+//        }
 
         return resultsPage;
     }

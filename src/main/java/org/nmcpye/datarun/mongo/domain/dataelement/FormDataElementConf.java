@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.mongo.domain.dataelement;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.ValueTypeRendering;
@@ -17,7 +16,6 @@ public class FormDataElementConf extends FormElementConf {
 
     private String id;
 
-    @NotNull
     @Field("type")
     private ValueType type;
 
@@ -45,4 +43,15 @@ public class FormDataElementConf extends FormElementConf {
     private String resourceMetadataSchema;
 
     private ValueTypeRendering valueTypeRendering = ValueTypeRendering.DEFAULT;
+
+    @Override
+    public FormDataElementConf path(String path) {
+        this.setPath(path);
+        return this;
+    }
+
+    public FormDataElementConf type(ValueType type) {
+        this.setType(type);
+        return this;
+    }
 }

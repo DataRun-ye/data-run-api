@@ -105,6 +105,7 @@ public class DataFormSubmissionServiceImpl
                         newSubmission.setOrgUnit(a.getOrgUnit().getUid());
                         newSubmission.setOrgUnitCode(a.getOrgUnit().getCode());
                         newSubmission.setOrgUnitName(a.getOrgUnit().getName());
+                        newSubmission.setActivity(a.getActivity().getUid());
                     },
                     () -> {
                         log.error("submission by: for form: {}, with assignment: {} not in the system",

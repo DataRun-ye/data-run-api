@@ -14,6 +14,11 @@ public class FormSectionConf extends FormElementConf {
         return getName();
     }
 
+    @Override
+    public FormSectionConf path(String path) {
+        this.setPath(path);
+        return this;
+    }
 //    public FormSectionConf() {
 //        if (getId() == null || getId().isEmpty()) {
 //            setId(CodeGenerator.generateUid());

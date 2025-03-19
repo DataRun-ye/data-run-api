@@ -3,6 +3,7 @@ package org.nmcpye.datarun.web.rest.errors;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
+import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.service.UsernameAlreadyUsedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,6 @@ import tech.jhipster.web.rest.errors.ProblemDetailWithCause.ProblemDetailWithCau
 import tech.jhipster.web.util.HeaderUtil;
 
 import java.net.URI;
-import java.time.Instant;
 import java.util.*;
 
 import static org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation;
@@ -60,6 +60,20 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         this.env = env;
     }
 
+    @ExceptionHandler(ErrorCodeException.class)
+    public ResponseEntity<EntitySaveSummaryVM> handleBaseException(ErrorCodeException ex) {
+        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
+        if (ex.getErrorCode() != null) {
+            summary.getFailed().put("error_code", ex.getErrorCode().toString());
+        }
+
+        summary.getFailed().put("message", ex.getMessage());
+
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        return new ResponseEntity<>(summary, status);
+    }
+
     @ExceptionHandler
     public ResponseEntity<Object> handleAnyException(Throwable ex, NativeWebRequest request) {
         ProblemDetailWithCause pdCause = wrapAndCustomizeProblem(ex, request);
@@ -76,7 +90,9 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         WebRequest request
     ) {
         log.error("Exception handled: {}", ex.getMessage(), ex);
+
         body = wrapAndCustomizeProblem(ex, (NativeWebRequest) request);
+//        body = body == null ? wrapAndCustomizeProblem((Throwable) ex, (NativeWebRequest) request) : body;
         return super.handleExceptionInternal(ex, body, headers, statusCode, request);
     }
 
@@ -104,19 +120,6 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
         return ProblemDetailWithCauseBuilder.instance().withStatus(toStatus(ex).value()).build();
     }
-
-    @ExceptionHandler(ErrorCodeException.class)
-    public ResponseEntity<Map<String, Object>> handleBaseException(ErrorCodeException ex) {
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("code", ex.getErrorCode());
-        errorResponse.put("message", ex.getMessage());
-        errorResponse.put("timestamp", Instant.now());
-
-        HttpStatus status = HttpStatus.BAD_REQUEST;
-
-        return new ResponseEntity<>(errorResponse, status);
-    }
-
 
     protected ProblemDetailWithCause customizeProblem(ProblemDetailWithCause problem, Throwable err, NativeWebRequest request) {
         if (problem.getStatus() <= 0) problem.setStatus(toStatus(err));
@@ -177,12 +180,12 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
     private String extractTitleForResponseStatus(Throwable err, int statusCode) {
         ResponseStatus specialStatus = extractResponseStatus(err);
-        return specialStatus.reason();
+        return specialStatus == null ? HttpStatus.valueOf(statusCode).getReasonPhrase() : specialStatus.reason();
     }
 
     private String extractURI(NativeWebRequest request) {
         HttpServletRequest nativeRequest = request.getNativeRequest(HttpServletRequest.class);
-        return nativeRequest.getRequestURI();
+        return nativeRequest != null ? nativeRequest.getRequestURI() : StringUtils.EMPTY;
     }
 
     private HttpStatus toStatus(final Throwable throwable) {
@@ -190,18 +193,17 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         if (throwable instanceof ErrorResponse err) return HttpStatus.valueOf(err.getBody().getStatus());
 
         return Optional.ofNullable(getMappedStatus(throwable)).orElse(
-            Optional.of(resolveResponseStatus(throwable)).map(ResponseStatus::value).orElse(HttpStatus.INTERNAL_SERVER_ERROR)
+            Optional.ofNullable(resolveResponseStatus(throwable)).map(ResponseStatus::value).orElse(HttpStatus.INTERNAL_SERVER_ERROR)
         );
     }
 
     private ResponseStatus extractResponseStatus(final Throwable throwable) {
-        return resolveResponseStatus(throwable);
+        return Optional.ofNullable(resolveResponseStatus(throwable)).orElse(null);
     }
 
     private ResponseStatus resolveResponseStatus(final Throwable type) {
         final ResponseStatus candidate = findMergedAnnotation(type.getClass(), ResponseStatus.class);
-//        return candidate == null && type.getCause() != null ? resolveResponseStatus(type.getCause()) : candidate;
-        return candidate;
+        return candidate == null && type.getCause() != null ? resolveResponseStatus(type.getCause()) : candidate;
     }
 
     private URI getMappedType(Throwable err) {

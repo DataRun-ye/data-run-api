@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.mongo;
 
 import org.nmcpye.datarun.common.IdentifiableRepository;
+import org.nmcpye.datarun.common.IdentifiableService;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
-import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableService;
 import org.nmcpye.datarun.web.rest.common.AbstractResourceReadWrite;
 
 //@RequestMapping("/api/custom")

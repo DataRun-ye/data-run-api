@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.mongo.service.formcomfiguration;
+package org.nmcpye.datarun.formtemplate;
 
 import org.nmcpye.datarun.mongo.domain.dataelement.FormElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
@@ -7,11 +7,7 @@ import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.nmcpye.datarun.utils.PathUtil.buildPath;
-
-public class FormElementMerger {
-
-
+public class FormElementMerger2 {
     /**
      * Merges two lists (fields and sections) into a single ordered list.
      * <p>
@@ -60,7 +56,7 @@ public class FormElementMerger {
             .filter(e -> e instanceof FormSectionConf)
             .toList();
         for (FormElementConf rootSection : rootSections) {
-            addElementWithChildren(rootSection, childrenMap, result, visited, dataFormTemplate);
+            addElementWithChildren(rootSection, childrenMap, result, visited);
         }
         // Then add any remaining root fields.
         final List<FormElementConf> rootFields = roots.stream()
@@ -87,8 +83,7 @@ public class FormElementMerger {
     static public void addElementWithChildren(FormElementConf element,
                                               Map<String, List<FormElementConf>> childrenMap,
                                               List<FormElementConf> result,
-                                              Set<String> visited, DataFormTemplate dataFormTemplate) {
-        element.setPath(buildPath(element, dataFormTemplate.getSections()));
+                                              Set<String> visited) {
 
         if (!visited.add(element.getId())) {
             // Already processed this element; skip to avoid duplicates.
@@ -108,7 +103,7 @@ public class FormElementMerger {
             .filter(e -> e instanceof FormSectionConf)
             .toList();
         for (FormElementConf childSection : childSections) {
-            addElementWithChildren(childSection, childrenMap, result, visited, dataFormTemplate);
+            addElementWithChildren(childSection, childrenMap, result, visited);
         }
 
         // Then process child fields.

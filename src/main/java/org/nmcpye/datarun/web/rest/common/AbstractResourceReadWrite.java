@@ -2,9 +2,9 @@ package org.nmcpye.datarun.web.rest.common;
 
 import jakarta.validation.Valid;
 import org.nmcpye.datarun.common.IdentifiableRepository;
+import org.nmcpye.datarun.common.IdentifiableService;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
-import org.nmcpye.datarun.drun.postgres.service.indentifieble.IdentifiableService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.slf4j.Logger;
@@ -61,7 +61,7 @@ public abstract class AbstractResourceReadWrite<T extends IdentifiableEntity<ID>
         return ResponseEntity.ok(summary);
     }
 
-    void saveEntity(T entity, EntitySaveSummaryVM summary) {
+    protected void saveEntity(T entity, EntitySaveSummaryVM summary) {
         try {
             if (identifiableService.existsByUid(entity.getUid())) {
                 entity = identifiableService.update(entity);

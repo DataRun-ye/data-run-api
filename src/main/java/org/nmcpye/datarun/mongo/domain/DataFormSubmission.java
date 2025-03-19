@@ -2,6 +2,7 @@ package org.nmcpye.datarun.mongo.domain;
 
 import jakarta.el.PropertyNotFoundException;
 import jakarta.validation.constraints.Size;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 import org.nmcpye.datarun.utils.CodeGenerator;
 import org.springframework.data.annotation.Id;
@@ -306,32 +307,33 @@ public class DataFormSubmission
      */
     public DataFormSubmission populateFormDataAttributes() {
 
-        if (Objects.isNull(team) || Objects.isNull(form)) {
-            throw new PropertyNotFoundException("one or more of the MainAttributes activity, team, or form is not set");
+        if (Objects.isNull(team)) {
+            throw new IllegalQueryException("Submission `" + getUid() + "` team property is not set");
         }
 
-        final String activity = (String) this.getFormData().get("_activity");
+        if (Objects.isNull(form)) {
+            throw new IllegalQueryException("Submission `" + getUid() + "` form property is not set");
+        }
+
         Map<String, Object> map = Map.ofEntries(
             entry("_id", this.getUid()),
-            entry("_deleted", this.getDeleted()),
+            entry("_deleted", deleted == Boolean.TRUE),
             entry("_form", this.getForm()),
-            entry("_activity", activity),
-            entry("_orgUnit", orgUnit),
-            entry("_orgUnitCode", orgUnitCode),
-            entry("_orgUnitName", orgUnitName),
-            entry("_team", this.getTeam()),
+            entry("_team", this.getForm()),
             entry("_serialNumber", this.getSerialNumber()),
             entry("_submissionTime", Objects.requireNonNullElse(this.getCreatedDate(), Instant.now())),
             entry("_lastModifiedDate", Objects.requireNonNullElse(this.getLastModifiedDate(), Instant.now())),
             entry("_version", this.getVersion())
         );
 
-        this.setActivity(activity);
-
         Map<String, Object> metadata = new LinkedHashMap<>(map);
 
         if (assignment != null) {
             metadata.put("_assignment", this.getAssignment());
+            metadata.put("_orgUnit", orgUnit);
+            metadata.put("_orgUnitCode", orgUnitCode);
+            metadata.put("_orgUnitName", orgUnitName);
+            metadata.put("_activity", activity);
         }
 
         this.setMetadata(metadata);

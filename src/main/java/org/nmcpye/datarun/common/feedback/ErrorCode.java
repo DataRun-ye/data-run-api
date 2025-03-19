@@ -12,13 +12,16 @@ public enum ErrorCode {
     E1003("Failed to update paths: `{0}`"),
 
     /* Basic metadata */
-    E1100("Data element not found or not accessible: `{0}`"),
-    E1101("Form element parent `{0}` not found: `{1}`"),
-    E1102("Reference Type must be specified: `{0}`"),
-    E1103("MetaDataSchema must be specified for Reference Type element: `{0}`"),
-    E1104("Specified MetaDataSchema `{0}` not found: `{1}`"),
-    E1105("field conf value type should match data element value type"),
-    E1106("Property `{0}` not found: `{1}`"),
+    E1100("Data element not found or not accessible: `{0}`:`{1}`"),
+    E1101("Form element `{0}`:`{1}` parent `{2}` not found in sections"),
+    E1102("Reference element `{0}`:`{1}` must specify Reference type"),
+    E1103("MetaDataSchema must be specified for Reference Type element: `{0}`:`{1}`"),
+    E1104("Element `{0}`:`{1}` Specified MetaDataSchema `{0}` not found"),
+    E1105("Form element `{0}` and its data element value types `{1}`:`{2}` not matching"),
+    E1106("Property {0}:`{1}` not found"),
+
+    E1107("Circular reference detected for parent: `{0}`:`{1}`"),
+    E1108("Duplicate `{0}` IDs found: `{1}`:`{2}`"),
     E1130("System configuration Error: `{0}`"),
 
     /* Data */

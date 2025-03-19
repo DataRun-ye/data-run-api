@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Getter
 @Setter
@@ -40,20 +41,20 @@ public abstract class FormElementConf implements Serializable {
 
     abstract public String getId();
 
-//    public FormElementConf id(String id) {
-//        this.setId(id);
-//        return this;
-//    }
+    public FormElementConf path(String path) {
+        setPath(path);
+        return this;
+    }
 
-//    @Override
-//    public boolean equals(Object o) {
-//        if (this == o) return true;
-//        if (!(o instanceof FormElementConf that)) return false;
-//        return Objects.equals(getParent(), that.getParent()) && Objects.equals(getId(), that.getId());
-//    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof FormElementConf that)) return false;
+        return Objects.equals(getId(), that.getId());
+    }
 
-//    @Override
-//    public int hashCode() {
-//        return Objects.hash(getParent(), getId());
-//    }
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
+    }
 }

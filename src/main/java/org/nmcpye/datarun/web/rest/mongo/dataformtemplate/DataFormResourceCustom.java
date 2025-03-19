@@ -47,6 +47,7 @@ public class DataFormResourceCustom extends AbstractMongoResource<DataForm> {
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
     public ResponseEntity<EntitySaveSummaryVM> saveOne(DataForm entity) {
+
 //        var sc = formTemplateSchema.generateSchema(entity);
 //        Document document = sc.toDocument();
 //        var bson = sc.toDocument().toBsonDocument();
@@ -56,12 +57,6 @@ public class DataFormResourceCustom extends AbstractMongoResource<DataForm> {
 //        log.debug(json2);
         return super.saveOne(entity);
     }
-
-//    public void saveEntity(MyEntity entity) {
-//        String schema = loadSchemaFromResources(); // Load your schema
-//        validateDynamicProperty(entity.getDynamicProperty(), schema);
-//        repository.save(entity);
-//    }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
