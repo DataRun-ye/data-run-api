@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.service.indentifieble;
 
+import org.nmcpye.datarun.common.IdentifiableService;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

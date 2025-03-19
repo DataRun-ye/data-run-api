@@ -9,10 +9,10 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.NameableObject;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.common.BaseIdentifiableObject;
-import org.nmcpye.datarun.drun.postgres.common.NameableObject;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
 import org.springframework.data.domain.Persistable;
 

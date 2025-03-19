@@ -72,41 +72,4 @@ public abstract class AbstractAuditingEntityMongo<T>
     public void setLastModifiedDate(Instant lastModifiedDate) {
         this.lastModifiedDate = lastModifiedDate;
     }
-
-    // -------------------------------------------------------------------------
-    // hashCode and equals
-    // -------------------------------------------------------------------------
-
-    @Override
-    public int hashCode() {
-        int result = getUid() != null ? getUid().hashCode() : getId().hashCode();
-//        result = 31 * result + (getCode() != null ? getCode().hashCode() : 0);
-//        result = 31 * result + (getUid() != null ? getName().hashCode() : 0);
-
-        return result;
-    }
-
-//    @Override
-//    public String getDisplayName() {
-////        return getTranslation("NAME", getName());
-//        return getName();
-//    }
-
-//    /**
-//     * Compares objects based on display name. A null display name is ordered
-//     * after a non-null display name.
-//     */
-//    @Override
-//    public int compareTo(IdentifiableObject<T> object) {
-//        if (this.getDisplayName() == null && object != null) {
-//            return object.getDisplayName() == null ? 0 : 1;
-//        }
-//
-//        return object == null || object.getDisplayName() == null ? -1 : this.getDisplayName().compareToIgnoreCase(object.getDisplayName());
-////        if (this.getDisplayName() == null && object != null) {
-////            return object.getDisplayName() == null ? 0 : 1;
-////        }
-////
-////        return object == null || object.getDisplayName() == null ? -1 : this.getDisplayName().compareToIgnoreCase(object.getDisplayName());
-//    }
 }

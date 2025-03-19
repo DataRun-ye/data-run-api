@@ -19,7 +19,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Transactional
-public abstract class IdentifiableRelationalServiceImpl<T extends IdentifiableEntity<Long>>
+public abstract class IdentifiableRelationalServiceImpl
+    <T extends IdentifiableEntity<Long>>
     implements IdentifiableRelationalService<T> {
 
     private static final Logger log = LoggerFactory.getLogger(IdentifiableRelationalServiceImpl.class);
@@ -31,11 +32,6 @@ public abstract class IdentifiableRelationalServiceImpl<T extends IdentifiableEn
     public IdentifiableRelationalServiceImpl(IdentifiableRelationalRepository<T> identifiableRepository, CacheManager cacheManager) {
         this.identifiableRepository = identifiableRepository;
         this.cacheManager = cacheManager;
-    }
-
-    @Override
-    public List<T> findAll(QueryRequest queryRequest) {
-        return identifiableRepository.findAll();
     }
 
     @Override
@@ -116,20 +112,6 @@ public abstract class IdentifiableRelationalServiceImpl<T extends IdentifiableEn
 
         object.setIsPersisted();
         return saveWithRelations(object);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<T> findAll(Pageable pageable, QueryRequest queryRequest) {
-        log.debug("Request to get all entities");
-        return identifiableRepository.findAll(pageable);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<T> findOne(Long id) {
-        log.debug("Request to get T : {}", id);
-        return identifiableRepository.findById(id);
     }
 
     @Override

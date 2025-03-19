@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.drun.postgres.service.indentifieble;
+package org.nmcpye.datarun.common;
 
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -48,24 +48,6 @@ public interface IdentifiableService<T extends IdentifiableEntity<ID>,
      * @return the persisted entity.
      */
     T update(T object);
-
-    /**
-     * Get all the chvSessions.
-     *
-     * @param pageable the pagination information.
-     * @return the list of entities.
-     */
-    Page<T> findAll(Pageable pageable, QueryRequest queryRequest);
-
-    List<T> findAll(QueryRequest queryRequest);
-
-    /**
-     * Get the "id" object.
-     *
-     * @param id the id of the entity.
-     * @return the entity.
-     */
-    Optional<T> findOne(ID id);
 
     /**
      * Delete the "id" object.
