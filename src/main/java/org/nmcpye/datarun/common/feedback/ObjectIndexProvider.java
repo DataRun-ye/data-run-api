@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.common.feedback;
 
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+
+
+import org.nmcpye.datarun.common.IdentifiableObject;
 
 import javax.annotation.Nonnull;
 
@@ -14,5 +16,5 @@ public interface ObjectIndexProvider {
      * @return the index of the specified object.
      */
     @Nonnull
-    Integer mergeObjectIndex(@Nonnull Identifiable object);
+    Integer mergeObjectIndex(@Nonnull IdentifiableObject object);
 }

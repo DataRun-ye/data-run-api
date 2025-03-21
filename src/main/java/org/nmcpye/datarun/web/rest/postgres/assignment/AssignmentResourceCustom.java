@@ -3,15 +3,14 @@ package org.nmcpye.datarun.web.rest.postgres.assignment;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.service.AssignmentServiceCustom;
+import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
+import org.nmcpye.datarun.drun.postgres.service.AssignmentService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.nmcpye.datarun.web.rest.postgres.AbstractRelationalResource;
+import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -33,15 +32,15 @@ import java.util.List;
 @RequestMapping("/api/custom/assignments")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class AssignmentResourceCustom
-    extends AbstractRelationalResource<Assignment> {
+    extends AbstractJpaResource<Assignment> {
 
     private final Logger log = LoggerFactory.getLogger(AssignmentResourceCustom.class);
 
-    private final AssignmentServiceCustom assignmentService;
+    private final AssignmentService assignmentService;
 
-    private final AssignmentRelationalRepositoryCustom assignmentRepository;
+    private final AssignmentRepository assignmentRepository;
 
-    public AssignmentResourceCustom(AssignmentServiceCustom assignmentService, AssignmentRelationalRepositoryCustom assignmentRepository) {
+    public AssignmentResourceCustom(AssignmentService assignmentService, AssignmentRepository assignmentRepository) {
         super(assignmentService, assignmentRepository);
         this.assignmentRepository = assignmentRepository;
         this.assignmentService = assignmentService;
@@ -50,7 +49,7 @@ public class AssignmentResourceCustom
     @Override
     protected Page<Assignment> getList(Pageable pageable, QueryRequest queryRequest) {
         if (queryRequest.getFilters().isEmpty()) {
-            return assignmentService.getAllUserAccessible(pageable);
+            return assignmentService.getAllUserAccessible(pageable, queryRequest);
         }
 
         return super.getList(pageable, queryRequest);
@@ -102,11 +101,13 @@ public class AssignmentResourceCustom
     @Override
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<EntitySaveSummaryVM> saveAll(List<Assignment> entities) {
-        log.debug("REST request to saveAll {}", getName());
-        var withIds = entities.stream().filter((entity) -> entity.getId() != null).map(IdentifiableEntity::getId).toList();
-        if (!withIds.isEmpty()) {
-            throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + withIds, "idexists");
-        }
+//        log.debug("REST request to saveAll {}", getName());
+//        var withIds = entities.stream()
+//            .filter((entity) -> entity.getId() != null)
+//            .map(IdentifiableEntity::getId).toList();
+//        if (!withIds.isEmpty()) {
+//            throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + withIds, "idexists");
+//        }
 
         return super.saveAll(entities);
     }

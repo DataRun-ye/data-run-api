@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.web.rest;
 
-import org.nmcpye.datarun.service.UserService;
+import org.nmcpye.datarun.drun.postgres.service.UserService;
 import org.nmcpye.datarun.service.dto.UserDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

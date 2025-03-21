@@ -1,0 +1,43 @@
+package org.nmcpye.datarun.security;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import org.springframework.security.core.GrantedAuthority;
+
+import java.util.Collection;
+import java.util.Set;
+
+/**
+ * @author Hamza, 20/03/2025
+ */
+@AllArgsConstructor
+@Getter
+@Builder
+public class CurrentUserDetailsImpl implements CurrentUserDetails {
+    private final String uid;
+
+    private final String username;
+
+    private final String password;
+
+    private final boolean enabled;
+
+    private final boolean accountNonExpired;
+
+    private final boolean accountNonLocked;
+
+    private final boolean credentialsNonExpired;
+
+    private final Collection<GrantedAuthority> authorities;
+
+    private final Set<String> userTeamIds;
+
+    private final Set<String> userManagedTeamIds;
+
+    private final Set<String> userGroupIds;
+
+    private final boolean isSuper;
+
+    private final String langKey;
+}

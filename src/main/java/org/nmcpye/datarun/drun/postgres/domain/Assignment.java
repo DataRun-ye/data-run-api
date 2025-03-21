@@ -7,19 +7,18 @@ import com.google.common.collect.Lists;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.compress.utils.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
-import org.nmcpye.datarun.domain.AbstractAuditingEntity;
+import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableObjectUtils;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
-import org.springframework.data.domain.Persistable;
 
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,35 +27,20 @@ import java.util.stream.Collectors;
  * A Assignment.
  */
 @Entity
-@Table(name = "assignment", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_assignment_activity_id",
-        columnNames = {"activity_id", "orgUnit_id", "team_id"})
+@Table(name = "assignment", indexes = {
+    @Index(name = "idx_assignment_uid_unq", columnList = "uid", unique = true)
+}, uniqueConstraints = {
+    @UniqueConstraint(name = "uc_assignment_activity_id", columnNames = {"activity_id", "orgUnit_id", "team_id"})
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @JsonIgnoreProperties(value = {"new"})
+@Getter
+@Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Assignment
-    extends AbstractAuditingEntity<Long>
-    implements Serializable, Persistable<Long> {
+    extends JpaAuditableObject {
 
-    private static final long serialVersionUID = 1L;
     private static final String PATH_SEP = ",";
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    private Long id;
-
-    @Size(max = 11)
-    @Column(name = "uid", length = 11, nullable = false, unique = true)
-    private String uid;
-
-    @Column(name = "code")
-    private String code;
-
-    @Transient
-    private boolean isPersisted;
 
     @NotNull
     @ManyToOne//(fetch = FetchType.LAZY)
@@ -118,34 +102,9 @@ public class Assignment
     @Transient
     private String lastEntryBy;
 
-
-    public Assignment() {
-        this.setAutoFields();
-    }
-
     @JsonProperty
     public AssignmentStatus getStatus() {
         return status;
-    }
-
-    public void setStatus(AssignmentStatus status) {
-        this.status = status;
-    }
-
-    public Instant getLastEntryDate() {
-        return lastEntryDate;
-    }
-
-    public void setLastEntryDate(Instant lastEntryDate) {
-        this.lastEntryDate = lastEntryDate;
-    }
-
-    public String getLastEntryBy() {
-        return lastEntryBy;
-    }
-
-    public void setLastEntryBy(String lastEntryBy) {
-        this.lastEntryBy = lastEntryBy;
     }
 
     @JsonProperty
@@ -153,149 +112,9 @@ public class Assignment
         return entityScope;
     }
 
-    public void setEntityScope(EntityScope entityScope) {
-        this.entityScope = entityScope;
-    }
-
-    public Set<String> getForms() {
-        return forms;
-    }
-
-    public void setForms(Set<String> forms) {
-        this.forms = forms;
-    }
-
-    public Long getId() {
-        return this.id;
-    }
-
-    public Assignment id(Long id) {
-        this.setId(id);
-        return this;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getUid() {
-        return this.uid;
-    }
-
-    public Assignment uid(String uid) {
-        this.setUid(uid);
-        return this;
-    }
-
-    public Integer getStartDay() {
-        return startDay;
-    }
-
-    public void setStartDay(Integer startDay) {
-        this.startDay = startDay;
-    }
-
-
     @JsonProperty
     public Map<String, Object> getAllocatedResources() {
         return allocatedResources;
-    }
-
-    public void setAllocatedResources(Map<String, Object> allocatedResources) {
-        this.allocatedResources = allocatedResources;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
-
-    public String getCode() {
-        return this.code;
-    }
-
-    public Assignment code(String code) {
-        this.setCode(code);
-        return this;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public Assignment createdBy(String createdBy) {
-        this.setCreatedBy(createdBy);
-        return this;
-    }
-
-    public Assignment createdDate(Instant createdDate) {
-        this.setCreatedDate(createdDate);
-        return this;
-    }
-
-    public Assignment lastModifiedBy(String lastModifiedBy) {
-        this.setLastModifiedBy(lastModifiedBy);
-        return this;
-    }
-
-    public Assignment lastModifiedDate(Instant lastModifiedDate) {
-        this.setLastModifiedDate(lastModifiedDate);
-        return this;
-    }
-
-    @PostLoad
-    @PostPersist
-    public void updateEntityState() {
-        this.setIsPersisted();
-    }
-
-    @Transient
-    @Override
-    public boolean isNew() {
-        return !this.isPersisted;
-    }
-
-    public Assignment setIsPersisted() {
-        this.isPersisted = true;
-        return this;
-    }
-
-    public Activity getActivity() {
-        return this.activity;
-    }
-
-    public void setActivity(Activity activity) {
-        this.activity = activity;
-    }
-
-    public Assignment activity(Activity activity) {
-        this.setActivity(activity);
-        return this;
-    }
-
-    public OrgUnit getOrgUnit() {
-        return this.orgUnit;
-    }
-
-    public void setOrgUnit(OrgUnit orgUnit) {
-        this.orgUnit = orgUnit;
-    }
-
-    public Assignment organisationUnit(OrgUnit orgUnit) {
-        this.setOrgUnit(orgUnit);
-        return this;
-    }
-
-    public Team getTeam() {
-        return this.team;
-    }
-
-    public void setTeam(Team team) {
-        this.team = team;
-    }
-
-    public Assignment team(Team team) {
-        this.setTeam(team);
-        return this;
     }
 
     /**
@@ -354,14 +173,6 @@ public class Assignment
         return map;
     }
 
-    public Set<Assignment> getChildren() {
-        return children;
-    }
-
-    public void setChildren(Set<Assignment> children) {
-        this.children = children;
-    }
-
     @JsonProperty(value = "level", access = JsonProperty.Access.READ_ONLY)
     public Integer getLevel() {
         return StringUtils.countMatches(path, PATH_SEP);
@@ -378,7 +189,7 @@ public class Assignment
      * has better performance.
      */
     public Integer getHierarchyLevel() {
-        Set<String> uids = Sets.newHashSet(uid);
+        Set<String> uids = Sets.newHashSet(getUid());
 
         Assignment current = this;
 
@@ -463,7 +274,7 @@ public class Assignment
         Set<String> visitedSet = new HashSet<>();
         Assignment assignment = parent;
 
-        pathList.add(uid);
+        pathList.add(getUid());
 
         while (assignment != null) {
             if (!visitedSet.contains(assignment.getUid())) {
@@ -520,28 +331,11 @@ public class Assignment
         return false;
     }
 
-    public void setPath(String path) {
-        this.path = path;
-    }
-
-    public void setHierarchyLevel(Integer hierarchyLevel) {
-        this.hierarchyLevel = hierarchyLevel;
-    }
-
-    public Assignment getParent() {
-        return parent;
-    }
-
-    public void setParent(Assignment parent) {
-        this.parent = parent;
-    }
-
     @Override
     public String toString() {
         return "Assignment{" +
             "id=" + getId() +
             ", uid='" + getUid() + "'" +
-            ", code='" + getCode() + "'" +
             ", createdBy='" + getCreatedBy() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
             ", lastModifiedBy='" + getLastModifiedBy() + "'" +

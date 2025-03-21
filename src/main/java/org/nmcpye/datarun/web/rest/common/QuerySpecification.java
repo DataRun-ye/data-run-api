@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface QuerySpecification<T> {
-    default Specification<T> buildSpecification(QueryRequest queryRequest) {
+    default Specification<T> buildQuerySpecification(QueryRequest queryRequest) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 

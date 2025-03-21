@@ -3,26 +3,28 @@ package org.nmcpye.datarun.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.Sets;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
+import org.nmcpye.datarun.security.AuthoritiesConstants;
 
-import java.io.Serializable;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A user.
@@ -30,25 +32,13 @@ import java.util.Set;
 @Entity
 @Table(name = "app_user")
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
-public class User extends AbstractAuditingEntity<Long> implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    @Size(max = 11)
-    @Column(name = "uid", length = 11, unique = true)
-    private String uid;
-
-    @Column(name = "code", unique = true)
-    private String code;
+@Getter
+@Setter
+public class User extends JpaAuditableObject {
 
     @Size(max = 20)
     @Column(name = "mobile", length = 20, unique = true)
     private String mobile;
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    private Long id;
 
     @NotNull
     @Pattern(regexp = Constants.LOGIN_REGEX)
@@ -111,6 +101,16 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
     @BatchSize(size = 20)
     private Set<Authority> authorities = new HashSet<>();
 
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(
+        name = "user_role_members",
+        joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
+        inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")}
+    )
+    @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+    Set<Role> roles;
+
     @ManyToMany(mappedBy = "users")
     @JsonIgnoreProperties(value = {"managedTeams", "managedTeams", "users", "assignments",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
@@ -122,51 +122,6 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
     @JsonIgnoreProperties(value = {"users", "managedGroups", "managedByGroups"}, allowSetters = true)
     private Set<UserGroup> groups = new HashSet<>();
 
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getName() {
-        return firstName + " " + lastName;
-    }
-
-    public String getMobile() {
-        return mobile;
-    }
-
-    public void setMobile(String mobile) {
-        this.mobile = mobile;
-    }
-
-    public String getUid() {
-        return this.uid;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
-
-    @Override
-    public User setIsPersisted() {
-        return null;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getLogin() {
-        return login;
-    }
-
     // Lowercase the login before saving it in database
     public void setLogin(String login) {
         this.login = StringUtils.lowerCase(login, Locale.ENGLISH);
@@ -175,102 +130,6 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public String getPassword() {
         return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
-    public boolean isActivated() {
-        return activated;
-    }
-
-    public void setActivated(boolean activated) {
-        this.activated = activated;
-    }
-
-    public String getActivationKey() {
-        return activationKey;
-    }
-
-    public void setActivationKey(String activationKey) {
-        this.activationKey = activationKey;
-    }
-
-    public String getResetKey() {
-        return resetKey;
-    }
-
-    public void setResetKey(String resetKey) {
-        this.resetKey = resetKey;
-    }
-
-    public Instant getResetDate() {
-        return resetDate;
-    }
-
-    public void setResetDate(Instant resetDate) {
-        this.resetDate = resetDate;
-    }
-
-    public String getLangKey() {
-        return langKey;
-    }
-
-    public void setLangKey(String langKey) {
-        this.langKey = langKey;
-    }
-
-    public Set<Authority> getAuthorities() {
-        return authorities;
-    }
-
-    public void setAuthorities(Set<Authority> authorities) {
-        this.authorities = authorities;
-    }
-
-    public Set<Team> getTeams() {
-        return teams;
-    }
-
-    public void setTeams(Set<Team> teams) {
-        this.teams = teams;
-    }
-
-    public Set<UserGroup> getGroups() {
-        return this.groups;
     }
 
     public void setGroups(Set<UserGroup> userGroups) {
@@ -442,18 +301,44 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
         return false;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        User user = (User) o;
-        return (getId() != null && getId().equals(user.getId())) ||
-            (getUid() != null && getUid().equals(user.getUid()));
+    public Set<String> getAllAuthorities() {
+        return getAuthorities().stream().map(Authority::getName).collect(Collectors.toSet());
     }
 
-    @Override
-    public int hashCode() {
-        return getId() != null ? getId().hashCode() : (getUid() != null ? getUid().hashCode() : 0);
+    /**
+     * Tests whether this user has any of the authorities in the given set.
+     *
+     * @param auths the authorities to compare with.
+     * @return true or false.
+     */
+    public boolean hasAnyAuthority(Collection<String> auths) {
+        return getAllAuthorities().stream().anyMatch(auths::contains);
+    }
+
+    /**
+     * Tests whether the user has the given authority. Returns true in any case
+     * if the user has the ALL authority.
+     */
+    public boolean isAuthorized(String auth) {
+        if (auth == null) {
+            return false;
+        }
+
+        final Set<String> auths = getAllAuthorities();
+
+        return CollectionUtils.containsAny(auths,
+            Sets.newHashSet(AuthoritiesConstants.ADMIN)) || auths.contains(auth);
+    }
+
+    /**
+     * Indicates whether this user is a super user, implying that the ALL
+     * authority is present in at least one of the user authority groups of this
+     * user.
+     */
+    @JsonProperty
+    public boolean isSuper() {
+        final var superAuths = Sets.newHashSet(AuthoritiesConstants.ADMIN);
+        return getAllAuthorities().stream().anyMatch(superAuths::contains);
     }
 
     // prettier-ignore

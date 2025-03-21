@@ -3,10 +3,11 @@ package org.nmcpye.datarun.mongo.service.impl;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
+import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
+import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionHistory;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionHistoryRepository;
@@ -19,6 +20,7 @@ import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -42,15 +44,15 @@ import java.util.stream.Collectors;
 @Service
 @Primary
 public class DataFormSubmissionServiceImpl
-    extends IdentifiableMongoServiceImpl<DataFormSubmission>
+    extends DefaultMongoAuditableObjectService<DataFormSubmission>
     implements DataFormSubmissionService {
 
     private final Logger log = LoggerFactory.getLogger(DataFormSubmissionServiceImpl.class);
 
     private final DataFormSubmissionRepositoryCustom repository;
     private final DataFormSubmissionHistoryRepository historyRepository;
-    private final AssignmentRelationalRepositoryCustom assignmentRepository;
-    private final TeamRelationalRepositoryCustom teamRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final TeamRepository teamRepository;
     private final SequenceGeneratorService sequenceGeneratorService;
     private final SubmissionMaintenanceService maintenanceService;
     private final AssignmentSubmissionHistoryService historyService;
@@ -58,12 +60,13 @@ public class DataFormSubmissionServiceImpl
 
     public DataFormSubmissionServiceImpl(
         DataFormSubmissionRepositoryCustom repository,
+        CacheManager cacheManager,
         DataFormSubmissionHistoryRepository historyRepository,
-        AssignmentRelationalRepositoryCustom assignmentRepository,
-        TeamRelationalRepositoryCustom teamRepository,
+        AssignmentRepository assignmentRepository,
+        TeamRepository teamRepository,
         MongoTemplate mongoTemplate,
         SequenceGeneratorService sequenceGeneratorService, SubmissionMaintenanceService maintenanceService, AssignmentSubmissionHistoryService historyService) {
-        super(repository, mongoTemplate);
+        super(repository, cacheManager, mongoTemplate);
         this.repository = repository;
         this.historyRepository = historyRepository;
         this.assignmentRepository = assignmentRepository;

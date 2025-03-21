@@ -8,7 +8,7 @@ import java.util.List;
 @JsonSerialize(using = DynamicFieldSerializer.class)
 public class PagedResponse<T> {
     private Page<T> page;
-//    private int page;
+    //    private int page;
 //    private int size;
 //    private long totalElements;
 //    private boolean paged;
@@ -18,7 +18,7 @@ public class PagedResponse<T> {
 //    private boolean last;
 //    private boolean empty;
     private String nextPage;
-//    private List<T> items;
+    //    private List<T> items;
     private String entityName;
 
     public PagedResponse(Page<T> page, String contentName, String nextPage) {

@@ -2,15 +2,16 @@ package org.nmcpye.datarun.mongo.domain;
 
 import jakarta.el.PropertyNotFoundException;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 import org.nmcpye.datarun.utils.CodeGenerator;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.*;
 
@@ -20,14 +21,11 @@ import static java.util.Map.entry;
  * A DataFormSubmission.
  */
 @Document(collection = "data_form_submission")
+@Getter
+@Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormSubmission
-    extends AbstractAuditingEntityMongo<String> implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    @Id
-    private String id;
+    extends MongoAuditableBaseObject {
 
     @Size(max = 11)
     @Field("uid")
@@ -79,223 +77,6 @@ public class DataFormSubmission
 
     @Field("cancelReason")
     private String cancelReason;
-
-    public DataFormSubmission() {
-        setAutoFields();
-    }
-
-    public String getReassignedTo() {
-        return reassignedTo;
-    }
-
-    public void setReassignedTo(String reassignedTo) {
-        this.reassignedTo = reassignedTo;
-    }
-
-    public String getRescheduledTo() {
-        return rescheduledTo;
-    }
-
-    public void setRescheduledTo(String rescheduledTo) {
-        this.rescheduledTo = rescheduledTo;
-    }
-
-    public String getMergedWith() {
-        return mergedWith;
-    }
-
-    public void setMergedWith(String mergedWith) {
-        this.mergedWith = mergedWith;
-    }
-
-    public String getCancelReason() {
-        return cancelReason;
-    }
-
-    public void setCancelReason(String cancelReason) {
-        this.cancelReason = cancelReason;
-    }
-
-    public Long getSerialNumber() {
-        return serialNumber;
-    }
-
-    public void setSerialNumber(Long serialNumber) {
-        this.serialNumber = serialNumber;
-    }
-
-    public Map<String, Object> getFormData() {
-        return formData;
-    }
-
-    public void setFormData(Map<String, Object> formData) {
-        this.formData = formData;
-    }
-
-    public String getId() {
-        return this.id;
-    }
-
-    public DataFormSubmission id(String id) {
-        this.setId(id);
-        return this;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getUid() {
-        return this.uid;
-    }
-
-    public DataFormSubmission uid(String uid) {
-        this.setUid(uid);
-        return this;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
-
-    public Boolean getDeleted() {
-        return this.deleted;
-    }
-
-    public DataFormSubmission deleted(Boolean deleted) {
-        this.setDeleted(deleted);
-        return this;
-    }
-
-    public void setDeleted(Boolean deleted) {
-        this.deleted = deleted;
-    }
-
-    public Instant getStartEntryTime() {
-        return this.startEntryTime;
-    }
-
-    public DataFormSubmission startEntryTime(Instant startEntryTime) {
-        this.setStartEntryTime(startEntryTime);
-        return this;
-    }
-
-    public void setStartEntryTime(Instant startEntryTime) {
-        this.startEntryTime = startEntryTime;
-    }
-
-    public Instant getFinishedEntryTime() {
-        return this.finishedEntryTime;
-    }
-
-    public DataFormSubmission finishedEntryTime(Instant finishedEntryTime) {
-        this.setFinishedEntryTime(finishedEntryTime);
-        return this;
-    }
-
-    public void setFinishedEntryTime(Instant finishedEntryTime) {
-        this.finishedEntryTime = finishedEntryTime;
-    }
-
-    public AssignmentStatus getStatus() {
-        return this.status;
-    }
-
-    public DataFormSubmission status(AssignmentStatus status) {
-        this.setStatus(status);
-        return this;
-    }
-
-    public void setStatus(AssignmentStatus status) {
-        this.status = status;
-    }
-
-    public String getForm() {
-        return this.form;
-    }
-
-    public void setForm(String dataForm) {
-        this.form = dataForm;
-    }
-
-    public DataFormSubmission form(String dataForm) {
-        this.setForm(dataForm);
-        return this;
-    }
-
-    public String getTeam() {
-        return this.team;
-    }
-
-    public void setTeam(String team) {
-        this.team = team;
-    }
-
-    public DataFormSubmission team(String team) {
-        this.setTeam(team);
-        return this;
-    }
-
-    public String getAssignment() {
-        return this.assignment;
-    }
-
-    public void setAssignment(String assignment) {
-        this.assignment = assignment;
-    }
-
-    public DataFormSubmission assignment(String assignment) {
-        this.setAssignment(assignment);
-        return this;
-    }
-
-    public String getTeamCode() {
-        return teamCode;
-    }
-
-    public void setTeamCode(String teamCode) {
-        this.teamCode = teamCode;
-    }
-
-    public String getOrgUnit() {
-        return orgUnit;
-    }
-
-    public void setOrgUnit(String orgUnit) {
-        this.orgUnit = orgUnit;
-    }
-
-    public String getOrgUnitCode() {
-        return orgUnitCode;
-    }
-
-    public void setOrgUnitCode(String orgUnitCode) {
-        this.orgUnitCode = orgUnitCode;
-    }
-
-    public String getOrgUnitName() {
-        return orgUnitName;
-    }
-
-    public void setOrgUnitName(String orgUnitName) {
-        this.orgUnitName = orgUnitName;
-    }
-
-    public String getActivity() {
-        return activity;
-    }
-
-    public void setActivity(String activity) {
-        this.activity = activity;
-    }
-
-    public Map<String, Object> getMetadata() {
-        return metadata;
-    }
-
-    public void setMetadata(Map<String, Object> metadata) {
-        this.metadata = metadata;
-    }
 
     /**
      * Populates the form data attributes with additional metadata.
@@ -396,21 +177,6 @@ public class DataFormSubmission
                 || obj.get("_index") == null);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        DataFormSubmission dataFormSubmission = (DataFormSubmission) o;
-        return (id != null && id.equals(dataFormSubmission.id)) ||
-            (uid != null && uid.equals(dataFormSubmission.uid));
-    }
-
-    @Override
-    public int hashCode() {
-        return id != null ? id.hashCode() : (uid != null ? uid.hashCode() : 0);
-    }
-
-
     // prettier-ignore
     @Override
     public String toString() {
@@ -422,18 +188,5 @@ public class DataFormSubmission
             ", finishedEntryTime='" + getFinishedEntryTime() + "'" +
             ", status='" + getStatus() + "'" +
             "}";
-    }
-
-    /**
-     * form version
-     *
-     * @return The form version of the submission,
-     */
-    public int getVersion() {
-        return version;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
     }
 }

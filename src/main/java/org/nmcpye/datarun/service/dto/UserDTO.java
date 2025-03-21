@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.service.dto;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.nmcpye.datarun.domain.User;
 
 import java.io.Serializable;
@@ -8,6 +10,8 @@ import java.util.Objects;
 /**
  * DTO for {@link org.nmcpye.datarun.domain.User}
  */
+@Getter
+@Setter
 public class UserDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -15,7 +19,6 @@ public class UserDTO implements Serializable {
     private Long id;
     private String uid;
     private String login;
-    private String name;
     private String mobile;
 
     public UserDTO() {
@@ -27,48 +30,7 @@ public class UserDTO implements Serializable {
         // Customize it here if you need, or not, firstName/lastName/etc
         this.uid = user.getUid();
         this.login = user.getLogin();
-        this.name = user.getName();
         this.mobile = user.getMobile();
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getUid() {
-        return uid;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
-
-    public String getMobile() {
-        return mobile;
-    }
-
-    public void setMobile(String mobile) {
-        this.mobile = mobile;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getLogin() {
-        return login;
-    }
-
-    public void setLogin(String login) {
-        this.login = login;
     }
 
     @Override

@@ -1,15 +1,13 @@
 package org.nmcpye.datarun.common;
 
-import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
-
-public interface NameableObject<T> extends IdentifiableEntity<T> {
-    String getName();
-
-    String getCode();
-
+public interface NameableObject<ID> extends IdentifiableObject<ID> {
     String getShortName();
 
     String getDisplayShortName();
 
     String getDescription();
+
+    String getDisplayDescription();
+
+    String getDisplayProperty(DisplayProperty property);
 }

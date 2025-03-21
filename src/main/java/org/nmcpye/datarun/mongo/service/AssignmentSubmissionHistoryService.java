@@ -1,12 +1,14 @@
 package org.nmcpye.datarun.mongo.service;
 
+import org.nmcpye.datarun.common.AuditableObjectService;
 import org.nmcpye.datarun.mongo.domain.AssignmentSubmissionHistory;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface AssignmentSubmissionHistoryService extends IdentifiableMongoService<AssignmentSubmissionHistory> {
+public interface AssignmentSubmissionHistoryService
+    extends AuditableObjectService<AssignmentSubmissionHistory, String> {
     void updateSubmissionHistory(DataFormSubmission submission);
 
     List<AssignmentSubmissionHistory> findByUidAndTeamId(String uid, String teamId);

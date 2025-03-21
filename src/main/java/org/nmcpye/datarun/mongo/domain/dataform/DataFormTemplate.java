@@ -3,11 +3,10 @@ package org.nmcpye.datarun.mongo.domain.dataform;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.mongo.domain.AbstractAuditingEntityMongo;
+import org.nmcpye.datarun.common.mongo.MongoBaseIdentifiableObject;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -24,15 +23,15 @@ import java.util.Map;
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormTemplate
-    extends AbstractAuditingEntityMongo<String> {
-
-    @Id
-    private String id;
+    extends MongoBaseIdentifiableObject {
 
     @Size(max = 11)
     @Field("uid")
     @Indexed(unique = true, name = "form_template_uid")
     private String uid;
+
+    @Field("code")
+    private String code;
 
     @Field("name")
     @Indexed(unique = true, name = "form_template_name")
@@ -82,20 +81,6 @@ public class DataFormTemplate
     public DataFormTemplate sections(List<FormSectionConf> sections) {
         this.setSections(sections);
         return this;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        DataFormTemplate dataForm = (DataFormTemplate) o;
-        return (id != null && id.equals(dataForm.id)) ||
-            (uid != null && uid.equals(dataForm.uid));
-    }
-
-    @Override
-    public int hashCode() {
-        return id != null ? id.hashCode() : (uid != null ? uid.hashCode() : 0);
     }
 
     // prettier-ignore

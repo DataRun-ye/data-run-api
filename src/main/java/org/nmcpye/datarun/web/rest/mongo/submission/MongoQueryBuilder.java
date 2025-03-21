@@ -26,7 +26,8 @@ public class MongoQueryBuilder {
                 case "eq" -> Criteria.where(field).is(value);
                 case "ne" -> Criteria.where(field).ne(value);
                 case "regex" -> Criteria.where(field).regex(value.toString(), "i");
-                case "in" -> Criteria.where(field).in(value instanceof List ? value : Arrays.asList(value.toString().split(",")));
+                case "in" ->
+                    Criteria.where(field).in(value instanceof List ? value : Arrays.asList(value.toString().split(",")));
                 case "exists" -> Criteria.where(field).exists((Boolean) value);
                 case "gt" -> Criteria.where(field).gt(value);
                 case "gte" -> Criteria.where(field).gte(value);

@@ -7,8 +7,8 @@ import org.apache.commons.collections4.map.UnmodifiableMap;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
+import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionBu;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionFinal;
@@ -29,13 +29,13 @@ import static java.util.Map.entry;
 @Transactional
 public class FormDataMigrator {
     private static final Logger log = LoggerFactory.getLogger(TemplateDrivenMigrator.class);
-    private final TeamRelationalRepositoryCustom teamRepository;
-    private final AssignmentRelationalRepositoryCustom assignmentRepository;
+    private final TeamRepository teamRepository;
+    private final AssignmentRepository assignmentRepository;
     private final Map<String, String> fieldMappings; // Loaded from JSON
     private final Map<String, String> anotherPathMap; // Loaded from JSON
     private final Map<String, Object> defaultValuesMap; // Loaded
 
-    public FormDataMigrator(TeamRelationalRepositoryCustom teamRepository, AssignmentRelationalRepositoryCustom assignmentRepository) {
+    public FormDataMigrator(TeamRepository teamRepository, AssignmentRepository assignmentRepository) {
         this.teamRepository = teamRepository;
         this.assignmentRepository = assignmentRepository;
         this.anotherPathMap = parseJsonMapping(anotherPath);

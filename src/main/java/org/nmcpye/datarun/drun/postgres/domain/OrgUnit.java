@@ -6,55 +6,35 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.compress.utils.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.drun.postgres.common.BaseIdentifiableObject;
-import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
+import org.nmcpye.datarun.common.IdentifiableObject;
+import org.nmcpye.datarun.common.jpa.JpaBaseIdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableObjectUtils;
 
-import java.io.Serializable;
 import java.util.*;
 
 /**
  * A OrgUnit.
  */
 @Entity
-@Table(name = "org_unit")
+@Table(name = "org_unit", indexes = {
+    @Index(name = "idx_orgunit_uid_unq", columnList = "uid", unique = true)
+})
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+@Getter
+@Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class OrgUnit extends JpaBaseIdentifiableObject {
 
     private static final String PATH_SEP = ",";
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    private Long id;
-
-    @Size(max = 11)
-    @Column(name = "uid", length = 11, unique = true)
-    private String uid;
-
-    @Column(name = "code", unique = true)
-    private String code;
-
-    @NotNull
-    @Column(name = "name", nullable = false)
-    private String name;
-
     @Column(name = "path")
     private String path;
-
-//    @ManyToOne(optional = false)
-//    @NotNull
-//    private OuLevel level;
 
     @JsonIgnore
     @Column(name = "level")
@@ -62,7 +42,7 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "orgUnit")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonSerialize(contentAs = IdentifiableEntity.class)
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Set<Assignment> assignments = new HashSet<>();
 
@@ -117,13 +97,6 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
         newParent.getChildren().add(this);
     }
 
-    public Set<OrgUnit> getChildren() {
-        return this.children;
-    }
-
-    public void setChildren(Set<OrgUnit> organisationUnits) {
-        this.children = organisationUnits;
-    }
 
     public OrgUnit children(Set<OrgUnit> organisationUnits) {
         this.setChildren(organisationUnits);
@@ -142,19 +115,6 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
         return this;
     }
 
-    public Set<OrgUnitGroup> getGroups() {
-        return this.groups;
-    }
-
-    public void setGroups(Set<OrgUnitGroup> organisationUnitGroups) {
-        this.groups = organisationUnitGroups;
-    }
-
-    public OrgUnit groups(Set<OrgUnitGroup> organisationUnitGroups) {
-        this.setGroups(organisationUnitGroups);
-        return this;
-    }
-
     public OrgUnit addGroup(OrgUnitGroup organisationUnitGroup) {
         this.groups.add(organisationUnitGroup);
         organisationUnitGroup.getMembers().add(this);
@@ -167,76 +127,12 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
         return this;
     }
 
-
-    public Set<Assignment> getAssignments() {
-        return assignments;
-    }
-
-    public void setAssignments(Set<Assignment> assignments) {
-        this.assignments = assignments;
-    }
-
-    public Long getId() {
-        return this.id;
-    }
-
-    public OrgUnit id(Long id) {
-        this.setId(id);
-        return this;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getUid() {
-        return this.uid;
-    }
-
-    public OrgUnit uid(String uid) {
-        this.setUid(uid);
-        return this;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
-
-    public String getCode() {
-        return this.code;
-    }
-
-    public OrgUnit code(String code) {
-        this.setCode(code);
-        return this;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
-    public OrgUnit name(String name) {
-        this.setName(name);
-        return this;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    //    public String getPath() {
-//        return this.path;
-//    }
     public String getPath() {
         List<String> pathList = new ArrayList<>();
         Set<String> visitedSet = new HashSet<>();
         OrgUnit unit = parent;
 
-        pathList.add(uid);
+        pathList.add(getUid());
 
         while (unit != null) {
             if (!visitedSet.contains(unit.getUid())) {
@@ -253,37 +149,6 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
         this.path = PATH_SEP + StringUtils.join(pathList, PATH_SEP);
 
         return this.path;
-    }
-
-    public OrgUnit path(String ouPath) {
-        this.setPath(ouPath);
-        return this;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
-    }
-
-
-//    public OuLevel getLevel() {
-//        return this.level;
-//    }
-//
-//    public void setLevel(OuLevel ouLevel) {
-//        this.level = ouLevel;
-//    }
-//
-//    public OrgUnit level(OuLevel ouLevel) {
-//        this.setLevel(ouLevel);
-//        return this;
-//    }
-
-    public OrgUnit getParent() {
-        return parent;
-    }
-
-    public void setParent(OrgUnit parent) {
-        this.parent = parent;
     }
 
     /**
@@ -381,7 +246,7 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
      * has better performance.
      */
     public Integer getHierarchyLevel() {
-        Set<String> uids = Sets.newHashSet(uid);
+        Set<String> uids = Sets.newHashSet(getUid());
 
         OrgUnit current = this;
 
@@ -396,15 +261,6 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
         hierarchyLevel = uids.size();
 
         return hierarchyLevel;
-    }
-
-    public OrgUnit hierarchyLevel(Integer hierarchyLevel) {
-        this.setHierarchyLevel(hierarchyLevel);
-        return this;
-    }
-
-    public void setHierarchyLevel(Integer hierarchyLevel) {
-        this.hierarchyLevel = hierarchyLevel;
     }
 
     /**
@@ -464,14 +320,6 @@ public class OrgUnit extends BaseIdentifiableObject<Long> implements Serializabl
     public OrgUnit parent(OrgUnit parent) {
         this.setParent(parent);
         return this;
-    }
-
-    public EntityScope getEntityScope() {
-        return entityScope;
-    }
-
-    public void setEntityScope(EntityScope entityScope) {
-        this.entityScope = entityScope;
     }
 
     // prettier-ignore

@@ -2,14 +2,15 @@ package org.nmcpye.datarun.mongo.domain;
 
 import jakarta.el.PropertyNotFoundException;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 import org.nmcpye.datarun.utils.CodeGenerator;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.*;
 
@@ -19,14 +20,11 @@ import static java.util.Map.entry;
  * A DataFormSubmission.
  */
 @Document(collection = "data_form_submission_bu")
+@Getter
+@Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormSubmissionBu
-    extends AbstractAuditingEntityMongo<String> implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    @Id
-    private String id;
+    extends MongoAuditableBaseObject {
 
     @Size(max = 11)
     @Field("uid")
@@ -81,235 +79,6 @@ public class DataFormSubmissionBu
     private Long failedAt;
     private Long lastProcessedAt;
     private Boolean processed;
-
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
-
-    public String getErrorStackTrace() {
-        return errorStackTrace;
-    }
-
-    public void setErrorStackTrace(String errorStackTrace) {
-        this.errorStackTrace = errorStackTrace;
-    }
-
-    public Long getFailedAt() {
-        return failedAt;
-    }
-
-    public void setFailedAt(Long failedAt) {
-        this.failedAt = failedAt;
-    }
-
-    public Long getLastProcessedAt() {
-        return lastProcessedAt;
-    }
-
-    public void setLastProcessedAt(Long lastProcessedAt) {
-        this.lastProcessedAt = lastProcessedAt;
-    }
-
-    public Boolean getProcessed() {
-        return processed;
-    }
-
-    public void setProcessed(Boolean processed) {
-        this.processed = processed;
-    }
-
-    public String getReassignedTo() {
-        return reassignedTo;
-    }
-
-    public void setReassignedTo(String reassignedTo) {
-        this.reassignedTo = reassignedTo;
-    }
-
-    public String getRescheduledTo() {
-        return rescheduledTo;
-    }
-
-    public void setRescheduledTo(String rescheduledTo) {
-        this.rescheduledTo = rescheduledTo;
-    }
-
-    public String getMergedWith() {
-        return mergedWith;
-    }
-
-    public void setMergedWith(String mergedWith) {
-        this.mergedWith = mergedWith;
-    }
-
-    public String getCancelReason() {
-        return cancelReason;
-    }
-
-    public void setCancelReason(String cancelReason) {
-        this.cancelReason = cancelReason;
-    }
-
-    public Long getSerialNumber() {
-        return serialNumber;
-    }
-
-    public void setSerialNumber(Long serialNumber) {
-        this.serialNumber = serialNumber;
-    }
-
-    public Map<String, Object> getFormData() {
-        return formData;
-    }
-
-    public void setFormData(Map<String, Object> formData) {
-        this.formData = formData;
-    }
-
-    public String getId() {
-        return this.id;
-    }
-
-    public DataFormSubmissionBu id(String id) {
-        this.setId(id);
-        return this;
-    }
-
-    public String getOrgUnit() {
-        return orgUnit;
-    }
-
-    public void setOrgUnit(String orgUnit) {
-        this.orgUnit = orgUnit;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getUid() {
-        return this.uid;
-    }
-
-    public DataFormSubmissionBu uid(String uid) {
-        this.setUid(uid);
-        return this;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
-
-    public Boolean getDeleted() {
-        return this.deleted;
-    }
-
-    public DataFormSubmissionBu deleted(Boolean deleted) {
-        this.setDeleted(deleted);
-        return this;
-    }
-
-    public void setDeleted(Boolean deleted) {
-        this.deleted = deleted;
-    }
-
-    public Instant getStartEntryTime() {
-        return this.startEntryTime;
-    }
-
-    public DataFormSubmissionBu startEntryTime(Instant startEntryTime) {
-        this.setStartEntryTime(startEntryTime);
-        return this;
-    }
-
-    public void setStartEntryTime(Instant startEntryTime) {
-        this.startEntryTime = startEntryTime;
-    }
-
-    public Instant getFinishedEntryTime() {
-        return this.finishedEntryTime;
-    }
-
-    public DataFormSubmissionBu finishedEntryTime(Instant finishedEntryTime) {
-        this.setFinishedEntryTime(finishedEntryTime);
-        return this;
-    }
-
-    public void setFinishedEntryTime(Instant finishedEntryTime) {
-        this.finishedEntryTime = finishedEntryTime;
-    }
-
-    public AssignmentStatus getStatus() {
-        return this.status;
-    }
-
-    public DataFormSubmissionBu status(AssignmentStatus status) {
-        this.setStatus(status);
-        return this;
-    }
-
-    public void setStatus(AssignmentStatus status) {
-        this.status = status;
-    }
-
-    public String getForm() {
-        return this.form;
-    }
-
-    public void setForm(String dataForm) {
-        this.form = dataForm;
-    }
-
-    public DataFormSubmissionBu form(String dataForm) {
-        this.setForm(dataForm);
-        return this;
-    }
-
-    public String getTeamOld() {
-        return teamOld;
-    }
-
-    public void setTeamOld(String teamOld) {
-        this.teamOld = teamOld;
-    }
-
-    public String getTeam() {
-        return this.team;
-    }
-
-    public void setTeam(String team) {
-        this.team = team;
-    }
-
-    public DataFormSubmissionBu team(String team) {
-        this.setTeam(team);
-        return this;
-    }
-
-    public String getAssignment() {
-        return this.assignment;
-    }
-
-    public void setAssignment(String assignment) {
-        this.assignment = assignment;
-    }
-
-    public DataFormSubmissionBu assignment(String assignment) {
-        this.setAssignment(assignment);
-        return this;
-    }
-
-    public String getActivity() {
-        return activity;
-    }
-
-    public void setActivity(String activity) {
-        this.activity = activity;
-    }
 
     /**
      * Populates the form data attributes with additional metadata.
@@ -370,8 +139,7 @@ public class DataFormSubmissionBu
         for (Map.Entry<String, Object> entry : formData.entrySet()) {
             Object value = entry.getValue();
 
-            if (value instanceof List) {
-                List<?> list = (List<?>) value;
+            if (value instanceof List<?> list) {
                 if (!list.isEmpty() && list.get(0) instanceof Map) {
                     if (containUnidentifiedRepeatItem((List<Map<String, Object>>) list)) {
                         List<Map<String, Object>> updatedList = new ArrayList<>();
@@ -404,21 +172,6 @@ public class DataFormSubmissionBu
                 || obj.get("_index") == null);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        DataFormSubmissionBu dataFormSubmission = (DataFormSubmissionBu) o;
-        return (id != null && id.equals(dataFormSubmission.id)) ||
-            (uid != null && uid.equals(dataFormSubmission.uid));
-    }
-
-    @Override
-    public int hashCode() {
-        return id != null ? id.hashCode() : (uid != null ? uid.hashCode() : 0);
-    }
-
-
     // prettier-ignore
     @Override
     public String toString() {
@@ -430,18 +183,5 @@ public class DataFormSubmissionBu
             ", finishedEntryTime='" + getFinishedEntryTime() + "'" +
             ", status='" + getStatus() + "'" +
             "}";
-    }
-
-    /**
-     * form version
-     *
-     * @return The form version of the submission,
-     */
-    public int getVersion() {
-        return version;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
     }
 }

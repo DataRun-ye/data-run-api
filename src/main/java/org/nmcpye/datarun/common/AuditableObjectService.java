@@ -1,0 +1,49 @@
+package org.nmcpye.datarun.common;
+
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * @author Hamza, 20/03/2025
+ */
+public interface AuditableObjectService<T extends AuditableObject<ID>, ID> {
+    Optional<T> findByIdentifyingProperties(T identifiableObject);
+
+    T saveWithRelations(T object);
+
+    boolean existsByUid(String uid);
+
+    Optional<T> findByUid(String uid);
+
+    void deleteByUid(String uid);
+
+    Page<T> findAllByUser(Pageable pageable, QueryRequest queryRequest);
+
+    List<T> findAllByUser(QueryRequest queryRequest);
+    /**
+     * Save an object.
+     *
+     * @param object the entity to save.
+     * @return the persisted entity.
+     */
+    T save(T object);
+
+    /**
+     * Updates a object.
+     *
+     * @param object the entity to update.
+     * @return the persisted entity.
+     */
+    T update(T object);
+
+    /**
+     * Delete an object.
+     *
+     * @param object the entity to delete.
+     */
+    void delete(T object);
+}

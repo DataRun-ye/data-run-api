@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.mongo.service;
 
+import org.nmcpye.datarun.common.AuditableObjectService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
 
@@ -7,7 +8,7 @@ import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
  * Service Interface for managing {@link DataFormSubmission}.
  */
 public interface MetadataSubmissionService
-    extends IdentifiableMongoService<MetadataSubmission> {
+    extends AuditableObjectService<MetadataSubmission, String> {
 
 //    Page<MetadataSubmission> findAllByForm(List<String> forms, Pageable pageable);
 

@@ -2,12 +2,16 @@ package org.nmcpye.datarun.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import java.io.Serializable;
-import java.util.Objects;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.data.domain.Persistable;
+
+import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * A Authority.
@@ -15,7 +19,9 @@ import org.springframework.data.domain.Persistable;
 @Entity
 @Table(name = "app_authority")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-@JsonIgnoreProperties(value = { "new", "id" })
+@JsonIgnoreProperties(value = {"new", "id"})
+@Getter
+@Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Authority implements Serializable, Persistable<String> {
 
@@ -30,19 +36,9 @@ public class Authority implements Serializable, Persistable<String> {
     @Transient
     private boolean isPersisted;
 
-    // jhipster-needle-entity-add-field - JHipster will add fields here
-
-    public String getName() {
-        return this.name;
-    }
-
     public Authority name(String name) {
         this.setName(name);
         return this;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     @PostLoad
@@ -66,8 +62,6 @@ public class Authority implements Serializable, Persistable<String> {
         this.isPersisted = true;
         return this;
     }
-
-    // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
 
     @Override
     public boolean equals(Object o) {

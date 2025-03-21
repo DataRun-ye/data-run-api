@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.mongo.repository;
 
 import org.javers.spring.annotation.JaversSpringDataAuditable;
+import org.nmcpye.datarun.common.mongo.repository.MongoIdentifiableRepository;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;
 import org.springframework.data.mongodb.repository.Query;
@@ -16,7 +17,7 @@ import java.util.Set;
 @Repository
 @JaversSpringDataAuditable
 public interface DataFormTemplateRepository
-    extends IdentifiableMongoRepository<DataFormTemplate> {
+    extends MongoIdentifiableRepository<DataFormTemplate> {
     Set<DataFormTemplate> findAllByUidInAndDisabledIsNot(Collection<String> uids, Boolean disabled);
 
     @Query(value = "{ 'fields.type': { $in: ?0 }}")

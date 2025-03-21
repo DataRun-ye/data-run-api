@@ -1,9 +1,8 @@
 package org.nmcpye.datarun.security;
 
-import org.hibernate.validator.internal.constraintvalidators.hv.EmailValidator;
+import org.nmcpye.datarun.common.security.CurrentUserInfoService;
 import org.nmcpye.datarun.domain.Authority;
 import org.nmcpye.datarun.domain.User;
-import org.nmcpye.datarun.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -13,9 +12,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Authenticate a user from the database.
@@ -23,46 +21,72 @@ import java.util.Optional;
 @Component("userDetailsService")
 public class DomainUserDetailsService implements UserDetailsService {
 
-    private static final Logger log = LoggerFactory.getLogger(DomainUserDetailsService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DomainUserDetailsService.class);
 
-    private final UserRepository userRepository;
+    private final CurrentUserInfoService currentUserInfoService;
 
-    public DomainUserDetailsService(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public DomainUserDetailsService(CurrentUserInfoService currentUserInfoService) {
+        this.currentUserInfoService = currentUserInfoService;
     }
 
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(final String login) {
-        log.debug("Authenticating {}", login);
+        LOG.debug("Authenticating {}", login);
 
-        if (new EmailValidator().isValid(login, null)) {
-            return userRepository
-                .findOneWithAuthoritiesByEmailIgnoreCase(login)
-                .map(user -> createSpringSecurityUser(login, user))
-                .orElseThrow(() -> new UsernameNotFoundException("User with email " + login + " was not found in the database"));
-        }
-
+//        if (new EmailValidator().isValid(login, null)) {
+//            final var userByEmail = currentUserInfoService
+//                .findCurrentByEmail(login).orElseThrow(() ->
+//                    new UsernameNotFoundException("User with login " + login + " was not found in the database"));
+//        }
         String lowercaseLogin = login.toLowerCase(Locale.ENGLISH);
-
-        final Optional<User> userf = userRepository
-            .findOneWithAuthoritiesByLogin(lowercaseLogin);
-        return userRepository
-            .findOneWithAuthoritiesByLogin(lowercaseLogin)
-            .map(user -> createSpringSecurityUser(lowercaseLogin, user))
+        return currentUserInfoService
+            .findCurrentByLogin(lowercaseLogin)
+            .map(user -> createUserDetails(lowercaseLogin, user))
             .orElseThrow(() -> new UsernameNotFoundException("User " + lowercaseLogin + " was not found in the database"));
     }
 
-    private org.springframework.security.core.userdetails.User createSpringSecurityUser(String lowercaseLogin, User user) {
+    public CurrentUserDetails createUserDetails(String lowercaseLogin, User user) {
         if (!user.isActivated()) {
             throw new UserNotActivatedException("User " + lowercaseLogin + " was not activated");
         }
-        List<SimpleGrantedAuthority> grantedAuthorities = user
-            .getAuthorities()
-            .stream()
-            .map(Authority::getName)
-            .map(SimpleGrantedAuthority::new)
-            .toList();
-        return new org.springframework.security.core.userdetails.User(user.getLogin(), user.getPassword(), grantedAuthorities);
+        return CurrentUserDetailsImpl.builder()
+            .uid(user.getUid())
+            .username(user.getLogin())
+            .password(user.getPassword())
+            .enabled(user.isActivated())
+            .accountNonExpired(user.isActivated())
+            .accountNonLocked(user.isActivated())
+            .credentialsNonExpired(user.isActivated())
+            // TODO: migrate to use User's roles
+            .authorities(user.getAuthorities().stream()
+                .map(authority -> new SimpleGrantedAuthority(authority.getName()))
+                .collect(Collectors.toList()))
+            .userTeamIds(currentUserInfoService.getUserTeamInfo(user.getUid()).getTeamUIDs())
+            .userManagedTeamIds(currentUserInfoService.getUserTeamInfo(user.getUid()).getManagedTeamUIDs())
+            .userGroupIds(currentUserInfoService.getUserGroupIds(user.getUid()).getUserGroupUIDs())
+            .isSuper(user.getAuthorities()
+                .stream()
+                .map(Authority::getName)
+                .anyMatch((s) ->
+                    s.equals(AuthoritiesConstants.ADMIN)))
+            .build();
     }
+
+//    // old jhipster
+//    private org.springframework.security.core.userdetails.User createSpringSecurityUser(String lowercaseLogin, User user) {
+//        if (!user.isActivated()) {
+//            throw new UserNotActivatedException("User " + lowercaseLogin + " was not activated");
+//        }
+//        List<SimpleGrantedAuthority> grantedAuthorities = user
+//            .getAuthorities()
+//            .stream()
+//            .map(Authority::getName)
+//            .map(SimpleGrantedAuthority::new)
+//            .toList();
+//
+//
+//
+//        return new org.springframework.security.core.userdetails.User(user.getLogin(), user.getPassword(), grantedAuthorities);
+//    }
 }

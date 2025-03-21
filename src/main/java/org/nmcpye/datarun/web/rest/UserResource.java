@@ -2,12 +2,12 @@ package org.nmcpye.datarun.web.rest;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
+import org.nmcpye.datarun.common.repository.UserRepository;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.domain.User;
-import org.nmcpye.datarun.repository.UserRepository;
+import org.nmcpye.datarun.drun.postgres.service.UserService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.service.MailService;
-import org.nmcpye.datarun.service.UserService;
 import org.nmcpye.datarun.service.dto.AdminUserDTO;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.nmcpye.datarun.web.rest.errors.EmailAlreadyUsedException;
@@ -137,7 +137,7 @@ public class UserResource {
      * @throws EmailAlreadyUsedException {@code 400 (Bad Request)} if the email is already in use.
      * @throws LoginAlreadyUsedException {@code 400 (Bad Request)} if the login is already in use.
      */
-    @PutMapping({ "/users", "/users/{login}" })
+    @PutMapping({"/users", "/users/{login}"})
     @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<AdminUserDTO> updateUser(
         @PathVariable(name = "login", required = false) @Pattern(regexp = Constants.LOGIN_REGEX) String login,

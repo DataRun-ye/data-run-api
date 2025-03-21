@@ -2,13 +2,13 @@ package org.nmcpye.datarun.web.rest.postgres.team;
 
 import jakarta.validation.constraints.NotNull;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
+import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
+import org.nmcpye.datarun.drun.postgres.service.TeamService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.nmcpye.datarun.web.rest.postgres.AbstractRelationalResource;
+import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -31,15 +31,15 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/custom/teams")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class TeamResourceCustom extends AbstractRelationalResource<Team> {
+public class TeamResourceCustom extends AbstractJpaResource<Team> {
     private final Logger log = LoggerFactory.getLogger(TeamResourceCustom.class);
 
-    private final TeamServiceCustom serviceCustom;
+    private final TeamService serviceCustom;
 
-    private final TeamRelationalRepositoryCustom repositoryCustom;
+    private final TeamRepository repositoryCustom;
 
-    public TeamResourceCustom(TeamServiceCustom serviceCustom,
-                              TeamRelationalRepositoryCustom repositoryCustom) {
+    public TeamResourceCustom(TeamService serviceCustom,
+                              TeamRepository repositoryCustom) {
         super(serviceCustom, repositoryCustom);
         this.serviceCustom = serviceCustom;
         this.repositoryCustom = repositoryCustom;

@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.web.rest.postgres.orgunit;
 
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitGroupRelationalRepository;
+import org.nmcpye.datarun.drun.postgres.repository.OrgUnitGroupRepository;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitGroupService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.web.rest.postgres.AbstractRelationalResource;
+import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -22,13 +22,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/custom/orgUnitGroups")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class OrgUnitGroupResource extends AbstractRelationalResource<OrgUnitGroup> {
+public class OrgUnitGroupResource extends AbstractJpaResource<OrgUnitGroup> {
 
     private final Logger log = LoggerFactory.getLogger(OrgUnitGroupResource.class);
 
     private final OrgUnitGroupService service;
 
-    public OrgUnitGroupResource(OrgUnitGroupService service, OrgUnitGroupRelationalRepository repository) {
+    public OrgUnitGroupResource(OrgUnitGroupService service, OrgUnitGroupRepository repository) {
         super(service, repository);
         this.service = service;
     }

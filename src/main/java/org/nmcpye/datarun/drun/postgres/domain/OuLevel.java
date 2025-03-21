@@ -1,115 +1,32 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.drun.postgres.common.BaseIdentifiableObject;
-
-import java.io.Serializable;
+import org.nmcpye.datarun.common.jpa.JpaBaseIdentifiableObject;
 
 /**
  * A OuLevel.
  */
 @Entity
-@Table(name = "ou_level")
+@Table(name = "ou_level", indexes = {
+    @Index(name = "idx_oulevel_uid_unq", columnList = "uid", unique = true)
+})
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+@Getter
+@Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OuLevel extends BaseIdentifiableObject<Long> implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    private Long id;
-
-    @Size(max = 11)
-    @Column(name = "uid", length = 11, unique = true)
-    private String uid;
-
-    @Column(name = "name")
-    private String name;
-
-    @Column(name = "code")
-    private String code;
-
+public class OuLevel extends JpaBaseIdentifiableObject {
     @NotNull
     @Column(name = "level", nullable = false)
     private Integer level;
 
-    public OuLevel() {
-        this.setAutoFields();
-    }
-
-    public Long getId() {
-        return this.id;
-    }
-
-    public OuLevel id(Long id) {
-        this.setId(id);
-        return this;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getUid() {
-        return this.uid;
-    }
-
-    public OuLevel uid(String uid) {
-        this.setUid(uid);
-        return this;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
-
-    @Override
-    public String getCreatedBy() {
-        return null;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
-    public OuLevel name(String name) {
-        this.setName(name);
-        return this;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Integer getLevel() {
-        return this.level;
-    }
-
-    public OuLevel level(Integer level) {
-        this.setLevel(level);
-        return this;
-    }
-
-    public void setLevel(Integer level) {
-        this.level = level;
-    }
-
-    // prettier-ignore
     @Override
     public String toString() {
         return "OuLevel{" +

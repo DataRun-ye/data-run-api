@@ -5,10 +5,10 @@ import jakarta.validation.constraints.Pattern;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
+import org.nmcpye.datarun.common.repository.UserRepository;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.domain.User;
-import org.nmcpye.datarun.repository.UserRepository;
-import org.nmcpye.datarun.service.UserService;
+import org.nmcpye.datarun.drun.postgres.service.UserService;
 import org.nmcpye.datarun.service.dto.AdminUserDTO;
 import org.nmcpye.datarun.web.rest.common.AbstractResourceRead;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
@@ -114,7 +114,7 @@ public class UserResourceCustom extends AbstractResourceRead<User, Long>
 
         Specification<User> spec;
         try {
-            spec = buildSpecification(queryRequest);
+            spec = buildQuerySpecification(queryRequest);
         } catch (Exception e) {
             throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2050, e.getMessage()));
         }
@@ -131,7 +131,7 @@ public class UserResourceCustom extends AbstractResourceRead<User, Long>
     protected Page<User> getList(Pageable pageable, QueryRequest queryRequest) {
         Specification<User> spec;
         try {
-            spec = buildSpecification(queryRequest);
+            spec = buildQuerySpecification(queryRequest);
         } catch (Exception e) {
             throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2050, e.getMessage()));
         }

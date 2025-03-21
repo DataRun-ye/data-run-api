@@ -1,0 +1,24 @@
+package org.nmcpye.datarun.common;
+
+import org.nmcpye.datarun.drun.postgres.common.IdScheme;
+import org.nmcpye.datarun.drun.postgres.common.translation.Translation;
+
+import java.util.Set;
+
+/**
+ * @author Hamza, 20/03/2025
+ */
+public interface IdentifiableObject<ID>
+    extends AuditableObject<ID>, Comparable<IdentifiableObject<ID>> {
+    ID getId();
+
+    String getCode();
+
+    String getName();
+
+    String getDisplayName();
+
+    Set<Translation> getTranslations();
+
+    String getPropertyValue(IdScheme idScheme);
+}

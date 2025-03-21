@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.web.rest.postgres.orgunit;
 
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitGroupSetRelationalRepository;
+import org.nmcpye.datarun.drun.postgres.repository.OrgUnitGroupSetRepository;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitGroupSetService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.web.rest.postgres.AbstractRelationalResource;
+import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,11 +20,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/custom/orgUnitGroupSets")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class OrgUnitGroupSetResource extends AbstractRelationalResource<OrgUnitGroupSet> {
+public class OrgUnitGroupSetResource extends AbstractJpaResource<OrgUnitGroupSet> {
 
     private final OrgUnitGroupSetService service;
 
-    public OrgUnitGroupSetResource(OrgUnitGroupSetService service, OrgUnitGroupSetRelationalRepository repository) {
+    public OrgUnitGroupSetResource(OrgUnitGroupSetService service, OrgUnitGroupSetRepository repository) {
         super(service, repository);
         this.service = service;
     }

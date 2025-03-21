@@ -2,10 +2,8 @@ package org.nmcpye.datarun.drun.postgres.common;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Predicate;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
@@ -30,18 +28,6 @@ public abstract class AssignmentSpecifications {
                 Join<Team, User> userJoin = assignmentJoin.join("users", JoinType.INNER);
                 return criteriaBuilder.equal(userJoin.get("login"), currentUserLogin);
             }
-        };
-    }
-
-    public static Specification<Assignment> isEnabled() {
-        return (root, query, criteriaBuilder) -> {
-            Join<Assignment, Activity> activityJoin = root.join("activity", JoinType.LEFT);
-            Join<Assignment, Team> teamJoin = root.join("team", JoinType.LEFT);
-
-            Predicate activityNotDisabled = criteriaBuilder.isFalse(activityJoin.get("disabled"));
-            Predicate teamNotDisabled = criteriaBuilder.isFalse(teamJoin.get("disabled"));
-
-            return criteriaBuilder.and(teamNotDisabled, activityNotDisabled);
         };
     }
 }

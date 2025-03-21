@@ -1,11 +1,9 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
+import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
-import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.MetadataSchema;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
@@ -17,8 +15,7 @@ import org.nmcpye.datarun.mongo.service.MetadataSchemaService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -38,34 +35,23 @@ import java.util.Optional;
 @Primary
 @Transactional
 public class MetadataSchemaServiceImpl
-    extends IdentifiableMongoServiceImpl<MetadataSchema>
+    extends DefaultMongoAuditableObjectService<MetadataSchema>
     implements MetadataSchemaService {
-
-    private final Logger log = LoggerFactory.getLogger(MetadataSchemaServiceImpl.class);
 
     private final MetadataSchemaRepository repositoryCustom;
     private final DataFormRepository dataFormRepository;
-    private final ActivityRelationalRepositoryCustom activityRepository;
 
-    private final AssignmentRelationalRepositoryCustom assignmentRepository;
-    private final TeamRelationalRepositoryCustom teamRepository;
-
-    private final OrgUnitRelationalRepositoryCustom orgUnitRepository;
+    private final AssignmentRepository assignmentRepository;
 
     public MetadataSchemaServiceImpl(MetadataSchemaRepository repositoryCustom,
+                                     CacheManager cacheManager,
                                      DataFormRepository dataFormRepository,
-                                     ActivityRelationalRepositoryCustom activityRepository,
-                                     AssignmentRelationalRepositoryCustom assignmentRepository,
-                                     TeamRelationalRepositoryCustom teamRepository,
-                                     OrgUnitRelationalRepositoryCustom orgUnitRepository,
+                                     AssignmentRepository assignmentRepository,
                                      MongoTemplate mongoTemplate) {
-        super(repositoryCustom, mongoTemplate);
+        super(repositoryCustom, cacheManager, mongoTemplate);
         this.repositoryCustom = repositoryCustom;
         this.dataFormRepository = dataFormRepository;
-        this.activityRepository = activityRepository;
         this.assignmentRepository = assignmentRepository;
-        this.teamRepository = teamRepository;
-        this.orgUnitRepository = orgUnitRepository;
     }
 
     public void processFields(List<AbstractField> fields, String parentPath) {

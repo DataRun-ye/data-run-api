@@ -2,10 +2,10 @@ package org.nmcpye.datarun.web.rest.postgres.orgunit;
 
 import org.nmcpye.datarun.domain.Project;
 import org.nmcpye.datarun.drun.postgres.domain.OuLevel;
-import org.nmcpye.datarun.drun.postgres.repository.OuLevelRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.service.OuLevelServiceCustom;
+import org.nmcpye.datarun.drun.postgres.repository.OuLevelRepository;
+import org.nmcpye.datarun.drun.postgres.service.OuLevelService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.web.rest.postgres.AbstractRelationalResource;
+import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,16 +17,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/custom/ouLevels")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class OuLevelResourceCustom
-    extends AbstractRelationalResource<OuLevel> {
+    extends AbstractJpaResource<OuLevel> {
 
-    private final OuLevelServiceCustom ouLevelServiceCustom;
+    private final OuLevelService ouLevelService;
 
-    private final OuLevelRelationalRepositoryCustom ouLevelRepositoryCustom;
+    private final OuLevelRepository ouLevelRepositoryCustom;
 
-    public OuLevelResourceCustom(OuLevelServiceCustom ouLevelService,
-                                 OuLevelRelationalRepositoryCustom ouLevelRepository) {
+    public OuLevelResourceCustom(OuLevelService ouLevelService,
+                                 OuLevelRepository ouLevelRepository) {
         super(ouLevelService, ouLevelRepository);
-        this.ouLevelServiceCustom = ouLevelService;
+        this.ouLevelService = ouLevelService;
         this.ouLevelRepositoryCustom = ouLevelRepository;
     }
 

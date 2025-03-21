@@ -1,13 +1,15 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
+import org.nmcpye.datarun.common.mongo.impl.DefaultMongoIdentifiableService;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.DataFormTemplateService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,19 +31,20 @@ import java.util.stream.Collectors;
 @Primary
 @Transactional
 public class DataFormTemplateServiceImpl
-    extends IdentifiableMongoServiceImpl<DataFormTemplate>
+    extends DefaultMongoIdentifiableService<DataFormTemplate>
     implements DataFormTemplateService {
 
     private final DataFormTemplateRepository repository;
 
-    private final TeamRelationalRepositoryCustom teamRepository;
+    private final TeamRepository teamRepository;
 
 
     public DataFormTemplateServiceImpl(
         DataFormTemplateRepository repository,
+        CacheManager cacheManager,
         MongoTemplate mongoTemplate,
-        TeamRelationalRepositoryCustom teamRepository) {
-        super(repository, mongoTemplate);
+        TeamRepository teamRepository) {
+        super(repository, cacheManager, mongoTemplate);
         this.repository = repository;
         this.teamRepository = teamRepository;
     }

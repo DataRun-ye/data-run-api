@@ -13,8 +13,6 @@ import java.util.Objects;
  */
 @Getter
 @Setter
-//@JsonSerialize(using = DataOptionSerializer.class)
-//@JsonDeserialize(using = DataOptionDeserializer.class)
 public class DataOption implements Serializable {
 
     private static final long serialVersionUID = 1L;

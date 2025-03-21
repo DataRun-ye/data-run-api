@@ -2,7 +2,7 @@ package org.nmcpye.datarun.mongo.service.submissionmigration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.bulk.BulkWriteResult;
-import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
+import org.nmcpye.datarun.common.PrimaryKeyObject;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionBu;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionFinal;
@@ -87,7 +87,6 @@ public class TemplateDrivenMigrator implements CommandLineRunner {
 //        }
     }
 
-
     private void saveBatch(List<DataFormSubmissionFinal> batch) {
         try {
             BulkOperations bulkOps = mongoTemplate.bulkOps(
@@ -125,7 +124,7 @@ public class TemplateDrivenMigrator implements CommandLineRunner {
         });
     }
 
-    private <T extends IdentifiableEntity<String>> void storeInDLQ(T doc, Exception error) {
+    private <T extends PrimaryKeyObject> void storeInDLQ(T doc, Exception error) {
         try {
             // Convert entity to Map
             DataFormSubmissionBu errorDocument = objectMapper.convertValue(doc, DataFormSubmissionBu.class);

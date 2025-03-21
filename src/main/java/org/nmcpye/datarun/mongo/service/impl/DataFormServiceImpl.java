@@ -3,9 +3,10 @@ package org.nmcpye.datarun.mongo.service.impl;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
+import org.nmcpye.datarun.common.mongo.impl.DefaultMongoIdentifiableService;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.ReferenceField;
@@ -18,6 +19,7 @@ import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -41,7 +43,7 @@ import java.util.stream.Collectors;
 @Primary
 @Transactional
 public class DataFormServiceImpl
-    extends IdentifiableMongoServiceImpl<DataForm>
+    extends DefaultMongoIdentifiableService<DataForm>
     implements DataFormService {
 
     private final Logger log = LoggerFactory.getLogger(DataFormServiceImpl.class);
@@ -50,14 +52,15 @@ public class DataFormServiceImpl
 
     private final MetadataSchemaRepository metadataSchemaRepository;
 
-    private final TeamRelationalRepositoryCustom teamRepository;
+    private final TeamRepository teamRepository;
 
 
     public DataFormServiceImpl(DataFormRepository repositoryCustom,
                                MetadataSchemaRepository metadataSchemaRepository,
                                MongoTemplate mongoTemplate,
-                               TeamRelationalRepositoryCustom teamRepository) {
-        super(repositoryCustom, mongoTemplate);
+                               CacheManager cacheManager,
+                               TeamRepository teamRepository) {
+        super(repositoryCustom, cacheManager, mongoTemplate);
         this.repositoryCustom = repositoryCustom;
         this.metadataSchemaRepository = metadataSchemaRepository;
         this.teamRepository = teamRepository;

@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.mongo.repository;
 
 import org.javers.spring.annotation.JaversSpringDataAuditable;
+import org.nmcpye.datarun.common.mongo.repository.MongoIdentifiableRepository;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -13,7 +14,7 @@ import java.util.List;
 @Repository
 @JaversSpringDataAuditable
 public interface DataFormRepository
-    extends IdentifiableMongoRepository<DataForm> {
+    extends MongoIdentifiableRepository<DataForm> {
 
     @Query("{'activity': ?0}")
     List<DataForm> findAllByActivity(String activity);

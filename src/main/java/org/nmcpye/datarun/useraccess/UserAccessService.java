@@ -1,0 +1,12 @@
+package org.nmcpye.datarun.useraccess;
+
+import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.springframework.data.jpa.domain.Specification;
+
+/**
+ * @author Hamza, 20/03/2025
+ */
+public interface UserAccessService {
+    <T extends AuditableObject<?>> Specification<T> readSpec(Class<T> klass, CurrentUserDetails user, boolean includeDisabled);
+}

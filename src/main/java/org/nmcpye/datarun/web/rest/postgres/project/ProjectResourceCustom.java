@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.web.rest.postgres.project;
 
 import org.nmcpye.datarun.domain.Project;
-import org.nmcpye.datarun.drun.postgres.repository.ProjectRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.service.ProjectServiceCustom;
+import org.nmcpye.datarun.drun.postgres.repository.ProjectRepository;
+import org.nmcpye.datarun.drun.postgres.service.ProjectService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.web.rest.postgres.AbstractRelationalResource;
+import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -22,16 +22,16 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/custom/projects")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class ProjectResourceCustom extends AbstractRelationalResource<Project> {
+public class ProjectResourceCustom extends AbstractJpaResource<Project> {
 
     private final Logger log = LoggerFactory.getLogger(ProjectResourceCustom.class);
 
-    private final ProjectServiceCustom projectService;
+    private final ProjectService projectService;
 
-    private final ProjectRelationalRepositoryCustom projectRepository;
+    private final ProjectRepository projectRepository;
 
-    public ProjectResourceCustom(ProjectServiceCustom projectService,
-                                 ProjectRelationalRepositoryCustom projectRepository) {
+    public ProjectResourceCustom(ProjectService projectService,
+                                 ProjectRepository projectRepository) {
         super(projectService, projectRepository);
         this.projectService = projectService;
         this.projectRepository = projectRepository;

@@ -1,17 +1,15 @@
 package org.nmcpye.datarun;
 
-import static com.tngtech.archunit.base.DescribedPredicate.alwaysTrue;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.belongToAnyOf;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.type;
-import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
-
 import com.tngtech.archunit.core.importer.ImportOption.DoNotIncludeTests;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import org.nmcpye.datarun.audit.EntityAuditEventListener;
-import org.nmcpye.datarun.domain.AbstractAuditingEntity;
+import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
+
+import static com.tngtech.archunit.base.DescribedPredicate.alwaysTrue;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.*;
+import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
 @AnalyzeClasses(packagesOf = DataRunApiApp.class, importOptions = DoNotIncludeTests.class)
 class TechnicalStructureTest {
@@ -35,7 +33,7 @@ class TechnicalStructureTest {
         .whereLayer("Domain").mayOnlyBeAccessedByLayers("Persistence", "Service", "Security", "Web", "Config")
 
         .ignoreDependency(resideInAPackage("org.nmcpye.datarun.audit"), alwaysTrue())
-        .ignoreDependency(type(AbstractAuditingEntity.class), type(EntityAuditEventListener.class))
+        .ignoreDependency(type(JpaAuditableObject.class), type(EntityAuditEventListener.class))
         .ignoreDependency(belongToAnyOf(DataRunApiApp.class), alwaysTrue())
         .ignoreDependency(alwaysTrue(), belongToAnyOf(
             org.nmcpye.datarun.config.Constants.class,

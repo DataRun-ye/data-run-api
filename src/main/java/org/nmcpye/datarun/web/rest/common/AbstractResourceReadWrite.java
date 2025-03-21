@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.web.rest.common;
 
 import jakarta.validation.Valid;
-import org.nmcpye.datarun.common.IdentifiableRepository;
-import org.nmcpye.datarun.common.IdentifiableService;
+import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.common.AuditableObjectService;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
+import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.slf4j.Logger;
@@ -20,8 +20,7 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
 
-//@RequestMapping("/api/custom")
-public abstract class AbstractResourceReadWrite<T extends IdentifiableEntity<ID>, ID extends Serializable>
+public abstract class AbstractResourceReadWrite<T extends AuditableObject<ID>, ID extends Serializable>
     extends AbstractResourceRead<T, ID> {
 
     protected final Logger log = LoggerFactory.getLogger(AbstractResourceReadWrite.class);
@@ -29,8 +28,8 @@ public abstract class AbstractResourceReadWrite<T extends IdentifiableEntity<ID>
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
 
-    protected AbstractResourceReadWrite(IdentifiableService<T, ID> identifiableService,
-                                        IdentifiableRepository<T, ID> repository) {
+    protected AbstractResourceReadWrite(AuditableObjectService<T, ID> identifiableService,
+                                        AuditableObjectRepository<T, ID> repository) {
         super(identifiableService, repository);
     }
 
@@ -53,9 +52,10 @@ public abstract class AbstractResourceReadWrite<T extends IdentifiableEntity<ID>
 
     @PostMapping("/return")
     public ResponseEntity<?> saveReturnSaved(@Valid @RequestBody T entity) {
+        log.info("Request to save and return {}:{}", entity.getClass().getSimpleName(), entity.getUid());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         saveEntity(entity, summary);
-        if (entity.getId() != null) {
+        if (entity.getUid() != null) {
             return ResponseEntity.ok(entity);
         }
         return ResponseEntity.ok(summary);
@@ -63,7 +63,7 @@ public abstract class AbstractResourceReadWrite<T extends IdentifiableEntity<ID>
 
     protected void saveEntity(T entity, EntitySaveSummaryVM summary) {
         try {
-            if (identifiableService.existsByUid(entity.getUid())) {
+            if (entity.getUid() != null && identifiableService.existsByUid(entity.getUid())) {
                 entity = identifiableService.update(entity);
                 summary.getUpdated().add(entity.getUid());
             } else {
@@ -71,7 +71,7 @@ public abstract class AbstractResourceReadWrite<T extends IdentifiableEntity<ID>
                 summary.getCreated().add(entity.getUid());
             }
         } catch (Exception e) {
-            log.debug("REST Error Saving submission {}: {}", e.toString(), entity.getCreatedBy());
+            log.error("REST Error Saving entity {}:{}", getEntityClass().getSimpleName(), entity.getUid());
             summary.getFailed().put(entity.getUid(), e.getMessage());
             throw new IllegalQueryException(e.getMessage());
         }
@@ -95,8 +95,8 @@ public abstract class AbstractResourceReadWrite<T extends IdentifiableEntity<ID>
         @Valid @RequestBody T entity
     ) throws URISyntaxException {
         log.debug("REST request to delete from {}: {}", getName(), id);
-        if (entity.getId() == null) {
-            throw new BadRequestAlertException("Invalid id", getName(), "idnull");
+        if (entity.getUid() == null) {
+            throw new BadRequestAlertException("Invalid id", getName(), "uid is null");
         }
         if (!Objects.equals(id, entity.getId())) {
             if (!Objects.equals(id, entity.getUid())) {
@@ -104,11 +104,6 @@ public abstract class AbstractResourceReadWrite<T extends IdentifiableEntity<ID>
             }
         }
 
-        if (!identifiableService.existsById(id)) {
-            if (id instanceof String && !identifiableService.existsByUid(id.toString())) {
-                throw new BadRequestAlertException("Entity not found", getName(), "idnotfound");
-            }
-        }
         entity = identifiableService.update(entity);
 
         return ResponseEntity.ok()

@@ -4,12 +4,12 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
+import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.service.OrgUnitService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.exception.PathUpdateException;
-import org.nmcpye.datarun.web.rest.postgres.AbstractRelationalResource;
+import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -26,15 +26,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/custom/orgUnits")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class OrgUnitResourceCustom extends AbstractRelationalResource<OrgUnit> {
+public class OrgUnitResourceCustom extends AbstractJpaResource<OrgUnit> {
 
     private final Logger log = LoggerFactory.getLogger(OrgUnitResourceCustom.class);
 
-    private final OrgUnitServiceCustom serviceCustom;
+    private final OrgUnitService serviceCustom;
 
-    private final OrgUnitRelationalRepositoryCustom repositoryCustom;
+    private final OrgUnitRepositoryCustom repositoryCustom;
 
-    public OrgUnitResourceCustom(OrgUnitServiceCustom serviceCustom, OrgUnitRelationalRepositoryCustom repositoryCustom) {
+    public OrgUnitResourceCustom(OrgUnitService serviceCustom, OrgUnitRepositoryCustom repositoryCustom) {
         super(serviceCustom, repositoryCustom);
         this.repositoryCustom = repositoryCustom;
         this.serviceCustom = serviceCustom;

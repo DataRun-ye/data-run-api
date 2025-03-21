@@ -1,8 +1,9 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
+import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.mongo.domain.AssignmentSubmissionHistory;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
@@ -11,6 +12,7 @@ import org.nmcpye.datarun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.mongo.service.AssignmentSubmissionHistoryService;
 import org.nmcpye.datarun.utils.FormProcessor;
 import org.nmcpye.datarun.utils.ResourceSummarizer;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
@@ -20,16 +22,17 @@ import java.util.Optional;
 
 @Service
 public class AssignmentSubmissionHistoryServiceImpl
-    extends IdentifiableMongoServiceImpl<AssignmentSubmissionHistory>
+    extends DefaultMongoAuditableObjectService<AssignmentSubmissionHistory>
     implements AssignmentSubmissionHistoryService {
 
     private final AssignmentSubmissionHistoryRepository repository;
-    private final AssignmentRelationalRepositoryCustom assignmentRepository;
+    private final AssignmentRepository assignmentRepository;
     private final DataFormRepository dataFormRepository;
 
     public AssignmentSubmissionHistoryServiceImpl(AssignmentSubmissionHistoryRepository repository,
-                                                  AssignmentRelationalRepositoryCustom assignmentRepository, MongoTemplate mongoTemplate, DataFormRepository dataFormRepository) {
-        super(repository, mongoTemplate);
+                                                  CacheManager cacheManager,
+                                                  AssignmentRepository assignmentRepository, MongoTemplate mongoTemplate, DataFormRepository dataFormRepository) {
+        super(repository, cacheManager, mongoTemplate);
         this.repository = repository;
         this.assignmentRepository = assignmentRepository;
         this.dataFormRepository = dataFormRepository;

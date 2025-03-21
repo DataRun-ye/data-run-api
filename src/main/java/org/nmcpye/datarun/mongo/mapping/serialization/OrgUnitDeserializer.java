@@ -4,15 +4,15 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
-import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
+import org.nmcpye.datarun.drun.postgres.service.OrgUnitService;
 
 import java.io.IOException;
 
 public class OrgUnitDeserializer extends JsonDeserializer<OrgUnit> {
 
-    final private OrgUnitServiceCustom orgUnitService;  // or a repository to fetch OrgUnit by UID
+    final private OrgUnitService orgUnitService;  // or a repository to fetch OrgUnit by UID
 
-    public OrgUnitDeserializer(OrgUnitServiceCustom orgUnitService) {
+    public OrgUnitDeserializer(OrgUnitService orgUnitService) {
         this.orgUnitService = orgUnitService;
     }
 

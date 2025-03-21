@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.mongo.domain;
 
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 import org.nmcpye.datarun.mongo.domain.enumeration.RuleAction;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -11,6 +13,8 @@ import java.util.Objects;
 /**
  * A DataFieldRule.
  */
+@Getter
+@Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFieldRule implements Serializable {
 
@@ -29,47 +33,8 @@ public class DataFieldRule implements Serializable {
 
     private String assignedValue;
 
-    public String getAssignedValue() {
-        return assignedValue;
-    }
-
-    public void setAssignedValue(String assignedValue) {
-        this.assignedValue = assignedValue;
-    }
-
-    public Map<String, String> getMessage() {
-        return message;
-    }
-
-
     public void setMessage(Map<String, String> message) {
         this.message = action == RuleAction.Error ? Objects.requireNonNullElseGet(message, () -> Map.of("en", "Field with error, check")) : null;
-    }
-
-    public String getExpression() {
-        return this.expression;
-    }
-
-    public DataFieldRule expression(String expression) {
-        this.setExpression(expression);
-        return this;
-    }
-
-    public void setExpression(String expression) {
-        this.expression = expression;
-    }
-
-    public RuleAction getAction() {
-        return this.action;
-    }
-
-    public DataFieldRule action(RuleAction action) {
-        this.setAction(action);
-        return this;
-    }
-
-    public void setAction(RuleAction action) {
-        this.action = action;
     }
 
     @Override

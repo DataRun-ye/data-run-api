@@ -3,8 +3,8 @@ package org.nmcpye.datarun.mongo.repository;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.TeamFormPermissions;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.service.TeamServiceCustom;
+import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
+import org.nmcpye.datarun.drun.postgres.service.TeamService;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.ReferenceField;
@@ -28,17 +28,17 @@ import java.util.stream.Collectors;
 public class MetadataSubmissionGranularRepository {
 
     final private MongoTemplate mongoTemplate;
-    final private TeamServiceCustom teamServiceCustom;
+    final private TeamService teamService;
     final private MetadataSubmissionRepositoryCustom metadataSubmissionRepository;
     final private DataFormRepository dataFormRepository;
-    private final AssignmentRelationalRepositoryCustom assignmentRepository;
+    private final AssignmentRepository assignmentRepository;
 
     public MetadataSubmissionGranularRepository(MongoTemplate mongoTemplate,
-                                                TeamServiceCustom teamServiceCustom, MetadataSubmissionRepositoryCustom metadataSubmissionRepository,
+                                                TeamService teamService, MetadataSubmissionRepositoryCustom metadataSubmissionRepository,
                                                 DataFormRepository dataFormRepository,
-                                                AssignmentRelationalRepositoryCustom assignmentRepository) {
+                                                AssignmentRepository assignmentRepository) {
         this.mongoTemplate = mongoTemplate;
-        this.teamServiceCustom = teamServiceCustom;
+        this.teamService = teamService;
         this.metadataSubmissionRepository = metadataSubmissionRepository;
         this.dataFormRepository = dataFormRepository;
         this.assignmentRepository = assignmentRepository;
@@ -69,7 +69,7 @@ public class MetadataSubmissionGranularRepository {
 
     // uids of assigned teams for resourceType == Team
     private List<String> getAssignedTeams(QueryRequest queryRequest) {
-        return teamServiceCustom.findAllByUser(queryRequest).stream()
+        return teamService.findAllByUser(queryRequest).stream()
             .map(Team::getUid)
             .collect(Collectors.toList());
     }

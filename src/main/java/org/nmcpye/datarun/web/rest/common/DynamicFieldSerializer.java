@@ -25,7 +25,7 @@ public class DynamicFieldSerializer<T> extends StdSerializer<PagedResponse<T>> {
         gen.writeNumberField("totalPages", pagedResponse.getTotalPages());
         gen.writeNumberField("totalElements", pagedResponse.getTotalElements());
         gen.writeNumberField("size", pagedResponse.getSize());
-        if(pagedResponse.getNextPage() != null) {
+        if (pagedResponse.getNextPage() != null) {
             gen.writeStringField("nextPage", pagedResponse.getNextPage());
         }
         String entityName = pagedResponse.getEntityName();

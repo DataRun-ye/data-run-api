@@ -1,9 +1,7 @@
 package org.nmcpye.datarun.audit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import org.nmcpye.datarun.domain.AbstractAuditingEntity;
+import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
 import org.nmcpye.datarun.domain.EntityAuditEvent;
 import org.nmcpye.datarun.domain.enumeration.EntityAuditAction;
 import org.nmcpye.datarun.repository.EntityAuditEventRepository;
@@ -13,6 +11,9 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
 
 /**
  * Async Entity Audit Event writer
@@ -77,14 +78,15 @@ public class AsyncEntityAuditEventWriter implements EntityAuditEventWriter {
             entityId = privateLongField.get(entity);
             privateLongField.setAccessible(false);
             entityData = objectMapper.writeValueAsString(entity);
-        } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException | IOException e) {
+        } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException |
+                 IOException e) {
             log.error("Exception while getting entity ID and content", e);
             // returning null as we don't want to raise an application exception here
             return null;
         }
         auditedEntity.setEntityId(conversionService.convert(entityId, String.class));
         auditedEntity.setEntityValue(entityData);
-        final AbstractAuditingEntity abstractAuditEntity = (AbstractAuditingEntity) entity;
+        final JpaAuditableObject abstractAuditEntity = (JpaAuditableObject) entity;
         if (EntityAuditAction.CREATE.equals(action)) {
             auditedEntity.setModifiedBy(abstractAuditEntity.getCreatedBy());
             auditedEntity.setModifiedDate(abstractAuditEntity.getCreatedDate());

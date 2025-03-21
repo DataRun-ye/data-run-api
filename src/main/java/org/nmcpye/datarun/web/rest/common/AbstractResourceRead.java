@@ -1,8 +1,9 @@
 package org.nmcpye.datarun.web.rest.common;
 
-import org.nmcpye.datarun.common.IdentifiableRepository;
-import org.nmcpye.datarun.common.IdentifiableService;
-import org.nmcpye.datarun.drun.postgres.common.IdentifiableEntity;
+
+import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.common.AuditableObjectService;
+import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,19 +23,18 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Optional;
 
-//@RequestMapping("/api/custom")
-public abstract class AbstractResourceRead<T extends IdentifiableEntity<ID>, ID extends Serializable> {
+public abstract class AbstractResourceRead<T extends AuditableObject<ID>, ID extends Serializable> {
 
     protected final Logger log = LoggerFactory.getLogger(AbstractResourceRead.class);
 
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
 
-    final protected IdentifiableService<T, ID> identifiableService;
-    final protected IdentifiableRepository<T, ID> repository;
+    final protected AuditableObjectService<T, ID> identifiableService;
+    final protected AuditableObjectRepository<T, ID> repository;
 
-    protected AbstractResourceRead(IdentifiableService<T, ID> identifiableService,
-                                   IdentifiableRepository<T, ID> repository) {
+    protected AbstractResourceRead(AuditableObjectService<T, ID> identifiableService,
+                                   AuditableObjectRepository<T, ID> repository) {
         this.identifiableService = identifiableService;
         this.repository = repository;
     }

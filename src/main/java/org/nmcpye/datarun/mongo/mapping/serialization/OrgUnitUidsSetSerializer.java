@@ -3,7 +3,7 @@ package org.nmcpye.datarun.mongo.mapping.serialization;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import org.nmcpye.datarun.drun.postgres.service.OrgUnitServiceCustom;
+import org.nmcpye.datarun.drun.postgres.service.OrgUnitService;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -15,9 +15,9 @@ import java.util.stream.Collectors;
  * to serialize DataForm of arbitrary types into JSON
  **/
 public class OrgUnitUidsSetSerializer extends JsonSerializer<Collection<String>> {
-    final private OrgUnitServiceCustom orgUnitService; // Service to fetch OrgUnit by UID
+    final private OrgUnitService orgUnitService; // Service to fetch OrgUnit by UID
 
-    public OrgUnitUidsSetSerializer(OrgUnitServiceCustom orgUnitService) {
+    public OrgUnitUidsSetSerializer(OrgUnitService orgUnitService) {
         this.orgUnitService = orgUnitService;
     }
 

@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
+import org.nmcpye.datarun.common.mongo.impl.DefaultMongoIdentifiableService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionHistory;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionHistoryRepository;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepositoryCustom;
@@ -13,7 +14,7 @@ import java.util.List;
 
 @Service
 public class DataFormSubmissionHistoryServiceImpl
-    extends IdentifiableMongoServiceImpl<DataFormSubmissionHistory>
+    extends DefaultMongoIdentifiableService<DataFormSubmissionHistory>
     implements DataFormSubmissionHistoryService {
     final DataFormSubmissionHistoryRepository repository;
     final DataFormSubmissionRepositoryCustom submissionRepository;

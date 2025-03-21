@@ -10,41 +10,24 @@ import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
-import org.nmcpye.datarun.drun.postgres.common.BaseIdentifiableObject;
+import org.nmcpye.datarun.common.jpa.JpaBaseIdentifiableObject;
 import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
 import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;
 
-import java.io.Serializable;
 import java.util.Map;
 
 /**
  * A OuLevel.
  */
 @Entity
-@Table(name = "data_element")
+@Table(name = "data_element", indexes = {
+    @Index(name = "idx_dataelement_uid_unq", columnList = "uid", unique = true)
+})
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataElement
-    extends BaseIdentifiableObject<Long> implements Serializable {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    private Long id;
-
-    @Size(max = 11)
-    @Column(name = "uid", length = 11, unique = true, nullable = false)
-    private String uid;
-
-    @Column(name = "code", unique = true)
-    private String code;
-
-    @NotNull
-    @Column(name = "name", unique = true, nullable = false)
-    private String name;
+public class DataElement extends JpaBaseIdentifiableObject {
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -70,8 +53,4 @@ public class DataElement
     @Enumerated(EnumType.STRING)
     @Column(name = "reference_type", updatable = false)
     private ReferenceType resourceType;
-
-    public DataElement() {
-        setAutoFields();
-    }
 }

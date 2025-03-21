@@ -10,6 +10,7 @@ public enum ErrorCode {
     E1001("API query contains an illegal string"),
     E1002("API version is invalid"),
     E1003("Failed to update paths: `{0}`"),
+    E1004("Failed to update, entity {0}:`{1}` not found"),
 
     /* Basic metadata */
     E1100("Data element not found or not accessible: `{0}`:`{1}`"),
@@ -44,6 +45,7 @@ public enum ErrorCode {
     E3002("User `{0}` is not allowed to delete object `{1}`"),
     E3003("User `{0}` is not allowed to create objects of type {1}"),
     E3004("User `{0}` is not allowed to access objects of type {1}"),
+    E3005("You are not allowed to access {}"),
 
     /* Users */
     E6201("User account not found"),

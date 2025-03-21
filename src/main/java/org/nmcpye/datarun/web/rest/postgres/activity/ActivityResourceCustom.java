@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.web.rest.postgres.activity;
 
 import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.service.ActivityServiceCustom;
+import org.nmcpye.datarun.drun.postgres.repository.ActivityRepository;
+import org.nmcpye.datarun.drun.postgres.service.ActivityService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.web.rest.postgres.AbstractRelationalResource;
+import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -22,15 +22,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/custom/activities")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class ActivityResourceCustom extends AbstractRelationalResource<Activity> {
+public class ActivityResourceCustom extends AbstractJpaResource<Activity> {
 
     private final Logger log = LoggerFactory.getLogger(ActivityResourceCustom.class);
 
-    private final ActivityServiceCustom activityService;
+    private final ActivityService activityService;
 
-    private final ActivityRelationalRepositoryCustom activityRepository;
+    private final ActivityRepository activityRepository;
 
-    public ActivityResourceCustom(ActivityServiceCustom activityService, ActivityRelationalRepositoryCustom activityRepository) {
+    public ActivityResourceCustom(ActivityService activityService, ActivityRepository activityRepository) {
         super(activityService, activityRepository);
         this.activityRepository = activityRepository;
         this.activityService = activityService;

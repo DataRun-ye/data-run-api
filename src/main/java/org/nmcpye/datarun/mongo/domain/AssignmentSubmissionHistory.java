@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.mongo.domain;
 
-import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -13,18 +13,11 @@ import java.util.List;
 import java.util.Map;
 
 @Document(collection = "assignment_submission_history")
+@Getter
+@Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class AssignmentSubmissionHistory extends AbstractAuditingEntityMongo<String> {
-
-    @Id
-    private String id;
-
-    // assignment_uid
-    @Size(max = 11)
-    @Indexed(unique = true, name = "assignment_submission_history_uid")
-    @Field("uid")
-    private String uid;
-
+public class AssignmentSubmissionHistory
+    extends MongoAuditableBaseObject {
     @Field("entries")
     private List<HistoryEntry> entries = new ArrayList<>();
 
@@ -204,31 +197,5 @@ public class AssignmentSubmissionHistory extends AbstractAuditingEntityMongo<Str
         public void setSubmittedResources(Map<String, Double> submittedResources) {
             this.submittedResources = submittedResources;
         }
-    }
-
-    @Override
-    public String getId() {
-        return id;
-    }
-
-    @Override
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getUid() {
-        return uid;
-    }
-
-    public void setUid(String assignmentUid) {
-        this.uid = assignmentUid;
-    }
-
-    public List<HistoryEntry> getEntries() {
-        return entries;
-    }
-
-    public void setEntries(List<HistoryEntry> entries) {
-        this.entries = entries;
     }
 }

@@ -27,6 +27,25 @@ public final class SecurityUtils {
     private SecurityUtils() {
     }
 
+    public static Optional<CurrentUserDetails> getCurrentUserDetails() {
+        return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+            .map(authentication -> {
+                Object principal = authentication.getPrincipal();
+                if (principal instanceof CurrentUserDetails) {
+                    return (CurrentUserDetails) principal;
+                }
+                return null;
+            });
+    }
+
+    public static Optional<String> getCurrentUserLocale() {
+        return getCurrentUserDetails().map(CurrentUserDetails::getLangKey);
+    }
+
+    public static Optional<Boolean> isCurrentUserActivated() {
+        return getCurrentUserDetails().map(CurrentUserDetails::isEnabled);
+    }
+
     /**
      * Get the login of the current user.
      *

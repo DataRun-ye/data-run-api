@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.common.feedback;
 
-import org.nmcpye.datarun.drun.postgres.common.Identifiable;
+
 import org.nmcpye.datarun.drun.postgres.hibernate.HibernateProxyUtils;
 
 import javax.annotation.Nonnull;

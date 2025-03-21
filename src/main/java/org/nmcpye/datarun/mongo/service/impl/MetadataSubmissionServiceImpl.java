@@ -2,19 +2,19 @@ package org.nmcpye.datarun.mongo.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
 import org.apache.commons.lang3.NotImplementedException;
+import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
-import org.nmcpye.datarun.drun.postgres.repository.ActivityRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRelationalRepositoryCustom;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRelationalRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.ActivityRepository;
+import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
+import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
 import org.nmcpye.datarun.mongo.repository.MetadataSubmissionRepositoryCustom;
 import org.nmcpye.datarun.mongo.service.MetadataSubmissionService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -34,30 +34,30 @@ import java.util.stream.Collectors;
 @Service
 @Primary
 public class MetadataSubmissionServiceImpl
-    extends IdentifiableMongoServiceImpl<MetadataSubmission>
+    extends DefaultMongoAuditableObjectService<MetadataSubmission>
     implements MetadataSubmissionService {
 
-    private final Logger log = LoggerFactory.getLogger(MetadataSubmissionServiceImpl.class);
-
     private final MetadataSubmissionRepositoryCustom repository;
-    private final TeamRelationalRepositoryCustom teamRepository;
-    private final ActivityRelationalRepositoryCustom activityRepository;
-    private final AssignmentRelationalRepositoryCustom assignmentRepository;
+    private final TeamRepository teamRepository;
+    private final ActivityRepository activityRepository;
+    private final AssignmentRepository assignmentRepository;
 
-    private final OrgUnitRelationalRepositoryCustom orgUnitRelationalRepositoryCustom;
+    private final OrgUnitRepositoryCustom orgUnitRepositoryCustom;
     final private MongoTemplate mongoTemplate;
     private final SequenceGeneratorService sequenceGeneratorService;
 
     public MetadataSubmissionServiceImpl(
-        MetadataSubmissionRepositoryCustom repository, ActivityRelationalRepositoryCustom activityRepository, TeamRelationalRepositoryCustom teamRepository, AssignmentRelationalRepositoryCustom assignmentRepository,
-        OrgUnitRelationalRepositoryCustom orgUnitRelationalRepositoryCustom,
+        MetadataSubmissionRepositoryCustom repository,
+        CacheManager cacheManager,
+        ActivityRepository activityRepository, TeamRepository teamRepository, AssignmentRepository assignmentRepository,
+        OrgUnitRepositoryCustom orgUnitRepositoryCustom,
         MongoTemplate mongoTemplate, SequenceGeneratorService sequenceGeneratorService) {
-        super(repository, mongoTemplate);
+        super(repository, cacheManager, mongoTemplate);
         this.repository = repository;
         this.activityRepository = activityRepository;
         this.teamRepository = teamRepository;
         this.assignmentRepository = assignmentRepository;
-        this.orgUnitRelationalRepositoryCustom = orgUnitRelationalRepositoryCustom;
+        this.orgUnitRepositoryCustom = orgUnitRepositoryCustom;
         this.mongoTemplate = mongoTemplate;
         this.sequenceGeneratorService = sequenceGeneratorService;
     }
@@ -78,7 +78,7 @@ public class MetadataSubmissionServiceImpl
                     () -> {
                         throw new PropertyNotFoundException("Activity not found: " + newSubmission.getResourceId());
                     });
-            case OrgUnit -> orgUnitRelationalRepositoryCustom.findByUid(newSubmission.getResourceId())
+            case OrgUnit -> orgUnitRepositoryCustom.findByUid(newSubmission.getResourceId())
                 .ifPresentOrElse((a) -> newSubmission.setResourceId(a.getUid()),
                     () -> {
                         throw new PropertyNotFoundException("OrgUnit not found: " + newSubmission.getResourceId());
@@ -123,7 +123,7 @@ public class MetadataSubmissionServiceImpl
             return repository.findAll(pageable);
         }
 
-        final List<OrgUnit> userOrgUnits = orgUnitRelationalRepositoryCustom
+        final List<OrgUnit> userOrgUnits = orgUnitRepositoryCustom
             .findAllWithRelation();
 
         final Set<String> uids = userOrgUnits
