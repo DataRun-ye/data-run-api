@@ -1,13 +1,13 @@
 package org.nmcpye.datarun.mongo.domain;
 
 import jakarta.el.PropertyNotFoundException;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 import org.nmcpye.datarun.utils.CodeGenerator;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -23,14 +23,10 @@ import static java.util.Map.entry;
 @Document(collection = "data_form_submission")
 @Getter
 @Setter
+@CompoundIndex(name = "data_submission_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormSubmission
     extends MongoAuditableBaseObject {
-
-    @Size(max = 11)
-    @Field("uid")
-    @Indexed(unique = true, name = "data_submission_uid")
-    private String uid;
 
     @Field("deleted")
     private Boolean deleted;

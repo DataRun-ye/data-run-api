@@ -1,13 +1,13 @@
 package org.nmcpye.datarun.drun.postgres.service;
 
-import org.nmcpye.datarun.common.AuditableObjectService;
+import org.nmcpye.datarun.common.jpa.JpaAuditableObjectService;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface AssignmentService
-    extends AuditableObjectService<Assignment, Long> {
+    extends JpaAuditableObjectService<Assignment> {
 
     /**
      * Updates the paths of organization units in the system.

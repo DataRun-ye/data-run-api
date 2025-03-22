@@ -7,6 +7,7 @@ import org.nmcpye.datarun.common.mongo.MongoBaseIdentifiableObject;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -21,14 +22,10 @@ import java.util.Map;
 @Document(collection = "data_form_template")
 @Getter
 @Setter
+@CompoundIndex(name = "form_template_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormTemplate
     extends MongoBaseIdentifiableObject {
-
-    @Size(max = 11)
-    @Field("uid")
-    @Indexed(unique = true, name = "form_template_uid")
-    private String uid;
 
     @Field("code")
     private String code;

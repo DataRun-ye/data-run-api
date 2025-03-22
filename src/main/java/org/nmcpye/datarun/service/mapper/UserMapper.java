@@ -124,7 +124,6 @@ public class UserMapper {
     @Mapping(target = "id", source = "id")
     @Mapping(target = "uid", source = "uid")
     @Mapping(target = "login", source = "login")
-    @Mapping(target = "name", source = "name")
     @Mapping(target = "mobile", source = "mobile")
     public UserDTO toDtoLogin(User user) {
         if (user == null) {
@@ -134,7 +133,6 @@ public class UserMapper {
         userDto.setId(user.getId());
         userDto.setLogin(user.getLogin());
         userDto.setMobile(user.getMobile());
-        userDto.setName(user.getName());
         return userDto;
     }
 

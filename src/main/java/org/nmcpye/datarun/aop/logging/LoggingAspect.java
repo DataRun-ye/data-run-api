@@ -51,7 +51,8 @@ public class LoggingAspect {
             " || within(org.nmcpye.datarun.drun.postgres.service..*)" +
             " || within(org.nmcpye.datarun.mongo.repository..*)" +
             " || within(org.nmcpye.datarun.mongo.service..*)" +
-            " || within(org.nmcpye.datarun.web.rest.mongo..*)"
+            " || within(org.nmcpye.datarun.web.rest.mongo..*)" +
+            " || within(org.nmcpye.datarun.common..*)"
     )
     public void applicationPackagePointcut() {
         // Method is empty as this is just a Pointcut, the implementations are in the advices.

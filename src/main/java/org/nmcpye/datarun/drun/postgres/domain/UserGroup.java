@@ -18,6 +18,9 @@ import java.util.Set;
 @Entity
 @Table(name = "user_group", indexes = {
     @Index(name = "idx_usergroup_uid_unq", columnList = "uid", unique = true)
+}, uniqueConstraints = {
+    @UniqueConstraint(name = "uc_user_group_name", columnNames = "name"),
+    @UniqueConstraint(name = "uc_user_group_code", columnNames = "code")
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @JsonIgnoreProperties(value = {"new"})

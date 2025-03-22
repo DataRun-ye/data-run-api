@@ -1,9 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,6 +14,9 @@ import org.nmcpye.datarun.common.jpa.JpaBaseIdentifiableObject;
 @Entity
 @Table(name = "ou_level", indexes = {
     @Index(name = "idx_oulevel_uid_unq", columnList = "uid", unique = true)
+}, uniqueConstraints = {
+    @UniqueConstraint(name = "uc_ou_level_name", columnNames = "name"),
+    @UniqueConstraint(name = "uc_ou_level_code", columnNames = "code")
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter

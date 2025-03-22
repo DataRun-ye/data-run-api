@@ -22,6 +22,9 @@ import java.util.Map;
 @Entity
 @Table(name = "data_element", indexes = {
     @Index(name = "idx_dataelement_uid_unq", columnList = "uid", unique = true)
+}, uniqueConstraints = {
+    @UniqueConstraint(name = "uc_data_element_name", columnNames = "name"),
+    @UniqueConstraint(name = "uc_data_element_code", columnNames = "code")
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter

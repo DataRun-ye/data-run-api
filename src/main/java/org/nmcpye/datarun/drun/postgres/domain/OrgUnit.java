@@ -24,6 +24,8 @@ import java.util.*;
 @Entity
 @Table(name = "org_unit", indexes = {
     @Index(name = "idx_orgunit_uid_unq", columnList = "uid", unique = true)
+}, uniqueConstraints = {
+    @UniqueConstraint(name = "uc_org_unit_code", columnNames = "code")
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter

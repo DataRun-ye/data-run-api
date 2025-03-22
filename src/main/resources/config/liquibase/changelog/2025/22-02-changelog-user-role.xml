@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1742598417806-14" author="Hamza (generated)">
+        <createTable tableName="app_user_role_members">
+            <column name="role_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_app_user_role_members"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_app_user_role_members"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="1742598417806-15" author="Hamza (generated)">
+        <createTable tableName="role">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_role"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="1742598417806-16" author="Hamza (generated)">
+        <createTable tableName="role_privilege">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_role_privilege"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="1742598417806-17" author="Hamza (generated)">
+        <createTable tableName="role_privilege_members">
+            <column name="privilege_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="1742598417806-35" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="name" constraintName="uc_role_name" tableName="role"/>
+
+        <addUniqueConstraint columnNames="name" constraintName="uc_role_privilege_name" tableName="role_privilege"/>
+    </changeSet>
+    <changeSet id="1742598417806-39" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="role_id" baseTableName="app_user_role_members"
+                                 constraintName="fk_appuserolmem_on_role" referencedColumnNames="id"
+                                 referencedTableName="role"/>
+    </changeSet>
+    <changeSet id="1742598417806-40" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="user_id" baseTableName="app_user_role_members"
+                                 constraintName="fk_appuserolmem_on_user" referencedColumnNames="id"
+                                 referencedTableName="app_user"/>
+    </changeSet>
+    <changeSet id="1742598417806-41" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="privilege_id" baseTableName="role_privilege_members"
+                                 constraintName="fk_rolprimem_on_privilege" referencedColumnNames="id"
+                                 referencedTableName="role_privilege"/>
+    </changeSet>
+    <changeSet id="1742598417806-42" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="role_id" baseTableName="role_privilege_members"
+                                 constraintName="fk_rolprimem_on_role" referencedColumnNames="id"
+                                 referencedTableName="role"/>
+    </changeSet>
+</databaseChangeLog>

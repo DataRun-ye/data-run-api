@@ -1,27 +1,30 @@
-package org.nmcpye.datarun.common.jpa.repository;
+package org.nmcpye.datarun.common.mongo.repository;
 
-import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
+import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
 import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.data.repository.NoRepositoryBean;
 
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
+@SuppressWarnings("unused")
 @NoRepositoryBean
-public interface JpaAuditableRepository<T extends JpaAuditableObject>
-    extends JpaRepository<T, Long>, JpaSpecificationExecutor<T>, AuditableObjectRepository<T, Long> {
+public interface MongoAuditableRepository<T extends MongoAuditableBaseObject>
+    extends MongoRepository<T, String>, AuditableObjectRepository<T, String> {
+    @Query("{'uid': ?0}")
+    Optional<T> findByUid(String uid);
+
     void deleteByUid(String uid);
 
     boolean existByUid(String uid);
 
     void deleteAllByUidIn(Collection<String> uids);
 
-    Optional<T> findByUid(String uid);
 
     Set<T> findAllByUidIn(Collection<String> uids);
 

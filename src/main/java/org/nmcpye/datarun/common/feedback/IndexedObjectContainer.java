@@ -1,17 +1,17 @@
 package org.nmcpye.datarun.common.feedback;
 
-
+import org.nmcpye.datarun.common.AuditableObject;
 
 import javax.annotation.Nonnull;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
 public class IndexedObjectContainer implements ObjectIndexProvider {
-    private final Map<Identifiable, Integer> objectsIndexMap = new IdentityHashMap<>();
+    private final Map<AuditableObject<?>, Integer> objectsIndexMap = new IdentityHashMap<>();
 
     @Nonnull
     @Override
-    public Integer mergeObjectIndex(@Nonnull Identifiable object) {
+    public Integer mergeObjectIndex(@Nonnull AuditableObject<?> object) {
         return add(object);
     }
 
@@ -20,7 +20,7 @@ public class IndexedObjectContainer implements ObjectIndexProvider {
      * @return <code>true</code> if the object is included in the container,
      * <code>false</code> otherwise.
      */
-    public boolean containsObject(@Nonnull Identifiable object) {
+    public boolean containsObject(@Nonnull AuditableObject<?> object) {
         return objectsIndexMap.containsKey(object);
     }
 
@@ -33,7 +33,7 @@ public class IndexedObjectContainer implements ObjectIndexProvider {
      * container.
      */
     @Nonnull
-    protected Integer add(@Nonnull Identifiable object) {
+    protected Integer add(@Nonnull AuditableObject<?> object) {
         final Integer newIndex = objectsIndexMap.size();
         final Integer existingIndex = objectsIndexMap.putIfAbsent(object, newIndex);
         return (existingIndex == null) ? newIndex : existingIndex;

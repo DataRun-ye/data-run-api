@@ -13,7 +13,7 @@ import org.nmcpye.datarun.drun.postgres.repository.ActivityRepository;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.drun.postgres.service.TeamService;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.useraccess.UserAccessService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
@@ -24,7 +24,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,8 +46,8 @@ public class DefaultTeamService
     public DefaultTeamService(TeamRepository repository,
                               UserRepository userRepository,
                               ActivityRepository activityRepository,
-                              CacheManager cacheManager) {
-        super(repository, cacheManager);
+                              CacheManager cacheManager, UserAccessService userAccessService) {
+        super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
@@ -107,25 +110,25 @@ public class DefaultTeamService
             });
     }
 
-    @Override
-    public Page<Team> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
-        Specification<Team> spec = canRead();
-        if (!queryRequest.isIncludeDisabled()) {
-            spec = spec.and(TeamSpecifications.isEnabled());
-        }
-
-        return repository.fetchBagRelationships(repository.findAll(spec, pageable));
-    }
-
-    @Override
-    public List<Team> findAllByUser(QueryRequest queryRequest) {
-        Specification<Team> spec = canRead();
-        if (!queryRequest.isIncludeDisabled()) {
-            spec = spec.and(TeamSpecifications.isEnabled());
-        }
-
-        return repository.fetchBagRelationships(repository.findAll(spec));
-    }
+//    @Override
+//    public Page<Team> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+//        Specification<Team> spec = canRead();
+//        if (!queryRequest.isIncludeDisabled()) {
+//            spec = spec.and(TeamSpecifications.isEnabled());
+//        }
+//
+//        return repository.fetchBagRelationships(repository.findAll(spec, pageable));
+//    }
+//
+//    @Override
+//    public List<Team> findAllByUser(QueryRequest queryRequest) {
+//        Specification<Team> spec = canRead();
+//        if (!queryRequest.isIncludeDisabled()) {
+//            spec = spec.and(TeamSpecifications.isEnabled());
+//        }
+//
+//        return repository.fetchBagRelationships(repository.findAll(spec));
+//    }
 
     @Override
     public Page<Team> findAllManagedByUser(Pageable pageable) {

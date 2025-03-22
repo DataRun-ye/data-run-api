@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mongo.repository;
 
 import org.javers.spring.annotation.JaversSpringDataAuditable;
-import org.nmcpye.datarun.common.mongo.repository.MongoIdentifiableRepository;
+import org.nmcpye.datarun.common.mongo.repository.MongoAuditableRepository;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.MetadataSchema;
 import org.springframework.data.domain.Page;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 @JaversSpringDataAuditable
 public interface MetadataSchemaRepository
-    extends MongoIdentifiableRepository<MetadataSchema> {
+    extends MongoAuditableRepository<MetadataSchema> {
     @Query("{ 'team.userInfo.login' : ?#{authentication.name} }")
     Page<DataFormSubmission> findAllByUser(Pageable pageable);
 

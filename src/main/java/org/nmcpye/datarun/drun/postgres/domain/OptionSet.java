@@ -1,10 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
 import io.hypersistence.utils.hibernate.type.json.JsonType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
@@ -21,6 +18,10 @@ import java.util.List;
 @Entity
 @Table(name = "option_set", indexes = {
     @Index(name = "idx_optionset_uid_unq", columnList = "uid", unique = true)
+}, uniqueConstraints = {
+    @UniqueConstraint(name = "uc_option_set_name",
+        columnNames = "name"),
+    @UniqueConstraint(name = "uc_option_set_code", columnNames = "code")
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter

@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
-@EnableMongoRepositories({"org.nmcpye.datarun.mongo.repository"})
+@EnableMongoRepositories({"org.nmcpye.datarun.mongo.repository", "org.nmcpye.datarun.common.mongo.repository"})
 @Profile("!" + JHipsterConstants.SPRING_PROFILE_CLOUD)
 @Import(value = MongoAutoConfiguration.class)
 @EnableMongoAuditing(auditorAwareRef = "springSecurityAuditorAware")

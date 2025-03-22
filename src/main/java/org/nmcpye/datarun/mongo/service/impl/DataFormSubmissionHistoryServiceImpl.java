@@ -1,10 +1,11 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
-import org.nmcpye.datarun.common.mongo.impl.DefaultMongoIdentifiableService;
+import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionHistory;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionHistoryRepository;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepositoryCustom;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionHistoryService;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -14,15 +15,15 @@ import java.util.List;
 
 @Service
 public class DataFormSubmissionHistoryServiceImpl
-    extends DefaultMongoIdentifiableService<DataFormSubmissionHistory>
+    extends DefaultMongoAuditableObjectService<DataFormSubmissionHistory>
     implements DataFormSubmissionHistoryService {
     final DataFormSubmissionHistoryRepository repository;
     final DataFormSubmissionRepositoryCustom submissionRepository;
 
-    public DataFormSubmissionHistoryServiceImpl(DataFormSubmissionHistoryRepository repository,
+    public DataFormSubmissionHistoryServiceImpl(DataFormSubmissionHistoryRepository repository, CacheManager cacheManager,
                                                 DataFormSubmissionRepositoryCustom submissionRepository,
                                                 MongoTemplate mongoTemplate) {
-        super(repository, mongoTemplate);
+        super(repository, cacheManager, mongoTemplate);
         this.repository = repository;
         this.submissionRepository = submissionRepository;
     }

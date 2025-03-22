@@ -7,6 +7,7 @@ import org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitGroupRepository;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitGroupSetRepository;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitGroupSetService;
+import org.nmcpye.datarun.useraccess.UserAccessService;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -28,8 +29,8 @@ public class DefaultOrgUnitGroupSetService
 
     public DefaultOrgUnitGroupSetService(OrgUnitGroupSetRepository repository,
                                          OrgUnitGroupRepository orgUnitGroupRepository,
-                                         CacheManager cacheManager) {
-        super(repository, cacheManager);
+                                         CacheManager cacheManager, UserAccessService userAccessService) {
+        super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.orgUnitGroupRepository = orgUnitGroupRepository;
     }

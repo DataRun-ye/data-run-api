@@ -104,7 +104,7 @@ public class User extends JpaAuditableObject {
     @JsonIgnore
     @ManyToMany
     @JoinTable(
-        name = "user_role_members",
+        name = "app_user_role_members",
         joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
         inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")}
     )

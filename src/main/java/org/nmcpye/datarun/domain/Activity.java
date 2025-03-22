@@ -20,6 +20,9 @@ import java.util.Set;
 @Entity
 @Table(name = "activity", indexes = {
     @Index(name = "idx_activity_uid_unq", columnList = "uid", unique = true)
+}, uniqueConstraints = {
+    @UniqueConstraint(name = "uc_activity_name", columnNames = "name"),
+    @UniqueConstraint(name = "uc_activity_code", columnNames = "code")
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @JsonIgnoreProperties(value = {"new"})

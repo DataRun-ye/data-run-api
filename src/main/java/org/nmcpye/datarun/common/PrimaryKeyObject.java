@@ -1,8 +1,5 @@
 package org.nmcpye.datarun.common;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.io.Serializable;
 
 /**
@@ -13,12 +10,12 @@ import java.io.Serializable;
  */
 public interface PrimaryKeyObject<T> extends Serializable {
 
-    @JsonIgnore
+    //    @JsonIgnore
     T getId();
 
     /**
      * @return external unique ID of the object as used in the RESTful API
      */
-    @JsonProperty(value = "id")
+//    @JsonProperty(value = "id")
     String getUid();
 }

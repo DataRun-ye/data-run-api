@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -22,9 +21,6 @@ import java.util.Map;
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormSubmissionHistory
     extends MongoAuditableBaseObject {
-
-    @Id
-    private String id;
 
     private String dataSubmissionId;  // Link to the main document
 

@@ -18,6 +18,9 @@ import java.util.Set;
 @Entity
 @Table(name = "org_unit_group", indexes = {
     @Index(name = "idx_orgunitgroup_uid_unq", columnList = "uid", unique = true)
+}, uniqueConstraints = {
+    @UniqueConstraint(name = "uc_org_unit_group_name", columnNames = "name"),
+    @UniqueConstraint(name = "uc_org_unit_group_code", columnNames = "code")
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter

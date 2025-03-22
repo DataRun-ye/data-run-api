@@ -9,7 +9,6 @@ import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
 import org.nmcpye.datarun.utils.CodeGenerator;
 import org.springframework.data.annotation.*;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.io.Serializable;
@@ -30,20 +29,19 @@ public abstract class MongoAuditableBaseObject
     private static final long serialVersionUID = 1L;
 
     @Id
-    private String id;
+    protected String id;
 
     @Size(max = 11)
     @Field("uid")
-    @Indexed(unique = true, name = "form_uid")
-    private String uid;
+    protected String uid;
 
     @CreatedBy
     @Field("createdBy")
-    private String createdBy;
+    protected String createdBy;
 
     @CreatedDate
     @Field("createdDate")
-    private Instant createdDate = Instant.now();
+    protected Instant createdDate = Instant.now();
 
     @LastModifiedBy
     @Field("lastModifiedBy")

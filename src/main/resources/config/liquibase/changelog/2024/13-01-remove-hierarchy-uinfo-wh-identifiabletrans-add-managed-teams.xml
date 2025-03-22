@@ -39,27 +39,27 @@
 
         <dropColumn columnName="path" tableName="team"/>
     </changeSet>
-    <changeSet id="1734120989068-14-update-identifieble-entities-remove-translation" author="Hamza (generated)">
-        <dropColumn columnName="translations" tableName="activity"/>
+<!--    <changeSet id="1734120989068-14-update-identifieble-entities-remove-translation" author="Hamza (generated)">-->
+<!--        <dropColumn columnName="translations" tableName="activity"/>-->
 
-        <dropColumn columnName="translations" tableName="org_unit"/>
+<!--        <dropColumn columnName="translations" tableName="org_unit"/>-->
 
-        <dropColumn columnName="translations" tableName="org_unit_group"/>
+<!--        <dropColumn columnName="translations" tableName="org_unit_group"/>-->
 
-        <dropColumn columnName="translations" tableName="org_unit_groupset"/>
+<!--        <dropColumn columnName="translations" tableName="org_unit_groupset"/>-->
 
-        <dropColumn columnName="translations" tableName="ou_level"/>
+<!--        <dropColumn columnName="translations" tableName="ou_level"/>-->
 
-        <dropColumn columnName="translations" tableName="project"/>
-    </changeSet>
-    <changeSet id="1734120989068-15-remove-userinfo-and-warehouse-properties" author="Hamza (generated)">
-        <dropForeignKeyConstraint baseTableName="team" constraintName="fk_team__user_info_id"/>
+<!--        <dropColumn columnName="translations" tableName="project"/>-->
+<!--    </changeSet>-->
+<!--    <changeSet id="1734120989068-15-remove-userinfo-and-warehouse-properties" author="Hamza (generated)">-->
+<!--        <dropForeignKeyConstraint baseTableName="team" constraintName="fk_team__user_info_id"/>-->
 
-        <dropForeignKeyConstraint baseTableName="team" constraintName="fk_team__warehouse_id"/>
+<!--        <dropForeignKeyConstraint baseTableName="team" constraintName="fk_team__warehouse_id"/>-->
 
-        <dropColumn columnName="warehouse_id" tableName="team"/>
+<!--        <dropColumn columnName="warehouse_id" tableName="team"/>-->
 
-        <dropColumn columnName="user_info_id" tableName="team"/>
-    </changeSet>
+<!--        <dropColumn columnName="user_info_id" tableName="team"/>-->
+<!--    </changeSet>-->
 
 </databaseChangeLog>

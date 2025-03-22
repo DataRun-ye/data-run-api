@@ -12,7 +12,7 @@ import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.Repeat;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;
 import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
-import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -27,17 +27,13 @@ import java.util.Objects;
 @Document(collection = "metadata_schema")
 @Getter
 @Setter
+@CompoundIndex(name = "schema_uid", def = "{'uid': 1}", unique = true)
+@CompoundIndex(name = "schema_name", def = "{'name': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class MetadataSchema
     extends MongoAuditableBaseObject {
-    @Size(max = 11)
-    @Field("uid")
-    @Indexed(unique = true, name = "schema_uid")
-    private String uid;
-
     @NotNull
     @Field("name")
-    @Indexed(unique = true, name = "schema_name")
     private String name;
 
     @Size(max = 2000)

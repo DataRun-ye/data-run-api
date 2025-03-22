@@ -35,14 +35,14 @@ public class JpaBaseIdentifiableObject
     /**
      * The unique code for this object.
      */
-    @Column(name = "code", unique = true)
+    @Column(name = "code")
     protected String code;
 
     /**
      * The name of this object. Required and unique.
      */
     @NotNull
-    @Column(name = "name", unique = true, nullable = false)
+    @Column(name = "name", nullable = false)
     protected String name;
 
     /**

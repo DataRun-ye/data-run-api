@@ -29,14 +29,10 @@ import java.util.stream.Collectors;
     @UniqueConstraint(name = "uc_team_code_activity_id", columnNames = {"code", "activity_id"})
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-@JsonIgnoreProperties(value = {"new"})
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Team extends JpaBaseIdentifiableObject {
-    @Column(name = "name")
-    private String name;
-
     @Column(name = "description")
     private String description;
 

@@ -30,7 +30,7 @@
     <include file="config/liquibase/changelog/20240806201251_updated_entity_constraints_Team.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/2024/09-01-changelog-user-mobile-code.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/2024/09-01-changelog-assignment.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/2024/15-01-changelog-translation-and-drop-audit-not-null.xml" relativeToChangelogFile="false"/>
+<!--    <include file="/config/liquibase/changelog/2024/15-01-changelog-translation-and-drop-audit-not-null.xml" relativeToChangelogFile="false"/>-->
     <include file="/config/liquibase/changelog/2024/22-01-team-user-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/2024/27-02-audit-changelog.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/2024/27-01-date-time-wrapper-changelog.xml" relativeToChangelogFile="false"/>
@@ -47,5 +47,7 @@
     <include file="/config/liquibase/changelog/2024/05-01-changelog-add-user_group.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/29-01-org-unit-group-and-groupset.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2024/17-01-changelog-dataelement-remove-fields-and-user-group-constraints.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/2025/22-02-changelog-user-role.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/2025/22-01-changelog-add-new-identifiable-structure.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

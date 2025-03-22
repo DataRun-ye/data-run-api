@@ -136,7 +136,7 @@ public class UserResourceCustom extends AbstractResourceRead<User, Long>
             throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2050, e.getMessage()));
         }
 
-        return userService.findAllByUser(spec, pageable);
+        return userService.findAllByUser(spec, pageable, queryRequest);
     }
 
     /**

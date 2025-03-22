@@ -12,7 +12,7 @@ import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
 import org.nmcpye.datarun.drun.postgres.repository.UserGroupRepository;
 import org.nmcpye.datarun.drun.postgres.service.UserGroupService;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.useraccess.UserAccessService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
@@ -42,8 +42,8 @@ public class DefaultUserGroupService
 
     public DefaultUserGroupService(UserGroupRepository repository,
                                    UserRepository userRepository,
-                                   CacheManager cacheManager) {
-        super(repository, cacheManager);
+                                   CacheManager cacheManager, UserAccessService userAccessService) {
+        super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.userRepository = userRepository;
     }
@@ -91,25 +91,25 @@ public class DefaultUserGroupService
             });
     }
 
-    @Override
-    public Page<UserGroup> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
-        Specification<UserGroup> spec = canRead();
-        if (!queryRequest.isIncludeDisabled()) {
-            spec = spec.and(UserGroupSpecifications.isEnabled());
-        }
-
-        return repository.fetchBagRelationships(repository.findAll(spec, pageable));
-    }
-
-    @Override
-    public List<UserGroup> findAllByUser(QueryRequest queryRequest) {
-        Specification<UserGroup> spec = canRead();
-        if (!queryRequest.isIncludeDisabled()) {
-            spec = spec.and(UserGroupSpecifications.isEnabled());
-        }
-
-        return repository.fetchBagRelationships(repository.findAll(spec));
-    }
+//    @Override
+//    public Page<UserGroup> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+//        Specification<UserGroup> spec = canRead();
+//        if (!queryRequest.isIncludeDisabled()) {
+//            spec = spec.and(UserGroupSpecifications.isEnabled());
+//        }
+//
+//        return repository.fetchBagRelationships(repository.findAll(spec, pageable));
+//    }
+//
+//    @Override
+//    public List<UserGroup> findAllByUser(QueryRequest queryRequest) {
+//        Specification<UserGroup> spec = canRead();
+//        if (!queryRequest.isIncludeDisabled()) {
+//            spec = spec.and(UserGroupSpecifications.isEnabled());
+//        }
+//
+//        return repository.fetchBagRelationships(repository.findAll(spec));
+//    }
 
     @Override
     public Page<UserGroup> findAllManagedByUser(Pageable pageable) {

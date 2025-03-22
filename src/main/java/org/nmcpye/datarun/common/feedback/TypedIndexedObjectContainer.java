@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.common.feedback;
 
 
+import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.drun.postgres.hibernate.HibernateProxyUtils;
 
 import javax.annotation.Nonnull;
@@ -8,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TypedIndexedObjectContainer implements ObjectIndexProvider {
-    private final Map<Class<? extends Identifiable>, IndexedObjectContainer> typedIndexedObjectContainers = new HashMap<>();
+    private final Map<Class<? extends AuditableObject<?>>, IndexedObjectContainer> typedIndexedObjectContainers = new HashMap<>();
 
     /**
      * Get the typed container for the specified object class.
@@ -18,14 +19,14 @@ public class TypedIndexedObjectContainer implements ObjectIndexProvider {
      * container).
      */
     @Nonnull
-    public IndexedObjectContainer getTypedContainer(@Nonnull Class<? extends Identifiable> c) {
+    public IndexedObjectContainer getTypedContainer(@Nonnull Class<? extends AuditableObject<?>> c) {
         return typedIndexedObjectContainers.computeIfAbsent(c, key -> new IndexedObjectContainer());
     }
 
     @Nonnull
     @Override
     @SuppressWarnings("unchecked")
-    public Integer mergeObjectIndex(@Nonnull Identifiable object) {
+    public Integer mergeObjectIndex(@Nonnull AuditableObject<?> object) {
         return getTypedContainer(HibernateProxyUtils.getRealClass(object)).mergeObjectIndex(object);
     }
 
@@ -34,7 +35,7 @@ public class TypedIndexedObjectContainer implements ObjectIndexProvider {
      * @return <code>true</code> if the object is included in the container,
      * <code>false</code> otherwise.
      */
-    public boolean containsObject(@Nonnull Identifiable object) {
+    public boolean containsObject(@Nonnull AuditableObject<?> object) {
         final IndexedObjectContainer indexedObjectContainer = typedIndexedObjectContainers
             .get(HibernateProxyUtils.getRealClass(object));
         return indexedObjectContainer != null && indexedObjectContainer.containsObject(object);
@@ -47,7 +48,7 @@ public class TypedIndexedObjectContainer implements ObjectIndexProvider {
      *                           container.
      */
     @SuppressWarnings("unchecked")
-    public void add(@Nonnull Identifiable identifiableObject) {
+    public void add(@Nonnull AuditableObject<?> identifiableObject) {
         getTypedContainer(HibernateProxyUtils.getRealClass(identifiableObject)).add(identifiableObject);
     }
 }

@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mongo.repository;
 
 import org.javers.spring.annotation.JaversSpringDataAuditable;
-import org.nmcpye.datarun.common.mongo.repository.MongoIdentifiableRepository;
+import org.nmcpye.datarun.common.mongo.repository.MongoAuditableRepository;
 import org.nmcpye.datarun.mongo.domain.AssignmentSubmissionHistory;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -12,7 +12,7 @@ import java.util.Optional;
 @Repository
 @JaversSpringDataAuditable
 public interface AssignmentSubmissionHistoryRepository
-    extends MongoIdentifiableRepository<AssignmentSubmissionHistory>/*, AssignmentSubmissionHistoryRepositoryCustom*/ {
+    extends MongoAuditableRepository<AssignmentSubmissionHistory>/*, AssignmentSubmissionHistoryRepositoryCustom*/ {
 
     @Query("{'uid': ?0, 'entries.submissionTeam': ?1}")
     List<AssignmentSubmissionHistory> findByUidAndTeam(String uid, String team);

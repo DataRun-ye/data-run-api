@@ -8,10 +8,12 @@ import java.util.Collection;
  * @author Hamza, 21/03/2025
  */
 @Entity
-@Table(name = "user_role")
+@Table(name = "role")
 public class Role {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+    @SequenceGenerator(name = "sequenceGenerator")
+    @Column(name = "id")
     private Long id;
 
     @Column(nullable = false, unique = true)
@@ -22,7 +24,7 @@ public class Role {
 
     @ManyToMany
     @JoinTable(
-        name = "roles_privileges",
+        name = "role_privilege_members",
         joinColumns = @JoinColumn(
             name = "role_id", referencedColumnName = "id"),
         inverseJoinColumns = @JoinColumn(

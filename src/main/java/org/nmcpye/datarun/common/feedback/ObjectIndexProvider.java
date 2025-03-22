@@ -1,8 +1,7 @@
 package org.nmcpye.datarun.common.feedback;
 
 
-
-import org.nmcpye.datarun.common.IdentifiableObject;
+import org.nmcpye.datarun.common.AuditableObject;
 
 import javax.annotation.Nonnull;
 
@@ -16,5 +15,5 @@ public interface ObjectIndexProvider {
      * @return the index of the specified object.
      */
     @Nonnull
-    Integer mergeObjectIndex(@Nonnull IdentifiableObject object);
+    Integer mergeObjectIndex(@Nonnull AuditableObject<?> object);
 }
