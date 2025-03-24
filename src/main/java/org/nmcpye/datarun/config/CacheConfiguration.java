@@ -64,6 +64,7 @@ public class CacheConfiguration {
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.UserGroup.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.UserGroup.class.getName() + ".users");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.UserGroup.class.getName() + ".managedByGroups");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.UserGroup.class.getName() + ".managedGroups");
 
             createCache(cm, org.nmcpye.datarun.domain.EntityAuditEvent.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Project.class.getName());
@@ -89,6 +90,7 @@ public class CacheConfiguration {
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet.class.getName() + ".orgUnitGroups");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.DataElement.class.getName());
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OptionSet.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.WarehouseItem.class.getName());
         };
     }
