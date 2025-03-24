@@ -33,10 +33,10 @@ public class CacheConfiguration {
 
         jcacheConfiguration = Eh107Configuration.fromEhcacheCacheConfiguration(
             CacheConfigurationBuilder.newCacheConfigurationBuilder(
-                Object.class,
-                Object.class,
-                ResourcePoolsBuilder.heap(ehcache.getMaxEntries())
-            )
+                    Object.class,
+                    Object.class,
+                    ResourcePoolsBuilder.heap(ehcache.getMaxEntries())
+                )
                 .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofSeconds(ehcache.getTimeToLiveSeconds())))
                 .build()
         );
@@ -52,15 +52,26 @@ public class CacheConfiguration {
         return cm -> {
             createCache(cm, UserRepository.USERS_BY_LOGIN_CACHE);
             createCache(cm, UserRepository.USERS_BY_EMAIL_CACHE);
+            createCache(cm, UserRepository.USER_TEAM_IDS_CACHE);
+            createCache(cm, UserRepository.USER_GROUP_IDS_CACHE);
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Authority.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".authorities");
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".teams");
+            createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".roles");
+            createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".groups");
+
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.UserGroup.class.getName());
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.UserGroup.class.getName() + ".users");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.UserGroup.class.getName() + ".managedByGroups");
+
             createCache(cm, org.nmcpye.datarun.domain.EntityAuditEvent.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Project.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Project.class.getName() + ".activities");
             createCache(cm, org.nmcpye.datarun.domain.Activity.class.getName());
+            createCache(cm, org.nmcpye.datarun.domain.Activity.class.getName() + ".assignments");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Assignment.class.getName());
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Assignment.class.getName() + ".children");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName() + ".assignments");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName() + ".users");
@@ -70,16 +81,15 @@ public class CacheConfiguration {
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName() + ".assignments");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName() + ".groups");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName() + ".children");
-
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OuLevel.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.WarehouseItem.class.getName());
+
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup.class.getName() + ".members");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup.class.getName() + ".groupSets");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet.class.getName() + ".orgUnitGroups");
-
-            // jhipster-needle-ehcache-add-entry
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.DataElement.class.getName());
+            createCache(cm, org.nmcpye.datarun.domain.WarehouseItem.class.getName());
         };
     }
 

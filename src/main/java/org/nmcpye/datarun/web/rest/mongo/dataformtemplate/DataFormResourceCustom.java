@@ -6,7 +6,7 @@ import org.nmcpye.datarun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.mongo.service.DataFormService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.utils.FormTemplateSchema;
-import org.nmcpye.datarun.web.rest.mongo.AbstractMongoResource;
+import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/custom/dataForm")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class DataFormResourceCustom extends AbstractMongoResource<DataForm> {
+public class DataFormResourceCustom extends MongoBaseResource<DataForm> {
 
     final DataFormService dataFormService;
     private final FormTemplateSchema formTemplateSchema;
@@ -66,13 +66,13 @@ public class DataFormResourceCustom extends AbstractMongoResource<DataForm> {
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<Void> deleteByIdUid(String uid) {
-        return super.deleteByIdUid(uid);
+    public ResponseEntity<Void> deleteByIdUid(String id) {
+        return super.deleteByIdUid(id);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<DataForm> updateEntity(String s, DataForm entity) throws URISyntaxException {
-        return super.updateEntity(s, entity);
+    public ResponseEntity<DataForm> updateEntity(String uid, DataForm entity) throws URISyntaxException {
+        return super.updateEntity(uid, entity);
     }
 }

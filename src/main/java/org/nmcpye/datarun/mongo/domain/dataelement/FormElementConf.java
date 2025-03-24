@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.mongo.domain.dataelement;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@JsonIgnoreProperties(value = {"path"}, allowGetters = true)
 @Getter
 @Setter
 public abstract class FormElementConf implements Serializable {

@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.repository;
 
-import org.nmcpye.datarun.common.jpa.repository.JpaIdentifiableRepository;
+import org.nmcpye.datarun.common.jpa.repository.JpaAuditableRepository;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet;
 import org.springframework.stereotype.Repository;
 
@@ -13,7 +13,7 @@ import java.util.Optional;
 @Repository
 public interface OrgUnitGroupSetRepository
     extends OrgUnitRepositoryWithBagRelationships,
-    JpaIdentifiableRepository<OrgUnitGroupSet> {
+    JpaAuditableRepository<OrgUnitGroupSet> {
 
     Optional<OrgUnitGroupSet> findByCode(String code);
 }

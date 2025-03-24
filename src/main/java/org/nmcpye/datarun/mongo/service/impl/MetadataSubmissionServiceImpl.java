@@ -9,7 +9,7 @@ import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
-import org.nmcpye.datarun.mongo.repository.MetadataSubmissionRepositoryCustom;
+import org.nmcpye.datarun.mongo.repository.MetadataSubmissionRepository;
 import org.nmcpye.datarun.mongo.service.MetadataSubmissionService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -37,7 +37,7 @@ public class MetadataSubmissionServiceImpl
     extends DefaultMongoAuditableObjectService<MetadataSubmission>
     implements MetadataSubmissionService {
 
-    private final MetadataSubmissionRepositoryCustom repository;
+    private final MetadataSubmissionRepository repository;
     private final TeamRepository teamRepository;
     private final ActivityRepository activityRepository;
     private final AssignmentRepository assignmentRepository;
@@ -47,7 +47,7 @@ public class MetadataSubmissionServiceImpl
     private final SequenceGeneratorService sequenceGeneratorService;
 
     public MetadataSubmissionServiceImpl(
-        MetadataSubmissionRepositoryCustom repository,
+        MetadataSubmissionRepository repository,
         CacheManager cacheManager,
         ActivityRepository activityRepository, TeamRepository teamRepository, AssignmentRepository assignmentRepository,
         OrgUnitRepositoryCustom orgUnitRepositoryCustom,
@@ -65,8 +65,6 @@ public class MetadataSubmissionServiceImpl
 
     @Override
     public MetadataSubmission saveWithRelations(MetadataSubmission newSubmission) {
-//        final MetadataSubmission metadataSubmission = createSubmission(newSubmission);
-
         switch (newSubmission.getResourceType()) {
             case Team -> teamRepository.findByUid(newSubmission.getResourceId())
                 .ifPresentOrElse((a) -> newSubmission.setResourceId(a.getUid()),
@@ -103,18 +101,7 @@ public class MetadataSubmissionServiceImpl
             .createSubmission()
             .populateFormDataAttributes();
 
-        return repository.save(dataFormSubmission);
-    }
-
-    public Page<MetadataSubmission> findAllByEntity(String uid, Pageable pageable) {
-        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            Query query = new Query(Criteria.where("entityUid").is(uid));
-            List<MetadataSubmission> submissions = mongoTemplate.find(query, MetadataSubmission.class);
-
-            return getMetadataSubmissions(pageable, submissions);
-        }
-
-        return Page.empty(pageable);
+        return save(dataFormSubmission);
     }
 
     @Override
@@ -132,7 +119,6 @@ public class MetadataSubmissionServiceImpl
             .collect(Collectors.toSet());
 
         if (SecurityUtils.getCurrentUserLogin().isPresent()) {
-//            String login = SecurityUtils.getCurrentUserLogin().get();
             Query query = new Query(Criteria.where("entityUid").in(uids));
             List<MetadataSubmission> submissions = mongoTemplate.find(query, MetadataSubmission.class);
 

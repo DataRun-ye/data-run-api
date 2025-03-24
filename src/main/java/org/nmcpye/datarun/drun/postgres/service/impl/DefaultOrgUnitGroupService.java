@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
-import org.nmcpye.datarun.common.jpa.impl.DefaultJpaIdentifiableService;
+import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitGroupRepository;
@@ -20,16 +20,11 @@ import java.util.Set;
 @Service
 @Primary
 @Transactional
-public class DefaultOrgUnitGroupService
-    extends DefaultJpaIdentifiableService<OrgUnitGroup>
-    implements OrgUnitGroupService {
+public class DefaultOrgUnitGroupService extends DefaultJpaAuditableService<OrgUnitGroup> implements OrgUnitGroupService {
 
     private final OrgUnitRepositoryCustom orgUnitRepository;
 
-    public DefaultOrgUnitGroupService(OrgUnitGroupRepository repository,
-                                      OrgUnitRepositoryCustom orgUnitRepository,
-                                      UserAccessService userAccessService,
-                                      CacheManager cacheManager) {
+    public DefaultOrgUnitGroupService(OrgUnitGroupRepository repository, OrgUnitRepositoryCustom orgUnitRepository, UserAccessService userAccessService, CacheManager cacheManager) {
         super(repository, cacheManager, userAccessService);
         this.orgUnitRepository = orgUnitRepository;
     }
@@ -44,20 +39,14 @@ public class DefaultOrgUnitGroupService
             }
 
             object.setMembers(orgUnits);
-            return repository.save(object);
+            return save(object);
         }
 
-        return repository.save(object);
+        return save(object);
     }
 
     private OrgUnit findOrgUnit(OrgUnit orgUnit) {
-        return Optional.ofNullable(orgUnit.getUid())
-            .flatMap(orgUnitRepository::findByUid)
-            .or(() -> Optional.ofNullable(orgUnit.getId())
-                .flatMap(orgUnitRepository::findById))
-            .or(() -> Optional.ofNullable(orgUnit.getCode())
-                .flatMap(orgUnitRepository::findByCode))
-            .orElseThrow(() -> new PropertyNotFoundException("OrgUnit not found: " + orgUnit));
+        return Optional.ofNullable(orgUnit.getUid()).flatMap(orgUnitRepository::findByUid).or(() -> Optional.ofNullable(orgUnit.getId()).flatMap(orgUnitRepository::findById)).or(() -> Optional.ofNullable(orgUnit.getCode()).flatMap(orgUnitRepository::findByCode)).orElseThrow(() -> new PropertyNotFoundException("OrgUnit not found: " + orgUnit));
     }
 
 //    @Override

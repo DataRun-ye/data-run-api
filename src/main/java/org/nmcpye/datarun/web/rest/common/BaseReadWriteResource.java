@@ -20,17 +20,17 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
 
-public abstract class AbstractResourceReadWrite<T extends AuditableObject<ID>, ID extends Serializable>
-    extends AbstractResourceRead<T, ID> {
+public abstract class BaseReadWriteResource<T extends AuditableObject<ID>, ID extends Serializable>
+    extends BaseReadResource<T, ID> {
 
-    protected final Logger log = LoggerFactory.getLogger(AbstractResourceReadWrite.class);
+    protected final Logger log = LoggerFactory.getLogger(BaseReadWriteResource.class);
 
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
 
-    protected AbstractResourceReadWrite(AuditableObjectService<T, ID> identifiableService,
-                                        AuditableObjectRepository<T, ID> repository) {
-        super(identifiableService, repository);
+    protected BaseReadWriteResource(AuditableObjectService<T, ID> auditableObjectService,
+                                    AuditableObjectRepository<T, ID> repository) {
+        super(auditableObjectService, repository);
     }
 
     @PostMapping("/bulk")
@@ -63,11 +63,11 @@ public abstract class AbstractResourceReadWrite<T extends AuditableObject<ID>, I
 
     protected void saveEntity(T entity, EntitySaveSummaryVM summary) {
         try {
-            if (entity.getUid() != null && identifiableService.existsByUid(entity.getUid())) {
-                entity = identifiableService.update(entity);
+            if (entity.getUid() != null && auditableObjectService.existsByUid(entity.getUid())) {
+                entity = auditableObjectService.update(entity);
                 summary.getUpdated().add(entity.getUid());
             } else {
-                entity = identifiableService.save(entity);
+                entity = auditableObjectService.saveWithRelations(entity);
                 summary.getCreated().add(entity.getUid());
             }
         } catch (Exception e) {
@@ -77,34 +77,33 @@ public abstract class AbstractResourceReadWrite<T extends AuditableObject<ID>, I
         }
     }
 
-    @DeleteMapping("/{uid}")
+    @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
-    public ResponseEntity<Void> deleteByIdUid(@PathVariable("uid") String uid) {
-        log.debug("REST request to delete from {}: {}", getName(), uid);
-        identifiableService.findByUid(uid).ifPresent((entity) -> identifiableService.deleteByUid(entity.getUid()));
+    public ResponseEntity<Void> deleteByIdUid(@PathVariable("id") String id) {
+        log.debug("REST request to delete from {}: {}", getName(), id);
+        auditableObjectService.findByUid(id).ifPresent(auditableObjectService::delete);
         return ResponseEntity
             .noContent()
             .headers(HeaderUtil
-                .createEntityDeletionAlert(applicationName, true, getName(), uid.toString())).build();
+                .createEntityDeletionAlert(applicationName, true, getName(), id.toString())).build();
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{uid}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<T> updateEntity(
-        @PathVariable(value = "id", required = false) final ID id,
+        @PathVariable(value = "uid", required = false) final String uid,
         @Valid @RequestBody T entity
     ) throws URISyntaxException {
-        log.debug("REST request to delete from {}: {}", getName(), id);
+        log.debug("REST request to delete from {}: {}", getName(), uid);
         if (entity.getUid() == null) {
-            throw new BadRequestAlertException("Invalid id", getName(), "uid is null");
-        }
-        if (!Objects.equals(id, entity.getId())) {
-            if (!Objects.equals(id, entity.getUid())) {
-                throw new BadRequestAlertException("Invalid ID", getName(), "idinvalid");
-            }
+            throw new BadRequestAlertException("Invalid uid", getName(), "uid is null");
         }
 
-        entity = identifiableService.update(entity);
+        if (!Objects.equals(uid, entity.getUid())) {
+            throw new BadRequestAlertException("Invalid ID", getName(), "idinvalid");
+        }
+
+        entity = auditableObjectService.update(entity);
 
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), entity.getId().toString()))

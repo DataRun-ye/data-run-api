@@ -2,7 +2,7 @@ package org.nmcpye.datarun.mongo.service.submissionmigration;
 
 import jakarta.transaction.Transactional;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
-import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepositoryCustom;
+import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepository;
 import org.nmcpye.datarun.mongo.service.impl.SequenceGeneratorService;
 import org.springframework.stereotype.Service;
 
@@ -12,10 +12,10 @@ import java.util.List;
 public class SubmissionMaintenanceService {
 
     private final SequenceGeneratorService sequenceGeneratorService;
-    private final DataFormSubmissionRepositoryCustom submissionRepository;
+    private final DataFormSubmissionRepository submissionRepository;
 
     public SubmissionMaintenanceService(SequenceGeneratorService sequenceGeneratorService,
-                                        DataFormSubmissionRepositoryCustom submissionRepository) {
+                                        DataFormSubmissionRepository submissionRepository) {
         this.sequenceGeneratorService = sequenceGeneratorService;
         this.submissionRepository = submissionRepository;
     }

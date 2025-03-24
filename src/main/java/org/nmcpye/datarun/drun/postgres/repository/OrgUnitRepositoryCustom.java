@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.repository;
 
-import org.nmcpye.datarun.common.jpa.repository.JpaIdentifiableRepository;
+import org.nmcpye.datarun.common.jpa.repository.JpaAuditableRepository;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,7 +18,7 @@ import java.util.Optional;
 @Repository
 public interface OrgUnitRepositoryCustom
     extends OrgUnitRepositoryWithBagRelationships,
-    JpaIdentifiableRepository<OrgUnit> {
+    JpaAuditableRepository<OrgUnit> {
 
     Optional<OrgUnit> findByCode(String code);
 

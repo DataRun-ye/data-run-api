@@ -11,5 +11,6 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public interface JpaAuditableObjectService<T extends JpaAuditableObject>
     extends AuditableObjectService<T, Long> {
+    @Deprecated
     Page<T> findAllByUser(Specification<T> spec, Pageable pageable, QueryRequest queryRequest);
 }

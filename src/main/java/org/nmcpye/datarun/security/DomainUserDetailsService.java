@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.security;
 
+import org.hibernate.validator.internal.constraintvalidators.bv.EmailValidator;
+import org.nmcpye.datarun.common.repository.UserRepository;
 import org.nmcpye.datarun.common.security.CurrentUserInfoService;
 import org.nmcpye.datarun.domain.Authority;
 import org.nmcpye.datarun.domain.User;
@@ -24,9 +26,11 @@ public class DomainUserDetailsService implements UserDetailsService {
     private static final Logger LOG = LoggerFactory.getLogger(DomainUserDetailsService.class);
 
     private final CurrentUserInfoService currentUserInfoService;
+    private final UserRepository userRepository;
 
-    public DomainUserDetailsService(CurrentUserInfoService currentUserInfoService) {
+    public DomainUserDetailsService(CurrentUserInfoService currentUserInfoService, UserRepository userRepository) {
         this.currentUserInfoService = currentUserInfoService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -34,15 +38,14 @@ public class DomainUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(final String login) {
         LOG.debug("Authenticating {}", login);
 
-//        if (new EmailValidator().isValid(login, null)) {
-//            final var userByEmail = currentUserInfoService
-//                .findCurrentByEmail(login).orElseThrow(() ->
-//                    new UsernameNotFoundException("User with login " + login + " was not found in the database"));
-//        }
+        if (new EmailValidator().isValid(login, null)) {
+            final var userByEmail = userRepository.findOneWithAuthoritiesByEmailIgnoreCase(login).orElseThrow(() ->
+                new UsernameNotFoundException("User with login " + login + " was not found in the database"));
+        }
         String lowercaseLogin = login.toLowerCase(Locale.ENGLISH);
-        return currentUserInfoService
-            .findCurrentByLogin(lowercaseLogin)
-            .map(user -> createUserDetails(lowercaseLogin, user))
+        final var userLogin = userRepository.findOneWithAuthoritiesByLogin(lowercaseLogin);
+
+        return userLogin.map(user -> createUserDetails(lowercaseLogin, user))
             .orElseThrow(() -> new UsernameNotFoundException("User " + lowercaseLogin + " was not found in the database"));
     }
 
@@ -50,6 +53,8 @@ public class DomainUserDetailsService implements UserDetailsService {
         if (!user.isActivated()) {
             throw new UserNotActivatedException("User " + lowercaseLogin + " was not activated");
         }
+
+        final var userTeamInfo = currentUserInfoService.getUserTeamInfo(user.getLogin());
         return CurrentUserDetailsImpl.builder()
             .uid(user.getUid())
             .username(user.getLogin())
@@ -62,9 +67,9 @@ public class DomainUserDetailsService implements UserDetailsService {
             .authorities(user.getAuthorities().stream()
                 .map(authority -> new SimpleGrantedAuthority(authority.getName()))
                 .collect(Collectors.toList()))
-            .userTeamIds(currentUserInfoService.getUserTeamInfo(user.getUid()).getTeamUIDs())
-            .userManagedTeamIds(currentUserInfoService.getUserTeamInfo(user.getUid()).getManagedTeamUIDs())
-            .userGroupIds(currentUserInfoService.getUserGroupIds(user.getUid()).getUserGroupUIDs())
+            .userTeamIds(userTeamInfo.getTeamUIDs())
+            .userManagedTeamIds(userTeamInfo.getManagedTeamUIDs())
+            .userGroupIds(currentUserInfoService.getUserGroupIds(user.getLogin()).getUserGroupUIDs())
             .isSuper(user.getAuthorities()
                 .stream()
                 .map(Authority::getName)

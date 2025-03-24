@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
-import org.nmcpye.datarun.common.jpa.impl.DefaultJpaIdentifiableService;
+import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRepository;
 import org.nmcpye.datarun.drun.postgres.service.ActivityService;
@@ -18,15 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Primary
 @Transactional
-public class DefaultActivityService
-    extends DefaultJpaIdentifiableService<Activity>
-    implements ActivityService {
+public class DefaultActivityService extends DefaultJpaAuditableService<Activity> implements ActivityService {
 
     private final ActivityRepository repository;
 
 
-    public DefaultActivityService(ActivityRepository repository,
-                                  CacheManager cacheManager, UserAccessService userAccessService) {
+    public DefaultActivityService(ActivityRepository repository, CacheManager cacheManager, UserAccessService userAccessService) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
     }

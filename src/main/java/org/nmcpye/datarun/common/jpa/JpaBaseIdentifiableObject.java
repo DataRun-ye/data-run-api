@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.common.jpa;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
@@ -66,6 +67,14 @@ public class JpaBaseIdentifiableObject
     // Comparable implementation
     // -------------------------------------------------------------------------
 
+    @JsonIgnore
+    public Map<String, String> getTranslationCache() {
+        return translationCache;
+    }
+
+    public void setTranslationCache(Map<String, String> translationCache) {
+        this.translationCache = translationCache;
+    }
 
     /**
      * Compares objects based on display name. A null display name is ordered

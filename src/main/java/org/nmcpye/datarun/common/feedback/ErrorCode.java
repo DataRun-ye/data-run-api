@@ -23,6 +23,7 @@ public enum ErrorCode {
 
     E1107("Circular reference detected for parent: `{0}`:`{1}`"),
     E1108("Duplicate `{0}` IDs found: `{1}`:`{2}`"),
+    E1109("Object {0}:`{1}` not found"),
     E1130("System configuration Error: `{0}`"),
 
     /* Data */
@@ -34,6 +35,7 @@ public enum ErrorCode {
     E2016("Invalid Query Format"),
     E2017("Unable to parse order param: `{0}`"),
     E2018("Value for `{0}` must be `{1}` "),
+    E2019("Unsupported FilterExpression: {0}"),
 
     E2034("Filter not supported: `{0}`"),
     E2035("Operator not supported: `{0}`"),

@@ -3,7 +3,6 @@ package org.nmcpye.datarun.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.Sets;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
@@ -20,11 +19,12 @@ import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
 
 import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * A user.
@@ -301,45 +301,45 @@ public class User extends JpaAuditableObject {
         return false;
     }
 
-    public Set<String> getAllAuthorities() {
-        return getAuthorities().stream().map(Authority::getName).collect(Collectors.toSet());
-    }
-
-    /**
-     * Tests whether this user has any of the authorities in the given set.
-     *
-     * @param auths the authorities to compare with.
-     * @return true or false.
-     */
-    public boolean hasAnyAuthority(Collection<String> auths) {
-        return getAllAuthorities().stream().anyMatch(auths::contains);
-    }
-
-    /**
-     * Tests whether the user has the given authority. Returns true in any case
-     * if the user has the ALL authority.
-     */
-    public boolean isAuthorized(String auth) {
-        if (auth == null) {
-            return false;
-        }
-
-        final Set<String> auths = getAllAuthorities();
-
-        return CollectionUtils.containsAny(auths,
-            Sets.newHashSet(AuthoritiesConstants.ADMIN)) || auths.contains(auth);
-    }
-
-    /**
-     * Indicates whether this user is a super user, implying that the ALL
-     * authority is present in at least one of the user authority groups of this
-     * user.
-     */
-    @JsonProperty
-    public boolean isSuper() {
-        final var superAuths = Sets.newHashSet(AuthoritiesConstants.ADMIN);
-        return getAllAuthorities().stream().anyMatch(superAuths::contains);
-    }
+//    public Set<String> getAllAuthorities() {
+//        return getAuthorities().stream().map(Authority::getName).collect(Collectors.toSet());
+//    }
+//
+//    /**
+//     * Tests whether this user has any of the authorities in the given set.
+//     *
+//     * @param auths the authorities to compare with.
+//     * @return true or false.
+//     */
+//    public boolean hasAnyAuthority(Collection<String> auths) {
+//        return getAllAuthorities().stream().anyMatch(auths::contains);
+//    }
+//
+//    /**
+//     * Tests whether the user has the given authority. Returns true in any case
+//     * if the user has the ALL authority.
+//     */
+//    public boolean isAuthorized(String auth) {
+//        if (auth == null) {
+//            return false;
+//        }
+//
+//        final Set<String> auths = getAllAuthorities();
+//
+//        return CollectionUtils.containsAny(auths,
+//            Sets.newHashSet(AuthoritiesConstants.ADMIN)) || auths.contains(auth);
+//    }
+//
+//    /**
+//     * Indicates whether this user is a super user, implying that the ALL
+//     * authority is present in at least one of the user authority groups of this
+//     * user.
+//     */
+//    @JsonProperty
+//    public boolean isSuper() {
+//        final var superAuths = Sets.newHashSet(AuthoritiesConstants.ADMIN);
+//        return getAllAuthorities().stream().anyMatch(superAuths::contains);
+//    }
 
     // prettier-ignore
     @Override

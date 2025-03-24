@@ -17,7 +17,7 @@ public interface JpaAuditableRepository<T extends JpaAuditableObject>
     extends JpaRepository<T, Long>, JpaSpecificationExecutor<T>, AuditableObjectRepository<T, Long> {
     void deleteByUid(String uid);
 
-    boolean existByUid(String uid);
+    boolean existsByUid(String uid);
 
     void deleteAllByUidIn(Collection<String> uids);
 

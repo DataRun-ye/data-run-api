@@ -5,6 +5,7 @@ import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.service.impl.UserAccessibleElementsService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -19,8 +20,7 @@ import java.util.stream.Collectors;
 public class OptionSetFilter extends DefaultJpaFilter<OptionSet> {
     private final UserAccessibleElementsService userAccessibleElementsService;
 
-    public OptionSetFilter(Class<OptionSet> clazz, UserAccessibleElementsService userAccessibleElementsService) {
-        super(clazz);
+    public OptionSetFilter(UserAccessibleElementsService userAccessibleElementsService) {
         this.userAccessibleElementsService = userAccessibleElementsService;
     }
 
@@ -29,7 +29,8 @@ public class OptionSetFilter extends DefaultJpaFilter<OptionSet> {
     }
 
     @Override
-    public Specification<OptionSet> createSpecification(CurrentUserDetails user, boolean includeDisabled) {
+    public Specification<OptionSet> getAccessSpecification(CurrentUserDetails user,
+                                                           QueryRequest queryRequest) {
         Set<String> userOptionSets = getUserOptionSets(user.getUsername());
 
         return (root, query, cb) -> {

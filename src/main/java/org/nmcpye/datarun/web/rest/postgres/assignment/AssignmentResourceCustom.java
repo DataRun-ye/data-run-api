@@ -7,10 +7,11 @@ import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
+import org.nmcpye.datarun.query.filter.FilterExpression;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
+import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -32,7 +33,7 @@ import java.util.List;
 @RequestMapping("/api/custom/assignments")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class AssignmentResourceCustom
-    extends AbstractJpaResource<Assignment> {
+    extends JpaBaseResource<Assignment> {
 
     private final Logger log = LoggerFactory.getLogger(AssignmentResourceCustom.class);
 
@@ -47,25 +48,13 @@ public class AssignmentResourceCustom
     }
 
     @Override
-    protected Page<Assignment> getList(Pageable pageable, QueryRequest queryRequest) {
+    protected Page<Assignment> getList(Pageable pageable, QueryRequest queryRequest, FilterExpression expression) {
         if (queryRequest.getFilters().isEmpty()) {
             return assignmentService.getAllUserAccessible(pageable, queryRequest);
         }
 
-        return super.getList(pageable, queryRequest);
+        return super.getList(pageable, queryRequest, expression);
     }
-
-//    @Override
-//    public Specification<Assignment> buildSpecification(QueryRequest queryRequest) {
-//        Specification<Assignment> spec = super.buildSpecification(queryRequest);
-//        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-//            return spec;
-//        } else if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
-//            return null;
-//        }
-//        return spec
-//            .and(assignmentService.canRead());
-//    }
 
     @Override
     protected String getName() {
@@ -94,8 +83,8 @@ public class AssignmentResourceCustom
 
     @Override
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<Assignment> updateEntity(Long aLong, Assignment entity) throws URISyntaxException {
-        return super.updateEntity(aLong, entity);
+    public ResponseEntity<Assignment> updateEntity(String uid, Assignment entity) throws URISyntaxException {
+        return super.updateEntity(uid, entity);
     }
 
     @Override

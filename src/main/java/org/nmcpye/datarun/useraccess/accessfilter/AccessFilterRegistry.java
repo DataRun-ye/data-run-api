@@ -2,6 +2,7 @@ package org.nmcpye.datarun.useraccess.accessfilter;
 
 import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -17,10 +18,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class AccessFilterRegistry {
 
-    private final List<AccessFilter<?>> filterBeans;
-    private final Map<Class<?>, AccessFilter<?>> filters = new ConcurrentHashMap<>();
+    private final List<AccessFilter<? extends AuditableObject<?>>> filterBeans;
+    private final Map<Class<? extends AuditableObject<?>>, AccessFilter<? extends AuditableObject<?>>> filters = new ConcurrentHashMap<>();
 
-    public AccessFilterRegistry(List<AccessFilter<?>> filterBeans) {
+    public AccessFilterRegistry(List<AccessFilter<? extends AuditableObject<?>>> filterBeans) {
         this.filterBeans = filterBeans;
     }
 
@@ -29,7 +30,7 @@ public class AccessFilterRegistry {
             return;
         }
         filterBeans.forEach(filter ->
-            filters.put(filter.getClazz(), filter)
+            filters.put(filter.getKlass(), filter)
         );
     }
 
@@ -39,10 +40,12 @@ public class AccessFilterRegistry {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends AuditableObject<?>> Specification<T> getSpecification(Class<T> entityClass, CurrentUserDetails user, boolean includeDisabled) {
+    public <T extends AuditableObject<?>> Specification<T> getSpecification(
+        Class<T> entityClass, CurrentUserDetails user, QueryRequest queryRequest) {
         AccessFilter<T> filter = (AccessFilter<T>) getFilter(entityClass);
-        return filter != null ?
-            filter.createSpecification(user, includeDisabled) :
-            AccessFilter.createDefaultSpecification(user);
+        final var querySpecification = (Specification<T>) AccessFilter.buildQuerySpecification(queryRequest);
+        return querySpecification.and(filter != null ?
+            filter.getAccessSpecification(user, queryRequest) :
+            AccessFilter.createDefaultSpecification(user));
     }
 }

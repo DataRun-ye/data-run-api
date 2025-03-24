@@ -5,7 +5,7 @@ import org.nmcpye.datarun.drun.postgres.repository.ProjectRepository;
 import org.nmcpye.datarun.drun.postgres.service.ProjectService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
+import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/custom/projects")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class ProjectResourceCustom extends AbstractJpaResource<Project> {
+public class ProjectResourceCustom extends JpaBaseResource<Project> {
 
     private final Logger log = LoggerFactory.getLogger(ProjectResourceCustom.class);
 
@@ -44,8 +44,8 @@ public class ProjectResourceCustom extends AbstractJpaResource<Project> {
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<Project> updateEntity(Long aLong, Project entity) throws URISyntaxException {
-        return super.updateEntity(aLong, entity);
+    public ResponseEntity<Project> updateEntity(String uid, Project entity) throws URISyntaxException {
+        return super.updateEntity(uid, entity);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")

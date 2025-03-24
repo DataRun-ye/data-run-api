@@ -32,12 +32,14 @@ spring:
       indent-output: true
   data:
     mongodb:
-      uri: mongodb://dRunUser:dRunUser@localhost:27017/dataRunApi2
+      uri: mongodb://dRunUser:dRunUser@localhost:27017/dataRunApi
+#      uri: mongodb://dRunUser:dRunUser@localhost:27017/dataRunApi2
 #      uri: mongodb://dRunUser:dRunUser@mongod1:27017,mongod2:27017,mongod3:27017/dataRunApi?replicaSet=dbrs
       auto-index-creation: true
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:postgresql://localhost:5432/dataRunApi2
+    url: jdbc:postgresql://localhost:5432/dataRunApi
+#    url: jdbc:postgresql://localhost:5432/dataRunApi2
     username: dataRunApi
     password: dataRunApi
 

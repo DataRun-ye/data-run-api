@@ -36,15 +36,15 @@ public abstract class DefaultJpaAuditableService
         this.jpaAuditableObjectRepository = jpaAuditableObjectRepository;
     }
 
-    protected Specification<T> baseSpecification(CurrentUserDetails user, boolean includeDisabled) {
-        return userAccessService.readSpec(getClazz(), user, includeDisabled);
+    protected Specification<T> baseSpecification(CurrentUserDetails user,  QueryRequest queryRequest) {
+        return userAccessService.readSpec(getClazz(), user, queryRequest);
     }
 
     @Override
     public Page<T> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         return jpaAuditableObjectRepository.findAll(
             baseSpecification(SecurityUtils.getCurrentUserDetails()
-                .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), queryRequest.isIncludeDisabled()),
+                .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), queryRequest),
             pageable
         );
     }
@@ -53,7 +53,7 @@ public abstract class DefaultJpaAuditableService
     public List<T> findAllByUser(QueryRequest queryRequest) {
         final var readSpec = baseSpecification(SecurityUtils.getCurrentUserDetails()
                 .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))),
-            queryRequest.isIncludeDisabled());
+            queryRequest);
         return jpaAuditableObjectRepository.findAll(readSpec);
     }
 
@@ -62,7 +62,7 @@ public abstract class DefaultJpaAuditableService
         final var accessSpec = baseSpecification(SecurityUtils.getCurrentUserDetails()
                 .orElseThrow(() ->
                     new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))),
-            queryRequest.isIncludeDisabled());
+            queryRequest);
         return jpaAuditableObjectRepository.findAll(spec.and(accessSpec), pageable);
     }
 }

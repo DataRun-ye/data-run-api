@@ -9,13 +9,14 @@ import org.nmcpye.datarun.common.repository.UserRepository;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.service.UserService;
+import org.nmcpye.datarun.query.filter.FilterExpression;
 import org.nmcpye.datarun.service.dto.AdminUserDTO;
-import org.nmcpye.datarun.web.rest.common.AbstractResourceRead;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.common.QuerySpecification;
 import org.nmcpye.datarun.web.rest.errors.EmailAlreadyUsedException;
 import org.nmcpye.datarun.web.rest.errors.LoginAlreadyUsedException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.nmcpye.datarun.web.rest.vm.ManagedUserVM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,7 @@ import java.util.Optional;
  */
 @RestController
 @RequestMapping("/api/custom/admin/users")
-public class UserResourceCustom extends AbstractResourceRead<User, Long>
+public class UserResourceCustom extends JpaBaseResource<User>
     implements QuerySpecification<User> {
 
     // NMC security is set globally in DataRunSecurityConfig
@@ -128,7 +129,7 @@ public class UserResourceCustom extends AbstractResourceRead<User, Long>
     }
 
     @Override
-    protected Page<User> getList(Pageable pageable, QueryRequest queryRequest) {
+    protected Page<User> getList(Pageable pageable, QueryRequest queryRequest, FilterExpression expression) {
         Specification<User> spec;
         try {
             spec = buildQuerySpecification(queryRequest);

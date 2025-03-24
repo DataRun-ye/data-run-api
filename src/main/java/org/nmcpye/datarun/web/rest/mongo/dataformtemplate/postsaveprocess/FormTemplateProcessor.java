@@ -56,9 +56,10 @@ public class FormTemplateProcessor {
     }
 
     private Integer createOrUpdateVersion(DataFormTemplate source) {
-        return dataFormTemplateRepository.findByUid(source.getUid())
+        final var version = dataFormTemplateRepository.findByUid(source.getUid())
             .map(DataFormTemplate::getVersion)
             .orElse(0);
+        return version;
     }
 
     private void validateElementsDataElement(DataFormTemplate formTemplate, Collection<DataElement> dataElements) {

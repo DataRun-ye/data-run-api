@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
-import org.nmcpye.datarun.common.jpa.impl.DefaultJpaIdentifiableService;
+import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
 import org.nmcpye.datarun.drun.postgres.domain.DataElement;
 import org.nmcpye.datarun.drun.postgres.repository.DataElementRepository;
 import org.nmcpye.datarun.drun.postgres.repository.OptionSetRepository;
@@ -14,15 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Primary
 @Transactional
-public class DefaultDataElementService
-    extends DefaultJpaIdentifiableService<DataElement>
-    implements DataElementService {
+public class DefaultDataElementService extends DefaultJpaAuditableService<DataElement> implements DataElementService {
     private final OptionSetRepository optionSetRepository;
 
-    public DefaultDataElementService(DataElementRepository repository,
-                                     CacheManager cacheManager,
-                                     OptionSetRepository optionSetRepository,
-                                     UserAccessService userAccessService) {
+    public DefaultDataElementService(DataElementRepository repository, CacheManager cacheManager, OptionSetRepository optionSetRepository, UserAccessService userAccessService) {
         super(repository, cacheManager, userAccessService);
         this.optionSetRepository = optionSetRepository;
     }
@@ -30,11 +25,9 @@ public class DefaultDataElementService
     @Override
     public DataElement saveWithRelations(DataElement element) {
         if (element.getType().isOptionsType() && element.getOptionSet() != null) {
-            final var optionSet = optionSetRepository.findByUid(element.getOptionSet().getUid())
-                .or(() -> optionSetRepository.findById(element.getOptionSet().getId()))
-                .orElseThrow(() -> new IllegalStateException(element.getName() + "'s Option Set not found"));
+            final var optionSet = optionSetRepository.findByUid(element.getOptionSet().getUid()).or(() -> optionSetRepository.findById(element.getOptionSet().getId())).orElseThrow(() -> new IllegalStateException(element.getName() + "'s Option Set not found"));
             element.setOptionSet(optionSet);
         }
-        return repository.save(element);
+        return save(element);
     }
 }

@@ -6,7 +6,7 @@ import org.nmcpye.datarun.drun.postgres.service.UserGroupService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
+import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/custom/userGroups")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class UserGroupResource extends AbstractJpaResource<UserGroup> {
+public class UserGroupResource extends JpaBaseResource<UserGroup> {
     private final UserGroupService service;
 
     public UserGroupResource(UserGroupService service,

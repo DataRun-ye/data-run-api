@@ -1,12 +1,11 @@
 package org.nmcpye.datarun.config.datarun;
 
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.security.DomainUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,11 +28,11 @@ public class DataRunSecurityConfig {
 
     private final JHipsterProperties jHipsterProperties;
 
-    private final DomainUserDetailsService userDetailsService;
+//    private final DomainUserDetailsService userDetailsService;
 
-    public DataRunSecurityConfig(JHipsterProperties jHipsterProperties, DomainUserDetailsService userDetailsService) {
+    public DataRunSecurityConfig(JHipsterProperties jHipsterProperties/*, DomainUserDetailsService userDetailsService*/) {
         this.jHipsterProperties = jHipsterProperties;
-        this.userDetailsService = userDetailsService;
+//        this.userDetailsService = userDetailsService;
     }
 
     @Bean
@@ -41,13 +40,13 @@ public class DataRunSecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public AuthenticationManager authManager(HttpSecurity http) throws Exception {
-        AuthenticationManagerBuilder authenticationManagerBuilder =
-            http.getSharedObject(AuthenticationManagerBuilder.class);
-        authenticationManagerBuilder.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
-        return authenticationManagerBuilder.build();
-    }
+//    @Bean
+//    public AuthenticationManager authManager(HttpSecurity http) throws Exception {
+//        AuthenticationManagerBuilder authenticationManagerBuilder =
+//            http.getSharedObject(AuthenticationManagerBuilder.class);
+//        authenticationManagerBuilder.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+//        return authenticationManagerBuilder.build();
+//    }
 
     @Bean
     MvcRequestMatcher.Builder mvc(HandlerMappingIntrospector introspector) {
@@ -101,7 +100,7 @@ public class DataRunSecurityConfig {
                         .accessDeniedHandler(new BearerTokenAccessDeniedHandler())
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(withDefaults()))
-            .httpBasic(withDefaults());
+            .httpBasic(Customizer.withDefaults());
         return http.build();
     }
 }

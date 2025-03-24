@@ -5,7 +5,7 @@ import org.nmcpye.datarun.drun.postgres.repository.ActivityRepository;
 import org.nmcpye.datarun.drun.postgres.service.ActivityService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
+import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/custom/activities")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class ActivityResourceCustom extends AbstractJpaResource<Activity> {
+public class ActivityResourceCustom extends JpaBaseResource<Activity> {
 
     private final Logger log = LoggerFactory.getLogger(ActivityResourceCustom.class);
 
@@ -55,8 +55,8 @@ public class ActivityResourceCustom extends AbstractJpaResource<Activity> {
 
     @Override
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<Activity> updateEntity(Long aLong, Activity entity) throws URISyntaxException {
-        return super.updateEntity(aLong, entity);
+    public ResponseEntity<Activity> updateEntity(String uid, Activity entity) throws URISyntaxException {
+        return super.updateEntity(uid, entity);
     }
 
     @Override

@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
-import org.nmcpye.datarun.common.jpa.impl.DefaultJpaIdentifiableService;
+import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
 import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
 import org.nmcpye.datarun.drun.postgres.repository.OptionSetRepository;
 import org.nmcpye.datarun.drun.postgres.service.OptionSetService;
@@ -13,12 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Primary
 @Transactional
-public class DefaultOptionSetService
-    extends DefaultJpaIdentifiableService<OptionSet>
-    implements OptionSetService {
-    public DefaultOptionSetService(OptionSetRepository repository,
-                                   CacheManager cacheManager,
-                                   UserAccessService userAccessService) {
+public class DefaultOptionSetService extends DefaultJpaAuditableService<OptionSet> implements OptionSetService {
+    public DefaultOptionSetService(OptionSetRepository repository, CacheManager cacheManager, UserAccessService userAccessService) {
         super(repository, cacheManager, userAccessService);
     }
 }

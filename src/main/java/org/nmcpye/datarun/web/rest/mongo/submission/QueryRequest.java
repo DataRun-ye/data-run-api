@@ -62,15 +62,15 @@ public class QueryRequest {
     @Schema(description = "Flag to merge DataFormTemplate elements and sections")
     private boolean mergeElements = false;
 
-
-    public Map<String, Object> parseFilters() {
+    public Map<String, Object> getParsedFilter() {
         return filters.entrySet().stream().collect(Collectors.toMap(
             Map.Entry::getKey,
             entry -> parseValue(entry.getKey(), entry.getValue())
         ));
     }
 
-    public static Map<String, Object> parseFilter(String filter) throws IOException {
+    ///
+    public static Map<String, Object> parseIncomingFilter(String filter) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.readValue(filter, new TypeReference<Map<String, Object>>() {
         });

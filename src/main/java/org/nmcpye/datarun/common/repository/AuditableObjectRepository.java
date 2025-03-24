@@ -15,7 +15,7 @@ public interface AuditableObjectRepository<T extends AuditableObject<ID>, ID>
     extends CrudRepository<T, ID> {
     void deleteByUid(String uid);
 
-    boolean existByUid(String uid);
+    boolean existsByUid(String uid);
 
     void deleteAllByUidIn(Collection<String> uids);
 

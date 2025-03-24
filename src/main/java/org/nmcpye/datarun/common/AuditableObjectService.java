@@ -11,6 +11,8 @@ import java.util.Optional;
  * @author Hamza, 20/03/2025
  */
 public interface AuditableObjectService<T extends AuditableObject<ID>, ID> {
+    Class<T> getClazz();
+
     Optional<T> findByIdentifyingProperties(T identifiableObject);
 
     T saveWithRelations(T object);
@@ -24,6 +26,7 @@ public interface AuditableObjectService<T extends AuditableObject<ID>, ID> {
     Page<T> findAllByUser(Pageable pageable, QueryRequest queryRequest);
 
     List<T> findAllByUser(QueryRequest queryRequest);
+
     /**
      * Save an object.
      *

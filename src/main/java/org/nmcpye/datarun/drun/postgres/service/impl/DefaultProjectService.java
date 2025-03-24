@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
-import org.nmcpye.datarun.common.jpa.impl.DefaultJpaIdentifiableService;
+import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
 import org.nmcpye.datarun.domain.Project;
 import org.nmcpye.datarun.drun.postgres.repository.ProjectRepository;
 import org.nmcpye.datarun.drun.postgres.service.ProjectService;
@@ -13,12 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Primary
 @Transactional
-public class DefaultProjectService
-    extends DefaultJpaIdentifiableService<Project>
-    implements ProjectService {
+public class DefaultProjectService extends DefaultJpaAuditableService<Project> implements ProjectService {
 
-    public DefaultProjectService(ProjectRepository repository,
-                                 CacheManager cacheManager, UserAccessService userAccessService) {
+    public DefaultProjectService(ProjectRepository repository, CacheManager cacheManager, UserAccessService userAccessService) {
         super(repository, cacheManager, userAccessService);
     }
 }

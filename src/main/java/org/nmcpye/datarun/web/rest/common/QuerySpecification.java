@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface QuerySpecification<T> {
+    @Deprecated
     default Specification<T> buildQuerySpecification(QueryRequest queryRequest) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -31,5 +32,4 @@ public interface QuerySpecification<T> {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
-
 }

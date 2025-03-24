@@ -7,6 +7,7 @@ import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -15,16 +16,13 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ActivityFilter extends DefaultJpaFilter<Activity> {
-    public ActivityFilter(Class<Activity> clazz) {
-        super(clazz);
-    }
-
     public static Specification<Activity> isEnabled() {
         return (root, query, criteriaBuilder) -> criteriaBuilder.isFalse(root.get("disabled"));
     }
 
     @Override
-    public Specification<Activity> createSpecification(CurrentUserDetails user, boolean includeDisabled) {
+    public Specification<Activity> getAccessSpecification(CurrentUserDetails user,
+                                                          QueryRequest queryRequest) {
 
         Specification<Activity> spec = (root, query, criteriaBuilder) -> {
             if (user.isSuper()) {
@@ -38,7 +36,7 @@ public class ActivityFilter extends DefaultJpaFilter<Activity> {
             }
         };
 
-        if (includeDisabled) {
+        if (queryRequest.isIncludeDisabled()) {
             spec = Specification.where(spec).and(isEnabled());
         }
         return spec;

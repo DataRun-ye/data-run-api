@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.common.jpa;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -71,6 +72,15 @@ public abstract class JpaAuditableObject
     @PostPersist
     public void updateEntityState() {
         this.setIsPersisted();
+    }
+
+    @JsonIgnore
+    public boolean isPersisted() {
+        return isPersisted;
+    }
+
+    public void setPersisted(boolean persisted) {
+        isPersisted = persisted;
     }
 
     @Transient

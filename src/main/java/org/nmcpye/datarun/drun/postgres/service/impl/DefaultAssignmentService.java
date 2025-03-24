@@ -36,9 +36,7 @@ import java.util.stream.Stream;
 @Service
 @Primary
 @Transactional
-public class DefaultAssignmentService
-    extends DefaultJpaAuditableService<Assignment>
-    implements AssignmentService {
+public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignment> implements AssignmentService {
 
     final AssignmentRepository repository;
     final TeamRepository teamRepository;
@@ -46,12 +44,7 @@ public class DefaultAssignmentService
     final UserRepository userRepository;
     private final AssignmentSubmissionHistoryRepository assignmentHistoryRepository;
 
-    public DefaultAssignmentService(AssignmentRepository repository,
-                                    TeamRepository teamRepository,
-                                    OrgUnitRepositoryCustom orgUnitRepository,
-                                    UserRepository userRepository,
-                                    AssignmentSubmissionHistoryRepository assignmentHistoryRepository, UserAccessService userAccessService,
-                                    CacheManager cacheManager) {
+    public DefaultAssignmentService(AssignmentRepository repository, TeamRepository teamRepository, OrgUnitRepositoryCustom orgUnitRepository, UserRepository userRepository, AssignmentSubmissionHistoryRepository assignmentHistoryRepository, UserAccessService userAccessService, CacheManager cacheManager) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.teamRepository = teamRepository;
@@ -83,61 +76,38 @@ public class DefaultAssignmentService
         object.setTeam(team);
         object.setOrgUnit(orgUnit);
 
-        return repository.save(object);
+        return save(object);
     }
 
     private Assignment findParent(Assignment parent) {
-        return Optional.ofNullable(parent.getId())
-            .flatMap(repository::findById)
-            .or(() -> Optional.ofNullable(parent.getUid())
-                .flatMap(repository::findByUid))
-            .orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
+        return Optional.ofNullable(parent.getId()).flatMap(repository::findById).or(() -> Optional.ofNullable(parent.getUid()).flatMap(repository::findByUid)).orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
     }
 
     private Team findTeam(Team team) {
-        return Optional.ofNullable(team.getId())
-            .flatMap(teamRepository::findById)
-            .or(() -> Optional.ofNullable(team.getUid())
-                .flatMap(teamRepository::findByUid))
-            .or(() -> Optional.ofNullable(team.getCode())
-                .flatMap((code) -> teamRepository.findByCodeAndActivityUid(code, team.getActivity().getUid())))
-            .orElseThrow(() -> new PropertyNotFoundException("Team not found: " + team));
+        return Optional.ofNullable(team.getId()).flatMap(teamRepository::findById).or(() -> Optional.ofNullable(team.getUid()).flatMap(teamRepository::findByUid)).or(() -> Optional.ofNullable(team.getCode()).flatMap((code) -> teamRepository.findByCodeAndActivityUid(code, team.getActivity().getUid()))).orElseThrow(() -> new PropertyNotFoundException("Team not found: " + team));
     }
 
     private OrgUnit findOrgUnit(OrgUnit orgUnit) {
-        return Optional.ofNullable(orgUnit.getId())
-            .flatMap(orgUnitRepository::findById)
-            .or(() -> Optional.ofNullable(orgUnit.getUid())
-                .flatMap(orgUnitRepository::findByUid))
-            .or(() -> Optional.ofNullable(orgUnit.getCode())
-                .flatMap(orgUnitRepository::findByCode))
-            .orElseThrow(() -> new PropertyNotFoundException("OrgUniy not found: " + orgUnit));
+        return Optional.ofNullable(orgUnit.getId()).flatMap(orgUnitRepository::findById).or(() -> Optional.ofNullable(orgUnit.getUid()).flatMap(orgUnitRepository::findByUid)).or(() -> Optional.ofNullable(orgUnit.getCode()).flatMap(orgUnitRepository::findByCode)).orElseThrow(() -> new PropertyNotFoundException("OrgUniy not found: " + orgUnit));
     }
 
     private Page<Assignment> findWithStatus(Page<Assignment> assignments) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             assignments.forEach(assignment -> {
-                assignmentHistoryRepository.findLastEntryByUidAndAssignedTeam(assignment.getUid(),
-                        assignment.getTeam().getUid())
-                    .flatMap(history -> history.getEntries().stream()
-                        .max(Comparator.comparing(AssignmentSubmissionHistory.HistoryEntry::getEntryDate)))
-                    .ifPresentOrElse(lastEntry -> {
-                        assignment.setStatus(lastEntry.getSubmissionStatus());
-                        assignment.setLastEntryDate(lastEntry.getEntryDate());
-                        assignment.setLastEntryBy(lastEntry.getSubmissionUser());
-                    }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
+                assignmentHistoryRepository.findLastEntryByUidAndAssignedTeam(assignment.getUid(), assignment.getTeam().getUid()).flatMap(history -> history.getEntries().stream().max(Comparator.comparing(AssignmentSubmissionHistory.HistoryEntry::getEntryDate))).ifPresentOrElse(lastEntry -> {
+                    assignment.setStatus(lastEntry.getSubmissionStatus());
+                    assignment.setLastEntryDate(lastEntry.getEntryDate());
+                    assignment.setLastEntryBy(lastEntry.getSubmissionUser());
+                }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
             });
         } else {
             String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow();
             assignments.forEach(assignment -> {
-                assignmentHistoryRepository.findLastEntryByUidAndUser(assignment.getUid(), currentUserLogin)
-                    .flatMap(history -> history.getEntries().stream()
-                        .max(Comparator.comparing(AssignmentSubmissionHistory.HistoryEntry::getEntryDate)))
-                    .ifPresentOrElse(lastEntry -> {
-                        assignment.setStatus(lastEntry.getSubmissionStatus());
-                        assignment.setLastEntryDate(lastEntry.getEntryDate());
-                        assignment.setLastEntryBy(lastEntry.getSubmissionUser());
-                    }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
+                assignmentHistoryRepository.findLastEntryByUidAndUser(assignment.getUid(), currentUserLogin).flatMap(history -> history.getEntries().stream().max(Comparator.comparing(AssignmentSubmissionHistory.HistoryEntry::getEntryDate))).ifPresentOrElse(lastEntry -> {
+                    assignment.setStatus(lastEntry.getSubmissionStatus());
+                    assignment.setLastEntryDate(lastEntry.getEntryDate());
+                    assignment.setLastEntryBy(lastEntry.getSubmissionUser());
+                }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
             });
         }
         return assignments;
@@ -148,19 +118,13 @@ public class DefaultAssignmentService
     @Transactional(readOnly = true)
     public Page<Assignment> getAllUserAccessible(Pageable pageable, QueryRequest queryRequest) {
         Page<Assignment> assignedPage = findAllByUser(pageable, queryRequest);
-        List<Assignment> assigned = assignedPage.getContent().stream()
-            .filter(assignment -> !assignment.getActivity().getDisabled())
-            .peek(assignment -> assignment.setEntityScope(EntityScope.Assigned))
-            .toList();
+        List<Assignment> assigned = assignedPage.getContent().stream().filter(assignment -> !assignment.getActivity().getDisabled()).peek(assignment -> assignment.setEntityScope(EntityScope.Assigned)).toList();
 
         List<String> assignedUids = assigned.stream().map(Assignment::getUid).toList();
 
-        List<Assignment> managed = getManagedTeamsAssignmentsWithChildren().stream()
-            .peek(assignment -> assignment.setEntityScope(EntityScope.Managed))
-            .toList();
+        List<Assignment> managed = getManagedTeamsAssignmentsWithChildren().stream().peek(assignment -> assignment.setEntityScope(EntityScope.Managed)).toList();
 
-        List<Assignment> combinedContent = Stream.concat(assigned.stream(), managed.stream())
-            .collect(Collectors.toList());
+        List<Assignment> combinedContent = Stream.concat(assigned.stream(), managed.stream()).collect(Collectors.toList());
 
         // TODO Create AssignmentHistory in app and fetch all and sort the latest out on the app
         Page<Assignment> assignments = findWithStatus(new PageImpl<>(combinedContent, pageable, assignedPage.getTotalElements() + managed.size()));
@@ -177,14 +141,9 @@ public class DefaultAssignmentService
     }
 
     List<Assignment> getManagedTeamsAssignmentsWithChildren() {
-        Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(
-                SecurityUtils.getCurrentUserLoginOrThrow())
-            .and(TeamSpecifications.isEnabled());
+        Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLoginOrThrow()).and(TeamSpecifications.isEnabled());
 
-        List<String> managedAssignmentsUids = teamRepository
-            .findAll(spec)
-            .stream()
-            .flatMap(team -> team.getAssignments().stream()).map(Assignment::getUid).toList();
+        List<String> managedAssignmentsUids = teamRepository.findAll(spec).stream().flatMap(team -> team.getAssignments().stream()).map(Assignment::getUid).toList();
         return getAssignmentsWithChildren(managedAssignmentsUids);
     }
 

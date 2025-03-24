@@ -14,11 +14,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 @JaversSpringDataAuditable
-public interface MetadataSchemaRepository
-    extends MongoAuditableRepository<MetadataSchema> {
+public interface MetadataSchemaRepository extends MongoAuditableRepository<MetadataSchema> {
     @Query("{ 'team.userInfo.login' : ?#{authentication.name} }")
     Page<DataFormSubmission> findAllByUser(Pageable pageable);
-
-    @Query("{resourceType: ?0}")
-    Page<MetadataSchema> findAllByResourceTypeAndResourceId(String resourceType, Pageable pageable);
 }

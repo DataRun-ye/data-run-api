@@ -16,8 +16,7 @@ import java.util.List;
  */
 @Repository
 @JaversSpringDataAuditable
-public interface MetadataSubmissionRepositoryCustom
-    extends MongoAuditableRepository<MetadataSubmission> {
+public interface MetadataSubmissionRepository extends MongoAuditableRepository<MetadataSubmission> {
 
     @Query("{ 'serialNumber' : { $exists: false } }")
     List<DataFormSubmission> findBySerialNumberNull();

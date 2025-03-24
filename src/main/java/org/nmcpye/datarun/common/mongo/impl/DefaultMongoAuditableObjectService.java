@@ -1,13 +1,13 @@
 package org.nmcpye.datarun.common.mongo.impl;
 
-import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
-import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
 import org.nmcpye.datarun.common.AuditableObjectService;
 import org.nmcpye.datarun.common.impl.DefaultAuditableObjectService;
+import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
+import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.web.rest.mongo.submission.MongoQueryBuilder;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.web.rest.mongo.submission.RequestQueryBuilder;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -45,9 +45,7 @@ public abstract class DefaultMongoAuditableObjectService<T extends MongoAuditabl
     }
 
     public Page<T> query(QueryRequest request) {
-        Query query = MongoQueryBuilder.buildQuery(request.parseFilters());
-        query = MongoQueryBuilder.addProjections(query, request.getFields());
-
+        final var query = new RequestQueryBuilder(request).buildForMongo();
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
         query.with(pageable);
 

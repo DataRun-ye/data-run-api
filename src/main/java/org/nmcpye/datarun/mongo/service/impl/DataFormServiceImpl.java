@@ -3,7 +3,7 @@ package org.nmcpye.datarun.mongo.service.impl;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.common.mongo.impl.DefaultMongoIdentifiableService;
+import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
@@ -32,7 +32,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,7 +42,7 @@ import java.util.stream.Collectors;
 @Primary
 @Transactional
 public class DataFormServiceImpl
-    extends DefaultMongoIdentifiableService<DataForm>
+    extends DefaultMongoAuditableObjectService<DataForm>
     implements DataFormService {
 
     private final Logger log = LoggerFactory.getLogger(DataFormServiceImpl.class);
@@ -93,30 +92,17 @@ public class DataFormServiceImpl
         }
     }
 
+    private Integer createOrUpdateVersion(DataForm object) {
+        return repositoryCustom
+            .findByUid(object.getUid()).map(DataForm::getVersion).orElse(0);
+    }
+
     @Override
     public DataForm saveWithRelations(DataForm dataForm) {
         processFields(dataForm.getFields(), "", dataForm);
         dataForm.updateFlattenedFields();
-        return repositoryCustom.save(dataForm);
-    }
-
-    @Override
-    public DataForm save(DataForm object) {
-        final Integer version =
-            Objects.requireNonNullElse(object.getVersion(), 0) + 1;
-        object.setVersion(version);
-        return super.save(object);
-    }
-
-    @Override
-    public DataForm update(DataForm object) {
-        final Integer version =
-            Objects.requireNonNullElse(repositoryCustom
-                .findByUid(object.getUid())
-                .get().getVersion(), 0) + 1;
-        object.setVersion(version);
-
-        return super.update(object);
+        dataForm.setVersion(createOrUpdateVersion(dataForm) + 1);
+        return save(dataForm);
     }
 
     @Override

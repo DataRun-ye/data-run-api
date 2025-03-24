@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.mongo.domain.dataform;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,6 +20,7 @@ import java.util.Map;
 /**
  * A DataFormTemplate.
  */
+@JsonIgnoreProperties(value = {"elements"}, allowGetters = true)
 @Document(collection = "data_form_template")
 @Getter
 @Setter

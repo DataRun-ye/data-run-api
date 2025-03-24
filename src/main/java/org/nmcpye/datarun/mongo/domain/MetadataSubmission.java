@@ -92,14 +92,14 @@ public class MetadataSubmission
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     private Map<String, Object> addGroupIndicesToFormData(Map<String, Object> formData, Object parentId) {
         Map<String, Object> updatedFormData = new HashMap<>();
         for (Map.Entry<String, Object> entry : formData.entrySet()) {
             Object value = entry.getValue();
 
             // If it's an array of objects, add group indices
-            if (value instanceof List) {
-                List<?> list = (List<?>) value;
+            if (value instanceof List<?> list) {
                 if (!list.isEmpty() && list.get(0) instanceof Map) {
                     if (containUnidentifiedRepeatItem((List<Map<String, Object>>) list)) {
                         List<Map<String, Object>> updatedList = new ArrayList<>();

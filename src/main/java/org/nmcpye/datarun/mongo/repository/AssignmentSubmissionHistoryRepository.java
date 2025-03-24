@@ -11,8 +11,7 @@ import java.util.Optional;
 
 @Repository
 @JaversSpringDataAuditable
-public interface AssignmentSubmissionHistoryRepository
-    extends MongoAuditableRepository<AssignmentSubmissionHistory>/*, AssignmentSubmissionHistoryRepositoryCustom*/ {
+public interface AssignmentSubmissionHistoryRepository extends MongoAuditableRepository<AssignmentSubmissionHistory>/*, AssignmentSubmissionHistoryRepositoryCustom*/ {
 
     @Query("{'uid': ?0, 'entries.submissionTeam': ?1}")
     List<AssignmentSubmissionHistory> findByUidAndTeam(String uid, String team);

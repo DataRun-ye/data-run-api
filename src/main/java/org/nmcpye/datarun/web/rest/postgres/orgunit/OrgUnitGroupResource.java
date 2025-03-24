@@ -5,9 +5,7 @@ import org.nmcpye.datarun.drun.postgres.repository.OrgUnitGroupRepository;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitGroupService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,26 +20,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/custom/orgUnitGroups")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class OrgUnitGroupResource extends AbstractJpaResource<OrgUnitGroup> {
-
-    private final Logger log = LoggerFactory.getLogger(OrgUnitGroupResource.class);
-
-    private final OrgUnitGroupService service;
+public class OrgUnitGroupResource extends JpaBaseResource<OrgUnitGroup> {
 
     public OrgUnitGroupResource(OrgUnitGroupService service, OrgUnitGroupRepository repository) {
         super(service, repository);
-        this.service = service;
     }
-
-//    @Override
-//    Specification<OrgUnitGroup> buildSpecification(QueryRequest queryRequest) {
-//        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-//            return super.buildSpecification(queryRequest);
-//        } else if (SecurityUtils.getCurrentUserLogin().isEmpty()) {
-//            return null;
-//        }
-//        return super.buildSpecification(queryRequest).and(service.canRead());
-//    }
 
     @Override
     protected String getName() {
@@ -51,8 +34,8 @@ public class OrgUnitGroupResource extends AbstractJpaResource<OrgUnitGroup> {
 
     @Override
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<OrgUnitGroup> updateEntity(Long aLong, OrgUnitGroup entity) throws URISyntaxException {
-        return super.updateEntity(aLong, entity);
+    public ResponseEntity<OrgUnitGroup> updateEntity(String uid, OrgUnitGroup entity) throws URISyntaxException {
+        return super.updateEntity(uid, entity);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")

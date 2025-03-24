@@ -6,10 +6,13 @@ import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
 import org.nmcpye.datarun.common.jpa.JpaAuditableObjectService;
 import org.nmcpye.datarun.common.jpa.repository.JpaAuditableRepository;
-import org.nmcpye.datarun.web.rest.common.AbstractResourceReadWrite;
+import org.nmcpye.datarun.query.JpaQueryBuilder;
+import org.nmcpye.datarun.query.filter.FilterExpression;
+import org.nmcpye.datarun.web.rest.common.BaseReadWriteResource;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.common.QuerySpecification;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,15 +20,25 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 
-public abstract class AbstractJpaResource<T extends JpaAuditableObject>
-    extends AbstractResourceReadWrite<T, Long> implements QuerySpecification<T> {
+import java.util.List;
+
+public abstract class JpaBaseResource<T extends JpaAuditableObject>
+    extends BaseReadWriteResource<T, Long> implements QuerySpecification<T> {
 
     private final JpaAuditableObjectService<T> jpaAuditableObjectService;
 
-    protected AbstractJpaResource(JpaAuditableObjectService<T> jpaAuditableObjectService,
-                                  JpaAuditableRepository<T> repository) {
+    @Autowired
+    private JpaQueryBuilder<T> jpaQueryBuilder;
+
+    protected JpaBaseResource(JpaAuditableObjectService<T> jpaAuditableObjectService,
+                              JpaAuditableRepository<T> repository) {
         super(jpaAuditableObjectService, repository);
         this.jpaAuditableObjectService = jpaAuditableObjectService;
+    }
+
+    @Override
+    protected JpaQueryBuilder<T> getQueryBuilder() {
+        return jpaQueryBuilder;
     }
 
     @Override
@@ -34,14 +47,16 @@ public abstract class AbstractJpaResource<T extends JpaAuditableObject>
     }
 
     @Override
-    protected Page<T> getList(Pageable pageable, QueryRequest queryRequest) {
+    protected Page<T> getList(Pageable pageable, QueryRequest queryRequest, FilterExpression expression) {
         Specification<T> spec;
         try {
             spec = buildQuerySpecification(queryRequest);
         } catch (Exception e) {
             throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2050, e.getMessage()));
         }
-
+        if (expression != null) {
+            spec = spec.and(getQueryBuilder().buildQuery(List.of(expression)));
+        }
         return jpaAuditableObjectService.findAllByUser(spec, pageable, queryRequest);
     }
 
@@ -68,52 +83,7 @@ public abstract class AbstractJpaResource<T extends JpaAuditableObject>
         PagedResponse<T> response = initPageResponse(processedPage, next);
         return ResponseEntity.ok(response);
     }
-//    public ResponseEntity<Page<T>> getEntities(@ParameterObject Pageable pageable,
-//                                               QueryRequest queryRequest) {
-//        if (!queryRequest.isPaged()) {
-//            pageable = Pageable.unpaged();
-//        }
-//
-//        Specification<T> spec;
-//        try {
-//            spec = buildSpecification(queryRequest);
-//        } catch (Exception e) {
-//            throw new RequestQueryParsingException();
-//        }
-//        Page<T> results = getRepository().findAll(spec, pageable);
-//        return ResponseEntity.ok(results);
-//    }
-//    @GetMapping("")
-//    public ResponseEntity<Page<T>> getEntities(@ParameterObject Pageable pageable,
-//                                               @RequestParam(name = "paging", required = false, defaultValue = "true")
-//                                               boolean paging,
-//                                               @RequestParam(required = false) String query,
-//                                               HttpServletRequest request,
-//                                               HttpServletResponse response/*,
-//                                               @RequestParam(required = false) Map<String, Object> query*/) {
-//        if (!paging) {
-//            pageable = Pageable.unpaged();
-//        }
-//
-//        Specification<T> spec;
-//        try {
-//            spec = buildSpecification(query);
-//        } catch (Exception e) {
-//            throw new RequestQueryParsingException();
-//        }
-//        Page<T> results = getRepository().findAll(spec, pageable);
-//        return ResponseEntity.ok(results);
-//    }
-//
-//    protected Map<String, Object> parseQuery(String query) throws IOException {
-//        if (query == null) {
-//            return new HashMap<>();
-//        }
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        return objectMapper.readValue(query, new TypeReference<Map<String, Object>>() {
-//        });
-//    }
-//
+
 //    protected Specification<T> buildSpecification(/*Map<String, Object>*/ String query) throws IOException {
 //        Map<String, Object> filters = parseQuery(query);
 //

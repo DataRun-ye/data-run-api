@@ -4,6 +4,7 @@ import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -18,13 +19,13 @@ import java.util.stream.Stream;
 public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
     private final AssignmentRepository assignmentRepository;
 
-    public OrgUnitFilter(Class<OrgUnit> clazz, AssignmentRepository assignmentRepository) {
-        super(clazz);
+    public OrgUnitFilter(AssignmentRepository assignmentRepository) {
         this.assignmentRepository = assignmentRepository;
     }
 
     @Override
-    public Specification<OrgUnit> createSpecification(CurrentUserDetails user, boolean includeDisabled) {
+    public Specification<OrgUnit> getAccessSpecification(CurrentUserDetails user,
+                                                         QueryRequest queryRequest) {
         final var directOrgUnits = getDirectAndManagedOrgUnit(user);
         final var directAndManagedUids = directOrgUnits.stream().map(OrgUnit::getUid).collect(Collectors.toSet());
 

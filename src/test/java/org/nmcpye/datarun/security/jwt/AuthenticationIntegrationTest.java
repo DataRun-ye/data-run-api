@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.security.jwt;
 
-import org.nmcpye.datarun.config.SecurityConfiguration;
 import org.nmcpye.datarun.config.SecurityJwtConfiguration;
 import org.nmcpye.datarun.config.WebConfigurer;
+import org.nmcpye.datarun.config.datarun.DataRunSecurityConfig;
 import org.nmcpye.datarun.management.SecurityMetersService;
 import org.nmcpye.datarun.web.rest.postgres.authenticate.AuthenticateController;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
     classes = {
         JHipsterProperties.class,
         WebConfigurer.class,
-        SecurityConfiguration.class,
+        DataRunSecurityConfig.class,
         SecurityJwtConfiguration.class,
         SecurityMetersService.class,
         AuthenticateController.class,

@@ -2,6 +2,7 @@ package org.nmcpye.datarun.useraccess.accessfilter;
 
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -10,12 +11,9 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class UserFilter extends DefaultJpaFilter<User> {
-    public UserFilter(Class<User> clazz) {
-        super(clazz);
-    }
-
     @Override
-    public Specification<User> createSpecification(CurrentUserDetails user, boolean includeDisabled) {
+    public Specification<User> getAccessSpecification(CurrentUserDetails user,
+                                                      QueryRequest queryRequest) {
         return (root, query, cb) -> {
             if (user.isSuper()) {
                 return cb.conjunction();

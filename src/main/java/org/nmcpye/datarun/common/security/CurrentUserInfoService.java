@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.common.security;
 
 import org.nmcpye.datarun.common.repository.UserRepository;
-import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.nmcpye.datarun.common.repository.UserRepository.USER_GROUP_IDS_CACHE;
@@ -31,17 +29,9 @@ public class CurrentUserInfoService {
         this.userGroupRepository = userGroupRepository;
     }
 
-    public Optional<User> findCurrentByLogin(String login) {
-        return userRepository.findOneByLogin(login);
-    }
-
-    public Optional<User> findCurrentByEmail(String email) {
-        return userRepository.findOneWithAuthoritiesByEmailIgnoreCase(email);
-    }
-
     @Cacheable(cacheNames = USER_TEAM_IDS_CACHE, key = "#userLogin")
     public CurrentUserTeamInfo getUserTeamInfo(String userLogin) {
-        final var user = findCurrentByLogin(userLogin).orElseThrow(() ->
+        final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
             new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
         final var teams = new HashSet<>(teamRepository.findAllByUserLogin(userLogin, false));
         final var managedTeams = teams.stream()
@@ -69,7 +59,7 @@ public class CurrentUserInfoService {
 
     @Cacheable(cacheNames = USER_GROUP_IDS_CACHE, key = "#userLogin")
     public CurrentUserGroupInfo getUserGroupIds(String userLogin) {
-        final var user = findCurrentByLogin(userLogin).orElseThrow(() ->
+        final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
             new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
 
         final var userGroupIds = new HashSet<>(userGroupRepository.findAllByUserLogin(userLogin, false))

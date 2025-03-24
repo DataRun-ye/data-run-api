@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.repository;
 
-import org.nmcpye.datarun.common.jpa.repository.JpaIdentifiableRepository;
+import org.nmcpye.datarun.common.jpa.repository.JpaAuditableRepository;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +17,7 @@ import java.util.Optional;
 @Repository
 public interface TeamRepository
     extends TeamRepositoryWithBagRelationships,
-    JpaIdentifiableRepository<Team> {
+    JpaAuditableRepository<Team> {
 
     Optional<Team> findByCodeAndActivityUid(String code, String activityUid);
 
@@ -48,7 +48,7 @@ public interface TeamRepository
             "where a.uid =:activity and user.login =:userLogin and a.disabled = false"
     )
     List<Team> findFirstByActivityAndUser(@Param("activity") String activity,
-                                                 @Param("userLogin") String userLogin);
+                                          @Param("userLogin") String userLogin);
 
     @Query(
         "select team from Team team " +

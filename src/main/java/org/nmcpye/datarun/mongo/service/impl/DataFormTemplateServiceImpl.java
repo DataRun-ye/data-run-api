@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
-import org.nmcpye.datarun.common.mongo.impl.DefaultMongoIdentifiableService;
+import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 @Primary
 @Transactional
 public class DataFormTemplateServiceImpl
-    extends DefaultMongoIdentifiableService<DataFormTemplate>
+    extends DefaultMongoAuditableObjectService<DataFormTemplate>
     implements DataFormTemplateService {
 
     private final DataFormTemplateRepository repository;
@@ -47,17 +47,6 @@ public class DataFormTemplateServiceImpl
         super(repository, cacheManager, mongoTemplate);
         this.repository = repository;
         this.teamRepository = teamRepository;
-    }
-
-    @Override
-    public DataFormTemplate saveWithRelations(DataFormTemplate formTemplate) {
-//        final var sections = formElementConfigService.configureSectionsPath(formTemplate.getSections());
-//        formTemplate.setSections(sections);
-//        final var fields = formElementConfigService
-//            .configureAndValidateFields(formTemplate.getFields(), sections);
-//        formTemplate.version(createOrUpdateVersion(formTemplate) + 1);
-//        formTemplate.setFields(fields);
-        return repository.save(formTemplate);
     }
 
     @Override
@@ -94,10 +83,6 @@ public class DataFormTemplateServiceImpl
             results,
             pageable,
             () -> mongoTemplate.count(totalQuery, DataFormTemplate.class));
-
-//        if (queryRequest.isMergeElements()) {
-//            resultsPage.forEach(formElementConfigService::mergeFormElements);
-//        }
 
         return resultsPage;
     }

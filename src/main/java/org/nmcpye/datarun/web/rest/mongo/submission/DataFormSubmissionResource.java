@@ -1,13 +1,13 @@
 package org.nmcpye.datarun.web.rest.mongo.submission;
 
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
-import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepositoryCustom;
+import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepository;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.utils.FormSubmissionDataUtil;
 import org.nmcpye.datarun.utils.JsonFlattener;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
-import org.nmcpye.datarun.web.rest.mongo.AbstractMongoResource;
+import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,14 +23,16 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/custom/dataSubmission")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class DataFormSubmissionResourceCustom
-    extends AbstractMongoResource<DataFormSubmission> {
+public class DataFormSubmissionResource
+    extends MongoBaseResource<DataFormSubmission> {
 
     final private GenericQueryService queryService;
 
-    public DataFormSubmissionResourceCustom(DataFormSubmissionService dataFormSubmissionService,
-                                            DataFormSubmissionRepositoryCustom dataFormSubmissionRepositoryCustom, GenericQueryService queryService) {
-        super(dataFormSubmissionService, dataFormSubmissionRepositoryCustom);
+    public DataFormSubmissionResource(DataFormSubmissionService dataFormSubmissionService,
+                                      DataFormSubmissionRepository
+                                          dataFormSubmissionRepository,
+                                      GenericQueryService queryService) {
+        super(dataFormSubmissionService, dataFormSubmissionRepository);
         this.queryService = queryService;
     }
 

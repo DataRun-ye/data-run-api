@@ -12,7 +12,7 @@ import org.apache.commons.compress.utils.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.common.IdentifiableObject;
+import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
 import org.nmcpye.datarun.common.jpa.JpaBaseIdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableObjectUtils;
 
@@ -44,7 +44,7 @@ public class OrgUnit extends JpaBaseIdentifiableObject {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "orgUnit")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonSerialize(contentAs = IdentifiableObject.class)
+    @JsonSerialize(contentAs = JpaAuditableObject.class)
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Set<Assignment> assignments = new HashSet<>();
 

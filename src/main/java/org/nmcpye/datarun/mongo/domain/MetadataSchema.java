@@ -63,14 +63,6 @@ public class MetadataSchema
     @Field("flattenedFields")
     private List<AbstractField> flattenedFields = new ArrayList<>();
 
-    public List<AbstractField> getFlattenedFields() {
-        if (flattenedFields.isEmpty()) {
-            return flattenFields();
-        }
-
-        return flattenedFields;
-    }
-
     @PrePersist
     @PreUpdate
     public void updateFlattenedFields() {

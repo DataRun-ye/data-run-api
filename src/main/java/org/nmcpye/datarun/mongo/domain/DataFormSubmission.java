@@ -3,6 +3,7 @@ package org.nmcpye.datarun.mongo.domain;
 import jakarta.el.PropertyNotFoundException;
 import lombok.Getter;
 import lombok.Setter;
+import org.nmcpye.datarun.common.SoftDeleteObject;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
@@ -26,7 +27,7 @@ import static java.util.Map.entry;
 @CompoundIndex(name = "data_submission_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormSubmission
-    extends MongoAuditableBaseObject {
+    extends MongoAuditableBaseObject implements SoftDeleteObject<String> {
 
     @Field("deleted")
     private Boolean deleted;
@@ -53,7 +54,7 @@ public class DataFormSubmission
     @Field("status")
     private AssignmentStatus status;
 
-    private Map<String, Object> formData = new LinkedHashMap<String, Object>();
+    private Map<String, Object> formData = new LinkedHashMap<>();
     private Map<String, Object> metadata = new LinkedHashMap<>();
 
     @Field("currentVersion")
@@ -122,10 +123,6 @@ public class DataFormSubmission
 
         Map<String, Object> formData = this.getFormData();
 
-//        final Object id = Objects.requireNonNullElse(formData.get("_submissionUid"), CodeGenerator.generateCode(16));
-
-//        final Object id = formData.putIfAbsent("_id", getUid());
-
         Map<String, Object> updatedFormData = addGroupIndices(formData, getUid());
 
         this.setFormData(updatedFormData);
@@ -133,13 +130,13 @@ public class DataFormSubmission
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     private Map<String, Object> addGroupIndices(Map<String, Object> formData, Object parentId) {
         Map<String, Object> updatedFormData = new HashMap<>();
         for (Map.Entry<String, Object> entry : formData.entrySet()) {
             Object value = entry.getValue();
 
-            if (value instanceof List) {
-                List<?> list = (List<?>) value;
+            if (value instanceof List<?> list) {
                 if (!list.isEmpty() && list.get(0) instanceof Map) {
                     if (containUnidentifiedRepeatItem((List<Map<String, Object>>) list)) {
                         List<Map<String, Object>> updatedList = new ArrayList<>();

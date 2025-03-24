@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.common.mongo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
@@ -36,6 +37,7 @@ abstract public class MongoBaseIdentifiableObject
      * Cache for object translations, where the cache key is a combination of
      * locale and translation property, and value is the translated value.
      */
+    @JsonIgnore
     transient private Map<String, String> translationCache = new ConcurrentHashMap<>();
 
     // -------------------------------------------------------------------------

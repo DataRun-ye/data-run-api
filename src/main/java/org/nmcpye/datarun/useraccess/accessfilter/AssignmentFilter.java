@@ -8,6 +8,7 @@ import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -16,10 +17,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class AssignmentFilter extends DefaultJpaFilter<Assignment> {
-    public AssignmentFilter(Class<Assignment> clazz) {
-        super(clazz);
-    }
-
     public static Specification<Assignment> isEnabled() {
         return (root, query, cb) -> {
             Join<Assignment, Activity> activityJoin = root.join("activity", JoinType.LEFT);
@@ -33,7 +30,8 @@ public class AssignmentFilter extends DefaultJpaFilter<Assignment> {
     }
 
     @Override
-    public Specification<Assignment> createSpecification(CurrentUserDetails user, boolean includeDisabled) {
+    public Specification<Assignment> getAccessSpecification(CurrentUserDetails user,
+                                                            QueryRequest queryRequest) {
         Specification<Assignment> spec = (root, query, cb) -> {
             if (user.isSuper()) {
                 return cb.conjunction();
@@ -44,7 +42,7 @@ public class AssignmentFilter extends DefaultJpaFilter<Assignment> {
             }
         };
 
-        if (includeDisabled) {
+        if (queryRequest.isIncludeDisabled()) {
             spec = Specification.where(spec).and(isEnabled());
         }
         return spec;

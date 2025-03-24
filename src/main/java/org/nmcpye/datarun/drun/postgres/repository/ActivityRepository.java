@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.repository;
 
-import org.nmcpye.datarun.common.jpa.repository.JpaIdentifiableRepository;
+import org.nmcpye.datarun.common.jpa.repository.JpaAuditableRepository;
 import org.nmcpye.datarun.domain.Activity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,7 +15,7 @@ import java.util.Optional;
  */
 @Repository
 public interface ActivityRepository
-    extends JpaIdentifiableRepository<Activity> {
+    extends JpaAuditableRepository<Activity> {
 
     default Optional<Activity> findOneWithEagerRelationshipsByUser(Long id) {
         return this.findOneWithToOneRelationshipsByUser(id);

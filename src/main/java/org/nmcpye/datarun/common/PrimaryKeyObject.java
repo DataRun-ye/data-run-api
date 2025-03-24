@@ -10,7 +10,7 @@ import java.io.Serializable;
  */
 public interface PrimaryKeyObject<T> extends Serializable {
 
-    //    @JsonIgnore
+//    @JsonIgnore
     T getId();
 
     /**

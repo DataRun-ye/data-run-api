@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
-import org.nmcpye.datarun.common.jpa.impl.DefaultJpaIdentifiableService;
+import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepositoryCustom;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitService;
@@ -17,15 +17,11 @@ import java.util.Optional;
 @Service
 @Primary
 @Transactional
-public class DefaultOrgUnitService
-    extends DefaultJpaIdentifiableService<OrgUnit>
-    implements OrgUnitService {
+public class DefaultOrgUnitService extends DefaultJpaAuditableService<OrgUnit> implements OrgUnitService {
 
     final OrgUnitRepositoryCustom repository;
 
-    public DefaultOrgUnitService(OrgUnitRepositoryCustom repository,
-                                 UserAccessService userAccessService,
-                                 CacheManager cacheManager) {
+    public DefaultOrgUnitService(OrgUnitRepositoryCustom repository, UserAccessService userAccessService, CacheManager cacheManager) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
     }
@@ -39,17 +35,11 @@ public class DefaultOrgUnitService
             object.setParent(parent);
         }
 
-        return repository.save(object);
+        return save(object);
     }
 
     private OrgUnit findParent(OrgUnit parent) {
-        return Optional.ofNullable(parent.getId())
-            .flatMap(repository::findById)
-            .or(() -> Optional.ofNullable(parent.getUid())
-                .flatMap(repository::findByUid))
-            .or(() -> Optional.ofNullable(parent.getCode())
-                .flatMap(repository::findByCode))
-            .orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
+        return Optional.ofNullable(parent.getId()).flatMap(repository::findById).or(() -> Optional.ofNullable(parent.getUid()).flatMap(repository::findByUid)).or(() -> Optional.ofNullable(parent.getCode()).flatMap(repository::findByCode)).orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
     }
 
 //    @Override

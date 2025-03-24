@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.common.impl;
 
 import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.common.AuditableObjectService;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
-import org.nmcpye.datarun.common.AuditableObjectService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
@@ -26,6 +26,7 @@ public abstract class DefaultAuditableObjectService<T extends AuditableObject<ID
 
     private final Class<T> klass;
 
+    @SuppressWarnings("unchecked")
     public DefaultAuditableObjectService(AuditableObjectRepository<T, ID> repository,
                                          CacheManager cacheManager) {
         this.repository = repository;
@@ -41,12 +42,12 @@ public abstract class DefaultAuditableObjectService<T extends AuditableObject<ID
 
     @Override
     public T saveWithRelations(T object) {
-        return repository.save(object);
+        return save(object);
     }
 
     @Override
     public boolean existsByUid(String uid) {
-        return repository.existByUid(uid);
+        return repository.existsByUid(uid);
     }
 
     @Override
@@ -62,7 +63,7 @@ public abstract class DefaultAuditableObjectService<T extends AuditableObject<ID
     @Override
     public T save(T object) {
         log.debug("Request service to save {}:`{}`", getClazz().getSimpleName(), object.getUid());
-        return saveWithRelations(object);
+        return repository.save(object);
     }
 
     @Override
@@ -73,7 +74,11 @@ public abstract class DefaultAuditableObjectService<T extends AuditableObject<ID
                 new IllegalQueryException(
                     new ErrorMessage(ErrorCode.E1004,
                         getClazz().getSimpleName(), object.getUid())));
-        return saveWithRelations(existingEntity);
+
+        object.setId(existingEntity.getId());
+        object.setCreatedBy(existingEntity.getCreatedBy());
+        /// update object, overwrite with updates
+        return saveWithRelations(object);
     }
 
     @Override

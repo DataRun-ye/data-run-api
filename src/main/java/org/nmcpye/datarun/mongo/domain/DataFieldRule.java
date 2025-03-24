@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.nmcpye.datarun.mongo.domain.enumeration.RuleAction;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
@@ -18,6 +19,7 @@ import java.util.Objects;
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFieldRule implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @NotNull

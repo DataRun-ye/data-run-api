@@ -3,10 +3,11 @@ package org.nmcpye.datarun.web.rest.mongo.metadataschema;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
 import org.nmcpye.datarun.mongo.repository.MetadataSubmissionGranularRepository;
-import org.nmcpye.datarun.mongo.repository.MetadataSubmissionRepositoryCustom;
+import org.nmcpye.datarun.mongo.repository.MetadataSubmissionRepository;
 import org.nmcpye.datarun.mongo.service.MetadataSubmissionService;
+import org.nmcpye.datarun.query.filter.FilterExpression;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.web.rest.mongo.AbstractMongoResource;
+import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,18 +22,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/custom/metadataSubmissions")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class MetadataSubmissionResourceCustom
-    extends AbstractMongoResource<MetadataSubmission> {
+    extends MongoBaseResource<MetadataSubmission> {
 
     private final MetadataSubmissionGranularRepository metadataSubmissionGranularRepository;
 
     public MetadataSubmissionResourceCustom(MetadataSubmissionService metadataSubmissionService,
-                                            MetadataSubmissionRepositoryCustom metadataSubmissionRepositoryCustom, MetadataSubmissionGranularRepository metadataSubmissionGranularRepository) {
-        super(metadataSubmissionService, metadataSubmissionRepositoryCustom);
+                                            MetadataSubmissionRepository metadataSubmissionRepository, MetadataSubmissionGranularRepository metadataSubmissionGranularRepository) {
+        super(metadataSubmissionService, metadataSubmissionRepository);
         this.metadataSubmissionGranularRepository = metadataSubmissionGranularRepository;
     }
 
     @Override
-    protected Page<MetadataSubmission> getList(Pageable pageable, QueryRequest queryRequest) {
+    protected Page<MetadataSubmission> getList(Pageable pageable, QueryRequest queryRequest, FilterExpression expression) {
         return metadataSubmissionGranularRepository.getReferencedMetadataSubmissions(pageable, queryRequest);
     }
 

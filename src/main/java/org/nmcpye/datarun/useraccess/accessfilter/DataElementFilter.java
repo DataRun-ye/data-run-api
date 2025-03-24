@@ -5,6 +5,7 @@ import org.nmcpye.datarun.drun.postgres.domain.DataElement;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.service.impl.UserAccessibleElementsService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -17,8 +18,7 @@ import java.util.List;
 public class DataElementFilter extends DefaultJpaFilter<DataElement> {
     private final UserAccessibleElementsService userAccessibleElementsService;
 
-    public DataElementFilter(Class<DataElement> clazz, UserAccessibleElementsService userAccessibleElementsService) {
-        super(clazz);
+    public DataElementFilter(UserAccessibleElementsService userAccessibleElementsService) {
         this.userAccessibleElementsService = userAccessibleElementsService;
     }
 
@@ -27,7 +27,8 @@ public class DataElementFilter extends DefaultJpaFilter<DataElement> {
     }
 
     @Override
-    public Specification<DataElement> createSpecification(CurrentUserDetails user, boolean includeDisabled) {
+    public Specification<DataElement> getAccessSpecification(CurrentUserDetails user,
+                                                             QueryRequest queryRequest) {
         List<String> userDataElements = userAccessibleElementsService
             .getUserFormsWithWritePermission(user.getUsername())
             .stream()

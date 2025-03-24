@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.mongo.domain;
 
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
@@ -23,11 +22,6 @@ public class DataFormSubmissionHistory
     extends MongoAuditableBaseObject {
 
     private String dataSubmissionId;  // Link to the main document
-
-    @Size(max = 11)
-    @Field("uid")
-    private String uid;
-
 
     private int version;
 

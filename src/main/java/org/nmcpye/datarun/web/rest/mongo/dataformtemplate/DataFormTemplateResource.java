@@ -11,7 +11,7 @@ import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.DataFormTemplateService;
 import org.nmcpye.datarun.mongo.service.submissionmigration.DataFormTemplateMigrationService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.web.rest.mongo.AbstractMongoResource;
+import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess.FormTemplateProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,7 +29,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/custom/dataFormTemplates")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class DataFormTemplateResource extends AbstractMongoResource<DataFormTemplate> {
+public class DataFormTemplateResource extends MongoBaseResource<DataFormTemplate> {
 
     private final DataFormTemplateService templateService;
     //    private final FormTemplateSchema formTemplateSchema;
@@ -84,14 +84,14 @@ public class DataFormTemplateResource extends AbstractMongoResource<DataFormTemp
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<Void> deleteByIdUid(String uid) {
-        return super.deleteByIdUid(uid);
+    public ResponseEntity<Void> deleteByIdUid(String id) {
+        return super.deleteByIdUid(id);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<DataFormTemplate> updateEntity(String s, DataFormTemplate entity) throws URISyntaxException {
-        return super.updateEntity(s, entity);
+    public ResponseEntity<DataFormTemplate> updateEntity(String uid, DataFormTemplate entity) throws URISyntaxException {
+        return super.updateEntity(uid, entity);
     }
 
     @GetMapping("/migrate")

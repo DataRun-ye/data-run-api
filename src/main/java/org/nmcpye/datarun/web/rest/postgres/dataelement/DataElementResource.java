@@ -5,7 +5,7 @@ import org.nmcpye.datarun.drun.postgres.repository.DataElementRepository;
 import org.nmcpye.datarun.drun.postgres.service.DataElementService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
+import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/custom/dataElements")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class DataElementResource
-    extends AbstractJpaResource<DataElement> {
+    extends JpaBaseResource<DataElement> {
 
     public DataElementResource(DataElementService metadataSubmissionService,
                                DataElementRepository metadataSchemaRepository) {

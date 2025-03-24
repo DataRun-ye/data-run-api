@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.repository;
 
-import org.nmcpye.datarun.common.jpa.repository.JpaIdentifiableRepository;
+import org.nmcpye.datarun.common.jpa.repository.JpaAuditableRepository;
 import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +17,7 @@ import java.util.Optional;
 @Repository
 public interface UserGroupRepository
     extends UserGroupRepositoryWithBagRelationships,
-    JpaIdentifiableRepository<UserGroup> {
+    JpaAuditableRepository<UserGroup> {
 
     Optional<UserGroup> findByCode(String code);
 

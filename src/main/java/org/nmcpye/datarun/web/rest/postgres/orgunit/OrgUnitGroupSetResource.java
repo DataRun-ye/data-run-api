@@ -5,7 +5,7 @@ import org.nmcpye.datarun.drun.postgres.repository.OrgUnitGroupSetRepository;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitGroupSetService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.web.rest.postgres.AbstractJpaResource;
+import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/custom/orgUnitGroupSets")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class OrgUnitGroupSetResource extends AbstractJpaResource<OrgUnitGroupSet> {
+public class OrgUnitGroupSetResource extends JpaBaseResource<OrgUnitGroupSet> {
 
     private final OrgUnitGroupSetService service;
 
@@ -37,8 +37,8 @@ public class OrgUnitGroupSetResource extends AbstractJpaResource<OrgUnitGroupSet
 
     @Override
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<OrgUnitGroupSet> updateEntity(Long aLong, OrgUnitGroupSet entity) throws URISyntaxException {
-        return super.updateEntity(aLong, entity);
+    public ResponseEntity<OrgUnitGroupSet> updateEntity(String uid, OrgUnitGroupSet entity) throws URISyntaxException {
+        return super.updateEntity(uid, entity);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")

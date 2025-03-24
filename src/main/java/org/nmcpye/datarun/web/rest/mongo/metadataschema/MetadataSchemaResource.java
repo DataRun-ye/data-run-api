@@ -6,7 +6,7 @@ import org.nmcpye.datarun.mongo.repository.MetadataSchemaRepository;
 import org.nmcpye.datarun.mongo.repository.MetadataSubmissionGranularRepository;
 import org.nmcpye.datarun.mongo.service.MetadataSchemaService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.web.rest.mongo.AbstractMongoResource;
+import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/custom/metadataSchemas")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class MetadataSchemaResource
-    extends AbstractMongoResource<MetadataSchema> {
+    extends MongoBaseResource<MetadataSchema> {
 
     public MetadataSchemaResource(MetadataSchemaService metadataSubmissionService,
                                   MetadataSchemaRepository metadataSchemaRepository,

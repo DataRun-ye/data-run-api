@@ -11,7 +11,7 @@ import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionHistory;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionHistoryRepository;
-import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepositoryCustom;
+import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepository;
 import org.nmcpye.datarun.mongo.service.AssignmentSubmissionHistoryService;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.mongo.service.submissionmigration.SubmissionMaintenanceService;
@@ -49,7 +49,7 @@ public class DataFormSubmissionServiceImpl
 
     private final Logger log = LoggerFactory.getLogger(DataFormSubmissionServiceImpl.class);
 
-    private final DataFormSubmissionRepositoryCustom repository;
+    private final DataFormSubmissionRepository repository;
     private final DataFormSubmissionHistoryRepository historyRepository;
     private final AssignmentRepository assignmentRepository;
     private final TeamRepository teamRepository;
@@ -59,7 +59,7 @@ public class DataFormSubmissionServiceImpl
     private static final int MAX_HISTORY_VERSIONS = 3; // Keep only the last 10 versions
 
     public DataFormSubmissionServiceImpl(
-        DataFormSubmissionRepositoryCustom repository,
+        DataFormSubmissionRepository repository,
         CacheManager cacheManager,
         DataFormSubmissionHistoryRepository historyRepository,
         AssignmentRepository assignmentRepository,
@@ -141,7 +141,7 @@ public class DataFormSubmissionServiceImpl
             .createSubmission()
             .populateFormDataAttributes();
 
-        DataFormSubmission savedSubmission = repository.save(dataFormSubmission);
+        DataFormSubmission savedSubmission = save(dataFormSubmission);
 
         if (savedSubmission.getAssignment() != null) {
             addEntryToHistory(savedSubmission);
@@ -197,17 +197,6 @@ public class DataFormSubmissionServiceImpl
         long total = submissions.size();
 
         return new PageImpl<>(submissions, pageable, total);
-    }
-
-    @Override
-    public void deleteByUid(String uid) {
-        log.debug("request to soft delete DataFormSubmission : {}", uid);
-        DataFormSubmission submission = repository.findByUid(uid)
-            .orElseThrow(() ->
-                new IllegalQueryException(new ErrorMessage(ErrorCode.E1106, "Id", uid)));
-
-        submission.setDeleted(true);
-        repository.save(submission);
     }
 
     @Override

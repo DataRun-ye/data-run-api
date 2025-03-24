@@ -6,6 +6,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -14,10 +15,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class UserGroupFilter extends DefaultJpaFilter<UserGroup> {
-    public UserGroupFilter(Class<UserGroup> clazz) {
-        super(clazz);
-    }
-
     public static Specification<UserGroup> isEnabled() {
         return (root, query, criteriaBuilder) -> {
 
@@ -28,7 +25,8 @@ public class UserGroupFilter extends DefaultJpaFilter<UserGroup> {
     }
 
     @Override
-    public Specification<UserGroup> createSpecification(CurrentUserDetails user, boolean includeDisabled) {
+    public Specification<UserGroup> getAccessSpecification(CurrentUserDetails user,
+                                                           QueryRequest queryRequest) {
         Specification<UserGroup> spec = (root, query, criteriaBuilder) -> {
             if (user.isSuper()) {
                 return criteriaBuilder.conjunction();
@@ -38,7 +36,7 @@ public class UserGroupFilter extends DefaultJpaFilter<UserGroup> {
             }
         };
 
-        if (includeDisabled) {
+        if (queryRequest.isIncludeDisabled()) {
             spec = Specification.where(spec).and(isEnabled());
         }
         return spec;

@@ -21,8 +21,7 @@ public class GenericQueryService {
     }
 
     public <T> Page<T> query(QueryRequest request, Class<T> entityClass) {
-        Query query = MongoQueryBuilder.buildQuery(request.parseFilters());
-        query = MongoQueryBuilder.addProjections(query, request.getFields());
+        Query query = new RequestQueryBuilder(request).buildForMongo();
 
         if (!request.isIncludeDeleted()) {
             query.addCriteria(Criteria.where("deleted").is(false));

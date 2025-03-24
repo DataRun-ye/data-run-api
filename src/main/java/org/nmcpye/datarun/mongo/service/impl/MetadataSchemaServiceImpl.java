@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -38,18 +37,18 @@ public class MetadataSchemaServiceImpl
     extends DefaultMongoAuditableObjectService<MetadataSchema>
     implements MetadataSchemaService {
 
-    private final MetadataSchemaRepository repositoryCustom;
+    private final MetadataSchemaRepository repository;
     private final DataFormRepository dataFormRepository;
 
     private final AssignmentRepository assignmentRepository;
 
-    public MetadataSchemaServiceImpl(MetadataSchemaRepository repositoryCustom,
+    public MetadataSchemaServiceImpl(MetadataSchemaRepository repository,
                                      CacheManager cacheManager,
                                      DataFormRepository dataFormRepository,
                                      AssignmentRepository assignmentRepository,
                                      MongoTemplate mongoTemplate) {
-        super(repositoryCustom, cacheManager, mongoTemplate);
-        this.repositoryCustom = repositoryCustom;
+        super(repository, cacheManager, mongoTemplate);
+        this.repository = repository;
         this.dataFormRepository = dataFormRepository;
         this.assignmentRepository = assignmentRepository;
     }
@@ -67,34 +66,24 @@ public class MetadataSchemaServiceImpl
         }
     }
 
+    private Integer createOrUpdateVersion(MetadataSchema object) {
+        return repository
+            .findByUid(object.getUid()).map(MetadataSchema::getVersion).orElse(0);
+    }
+
     @Override
     public MetadataSchema saveWithRelations(MetadataSchema newSubmission) {
         processFields(newSubmission.getFields(), "");
         newSubmission.updateFlattenedFields();
-        return repository.save(newSubmission);
-    }
-
-    @Override
-    public MetadataSchema save(MetadataSchema object) {
-        final Integer version =
-            Objects.requireNonNullElse(object.getVersion(), 0) + 1;
-        object.setVersion(version);
-        return super.save(object);
-    }
-
-    @Override
-    public MetadataSchema update(MetadataSchema object) {
-        final Integer version =
-            Objects.requireNonNullElse(object.getVersion(), 0) + 1;
-        object.setVersion(version);
-        return super.update(object);
+        newSubmission.setVersion(createOrUpdateVersion(newSubmission) + 1);
+        return save(newSubmission);
     }
 
     @Override
     public Page<MetadataSchema> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
         // If the current user is an admin, fetch all schemas
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return repositoryCustom.findAll(pageable);
+            return repository.findAll(pageable);
         }
 
         // Get all active assignments for the user
@@ -115,7 +104,7 @@ public class MetadataSchemaServiceImpl
             .map(ReferenceField.class::cast)
             .map(ReferenceField::getResourceMetadataSchema)
             .distinct()
-            .map(repositoryCustom::findByUid)
+            .map(repository::findByUid)
             .flatMap(Optional::stream) // Unwrap only present values
             .toList();
 
