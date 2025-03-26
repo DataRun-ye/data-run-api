@@ -8,9 +8,12 @@ import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.drun.postgres.domain.DataElement;
 import org.nmcpye.datarun.drun.postgres.repository.DataElementRepository;
 import org.nmcpye.datarun.formtemplate.FormElementProcessor;
-import org.nmcpye.datarun.formtemplate.FormElementValidator;
+import org.nmcpye.datarun.formtemplate.validation.DefaultFormTemplateValidator;
+import org.nmcpye.datarun.mongo.common.FormWithFields;
+import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
+import org.nmcpye.datarun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -29,23 +33,33 @@ public class FormTemplateProcessor {
     protected final Logger log = LoggerFactory.getLogger(FormTemplateProcessor.class);
 
     private final DataElementRepository dataElementRepository;
+
     private final DataFormTemplateRepository dataFormTemplateRepository;
 
-    public FormTemplateProcessor(DataElementRepository dataElementRepository, DataFormTemplateRepository dataFormTemplateRepository) {
+    private final DataFormRepository legacyFormRepository;
+
+    private final DefaultFormTemplateValidator validator;
+
+    public FormTemplateProcessor(DataElementRepository dataElementRepository,
+                                 DataFormTemplateRepository dataFormTemplateRepository, DataFormRepository legacyFormRepository, DefaultFormTemplateValidator validator) {
+
         this.dataElementRepository = dataElementRepository;
         this.dataFormTemplateRepository = dataFormTemplateRepository;
+        this.legacyFormRepository = legacyFormRepository;
+        this.validator = validator;
     }
 
-    public DataFormTemplate validateElements(DataFormTemplate formTemplate) {
+    public <T extends FormWithFields> T validate(T formTemplate) {
         log.debug("start validating form template {}", formTemplate.getUid());
 
-        FormElementValidator.validateForm(formTemplate);
+        validator.validate(formTemplate);
         return formTemplate;
     }
 
-    public DataFormTemplate processMetadata(DataFormTemplate formTemplate) {
+    public <T extends FormWithFields> FormWithFields processMetadata(T formTemplate) {
         log.debug("start processing form template's metadata {}", formTemplate.getUid());
-        final var fieldUids = formTemplate.getFields().stream()
+
+        final var fieldUids = formTemplate.getFieldsConf().stream()
             .map(FormDataElementConf::getId).toList();
         final var dataElements = dataElementRepository.findAllByUidIn(fieldUids);
         validateElementsDataElement(formTemplate, dataElements);
@@ -55,15 +69,23 @@ public class FormTemplateProcessor {
             .version(createOrUpdateVersion(formTemplate) + 1);
     }
 
-    private Integer createOrUpdateVersion(DataFormTemplate source) {
-        final var version = dataFormTemplateRepository.findByUid(source.getUid())
-            .map(DataFormTemplate::getVersion)
-            .orElse(0);
-        return version;
+    private <T extends FormWithFields> Integer createOrUpdateVersion(T source) {
+        Optional<Integer> version = Optional.empty();
+        if (source instanceof DataFormTemplate) {
+            version = dataFormTemplateRepository.findByUid(source.getUid())
+                .map(DataFormTemplate::getVersion);
+        }
+
+        if (source instanceof DataForm) {
+            version = legacyFormRepository.findByUid(source.getUid())
+                .map(DataForm::getVersion);
+        }
+
+        return version.orElse(0);
     }
 
-    private void validateElementsDataElement(DataFormTemplate formTemplate, Collection<DataElement> dataElements) {
-        final var fieldUids = formTemplate.getFields().stream()
+    private <T extends FormWithFields> void validateElementsDataElement(T formTemplate, Collection<DataElement> dataElements) {
+        final var fieldUids = formTemplate.getFieldsConf().stream()
             .map(FormDataElementConf::getId).toList();
         final var dataElementUids = getUids(dataElements);
         final var notFoundElementUids = fieldUids.stream()

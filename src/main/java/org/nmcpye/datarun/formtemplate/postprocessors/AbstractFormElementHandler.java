@@ -1,12 +1,11 @@
 package org.nmcpye.datarun.formtemplate.postprocessors;
 
 import org.nmcpye.datarun.drun.postgres.domain.DataElement;
+import org.nmcpye.datarun.mongo.common.FormWithFields;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
 import org.springframework.lang.Nullable;
-
-import java.util.Collection;
 
 /**
  * @author Hamza, 18/03/2025
@@ -17,7 +16,7 @@ public abstract class AbstractFormElementHandler<T extends FormElementConf>
     private FormElementHandler<T> next;
 
     public static FormDataElementConf processElement(FormDataElementConf element,
-                                                     Collection<FormSectionConf> sections, @Nullable DataElement source) {
+                                                     FormWithFields formTemplate, @Nullable DataElement source) {
 
         FormElementHandler<FormDataElementConf> handlerChain = new ValidateValueTypeHandler(source);
         handlerChain

@@ -1,35 +1,43 @@
 package org.nmcpye.datarun.mongo.domain.datafield;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.nmcpye.datarun.mongo.domain.DataFieldRule;
 import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@JsonIgnoreProperties(value = {"path"}, allowGetters = true)
+@Getter
+@Setter
 public class AbstractField implements Serializable {
     public static final String PATH_SEP = ".";
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @NotNull
     @Field("name")
     private String name;
 
-    @NotNull
-    @Field("type")
-    private ValueType type;
-
     @Size(max = 2000)
     @Field("description")
     private String description;
 
     private Map<String, String> label;
+
+    @NotNull
+    @Field("type")
+    private ValueType type;
 
     @Field("rules")
     private List<DataFieldRule> rules = new ArrayList<>();
@@ -42,24 +50,9 @@ public class AbstractField implements Serializable {
     @Field("order")
     private Integer order;
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public ValueType getType() {
-        return this.type;
-    }
-
-    public void setType(ValueType type) {
-        this.type = type;
-    }
 
     public void setLabel(Map<String, String> label) {
         this.label = Objects.requireNonNullElseGet(label, () -> Map.of("en", this.name));
-    }
-
-    public String getName() {
-        return this.name;
     }
 
     public Map<String, String> getLabel() {
@@ -69,21 +62,9 @@ public class AbstractField implements Serializable {
         return label;
     }
 
-    public List<DataFieldRule> getRules() {
-        return this.rules;
-    }
-
-    public void setRules(List<DataFieldRule> dataFieldRules) {
-        this.rules = dataFieldRules;
-    }
-
     public AbstractField rules(List<DataFieldRule> dataFieldRules) {
         this.setRules(dataFieldRules);
         return this;
-    }
-
-    public String getDescription() {
-        return this.description;
     }
 
     public AbstractField description(String description) {
@@ -91,32 +72,8 @@ public class AbstractField implements Serializable {
         return this;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
-    }
-
-    public Integer getOrder() {
-        return order;
-    }
-
     public void setOrder(Integer order) {
         this.order = Objects.requireNonNullElseGet(order, () -> 0);
-    }
-
-    public String getCalculation() {
-        return calculation;
-    }
-
-    public void setCalculation(String calculation) {
-        this.calculation = calculation;
     }
 
     @Override
@@ -124,12 +81,12 @@ public class AbstractField implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AbstractField that = (AbstractField) o;
-        return path != null && path.equals(that.path) && name.equals(that.name) && type.equals(that.type);
+        return path != null && path.equals(that.path) && name.equals(that.name);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, type, path != null ? path.hashCode() : 0);
+        return Objects.hash(name, path != null ? path.hashCode() : 0);
     }
 
     /**
@@ -144,12 +101,10 @@ public class AbstractField implements Serializable {
         return field instanceof ReferenceField;
     }
 
-
     @Override
     public String toString() {
         return "AbstractField{" +
             "name='" + name + '\'' +
-            ", type=" + type +
             ", description='" + description + '\'' +
             ", label=" + label +
             ", rules=" + rules +

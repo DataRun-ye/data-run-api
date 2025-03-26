@@ -31,22 +31,17 @@ import java.util.List;
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class DataFormTemplateResource extends MongoBaseResource<DataFormTemplate> {
 
-    private final DataFormTemplateService templateService;
-    //    private final FormTemplateSchema formTemplateSchema;
     private final DataFormTemplateMigrationService dataFormTemplateMigrationService;
     private final FormTemplateProcessor formTemplateProcessor;
-//    private final DataFormTemplateRepository dataFormTemplateRepository;
 
+    //
     public DataFormTemplateResource(DataFormTemplateService templateService,
                                     DataFormTemplateRepository dataFormRepository,
-//                                    FormTemplateSchema formTemplateSchema,
-                                    DataFormTemplateMigrationService dataFormTemplateMigrationService, FormTemplateProcessor formTemplateProcessor,
-                                    DataFormTemplateRepository dataFormTemplateRepository) {
+                                    DataFormTemplateMigrationService dataFormTemplateMigrationService,
+                                    FormTemplateProcessor formTemplateProcessor) {
         super(templateService, dataFormRepository);
-        this.templateService = templateService;
         this.dataFormTemplateMigrationService = dataFormTemplateMigrationService;
         this.formTemplateProcessor = formTemplateProcessor;
-//        this.dataFormTemplateRepository = dataFormTemplateRepository;
     }
 
     @Override
@@ -59,8 +54,9 @@ public class DataFormTemplateResource extends MongoBaseResource<DataFormTemplate
     public ResponseEntity<EntitySaveSummaryVM> saveAll(@Valid @RequestBody List<DataFormTemplate> templates) {
         log.debug("REST request to saveAll all {}", getName());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        templates.stream().map(formTemplateProcessor::validateElements)
-            .map(formTemplateProcessor::processMetadata).forEach(t -> this.saveEntity(t, summary));
+        templates.stream().map(formTemplateProcessor::validate)
+            .map(formTemplateProcessor::processMetadata)
+            .forEach(t -> this.saveEntity((DataFormTemplate) t, summary));
 
         return ResponseEntity.ok(summary);
     }
@@ -70,8 +66,9 @@ public class DataFormTemplateResource extends MongoBaseResource<DataFormTemplate
     public ResponseEntity<EntitySaveSummaryVM> saveOne(DataFormTemplate formTemplate) {
         log.debug("REST request to saveOne {}", getName());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        final var processedTemplate = formTemplateProcessor.processMetadata(formTemplateProcessor.validateElements(formTemplate));
-        this.saveEntity(processedTemplate, summary);
+        final var processedTemplate = formTemplateProcessor.processMetadata(
+            formTemplateProcessor.validate(formTemplate));
+        this.saveEntity((DataFormTemplate) processedTemplate, summary);
 
         return ResponseEntity.ok(summary);
     }

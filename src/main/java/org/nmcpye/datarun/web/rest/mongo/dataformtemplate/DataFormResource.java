@@ -7,6 +7,7 @@ import org.nmcpye.datarun.mongo.service.DataFormService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.utils.FormTemplateSchema;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
+import org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess.FormTemplateProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,16 +22,18 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/custom/dataForm")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class DataFormResourceCustom extends MongoBaseResource<DataForm> {
+public class DataFormResource extends MongoBaseResource<DataForm> {
 
     final DataFormService dataFormService;
     private final FormTemplateSchema formTemplateSchema;
+    private final FormTemplateProcessor formTemplateProcessor;
 
-    public DataFormResourceCustom(DataFormService dataFormService,
-                                  DataFormRepository dataFormRepository, FormTemplateSchema formTemplateSchema) {
+    public DataFormResource(DataFormService dataFormService,
+                            DataFormRepository dataFormRepository, FormTemplateSchema formTemplateSchema, FormTemplateProcessor formTemplateProcessor) {
         super(dataFormService, dataFormRepository);
         this.dataFormService = dataFormService;
         this.formTemplateSchema = formTemplateSchema;
+        this.formTemplateProcessor = formTemplateProcessor;
     }
 
     @Override
@@ -40,13 +43,19 @@ public class DataFormResourceCustom extends MongoBaseResource<DataForm> {
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<DataForm> entities) {
-        return super.saveAll(entities);
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<DataForm> templates) {
+        log.debug("REST request to saveAll all {}", getName());
+        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
+        templates.stream().map(formTemplateProcessor::validate)
+            .map(formTemplateProcessor::processMetadata)
+            .forEach(t -> this.saveEntity((DataForm) t, summary));
+
+        return ResponseEntity.ok(summary);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveOne(DataForm entity) {
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(DataForm formTemplate) {
 
 //        var sc = formTemplateSchema.generateSchema(entity);
 //        Document document = sc.toDocument();
@@ -55,7 +64,13 @@ public class DataFormResourceCustom extends MongoBaseResource<DataForm> {
 //        var json2 = bson.toJson();
 //        log.debug(document.toJson());
 //        log.debug(json2);
-        return super.saveOne(entity);
+        log.debug("REST request to saveOne {}", getName());
+        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
+        final var processedTemplate = formTemplateProcessor.processMetadata(
+            formTemplateProcessor.validate(formTemplate));
+        this.saveEntity((DataForm) processedTemplate, summary);
+
+        return ResponseEntity.ok(summary);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")

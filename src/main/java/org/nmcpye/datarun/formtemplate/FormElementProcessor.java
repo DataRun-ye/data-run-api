@@ -5,18 +5,18 @@ import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.drun.postgres.domain.DataElement;
 import org.nmcpye.datarun.formtemplate.postprocessors.AbstractFormElementHandler;
+import org.nmcpye.datarun.mongo.common.FormWithFields;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
-import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class FormElementProcessor {
-    private final DataFormTemplate formTemplate;
+    private final FormWithFields formTemplate;
     final private Map<String, FormSectionConf> sectionMap;
 
-    public FormElementProcessor(DataFormTemplate formTemplate) {
+    public FormElementProcessor(FormWithFields formTemplate) {
         this.formTemplate = formTemplate;
         this.sectionMap = formTemplate.getSections()
             .stream().collect(Collectors.toMap(FormElementConf::getId, s -> s));
@@ -42,16 +42,16 @@ public class FormElementProcessor {
     private FormElementProcessor configureAndValidateFields(Collection<DataElement> dataElements) {
         final var dataElementMap = dataElements.stream().collect(Collectors.toMap(DataElement::getUid, s -> s));
         final var sectionMap = getSectionMap();
-        final var fields = formTemplate.getFields().stream().distinct()
+        final var fields = formTemplate.getFieldsConf().stream().distinct()
             .map((f) ->
                 AbstractFormElementHandler
-                    .processElement(f, formTemplate.getSections(),
+                    .processElement(f, formTemplate,
                         Optional.ofNullable(dataElementMap.get(f.getId()))
                             .orElseThrow(() -> new IllegalQueryException(ErrorCode.E1100, formTemplate.getUid(), f.getId()))))
             .peek(f -> f.path(buildPath(f, sectionMap)))
             .toList();
 
-        formTemplate.fields(fields);
+        formTemplate.setFieldsConf(fields);
         return this;
     }
 
@@ -59,7 +59,7 @@ public class FormElementProcessor {
         return configureAndValidateSections().configureAndValidateFields(dataElements);
     }
 
-    public DataFormTemplate get() {
+    public FormWithFields get() {
         return formTemplate;
     }
 

@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.mongo.MongoBaseIdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
+import org.nmcpye.datarun.mongo.common.FormWithFields;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
@@ -32,7 +33,7 @@ import java.util.*;
 @CompoundIndex(name = "form_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataForm
-    extends MongoBaseIdentifiableObject {
+    extends MongoBaseIdentifiableObject implements FormWithFields {
 
     @Field("code")
     @Indexed(unique = true, name = "form_code")
@@ -156,5 +157,11 @@ public class DataForm
             ", description='" + getDescription() + "'" +
             ", disabled='" + getDisabled() + "'" +
             "}";
+    }
+
+    @Override
+    public FormWithFields version(Integer version) {
+        this.setVersion(version);
+        return this;
     }
 }

@@ -1,10 +1,12 @@
 package org.nmcpye.datarun.mongo.domain.dataform;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.mongo.MongoBaseIdentifiableObject;
+import org.nmcpye.datarun.mongo.common.FormWithFields;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
@@ -27,7 +29,7 @@ import java.util.Map;
 @CompoundIndex(name = "form_template_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormTemplate
-    extends MongoBaseIdentifiableObject {
+    extends MongoBaseIdentifiableObject implements FormWithFields {
 
     @Field("code")
     private String code;
@@ -92,5 +94,16 @@ public class DataFormTemplate
             ", description='" + getDescription() + "'" +
             ", disabled='" + getDisabled() + "'" +
             "}";
+    }
+
+    @JsonIgnore
+    @Override
+    public List<FormDataElementConf> getFieldsConf() {
+        return getFields();
+    }
+
+    @Override
+    public void setFieldsConf(List<FormDataElementConf> fields) {
+        this.setFields(fields);
     }
 }

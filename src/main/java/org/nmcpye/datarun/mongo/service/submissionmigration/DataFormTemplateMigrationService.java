@@ -73,7 +73,7 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
                 FormDataElementConf elementConf = createDataElementConf(formField, dataElement.getUid(), dataElement.getCode());
                 template.getFields().add(elementConf);
             } else {
-                throw new EntityNotFoundException("DataElement not found: " + field.getName() + ", type: " + field.getType().name());
+                throw new EntityNotFoundException("DataElement not found: " + field.getName());
             }
         }
 
@@ -163,7 +163,7 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
         elementConf.setType(element.getType());
         elementConf.setDescription(element.getDescription());
         elementConf.setLabel(element.getLabel());
-        elementConf.setMandatory(element.getMandatory());
+        elementConf.setMandatory(element.isMandatory());
         elementConf.setDefaultValue(element.getDefaultValue());
 
         elementConf.setAppearance(element.getAppearance());
@@ -176,9 +176,9 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
             elementConf.setConstraint(errorRules.stream().findFirst().orElseThrow().getExpression());
             elementConf.setConstraintMessage(errorRules.stream().findFirst().orElseThrow().getMessage());
         }
-        elementConf.setMainField(element.getMainField());
+        elementConf.setMainField(element.isMainField());
         elementConf.setOrder(element.getOrder());
-        elementConf.setReadOnly(element.getReadOnly());
+        elementConf.setReadOnly(element.isReadOnly());
 
         if (element instanceof OptionField field) {
             final var de = dataElementRepository.findByUid(dataElementUid).orElseThrow();

@@ -24,7 +24,11 @@ public enum ErrorCode {
     E1107("Circular reference detected for parent: `{0}`:`{1}`"),
     E1108("Duplicate `{0}` IDs found: `{1}`:`{2}`"),
     E1109("Object {0}:`{1}` not found"),
-    E1130("System configuration Error: `{0}`"),
+
+    /* Form Template Validation */
+    E1110("Referenced element '{0}' does not exist in the form template"),
+    E1111("Form Validation Errors: `{0}`"),
+    E1199("System configuration Error: `{0}`"),
 
     /* Data */
     E2000("Query parameters cannot be null"),

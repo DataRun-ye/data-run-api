@@ -3,6 +3,7 @@ package org.nmcpye.datarun.web.rest.errors;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
+import org.nmcpye.datarun.formtemplate.validation.validators.FormTemplateValidationException;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.service.UsernameAlreadyUsedException;
 import org.slf4j.Logger;
@@ -63,11 +64,17 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ErrorCodeException.class)
     public ResponseEntity<EntitySaveSummaryVM> handleBaseException(ErrorCodeException ex) {
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        if (ex.getErrorCode() != null) {
+        if (ex instanceof FormTemplateValidationException validationException) {
             summary.getFailed().put("error_code", ex.getErrorCode().toString());
-        }
+            summary.getFailed().put("message", validationException.getResult().toString());
 
-        summary.getFailed().put("message", ex.getMessage());
+        } else {
+            if (ex.getErrorCode() != null) {
+                summary.getFailed().put("error_code", ex.getErrorCode().toString());
+            }
+
+            summary.getFailed().put("message", ex.getMessage());
+        }
 
         HttpStatus status = HttpStatus.BAD_REQUEST;
 

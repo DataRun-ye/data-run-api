@@ -59,7 +59,7 @@ public class DataFormMigrationService {
                 FormDataElementConf elementConf = createDataElementConf(formField, dataElement.getUid(), dataElement.getCode());
                 template.getFieldsConf().add(elementConf);
             } else {
-                throw new IllegalQueryException(ErrorCode.E1130, "DataElement Type: " + field.getType().name() + "not found ");
+                throw new IllegalQueryException(ErrorCode.E1199, "DataElement Type: " + "not found ");
             }
         }
         formRepository.save(template);
@@ -117,7 +117,7 @@ public class DataFormMigrationService {
         elementConf.setType(element.getType());
         elementConf.setDescription(element.getDescription());
         elementConf.setLabel(element.getLabel());
-        elementConf.setMandatory(element.getMandatory());
+        elementConf.setMandatory(element.isMandatory());
         elementConf.setDefaultValue(element.getDefaultValue());
 
         elementConf.setAppearance(element.getAppearance());
@@ -132,9 +132,9 @@ public class DataFormMigrationService {
         }
 
         elementConf.setRules(element.getRules());
-        elementConf.setMainField(element.getMainField());
+        elementConf.setMainField(element.isMainField());
         elementConf.setOrder(element.getOrder());
-        elementConf.setReadOnly(element.getReadOnly());
+        elementConf.setReadOnly(element.isReadOnly());
 
         if (element instanceof OptionField field) {
             final var de = dataElementRepository.findByUid(dataElementUid).orElseThrow();

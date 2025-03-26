@@ -8,7 +8,7 @@ import lombok.Setter;
 import org.nmcpye.datarun.mongo.domain.DataFieldRule;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -16,13 +16,11 @@ import java.util.Objects;
 @JsonIgnoreProperties(value = {"path"}, allowGetters = true)
 @Getter
 @Setter
-public abstract class FormElementConf implements Serializable {
-    private static final long serialVersionUID = 1L;
-
+public abstract class FormElementConf {
+    @Field("path")
     private String path;
 
     private String parent;
-
     @Field("code")
     private String code;
 
@@ -36,10 +34,14 @@ public abstract class FormElementConf implements Serializable {
 
     private Map<String, String> label;
 
-    private List<DataFieldRule> rules;
-    private List<String> appearance;
 
-    private Integer order = 0;
+    @Field("rules")
+    private List<DataFieldRule> rules = new ArrayList<>();
+
+    @Field("order")
+    private Integer order;
+
+    private List<String> appearance;
 
     abstract public String getId();
 

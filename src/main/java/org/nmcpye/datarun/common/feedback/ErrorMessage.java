@@ -2,9 +2,13 @@ package org.nmcpye.datarun.common.feedback;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.text.MessageFormat;
 
+@Getter
+@Setter
 public class ErrorMessage {
     private final ErrorCode errorCode;
 
@@ -23,14 +27,6 @@ public class ErrorMessage {
         this.errorCode = errorCode;
         this.args = null;
         this.message = message;
-    }
-
-    public ErrorCode getErrorCode() {
-        return errorCode;
-    }
-
-    public String getMessage() {
-        return message;
     }
 
     @Override
