@@ -1,0 +1,57 @@
+package org.nmcpye.datarun.drun.postgres.domain;
+
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.domain.User;
+
+import java.time.Instant;
+import java.util.Objects;
+
+/**
+ * @author Hamza Assada, 15/04/2025
+ */
+@Entity
+@Table(name = "refresh_token")
+@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+@Getter
+@Setter
+public class RefreshToken {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+    @SequenceGenerator(name = "sequenceGenerator")
+    @Column(name = "id")
+    protected Long id;
+
+
+    @Column(nullable = false, unique = true)
+    private String token;
+
+    @Column(name = "expiry_date", nullable = false)
+    private Instant expiryDate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonSerialize(contentAs = AuditableObject.class)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user; // Your user entity
+
+    public boolean isExpired() {
+        return Instant.now().isAfter(expiryDate);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof RefreshToken that)) return false;
+        return Objects.equals(getToken(), that.getToken());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(getToken());
+    }
+}

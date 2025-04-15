@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * @author Hamza, 23/03/2025
+ * @author Hamza Assada, 23/03/2025
  */
 @Component("mongoQueryBuilder")
 public class MongoQueryBuilder implements QueryBuilder<Query> {

@@ -8,7 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 /**
- * @author Hamza, 20/03/2025
+ * @author Hamza Assada, 20/03/2025
  */
 @Service
 public class UserAccessServiceImpl

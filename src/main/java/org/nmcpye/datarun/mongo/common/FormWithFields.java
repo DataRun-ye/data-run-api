@@ -6,7 +6,7 @@ import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
 import java.util.List;
 
 /**
- * @author Hamza, 26/03/2025
+ * @author Hamza Assada, 26/03/2025
  */
 public interface FormWithFields {
     String getName();

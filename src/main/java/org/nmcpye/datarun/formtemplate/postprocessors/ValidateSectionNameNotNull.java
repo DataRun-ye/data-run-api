@@ -4,7 +4,7 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
 
 /**
- * @author Hamza, 18/03/2025
+ * @author Hamza Assada, 18/03/2025
  */
 public class ValidateSectionNameNotNull
     extends AbstractFormElementHandler<FormSectionConf> {

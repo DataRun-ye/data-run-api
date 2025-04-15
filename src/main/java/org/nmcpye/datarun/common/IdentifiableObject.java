@@ -6,7 +6,7 @@ import org.nmcpye.datarun.drun.postgres.common.translation.Translation;
 import java.util.Set;
 
 /**
- * @author Hamza, 20/03/2025
+ * @author Hamza Assada, 20/03/2025
  */
 public interface IdentifiableObject<ID>
     extends AuditableObject<ID>, Comparable<IdentifiableObject<ID>> {

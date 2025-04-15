@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * @author Hamza, 20/03/2025
+ * @author Hamza Assada, 20/03/2025
  */
 public interface AuditableObjectService<T extends AuditableObject<ID>, ID> {
     Class<T> getClazz();

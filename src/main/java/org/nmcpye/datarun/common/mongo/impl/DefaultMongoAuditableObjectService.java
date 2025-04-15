@@ -20,7 +20,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 import java.util.List;
 
 /**
- * @author Hamza, 20/03/2025
+ * @author Hamza Assada, 20/03/2025
  */
 public abstract class DefaultMongoAuditableObjectService<T extends MongoAuditableBaseObject>
     extends DefaultAuditableObjectService<T, String>

@@ -7,7 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
- * @author Hamza, 20/03/2025
+ * @author Hamza Assada, 20/03/2025
  */
 public interface JpaAuditableObjectService<T extends JpaAuditableObject>
     extends AuditableObjectService<T, Long> {

@@ -7,7 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 /**
- * @author Hamza, 21/03/2025
+ * @author Hamza Assada, 21/03/2025
  */
 @Component
 public class ProjectFilter extends DefaultJpaFilter<Project> {

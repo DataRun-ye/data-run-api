@@ -12,7 +12,7 @@
 //import static org.nmcpye.datarun.drun.postgres.common.IdentifiableAccessSpecification.hasCode;
 //
 ///**
-// * @author Hamza, 20/03/2025
+// * @author Hamza Assada, 20/03/2025
 // */
 //@Transactional
 //public abstract class DefaultJpaIdentifiableService

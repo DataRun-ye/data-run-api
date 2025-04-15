@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * @author Hamza, 21/03/2025
+ * @author Hamza Assada, 21/03/2025
  */
 public interface userAccessInterface {
     String getLogin();

@@ -69,6 +69,7 @@ public class DataRunSecurityConfig {
 
                         // Data Run Added
                         // For basic Auth (Basic username:password) in header
+                        .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/custom/refresh")).permitAll()
                         .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/custom/authenticateBasic")).permitAll()
                         .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/custom/authenticateBasic")).permitAll()
                         .requestMatchers(mvc.pattern("/api/custom/register")).permitAll()

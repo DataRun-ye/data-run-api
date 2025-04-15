@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
 import org.nmcpye.datarun.formtemplate.validation.validators.FormTemplateValidationException;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
+import org.nmcpye.datarun.security.datarun.TokenRefreshException;
 import org.nmcpye.datarun.service.UsernameAlreadyUsedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +80,11 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
         return new ResponseEntity<>(summary, status);
+    }
+
+    @ExceptionHandler(value = TokenRefreshException.class)
+    public ResponseEntity<?> handleTokenRefreshException(TokenRefreshException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler

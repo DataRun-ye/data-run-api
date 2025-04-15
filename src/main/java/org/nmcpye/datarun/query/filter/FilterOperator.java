@@ -3,7 +3,7 @@ package org.nmcpye.datarun.query.filter;
 import java.util.Optional;
 
 /**
- * @author Hamza, 23/03/2025
+ * @author Hamza Assada, 23/03/2025
  */
 public enum FilterOperator {
     EQ, NE, GT, GTE, LT, LTE, IN, EXISTS, REGEX, NULL;

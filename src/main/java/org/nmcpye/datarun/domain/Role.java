@@ -7,7 +7,7 @@ import lombok.Setter;
 import java.util.Collection;
 
 /**
- * @author Hamza, 21/03/2025
+ * @author Hamza Assada, 21/03/2025
  */
 @Entity
 @Table(name = "role")

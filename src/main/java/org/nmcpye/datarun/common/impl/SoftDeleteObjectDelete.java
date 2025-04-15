@@ -8,7 +8,7 @@ import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * @author Hamza, 20/03/2025
+ * @author Hamza Assada, 20/03/2025
  */
 @Transactional
 public interface SoftDeleteObjectDelete<T extends SoftDeleteObject<ID>, ID>

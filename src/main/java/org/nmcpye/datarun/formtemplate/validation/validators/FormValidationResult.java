@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * @author Hamza, 25/03/2025
+ * @author Hamza Assada, 25/03/2025
  */
 
 public class FormValidationResult {

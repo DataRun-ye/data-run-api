@@ -19,7 +19,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.List;
 
 /**
- * @author Hamza, 20/03/2025
+ * @author Hamza Assada, 20/03/2025
  */
 public abstract class DefaultJpaAuditableService
     <T extends JpaAuditableObject>

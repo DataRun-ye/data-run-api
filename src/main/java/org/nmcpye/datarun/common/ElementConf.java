@@ -6,7 +6,7 @@
 //import java.util.Map;
 //
 ///**
-// * @author Hamza, 26/03/2025
+// * @author Hamza Assada, 26/03/2025
 // */
 //public interface ElementConf {
 //    String getPath();

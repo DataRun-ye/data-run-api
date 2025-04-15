@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  *  ]}
  * }</pre></blockquote>
  *
- * @author Hamza, 23/03/2025
+ * @author Hamza Assada, 23/03/2025
  * @see JpaQueryBuilder
  * @see MongoQueryBuilder
  */

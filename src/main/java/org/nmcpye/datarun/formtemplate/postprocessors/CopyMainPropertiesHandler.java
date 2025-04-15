@@ -6,7 +6,7 @@ import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import java.util.Optional;
 
 /**
- * @author Hamza, 18/03/2025
+ * @author Hamza Assada, 18/03/2025
  */
 public class CopyMainPropertiesHandler
     extends AbstractFormElementHandler<FormDataElementConf> {

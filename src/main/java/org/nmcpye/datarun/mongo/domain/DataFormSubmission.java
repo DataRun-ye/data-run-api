@@ -97,7 +97,8 @@ public class DataFormSubmission
             entry("_id", this.getUid()),
             entry("_deleted", deleted == Boolean.TRUE),
             entry("_form", this.getForm()),
-            entry("_team", this.getForm()),
+            entry("_team", this.getTeam()),
+            entry("_teamCode", this.getTeamCode()),
             entry("_serialNumber", this.getSerialNumber()),
             entry("_submissionTime", Objects.requireNonNullElse(this.getCreatedDate(), Instant.now())),
             entry("_lastModifiedDate", Objects.requireNonNullElse(this.getLastModifiedDate(), Instant.now())),
@@ -142,10 +143,10 @@ public class DataFormSubmission
                         List<Map<String, Object>> updatedList = new ArrayList<>();
                         for (int i = 0; i < list.size(); i++) {
                             Map<String, Object> objectInArray = (Map<String, Object>) list.get(i);
-                            objectInArray.put("_id", CodeGenerator.generateCode(16));  // Add groupIndex (s
+                            objectInArray.putIfAbsent("_id", CodeGenerator.generateCode(16));  // Add groupIndex (s
                             objectInArray.put("_parentId", parentId);
                             objectInArray.put("_submissionUid", this.getUid());
-                            objectInArray.put("_index", i + 1);  // Add repeatIndex (starting from 1)
+                            objectInArray.putIfAbsent("_index", i + 1);  // Add repeatIndex (starting from 1)
                             updatedList.add(objectInArray);
                         }
                         updatedFormData.put(entry.getKey(), updatedList);

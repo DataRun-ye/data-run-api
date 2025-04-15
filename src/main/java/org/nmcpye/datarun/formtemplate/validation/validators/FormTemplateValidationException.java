@@ -5,7 +5,7 @@ import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 
 /**
- * @author Hamza, 26/03/2025
+ * @author Hamza Assada, 26/03/2025
  */
 public class FormTemplateValidationException extends IllegalQueryException {
     private final FormValidationResult result;

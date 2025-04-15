@@ -16,7 +16,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * @author Hamza, 19/03/2025
+ * @author Hamza Assada, 19/03/2025
  */
 @Component
 public class DuplicateElementValidator implements TemplateValidator {

@@ -15,7 +15,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * @author Hamza, 20/03/2025
+ * @author Hamza Assada, 20/03/2025
  */
 public abstract class DefaultAuditableObjectService<T extends AuditableObject<ID>, ID>
     implements AuditableObjectService<T, ID> {
