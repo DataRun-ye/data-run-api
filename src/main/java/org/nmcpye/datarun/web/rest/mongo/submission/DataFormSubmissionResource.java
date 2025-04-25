@@ -1,6 +1,10 @@
 package org.nmcpye.datarun.web.rest.mongo.submission;
 
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.drun.postgres.service.TeamService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
+import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepository;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
@@ -27,13 +31,16 @@ public class DataFormSubmissionResource
     extends MongoBaseResource<DataFormSubmission> {
 
     final private GenericQueryService queryService;
+    final TeamService teamService;
 
     public DataFormSubmissionResource(DataFormSubmissionService dataFormSubmissionService,
                                       DataFormSubmissionRepository
                                           dataFormSubmissionRepository,
-                                      GenericQueryService queryService) {
+                                      GenericQueryService queryService,
+                                      TeamService teamService) {
         super(dataFormSubmissionService, dataFormSubmissionRepository);
         this.queryService = queryService;
+        this.teamService = teamService;
     }
 
     @Override
@@ -79,6 +86,20 @@ public class DataFormSubmissionResource
         PagedResponse<DataFormSubmission> response = new
             PagedResponse<>(processedPage, getName(), next);
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    protected void saveEntity(DataFormSubmission entity, EntitySaveSummaryVM summary) {
+        try {
+            if (!teamService.isActive(entity.getTeam())) {
+                throw new IllegalQueryException(ErrorCode.E1112, entity.getTeam());
+            }
+
+            super.saveEntity(entity, summary);
+        } catch (Exception e) {
+            log.error("REST Error Saving entity {}:{}", getEntityClass().getSimpleName(), entity.getUid());
+            summary.getFailed().put(entity.getUid(), e.getMessage());
+        }
     }
 
     @Override

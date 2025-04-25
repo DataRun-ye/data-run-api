@@ -28,6 +28,7 @@ public enum ErrorCode {
     /* Form Template Validation */
     E1110("Referenced element '{0}' does not exist in the form template"),
     E1111("Form Validation Errors: `{0}`"),
+    E1112("Activity or Team is not Active: {0}"),
     E1199("System configuration Error: `{0}`"),
 
     /* Data */
