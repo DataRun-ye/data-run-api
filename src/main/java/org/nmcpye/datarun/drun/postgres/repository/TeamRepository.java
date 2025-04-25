@@ -61,18 +61,6 @@ public interface TeamRepository
 
     @Query(
         value = "select team from Team team " +
-            "left join team.activity ac " +
-            "left join team.users u " +
-            "where u.login = ?#{authentication.name} and team.disabled = false and ac.disabled = false",
-        countQuery = "select count(team) from Team team " +
-            "left join team.activity ac " +
-            "left join team.users u " +
-            "where u.login = ?#{authentication.name} and team.disabled = false and ac.disabled = false"
-    )
-    Page<Team> findAllWithEagerRelation(Pageable pageable);
-
-    @Query(
-        value = "select team from Team team " +
             "left join fetch team.activity " +
             "left join team.users u " +
             "where u.login = ?#{authentication.name}",
@@ -89,4 +77,18 @@ public interface TeamRepository
             "where team.id =:id and user.login = ?#{authentication.name}"
     )
     Optional<Team> findOneWithToOneRelationshipsByUser(@Param("id") Long id);
+
+
+//    @Query(
+//        value = "select team from Team team " +
+//            "left join team.activity ac " +
+//            "left join team.users u " +
+//            "where u.login = ?#{authentication.name} and team.disabled = false and ac.disabled = false",
+//        countQuery = "select count(team) from Team team " +
+//            "left join team.activity ac " +
+//            "left join team.users u " +
+//            "where u.login = ?#{authentication.name} and team.disabled = false and ac.disabled = false"
+//    )
+//    Page<Team> findAllWithEagerRelation(Pageable pageable);
+
 }

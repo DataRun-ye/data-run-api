@@ -3,6 +3,8 @@ package org.nmcpye.datarun.domain;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import java.util.Collection;
 
@@ -11,6 +13,7 @@ import java.util.Collection;
  */
 @Entity
 @Table(name = "role")
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
 public class Role {
@@ -33,5 +36,6 @@ public class Role {
             name = "role_id", referencedColumnName = "id"),
         inverseJoinColumns = @JoinColumn(
             name = "privilege_id", referencedColumnName = "id"))
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Collection<Privilege> privileges;
 }

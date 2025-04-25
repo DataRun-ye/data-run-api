@@ -10,8 +10,10 @@ import java.util.Set;
  */
 @Value
 @Builder
-public class CurrentUserActivityInfo {
+public class CurrentUserFormInfo {
     Long userId;
+
     String userUID;
-    Set<String> activityUIDs;
+
+    Set<String> formUIDs;
 }

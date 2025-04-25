@@ -1,6 +1,10 @@
-package org.nmcpye.datarun.common.security;
+package org.nmcpye.datarun.security;
 
 import org.nmcpye.datarun.common.repository.UserRepository;
+import org.nmcpye.datarun.common.security.CurrentUserActivityInfo;
+import org.nmcpye.datarun.common.security.CurrentUserGroupInfo;
+import org.nmcpye.datarun.common.security.CurrentUserTeamInfo;
+import org.nmcpye.datarun.common.security.UserFormAccess;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
@@ -63,7 +67,7 @@ public class CurrentUserInfoService {
     }
 
     @Cacheable(cacheNames = USER_ACTIVITY_IDS_CACHE, key = "#userLogin")
-    public CurrentUserTeamInfo getUserActivityInfo(String userLogin) {
+    public CurrentUserActivityInfo getUserActivityInfo(String userLogin) {
         final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
             new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
 
@@ -73,7 +77,7 @@ public class CurrentUserInfoService {
             .map(Team::getActivity)
             .toList();
 
-        return CurrentUserTeamInfo
+        return CurrentUserActivityInfo
             .builder()
             .userId(user.getId())
             .userUID(user.getUid())
@@ -84,7 +88,28 @@ public class CurrentUserInfoService {
             .build();
     }
 
-    @Cacheable(cacheNames = USER_FORM_IDS_CACHE, key = "#userLogin")
+//    @Cacheable(cacheNames = USER_FORM_IDS_CACHE, key = "#userLogin")
+//    public CurrentUserFormInfo getUserFormInfo(String userLogin) {
+//        final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
+//            new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
+//
+//        final var teams = new HashSet<>(teamRepository.findAllByUserLogin(userLogin, false));
+//
+//        final var formUIDs = teams.stream()
+//            .map(Team::getFormPermissions)
+//            .flatMap(Collection::stream)
+//            .map(TeamFormPermissions::getForm)
+//            .collect(Collectors.toSet());
+//
+//        return CurrentUserFormInfo
+//            .builder()
+//            .userId(user.getId())
+//            .userUID(user.getUid())
+//            .formUIDs(formUIDs)
+//            .build();
+//    }
+
+    @Cacheable(cacheNames = USER_TEAM_FORM_ACCESS_CACHE, key = "#userLogin")
     public List<UserFormAccess> getUserFormAccess(String userLogin, Collection<String> teamUIDs) {
         final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
             new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));

@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import java.util.Collection;
 
@@ -12,6 +14,7 @@ import java.util.Collection;
  */
 @Entity
 @Table(name = "role_privilege")
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
 public class Privilege {
@@ -29,5 +32,6 @@ public class Privilege {
     private String name;
 
     @ManyToMany(mappedBy = "privileges")
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Collection<Role> roles;
 }

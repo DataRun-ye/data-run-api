@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.nmcpye.datarun.drun.postgres.common.IdScheme;
 import org.nmcpye.datarun.drun.postgres.common.translation.Translation;
 
@@ -20,5 +21,6 @@ public interface IdentifiableObject<ID>
 
     Set<Translation> getTranslations();
 
+    @JsonIgnore
     String getPropertyValue(IdScheme idScheme);
 }

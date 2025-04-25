@@ -28,7 +28,10 @@ public interface UserRepository
     String USER_GROUP_IDS_CACHE = "userGroupIdsByLogin";
 
     String USER_ACTIVITY_IDS_CACHE = "userActivityIdsByLogin";
-    String USER_FORM_IDS_CACHE = "userFormIdsByLogin";
+
+//    String USER_FORM_IDS_CACHE = "userFormIdsByLogin";
+
+    String USER_TEAM_FORM_ACCESS_CACHE = "userFormAccessByTeamAndForm";
 
 
     Optional<User> findOneByActivationKey(String activationKey);

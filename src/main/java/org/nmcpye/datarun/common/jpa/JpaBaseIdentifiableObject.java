@@ -57,6 +57,7 @@ public class JpaBaseIdentifiableObject
      * Cache for object translations, where the cache key is a combination of
      * locale and translation property, and value is the translated value.
      */
+    @JsonIgnore
     transient private Map<String, String> translationCache = new ConcurrentHashMap<>();
 
     // -------------------------------------------------------------------------
@@ -70,10 +71,6 @@ public class JpaBaseIdentifiableObject
     @JsonIgnore
     public Map<String, String> getTranslationCache() {
         return translationCache;
-    }
-
-    public void setTranslationCache(Map<String, String> translationCache) {
-        this.translationCache = translationCache;
     }
 
     /**

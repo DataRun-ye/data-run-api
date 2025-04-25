@@ -2,7 +2,7 @@ package org.nmcpye.datarun.security;
 
 import org.hibernate.validator.internal.constraintvalidators.bv.EmailValidator;
 import org.nmcpye.datarun.common.repository.UserRepository;
-import org.nmcpye.datarun.common.security.CurrentUserInfoService;
+import org.nmcpye.datarun.common.security.UserFormAccess;
 import org.nmcpye.datarun.domain.Authority;
 import org.nmcpye.datarun.domain.User;
 import org.slf4j.Logger;
@@ -60,6 +60,10 @@ public class DomainUserDetailsService implements UserDetailsService {
         final var userTeamInfo = currentUserInfoService
             .getUserTeamInfo(user.getLogin());
 
+        final var userFormAccess = currentUserInfoService
+            .getUserFormAccess
+                (user.getLogin(), userTeamInfo.getTeamUIDs());
+
         return CurrentUserDetailsImpl.builder()
             .uid(user.getUid())
             .username(user.getLogin())
@@ -72,24 +76,35 @@ public class DomainUserDetailsService implements UserDetailsService {
             .authorities(user.getAuthorities().stream()
                 .map(authority -> new SimpleGrantedAuthority(authority.getName()))
                 .collect(Collectors.toList()))
-            .userTeamIds(userTeamInfo.getTeamUIDs())
 
-            .userActivityIds(currentUserInfoService
-                .getUserActivityInfo(user.getLogin()).getActivityUIDs())
-
-            .userManagedTeamIds(userTeamInfo.getManagedTeamUIDs())
-
-            .userGroupIds(currentUserInfoService
-                .getUserGroupIds(user.getLogin()).getUserGroupUIDs())
-
-            .userFormAccess(currentUserInfoService
-                .getUserFormAccess(user.getLogin(), userTeamInfo.getTeamUIDs()))
+            .firstName(user.getFirstName())
+            .lastName(user.getLastName())
+            .mobile(user.getMobile())
+            .langKey(user.getLangKey())
+            .imageUrl(user.getImageUrl())
 
             .isSuper(user.getAuthorities()
                 .stream()
                 .map(Authority::getName)
                 .anyMatch((s) ->
                     s.equals(AuthoritiesConstants.ADMIN)))
+
+            .userTeams(userTeamInfo.getTeamUIDs())
+            .managedTeams(userTeamInfo.getManagedTeamUIDs())
+
+            .userActivities(currentUserInfoService
+                .getUserActivityInfo(user.getLogin()).getActivityUIDs())
+
+
+            .userGroups(currentUserInfoService
+                .getUserGroupIds(user.getLogin()).getUserGroupUIDs())
+
+            .userForms(userFormAccess.stream()
+                .map(UserFormAccess::getForm)
+                .collect(Collectors.toSet()))
+
+            .formAccess(userFormAccess)
+
             .build();
     }
 

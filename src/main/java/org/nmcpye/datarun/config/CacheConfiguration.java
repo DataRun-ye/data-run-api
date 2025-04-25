@@ -61,13 +61,18 @@ public class CacheConfiguration {
             createCache(cm, UserRepository.USER_TEAM_IDS_CACHE);
             createCache(cm, UserRepository.USER_GROUP_IDS_CACHE);
             createCache(cm, UserRepository.USER_ACTIVITY_IDS_CACHE);
-            createCache(cm, UserRepository.USER_FORM_IDS_CACHE);
+            createCache(cm, UserRepository.USER_TEAM_FORM_ACCESS_CACHE);
+            createCache(cm, org.nmcpye.datarun.domain.User.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Authority.class.getName());
+            createCache(cm, org.nmcpye.datarun.domain.Role.class.getName());
+            createCache(cm, org.nmcpye.datarun.domain.Privilege.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".authorities");
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".teams");
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".roles");
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".groups");
+            createCache(cm, org.nmcpye.datarun.domain.Role.class.getName() + ".privileges");
+            createCache(cm, org.nmcpye.datarun.domain.Privilege.class.getName() + ".roles");
 
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.UserGroup.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.UserGroup.class.getName() + ".users");

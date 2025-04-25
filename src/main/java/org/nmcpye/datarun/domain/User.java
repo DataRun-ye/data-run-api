@@ -11,7 +11,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.compress.utils.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Cache;
@@ -20,7 +19,6 @@ import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -332,16 +330,17 @@ public class User extends JpaAuditableObject {
 //            Sets.newHashSet(AuthoritiesConstants.ADMIN)) || auths.contains(auth);
 //    }
 //
-    /**
-     * Indicates whether this user is a super user, implying that the ALL
-     * authority is present in at least one of the user authority groups of this
-     * user.
-     */
-    @JsonProperty
-    public boolean isSuper() {
-        final var superAuths = Sets.newHashSet(AuthoritiesConstants.ADMIN);
-        return getAuthorities().stream().map(Authority::getName).anyMatch(superAuths::contains);
-    }
+//    /**
+//     * Indicates whether this user is a super user, implying that the ALL
+//     * authority is present in at least one of the user authority groups of this
+//     * user.
+//     */
+//    @JsonProperty
+//    @JsonIgnore
+//    public boolean isSuper() {
+//        final var superAuths = Sets.newHashSet(AuthoritiesConstants.ADMIN);
+//        return getAuthorities().stream().map(Authority::getName).anyMatch(superAuths::contains);
+//    }
 
     // prettier-ignore
     @Override

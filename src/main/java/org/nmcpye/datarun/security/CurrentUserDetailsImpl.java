@@ -35,17 +35,17 @@ public class CurrentUserDetailsImpl implements CurrentUserDetails {
 
     private final Collection<GrantedAuthority> authorities;
 
-    private final Set<String> userTeamIds;
-
-    private final Set<String> userActivityIds;
-
-    private final List<UserFormAccess> userFormAccess;
-
-    private final Set<String> userManagedTeamIds;
-
-    private final Set<String> userGroupIds;
-
-    private final boolean isSuper;
-
+    private final String mobile;
+    private final String email;
+    private final String imageUrl;
+    private final String firstName;
+    private final String lastName;
     private final String langKey;
+    private final boolean isSuper;
+    private final Set<String> userActivities;
+    private final Set<String> userTeams;
+    private final Set<String> managedTeams;
+    private final Set<String> userGroups;
+    private final Set<String> userForms;
+    private final List<UserFormAccess> formAccess;
 }

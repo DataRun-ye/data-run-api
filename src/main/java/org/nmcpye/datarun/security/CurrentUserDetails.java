@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.nmcpye.datarun.common.security.UserFormAccess;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,21 +22,37 @@ public interface CurrentUserDetails extends UserDetails {
     @Override
     String getUsername();
 
+    @JsonIgnore
     @Override
     boolean isAccountNonExpired();
 
+    @JsonIgnore
     @Override
     boolean isAccountNonLocked();
 
+    @JsonIgnore
     @Override
     boolean isCredentialsNonExpired();
 
+    @JsonProperty(value = "activated")
     @Override
     boolean isEnabled();
 
-    boolean isSuper();
-
+    /// Data run user's attributes
     String getUid();
+
+    String getMobile();
+
+    String getFirstName();
+
+    String getLastName();
+
+    String getEmail();
+
+    String getImageUrl();
+
+    @JsonIgnore
+    boolean isSuper();
 
     String getLangKey();
 
@@ -44,13 +61,15 @@ public interface CurrentUserDetails extends UserDetails {
      *
      * @return user Teams uids
      */
-    Set<String> getUserTeamIds();
+    Set<String> getUserTeams();
 
-    Set<String> getUserActivityIds();
+    Set<String> getUserActivities();
 
-    Set<String> getUserManagedTeamIds();
+    Set<String> getManagedTeams();
 
-    Set<String> getUserGroupIds();
+    Set<String> getUserGroups();
 
-    List<UserFormAccess> getUserFormAccess();
+    Set<String> getUserForms();
+
+    List<UserFormAccess> getFormAccess();
 }

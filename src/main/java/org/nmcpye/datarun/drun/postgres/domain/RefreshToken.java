@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.domain.User;
 
@@ -17,7 +15,6 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "refresh_token")
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 @Getter
 @Setter
 public class RefreshToken {

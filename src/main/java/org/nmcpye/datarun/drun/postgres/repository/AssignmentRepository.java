@@ -18,7 +18,16 @@ public interface AssignmentRepository
     extends JpaAuditableRepository<Assignment>, AssignmentRepositoryWithBagRelationships {
 
 
-    List<Assignment> findAllByTeamUidIn(Collection<String> teamIds);
+    @Query(
+        "select assignment from Assignment assignment " +
+            "left join  assignment.team t " +
+            "left join assignment.activity a " +
+            "where t.uid IN :teamUIDs and (:includeDisabled = true OR t.disabled = false) " +
+            "and (:includeDisabled = true OR a.disabled = false)")
+    List<Assignment> findAllByTeams(@Param("teamUIDs") Collection<String> teamUIDs,
+                                    @Param("includeDisabled") boolean includeDisabled);
+
+    List<Assignment> findAllByTeamUidIn(Collection<String> teamUIDs);
 
 
     //    @Query("select assignment from Assignment assignment where assignment.path like concat(:path, '%')")
