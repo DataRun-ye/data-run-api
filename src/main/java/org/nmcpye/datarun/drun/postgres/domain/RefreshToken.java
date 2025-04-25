@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -34,6 +35,7 @@ public class RefreshToken {
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonSerialize(contentAs = AuditableObject.class)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties(value = {"teams", "password", "authorities", "translations"}, allowSetters = true)
     private User user; // Your user entity
 
     public boolean isExpired() {

@@ -1,7 +1,9 @@
 package org.nmcpye.datarun.web.rest.postgres.authenticate;
 
 import jakarta.validation.Valid;
-import org.nmcpye.datarun.drun.postgres.service.impl.TokenService;
+import org.nmcpye.datarun.drun.postgres.dto.RefreshTokenDto;
+import org.nmcpye.datarun.drun.postgres.repository.RefreshTokenRepository;
+import org.nmcpye.datarun.security.jwt.TokenService;
 import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshRequest;
 import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshResponse;
 import org.springframework.http.HttpStatus;
@@ -12,31 +14,46 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Optional;
-
 /**
  * @author Hamza Assada, 16/04/2025
  */
 @RestController
-@RequestMapping("/api/custom")
+@RequestMapping("/api")
 public class RefreshTokenResource {
 
-    private final TokenService refreshTokenService;
+    private final TokenService tokenService;
+    private final RefreshTokenRepository tokenRepository;
 
-    public RefreshTokenResource(TokenService refreshTokenService) {
-        this.refreshTokenService = refreshTokenService;
+    public RefreshTokenResource(TokenService tokenService, RefreshTokenRepository tokenRepository) {
+        this.tokenService = tokenService;
+        this.tokenRepository = tokenRepository;
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@Valid @RequestBody TokenRefreshRequest request) {
-        String requestRefreshToken = request.getRefreshToken();
+        final var refreshTokenOpt = tokenRepository.findByToken(request.getRefreshToken());
+        if (refreshTokenOpt.isEmpty() || refreshTokenOpt.get().isExpired()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired refresh token");
+        }
 
+        // Retrieve the user. How you do this depends on your user management.
 
-        return Optional.of(refreshTokenService.verifyRefreshToken(requestRefreshToken))
-            .map(refreshToken -> ResponseEntity.ok(TokenRefreshResponse
-                .builder()
-                .accessToken(refreshTokenService.generateAccessToken(refreshToken.getUser().getLogin()))
-                .refreshToken(refreshTokenService.rotateRefreshToken(refreshToken).getToken())))
+        return refreshTokenOpt
+            .map(refreshToken -> {
+                String username = refreshTokenOpt.get().getUser().getLogin();
+                // generate another valid accessToken
+                String newAccessToken = tokenService.generateAccessToken(username);
+
+                // Revoke old refresh token/tokens (optional - implement rotation)
+                // will delete all user's stored refresh tokens and create a single one
+                RefreshTokenDto newRefreshToken = tokenService.rotateRefreshToken(refreshToken);
+
+                return ResponseEntity.ok(new TokenRefreshResponse(
+                    newAccessToken,
+                    newRefreshToken.getToken()
+                ));
+            })
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid refresh token"));
     }
+
 }

@@ -1,8 +1,9 @@
-package org.nmcpye.datarun.drun.postgres.service.impl;
+package org.nmcpye.datarun.security.jwt;
 
 import org.nmcpye.datarun.common.repository.UserRepository;
 import org.nmcpye.datarun.domain.Authority;
 import org.nmcpye.datarun.drun.postgres.domain.RefreshToken;
+import org.nmcpye.datarun.drun.postgres.dto.RefreshTokenDto;
 import org.nmcpye.datarun.drun.postgres.repository.RefreshTokenRepository;
 import org.nmcpye.datarun.security.datarun.TokenRefreshException;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +31,7 @@ import static org.nmcpye.datarun.security.SecurityUtils.JWT_ALGORITHM;
 @Transactional
 public class TokenService {
 
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenRepository tokenRepository;
     private final UserRepository userRepository;
     private final JwtEncoder jwtEncoder;
 
@@ -40,16 +41,16 @@ public class TokenService {
     @Value("${datarun.security.authentication.jwt.refresh-token-validity-in-seconds:2592000}") // 30 days
     private long refreshTokenValidity;
 
-    public TokenService(RefreshTokenRepository refreshTokenRepository,
+    public TokenService(RefreshTokenRepository tokenRepository,
                         JwtEncoder jwtEncoder,
                         UserRepository userRepository) {
-        this.refreshTokenRepository = refreshTokenRepository;
+        this.tokenRepository = tokenRepository;
         this.jwtEncoder = jwtEncoder;
         this.userRepository = userRepository;
     }
 
-    public Optional<RefreshToken> findByToken(String token) {
-        return refreshTokenRepository.findByToken(token);
+    public Optional<RefreshTokenDto> findDtoByToken(String token) {
+        return tokenRepository.findByToken(token);
     }
 
     @Transactional(readOnly = true)
@@ -69,10 +70,10 @@ public class TokenService {
             .claim(AUTHORITIES_KEY, authorities)
             .build();
         JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
-        return jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader,claims)).getTokenValue();
+        return jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
     }
 
-    public RefreshToken createRefreshToken(String username) {
+    public RefreshTokenDto createRefreshToken(String username) {
         final var user = userRepository
             .findOneWithAuthoritiesByLogin(username)
             .orElseThrow(() -> new TokenRefreshException(username, "invalid"));
@@ -81,21 +82,21 @@ public class TokenService {
         refreshToken.setExpiryDate(Instant.now().plus(refreshTokenValidity, ChronoUnit.SECONDS));
         refreshToken.setToken(UUID.randomUUID().toString());
 
-        return refreshTokenRepository.save(refreshToken);
+        return Optional.of(tokenRepository.save(refreshToken))
+            .map(RefreshTokenDto::new).orElseThrow();
     }
 
     @Transactional(readOnly = true)
-    public RefreshToken verifyRefreshToken(String token) {
-        return refreshTokenRepository.findByToken(token)
-            .filter(t -> !t.isExpired())
-            .orElseThrow(() -> new TokenRefreshException(token, "Invalid refresh token"));
+    public Optional<RefreshTokenDto> verifyRefreshToken(String token) {
+        return tokenRepository.findByToken(token)
+            .filter(t -> !t.isExpired());
     }
 
     /**
      * Invalidate the current refresh token and issue a new one.
      */
-    public RefreshToken rotateRefreshToken(RefreshToken refreshToken) {
-        refreshTokenRepository.delete(refreshToken);
+    public RefreshTokenDto rotateRefreshToken(RefreshTokenDto refreshToken) {
+        tokenRepository.deleteByUserUid(refreshToken.getUser().getUid());
         return createRefreshToken(refreshToken.getUser().getLogin());
     }
 
@@ -104,6 +105,6 @@ public class TokenService {
      */
     @Scheduled(cron = "0 0 0 * * ?")
     public void cleanupExpiredTokens() {
-        refreshTokenRepository.deleteAllByExpiryDateBefore(Instant.now());
+        tokenRepository.deleteAllByExpiryDateBefore(Instant.now());
     }
 }

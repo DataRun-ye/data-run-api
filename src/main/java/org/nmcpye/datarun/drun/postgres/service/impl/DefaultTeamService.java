@@ -18,7 +18,6 @@ import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,7 +50,6 @@ public class DefaultTeamService extends DefaultJpaAuditableService<Team> impleme
         this.activityRepository = activityRepository;
     }
 
-    @CacheEvict(value = {"products"}, allEntries = true)
     @Override
     public Team saveWithRelations(Team team) {
         Activity activity = null;

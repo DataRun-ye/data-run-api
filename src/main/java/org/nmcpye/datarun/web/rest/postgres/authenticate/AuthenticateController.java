@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.web.rest.postgres.authenticate;
 
 import jakarta.validation.Valid;
-import org.nmcpye.datarun.drun.postgres.domain.RefreshToken;
-import org.nmcpye.datarun.drun.postgres.service.impl.TokenService;
+import org.nmcpye.datarun.drun.postgres.dto.RefreshTokenDto;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.security.jwt.TokenService;
 import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshResponse;
 import org.nmcpye.datarun.web.rest.vm.LoginVM;
 import org.slf4j.Logger;
@@ -48,24 +48,12 @@ public class AuthenticateController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         String accessToken = tokenService.generateAccessToken(authentication.getName());
-        RefreshToken refreshToken = tokenService.createRefreshToken(authentication.getName());
+        RefreshTokenDto refreshToken = tokenService.createRefreshToken(authentication.getName());
 
         return ResponseEntity.ok()
             .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
             .body(new TokenRefreshResponse(accessToken, refreshToken.getToken()));
     }
-
-//    /**
-//     * {@code GET /authenticate} : check if the user is authenticated, and return its login.
-//     *
-//     * @param request the HTTP request.
-//     * @return the login if the user is authenticated.
-//     */
-//    @GetMapping("/authenticate")
-//    public String isAuthenticated(HttpServletRequest request) {
-//        log.debug("REST request to check if the current user is authenticated");
-//        return request.getRemoteUser();
-//    }
 
     /**
      * {@code GET /authenticate} : check if the user is authenticated, and return its details.

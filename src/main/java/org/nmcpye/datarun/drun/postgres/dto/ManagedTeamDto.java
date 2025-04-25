@@ -1,18 +1,23 @@
 package org.nmcpye.datarun.drun.postgres.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Value;
 
 import java.io.Serializable;
 
-/**
- * DTO for {@link org.nmcpye.datarun.drun.postgres.domain.Team}
- */
 @Value
-public class TeamDto implements Serializable {
+public class ManagedTeamDto implements Serializable {
+    @JsonProperty(value = "id")
     @Size(max = 11)
     String uid;
+
     @NotNull
     String code;
+
+    @JsonProperty(value = "activity")
+    String activityUid;
+
+    String managedBy;
 }

@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Set;
 
 public interface CurrentUserDetails extends UserDetails {
-
     @Override
     Collection<? extends GrantedAuthority> getAuthorities();
 
@@ -39,6 +38,7 @@ public interface CurrentUserDetails extends UserDetails {
     boolean isEnabled();
 
     /// Data run user's attributes
+    @JsonProperty(value = "id")
     String getUid();
 
     String getMobile();
