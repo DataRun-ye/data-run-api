@@ -94,6 +94,14 @@ public abstract class JpaAuditableObject
         return this;
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public String getUid() {
+        return uid;
+    }
+
     /**
      * Set auto-generated fields on save or update
      */

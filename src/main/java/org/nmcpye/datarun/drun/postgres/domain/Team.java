@@ -6,6 +6,7 @@ import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.stream.Streams;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
@@ -90,6 +91,12 @@ public class Team extends JpaBaseIdentifiableObject {
     @Transient
     private EntityScope entityScope;
 
+    public Set<FormPermission> getFormPermissions(String form) {
+        return formPermissions.stream()
+            .filter(p -> p.getForm().equals(form)).map(TeamFormPermissions::getPermissions)
+            .flatMap(Streams::of).collect(Collectors.toSet());
+    }
+
     public Set<String> getFormWithPermission(FormPermission permission) {
         return formPermissions.stream()
             .filter(p -> p.getPermissions().contains(permission))
@@ -128,48 +135,6 @@ public class Team extends JpaBaseIdentifiableObject {
         return Collections.emptySet();
     }
 
-    public Team addUser(User user) {
-        this.users.add(user);
-        user.getTeams().add(this);
-        return this;
-    }
-
-    public Team removeUser(User user) {
-        this.users.remove(user);
-        user.getTeams().remove(this);
-        return this;
-    }
-
-    public Team addManagedTeam(Team userGroup) {
-        this.managedTeams.add(userGroup);
-        userGroup.getManagedByTeams().add(this);
-        return this;
-    }
-
-    public Team removeManagedGroup(Team userGroup) {
-        this.managedTeams.remove(userGroup);
-        userGroup.getManagedByTeams().remove(this);
-        return this;
-    }
-
-
-    public Team managedByTeams(Set<Team> teams) {
-        this.setManagedByTeams(teams);
-        return this;
-    }
-
-    public Team addManagedByTeam(Team team) {
-        this.managedByTeams.add(team);
-        team.getManagedTeams().add(this);
-        return this;
-    }
-
-    public Team removeManagedByTeam(Team team) {
-        this.managedByTeams.remove(team);
-        team.getManagedTeams().remove(this);
-        return this;
-    }
-
     public void setAssignments(Set<Assignment> assignments) {
         if (this.assignments != null) {
             this.assignments.forEach(i -> i.setTeam(null));
@@ -182,18 +147,6 @@ public class Team extends JpaBaseIdentifiableObject {
 
     public Team assignments(Set<Assignment> assignments) {
         this.setAssignments(assignments);
-        return this;
-    }
-
-    public Team addAssignment(Assignment assignment) {
-        this.assignments.add(assignment);
-        assignment.setTeam(this);
-        return this;
-    }
-
-    public Team removeAssignment(Assignment assignment) {
-        this.assignments.remove(assignment);
-        assignment.setTeam(null);
         return this;
     }
 }

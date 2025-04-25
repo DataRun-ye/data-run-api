@@ -7,12 +7,54 @@ import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
 public abstract class TeamSpecifications {
+    static public Specification<Team> getAssignedSpecification(CurrentUserDetails user,
+                                                      QueryRequest queryRequest) {
+        Specification<Team> spec = (root, query, cb) -> {
+            if (user.isSuper()) {
+                return cb.conjunction();
+            }
+
+            if (user.getUserTeamIds() == null || user.getUserTeamIds().isEmpty()) {
+                return cb.disjunction(); // user has no access
+            }
+
+            return root.get("uid").in(user.getUserTeamIds());
+        };
+
+        if (!queryRequest.isIncludeDisabled()) {
+            spec = Specification.where(spec).and(isEnabled());
+        }
+        return spec;
+    }
+
+    static public Specification<Team> getManagedSpecification(CurrentUserDetails user,
+                                                      QueryRequest queryRequest) {
+        Specification<Team> spec = (root, query, cb) -> {
+            if (user.isSuper()) {
+                return cb.conjunction();
+            }
+
+            if (user.getUserManagedTeamIds() == null || user.getUserManagedTeamIds().isEmpty()) {
+                return cb.disjunction(); // user has no access
+            }
+
+            return root.get("uid").in(user.getUserManagedTeamIds());
+
+        };
+
+        if (!queryRequest.isIncludeDisabled()) {
+            spec = Specification.where(spec).and(isEnabled());
+        }
+        return spec;
+    }
 
     public static Specification<Team> canRead() {
         return (root, query, criteriaBuilder) -> {

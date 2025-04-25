@@ -59,7 +59,7 @@ public class TeamResourceCustom extends JpaBaseResource<Team> {
             pageable = Pageable.unpaged();
         }
 
-        Page<Team> processedPage = serviceCustom.findAllManagedByUser(pageable);
+        Page<Team> processedPage = serviceCustom.findAllManagedByUser(pageable, queryRequest);
 
         String next = createNextPageLink(processedPage);
 

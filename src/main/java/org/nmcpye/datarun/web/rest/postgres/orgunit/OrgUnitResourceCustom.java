@@ -4,7 +4,7 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepository;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
@@ -32,9 +32,9 @@ public class OrgUnitResourceCustom extends JpaBaseResource<OrgUnit> {
 
     private final OrgUnitService serviceCustom;
 
-    private final OrgUnitRepositoryCustom repositoryCustom;
+    private final OrgUnitRepository repositoryCustom;
 
-    public OrgUnitResourceCustom(OrgUnitService serviceCustom, OrgUnitRepositoryCustom repositoryCustom) {
+    public OrgUnitResourceCustom(OrgUnitService serviceCustom, OrgUnitRepository repositoryCustom) {
         super(serviceCustom, repositoryCustom);
         this.repositoryCustom = repositoryCustom;
         this.serviceCustom = serviceCustom;

@@ -1,50 +1,64 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
 
-import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 
+import static org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission.*;
 
+@AllArgsConstructor
+@Getter
+@Setter
+@EqualsAndHashCode
 public class TeamFormPermissions {
+    @NotNull
     private String form;
+    private Set<FormPermission> permissions;
 
-    private Set<FormPermission> permissions = new HashSet<>();
-
-    public TeamFormPermissions() {
+    public boolean canViewSubmission(String form) {
+        return this.form.equals(form) &&
+            permissions.stream()
+                .anyMatch(FormPermission::canViewSubmission);
     }
 
-    public TeamFormPermissions(String form, Set<FormPermission> permissions) {
-        this.form = form;
-        this.permissions = permissions;
+    public boolean canViewSubmissionFromUsers(String form) {
+        return this.form.equals(form) &&
+            permissions.contains(VIEW_SUBMISSIONS_FROM_USERS);
     }
 
-    public String getForm() {
-        return form;
+    public boolean canAddSubmission(String form) {
+        return this.form.equals(form) &&
+            permissions.contains(ADD_SUBMISSIONS);
     }
 
-    public void setForm(String form) {
-        this.form = form;
+    public boolean canEditSubmission(String form) {
+        return this.form.equals(form) &&
+            permissions.contains(EDIT_SUBMISSIONS);
+
     }
 
-    public Set<FormPermission> getPermissions() {
-        return permissions;
+    public boolean canEditSubmissionFromUsers(String form) {
+        return this.form.equals(form) &&
+            permissions.contains(EDIT_SUBMISSIONS_FROM_USERS);
     }
 
-    public void setPermissions(Set<FormPermission> permissions) {
-        this.permissions = permissions;
+    public boolean canApproveSubmission(String form) {
+        return permissions.contains(APPROVE_SUBMISSIONS);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof TeamFormPermissions that)) return false;
-        return Objects.equals(form, that.form) && Objects.equals(permissions, that.permissions);
+    public boolean canDeleteSubmission(String form) {
+        return this.form.equals(form) &&
+            permissions.contains(DELETE_SUBMISSIONS);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(form, permissions);
+    public boolean canDeleteSubmissionFromUsers(String form) {
+        return this.form.equals(form) &&
+            permissions.contains(DELETE_SUBMISSIONS_FROM_USERS);
     }
 }
+

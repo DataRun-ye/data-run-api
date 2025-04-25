@@ -1,11 +1,14 @@
 package org.nmcpye.datarun.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import org.nmcpye.datarun.common.security.UserFormAccess;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -19,6 +22,7 @@ public class CurrentUserDetailsImpl implements CurrentUserDetails {
 
     private final String username;
 
+    @JsonIgnore
     private final String password;
 
     private final boolean enabled;
@@ -32,6 +36,10 @@ public class CurrentUserDetailsImpl implements CurrentUserDetails {
     private final Collection<GrantedAuthority> authorities;
 
     private final Set<String> userTeamIds;
+
+    private final Set<String> userActivityIds;
+
+    private final List<UserFormAccess> userFormAccess;
 
     private final Set<String> userManagedTeamIds;
 

@@ -39,8 +39,10 @@ public class DomainUserDetailsService implements UserDetailsService {
         LOG.debug("Authenticating {}", login);
 
         if (new EmailValidator().isValid(login, null)) {
-            final var userByEmail = userRepository.findOneWithAuthoritiesByEmailIgnoreCase(login).orElseThrow(() ->
-                new UsernameNotFoundException("User with login " + login + " was not found in the database"));
+            return userRepository
+                .findOneWithAuthoritiesByEmailIgnoreCase(login)
+                .map(user -> createUserDetails(login, user))
+                .orElseThrow(() -> new UsernameNotFoundException("User with email " + login + " was not found in the database"));
         }
         String lowercaseLogin = login.toLowerCase(Locale.ENGLISH);
         final var userLogin = userRepository.findOneWithAuthoritiesByLogin(lowercaseLogin);
@@ -49,12 +51,15 @@ public class DomainUserDetailsService implements UserDetailsService {
             .orElseThrow(() -> new UsernameNotFoundException("User " + lowercaseLogin + " was not found in the database"));
     }
 
+    /////////
     public CurrentUserDetails createUserDetails(String lowercaseLogin, User user) {
         if (!user.isActivated()) {
             throw new UserNotActivatedException("User " + lowercaseLogin + " was not activated");
         }
 
-        final var userTeamInfo = currentUserInfoService.getUserTeamInfo(user.getLogin());
+        final var userTeamInfo = currentUserInfoService
+            .getUserTeamInfo(user.getLogin());
+
         return CurrentUserDetailsImpl.builder()
             .uid(user.getUid())
             .username(user.getLogin())
@@ -68,8 +73,18 @@ public class DomainUserDetailsService implements UserDetailsService {
                 .map(authority -> new SimpleGrantedAuthority(authority.getName()))
                 .collect(Collectors.toList()))
             .userTeamIds(userTeamInfo.getTeamUIDs())
+
+            .userActivityIds(currentUserInfoService
+                .getUserActivityInfo(user.getLogin()).getActivityUIDs())
+
             .userManagedTeamIds(userTeamInfo.getManagedTeamUIDs())
-            .userGroupIds(currentUserInfoService.getUserGroupIds(user.getLogin()).getUserGroupUIDs())
+
+            .userGroupIds(currentUserInfoService
+                .getUserGroupIds(user.getLogin()).getUserGroupUIDs())
+
+            .userFormAccess(currentUserInfoService
+                .getUserFormAccess(user.getLogin(), userTeamInfo.getTeamUIDs()))
+
             .isSuper(user.getAuthorities()
                 .stream()
                 .map(Authority::getName)

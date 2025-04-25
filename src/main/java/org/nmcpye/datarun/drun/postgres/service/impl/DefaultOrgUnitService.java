@@ -3,9 +3,10 @@ package org.nmcpye.datarun.drun.postgres.service.impl;
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.pathmaintenance.OrgUnitMaintenanceService;
+import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepository;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitService;
-import org.nmcpye.datarun.useraccess.UserAccessService;
+import org.nmcpye.datarun.security.useraccess.UserAccessService;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,11 +20,13 @@ import java.util.Optional;
 @Transactional
 public class DefaultOrgUnitService extends DefaultJpaAuditableService<OrgUnit> implements OrgUnitService {
 
-    final OrgUnitRepositoryCustom repository;
+    private final OrgUnitRepository repository;
+    private final OrgUnitMaintenanceService maintenanceService;
 
-    public DefaultOrgUnitService(OrgUnitRepositoryCustom repository, UserAccessService userAccessService, CacheManager cacheManager) {
+    public DefaultOrgUnitService(OrgUnitRepository repository, UserAccessService userAccessService, CacheManager cacheManager, OrgUnitMaintenanceService maintenanceService) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
+        this.maintenanceService = maintenanceService;
     }
 
 
@@ -197,13 +200,15 @@ public class DefaultOrgUnitService extends DefaultJpaAuditableService<OrgUnit> i
     @Transactional
     @Scheduled(cron = "0 0 3 * * ?")
     public void updatePaths() {
-        repository.updatePaths();
+        maintenanceService.updateMissingPaths();
+//        repository.updatePaths();
     }
 
     @Override
     @Transactional
     public void forceUpdatePaths() {
-        repository.forceUpdatePaths();
+        maintenanceService.forceRecomputePaths();
+//        repository.forceUpdatePaths();
     }
 
 }

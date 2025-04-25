@@ -5,7 +5,7 @@ import org.nmcpye.datarun.drun.postgres.domain.DataElement;
 import org.nmcpye.datarun.drun.postgres.repository.DataElementRepository;
 import org.nmcpye.datarun.drun.postgres.repository.OptionSetRepository;
 import org.nmcpye.datarun.drun.postgres.service.DataElementService;
-import org.nmcpye.datarun.useraccess.UserAccessService;
+import org.nmcpye.datarun.security.useraccess.UserAccessService;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;

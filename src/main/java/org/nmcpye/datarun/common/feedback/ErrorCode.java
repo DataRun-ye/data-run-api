@@ -52,6 +52,8 @@ public enum ErrorCode {
     E3003("User `{0}` is not allowed to create objects of type {1}"),
     E3004("User `{0}` is not allowed to access objects of type {1}"),
     E3005("You are not allowed to access {}"),
+    E3006("Team `{0}` is not available"),
+
 
     /* Users */
     E6201("User account not found"),

@@ -35,17 +35,17 @@ import static org.nmcpye.datarun.security.SecurityUtils.AUTHORITIES_KEY;
 import static org.nmcpye.datarun.security.SecurityUtils.JWT_ALGORITHM;
 
 @RestController
-@RequestMapping("/api/custom")
+@RequestMapping("/api")
 public class AuthenticateBasicResource {
 
     private final Logger log = LoggerFactory.getLogger(AuthenticateBasicResource.class);
 
     private final JwtEncoder jwtEncoder;
 
-    @Value("${jhipster.security.authentication.jwt.token-validity-in-seconds:0}")
+    @Value("${datarun.security.authentication.jwt.token-validity-in-seconds:0}")
     private long tokenValidityInSeconds;
 
-    @Value("${jhipster.security.authentication.jwt.token-validity-in-seconds-for-remember-me:0}")
+    @Value("${datarun.security.authentication.jwt.token-validity-in-seconds-for-remember-me:0}")
     private long tokenValidityInSecondsForRememberMe;
 
     private final AuthenticationManagerBuilder authenticationManagerBuilder;

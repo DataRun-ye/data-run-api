@@ -43,7 +43,7 @@ public interface UserGroupRepository
     @Query(
         "select ug from UserGroup ug " +
             "left join ug.users user " +
-            "where ug.disabled =:includeDisabled and user.login =:login"
+            "where user.login =:login and (:includeDisabled = true OR ug.disabled = false)"
     )
     List<UserGroup> findAllByUserLogin(@Param("login") String userLogin, boolean includeDisabled);
 

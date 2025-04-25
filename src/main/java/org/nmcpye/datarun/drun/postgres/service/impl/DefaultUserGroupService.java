@@ -11,7 +11,7 @@ import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
 import org.nmcpye.datarun.drun.postgres.repository.UserGroupRepository;
 import org.nmcpye.datarun.drun.postgres.service.UserGroupService;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.useraccess.UserAccessService;
+import org.nmcpye.datarun.security.useraccess.UserAccessService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;

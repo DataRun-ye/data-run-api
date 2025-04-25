@@ -5,6 +5,7 @@ import org.ehcache.config.builders.ExpiryPolicyBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.jsr107.Eh107Configuration;
 import org.hibernate.cache.jcache.ConfigSettings;
+import org.nmcpye.datarun.caching.UserKeyGenerator;
 import org.nmcpye.datarun.common.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
@@ -47,6 +48,11 @@ public class CacheConfiguration {
         return hibernateProperties -> hibernateProperties.put(ConfigSettings.CACHE_MANAGER, cacheManager);
     }
 
+    @Bean("userKeyGen")
+    public KeyGenerator userKeyGen() {
+        return new UserKeyGenerator();
+    }
+
     @Bean
     public JCacheManagerCustomizer cacheManagerCustomizer() {
         return cm -> {
@@ -54,6 +60,8 @@ public class CacheConfiguration {
             createCache(cm, UserRepository.USERS_BY_EMAIL_CACHE);
             createCache(cm, UserRepository.USER_TEAM_IDS_CACHE);
             createCache(cm, UserRepository.USER_GROUP_IDS_CACHE);
+            createCache(cm, UserRepository.USER_ACTIVITY_IDS_CACHE);
+            createCache(cm, UserRepository.USER_FORM_IDS_CACHE);
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Authority.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".authorities");

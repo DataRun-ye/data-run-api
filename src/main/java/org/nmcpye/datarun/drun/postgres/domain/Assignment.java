@@ -28,7 +28,8 @@ import java.util.stream.Collectors;
  */
 @Entity
 @Table(name = "assignment", indexes = {
-    @Index(name = "idx_assignment_uid_unq", columnList = "uid", unique = true)
+    @Index(name = "idx_assignment_uid_unq", columnList = "uid", unique = true),
+    @Index(name = "idx_assignment_uid_unq", columnList = "uid", unique = true),
 }, uniqueConstraints = {
     @UniqueConstraint(name = "uc_assignment_activity_id", columnNames = {"activity_id", "orgUnit_id", "team_id"})
 })

@@ -1,8 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.common;
 
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.*;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.domain.Activity;
@@ -17,6 +15,51 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.List;
 
 public abstract class OrgUnitSpecification {
+    public static Specification<OrgUnit> hasAncestors(
+        List<Long> accessibleIds, boolean includeDisabled
+    ) {
+        return (root, query, cb) -> {
+            // Subquery to get all ancestor UIDs from accessible OrgUnits' paths
+            Subquery<String> subquery = query.subquery(String.class);
+            Root<OrgUnit> acc = subquery.from(OrgUnit.class);
+            subquery.select(
+                cb.function("unnest", String.class,
+                    cb.function("string_to_array", String[].class, acc.get("path"), cb.literal(","))
+                )
+            ).where(acc.get("id").in(accessibleIds));
+
+            /// isAncestor
+            // Match current OrgUnit's UID against the collected ancestor UIDs
+            return root.get("uid").in(subquery);
+        };
+    }
+
+    public static Specification<OrgUnit> hasDescendants(
+        List<Long> accessibleIds, boolean includeDisabled
+    ) {
+        return (root, query, cb) -> {
+            // Subquery to get paths of accessible OrgUnits
+            Subquery<String> subquery = query.subquery(String.class);
+            Root<OrgUnit> acc = subquery.from(OrgUnit.class);
+            subquery.select(acc.get("path"))
+                .where(acc.get("id").in(accessibleIds));
+
+            // Check if current OrgUnit's path starts with any accessible path
+
+            return cb.or(
+                root.get("id").in(accessibleIds), // Include the accessible OrgUnit itself
+                cb.exists(subquery.where(
+                    cb.like(root.get("path"), cb.concat(acc.get("path"), ",%"))
+                ))
+            );
+        };
+    }
+
+    // Usage: Combine with additional filters
+//    List<OrgUnit> results = repo.findAll(
+//        hasAncestors(accessibleIds)
+//            .and((root, query, cb) -> cb.like(root.get("name"), "%HQ%"))
+//    );
 
     public static Specification<OrgUnit> hasLevel(Integer level) {
         return (root, query, criteriaBuilder) -> level == null ? null : criteriaBuilder.equal(root.get("level"), level);

@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.config.datarun;
 
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.DomainUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -28,11 +29,11 @@ public class DataRunSecurityConfig {
 
     private final JHipsterProperties jHipsterProperties;
 
-//    private final DomainUserDetailsService userDetailsService;
+    private final DomainUserDetailsService userDetailsService;
 
-    public DataRunSecurityConfig(JHipsterProperties jHipsterProperties/*, DomainUserDetailsService userDetailsService*/) {
+    public DataRunSecurityConfig(JHipsterProperties jHipsterProperties, DomainUserDetailsService userDetailsService) {
         this.jHipsterProperties = jHipsterProperties;
-//        this.userDetailsService = userDetailsService;
+        this.userDetailsService = userDetailsService;
     }
 
     @Bean
@@ -70,6 +71,8 @@ public class DataRunSecurityConfig {
                         // Data Run Added
                         // For basic Auth (Basic username:password) in header
                         .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/custom/refresh")).permitAll()
+                        .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/custom/authenticate")).permitAll()
+                        .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/custom/authenticate")).permitAll()
                         .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/custom/authenticateBasic")).permitAll()
                         .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/custom/authenticateBasic")).permitAll()
                         .requestMatchers(mvc.pattern("/api/custom/register")).permitAll()
@@ -99,6 +102,9 @@ public class DataRunSecurityConfig {
                         // nmc
                         .authenticationEntryPoint(new BasicAuthenticationEntryPoint())
                         .accessDeniedHandler(new BearerTokenAccessDeniedHandler())
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(new CustomJwtAuthenticationConverter(userDetailsService)))
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(withDefaults()))
             .httpBasic(Customizer.withDefaults());

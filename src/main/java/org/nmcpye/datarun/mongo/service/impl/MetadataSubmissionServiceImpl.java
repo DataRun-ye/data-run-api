@@ -6,7 +6,7 @@ import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRepository;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepository;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
 import org.nmcpye.datarun.mongo.repository.MetadataSubmissionRepository;
@@ -42,7 +42,7 @@ public class MetadataSubmissionServiceImpl
     private final ActivityRepository activityRepository;
     private final AssignmentRepository assignmentRepository;
 
-    private final OrgUnitRepositoryCustom orgUnitRepositoryCustom;
+    private final OrgUnitRepository orgUnitRepository;
     final private MongoTemplate mongoTemplate;
     private final SequenceGeneratorService sequenceGeneratorService;
 
@@ -50,14 +50,14 @@ public class MetadataSubmissionServiceImpl
         MetadataSubmissionRepository repository,
         CacheManager cacheManager,
         ActivityRepository activityRepository, TeamRepository teamRepository, AssignmentRepository assignmentRepository,
-        OrgUnitRepositoryCustom orgUnitRepositoryCustom,
+        OrgUnitRepository orgUnitRepository,
         MongoTemplate mongoTemplate, SequenceGeneratorService sequenceGeneratorService) {
         super(repository, cacheManager, mongoTemplate);
         this.repository = repository;
         this.activityRepository = activityRepository;
         this.teamRepository = teamRepository;
         this.assignmentRepository = assignmentRepository;
-        this.orgUnitRepositoryCustom = orgUnitRepositoryCustom;
+        this.orgUnitRepository = orgUnitRepository;
         this.mongoTemplate = mongoTemplate;
         this.sequenceGeneratorService = sequenceGeneratorService;
     }
@@ -76,7 +76,7 @@ public class MetadataSubmissionServiceImpl
                     () -> {
                         throw new PropertyNotFoundException("Activity not found: " + newSubmission.getResourceId());
                     });
-            case OrgUnit -> orgUnitRepositoryCustom.findByUid(newSubmission.getResourceId())
+            case OrgUnit -> orgUnitRepository.findByUid(newSubmission.getResourceId())
                 .ifPresentOrElse((a) -> newSubmission.setResourceId(a.getUid()),
                     () -> {
                         throw new PropertyNotFoundException("OrgUnit not found: " + newSubmission.getResourceId());
@@ -110,7 +110,7 @@ public class MetadataSubmissionServiceImpl
             return repository.findAll(pageable);
         }
 
-        final List<OrgUnit> userOrgUnits = orgUnitRepositoryCustom
+        final List<OrgUnit> userOrgUnits = orgUnitRepository
             .findAllWithRelation();
 
         final Set<String> uids = userOrgUnits

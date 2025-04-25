@@ -9,6 +9,7 @@ import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.Objects;
@@ -17,6 +18,7 @@ import java.util.Optional;
 /**
  * @author Hamza Assada, 20/03/2025
  */
+@Transactional
 public abstract class DefaultAuditableObjectService<T extends AuditableObject<ID>, ID>
     implements AuditableObjectService<T, ID> {
     private static final Logger log = LoggerFactory.getLogger(DefaultAuditableObjectService.class);
@@ -67,6 +69,7 @@ public abstract class DefaultAuditableObjectService<T extends AuditableObject<ID
     }
 
     @Override
+    @Transactional
     public T update(T object) {
         log.debug("Request service to update {}:`{}`", getClazz().getSimpleName(), object.getUid());
         T existingEntity = findByIdentifyingProperties(object)

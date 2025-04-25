@@ -1,16 +1,13 @@
 package org.nmcpye.datarun.web.rest.mongo.dataformtemplate;
 
 import jakarta.validation.Valid;
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.DataFormTemplateService;
-import org.nmcpye.datarun.mongo.service.submissionmigration.DataFormTemplateMigrationService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.startupmigration.mongo.DataFormTemplateMigrationService;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess.FormTemplateProcessor;
 import org.springframework.http.ResponseEntity;
@@ -92,15 +89,15 @@ public class DataFormTemplateResource extends MongoBaseResource<DataFormTemplate
     }
 
     @GetMapping("/migrate")
-    public ResponseEntity<String> updatePaths() {
+    public ResponseEntity<String> updatePaths() throws Exception {
         log.info("REST request to migrate dataFormTemplate elements");
 
-        try {
-            dataFormTemplateMigrationService.runForDataFormTemplates();
-            return ResponseEntity.ok("Paths updated successfully");
-        } catch (Exception e) {
-            log.error("Error occurred while updating paths", e);
-            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1000, e.getMessage(), "Failed to update paths"));
-        }
+//        try {
+        dataFormTemplateMigrationService.runForDataFormTemplates();
+        return ResponseEntity.ok("Paths updated successfully");
+//        } catch (Exception e) {
+//            log.error("Error occurred while updating paths", e);
+//            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1000, e.getMessage(), "Failed to update paths"));
+//        }
     }
 }

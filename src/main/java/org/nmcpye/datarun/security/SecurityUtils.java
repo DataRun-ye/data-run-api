@@ -29,13 +29,16 @@ public final class SecurityUtils {
 
     public static Optional<CurrentUserDetails> getCurrentUserDetails() {
         return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
-            .map(authentication -> {
-                Object principal = authentication.getPrincipal();
-                if (principal instanceof CurrentUserDetails) {
-                    return (CurrentUserDetails) principal;
-                }
-                return null;
-            });
+            .map(Authentication::getPrincipal)
+            .filter(p -> p instanceof CurrentUserDetails)
+            .map(CurrentUserDetails.class::cast);
+    }
+
+    public static CurrentUserDetails getCurrentUserDetailsOrThrow() {
+        return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+            .map(Authentication::getPrincipal)
+            .filter(p -> p instanceof CurrentUserDetails)
+            .map(CurrentUserDetails.class::cast).orElseThrow(() -> new IllegalQueryException(ErrorCode.E3000));
     }
 
     public static Optional<String> getCurrentUserLocale() {

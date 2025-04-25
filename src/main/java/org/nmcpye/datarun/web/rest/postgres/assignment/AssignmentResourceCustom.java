@@ -7,15 +7,11 @@ import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
-import org.nmcpye.datarun.query.filter.FilterExpression;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,22 +35,20 @@ public class AssignmentResourceCustom
 
     private final AssignmentService assignmentService;
 
-    private final AssignmentRepository assignmentRepository;
-
-    public AssignmentResourceCustom(AssignmentService assignmentService, AssignmentRepository assignmentRepository) {
+    public AssignmentResourceCustom(AssignmentService assignmentService,
+                                    AssignmentRepository assignmentRepository) {
         super(assignmentService, assignmentRepository);
-        this.assignmentRepository = assignmentRepository;
         this.assignmentService = assignmentService;
     }
 
-    @Override
-    protected Page<Assignment> getList(Pageable pageable, QueryRequest queryRequest, FilterExpression expression) {
-        if (queryRequest.getFilters().isEmpty()) {
-            return assignmentService.getAllUserAccessible(pageable, queryRequest);
-        }
-
-        return super.getList(pageable, queryRequest, expression);
-    }
+//    @Override
+//    protected Page<Assignment> getList(Pageable pageable, QueryRequest queryRequest, FilterExpression expression) {
+//        if (queryRequest.getFilters().isEmpty()) {
+//            return assignmentService.getAllUserAccessible(pageable, queryRequest);
+//        }
+//
+//        return super.getList(pageable, queryRequest, expression);
+//    }
 
     @Override
     protected String getName() {

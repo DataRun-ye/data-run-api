@@ -7,6 +7,7 @@ import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
 import org.nmcpye.datarun.query.QueryBuilder;
 import org.nmcpye.datarun.query.UnifiedQueryParser;
 import org.nmcpye.datarun.query.filter.FilterExpression;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +59,8 @@ public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends
      */
     @GetMapping("")
     protected ResponseEntity<PagedResponse<?>> getAll(QueryRequest queryRequest) throws Exception {
+        final var userLogin = SecurityUtils.getCurrentUserLoginOrThrow();
+        log.debug("REST request to getAll {}:{}", userLogin, getName());
         Pageable pageable = PageRequest.of(queryRequest.getPage(), queryRequest.getSize());
 
         if (!queryRequest.isPaged()) {

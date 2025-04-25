@@ -1,26 +1,26 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
 import org.nmcpye.datarun.common.repository.UserRepository;
 import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.domain.User;
-import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.ActivityRepository;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.drun.postgres.service.TeamService;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.useraccess.UserAccessService;
+import org.nmcpye.datarun.security.useraccess.UserAccessService;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +29,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static org.nmcpye.datarun.drun.postgres.common.TeamSpecifications.getManagedSpecification;
 
 @Service
 @Primary
@@ -117,11 +119,18 @@ public class DefaultTeamService extends DefaultJpaAuditableService<Team> impleme
 //    }
 
     @Override
-    public Page<Team> findAllManagedByUser(Pageable pageable) {
+    public Page<Team> findAllManagedByUser(Pageable pageable, QueryRequest queryRequest) {
 
-        Specification<Team> specManage = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLoginOrThrow(new ErrorMessage(ErrorCode.E3004, getClass().getName()))).and(TeamSpecifications.isEnabled());
+//        Specification<Team> specManage = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLoginOrThrow(new ErrorMessage(ErrorCode.E3004, getClass().getName()))).and(TeamSpecifications.isEnabled());
+//        if (!queryRequest.isIncludeDisabled()) {
+//            specManage = Specification.where(specManage).and(TeamSpecifications.isEnabled());
+//        }
+        final var managedSpec = getManagedSpecification(SecurityUtils
+                .getCurrentUserDetails().orElseThrow(() ->
+                    new IllegalQueryException(new ErrorMessage(ErrorCode.E3004, getClass().getName()))),
+            queryRequest);
 
-        return repository.fetchBagRelationships(repository.findAll(specManage, pageable));
+        return repository.fetchBagRelationships(repository.findAll(managedSpec, pageable));
     }
 
     @Override
@@ -183,6 +192,7 @@ public class DefaultTeamService extends DefaultJpaAuditableService<Team> impleme
             this.clearCaches(UserRepository.USERS_BY_EMAIL_CACHE, user.getEmail());
             this.clearCaches(UserRepository.USER_TEAM_IDS_CACHE, user.getLogin());
             this.clearCaches(UserRepository.USER_GROUP_IDS_CACHE, user.getLogin());
+            this.clearCaches(UserRepository.USER_ACTIVITY_IDS_CACHE, user.getLogin());
         });
     }
 }

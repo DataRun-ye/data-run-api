@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.common.security;
 
 import org.nmcpye.datarun.common.repository.UserRepository;
+import org.nmcpye.datarun.domain.Activity;
+import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
@@ -10,11 +12,13 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.nmcpye.datarun.common.repository.UserRepository.USER_GROUP_IDS_CACHE;
-import static org.nmcpye.datarun.common.repository.UserRepository.USER_TEAM_IDS_CACHE;
+import static org.nmcpye.datarun.common.repository.UserRepository.*;
 
 @Service
 @Transactional(readOnly = true)
@@ -23,7 +27,8 @@ public class CurrentUserInfoService {
     final private UserRepository userRepository;
     final private UserGroupRepository userGroupRepository;
 
-    public CurrentUserInfoService(TeamRepository teamRepository, UserRepository userRepository, UserGroupRepository userGroupRepository) {
+    public CurrentUserInfoService(TeamRepository teamRepository, UserRepository userRepository,
+                                  UserGroupRepository userGroupRepository) {
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
         this.userGroupRepository = userGroupRepository;
@@ -37,6 +42,7 @@ public class CurrentUserInfoService {
         final var managedTeams = teams.stream()
             .flatMap(team -> team.getManagedTeams().stream())
             .filter(team -> !team.getDisabled())
+            .filter(team -> !team.getActivity().getDisabled())
             .toList();
 
         final var teamIds = teams
@@ -56,6 +62,48 @@ public class CurrentUserInfoService {
             .build();
     }
 
+    @Cacheable(cacheNames = USER_ACTIVITY_IDS_CACHE, key = "#userLogin")
+    public CurrentUserTeamInfo getUserActivityInfo(String userLogin) {
+        final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
+            new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
+
+        final var teams = new HashSet<>(teamRepository.findAllByUserLogin(userLogin, false));
+
+        final var activities = teams.stream()
+            .map(Team::getActivity)
+            .toList();
+
+        return CurrentUserTeamInfo
+            .builder()
+            .userId(user.getId())
+            .userUID(user.getUid())
+            .activityUIDs(activities
+                .stream()
+                .map(Activity::getUid)
+                .collect(Collectors.toSet()))
+            .build();
+    }
+
+    @Cacheable(cacheNames = USER_FORM_IDS_CACHE, key = "#userLogin")
+    public List<UserFormAccess> getUserFormAccess(String userLogin, Collection<String> teamUIDs) {
+        final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
+            new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
+        final var teams = new HashSet<>(teamRepository.findAll(TeamSpecifications.isEnabled()
+            .and((root, query, cb) -> root.get("uid").in(teamUIDs))));
+
+        List<UserFormAccess> formAccesses = new ArrayList<>();
+        for (final Team team : teams) {
+            formAccesses.addAll(team.getFormPermissions()
+                .stream()
+                .map(formPermissions -> UserFormAccess.builder()
+                    .form(formPermissions.getForm())
+                    .team(team.getUid())
+                    .user(user.getUid())
+                    .permissions(formPermissions.getPermissions()).build()).toList());
+        }
+
+        return formAccesses;
+    }
 
     @Cacheable(cacheNames = USER_GROUP_IDS_CACHE, key = "#userLogin")
     public CurrentUserGroupInfo getUserGroupIds(String userLogin) {

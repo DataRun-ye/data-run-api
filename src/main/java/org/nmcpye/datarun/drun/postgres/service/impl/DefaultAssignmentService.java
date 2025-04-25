@@ -9,15 +9,16 @@ import org.nmcpye.datarun.drun.postgres.domain.EntityScope;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
+import org.nmcpye.datarun.drun.postgres.pathmaintenance.AssignmentMaintenanceService;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepository;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentService;
 import org.nmcpye.datarun.mongo.domain.AssignmentSubmissionHistory;
 import org.nmcpye.datarun.mongo.repository.AssignmentSubmissionHistoryRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.useraccess.UserAccessService;
+import org.nmcpye.datarun.security.useraccess.UserAccessService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
@@ -40,17 +41,19 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
 
     final AssignmentRepository repository;
     final TeamRepository teamRepository;
-    final OrgUnitRepositoryCustom orgUnitRepository;
+    final OrgUnitRepository orgUnitRepository;
     final UserRepository userRepository;
     private final AssignmentSubmissionHistoryRepository assignmentHistoryRepository;
+    private final AssignmentMaintenanceService maintenanceService;
 
-    public DefaultAssignmentService(AssignmentRepository repository, TeamRepository teamRepository, OrgUnitRepositoryCustom orgUnitRepository, UserRepository userRepository, AssignmentSubmissionHistoryRepository assignmentHistoryRepository, UserAccessService userAccessService, CacheManager cacheManager) {
+    public DefaultAssignmentService(AssignmentRepository repository, TeamRepository teamRepository, OrgUnitRepository orgUnitRepository, UserRepository userRepository, AssignmentSubmissionHistoryRepository assignmentHistoryRepository, UserAccessService userAccessService, CacheManager cacheManager, AssignmentMaintenanceService maintenanceService) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.teamRepository = teamRepository;
         this.orgUnitRepository = orgUnitRepository;
         this.userRepository = userRepository;
         this.assignmentHistoryRepository = assignmentHistoryRepository;
+        this.maintenanceService = maintenanceService;
     }
 
     @Override
@@ -118,13 +121,17 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
     @Transactional(readOnly = true)
     public Page<Assignment> getAllUserAccessible(Pageable pageable, QueryRequest queryRequest) {
         Page<Assignment> assignedPage = findAllByUser(pageable, queryRequest);
-        List<Assignment> assigned = assignedPage.getContent().stream().filter(assignment -> !assignment.getActivity().getDisabled()).peek(assignment -> assignment.setEntityScope(EntityScope.Assigned)).toList();
+        List<Assignment> assigned = assignedPage.getContent().stream()
+            .filter(assignment -> !assignment.getActivity().getDisabled())
+            .peek(assignment -> assignment.setEntityScope(EntityScope.Assigned)).toList();
 
         List<String> assignedUids = assigned.stream().map(Assignment::getUid).toList();
 
-        List<Assignment> managed = getManagedTeamsAssignmentsWithChildren().stream().peek(assignment -> assignment.setEntityScope(EntityScope.Managed)).toList();
+        List<Assignment> managed = getManagedTeamsAssignmentsWithChildren()
+            .stream().peek(assignment -> assignment.setEntityScope(EntityScope.Managed)).toList();
 
-        List<Assignment> combinedContent = Stream.concat(assigned.stream(), managed.stream()).collect(Collectors.toList());
+        List<Assignment> combinedContent = Stream.concat(assigned.stream(), managed.stream())
+            .collect(Collectors.toList());
 
         // TODO Create AssignmentHistory in app and fetch all and sort the latest out on the app
         Page<Assignment> assignments = findWithStatus(new PageImpl<>(combinedContent, pageable, assignedPage.getTotalElements() + managed.size()));
@@ -141,9 +148,14 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
     }
 
     List<Assignment> getManagedTeamsAssignmentsWithChildren() {
-        Specification<Team> spec = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLoginOrThrow()).and(TeamSpecifications.isEnabled());
+        Specification<Team> spec = TeamSpecifications
+            .getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLoginOrThrow())
+            .and(TeamSpecifications.isEnabled());
 
-        List<String> managedAssignmentsUids = teamRepository.findAll(spec).stream().flatMap(team -> team.getAssignments().stream()).map(Assignment::getUid).toList();
+        List<String> managedAssignmentsUids = teamRepository
+            .findAll(spec).stream()
+            .flatMap(team -> team.getAssignments().stream())
+            .map(Assignment::getUid).toList();
         return getAssignmentsWithChildren(managedAssignmentsUids);
     }
 
@@ -186,12 +198,14 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
     @Transactional
     @Scheduled(cron = "0 0 3 * * ?")
     public void updatePaths() {
-        repository.updatePaths();
+//        repository.updatePaths();
+        maintenanceService.updateMissingPaths();
     }
 
     @Override
     @Transactional
     public void forceUpdatePaths() {
-        repository.forceUpdatePaths();
+        maintenanceService.forceRecomputePaths();
+//        repository.forceUpdatePaths();
     }
 }

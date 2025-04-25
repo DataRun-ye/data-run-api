@@ -5,9 +5,9 @@ import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitGroupRepository;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepositoryCustom;
+import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepository;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitGroupService;
-import org.nmcpye.datarun.useraccess.UserAccessService;
+import org.nmcpye.datarun.security.useraccess.UserAccessService;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -22,9 +22,9 @@ import java.util.Set;
 @Transactional
 public class DefaultOrgUnitGroupService extends DefaultJpaAuditableService<OrgUnitGroup> implements OrgUnitGroupService {
 
-    private final OrgUnitRepositoryCustom orgUnitRepository;
+    private final OrgUnitRepository orgUnitRepository;
 
-    public DefaultOrgUnitGroupService(OrgUnitGroupRepository repository, OrgUnitRepositoryCustom orgUnitRepository, UserAccessService userAccessService, CacheManager cacheManager) {
+    public DefaultOrgUnitGroupService(OrgUnitGroupRepository repository, OrgUnitRepository orgUnitRepository, UserAccessService userAccessService, CacheManager cacheManager) {
         super(repository, cacheManager, userAccessService);
         this.orgUnitRepository = orgUnitRepository;
     }

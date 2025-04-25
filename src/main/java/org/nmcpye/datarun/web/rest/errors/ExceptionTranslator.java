@@ -63,7 +63,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(ErrorCodeException.class)
-    public ResponseEntity<EntitySaveSummaryVM> handleBaseException(ErrorCodeException ex) {
+    public ResponseEntity<?> handleBaseException(ErrorCodeException ex) {
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         if (ex instanceof FormTemplateValidationException validationException) {
             summary.getFailed().put("error_code", ex.getErrorCode().toString());
@@ -77,9 +77,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
             summary.getFailed().put("message", ex.getMessage());
         }
 
-        HttpStatus status = HttpStatus.BAD_REQUEST;
-
-        return new ResponseEntity<>(summary, status);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", summary.getFailed()));
     }
 
     @ExceptionHandler(value = TokenRefreshException.class)

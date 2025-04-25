@@ -7,6 +7,7 @@ import org.nmcpye.datarun.drun.postgres.repository.RefreshTokenRepository;
 import org.nmcpye.datarun.security.datarun.TokenRefreshException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
@@ -20,6 +21,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.nmcpye.datarun.security.SecurityUtils.AUTHORITIES_KEY;
+import static org.nmcpye.datarun.security.SecurityUtils.JWT_ALGORITHM;
 
 /**
  * @author Hamza Assada, 16/04/2025
@@ -32,10 +34,10 @@ public class TokenService {
     private final UserRepository userRepository;
     private final JwtEncoder jwtEncoder;
 
-    @Value("${jhipster.security.authentication.jwt.token-validity-in-seconds:600}")
+    @Value("${datarun.security.authentication.jwt.token-validity-in-seconds:600}")
     private long accessTokenValidity;
 
-    @Value("${jhipster.security.authentication.jwt.refresh-token-validity-in-seconds:2592000}") // 30 days
+    @Value("${datarun.security.authentication.jwt.refresh-token-validity-in-seconds:2592000}") // 30 days
     private long refreshTokenValidity;
 
     public TokenService(RefreshTokenRepository refreshTokenRepository,
@@ -61,14 +63,13 @@ public class TokenService {
             .collect(Collectors.joining(" "));
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
-            .issuer("Datarun")
             .issuedAt(now)
             .expiresAt(now.plus(accessTokenValidity, ChronoUnit.SECONDS))
             .subject(user.getLogin())
             .claim(AUTHORITIES_KEY, authorities)
             .build();
-
-        return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+        JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
+        return jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader,claims)).getTokenValue();
     }
 
     public RefreshToken createRefreshToken(String username) {
@@ -86,7 +87,6 @@ public class TokenService {
     @Transactional(readOnly = true)
     public RefreshToken verifyRefreshToken(String token) {
         return refreshTokenRepository.findByToken(token)
-//            .filter(t -> t.getExpiryDate().compareTo(Instant.now()) > 0)
             .filter(t -> !t.isExpired())
             .orElseThrow(() -> new TokenRefreshException(token, "Invalid refresh token"));
     }

@@ -1,12 +1,14 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.DataFormTemplateService;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.CacheManager;
@@ -23,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static org.nmcpye.datarun.drun.postgres.common.TeamSpecifications.getAssignedSpecification;
 
 /**
  * Service Implementation for managing {@link DataFormTemplate}.
@@ -57,13 +61,12 @@ public class DataFormTemplateServiceImpl
             return Page.empty(pageable);
         }
 
-        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return repository.findAll(pageable);
-        }
-
-
+        final var assignedTeamSec = getAssignedSpecification(SecurityUtils
+                .getCurrentUserDetails().orElseThrow(() ->
+                    new IllegalQueryException(new ErrorMessage(ErrorCode.E3004, getClass().getName()))),
+            queryRequest);
         Set<String> userForms = teamRepository
-            .findAllWithEagerRelation().stream().flatMap((team) -> team.getFormsWithPermission(
+            .findAll(assignedTeamSec).stream().flatMap((team) -> team.getFormsWithPermission(
                 FormPermission.ADD_SUBMISSIONS).stream()).collect(Collectors.toSet());
 
         Query query = new Query();

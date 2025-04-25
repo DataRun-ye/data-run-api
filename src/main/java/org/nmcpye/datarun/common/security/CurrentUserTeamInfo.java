@@ -1,23 +1,25 @@
 package org.nmcpye.datarun.common.security;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Value;
 
 import java.util.Set;
 
 /**
  * @author Hamza Assada, 20/03/2025
  */
-@AllArgsConstructor
-@Getter
+@Value
 @Builder
 public class CurrentUserTeamInfo {
-    private Long userId;
+    Long userId;
 
-    private String userUID;
+    String userUID;
 
-    private Set<String> teamUIDs;
+    Set<String> teamUIDs;
 
-    private Set<String> managedTeamUIDs;
+    Set<String> formsUIDs;
+
+    Set<String> activityUIDs;
+
+    Set<String> managedTeamUIDs;
 }

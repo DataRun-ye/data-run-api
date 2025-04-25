@@ -52,9 +52,10 @@ public interface TeamRepository
 
     @Query(
         "select team from Team team " +
-            "left join fetch team.activity a " +
-            "left join team.users user " +
-            "where team.disabled =:includeDisabled and a.disabled =:includeDisabled and user.login =:login"
+            "join team.activity a " +
+            "join team.users user " +
+            "where (:includeDisabled = true OR team.disabled = false) and user.login =:login " +
+            "and (:includeDisabled = true OR a.disabled = false)"
     )
     List<Team> findAllByUserLogin(@Param("login") String userLogin, boolean includeDisabled);
 
