@@ -17,6 +17,7 @@ import static org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission
 @EqualsAndHashCode
 public class TeamFormPermissions {
     @NotNull
+    private String team;
     private String form;
     private Set<FormPermission> permissions;
 

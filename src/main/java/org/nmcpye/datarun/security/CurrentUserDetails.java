@@ -7,7 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface CurrentUserDetails extends UserDetails {
@@ -51,25 +51,30 @@ public interface CurrentUserDetails extends UserDetails {
 
     String getImageUrl();
 
+    String getLangKey();
+
     @JsonIgnore
     boolean isSuper();
 
-    String getLangKey();
+    // metadata
+    Integer getAssignmentCount();
+
+    Integer getOrgUnitCount();
 
     /**
      * Set of UserTeam UID which current User belongs to.
      *
      * @return user Teams uids
      */
-    Set<String> getUserTeams();
+    Set<String> getTeams();
 
-    Set<String> getUserActivities();
+    Set<String> getActivities();
 
     Set<String> getManagedTeams();
 
     Set<String> getUserGroups();
 
-    Set<String> getUserForms();
+    Set<String> getForms();
 
-    List<UserFormAccess> getFormAccess();
+    Map<String, UserFormAccess> getFormAccess();
 }

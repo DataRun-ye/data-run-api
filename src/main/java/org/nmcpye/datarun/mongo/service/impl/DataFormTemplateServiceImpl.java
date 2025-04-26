@@ -4,6 +4,7 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.common.repository.UserRepository;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
@@ -12,6 +13,7 @@ import org.nmcpye.datarun.mongo.service.DataFormTemplateService;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,6 +53,14 @@ public class DataFormTemplateServiceImpl
         super(repository, cacheManager, mongoTemplate);
         this.repository = repository;
         this.teamRepository = teamRepository;
+    }
+
+    @CacheEvict(cacheNames = {UserRepository.USER_TEAM_FORM_ACCESS_CACHE,
+        UserRepository.USER_ACTIVITY_IDS_CACHE,
+        UserRepository.USER_TEAM_IDS_CACHE})
+    @Override
+    public DataFormTemplate saveWithRelations(DataFormTemplate object) {
+        return super.saveWithRelations(object);
     }
 
     @Override

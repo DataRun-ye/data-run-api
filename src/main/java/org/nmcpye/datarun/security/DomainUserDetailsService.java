@@ -89,17 +89,17 @@ public class DomainUserDetailsService implements UserDetailsService {
                 .anyMatch((s) ->
                     s.equals(AuthoritiesConstants.ADMIN)))
 
-            .userTeams(userTeamInfo.getTeamUIDs())
+            .teams(userTeamInfo.getTeamUIDs())
             .managedTeams(userTeamInfo.getManagedTeamUIDs())
 
-            .userActivities(currentUserInfoService
+            .activities(currentUserInfoService
                 .getUserActivityInfo(user.getLogin()).getActivityUIDs())
 
 
             .userGroups(currentUserInfoService
                 .getUserGroupIds(user.getLogin()).getUserGroupUIDs())
 
-            .userForms(userFormAccess.stream()
+            .forms(userFormAccess.values().stream()
                 .map(UserFormAccess::getForm)
                 .collect(Collectors.toSet()))
 

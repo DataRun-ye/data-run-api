@@ -16,10 +16,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.nmcpye.datarun.common.repository.UserRepository.*;
@@ -88,29 +85,8 @@ public class CurrentUserInfoService {
             .build();
     }
 
-//    @Cacheable(cacheNames = USER_FORM_IDS_CACHE, key = "#userLogin")
-//    public CurrentUserFormInfo getUserFormInfo(String userLogin) {
-//        final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
-//            new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
-//
-//        final var teams = new HashSet<>(teamRepository.findAllByUserLogin(userLogin, false));
-//
-//        final var formUIDs = teams.stream()
-//            .map(Team::getFormPermissions)
-//            .flatMap(Collection::stream)
-//            .map(TeamFormPermissions::getForm)
-//            .collect(Collectors.toSet());
-//
-//        return CurrentUserFormInfo
-//            .builder()
-//            .userId(user.getId())
-//            .userUID(user.getUid())
-//            .formUIDs(formUIDs)
-//            .build();
-//    }
-
     @Cacheable(cacheNames = USER_TEAM_FORM_ACCESS_CACHE, key = "#userLogin")
-    public List<UserFormAccess> getUserFormAccess(String userLogin, Collection<String> teamUIDs) {
+    public Map<String, UserFormAccess> getUserFormAccess(String userLogin, Collection<String> teamUIDs) {
         final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
             new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
         final var teams = new HashSet<>(teamRepository.findAll(TeamSpecifications.isEnabled()
@@ -127,7 +103,12 @@ public class CurrentUserInfoService {
                     .permissions(formPermissions.getPermissions()).build()).toList());
         }
 
-        return formAccesses;
+        final var formAccess = formAccesses.stream()
+            .collect(Collectors
+                .toMap(UserFormAccess::getForm,
+                    userFormAccess -> userFormAccess));
+
+        return formAccess;
     }
 
     @Cacheable(cacheNames = USER_GROUP_IDS_CACHE, key = "#userLogin")

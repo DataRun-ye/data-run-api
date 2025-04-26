@@ -6,6 +6,7 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
@@ -44,6 +45,13 @@ public abstract class DefaultAuditableObjectService<T extends AuditableObject<ID
 
     @Override
     public T saveWithRelations(T object) {
+        final var currentUser = SecurityUtils.getCurrentUserDetails().orElse(null);
+        // temporarily check for test users to not save anything.
+        if (currentUser != null && currentUser.getUsername().startsWith("test")) {
+            // pass
+            return object;
+        }
+
         return save(object);
     }
 

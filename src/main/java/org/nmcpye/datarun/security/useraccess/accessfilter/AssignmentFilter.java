@@ -36,12 +36,12 @@ public class AssignmentFilter extends DefaultJpaFilter<Assignment> {
                 return cb.conjunction();
             }
 
-            if (user.getUserTeams() == null || user.getUserTeams().isEmpty()) {
+            if (user.getTeams() == null || user.getTeams().isEmpty()) {
                 return cb.disjunction(); // user has no access
             }
 
             Join<Assignment, Team> assignmentJoin = root.join("team", JoinType.INNER);
-            return assignmentJoin.get("uid").in(user.getUserTeams());
+            return assignmentJoin.get("uid").in(user.getTeams());
 
         };
 

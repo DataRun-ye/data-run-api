@@ -22,11 +22,11 @@ public abstract class TeamSpecifications {
                 return cb.conjunction();
             }
 
-            if (user.getUserTeams() == null || user.getUserTeams().isEmpty()) {
+            if (user.getTeams() == null || user.getTeams().isEmpty()) {
                 return cb.disjunction(); // user has no access
             }
 
-            return root.get("uid").in(user.getUserTeams());
+            return root.get("uid").in(user.getTeams());
         };
 
         if (!queryRequest.isIncludeDisabled()) {

@@ -91,6 +91,12 @@ public class Team extends JpaBaseIdentifiableObject {
     @Transient
     private EntityScope entityScope;
 
+    public void setFormPermissions(Set<TeamFormPermissions> formPermissions) {
+        this.formPermissions = formPermissions
+            .stream().peek((f) -> f.setTeam(this.getUid()))
+            .collect(Collectors.toSet());
+    }
+
     public Set<FormPermission> getFormPermissions(String form) {
         return formPermissions.stream()
             .filter(p -> p.getForm().equals(form)).map(TeamFormPermissions::getPermissions)
