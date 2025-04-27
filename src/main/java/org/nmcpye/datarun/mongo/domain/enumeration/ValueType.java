@@ -25,8 +25,8 @@ public enum ValueType {
     Date,
     DateTime,
     Time,
-    Number,
     Percentage,
+    Number,
     Integer,
     IntegerPositive,
     IntegerNegative,
@@ -52,8 +52,29 @@ public enum ValueType {
         return List.of(Section, RepeatableSection);
     }
 
-    public boolean isSectionType() {
-        return SectionTypes().contains(this);
+    public List<ValueType> numericTypes() {
+        return List.of(Number,
+            Integer,
+            IntegerPositive,
+            IntegerNegative,
+            IntegerZeroOrPositive);
+    }
+
+    public List<ValueType> textualTypes() {
+        return List.of(SelectOne,
+            FullName,
+            Text,
+            LongText,
+            Letter,
+            YesNo);
+    }
+
+    public boolean isNumeric() {
+        return numericTypes().contains(this);
+    }
+
+    public boolean isTextual() {
+        return textualTypes().contains(this);
     }
 
     public boolean isSection() {
@@ -70,5 +91,25 @@ public enum ValueType {
 
     public boolean isOptionsType() {
         return this == SelectOne || this == SelectMulti;
+    }
+
+
+    /**
+     * Returns true if the two value types should be considered compatible:
+     * - exactly the same, or
+     * - both numeric, or
+     * - both textual.
+     */
+    public boolean isCompatible(ValueType other) {
+        if (this == other) {
+            return true;
+        }
+        if (this.isNumeric() && other.isNumeric()) {
+            return true;
+        }
+        if (this.isTextual() && other.isTextual()) {
+            return true;
+        }
+        return false;
     }
 }
