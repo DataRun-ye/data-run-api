@@ -93,7 +93,7 @@ public class Team extends JpaBaseIdentifiableObject {
 
     public void setFormPermissions(Set<TeamFormPermissions> formPermissions) {
         this.formPermissions = formPermissions
-            .stream().peek((f) -> f.setTeam(this.getUid()))
+            .stream().peek((f) -> f.setTeamUid(this.getUid()))
             .collect(Collectors.toSet());
     }
 

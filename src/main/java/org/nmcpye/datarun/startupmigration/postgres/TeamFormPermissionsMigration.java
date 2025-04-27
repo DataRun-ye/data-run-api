@@ -45,9 +45,9 @@ public class TeamFormPermissionsMigration implements CommandLineRunner {
                 // run each chunk in its own transaction to keep EM small
                 Page<Team> finalChunk = chunk;
                 new TransactionTemplate(txm).execute(status -> {
-                    for (Team ou : finalChunk) {
+                    for (Team team : finalChunk) {
                         // calling getter will recompute
-                        ou.setFormPermissions(ou.getFormPermissions());
+                        team.setFormPermissions(team.getFormPermissions());
                     }
                     repository.saveAll(finalChunk.getContent());
                     // make sure we don’t accumulate managed state

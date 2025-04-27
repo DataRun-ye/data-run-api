@@ -1,12 +1,7 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.common.repository.UserRepository;
-import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.DataFormTemplateService;
@@ -25,10 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.nmcpye.datarun.drun.postgres.common.TeamSpecifications.getAssignedSpecification;
 
 /**
  * Service Implementation for managing {@link DataFormTemplate}.
@@ -40,19 +31,11 @@ public class DataFormTemplateServiceImpl
     extends DefaultMongoAuditableObjectService<DataFormTemplate>
     implements DataFormTemplateService {
 
-    private final DataFormTemplateRepository repository;
-
-    private final TeamRepository teamRepository;
-
-
     public DataFormTemplateServiceImpl(
         DataFormTemplateRepository repository,
         CacheManager cacheManager,
-        MongoTemplate mongoTemplate,
-        TeamRepository teamRepository) {
+        MongoTemplate mongoTemplate) {
         super(repository, cacheManager, mongoTemplate);
-        this.repository = repository;
-        this.teamRepository = teamRepository;
     }
 
     @CacheEvict(cacheNames = {UserRepository.USER_TEAM_FORM_ACCESS_CACHE,
@@ -66,21 +49,16 @@ public class DataFormTemplateServiceImpl
     @Override
     @Transactional(readOnly = true)
     public Page<DataFormTemplate> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
-
         if (!SecurityUtils.isAuthenticated()) {
             return Page.empty(pageable);
         }
 
-        final var assignedTeamSec = getAssignedSpecification(SecurityUtils
-                .getCurrentUserDetails().orElseThrow(() ->
-                    new IllegalQueryException(new ErrorMessage(ErrorCode.E3004, getClass().getName()))),
-            queryRequest);
-        Set<String> userForms = teamRepository
-            .findAll(assignedTeamSec).stream().flatMap((team) -> team.getFormsWithPermission(
-                FormPermission.ADD_SUBMISSIONS).stream()).collect(Collectors.toSet());
-
         Query query = new Query();
-        query = query.addCriteria(Criteria.where("uid").in(userForms));
+
+        final var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
+        if (!currentUser.isSuper()) {
+            query = query.addCriteria(Criteria.where("uid").in(currentUser.getForms()));
+        }
 
         if (!queryRequest.isIncludeDeleted()) {
             query.addCriteria(Criteria.where("deleted").is(false));
@@ -92,11 +70,9 @@ public class DataFormTemplateServiceImpl
 
         List<DataFormTemplate> results = mongoTemplate.find(query, DataFormTemplate.class);
 
-        Page<DataFormTemplate> resultsPage = PageableExecutionUtils.getPage(
+        return PageableExecutionUtils.getPage(
             results,
             pageable,
             () -> mongoTemplate.count(totalQuery, DataFormTemplate.class));
-
-        return resultsPage;
     }
 }

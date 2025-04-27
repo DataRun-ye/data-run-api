@@ -1,7 +1,5 @@
 package org.nmcpye.datarun.web.rest.mongo.submission;
 
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.drun.postgres.service.TeamService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
@@ -91,10 +89,6 @@ public class DataFormSubmissionResource
     @Override
     protected void saveEntity(DataFormSubmission entity, EntitySaveSummaryVM summary) {
         try {
-            if (!teamService.isActive(entity.getTeam())) {
-                throw new IllegalQueryException(ErrorCode.E1112, entity.getTeam());
-            }
-
             super.saveEntity(entity, summary);
         } catch (Exception e) {
             log.error("REST Error Saving entity {}:{}", getEntityClass().getSimpleName(), entity.getUid());

@@ -99,7 +99,7 @@ public class DomainUserDetailsService implements UserDetailsService {
             .userGroups(currentUserInfoService
                 .getUserGroupIds(user.getLogin()).getUserGroupUIDs())
 
-            .forms(userFormAccess.values().stream()
+            .forms(userFormAccess.stream()
                 .map(UserFormAccess::getForm)
                 .collect(Collectors.toSet()))
 

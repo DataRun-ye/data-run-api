@@ -60,10 +60,10 @@ public class AccountResourceCustom /*extends AbstractRelationalResource<User>*/ 
      */
     @GetMapping("/me")
     public AdminUserDTO getAccount() {
-        final var user = userService
-            .getUserWithAuthorities()
-            .map(AdminUserDTO::new);
-        log.debug("Created Information for User: {}", user);
+//        final var user = userService
+//            .getUserWithAuthorities()
+//            .map(AdminUserDTO::new);
+//        log.debug("Created Information for User: {}", user);
         return userService
             .getUserWithAuthorities()
             .map(AdminUserDTO::new)

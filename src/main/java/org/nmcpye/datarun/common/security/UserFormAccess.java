@@ -7,6 +7,8 @@ import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
 import java.time.Instant;
 import java.util.Set;
 
+import static org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission.*;
+
 /**
  * @author Hamza Assada, 24/04/2025
  */
@@ -20,37 +22,45 @@ public class UserFormAccess {
     Instant validFrom;
     Instant validTo;
 
-//    public boolean canViewSubmission() {
-//        return permissions.stream().anyMatch(FormPermission::canViewSubmission);
-//    }
-//
-//    public boolean canViewSubmissionFromUsers() {
-//        return permissions.contains(VIEW_SUBMISSIONS_FROM_USERS);
-//    }
-//
-//    public boolean canAddSubmission() {
-//        return permissions.contains(ADD_SUBMISSIONS);
-//    }
-//
-//    public boolean canEditSubmission() {
-//        return permissions.contains(EDIT_SUBMISSIONS);
-//
-//    }
-//
-//    public boolean canEditSubmissionFromUsers() {
-//        return permissions.contains(EDIT_SUBMISSIONS_FROM_USERS);
-//    }
-//
-//    public boolean canApproveSubmission() {
-//        return permissions.contains(APPROVE_SUBMISSIONS);
-//    }
-//
-//    public boolean canDeleteSubmission() {
-//        return permissions.contains(DELETE_SUBMISSIONS);
-//    }
-//
-//    public boolean canDeleteSubmissionFromUsers() {
-//        return permissions.contains(DELETE_SUBMISSIONS_FROM_USERS);
-//    }
+    public boolean canViewSubmission(String form) {
+        return this.form.equals(form) &&
+            permissions.stream()
+                .anyMatch(FormPermission::canViewSubmission);
+    }
+
+    public boolean canViewSubmissionFromUsers(String form) {
+        return this.form.equals(form) &&
+            permissions.contains(VIEW_SUBMISSIONS_FROM_USERS);
+    }
+
+    public boolean canAddSubmission(String form) {
+        return this.form.equals(form) &&
+            permissions.contains(ADD_SUBMISSIONS);
+    }
+
+    public boolean canEditSubmission(String form) {
+        return this.form.equals(form) &&
+            permissions.contains(EDIT_SUBMISSIONS);
+
+    }
+
+    public boolean canEditSubmissionFromUsers(String form) {
+        return this.form.equals(form) &&
+            permissions.contains(EDIT_SUBMISSIONS_FROM_USERS);
+    }
+
+    public boolean canApproveSubmission(String form) {
+        return permissions.contains(APPROVE_SUBMISSIONS);
+    }
+
+    public boolean canDeleteSubmission(String form) {
+        return this.form.equals(form) &&
+            permissions.contains(DELETE_SUBMISSIONS);
+    }
+
+    public boolean canDeleteSubmissionFromUsers(String form) {
+        return this.form.equals(form) &&
+            permissions.contains(DELETE_SUBMISSIONS_FROM_USERS);
+    }
 }
 

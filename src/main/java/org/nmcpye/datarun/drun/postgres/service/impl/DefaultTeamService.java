@@ -186,18 +186,6 @@ public class DefaultTeamService extends DefaultJpaAuditableService<Team> impleme
         }).map(repository::save);
     }
 
-    @Override
-    public boolean isActive(String teamUid) {
-        final var teamOptional = repository.findByUid(teamUid);
-        if (teamOptional.isPresent()) {
-            final var team = teamOptional.get();
-            return team
-                .getDisabled() == Boolean.FALSE &&
-                team.getActivity().getDisabled() == Boolean.FALSE;
-        }
-        return false;
-    }
-
     private void clearTeamCaches(Team team) {
         team.getUsers().forEach(user -> {
             this.clearCaches(UserRepository.USERS_BY_LOGIN_CACHE, user.getLogin());

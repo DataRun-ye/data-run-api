@@ -7,7 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 public interface CurrentUserDetails extends UserDetails {
@@ -76,5 +76,5 @@ public interface CurrentUserDetails extends UserDetails {
 
     Set<String> getForms();
 
-    Map<String, UserFormAccess> getFormAccess();
+    List<UserFormAccess> getFormAccess();
 }

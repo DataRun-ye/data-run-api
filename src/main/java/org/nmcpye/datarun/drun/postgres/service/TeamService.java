@@ -17,6 +17,4 @@ public interface TeamService
     Page<Team> findAllManagedByUser(Pageable pageable, QueryRequest queryRequest);
 
     Optional<Team> partialUpdate(Team team);
-
-    boolean isActive(String teamUid);
 }

@@ -8,7 +8,7 @@ import org.nmcpye.datarun.common.security.UserFormAccess;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -50,5 +50,5 @@ public class CurrentUserDetailsImpl implements CurrentUserDetails {
     private final Set<String> managedTeams;
     private final Set<String> userGroups;
     private final Set<String> forms;
-    private final Map<String, UserFormAccess> formAccess;
+    private final List<UserFormAccess> formAccess;
 }
