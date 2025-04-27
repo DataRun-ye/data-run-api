@@ -61,5 +61,17 @@ public class TeamFormPermissions {
         return this.form.equals(form) &&
             permissions.contains(DELETE_SUBMISSIONS_FROM_USERS);
     }
+
+//    @Override
+//    public boolean equals(Object o) {
+//        if (this == o) return true;
+//        if (!(o instanceof TeamFormPermissions that)) return false;
+//        return Objects.equals(getTeamUid(), that.getTeamUid()) && Objects.equals(getForm(), that.getForm());
+//    }
+//
+//    @Override
+//    public int hashCode() {
+//        return Objects.hash(getTeamUid(), getForm());
+//    }
 }
 

@@ -14,6 +14,7 @@ import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.drun.postgres.service.TeamService;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.security.useraccess.UserAccessService;
+import org.nmcpye.datarun.startupmigration.postgres.TeamFormPermissionsMigration;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,12 +43,14 @@ public class DefaultTeamService extends DefaultJpaAuditableService<Team> impleme
 
     final private UserRepository userRepository;
     final private ActivityRepository activityRepository;
+    private final TeamFormPermissionsMigration formPermissionsMigration;
 
-    public DefaultTeamService(TeamRepository repository, UserRepository userRepository, ActivityRepository activityRepository, CacheManager cacheManager, UserAccessService userAccessService) {
+    public DefaultTeamService(TeamRepository repository, UserRepository userRepository, ActivityRepository activityRepository, CacheManager cacheManager, UserAccessService userAccessService, TeamFormPermissionsMigration formPermissionsMigration) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
+        this.formPermissionsMigration = formPermissionsMigration;
     }
 
     @Override
@@ -184,6 +187,11 @@ public class DefaultTeamService extends DefaultJpaAuditableService<Team> impleme
 
             return existingTeam;
         }).map(repository::save);
+    }
+
+    @Override
+    public void runFormPermissionsMigration() {
+        formPermissionsMigration.processInChunks();
     }
 
     private void clearTeamCaches(Team team) {

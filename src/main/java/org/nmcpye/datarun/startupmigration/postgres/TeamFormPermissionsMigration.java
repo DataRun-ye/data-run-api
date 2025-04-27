@@ -3,7 +3,6 @@ package org.nmcpye.datarun.startupmigration.postgres;
 import jakarta.persistence.EntityManager;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +16,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 @Component
 @Transactional
-public class TeamFormPermissionsMigration implements CommandLineRunner {
+public class TeamFormPermissionsMigration /*implements CommandLineRunner*/ {
     private static final int CHUNK_SIZE = 400;
     final TeamRepository repository;
 
@@ -31,12 +30,12 @@ public class TeamFormPermissionsMigration implements CommandLineRunner {
         this.txm = txm;
     }
 
-    @Override
-    public void run(String... args) throws Exception {
-        processInChunks();
-    }
+//    @Override
+//    public void run(String... args) throws Exception {
+//        processInChunks();
+//    }
 
-    private void processInChunks() {
+    public void processInChunks() {
         int page = 0;
         Page<Team> chunk;
         do {

@@ -31,18 +31,18 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/custom/teams")
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class TeamResourceCustom extends JpaBaseResource<Team> {
-    private final Logger log = LoggerFactory.getLogger(TeamResourceCustom.class);
+public class TeamResource extends JpaBaseResource<Team> {
+    private final Logger log = LoggerFactory.getLogger(TeamResource.class);
 
-    private final TeamService serviceCustom;
+    private final TeamService teamService;
 
-    private final TeamRepository repositoryCustom;
+    private final TeamRepository teamRepository;
 
-    public TeamResourceCustom(TeamService serviceCustom,
-                              TeamRepository repositoryCustom) {
-        super(serviceCustom, repositoryCustom);
-        this.serviceCustom = serviceCustom;
-        this.repositoryCustom = repositoryCustom;
+    public TeamResource(TeamService teamService,
+                        TeamRepository teamRepository) {
+        super(teamService, teamRepository);
+        this.teamService = teamService;
+        this.teamRepository = teamRepository;
     }
 
     @Override
@@ -59,7 +59,7 @@ public class TeamResourceCustom extends JpaBaseResource<Team> {
             pageable = Pageable.unpaged();
         }
 
-        Page<Team> processedPage = serviceCustom.findAllManagedByUser(pageable, queryRequest);
+        Page<Team> processedPage = teamService.findAllManagedByUser(pageable, queryRequest);
 
         String next = createNextPageLink(processedPage);
 
@@ -92,15 +92,23 @@ public class TeamResourceCustom extends JpaBaseResource<Team> {
             throw new BadRequestAlertException("Invalid ID", getName(), "idinvalid");
         }
 
-        if (!serviceCustom.existsByUid(uid)) {
+        if (!teamService.existsByUid(uid)) {
             throw new BadRequestAlertException("Entity not found", getName(), "idnotfound");
         }
 
-        Optional<Team> result = serviceCustom.partialUpdate(team);
+        Optional<Team> result = teamService.partialUpdate(team);
 
         return ResponseUtil.wrapOrNotFound(
             result,
             HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), team.getUid())
         );
+    }
+
+    @GetMapping("/migrate")
+    public ResponseEntity<String> updatePaths() throws Exception {
+        log.info("REST request to migrate team form permissions");
+        teamService.runFormPermissionsMigration();
+
+        return ResponseEntity.ok("Paths updated successfully");
     }
 }
