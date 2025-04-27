@@ -7,14 +7,16 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * @author Hamza Assada, 24/04/2025
  */
-//@Component
-//@Transactional
+@Component
+@Transactional
 public class TeamFormPermissionsMigration implements CommandLineRunner {
     private static final int CHUNK_SIZE = 400;
     final TeamRepository repository;
