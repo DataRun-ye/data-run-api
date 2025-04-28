@@ -5,6 +5,7 @@ import org.nmcpye.datarun.drun.postgres.repository.OrgUnitGroupSetRepository;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitGroupSetService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,13 +15,21 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import static org.nmcpye.datarun.web.rest.postgres.orgunit.OrgUnitGroupSetResource.CUSTOM;
+import static org.nmcpye.datarun.web.rest.postgres.orgunit.OrgUnitGroupSetResource.V1;
+
 /**
  * REST Extended controller for managing {@link OrgUnitGroupSet}.
  */
 @RestController
-@RequestMapping("/api/custom/orgUnitGroupSets")
+@RequestMapping(value = {
+    CUSTOM,
+    V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class OrgUnitGroupSetResource extends JpaBaseResource<OrgUnitGroupSet> {
+    protected static final String NAME = "/orgUnitGroupSets";
+    protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
+    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private final OrgUnitGroupSetService service;
 

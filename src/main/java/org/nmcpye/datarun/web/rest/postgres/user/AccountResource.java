@@ -6,15 +6,13 @@ import org.nmcpye.datarun.common.repository.UserRepository;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.service.UserService;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.service.MailService;
 import org.nmcpye.datarun.service.dto.AdminUserDTO;
 import org.nmcpye.datarun.service.dto.PasswordChangeDTO;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.errors.EmailAlreadyUsedException;
 import org.nmcpye.datarun.web.rest.errors.InvalidPasswordException;
 import org.nmcpye.datarun.web.rest.errors.LoginAlreadyUsedException;
 import org.nmcpye.datarun.web.rest.vm.ManagedUserVM;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,29 +23,22 @@ import java.util.Optional;
  * REST controller for managing the current user's account.
  */
 @RestController
-@RequestMapping("/api/custom")
-public class AccountResourceCustom /*extends AbstractRelationalResource<User>*/ {
+@RequestMapping(value = {AccountResource.CUSTOM, AccountResource.V1})
+public class AccountResource /*extends AbstractRelationalResource<User>*/ {
+    protected static final String CUSTOM = ApiVersion.API_CUSTOM;
+    protected static final String V1 = ApiVersion.API_V1;
 
-//    @Override
-//    protected String getName() {
-//        return "me";
-//    }
-
-    private static class AccountResourceException extends RuntimeException {
-
-        private AccountResourceException(String message) {
+    protected static class AccountResourceException extends RuntimeException {
+        public AccountResourceException(String message) {
             super(message);
         }
     }
 
-    private final Logger log = LoggerFactory.getLogger(AccountResourceCustom.class);
+    protected final UserRepository userRepository;
 
-    private final UserRepository userRepository;
+    protected final UserService userService;
 
-    private final UserService userService;
-
-    public AccountResourceCustom(UserRepository userRepository, UserService userService, MailService mailService) {
-//        super(userService, userRepository);
+    public AccountResource(UserRepository userRepository, UserService userService) {
         this.userRepository = userRepository;
         this.userService = userService;
     }
@@ -60,10 +51,6 @@ public class AccountResourceCustom /*extends AbstractRelationalResource<User>*/ 
      */
     @GetMapping("/me")
     public AdminUserDTO getAccount() {
-//        final var user = userService
-//            .getUserWithAuthorities()
-//            .map(AdminUserDTO::new);
-//        log.debug("Created Information for User: {}", user);
         return userService
             .getUserWithAuthorities()
             .map(AdminUserDTO::new)
@@ -112,7 +99,7 @@ public class AccountResourceCustom /*extends AbstractRelationalResource<User>*/ 
         userService.changePassword(passwordChangeDto.getCurrentPassword(), passwordChangeDto.getNewPassword());
     }
 
-    private static boolean isPasswordLengthInvalid(String password) {
+    protected static boolean isPasswordLengthInvalid(String password) {
         return (
             StringUtils.isEmpty(password) ||
                 password.length() < ManagedUserVM.PASSWORD_MIN_LENGTH ||

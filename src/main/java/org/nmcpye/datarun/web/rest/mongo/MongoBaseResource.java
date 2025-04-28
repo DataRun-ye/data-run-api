@@ -7,7 +7,7 @@ import org.nmcpye.datarun.query.MongoQueryBuilder;
 import org.nmcpye.datarun.web.rest.common.BaseReadWriteResource;
 import org.springframework.beans.factory.annotation.Autowired;
 
-//@RequestMapping("/api/custom")
+//@RequestMapping("ApiVersion.API_CUSTOM, ApiVersion.API_V1")
 public abstract class MongoBaseResource<T extends AuditableObject<String>>
     extends BaseReadWriteResource<T, String> {
 

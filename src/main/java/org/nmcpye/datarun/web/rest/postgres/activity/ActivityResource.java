@@ -5,6 +5,7 @@ import org.nmcpye.datarun.drun.postgres.repository.ActivityRepository;
 import org.nmcpye.datarun.drun.postgres.service.ActivityService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,21 +17,27 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import static org.nmcpye.datarun.web.rest.postgres.activity.ActivityResource.CUSTOM;
+import static org.nmcpye.datarun.web.rest.postgres.activity.ActivityResource.V1;
+
 /**
  * REST Extended controller for managing {@link Activity}.
  */
 @RestController
-@RequestMapping("/api/custom/activities")
+@RequestMapping(value = {CUSTOM, V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class ActivityResourceCustom extends JpaBaseResource<Activity> {
+public class ActivityResource extends JpaBaseResource<Activity> {
 
-    private final Logger log = LoggerFactory.getLogger(ActivityResourceCustom.class);
+    protected static final String NAME = "/activities";
+    protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
+    protected static final String V1 = ApiVersion.API_V1 + NAME;
+    private final Logger log = LoggerFactory.getLogger(ActivityResource.class);
 
     private final ActivityService activityService;
 
     private final ActivityRepository activityRepository;
 
-    public ActivityResourceCustom(ActivityService activityService, ActivityRepository activityRepository) {
+    public ActivityResource(ActivityService activityService, ActivityRepository activityRepository) {
         super(activityService, activityRepository);
         this.activityRepository = activityRepository;
         this.activityService = activityService;

@@ -5,6 +5,7 @@ import org.nmcpye.datarun.drun.postgres.repository.ProjectRepository;
 import org.nmcpye.datarun.drun.postgres.service.ProjectService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,22 +17,28 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import static org.nmcpye.datarun.web.rest.postgres.project.ProjectResource.CUSTOM;
+import static org.nmcpye.datarun.web.rest.postgres.project.ProjectResource.V1;
+
 /**
  * REST controller for managing {@link Project}.
  */
 @RestController
-@RequestMapping("/api/custom/projects")
+@RequestMapping(value = {CUSTOM, V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class ProjectResourceCustom extends JpaBaseResource<Project> {
+public class ProjectResource extends JpaBaseResource<Project> {
+    protected static final String NAME = "/projects";
+    protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
+    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
-    private final Logger log = LoggerFactory.getLogger(ProjectResourceCustom.class);
+    private final Logger log = LoggerFactory.getLogger(ProjectResource.class);
 
     private final ProjectService projectService;
 
     private final ProjectRepository projectRepository;
 
-    public ProjectResourceCustom(ProjectService projectService,
-                                 ProjectRepository projectRepository) {
+    public ProjectResource(ProjectService projectService,
+                           ProjectRepository projectRepository) {
         super(projectService, projectRepository);
         this.projectService = projectService;
         this.projectRepository = projectRepository;

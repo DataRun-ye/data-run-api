@@ -66,15 +66,15 @@ public interface CurrentUserDetails extends UserDetails {
      *
      * @return user Teams uids
      */
-    Set<String> getTeams();
+    Set<String> getUserTeamsUIDs();
 
-    Set<String> getActivities();
+    Set<String> getActivityUIDs();
 
-    Set<String> getManagedTeams();
+    Set<String> getManagedTeamsUIDs();
 
-    Set<String> getUserGroups();
+    Set<String> getUserGroupsUIDs();
 
-    Set<String> getForms();
+    Set<String> getUserFormsUIDs();
 
     List<UserFormAccess> getFormAccess();
 }

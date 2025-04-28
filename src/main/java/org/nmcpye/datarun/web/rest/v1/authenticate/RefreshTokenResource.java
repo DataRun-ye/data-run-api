@@ -1,9 +1,10 @@
-package org.nmcpye.datarun.web.rest.postgres.authenticate;
+package org.nmcpye.datarun.web.rest.v1.authenticate;
 
 import jakarta.validation.Valid;
 import org.nmcpye.datarun.drun.postgres.dto.RefreshTokenDto;
 import org.nmcpye.datarun.drun.postgres.repository.RefreshTokenRepository;
 import org.nmcpye.datarun.security.jwt.TokenService;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshRequest;
 import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshResponse;
 import org.springframework.http.HttpStatus;
@@ -14,12 +15,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import static org.nmcpye.datarun.web.rest.v1.authenticate.RefreshTokenResource.V1;
+
 /**
  * @author Hamza Assada, 16/04/2025
  */
 @RestController
-@RequestMapping("/api")
+@RequestMapping(V1)
 public class RefreshTokenResource {
+    protected static final String V1 = ApiVersion.API_V1;
 
     private final TokenService tokenService;
     private final RefreshTokenRepository tokenRepository;

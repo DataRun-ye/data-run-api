@@ -5,6 +5,7 @@ import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.drun.postgres.service.TeamService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -29,9 +30,13 @@ import java.util.Optional;
  * REST controller for managing {@link Team}.
  */
 @RestController
-@RequestMapping("/api/custom/teams")
+@RequestMapping(value = {TeamResource.CUSTOM, TeamResource.V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class TeamResource extends JpaBaseResource<Team> {
+    protected static final String NAME = "/teams";
+    protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
+    protected static final String V1 = ApiVersion.API_V1 + NAME;
+
     private final Logger log = LoggerFactory.getLogger(TeamResource.class);
 
     private final TeamService teamService;

@@ -8,6 +8,7 @@ import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepository;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.exception.PathUpdateException;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.slf4j.Logger;
@@ -20,21 +21,29 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import static org.nmcpye.datarun.web.rest.postgres.orgunit.OrgUnitResource.CUSTOM;
+import static org.nmcpye.datarun.web.rest.postgres.orgunit.OrgUnitResource.V1;
+
 /**
  * REST Extended controller for managing {@link OrgUnit}.
  */
 @RestController
-@RequestMapping("/api/custom/orgUnits")
+@RequestMapping(value = {
+    CUSTOM,
+    V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class OrgUnitResourceCustom extends JpaBaseResource<OrgUnit> {
+public class OrgUnitResource extends JpaBaseResource<OrgUnit> {
+    protected static final String NAME = "/orgUnits";
+    protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
+    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
-    private final Logger log = LoggerFactory.getLogger(OrgUnitResourceCustom.class);
+    private final Logger log = LoggerFactory.getLogger(OrgUnitResource.class);
 
     private final OrgUnitService serviceCustom;
 
     private final OrgUnitRepository repositoryCustom;
 
-    public OrgUnitResourceCustom(OrgUnitService serviceCustom, OrgUnitRepository repositoryCustom) {
+    public OrgUnitResource(OrgUnitService serviceCustom, OrgUnitRepository repositoryCustom) {
         super(serviceCustom, repositoryCustom);
         this.repositoryCustom = repositoryCustom;
         this.serviceCustom = serviceCustom;

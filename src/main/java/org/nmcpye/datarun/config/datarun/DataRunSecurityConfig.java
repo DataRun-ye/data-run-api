@@ -53,8 +53,9 @@ public class DataRunSecurityConfig {
                 auth ->
                     // prettier-ignore
                     auth
-                        .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/authenticate")).permitAll()
-                        .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/refresh")).permitAll()
+                        .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/v1/authenticate")).permitAll()
+                        .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/v1/refresh")).permitAll()
+                        .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/v1/authenticate")).permitAll()
                         .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/authenticate")).permitAll()
 
                         .requestMatchers(mvc.pattern("/api/custom/register")).permitAll()

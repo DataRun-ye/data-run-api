@@ -3,6 +3,7 @@ package org.nmcpye.datarun.web.rest.postgres.user;
 import jakarta.validation.Valid;
 import org.nmcpye.datarun.domain.Authority;
 import org.nmcpye.datarun.repository.AuthorityRepository;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,9 +24,12 @@ import java.util.Optional;
  * REST controller for managing {@link org.nmcpye.datarun.domain.Authority}.
  */
 @RestController
-@RequestMapping("/api/authorities")
+@RequestMapping(value = {AuthorityResource.CUSTOM, AuthorityResource.V1})
 @Transactional
 public class AuthorityResource {
+    protected static final String NAME = "/authorities";
+    protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
+    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private static final Logger log = LoggerFactory.getLogger(AuthorityResource.class);
 

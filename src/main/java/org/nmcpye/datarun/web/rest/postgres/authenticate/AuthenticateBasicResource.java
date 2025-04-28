@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.nmcpye.datarun.common.repository.UserRepository;
 import org.nmcpye.datarun.domain.Authority;
 import org.nmcpye.datarun.domain.User;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.UserTokenResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,10 +34,15 @@ import java.util.stream.Collectors;
 
 import static org.nmcpye.datarun.security.SecurityUtils.AUTHORITIES_KEY;
 import static org.nmcpye.datarun.security.SecurityUtils.JWT_ALGORITHM;
+import static org.nmcpye.datarun.web.rest.postgres.authenticate.AuthenticateBasicResource.CUSTOM;
+import static org.nmcpye.datarun.web.rest.postgres.authenticate.AuthenticateBasicResource.V1;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping(value = {CUSTOM, V1, "/api"})
 public class AuthenticateBasicResource {
+    protected static final String NAME = "";
+    protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
+    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private final Logger log = LoggerFactory.getLogger(AuthenticateBasicResource.class);
 
@@ -151,6 +157,18 @@ public class AuthenticateBasicResource {
         void setIdToken(String idToken) {
             this.idToken = idToken;
         }
+    }
+
+    /**
+     * {@code GET /authenticate} : check if the user is authenticated, and return its login.
+     *
+     * @param request the HTTP request.
+     * @return the login if the user is authenticated.
+     */
+    @GetMapping("/authenticate")
+    public String isAuthenticated(HttpServletRequest request) {
+        log.debug("REST request to check if the current user is authenticated");
+        return request.getRemoteUser();
     }
 }
 

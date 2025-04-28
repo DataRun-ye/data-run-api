@@ -14,7 +14,7 @@
 // * REST controller for managing {@link DataFormSubmission}.
 // */
 //@RestController
-//@RequestMapping("/api/custom/metadataSubmissionUpdates")
+//@RequestMapping("ApiVersion.API_CUSTOM, ApiVersion.API_V1/metadataSubmissionUpdates")
 //@PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 //public class MetadataSubmissionUpdateResourceCustom
 //    extends AbstractMongoResource<MetadataSubmissionUpdate> {

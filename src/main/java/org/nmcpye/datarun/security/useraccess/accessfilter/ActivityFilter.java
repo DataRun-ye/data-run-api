@@ -24,7 +24,7 @@ public class ActivityFilter extends DefaultJpaFilter<Activity> {
                 return cb.conjunction();
             }
 
-            if (user.getActivities() == null || user.getActivities().isEmpty()) {
+            if (user.getActivityUIDs() == null || user.getActivityUIDs().isEmpty()) {
                 return cb.disjunction(); // user has no access
             }
 //                Join<Activity, Assignment> assignmentJoin = root.join("assignments", JoinType.INNER);
@@ -32,7 +32,7 @@ public class ActivityFilter extends DefaultJpaFilter<Activity> {
 //                Join<Team, User> userJoin = teamJoin.join("users", JoinType.INNER);
 //
 //                return criteriaBuilder.equal(userJoin.get("login"), user.getUsername());
-            return root.get("uid").in(user.getActivities());
+            return root.get("uid").in(user.getActivityUIDs());
 
         };
 

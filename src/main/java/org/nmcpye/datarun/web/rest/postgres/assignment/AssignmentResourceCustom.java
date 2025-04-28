@@ -8,6 +8,7 @@ import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.slf4j.Logger;
@@ -22,14 +23,20 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import static org.nmcpye.datarun.web.rest.postgres.assignment.AssignmentResourceCustom.CUSTOM;
+import static org.nmcpye.datarun.web.rest.postgres.assignment.AssignmentResourceCustom.V1;
+
 /**
  * REST Extended controller for managing {@link Assignment}.
  */
 @RestController
-@RequestMapping("/api/custom/assignments")
+@RequestMapping(value = {CUSTOM, V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class AssignmentResourceCustom
     extends JpaBaseResource<Assignment> {
+    protected static final String NAME = "/assignments";
+    protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
+    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private final Logger log = LoggerFactory.getLogger(AssignmentResourceCustom.class);
 

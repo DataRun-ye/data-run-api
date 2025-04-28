@@ -34,11 +34,11 @@ public class TeamFilter extends DefaultJpaFilter<Team> {
                 return cb.conjunction();
             }
 
-            if (user.getTeams() == null || user.getTeams().isEmpty()) {
+            if (user.getUserTeamsUIDs() == null || user.getUserTeamsUIDs().isEmpty()) {
                 return cb.disjunction(); // user has no access
             }
 
-            return root.get("uid").in(user.getTeams());
+            return root.get("uid").in(user.getUserTeamsUIDs());
 //            Join<Team, User> userJoin = root.join("users", JoinType.INNER);
 //            return cb.equal(userJoin.get("login"), user.getUsername());
 

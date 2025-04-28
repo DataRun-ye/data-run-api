@@ -45,10 +45,10 @@ public class CurrentUserDetailsImpl implements CurrentUserDetails {
 
     private final Integer assignmentCount;
     private final Integer orgUnitCount;
-    private final Set<String> activities;
-    private final Set<String> teams;
-    private final Set<String> managedTeams;
-    private final Set<String> userGroups;
-    private final Set<String> forms;
+    private final Set<String> activityUIDs;
+    private final Set<String> userTeamsUIDs;
+    private final Set<String> managedTeamsUIDs;
+    private final Set<String> userGroupsUIDs;
+    private final Set<String> userFormsUIDs;
     private final List<UserFormAccess> formAccess;
 }

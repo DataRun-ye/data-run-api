@@ -7,6 +7,7 @@ import org.nmcpye.datarun.mongo.repository.MetadataSubmissionRepository;
 import org.nmcpye.datarun.mongo.service.MetadataSubmissionService;
 import org.nmcpye.datarun.query.filter.FilterExpression;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
@@ -15,14 +16,20 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.nmcpye.datarun.web.rest.mongo.metadataschema.MetadataSubmissionResourceCustom.CUSTOM;
+import static org.nmcpye.datarun.web.rest.mongo.metadataschema.MetadataSubmissionResourceCustom.V1;
+
 /**
  * REST controller for managing {@link DataFormSubmission}.
  */
 @RestController
-@RequestMapping("/api/custom/metadataSubmissions")
+@RequestMapping(value = {CUSTOM, V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class MetadataSubmissionResourceCustom
     extends MongoBaseResource<MetadataSubmission> {
+    protected static final String NAME = "/metadataSubmissions";
+    protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
+    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private final MetadataSubmissionGranularRepository metadataSubmissionGranularRepository;
 

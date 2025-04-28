@@ -65,8 +65,8 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
 
     Set<OrgUnit> getDirectAndManagedOrgUnit(CurrentUserDetails user, boolean includeDisabled) {
         final var orgUnitSet = assignmentRepository.findAllByTeamUidIn(
-            Stream.concat(user.getTeams().stream(),
-                    user.getManagedTeams().stream())
+            Stream.concat(user.getUserTeamsUIDs().stream(),
+                    user.getManagedTeamsUIDs().stream())
                 .collect(Collectors.toSet()));
 
         return !includeDisabled ? orgUnitSet

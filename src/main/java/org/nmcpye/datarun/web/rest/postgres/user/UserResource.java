@@ -11,6 +11,7 @@ import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.service.UserService;
 import org.nmcpye.datarun.query.filter.FilterExpression;
 import org.nmcpye.datarun.service.dto.AdminUserDTO;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.common.QuerySpecification;
 import org.nmcpye.datarun.web.rest.errors.EmailAlreadyUsedException;
@@ -66,9 +67,12 @@ import java.util.Optional;
  * Another option would be to have a specific JPA entity graph to handle this case.
  */
 @RestController
-@RequestMapping("/api/custom/admin/users")
-public class UserResourceCustom extends JpaBaseResource<User>
+@RequestMapping(value = {UserResource.CUSTOM, UserResource.V1})
+public class UserResource extends JpaBaseResource<User>
     implements QuerySpecification<User> {
+    protected static final String NAME = "/admin/users";
+    protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
+    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     // NMC security is set globally in DataRunSecurityConfig
 
@@ -88,7 +92,7 @@ public class UserResourceCustom extends JpaBaseResource<User>
         )
     );
 
-    private static final Logger log = LoggerFactory.getLogger(UserResourceCustom.class);
+    private static final Logger log = LoggerFactory.getLogger(UserResource.class);
 
     @Value("${jhipster.clientApp.name}")
     private String applicationName;
@@ -97,7 +101,7 @@ public class UserResourceCustom extends JpaBaseResource<User>
 
     private final UserRepository userRepository;
 
-    public UserResourceCustom(UserService userService, UserRepository userRepository) {
+    public UserResource(UserService userService, UserRepository userRepository) {
         super(userService, userRepository);
         this.userService = userService;
         this.userRepository = userRepository;

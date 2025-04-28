@@ -8,6 +8,7 @@ import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.utils.FormSubmissionDataUtil;
 import org.nmcpye.datarun.utils.JsonFlattener;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.springframework.data.domain.Page;
@@ -19,14 +20,20 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+import static org.nmcpye.datarun.web.rest.mongo.submission.DataFormSubmissionResource.CUSTOM;
+import static org.nmcpye.datarun.web.rest.mongo.submission.DataFormSubmissionResource.V1;
+
 /**
  * REST controller for managing {@link DataFormSubmission}.
  */
 @RestController
-@RequestMapping("/api/custom/dataSubmission")
+@RequestMapping(value = {CUSTOM, V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class DataFormSubmissionResource
     extends MongoBaseResource<DataFormSubmission> {
+    protected static final String NAME = "/dataSubmission";
+    protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
+    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     final private GenericQueryService queryService;
     final TeamService teamService;

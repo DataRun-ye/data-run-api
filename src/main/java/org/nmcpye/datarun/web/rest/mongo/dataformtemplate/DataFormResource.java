@@ -6,6 +6,7 @@ import org.nmcpye.datarun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.mongo.service.DataFormService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.utils.FormTemplateSchema;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess.FormTemplateProcessor;
 import org.springframework.http.ResponseEntity;
@@ -16,13 +17,19 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import static org.nmcpye.datarun.web.rest.mongo.dataformtemplate.DataFormResource.CUSTOM;
+import static org.nmcpye.datarun.web.rest.mongo.dataformtemplate.DataFormResource.V1;
+
 /**
  * REST controller for managing {@link DataForm}.
  */
 @RestController
-@RequestMapping("/api/custom/dataForm")
+@RequestMapping(value = {CUSTOM, V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class DataFormResource extends MongoBaseResource<DataForm> {
+    protected static final String NAME = "/dataForm";
+    protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
+    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     final DataFormService dataFormService;
     private final FormTemplateSchema formTemplateSchema;

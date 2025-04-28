@@ -22,11 +22,11 @@ public abstract class TeamSpecifications {
                 return cb.conjunction();
             }
 
-            if (user.getTeams() == null || user.getTeams().isEmpty()) {
+            if (user.getUserTeamsUIDs() == null || user.getUserTeamsUIDs().isEmpty()) {
                 return cb.disjunction(); // user has no access
             }
 
-            return root.get("uid").in(user.getTeams());
+            return root.get("uid").in(user.getUserTeamsUIDs());
         };
 
         if (!queryRequest.isIncludeDisabled()) {
@@ -42,11 +42,11 @@ public abstract class TeamSpecifications {
                 return cb.conjunction();
             }
 
-            if (user.getManagedTeams() == null || user.getManagedTeams().isEmpty()) {
+            if (user.getManagedTeamsUIDs() == null || user.getManagedTeamsUIDs().isEmpty()) {
                 return cb.disjunction(); // user has no access
             }
 
-            return root.get("uid").in(user.getManagedTeams());
+            return root.get("uid").in(user.getManagedTeamsUIDs());
 
         };
 

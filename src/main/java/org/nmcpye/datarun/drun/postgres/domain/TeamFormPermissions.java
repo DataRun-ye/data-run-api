@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.drun.postgres.domain;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -16,8 +15,6 @@ import static org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission
 @Setter
 @EqualsAndHashCode
 public class TeamFormPermissions {
-    @NotNull
-    private String teamUid;
     private String form;
     private Set<FormPermission> permissions;
 

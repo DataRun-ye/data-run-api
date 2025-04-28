@@ -1,10 +1,10 @@
-package org.nmcpye.datarun.web.rest.postgres.authenticate;
+package org.nmcpye.datarun.web.rest.v1.authenticate;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.nmcpye.datarun.drun.postgres.dto.RefreshTokenDto;
-import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.jwt.TokenService;
+import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshResponse;
 import org.nmcpye.datarun.web.rest.vm.LoginVM;
 import org.slf4j.Logger;
@@ -14,25 +14,27 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import static org.nmcpye.datarun.web.rest.v1.authenticate.AuthenticateResource.V1;
 
 /**
  * Controller to authenticate users.
  */
 @RestController
-@RequestMapping("/api")
-public class AuthenticateController {
+@RequestMapping(V1)
+public class AuthenticateResource {
+    protected static final String V1 = ApiVersion.API_V1;
 
-    private static final Logger log = LoggerFactory.getLogger(AuthenticateController.class);
+    private static final Logger log = LoggerFactory.getLogger(AuthenticateResource.class);
 
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
 
     private final TokenService tokenService;
 
-    public AuthenticateController(AuthenticationManagerBuilder authenticationManagerBuilder,
-                                  TokenService tokenService) {
+    public AuthenticateResource(AuthenticationManagerBuilder authenticationManagerBuilder,
+                                TokenService tokenService) {
         this.authenticationManagerBuilder = authenticationManagerBuilder;
         this.tokenService = tokenService;
     }
@@ -66,17 +68,5 @@ public class AuthenticateController {
     public String isAuthenticated(HttpServletRequest request) {
         log.debug("REST request to check if the current user is authenticated");
         return request.getRemoteUser();
-    }
-
-    /**
-     * {@code GET /authenticate} : check if the user is authenticated, and return its details.
-     *
-     * @param user the Authenticated principal request.
-     * @return the user details if the user is authenticated.
-     */
-    @GetMapping("/myDetails")
-    public CurrentUserDetails getMyDetails(@AuthenticationPrincipal CurrentUserDetails user) {
-        log.debug("REST request to check if the current user is authenticated");
-        return user;
     }
 }

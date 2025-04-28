@@ -3,9 +3,9 @@ package org.nmcpye.datarun.web.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.IntegrationTest;
-import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.common.repository.UserRepository;
-import org.nmcpye.datarun.web.rest.postgres.authenticate.AuthenticateController;
+import org.nmcpye.datarun.domain.User;
+import org.nmcpye.datarun.web.rest.v1.authenticate.AuthenticateResource;
 import org.nmcpye.datarun.web.rest.vm.LoginVM;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Integration tests for the {@link AuthenticateController} REST controller.
+ * Integration tests for the {@link AuthenticateResource} REST controller.
  */
 @AutoConfigureMockMvc
 @IntegrationTest
