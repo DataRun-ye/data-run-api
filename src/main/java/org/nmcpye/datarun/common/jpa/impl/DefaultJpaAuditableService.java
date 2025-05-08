@@ -19,8 +19,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 /**
  * @author Hamza Assada, 20/03/2025
  */
@@ -45,23 +43,24 @@ public abstract class DefaultJpaAuditableService
     }
 
     @Override
-    public Page<T> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+    public Page<T> findAllByUser(QueryRequest queryRequest) {
         final var user = SecurityUtils.getCurrentUserDetails();
         final var spec = baseSpecification(user
             .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), queryRequest);
-        return jpaAuditableObjectRepository.findAll(spec, pageable);
+        return jpaAuditableObjectRepository.findAll(spec, queryRequest.getPageable());
     }
 
-    @Override
-    public List<T> findAllByUser(QueryRequest queryRequest) {
-        final var readSpec = baseSpecification(SecurityUtils.getCurrentUserDetails()
-                .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))),
-            queryRequest);
-        return jpaAuditableObjectRepository.findAll(readSpec);
-    }
+//    @Override
+//    public List<T> findAllByUser(QueryRequest queryRequest) {
+//        final var readSpec = baseSpecification(SecurityUtils.getCurrentUserDetails()
+//                .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))),
+//            queryRequest);
+//        return jpaAuditableObjectRepository.findAll(readSpec);
+//    }
 
     @Override
-    public Page<T> findAllByUser(Specification<T> spec, Pageable pageable, QueryRequest queryRequest) {
+    public Page<T> findAllByUser(Specification<T> spec, QueryRequest queryRequest) {
+        Pageable pageable = queryRequest.getPageable();
         final var accessSpec = baseSpecification(
             SecurityUtils.getCurrentUserDetails()
                 .orElseThrow(() ->

@@ -3,9 +3,11 @@ package org.nmcpye.datarun.web.rest.common;
 import jakarta.validation.Valid;
 import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.common.AuditableObjectService;
+import org.nmcpye.datarun.common.DRunApiVersion;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
+import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +22,7 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
 
+@ApiVersion({DRunApiVersion.DEFAULT, DRunApiVersion.ALL})
 public abstract class BaseReadWriteResource<T extends AuditableObject<ID>, ID extends Serializable>
     extends BaseReadResource<T, ID> {
 

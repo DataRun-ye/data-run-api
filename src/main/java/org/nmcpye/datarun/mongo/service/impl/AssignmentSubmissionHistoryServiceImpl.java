@@ -2,16 +2,12 @@ package org.nmcpye.datarun.mongo.service.impl;
 
 import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
-import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.mongo.domain.AssignmentSubmissionHistory;
-import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.repository.AssignmentSubmissionHistoryRepository;
-import org.nmcpye.datarun.mongo.repository.DataFormRepository;
+import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.AssignmentSubmissionHistoryService;
-import org.nmcpye.datarun.utils.FormProcessor;
-import org.nmcpye.datarun.utils.ResourceSummarizer;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
@@ -27,11 +23,12 @@ public class AssignmentSubmissionHistoryServiceImpl
 
     private final AssignmentSubmissionHistoryRepository repository;
     private final AssignmentRepository assignmentRepository;
-    private final DataFormRepository dataFormRepository;
+    private final DataFormTemplateRepository dataFormRepository;
 
     public AssignmentSubmissionHistoryServiceImpl(AssignmentSubmissionHistoryRepository repository,
                                                   CacheManager cacheManager,
-                                                  AssignmentRepository assignmentRepository, MongoTemplate mongoTemplate, DataFormRepository dataFormRepository) {
+                                                  AssignmentRepository assignmentRepository,
+                                                  MongoTemplate mongoTemplate, DataFormTemplateRepository dataFormRepository) {
         super(repository, cacheManager, mongoTemplate);
         this.repository = repository;
         this.assignmentRepository = assignmentRepository;
@@ -91,22 +88,23 @@ public class AssignmentSubmissionHistoryServiceImpl
         entry.setForm(submission.getForm());
         entry.setFormVersion(submission.getForm());
 
-        final DataForm dataForm = dataFormRepository.findByUid(submission.getForm()).orElseThrow();
+//        final DataFormTemplate dataForm = dataFormRepository.findByUid(submission.getForm()).orElseThrow();
 
-        var totalResources = ResourceSummarizer.sumNumericResources(submission.getFormData());
-        var totalResources2 = ResourceSummarizer.sumNumericResources2(submission.getFormData());
+//        var totalResources = ResourceSummarizer.sumNumericResources(submission.getFormData());
+//        var totalResources2 = ResourceSummarizer.sumNumericResources2(submission.getFormData());
 
 
-        var extractedValues = FormProcessor.extractValues(submission.getFormData(), dataForm);
+//        var extractedValues = FormProcessor.extractValues(submission.getFormData(), dataForm);
 
-        var status = extractedValues.get("status");
+//        var status = extractedValues.get("status");
+//        var status = submission.getStatus();
 
-        if (status instanceof AssignmentStatus status1) {
-            entry.setSubmissionStatus(status1);
-        }
+//        if (status instanceof AssignmentStatus status1) {
+        entry.setSubmissionStatus(submission.getStatus());
+//        }
 
         entry.setAllocatedResources(assignment.getAllocatedResources());
-        entry.setSubmittedResources(totalResources);
+//        entry.setSubmittedResources(totalResources);
 
         history.getEntries().add(entry);
         repository.save(history);

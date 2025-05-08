@@ -119,8 +119,10 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Assignment> getAllUserAccessible(Pageable pageable, QueryRequest queryRequest) {
-        Page<Assignment> assignedPage = findAllByUser(pageable, queryRequest);
+    public Page<Assignment> getAllUserAccessible(QueryRequest queryRequest) {
+        Pageable pageable = queryRequest.getPageable();
+
+        Page<Assignment> assignedPage = findAllByUser(queryRequest);
         List<Assignment> assigned = assignedPage.getContent().stream()
             .filter(assignment -> !assignment.getActivity().getDisabled())
             .peek(assignment -> assignment.setEntityScope(EntityScope.Assigned)).toList();

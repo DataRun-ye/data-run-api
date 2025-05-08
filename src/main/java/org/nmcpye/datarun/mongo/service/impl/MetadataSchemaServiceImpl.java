@@ -80,7 +80,9 @@ public class MetadataSchemaServiceImpl
     }
 
     @Override
-    public Page<MetadataSchema> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+    public Page<MetadataSchema> findAllByUser(QueryRequest queryRequest) {
+        Pageable pageable = queryRequest.getPageable();
+
         // If the current user is an admin, fetch all schemas
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repository.findAll(pageable);

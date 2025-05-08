@@ -1,7 +1,5 @@
 package org.nmcpye.datarun.security;
 
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -12,6 +10,7 @@ import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -38,7 +37,7 @@ public final class SecurityUtils {
         return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
             .map(Authentication::getPrincipal)
             .filter(p -> p instanceof CurrentUserDetails)
-            .map(CurrentUserDetails.class::cast).orElseThrow(() -> new IllegalQueryException(ErrorCode.E3000));
+            .map(CurrentUserDetails.class::cast).orElseThrow(() -> new SecurityException("User is not authenticated"));
     }
 
     public static Optional<String> getCurrentUserLocale() {
@@ -68,7 +67,7 @@ public final class SecurityUtils {
     public static String getCurrentUserLoginOrThrow(ErrorMessage errorMessage) {
         SecurityContext securityContext = SecurityContextHolder.getContext();
         return Optional.ofNullable(extractPrincipal(securityContext.getAuthentication()))
-            .orElseThrow(() -> new IllegalQueryException(errorMessage));
+            .orElseThrow(() -> new SecurityException(errorMessage.getMessage()));
     }
 
     /**
@@ -79,7 +78,7 @@ public final class SecurityUtils {
     public static String getCurrentUserLoginOrThrow() {
         SecurityContext securityContext = SecurityContextHolder.getContext();
         return Optional.ofNullable(extractPrincipal(securityContext.getAuthentication()))
-            .orElseThrow(() -> new IllegalQueryException(ErrorCode.E3000));
+            .orElseThrow(() -> new SecurityException("User is not authenticated"));
     }
 
     private static String extractPrincipal(Authentication authentication) {
@@ -127,6 +126,20 @@ public final class SecurityUtils {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return (
             authentication != null && getAuthorities(authentication).anyMatch(authority -> Arrays.asList(authorities).contains(authority))
+        );
+    }
+
+    /**
+     * Checks if the current has super user authorities.
+     *
+     * @return true if the current user has any of the super user authorities, false otherwise.
+     */
+    public static boolean isSuper() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (
+            authentication != null &&
+                getAuthorities(authentication)
+                    .anyMatch(authority -> List.of(AuthoritiesConstants.ADMIN).contains(authority))
         );
     }
 

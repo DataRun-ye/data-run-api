@@ -28,9 +28,7 @@ import static org.nmcpye.datarun.web.rest.postgres.orgunit.OrgUnitResource.V1;
  * REST Extended controller for managing {@link OrgUnit}.
  */
 @RestController
-@RequestMapping(value = {
-    CUSTOM,
-    V1})
+@RequestMapping(value = {CUSTOM, V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class OrgUnitResource extends JpaBaseResource<OrgUnit> {
     protected static final String NAME = "/orgUnits";

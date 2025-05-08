@@ -2,9 +2,7 @@ package org.nmcpye.datarun.common;
 
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -23,9 +21,9 @@ public interface AuditableObjectService<T extends AuditableObject<ID>, ID> {
 
     void deleteByUid(String uid);
 
-    Page<T> findAllByUser(Pageable pageable, QueryRequest queryRequest);
+    Page<T> findAllByUser(QueryRequest queryRequest);
 
-    List<T> findAllByUser(QueryRequest queryRequest);
+//    List<T> findAllByUser(QueryRequest queryRequest);
 
     /**
      * Save an object.

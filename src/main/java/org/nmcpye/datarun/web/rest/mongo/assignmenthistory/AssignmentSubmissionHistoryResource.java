@@ -5,15 +5,19 @@ import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.repository.AssignmentSubmissionHistoryRepository;
 import org.nmcpye.datarun.mongo.service.AssignmentSubmissionHistoryService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.nmcpye.datarun.web.rest.mongo.submission.GenericQueryService;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import static org.nmcpye.datarun.web.rest.mongo.assignmenthistory.AssignmentSubmissionHistoryResourceCustom.CUSTOM;
-import static org.nmcpye.datarun.web.rest.mongo.assignmenthistory.AssignmentSubmissionHistoryResourceCustom.V1;
+import static org.nmcpye.datarun.web.rest.mongo.assignmenthistory.AssignmentSubmissionHistoryResource.CUSTOM;
+import static org.nmcpye.datarun.web.rest.mongo.assignmenthistory.AssignmentSubmissionHistoryResource.V1;
 
 /**
  * REST controller for managing {@link DataFormSubmission}.
@@ -21,19 +25,28 @@ import static org.nmcpye.datarun.web.rest.mongo.assignmenthistory.AssignmentSubm
 @RestController
 @RequestMapping(value = {CUSTOM, V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class AssignmentSubmissionHistoryResourceCustom
+public class AssignmentSubmissionHistoryResource
     extends MongoBaseResource<AssignmentSubmissionHistory> {
     protected static final String NAME = "/assignments/history";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
     protected static final String V1 = ApiVersion.API_V1 + NAME;
     final private GenericQueryService queryService;
 
-    public AssignmentSubmissionHistoryResourceCustom(AssignmentSubmissionHistoryService dataFormSubmissionService,
-                                                     AssignmentSubmissionHistoryRepository
+    public AssignmentSubmissionHistoryResource(AssignmentSubmissionHistoryService dataFormSubmissionService,
+                                               AssignmentSubmissionHistoryRepository
                                                          dataFormSubmissionRepositoryCustom,
-                                                     GenericQueryService queryService) {
+                                               GenericQueryService queryService) {
         super(dataFormSubmissionService, dataFormSubmissionRepositoryCustom);
         this.queryService = queryService;
+    }
+
+    @Override
+    protected void applySecurityConstraints(Query query) {
+        final CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
+
+        query.addCriteria(Criteria.where("form").in(user.getUserFormsUIDs()).and("team")
+            .in(user.getUserTeamsUIDs()));
+        super.applySecurityConstraints(query);
     }
 
     @Override

@@ -7,7 +7,7 @@ import java.util.List;
 
 @JsonSerialize(using = DynamicFieldSerializer.class)
 public class PagedResponse<T> {
-    private Page<T> page;
+    private final Page<T> page;
     //    private int page;
 //    private int size;
 //    private long totalElements;

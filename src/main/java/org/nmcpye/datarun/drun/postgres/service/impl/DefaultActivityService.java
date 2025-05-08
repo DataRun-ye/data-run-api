@@ -29,7 +29,9 @@ public class DefaultActivityService extends DefaultJpaAuditableService<Activity>
     }
 
     @Override
-    public Page<Activity> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+    public Page<Activity> findAllByUser(QueryRequest queryRequest) {
+        Pageable pageable = queryRequest.getPageable();
+
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repository.findAll(pageable);
         }

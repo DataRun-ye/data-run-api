@@ -3,21 +3,23 @@ package org.nmcpye.datarun.web.rest.common;
 
 import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.common.AuditableObjectService;
+import org.nmcpye.datarun.common.DRunApiVersion;
 import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
 import org.nmcpye.datarun.query.QueryBuilder;
-import org.nmcpye.datarun.query.UnifiedQueryParser;
-import org.nmcpye.datarun.query.filter.FilterExpression;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.ResponseUtil;
 
@@ -26,7 +28,8 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Optional;
 
-@RequestMapping("/api")
+//@RequestMapping("/api")
+@ApiVersion({DRunApiVersion.DEFAULT, DRunApiVersion.ALL})
 public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends Serializable> {
 
     protected final Logger log = LoggerFactory.getLogger(BaseReadResource.class);
@@ -59,13 +62,13 @@ public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends
     protected ResponseEntity<PagedResponse<?>> getAll(QueryRequest queryRequest) throws Exception {
         final var userLogin = SecurityUtils.getCurrentUserLoginOrThrow();
         log.debug("REST request to getAll {}:{}", userLogin, getName());
-        Pageable pageable = PageRequest.of(queryRequest.getPage(), queryRequest.getSize());
+        Pageable pageable = queryRequest.getPageable();
 
         if (!queryRequest.isPaged()) {
             pageable = Pageable.unpaged();
         }
 
-        Page<T> processedPage = getList(pageable, queryRequest, null);
+        Page<T> processedPage = getList(queryRequest, null);
 
         String next = createNextPageLink(processedPage);
 
@@ -81,18 +84,9 @@ public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends
     }
 
     @PostMapping("/query")
-    public ResponseEntity<PagedResponse<?>> queryMongo(@RequestBody String jsonQuery, QueryRequest queryRequest) {
+    public ResponseEntity<PagedResponse<?>> unifiedMongoLikeQuerying(@RequestBody String jsonQuery, QueryRequest queryRequest) {
         try {
-            // Parse JSON query into unified filter expression
-            FilterExpression filterExpression = UnifiedQueryParser.parse(jsonQuery);
-
-            Pageable pageable = PageRequest.of(queryRequest.getPage(), queryRequest.getSize());
-
-            if (!queryRequest.isPaged()) {
-                pageable = Pageable.unpaged();
-            }
-
-            Page<T> processedPage = getList(pageable, queryRequest, filterExpression);
+            Page<T> processedPage = getList(queryRequest, jsonQuery);
 
             String next = createNextPageLink(processedPage);
 
@@ -133,8 +127,8 @@ public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends
         return ResponseUtil.wrapOrNotFound(entity);
     }
 
-    protected Page<T> getList(Pageable pageable, QueryRequest queryRequest, FilterExpression expression) {
-        return auditableObjectService.findAllByUser(pageable, queryRequest);
+    protected Page<T> getList(QueryRequest queryRequest, String jsonQueryBody) {
+        return auditableObjectService.findAllByUser(queryRequest);
     }
 
     protected abstract String getName();

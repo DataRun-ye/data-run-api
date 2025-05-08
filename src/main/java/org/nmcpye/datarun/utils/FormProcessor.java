@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.utils;
 
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
-import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.Repeat;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;
+import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;
 
 import java.util.Arrays;
@@ -13,10 +13,10 @@ import java.util.List;
 import java.util.Map;
 
 public class FormProcessor {
-    static public Map<String, Object> extractValues(Map<String, Object> formData, DataForm formTemplate) {
+    static public Map<String, Object> extractValues(Map<String, Object> formData, DataFormTemplate formTemplate) {
         Map<String, Object> extractedValues = new HashMap<>();
 
-        extract(formData, formTemplate.getFields(), extractedValues);
+//        extract(formData, formTemplate.getFields(), extractedValues);
 
         return extractedValues;
     }

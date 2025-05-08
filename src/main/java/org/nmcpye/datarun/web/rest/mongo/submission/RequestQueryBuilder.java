@@ -6,8 +6,6 @@ import lombok.Value;
 import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -15,14 +13,14 @@ import org.springframework.data.mongodb.core.query.Query;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
+@Deprecated(since = "Api v1")
 @Value
 public class RequestQueryBuilder {
     QueryRequest queryRequest;
 
-    public Query buildQuery() {
-        Query query = new Query();
+    @Deprecated(since = "Api v1")
+    public Query buildQuery(Query query) {
         queryRequest.getParsedFilter().forEach((key, value) -> {
             String[] parts = key.split("__");
             String field = parts[0];  // field name
@@ -59,26 +57,14 @@ public class RequestQueryBuilder {
         return query;
     }
 
-    public Query applySecurityConstraints(Query query) {
-        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return query;
-        }
 
-        Optional<String> currentUserLogin = SecurityUtils.getCurrentUserLogin();
-        if (currentUserLogin.isPresent()) {
-            String login = currentUserLogin.get();
-            query.addCriteria(Criteria.where("createdBy").is(login));
-        } else {
-            throw new SecurityException("User is not authenticated");
-        }
-        return query;
+    @Deprecated(since = "Api v1")
+    public Query buildForMongo(Query query) {
+        return addProjections(buildQuery(query));
     }
 
-    public Query buildForMongo() {
-        return addProjections(applySecurityConstraints(buildQuery()));
-    }
-
-   public  <E extends AuditableObject<?>> Specification<E> buildForJpa() {
+    @Deprecated(since = "Api v1")
+    public <E extends AuditableObject<?>> Specification<E> buildForJpa() {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 

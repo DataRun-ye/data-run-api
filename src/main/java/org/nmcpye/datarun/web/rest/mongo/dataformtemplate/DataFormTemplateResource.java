@@ -7,10 +7,14 @@ import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.DataFormTemplateService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.startupmigration.mongo.DataFormTemplateMigrationService;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess.FormTemplateProcessor;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,6 +50,13 @@ public class DataFormTemplateResource extends MongoBaseResource<DataFormTemplate
         super(templateService, dataFormRepository);
         this.dataFormTemplateMigrationService = dataFormTemplateMigrationService;
         this.formTemplateProcessor = formTemplateProcessor;
+    }
+
+    @Override
+    protected void applySecurityConstraints(Query query) {
+        final CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
+
+        query.addCriteria(Criteria.where("uid").in(user.getUserFormsUIDs()));
     }
 
     @Override

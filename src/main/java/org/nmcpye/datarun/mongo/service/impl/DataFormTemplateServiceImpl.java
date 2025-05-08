@@ -16,7 +16,6 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -59,9 +58,9 @@ public class DataFormTemplateServiceImpl
 
     @Override
     @Transactional(readOnly = true)
-    public Page<DataFormTemplate> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+    public Page<DataFormTemplate> findAllByUser(QueryRequest queryRequest) {
         if (!SecurityUtils.isAuthenticated()) {
-            return Page.empty(pageable);
+            return Page.empty(queryRequest.getPageable());
         }
 
         final var assignedTeamSec = getAssignedSpecification(SecurityUtils
@@ -86,7 +85,7 @@ public class DataFormTemplateServiceImpl
             query.addCriteria(Criteria.where("deleted").is(false));
         }
 
-        query.with(pageable);
+        query.with(queryRequest.getPageable());
 
         final Query totalQuery = Query.of(query).limit(-1).skip(-1);
 
@@ -94,7 +93,7 @@ public class DataFormTemplateServiceImpl
 
         return PageableExecutionUtils.getPage(
             results,
-            pageable,
+            queryRequest.getPageable(),
             () -> mongoTemplate.count(totalQuery, DataFormTemplate.class));
     }
 }

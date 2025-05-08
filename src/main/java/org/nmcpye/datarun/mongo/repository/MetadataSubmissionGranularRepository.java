@@ -76,7 +76,8 @@ public class MetadataSubmissionGranularRepository {
         return typeReferenceFields;
     }
 
-    public Page<MetadataSubmission> getReferencedMetadataSubmissions(Pageable pageable, QueryRequest queryRequest) {
+    public Page<MetadataSubmission> getReferencedMetadataSubmissions(QueryRequest queryRequest) {
+        Pageable pageable = queryRequest.getPageable();
         Set<MetadataSubmission> metadataSubmissions = new HashSet<>();
 
         for (var field : getUserFieldsOfResourceType()) {

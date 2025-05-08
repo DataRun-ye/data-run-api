@@ -135,7 +135,9 @@ public class DataFormServiceImpl
 
 
     @Override
-    public Page<DataForm> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+    public Page<DataForm> findAllByUser(QueryRequest queryRequest) {
+
+        Pageable pageable = queryRequest.getPageable();
 
         if (!SecurityUtils.isAuthenticated()) {
             return Page.empty(pageable);
@@ -144,9 +146,6 @@ public class DataFormServiceImpl
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repositoryCustom.findAll(pageable);
         }
-
-        List<Team> userTeams = teamRepository
-            .findAllWithEagerRelation();
 
         Set<String> userForms = teamRepository
             .findAllWithEagerRelation().stream().flatMap((team) -> team.getFormsWithPermission(

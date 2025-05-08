@@ -18,9 +18,7 @@ import static org.nmcpye.datarun.web.rest.postgres.optionset.OptionSetResource.V
  * REST controller for managing {@link DataFormSubmission}.
  */
 @RestController
-@RequestMapping(value = {
-    CUSTOM,
-    V1})
+@RequestMapping(value = {CUSTOM, V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class OptionSetResource
     extends JpaBaseResource<OptionSet> {

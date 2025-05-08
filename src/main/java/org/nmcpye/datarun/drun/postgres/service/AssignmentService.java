@@ -4,7 +4,6 @@ import org.nmcpye.datarun.common.jpa.JpaAuditableObjectService;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 public interface AssignmentService
     extends JpaAuditableObjectService<Assignment> {
@@ -19,5 +18,5 @@ public interface AssignmentService
 
     void forceUpdatePaths();
 
-    Page<Assignment> getAllUserAccessible(Pageable pageable, QueryRequest queryRequest);
+    Page<Assignment> getAllUserAccessible(QueryRequest queryRequest);
 }

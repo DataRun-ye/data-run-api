@@ -105,7 +105,8 @@ public class MetadataSubmissionServiceImpl
     }
 
     @Override
-    public Page<MetadataSubmission> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+    public Page<MetadataSubmission> findAllByUser(QueryRequest queryRequest) {
+        Pageable pageable = queryRequest.getPageable();
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repository.findAll(pageable);
         }

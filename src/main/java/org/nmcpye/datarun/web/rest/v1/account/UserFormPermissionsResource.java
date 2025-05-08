@@ -49,15 +49,15 @@ public class UserFormPermissionsResource {
         return ResponseEntity.ok(response);
     }
 
+    protected String getName() {
+        return "formPermissions";
+    }
+
     protected PagedResponse<UserFormAccess> initPageResponse(Page<UserFormAccess> page, String next) {
         PagedResponse<UserFormAccess> response = new PagedResponse<>(page, getName(), next);
         response.setNextPage(next);
         response.setEntityName(getName());
         return response;
-    }
-
-    protected String getName() {
-        return "formPermissions";
     }
 
     protected String createNextPageLink(Page<?> page) {

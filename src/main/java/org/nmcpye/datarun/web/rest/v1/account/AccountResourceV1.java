@@ -20,7 +20,7 @@ import static org.nmcpye.datarun.web.rest.v1.account.AccountResourceV1.V1;
 @RestController
 @RequestMapping(V1)
 public class AccountResourceV1 extends AccountResource {
-    protected static final String NAME = "/userGroups";
+    protected static final String NAME = "";
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private final Logger log = LoggerFactory.getLogger(AccountResourceV1.class);
@@ -40,4 +40,15 @@ public class AccountResourceV1 extends AccountResource {
         log.debug("REST request to check if the current user is authenticated");
         return user;
     }
+//    @GetMapping("/myDetails")
+//    public ResponseEntity<PagedResponse<?>> getMyDetails(@AuthenticationPrincipal CurrentUserDetails user) {
+//        log.debug("REST request to check if the current user is authenticated");
+//
+//        Page<CurrentUserDetails> processedPage = new PageImpl<>(List.of(user));
+//
+//        String next = PagingConfigurator.createNextPageLink(processedPage);
+//
+//        PagedResponse<CurrentUserDetails> response = PagingConfigurator.initPageResponse(processedPage, next);
+//        return ResponseEntity.ok(response);
+//    }
 }

@@ -13,7 +13,6 @@ import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -58,11 +57,7 @@ public class TeamResource extends JpaBaseResource<Team> {
     @GetMapping("managed")
     protected ResponseEntity<PagedResponse<?>> getAllManaged(
         QueryRequest queryRequest) {
-        Pageable pageable = PageRequest.of(queryRequest.getPage(), queryRequest.getSize());
-
-        if (!queryRequest.isPaged()) {
-            pageable = Pageable.unpaged();
-        }
+        Pageable pageable = queryRequest.getPageable();
 
         Page<Team> processedPage = teamService.findAllManagedByUser(pageable, queryRequest);
 

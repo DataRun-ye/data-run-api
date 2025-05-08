@@ -9,7 +9,6 @@ import org.nmcpye.datarun.common.repository.UserRepository;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.service.UserService;
-import org.nmcpye.datarun.query.filter.FilterExpression;
 import org.nmcpye.datarun.service.dto.AdminUserDTO;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
@@ -23,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -111,11 +109,7 @@ public class UserResource extends JpaBaseResource<User>
     @GetMapping("/entities")
     public ResponseEntity<PagedResponse<?>> getEntities(
         QueryRequest queryRequest) {
-        Pageable pageable = PageRequest.of(queryRequest.getPage(), queryRequest.getSize());
-
-        if (!queryRequest.isPaged()) {
-            pageable = Pageable.unpaged();
-        }
+        Pageable pageable = queryRequest.getPageable();
 
         Specification<User> spec;
         try {
@@ -133,15 +127,15 @@ public class UserResource extends JpaBaseResource<User>
     }
 
     @Override
-    protected Page<User> getList(Pageable pageable, QueryRequest queryRequest, FilterExpression expression) {
+    protected Page<User> getList(QueryRequest queryRequest, String jsonQueryBody) {
         Specification<User> spec;
         try {
             spec = buildQuerySpecification(queryRequest);
         } catch (Exception e) {
-            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2050, e.getMessage()));
+            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2014, queryRequest.getFilters()));
         }
 
-        return userService.findAllByUser(spec, pageable, queryRequest);
+        return userService.findAllByUser(spec, queryRequest);
     }
 
     /**

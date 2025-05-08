@@ -5,6 +5,7 @@ import org.nmcpye.datarun.common.feedback.ErrorMessage;
 
 import java.util.List;
 
+@Deprecated(since = "api v1")
 public class QueryRequestValidator {
 
     private static final List<String> SUPPORTED_OPERATORS = List.of(

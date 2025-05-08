@@ -85,6 +85,7 @@ public abstract class JpaAuditableObject
 
     @Transient
     @Override
+    @JsonIgnore
     public boolean isNew() {
         return !this.isPersisted;
     }

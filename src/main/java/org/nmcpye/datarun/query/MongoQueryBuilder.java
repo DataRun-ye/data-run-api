@@ -16,6 +16,12 @@ import java.util.List;
 @Component("mongoQueryBuilder")
 public class MongoQueryBuilder implements QueryBuilder<Query> {
 
+
+    public Criteria buildCriteria(List<FilterExpression> expressions) {
+        Criteria criteria = buildCriteria(new CompoundFilter(LogicalOperator.AND, expressions));
+        return criteria;
+    }
+
     @Override
     public Query buildQuery(List<FilterExpression> expressions) {
         Criteria criteria = buildCriteria(new CompoundFilter(LogicalOperator.AND, expressions));

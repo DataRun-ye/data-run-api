@@ -7,6 +7,7 @@ import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
 import org.nmcpye.datarun.common.jpa.JpaAuditableObjectService;
 import org.nmcpye.datarun.common.jpa.repository.JpaAuditableRepository;
 import org.nmcpye.datarun.query.JpaQueryBuilder;
+import org.nmcpye.datarun.query.UnifiedQueryParser;
 import org.nmcpye.datarun.query.filter.FilterExpression;
 import org.nmcpye.datarun.web.rest.common.BaseReadWriteResource;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
@@ -14,7 +15,6 @@ import org.nmcpye.datarun.web.rest.common.QuerySpecification;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
@@ -47,27 +47,28 @@ public abstract class JpaBaseResource<T extends JpaAuditableObject>
     }
 
     @Override
-    protected Page<T> getList(Pageable pageable, QueryRequest queryRequest, FilterExpression expression) {
+    protected Page<T> getList(QueryRequest queryRequest, String jsonQueryBody) {
         Specification<T> spec;
         try {
             spec = buildQuerySpecification(queryRequest);
         } catch (Exception e) {
             throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2050, e.getMessage()));
         }
-        if (expression != null) {
-            spec = spec.and(getQueryBuilder().buildQuery(List.of(expression)));
+        if (jsonQueryBody != null && !jsonQueryBody.isEmpty()) {
+            try {
+                FilterExpression filterExpression = UnifiedQueryParser.parse(jsonQueryBody);
+                spec = spec.and(getQueryBuilder().buildQuery(List.of(filterExpression)));
+            } catch (Exception e) {
+                throw new IllegalQueryException(ErrorCode.E2050, jsonQueryBody);
+            }
         }
-        return jpaAuditableObjectService.findAllByUser(spec, pageable, queryRequest);
+        return jpaAuditableObjectService.findAllByUser(spec, queryRequest);
     }
 
     @GetMapping("entities")
     protected ResponseEntity<PagedResponse<?>> getEntities(
         QueryRequest queryRequest) {
-        Pageable pageable = PageRequest.of(queryRequest.getPage(), queryRequest.getSize());
-
-        if (!queryRequest.isPaged()) {
-            pageable = Pageable.unpaged();
-        }
+        Pageable pageable = queryRequest.getPageable();
 
         Specification<T> spec;
         try {

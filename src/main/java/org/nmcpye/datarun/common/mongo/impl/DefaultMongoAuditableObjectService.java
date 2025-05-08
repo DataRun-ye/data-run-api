@@ -10,7 +10,6 @@ import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.nmcpye.datarun.web.rest.mongo.submission.RequestQueryBuilder;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -34,19 +33,19 @@ public abstract class DefaultMongoAuditableObjectService<T extends MongoAuditabl
     }
 
     @Override
-    public Page<T> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+    public Page<T> findAllByUser(QueryRequest queryRequest) {
         return query(queryRequest);
     }
 
-    @Override
-    public List<T> findAllByUser(QueryRequest queryRequest) {
-        Query query = new Query();
-        return getFormSubmissions(query, queryRequest);
-    }
+//    @Override
+//    public List<T> findAllByUser(QueryRequest queryRequest) {
+//        Query query = new Query();
+//        return getFormSubmissions(query, queryRequest);
+//    }
 
     public Page<T> query(QueryRequest request) {
-        final var query = new RequestQueryBuilder(request).buildForMongo();
-        Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
+        final var query = new RequestQueryBuilder(request).buildForMongo(new Query());
+        Pageable pageable = request.getPageable();
         query.with(pageable);
 
         final Query totalQuery = Query.of(query).limit(-1).skip(-1);

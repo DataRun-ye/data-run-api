@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.common.IdScheme;
@@ -17,6 +18,7 @@ import org.nmcpye.datarun.drun.postgres.common.IdentifiableProperty;
 import org.nmcpye.datarun.drun.postgres.common.translation.Translatable;
 import org.nmcpye.datarun.drun.postgres.common.translation.Translation;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.springframework.data.annotation.Transient;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -58,6 +60,7 @@ public class JpaBaseIdentifiableObject
      * locale and translation property, and value is the translated value.
      */
     @JsonIgnore
+    @Transient
     transient private Map<String, String> translationCache = new ConcurrentHashMap<>();
 
     // -------------------------------------------------------------------------
@@ -69,6 +72,7 @@ public class JpaBaseIdentifiableObject
     // -------------------------------------------------------------------------
 
     @JsonIgnore
+    @BsonIgnore
     public Map<String, String> getTranslationCache() {
         return translationCache;
     }

@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
+import org.nmcpye.datarun.common.FindExistingSubmissionsDto;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
@@ -12,6 +13,7 @@ import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionHistory;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionHistoryRepository;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepository;
+import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.AssignmentSubmissionHistoryService;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
@@ -56,6 +58,7 @@ public class DataFormSubmissionServiceImpl
     private final SequenceGeneratorService sequenceGeneratorService;
     private final SubmissionMaintenanceService maintenanceService;
     private final AssignmentSubmissionHistoryService historyService;
+    private final DataFormTemplateRepository formTemplateRepository;
     private static final int MAX_HISTORY_VERSIONS = 3; // Keep only the last 10 versions
 
     public DataFormSubmissionServiceImpl(
@@ -65,7 +68,7 @@ public class DataFormSubmissionServiceImpl
         AssignmentRepository assignmentRepository,
         TeamRepository teamRepository,
         MongoTemplate mongoTemplate,
-        SequenceGeneratorService sequenceGeneratorService, SubmissionMaintenanceService maintenanceService, AssignmentSubmissionHistoryService historyService) {
+        SequenceGeneratorService sequenceGeneratorService, SubmissionMaintenanceService maintenanceService, AssignmentSubmissionHistoryService historyService, DataFormTemplateRepository formTemplateRepository) {
         super(repository, cacheManager, mongoTemplate);
         this.repository = repository;
         this.historyRepository = historyRepository;
@@ -74,6 +77,7 @@ public class DataFormSubmissionServiceImpl
         this.sequenceGeneratorService = sequenceGeneratorService;
         this.maintenanceService = maintenanceService;
         this.historyService = historyService;
+        this.formTemplateRepository = formTemplateRepository;
     }
 
     @Override
@@ -107,12 +111,20 @@ public class DataFormSubmissionServiceImpl
 
     @Override
     public DataFormSubmission saveWithRelations(DataFormSubmission newSubmission) {
+
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
         if (user.getUsername().startsWith("test")) {
             log.info("Pass a Test user save request `{}` save", user.getUsername());
             // pass
             return newSubmission;
         }
+        formTemplateRepository.findByUid(newSubmission.getForm()).orElseThrow(() -> {
+            log.error("form {} is not in the system for submission by {}  is not in the system",
+                newSubmission.getForm(), user.getUsername());
+            throw new IllegalQueryException(
+                new ErrorMessage(ErrorCode.E1106, "Team", newSubmission.getTeam()));
+        });
+
         if (!canSubmit(newSubmission)) {
             log.info("User {} cannot submit data", user.getUsername());
             throw new IllegalQueryException(ErrorCode.E1112, newSubmission.getTeam());
@@ -192,7 +204,8 @@ public class DataFormSubmissionServiceImpl
     }
 
     @Override
-    public Page<DataFormSubmission> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
+    public Page<DataFormSubmission> findAllByUser(QueryRequest queryRequest) {
+        Pageable pageable = queryRequest.getPageable();
         Specification<Team> spec = TeamSpecifications.canRead();
         if (!queryRequest.isIncludeDisabled()) {
             spec = spec.and(TeamSpecifications.isEnabled());
@@ -213,6 +226,22 @@ public class DataFormSubmissionServiceImpl
         long total = submissions.size();
 
         return new PageImpl<>(submissions, pageable, total);
+    }
+
+    @Override
+    public FindExistingSubmissionsDto findExistingAndMissingOrgUnitCodes(List<String> codes, String form) {
+        // 1. Query for distinct orgUnitCode values in the DB that are in our list
+        Query query = new Query(Criteria.where("orgUnitCode").in(codes).and("form").is(form));
+        List<String> existing = mongoTemplate
+            .findDistinct(query, "orgUnitCode", DataFormSubmission.class, String.class);  // :contentReference[oaicite:0]{index=0}
+
+        // 2. Compute missing codes
+        List<String> missing = codes.stream()
+            .filter(c -> !existing.contains(c))
+            .collect(Collectors.toList());
+
+        return FindExistingSubmissionsDto.builder()
+            .existing(existing).missing(missing).build();
     }
 
     @Override

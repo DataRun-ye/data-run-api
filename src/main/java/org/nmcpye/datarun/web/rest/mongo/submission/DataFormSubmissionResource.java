@@ -1,22 +1,25 @@
 package org.nmcpye.datarun.web.rest.mongo.submission;
 
+import org.nmcpye.datarun.common.FindExistingSubmissionsDto;
 import org.nmcpye.datarun.drun.postgres.service.TeamService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepository;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.utils.FormSubmissionDataUtil;
 import org.nmcpye.datarun.utils.JsonFlattener;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.springframework.data.domain.Page;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -36,6 +39,7 @@ public class DataFormSubmissionResource
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     final private GenericQueryService queryService;
+    final private DataFormSubmissionService dataFormSubmissionService;
     final TeamService teamService;
 
     public DataFormSubmissionResource(DataFormSubmissionService dataFormSubmissionService,
@@ -45,6 +49,7 @@ public class DataFormSubmissionResource
                                       TeamService teamService) {
         super(dataFormSubmissionService, dataFormSubmissionRepository);
         this.queryService = queryService;
+        this.dataFormSubmissionService = dataFormSubmissionService;
         this.teamService = teamService;
     }
 
@@ -71,13 +76,32 @@ public class DataFormSubmissionResource
 
 
     // temporary returning the submission object instead of just the submission formData map
-    @GetMapping("objects")
-    public ResponseEntity<PagedResponse<?>> getObjectSubmissions(QueryRequest queryRequest) {
+//    @RequestMapping(name = "objects", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "objects", method = {RequestMethod.GET, RequestMethod.POST})
+    public ResponseEntity<PagedResponse<?>> getObjectSubmissions(QueryRequest queryRequest,
+                                                                 @RequestBody(required = false) String jsonQuery) {
         QueryRequestValidator.validate(queryRequest);
+//        Page<DataFormSubmission> resultPage = queryService.query(queryRequest, getEntityClass());
+        Page<DataFormSubmission> resultPage = getList(queryRequest, jsonQuery);
 
-        Page<DataFormSubmission> resultPage = queryService.query(queryRequest, getEntityClass());
+        Page<DataFormSubmission> processedPage = postProcess(resultPage, queryRequest);
 
-        Page<DataFormSubmission> processedPage = resultPage.map(submission -> {
+        String next = createNextPageLink(processedPage);
+
+        PagedResponse<DataFormSubmission> response = new
+            PagedResponse<>(processedPage, getName(), next);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/existByCode")
+    public ResponseEntity<FindExistingSubmissionsDto> checkExisting(@RequestBody FindExistingVM findExisting) {
+
+        final var result = dataFormSubmissionService.findExistingAndMissingOrgUnitCodes(findExisting.getCodes(), findExisting.getForm());
+        return ResponseEntity.ok(result);
+    }
+
+    private Page<DataFormSubmission> postProcess(Page<DataFormSubmission> resultPage, QueryRequest queryRequest) {
+        return resultPage.map(submission -> {
             Map<String, Object> formData = submission.getFormData();
             if (queryRequest.isFlatten()) {
                 formData = FormSubmissionDataUtil.flatten(formData, false, true);
@@ -85,12 +109,6 @@ public class DataFormSubmissionResource
             submission.setFormData(formData);
             return submission;
         });
-
-        String next = createNextPageLink(processedPage);
-
-        PagedResponse<DataFormSubmission> response = new
-            PagedResponse<>(processedPage, getName(), next);
-        return ResponseEntity.ok(response);
     }
 
     @Override
@@ -106,5 +124,14 @@ public class DataFormSubmissionResource
     @Override
     protected String getName() {
         return "dataSubmission";
+    }
+
+    @Override
+    protected void applySecurityConstraints(Query query) {
+        final CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
+
+        query.addCriteria(Criteria.where("form").in(user.getUserFormsUIDs()).and("team")
+            .in(user.getUserTeamsUIDs()));
+
     }
 }
