@@ -18,6 +18,10 @@ import org.springframework.stereotype.Component;
 public class AssignmentFilter extends DefaultJpaFilter<Assignment> {
     public static Specification<Assignment> isEnabled() {
         return (root, query, cb) -> {
+            if (Long.class != query.getResultType()) {
+                root.fetch("assignmentForms", JoinType.LEFT);
+            }
+
             Join<Assignment, Activity> activityJoin = root.join("activity", JoinType.LEFT);
             Join<Assignment, Team> teamJoin = root.join("team", JoinType.LEFT);
 

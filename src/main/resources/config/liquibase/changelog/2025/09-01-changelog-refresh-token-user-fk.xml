@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1746740339847-0-add-refresh-token-user-fk" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="user_id" baseTableName="refresh_token"
+                                 constraintName="FK_REFRESH_TOKEN_ON_USER" referencedColumnNames="id"
+                                 referencedTableName="app_user"/>
+    </changeSet>
+
+    <changeSet id="1746740339847-1-refresh-token-token-idx" author="Hamza (generated)">
+        <createIndex indexName="idx_refresh_token_token_unq"
+                     tableName="refresh_token"
+                     unique="true">
+            <column name="token"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

@@ -30,7 +30,7 @@ public class TemplateExpressionValidator
         List<FormValidationError> errors = new ArrayList<>();
 
         // Validate rule expressions in fields.
-        for (FormDataElementConf field : template.getFieldsConf()) {
+        for (FormDataElementConf field : template.getFields()) {
             if (field.getRules() != null) {
                 for (DataFieldRule rule : field.getRules()) {
                     String expression = rule.getExpression();

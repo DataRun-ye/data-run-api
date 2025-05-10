@@ -13,13 +13,13 @@ public interface FormWithFields {
 
     String getUid();
 
-    List<FormDataElementConf> getFieldsConf();
-
-    void setFieldsConf(List<FormDataElementConf> fields);
+    List<FormDataElementConf> getFields();
 
     List<FormSectionConf> getSections();
 
+    Integer getVersion();
     FormWithFields version(Integer version);
 
     void setSections(List<FormSectionConf> sections);
+    void setFields(List<FormDataElementConf> sections);
 }

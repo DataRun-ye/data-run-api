@@ -32,7 +32,10 @@ public class MetadataSubmissionGranularRepository {
     final private DataFormRepository dataFormRepository;
     private final AssignmentRepository assignmentRepository;
 
-    public MetadataSubmissionGranularRepository(MongoTemplate mongoTemplate, TeamService teamService, MetadataSubmissionRepository metadataSubmissionRepository, DataFormRepository dataFormRepository, AssignmentRepository assignmentRepository) {
+    public MetadataSubmissionGranularRepository(MongoTemplate mongoTemplate, TeamService teamService,
+                                                MetadataSubmissionRepository metadataSubmissionRepository,
+                                                DataFormRepository dataFormRepository,
+                                                AssignmentRepository assignmentRepository) {
         this.mongoTemplate = mongoTemplate;
         this.teamService = teamService;
         this.metadataSubmissionRepository = metadataSubmissionRepository;
@@ -49,13 +52,18 @@ public class MetadataSubmissionGranularRepository {
 
     // uids of assigned orgUnits for resourceType == OrgUnit
     private List<String> getAssignedOrgUnits() {
-        var assignedOrgs = getAssignedAssignments().stream().map((assignment) -> assignment.getOrgUnit().getUid()).toList();
+        var assignedOrgs = getAssignedAssignments().stream().map((assignment) ->
+                assignment.getOrgUnit().getUid())
+            .toList();
         return assignedOrgs;
     }
 
     // uids of assigned activities for resourceType == Activity
     private List<String> getAssignedActivities() {
-        return getAssignedAssignments().stream().map((assignment) -> assignment.getActivity().getUid()).distinct().collect(Collectors.toList());
+        return getAssignedAssignments().stream().map((assignment) ->
+                assignment.getActivity().getUid())
+            .distinct()
+            .collect(Collectors.toList());
     }
 
     // uids of assigned teams for resourceType == Team
@@ -65,13 +73,24 @@ public class MetadataSubmissionGranularRepository {
 
     public List<ReferenceField> getUserFieldsOfResourceType() {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return dataFormRepository.findAll().stream().flatMap(form -> form.getFlattenedFields().stream()).filter(AbstractField::isResourceTypeField).map(ReferenceField.class::cast).toList();
+            return dataFormRepository.findAll().stream().flatMap(form -> form.getFlattenedFields()
+                    .stream()).filter(AbstractField::isResourceTypeField)
+                .map(ReferenceField.class::cast).toList();
         }
 
-        var forms = getAssignedAssignments().stream().filter(assignment -> !assignment.getActivity().getDisabled()).map(Assignment::getTeam).filter(team -> !team.getDisabled()).distinct().flatMap(team -> Objects.requireNonNullElse(team.getFormPermissions(), new HashSet<TeamFormPermissions>()).stream()).map(TeamFormPermissions::getForm).distinct().toList();
+        var forms = getAssignedAssignments().stream().filter(assignment ->
+                !assignment.getActivity().getDisabled()).map(Assignment::getTeam)
+            .filter(team -> !team.getDisabled()).distinct()
+            .flatMap(team -> Objects.requireNonNullElse(team.getFormPermissions(),
+                new HashSet<TeamFormPermissions>()).stream()).map(TeamFormPermissions::getForm).distinct().toList();
 
 
-        List<ReferenceField> typeReferenceFields = forms.stream().flatMap(uid -> dataFormRepository.findByUid(uid).stream()).flatMap(form -> form.flattenFields().stream()).filter(AbstractField::isResourceTypeField).map(ReferenceField.class::cast).toList();
+        List<ReferenceField> typeReferenceFields = forms.stream().flatMap(uid ->
+                dataFormRepository.findByUid(uid).stream())
+            .flatMap(form -> form.flattenFields().stream())
+            .filter(AbstractField::isResourceTypeField)
+            .map(ReferenceField.class::cast)
+            .toList();
 
         return typeReferenceFields;
     }
@@ -85,7 +104,8 @@ public class MetadataSubmissionGranularRepository {
             ReferenceType resourceType = field.getResourceType();
             String metadataSchema = field.getResourceMetadataSchema();
             List<String> resourceIds = getResourceUids(resourceType, queryRequest);
-            List<MetadataSubmission> resourceMetadataSubmissions = resourceIds.stream().flatMap(uid -> getMetadataSubmissionsForResource(resourceType.name(), metadataSchema, uid).stream()).toList();
+            List<MetadataSubmission> resourceMetadataSubmissions = resourceIds.stream().flatMap(uid ->
+                getMetadataSubmissionsForResource(resourceType.name(), metadataSchema, uid).stream()).toList();
             metadataSubmissions.addAll(resourceMetadataSubmissions);
         }
 
@@ -104,8 +124,10 @@ public class MetadataSubmissionGranularRepository {
     }
 
     private List<MetadataSubmission> getMetadataSubmissionsForResource(String resourceType, String metadataSchema, String resourceId) {
-        Query query = new Query(Criteria.where("resourceType").is(resourceType).and("metadataSchema").is(metadataSchema).and("resourceId").is(resourceId));
-        var subs = metadataSubmissionRepository.findAllByResourceTypeAndResourceIdAndAndMetadataSchema(resourceType, resourceId, metadataSchema, Pageable.unpaged());
+        Query query = new Query(Criteria.where("resourceType").is(resourceType)
+            .and("metadataSchema").is(metadataSchema).and("resourceId").is(resourceId));
+        var subs = metadataSubmissionRepository.findAllByResourceTypeAndResourceIdAndAndMetadataSchema(resourceType,
+            resourceId, metadataSchema, Pageable.unpaged());
 
         var submissions = mongoTemplate.find(query, MetadataSubmission.class);
         return mongoTemplate.find(query, MetadataSubmission.class);

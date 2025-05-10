@@ -4,7 +4,7 @@ import java.util.List;
 
 public enum FormPermission {
     /**
-     * the User can view his submissions
+     * the User can view own submissions
      */
     VIEW_SUBMISSIONS,
     /**
@@ -16,7 +16,7 @@ public enum FormPermission {
      */
     ADD_SUBMISSIONS,
     /**
-     * the User edit his submission after submitting
+     * the User edit own submissions after submitting
      */
     EDIT_SUBMISSIONS,
     /**
@@ -28,7 +28,7 @@ public enum FormPermission {
      */
     APPROVE_SUBMISSIONS,
     /**
-     * The user can delete his submissions after submitting
+     * The user can delete own submissions after submitting
      */
     DELETE_SUBMISSIONS,
     /**
@@ -36,12 +36,9 @@ public enum FormPermission {
      */
     DELETE_SUBMISSIONS_FROM_USERS;
 
-    public List<FormPermission> canViewPermissions() {
+    public static FormPermission[] canViewPermissions() {
         return List.of(VIEW_SUBMISSIONS, VIEW_SUBMISSIONS_FROM_USERS, EDIT_SUBMISSIONS,
-            EDIT_SUBMISSIONS_FROM_USERS, APPROVE_SUBMISSIONS, DELETE_SUBMISSIONS, DELETE_SUBMISSIONS_FROM_USERS);
-    }
-
-    public boolean canViewSubmission() {
-        return canViewPermissions().contains(this);
+            EDIT_SUBMISSIONS_FROM_USERS, APPROVE_SUBMISSIONS, DELETE_SUBMISSIONS,
+            DELETE_SUBMISSIONS_FROM_USERS).toArray(new FormPermission[0]);
     }
 }

@@ -15,7 +15,9 @@ import java.util.Objects;
  * @author Hamza Assada, 15/04/2025
  */
 @Entity
-@Table(name = "refresh_token")
+@Table(name = "refresh_token", indexes = {
+    @Index(name = "idx_refresh_token_token_unq", columnList = "token", unique = true),
+})
 @Getter
 @Setter
 public class RefreshToken {

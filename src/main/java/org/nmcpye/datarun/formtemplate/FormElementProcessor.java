@@ -42,7 +42,7 @@ public class FormElementProcessor {
     private FormElementProcessor configureAndValidateFields(Collection<DataElement> dataElements) {
         final var dataElementMap = dataElements.stream().collect(Collectors.toMap(DataElement::getUid, s -> s));
         final var sectionMap = getSectionMap();
-        final var fields = formTemplate.getFieldsConf().stream().distinct()
+        final var fields = formTemplate.getFields().stream().distinct()
             .map((f) ->
                 AbstractFormElementHandler
                     .processElement(f, formTemplate,
@@ -51,7 +51,7 @@ public class FormElementProcessor {
             .peek(f -> f.path(buildPath(f, sectionMap)))
             .toList();
 
-        formTemplate.setFieldsConf(fields);
+        formTemplate.setFields(fields);
         return this;
     }
 

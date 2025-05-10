@@ -84,13 +84,21 @@ public class CacheConfiguration {
             createCache(cm, org.nmcpye.datarun.domain.Project.class.getName() + ".activities");
             createCache(cm, org.nmcpye.datarun.domain.Activity.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Activity.class.getName() + ".assignments");
+
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.AssignmentForm.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Assignment.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Assignment.class.getName() + ".children");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Assignment.class.getName() + ".assignmentForms");
+
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.TeamFormAccess.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName() + ".assignments");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName() + ".users");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName() + ".managedTeams");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName() + ".managedByTeams");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName() + ".teamFormAccesses");
+
+
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName() + ".assignments");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName() + ".groups");
@@ -104,7 +112,6 @@ public class CacheConfiguration {
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet.class.getName() + ".orgUnitGroups");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.DataElement.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OptionSet.class.getName());
-            createCache(cm, org.nmcpye.datarun.domain.WarehouseItem.class.getName());
         };
     }
 

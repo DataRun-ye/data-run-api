@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 @Entity
 @Table(name = "assignment", indexes = {
     @Index(name = "idx_assignment_uid_unq", columnList = "uid", unique = true),
-    @Index(name = "idx_assignment_uid_unq", columnList = "uid", unique = true),
 }, uniqueConstraints = {
     @UniqueConstraint(name = "uc_assignment_activity_id", columnNames = {"activity_id", "orgUnit_id", "team_id"})
 })
@@ -45,7 +44,7 @@ public class Assignment
 
     @NotNull
     @ManyToOne//(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"project", "translations"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"project", "translations", "assignments"}, allowSetters = true)
     private Activity activity;
 
     @Column(name = "start_day")
@@ -59,7 +58,7 @@ public class Assignment
     @ManyToOne(optional = false)
     @NotNull
     @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
-        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
+        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
     private Team team;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
@@ -83,6 +82,9 @@ public class Assignment
     @Column(name = "forms", columnDefinition = "jsonb")
     private Set<String> forms = new HashSet<>();
 
+//    @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<AssignmentForm> employees;
+
     @Type(JsonType.class)
     @Column(name = "allocated_resources", columnDefinition = "jsonb")
     private Map<String, Object> allocatedResources = new HashMap<>();
@@ -103,6 +105,21 @@ public class Assignment
     @Transient
     private String lastEntryBy;
 
+    @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties(value = {"assignment"}, allowSetters = true)
+    private Set<AssignmentForm> assignmentForms = new LinkedHashSet<>();
+
+    public void setForms(Set<String> forms) {
+        this.forms = forms;
+        final var assignmentForms = forms.stream().map((f) -> {
+            final var assignmentForm = new AssignmentForm();
+            assignmentForm.setFormUid(f);
+            return assignmentForm;
+        }).collect(Collectors.toSet());
+
+        this.setAssignmentForms(assignmentForms);
+    }
+
     @JsonProperty
     public AssignmentStatus getStatus() {
         return status;
@@ -116,6 +133,19 @@ public class Assignment
     @JsonProperty
     public Map<String, Object> getAllocatedResources() {
         return allocatedResources;
+    }
+
+    public void setAssignmentForms(Set<AssignmentForm> assignmentForms) {
+        this.assignmentForms.clear();
+        if (assignmentForms != null) {
+            assignmentForms.forEach(i -> i.setAssignment(this));
+            this.assignmentForms.addAll(assignmentForms);
+        }
+    }
+
+    public Assignment assignmentForms(Set<AssignmentForm> assignmentForms) {
+        this.setAssignmentForms(assignmentForms);
+        return this;
     }
 
     /**

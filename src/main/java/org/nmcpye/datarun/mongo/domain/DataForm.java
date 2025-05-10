@@ -160,6 +160,10 @@ public class DataForm
     }
 
     @Override
+    public void setFields(List<FormDataElementConf> fields) {
+        this.fieldsConf = fields;
+    }
+
     public FormWithFields version(Integer version) {
         this.setVersion(version);
         return this;

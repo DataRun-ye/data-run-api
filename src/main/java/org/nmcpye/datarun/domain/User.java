@@ -112,8 +112,8 @@ public class User extends JpaAuditableObject {
     Set<Role> roles;
 
     @ManyToMany(mappedBy = "users")
-    @JsonIgnoreProperties(value = {"managedTeams", "managedTeams", "users", "assignments",
-        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
+        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<Team> teams = new LinkedHashSet<>();
 

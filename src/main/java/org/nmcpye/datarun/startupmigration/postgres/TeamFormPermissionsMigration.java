@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.startupmigration.postgres;
 
 import jakarta.persistence.EntityManager;
+import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.springframework.data.domain.Page;
@@ -16,6 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 @Component
 @Transactional
+@Slf4j
 public class TeamFormPermissionsMigration /*implements CommandLineRunner*/ {
     private static final int CHUNK_SIZE = 400;
     final TeamRepository repository;
@@ -52,11 +54,13 @@ public class TeamFormPermissionsMigration /*implements CommandLineRunner*/ {
                     }
                     repository.saveAll(finalChunk.getContent());
                     // make sure we don’t accumulate managed state
+
                     em.flush();
                     em.clear();
                     return null;
                 });
             }
+            log.info("saving next {} assignments", page);
             page++;
         } while (!chunk.isLast());
     }

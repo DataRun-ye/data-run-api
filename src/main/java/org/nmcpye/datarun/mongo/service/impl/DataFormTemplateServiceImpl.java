@@ -74,12 +74,13 @@ public class DataFormTemplateServiceImpl
         Query query = new Query();
 
         final var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
-//        if (!currentUser.isSuper()) {
-//            query = query.addCriteria(Criteria.where("uid").in(currentUser.getUserFormsUIDs()));
-//        }
         if (!currentUser.isSuper()) {
-            query = query.addCriteria(Criteria.where("uid").in(userForms));
+            query = query.addCriteria(Criteria.where("uid").in(currentUser.getUserFormsUIDs()));
         }
+
+//        if (!currentUser.isSuper()) {
+//            query = query.addCriteria(Criteria.where("uid").in(userForms));
+//        }
 
         if (!queryRequest.isIncludeDeleted()) {
             query.addCriteria(Criteria.where("deleted").is(false));

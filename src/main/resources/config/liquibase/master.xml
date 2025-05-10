@@ -50,5 +50,7 @@
     <include file="config/liquibase/changelog/2025/22-02-changelog-user-role.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2025/22-01-changelog-add-new-identifiable-structure.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/2025/16-02-changelog-refresh-token-create.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/2025/09-01-changelog-refresh-token-user-fk.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/2025/09-01-changelog-add-form-accesses-entities.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

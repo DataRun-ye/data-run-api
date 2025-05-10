@@ -1,14 +1,11 @@
 package org.nmcpye.datarun.mongo.domain.dataform;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.mongo.MongoBaseIdentifiableObject;
 import org.nmcpye.datarun.mongo.common.FormWithFields;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
-import org.nmcpye.datarun.mongo.domain.dataelement.FormElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -22,7 +19,7 @@ import java.util.Map;
 /**
  * A DataFormTemplate.
  */
-@JsonIgnoreProperties(value = {"elements"}, allowGetters = true)
+//@JsonIgnoreProperties(value = {"elements"}, allowGetters = true)
 @Document(collection = "data_form_template")
 @Getter
 @Setter
@@ -48,7 +45,10 @@ public class DataFormTemplate
     @Field("deleted")
     private boolean deleted;
 
-    private Integer version;
+    private Integer version; // latestVersion
+
+    @Field("latestVersionUid")
+    private String latestVersionUid; // points to latest Version uid
 
     @Getter
     @Field("defaultLocale")
@@ -56,8 +56,8 @@ public class DataFormTemplate
 
     private Map<String, String> label;
 
-    @Field("elements")
-    private List<FormElementConf> elements;
+//    @Field("elements")
+//    private List<FormElementConf> elements;
 
     @Field("fields")
     private List<FormDataElementConf> fields = new LinkedList<>();
@@ -94,16 +94,5 @@ public class DataFormTemplate
             ", description='" + getDescription() + "'" +
             ", disabled='" + getDisabled() + "'" +
             "}";
-    }
-
-    @JsonIgnore
-    @Override
-    public List<FormDataElementConf> getFieldsConf() {
-        return getFields();
-    }
-
-    @Override
-    public void setFieldsConf(List<FormDataElementConf> fields) {
-        this.setFields(fields);
     }
 }

@@ -43,15 +43,13 @@ public class Team extends JpaBaseIdentifiableObject {
     @Column(name = "delete_client_data")
     private Boolean deleteClientData;
 
-    @ManyToOne//fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"project", "translations"}, allowSetters = true)
+    @ManyToOne
+    @JsonIgnoreProperties(value = {"project", "translations", "assignments"}, allowSetters = true)
     @JsonSerialize(contentAs = NameableObject.class)
     private Activity activity;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "team_user", joinColumns = @JoinColumn(name = "team_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
-//    @JsonSerialize(as = UserDTO.class)
-    @JsonIgnoreProperties(value = {"teams", "password", "authorities", "translations"}, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<User> users = new HashSet<>();
 
@@ -63,14 +61,14 @@ public class Team extends JpaBaseIdentifiableObject {
         inverseJoinColumns = @JoinColumn(name = "managed_team_id")
     )
     @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
-        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
+        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<Team> managedTeams = new HashSet<>();
 
     @ManyToMany(mappedBy = "managedTeams")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
-        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity"}, allowSetters = true)
+        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
     private Set<Team> managedByTeams = new HashSet<>();
 
     @Column(name = "enabled_from")
@@ -90,6 +88,28 @@ public class Team extends JpaBaseIdentifiableObject {
 
     @Transient
     private EntityScope entityScope;
+
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties(value = {"team"}, allowSetters = true)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    private Set<TeamFormAccess> teamFormAccesses = new LinkedHashSet<>();
+
+    public void setFormPermissions(Set<TeamFormPermissions> formPermissions) {
+        this.formPermissions = formPermissions;
+        final var teamFormAccesses = formPermissions.stream().map((p) -> {
+            final var teamAccess = new TeamFormAccess();
+            teamAccess.setFormUid(p.getForm());
+            teamAccess.setPermissions(p.getPermissions());
+            return teamAccess;
+        }).collect(Collectors.toSet());
+
+        this.setTeamFormAccesses(teamFormAccesses);
+    }
+
+    @Deprecated(since = "v 6, use teamFormAccesses")
+    public Set<TeamFormPermissions> getFormPermissions() {
+        return formPermissions;
+    }
 
     public Set<FormPermission> getFormPermissions(String form) {
         return formPermissions.stream()
@@ -147,6 +167,19 @@ public class Team extends JpaBaseIdentifiableObject {
 
     public Team assignments(Set<Assignment> assignments) {
         this.setAssignments(assignments);
+        return this;
+    }
+
+    public void setTeamFormAccesses(Set<TeamFormAccess> teamFormAccesses) {
+        this.teamFormAccesses.clear();
+        if (teamFormAccesses != null) {
+            teamFormAccesses.forEach(i -> i.setTeam(this));
+            this.teamFormAccesses.addAll(teamFormAccesses);
+        }
+    }
+
+    public Team teamFormAccesses(Set<TeamFormAccess> teamFormAccesses) {
+        this.setTeamFormAccesses(teamFormAccesses);
         return this;
     }
 }

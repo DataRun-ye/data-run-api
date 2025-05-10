@@ -36,6 +36,11 @@ public class FormDataElementConf extends FormElementConf {
      */
     private ReferenceType resourceType;
 
+//    /**
+//     *  for referenceType ReferenceType.Stage
+//     */
+//    private StageReference stageReference;
+
     // TODO rename to referenceMetadataSchema
     /**
      * resourceMetadataSchema for ReferenceField type
@@ -43,6 +48,8 @@ public class FormDataElementConf extends FormElementConf {
     private String resourceMetadataSchema;
 
     private ValueTypeRendering valueTypeRendering = ValueTypeRendering.DEFAULT;
+
+    private AggregationType aggregationType = AggregationType.DEFAULT;
 
     @Override
     public FormDataElementConf path(String path) {

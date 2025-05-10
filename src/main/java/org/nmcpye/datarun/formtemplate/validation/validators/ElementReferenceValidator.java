@@ -31,7 +31,7 @@ public class ElementReferenceValidator implements ExpressionValidator {
 
         // Build a set of valid element names from the template.
         // Assume DataFormTemplate.getFields() returns a List<Field> where Field has a getName() method.
-        Set<String> validElementNames = template.getFieldsConf().stream()
+        Set<String> validElementNames = template.getFields().stream()
             .map(FormElementConf::getName)
             .collect(Collectors.toSet());
 

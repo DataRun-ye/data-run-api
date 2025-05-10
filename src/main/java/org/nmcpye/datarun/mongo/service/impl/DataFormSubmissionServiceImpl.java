@@ -18,6 +18,7 @@ import org.nmcpye.datarun.mongo.service.AssignmentSubmissionHistoryService;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.security.useraccess.dataform.FormAccessService;
 import org.nmcpye.datarun.startupmigration.mongo.SubmissionMaintenanceService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
@@ -59,6 +60,7 @@ public class DataFormSubmissionServiceImpl
     private final SubmissionMaintenanceService maintenanceService;
     private final AssignmentSubmissionHistoryService historyService;
     private final DataFormTemplateRepository formTemplateRepository;
+    private final FormAccessService formAccessService;
     private static final int MAX_HISTORY_VERSIONS = 3; // Keep only the last 10 versions
 
     public DataFormSubmissionServiceImpl(
@@ -68,7 +70,7 @@ public class DataFormSubmissionServiceImpl
         AssignmentRepository assignmentRepository,
         TeamRepository teamRepository,
         MongoTemplate mongoTemplate,
-        SequenceGeneratorService sequenceGeneratorService, SubmissionMaintenanceService maintenanceService, AssignmentSubmissionHistoryService historyService, DataFormTemplateRepository formTemplateRepository) {
+        SequenceGeneratorService sequenceGeneratorService, SubmissionMaintenanceService maintenanceService, AssignmentSubmissionHistoryService historyService, DataFormTemplateRepository formTemplateRepository, FormAccessService formAccessService) {
         super(repository, cacheManager, mongoTemplate);
         this.repository = repository;
         this.historyRepository = historyRepository;
@@ -78,6 +80,7 @@ public class DataFormSubmissionServiceImpl
         this.maintenanceService = maintenanceService;
         this.historyService = historyService;
         this.formTemplateRepository = formTemplateRepository;
+        this.formAccessService = formAccessService;
     }
 
     @Override
@@ -103,11 +106,12 @@ public class DataFormSubmissionServiceImpl
         return repository.save(submission);
     }
 
-    private boolean canSubmit(DataFormSubmission submission) {
-        final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
-        return user.getFormAccess().stream().anyMatch((f) -> f.canAddSubmission(submission.getForm())
-            || f.canEditSubmission(submission.getForm()));
-    }
+//    private boolean canSubmit(DataFormSubmission submission) {
+//        final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
+////        formTemplateRepository
+//        return user.getFormAccess().stream().anyMatch((f) -> f.canAddSubmission(submission.getForm())
+//            || f.canEditSubmission(submission.getForm()));
+//    }
 
     @Override
     public DataFormSubmission saveWithRelations(DataFormSubmission newSubmission) {
@@ -118,17 +122,19 @@ public class DataFormSubmissionServiceImpl
             // pass
             return newSubmission;
         }
-        formTemplateRepository.findByUid(newSubmission.getForm()).orElseThrow(() -> {
-            log.error("form {} is not in the system for submission by {}  is not in the system",
-                newSubmission.getForm(), user.getUsername());
-            throw new IllegalQueryException(
-                new ErrorMessage(ErrorCode.E1106, "Team", newSubmission.getTeam()));
-        });
 
-        if (!canSubmit(newSubmission)) {
+        if (!formAccessService.canSubmitData(newSubmission.getForm())) {
             log.info("User {} cannot submit data", user.getUsername());
             throw new IllegalQueryException(ErrorCode.E1112, newSubmission.getTeam());
         }
+
+        formTemplateRepository.findByUid(newSubmission.getForm()).orElseThrow(() -> {
+            log.error("form {} is not in the system for submission by {}  is not in the system",
+                newSubmission.getForm(), user.getUsername());
+            return new IllegalQueryException(
+                new ErrorMessage(ErrorCode.E1106, "Team", newSubmission.getTeam()));
+        });
+
         if (newSubmission.getAssignment() != null) {
             assignmentRepository.findByUid(newSubmission.getAssignment())
                 .ifPresentOrElse((a) -> {
