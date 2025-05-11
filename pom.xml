@@ -6,9 +6,16 @@
     <groupId>org.nmcpye.datarun</groupId>
     <artifactId>data-run-api</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
     <name>Data Run Api</name>
     <description>Description for Data Run Api</description>
+    <modules>
+        <module>datarun-domain</module>
+        <module>datarun-mongodb</module>
+        <module>datarun-jpa</module>
+        <module>datarun-service</module>
+        <module>datarun-app</module>
+    </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -39,6 +46,7 @@
         <config.version>1.4.3</config.version>
         <cucumber-bom.version>7.21.1</cucumber-bom.version>
         <git-commit-id-maven-plugin.version>9.0.1</git-commit-id-maven-plugin.version>
+        <jackson.version>2.17.1</jackson.version>
         <jackson-databind-nullable.version>0.2.6</jackson-databind-nullable.version>
         <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
         <jhipster-framework.version>8.9.0</jhipster-framework.version>
@@ -81,10 +89,47 @@
         <javers-spring-boot-starter-mongo.version>7.7.0</javers-spring-boot-starter-mongo.version>
         <mongock-bom.version>5.5.0</mongock-bom.version>
         <version.debezium>3.1.0.Alpha1</version.debezium>
+        <hypersistence-utils-hibernate-62.version>3.9.0</hypersistence-utils-hibernate-62.version>
+        <slf4j.version>1.7.36</slf4j.version>
+        <lombok.version>1.18.32</lombok.version> <!-- Or your managed version -->
+        <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.nmcpye.datarun</groupId>
+                <artifactId>datarun-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.nmcpye.datarun</groupId>
+                <artifactId>datarun-jpa</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.nmcpye.datarun</groupId>
+                <artifactId>datarun-mongodb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.nmcpye.datarun</groupId>
+                <artifactId>datarun-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- if datarun-debezium exists -->
+<!--            <dependency>-->
+<!--                <groupId>org.nmcpye.datarun</groupId>-->
+<!--                <artifactId>datarun-debezium</artifactId>-->
+<!--                <version>${project.version}</version>-->
+<!--            </dependency>-->
+            <dependency>
+                <groupId>org.nmcpye.datarun</groupId>
+                <artifactId>datarun-app</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- existing dependencyManagement entries like mongock-bom -->
             <dependency>
                 <groupId>io.mongock</groupId>
                 <artifactId>mongock-bom</artifactId>
@@ -92,137 +137,236 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+        <!--  moved from dependencies  -->
+            <dependency>
+                <groupId>tech.jhipster</groupId>
+                <artifactId>jhipster-framework</artifactId>
+                <version>${jhipster-framework.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-configuration-processor</artifactId>
+                <version>${spring-boot.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-loader-tools</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-actuator</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-aop</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-cache</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-data-jpa</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-logging</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-mail</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-security</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-test</artifactId>
+                <version>${spring-boot.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-thymeleaf</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-undertow</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-validation</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-web</artifactId>
+                <version>${spring-boot.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-starter-tomcat</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-test</artifactId>
+                <version>${spring-boot.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-data</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-test</artifactId>
+                <version>${spring-boot.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+                <version>${springdoc-openapi-starter-webmvc-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-hibernate6</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-hppc</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-jsr310</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.module</groupId>
+                <artifactId>jackson-module-jaxb-annotations</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit-junit5-api</artifactId>
+                <version>${archunit-junit5.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <!-- Adding the engine dependency to the surefire-plugin unfortunately does not work in the current version. -->
+                <!-- https://www.archunit.org/userguide/html/000_Index.html#_junit_5 -->
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit-junit5-engine</artifactId>
+                <version>${archunit-junit5.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.typesafe</groupId>
+                <artifactId>config</artifactId>
+                <version>${config.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.liquibase</groupId>
+                <artifactId>liquibase-core</artifactId>
+                <version>${liquibase.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct-processor</artifactId>
+                <version>${mapstruct.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.hypersistence</groupId>
+                <artifactId>hypersistence-utils-hibernate-62</artifactId>
+                <version>${hypersistence-utils-hibernate-62.version}</version>
+            </dependency>
+
+            <!-- debezium   -->
+            <dependency>
+                <groupId>io.debezium</groupId>
+                <artifactId>debezium-api</artifactId>
+                <version>${version.debezium}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.debezium</groupId>
+                <artifactId>debezium-embedded</artifactId>
+                <version>${version.debezium}</version>
+            </dependency>
+            <!--        <dependency>-->
+            <!--            <groupId>io.debezium</groupId>-->
+            <!--            <artifactId>debezium-storage-jdbc</artifactId>-->
+            <!--            <version>${version.debezium}</version>-->
+            <!--        </dependency>-->
+            <dependency>
+                <groupId>io.debezium</groupId>
+                <artifactId>debezium-connector-mongodb</artifactId>
+                <version>${version.debezium}</version>
+            </dependency>
+
+            <!--   javers    -->
+            <dependency>
+                <groupId>org.javers</groupId>
+                <artifactId>javers-spring-boot-starter-mongo</artifactId>
+                <version>${javers-spring-boot-starter-mongo.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.jayway.jsonpath</groupId>
+                <artifactId>json-path</artifactId>
+                <version>2.9.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-mapstruct-binding</artifactId>
+                <version>${lombok-mapstruct-binding.version}</version> <!-- Check for latest version -->
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version> <!-- Check for latest version -->
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
-        <dependency>
-            <groupId>tech.jhipster</groupId>
-            <artifactId>jhipster-framework</artifactId>
-            <version>${jhipster-framework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-loader-tools</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-cache</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-logging</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-thymeleaf</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-undertow</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-data</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
-            <version>${springdoc-openapi-starter-webmvc-api.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-hibernate6</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-hppc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-jaxb-annotations</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.tngtech.archunit</groupId>
-            <artifactId>archunit-junit5-api</artifactId>
-            <version>${archunit-junit5.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <!-- Adding the engine dependency to the surefire-plugin unfortunately does not work in the current version. -->
-            <!-- https://www.archunit.org/userguide/html/000_Index.html#_junit_5 -->
-            <groupId>com.tngtech.archunit</groupId>
-            <artifactId>archunit-junit5-engine</artifactId>
-            <version>${archunit-junit5.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe</groupId>
-            <artifactId>config</artifactId>
-            <version>${config.version}</version>
-        </dependency>
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
@@ -271,24 +415,9 @@
             <artifactId>hibernate-validator</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.liquibase</groupId>
-            <artifactId>liquibase-core</artifactId>
-            <version>${liquibase.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct</artifactId>
-            <version>${mapstruct.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct-processor</artifactId>
-            <version>${mapstruct.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
@@ -321,141 +450,79 @@
             <artifactId>mongodb-springdata-v4-driver</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.hypersistence</groupId>
-            <artifactId>hypersistence-utils-hibernate-62</artifactId>
-            <version>3.9.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok-mapstruct-binding</artifactId>
-            <version>0.2.0</version> <!-- Check for latest version -->
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <!--            <version>1.7.30</version>-->
-        </dependency>
-        <!-- debezium   -->
-        <dependency>
-            <groupId>io.debezium</groupId>
-            <artifactId>debezium-api</artifactId>
-            <version>${version.debezium}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.debezium</groupId>
-            <artifactId>debezium-embedded</artifactId>
-            <version>${version.debezium}</version>
-        </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.debezium</groupId>-->
-<!--            <artifactId>debezium-storage-jdbc</artifactId>-->
-<!--            <version>${version.debezium}</version>-->
-<!--        </dependency>-->
-        <dependency>
-            <groupId>io.debezium</groupId>
-            <artifactId>debezium-connector-mongodb</artifactId>
-            <version>${version.debezium}</version>
-        </dependency>
-
-        <!--   javers    -->
-        <dependency>
-            <groupId>org.javers</groupId>
-            <artifactId>javers-spring-boot-starter-mongo</artifactId>
-            <version>${javers-spring-boot-starter-mongo.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.jayway.jsonpath</groupId>
-            <artifactId>json-path</artifactId>
-            <version>2.9.0</version>
-        </dependency>
-        <!--  NMC end      -->
     </dependencies>
 
     <build>
         <defaultGoal>spring-boot:run</defaultGoal>
+        <!-- PLUGINS - Plugins that should run for ALL modules -->
         <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>com.google.cloud.tools</groupId>
-                <artifactId>jib-maven-plugin</artifactId>
+                <!-- Execution is defined in pluginManagement -->
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
+                <!-- Execution is defined in pluginManagement -->
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>properties-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.gaul</groupId>
-                <artifactId>modernizer-maven-plugin</artifactId>
+                <!-- Executions are defined in pluginManagement -->
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
+                <!-- Executions are defined in pluginManagement and will apply to modules with tests -->
             </plugin>
             <plugin>
-                <groupId>org.sonarsource.scanner.maven</groupId>
-                <artifactId>sonar-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <!-- Execution is defined in pluginManagement -->
             </plugin>
+            <plugin>
+                <groupId>org.gaul</groupId>
+                <artifactId>modernizer-maven-plugin</artifactId>
+                <!-- Execution is defined in pluginManagement -->
+            </plugin>
+
+            <!--
+               maven-compiler-plugin, maven-surefire-plugin, maven-resources-plugin, maven-jar-plugin
+               are bound to standard lifecycle phases, so just configuring them in pluginManagement is enough.
+               They don't need to be listed here unless you want to override something for all modules (uncommon).
+           -->
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-compiler-plugin</artifactId>-->
+<!--            </plugin>-->
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-surefire-plugin</artifactId>-->
+<!--            </plugin>-->
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-resources-plugin</artifactId>-->
+<!--            </plugin>-->
         </plugins>
         <pluginManagement>
             <plugins>
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>repackage</goal>
-                            </goals>
-                        </execution>
-                    </executions>
+<!--                    <executions>-->
+<!--                        <execution>-->
+<!--                            <goals>-->
+<!--                                <goal>repackage</goal>-->
+<!--                            </goals>-->
+<!--                        </execution>-->
+<!--                    </executions>-->
                     <configuration>
-                        <mainClass>${start-class}</mainClass>
+                        <jvmArguments>${argLine}</jvmArguments>
+<!--                        <mainClass>${start-class}</mainClass>-->
                         <!--
                         Enable the line below to have remote debugging of your application on port 5005
                         <jvmArguments>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005</jvmArguments>
@@ -495,9 +562,10 @@
                                 </platform>
                             </platforms>
                         </from>
-                        <to>
-                            <image>kaswarah/datarunapi:latest</image>
-                        </to>
+                        <!-- <to> image name will be in datarun-application -->
+<!--                        <to>-->
+<!--                            <image>kaswarah/datarunapi:latest</image>-->
+<!--                        </to>-->
                         <container>
                             <entrypoint>
                                 <shell>bash</shell>
@@ -515,7 +583,7 @@
                             <user>1000</user>
                         </container>
                         <extraDirectories>
-                            <paths>src/main/docker/jib</paths>
+                            <paths>datarun-app/src/main/docker/jib</paths>
                             <permissions>
                                 <permission>
                                     <file>/entrypoint.sh</file>
@@ -524,6 +592,7 @@
                             </permissions>
                         </extraDirectories>
                     </configuration>
+                    <!-- Execution will be in datarun-application -->
                 </plugin>
                 <plugin>
                     <groupId>io.github.git-commit-id</groupId>
@@ -567,7 +636,7 @@
                         <configLocation>checkstyle.xml</configLocation>
                         <includes>pom.xml,README.md</includes>
                         <excludes>.git/**/*,target/**/*,node_modules/**/*</excludes>
-                        <sourceDirectories>./</sourceDirectories>
+                        <sourceDirectories>./</sourceDirectories> <!-- This will apply to each module's directory -->
                     </configuration>
                     <executions>
                         <execution>
@@ -577,11 +646,15 @@
                         </execution>
                     </executions>
                 </plugin>
+                <!-- Maven Clean Plugin - Configuration -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-clean-plugin</artifactId>
                     <version>${maven-clean-plugin.version}</version>
+                    <!-- Specific fileset configurations can go into child modules if needed -->
                 </plugin>
+
+                <!-- Maven Compiler Plugin - Base Configuration -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -590,19 +663,11 @@
                         <source>${java.version}</source>
                         <target>${java.version}</target>
                         <parameters>true</parameters>
+                        <!-- COMMON Annotation Processors -->
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.springframework.boot</groupId>
                                 <artifactId>spring-boot-configuration-processor</artifactId>
-                            </path>
-                            <path>
-                                <groupId>org.mapstruct</groupId>
-                                <artifactId>mapstruct-processor</artifactId>
-                                <version>${mapstruct.version}</version>
-                            </path>
-                            <path>
-                                <groupId>org.hibernate.orm</groupId>
-                                <artifactId>hibernate-jpamodelgen</artifactId>
                             </path>
                             <path>
                                 <groupId>org.projectlombok</groupId>
@@ -610,17 +675,33 @@
                                 <version>1.18.32</version>
                             </path>
                             <path>
-                                <groupId>org.projectlombok</groupId>
-                                <artifactId>lombok-mapstruct-binding</artifactId>
-                                <version>0.2.0</version>
-                            </path>
-                            <path>
                                 <groupId>org.glassfish.jaxb</groupId>
                                 <artifactId>jaxb-runtime</artifactId>
                             </path>
+                            <!--
+                               MapStruct, JPA Modelgen, Lombok-Mapstruct-Binding will be ADDED
+                               in respective child modules (datarun-service, datarun-jpa-persistence)
+                            -->
+<!--                            <path>-->
+<!--                                <groupId>org.mapstruct</groupId>-->
+<!--                                <artifactId>mapstruct-processor</artifactId>-->
+<!--                                <version>${mapstruct.version}</version>-->
+<!--                            </path>-->
+<!--                            <path>-->
+<!--                                <groupId>org.hibernate.orm</groupId>-->
+<!--                                <artifactId>hibernate-jpamodelgen</artifactId>-->
+<!--                            </path>-->
+<!--                            <path>-->
+<!--                                <groupId>org.projectlombok</groupId>-->
+<!--                                <artifactId>lombok-mapstruct-binding</artifactId>-->
+<!--                                <version>0.2.0</version>-->
+<!--                            </path>-->
+
                         </annotationProcessorPaths>
                     </configuration>
                 </plugin>
+
+                <!-- Maven Enforcer Plugin - Configuration -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
@@ -658,6 +739,8 @@
                         </rules>
                     </configuration>
                 </plugin>
+
+                <!-- Maven Failsafe Plugin - Configuration -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
@@ -674,26 +757,31 @@
                         </includes>
                         <argLine>@{argLine} -Dspring.profiles.active=${profile.test}</argLine>
                     </configuration>
-                    <executions>
-                        <execution>
-                            <id>integration-test</id>
-                            <goals>
-                                <goal>integration-test</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>verify</id>
-                            <goals>
-                                <goal>verify</goal>
-                            </goals>
-                        </execution>
-                    </executions>
+                    <!-- Executions will be in datarun-application (or a dedicated -it module) -->
+<!--                    <executions>-->
+<!--                        <execution>-->
+<!--                            <id>integration-test</id>-->
+<!--                            <goals>-->
+<!--                                <goal>integration-test</goal>-->
+<!--                            </goals>-->
+<!--                        </execution>-->
+<!--                        <execution>-->
+<!--                            <id>verify</id>-->
+<!--                            <goals>-->
+<!--                                <goal>verify</goal>-->
+<!--                            </goals>-->
+<!--                        </execution>-->
+<!--                    </executions>-->
                 </plugin>
+
+                <!-- Maven JAR Plugin - Configuration -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>${maven-jar-plugin.version}</version>
                 </plugin>
+
+                <!-- Maven Javadoc Plugin - Configuration -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
@@ -702,11 +790,22 @@
                         <source>${maven.compiler.source}</source>
                     </configuration>
                 </plugin>
+
+                <!-- Maven Resources Plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${maven-resources-plugin.version}</version>
+                </plugin>
+
+                <!-- Maven Site Plugin -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
                     <version>${maven-site-plugin.version}</version>
                 </plugin>
+
+                <!-- Maven Surefire Plugin - Configuration -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
@@ -719,28 +818,34 @@
                             <exclude>**/*IntTest*</exclude>
                         </excludes>
                         <systemPropertyVariables>
+                            <!-- Path relative to each module -->
                             <java.util.logging.config.file>src/test/resources/logback.xml</java.util.logging.config.file>
                         </systemPropertyVariables>
                     </configuration>
                 </plugin>
+
+                <!-- Maven WAR Plugin - Configuration -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-war-plugin</artifactId>
                     <version>${maven-war-plugin.version}</version>
-                    <executions>
-                        <execution>
-                            <id>default-war</id>
-                            <goals>
-                                <goal>war</goal>
-                            </goals>
-                            <phase>package</phase>
-                        </execution>
-                    </executions>
+                    <!-- Execution and specific config in datarun-application if war profile is active -->
+<!--                    <executions>-->
+<!--                        <execution>-->
+<!--                            <id>default-war</id>-->
+<!--                            <goals>-->
+<!--                                <goal>war</goal>-->
+<!--                            </goals>-->
+<!--                            <phase>package</phase>-->
+<!--                        </execution>-->
+<!--                    </executions>-->
                     <configuration>
                         <warSourceIncludes>WEB-INF/**,META-INF/**</warSourceIncludes>
                         <failOnMissingWebXml>false</failOnMissingWebXml>
                     </configuration>
                 </plugin>
+
+                <!-- Properties Maven Plugin - Configuration -->
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>properties-maven-plugin</artifactId>
@@ -753,33 +858,38 @@
                             </goals>
                             <configuration>
                                 <files>
+                                    <!-- sonar-project.properties is in root -->
                                     <file>sonar-project.properties</file>
                                 </files>
                             </configuration>
                         </execution>
                     </executions>
                 </plugin>
+
+                <!-- Modernizer Maven Plugin - Configuration -->
                 <plugin>
                     <groupId>org.gaul</groupId>
                     <artifactId>modernizer-maven-plugin</artifactId>
                     <version>${modernizer-maven-plugin.version}</version>
+                    <configuration>
+                        <!-- Or false if you want to run it -->
+                        <skip>true</skip>
+                        <javaVersion>${java.version}</javaVersion>
+                    </configuration>
+
+                    <!-- Execution can be added here if you want it to run for all modules -->
                     <executions>
                         <execution>
                             <id>modernizer</id>
-                            <phase>package</phase>
+                            <phase>package</phase> <!-- Or verify -->
                             <goals>
                                 <goal>modernizer</goal>
                             </goals>
                         </execution>
                     </executions>
-                    <configuration>
-                        <skip>true</skip>
-                        <javaVersion>${java.version}</javaVersion>
-
-
-                    </configuration>
-
                 </plugin>
+
+                <!-- JaCoCo Maven Plugin - Configuration -->
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
@@ -815,19 +925,24 @@
                         </execution>
                     </executions>
                 </plugin>
+
+                <!-- Liquibase Maven Plugin - Base Configuration -->
                 <plugin>
                     <groupId>org.liquibase</groupId>
                     <artifactId>liquibase-maven-plugin</artifactId>
                     <version>${liquibase.version}</version>
                     <configuration>
                         <changeLogFile>config/liquibase/master.xml</changeLogFile>
+                        <!-- changeLogFile will be specific to where it's run (e.g., datarun-application) -->
+                        <!-- Path relative to module running it -->
                         <diffChangeLogFile>${project.basedir}/src/main/resources/config/liquibase/changelog/${maven.build.timestamp}_changelog.xml</diffChangeLogFile>
                         <driver>org.postgresql.Driver</driver>
                         <url>${liquibase-plugin.url}</url>
                         <defaultSchemaName/>
                         <username>${liquibase-plugin.username}</username>
                         <password>${liquibase-plugin.password}</password>
-                        <referenceUrl>hibernate:spring:org.nmcpye.datarun.domain?dialect=org.hibernate.dialect.PostgreSQLDialect&amp;hibernate.physical_naming_strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy&amp;hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy</referenceUrl>
+                        <!-- package 'org.nmcpye.datarun.domain' needs to be adjusted if JPA entities are in datarun-jpa -->
+                        <referenceUrl>hibernate:spring:org.nmcpye.datarun?dialect=org.hibernate.dialect.PostgreSQLDialect&amp;hibernate.physical_naming_strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy&amp;hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy</referenceUrl>
                         <verbose>true</verbose>
                         <logging>debug</logging>
                         <contexts>!test</contexts>
@@ -838,23 +953,37 @@
                             <artifactId>liquibase-core</artifactId>
                             <version>${liquibase.version}</version>
                         </dependency>
-                        <dependency>
-                            <groupId>org.liquibase.ext</groupId>
-                            <artifactId>liquibase-hibernate6</artifactId>
-                            <version>${liquibase.version}</version>
-                        </dependency>
+<!--                        <dependency>-->
+<!--                            <groupId>org.liquibase.ext</groupId>-->
+<!--                            <artifactId>liquibase-hibernate6</artifactId>-->
+<!--                            <version>${liquibase.version}</version>-->
+<!--                        </dependency>-->
                         <dependency>
                             <groupId>jakarta.validation</groupId>
                             <artifactId>jakarta.validation-api</artifactId>
                             <version>${jakarta-validation.version}</version>
                         </dependency>
+                        <!--
+                          This spring-boot-starter-data-jpa dependency for the plugin's classpath needs to be able
+                          to scan your entities. If entities are in datarun-jpa, then that module (or its classes)
+                          needs to be available to the plugin. This can get tricky. Often, running Liquibase diff/generation
+                          from the datarun-application module (which has datarun-jpa as a dependency) is easier.
+                       -->
                         <dependency>
                             <groupId>org.springframework.boot</groupId>
                             <artifactId>spring-boot-starter-data-jpa</artifactId>
                             <version>${spring-boot.version}</version>
                         </dependency>
+                        <!-- You might need to add your datarun-jpa-persistence module as a dependency to the plugin if entities are there -->
+                        <dependency>
+                            <groupId>org.nmcpye.datarun</groupId>
+                            <artifactId>datarun-jpa</artifactId>
+                            <version>${project.version}</version>
+                        </dependency>
                     </dependencies>
                 </plugin>
+
+                <!-- Sonar Maven Plugin -->
                 <plugin>
                     <groupId>org.sonarsource.scanner.maven</groupId>
                     <artifactId>sonar-maven-plugin</artifactId>
@@ -864,6 +993,8 @@
         </pluginManagement>
     </build>
 
+    <!-- PROFILES section remains largely the same in the parent POM -->
+    <!-- Specific plugin executions within profiles might move to datarun-application -->
     <profiles>
         <profile>
             <id>api-docs</id>
@@ -900,6 +1031,7 @@
                     <name>m2e.version</name>
                 </property>
             </activation>
+            <!-- dependencies specific to eclipse profile were in the original parent, they can stay here -->
             <dependencies>
                 <dependency>
                     <!-- The following dependency is added due to issue #9175-->
@@ -915,29 +1047,30 @@
                             It has no influence on the Maven build itself.
                             Remove when the m2e plugin can correctly bind to Maven lifecycle
                         -->
+                        <!-- Configuration is already in the main pluginManagement -->
                         <plugin>
                             <groupId>org.eclipse.m2e</groupId>
                             <artifactId>lifecycle-mapping</artifactId>
                             <version>${lifecycle-mapping.version}</version>
-                            <configuration>
-                                <lifecycleMappingMetadata>
-                                    <pluginExecutions>
-                                        <pluginExecution>
-                                            <pluginExecutionFilter>
-                                                <groupId>org.jacoco</groupId>
-                                                <artifactId>jacoco-maven-plugin</artifactId>
-                                                <versionRange>${jacoco-maven-plugin.version}</versionRange>
-                                                <goals>
-                                                    <goal>prepare-agent</goal>
-                                                </goals>
-                                            </pluginExecutionFilter>
-                                            <action>
-                                                <ignore/>
-                                            </action>
-                                        </pluginExecution>
-                                    </pluginExecutions>
-                                </lifecycleMappingMetadata>
-                            </configuration>
+<!--                            <configuration>-->
+<!--                                <lifecycleMappingMetadata>-->
+<!--                                    <pluginExecutions>-->
+<!--                                        <pluginExecution>-->
+<!--                                            <pluginExecutionFilter>-->
+<!--                                                <groupId>org.jacoco</groupId>-->
+<!--                                                <artifactId>jacoco-maven-plugin</artifactId>-->
+<!--                                                <versionRange>${jacoco-maven-plugin.version}</versionRange>-->
+<!--                                                <goals>-->
+<!--                                                    <goal>prepare-agent</goal>-->
+<!--                                                </goals>-->
+<!--                                            </pluginExecutionFilter>-->
+<!--                                            <action>-->
+<!--                                                <ignore/>-->
+<!--                                            </action>-->
+<!--                                        </pluginExecution>-->
+<!--                                    </pluginExecutions>-->
+<!--                                </lifecycleMappingMetadata>-->
+<!--                            </configuration>-->
                         </plugin>
                     </plugins>
                 </pluginManagement>
@@ -968,6 +1101,7 @@
                 <profile.no-liquibase>,no-liquibase</profile.no-liquibase>
             </properties>
         </profile>
+
         <profile>
             <id>prod</id>
             <properties>
@@ -1005,6 +1139,8 @@
                             </execution>
                         </executions>
                     </plugin>
+                    <!-- git-commit-id-maven-plugin is already configured in pluginManagement and will execute -->
+                    <!-- spring-boot:build-info should be in datarun-application's prod profile -->
                     <plugin>
                         <groupId>io.github.git-commit-id</groupId>
                         <artifactId>git-commit-id-maven-plugin</artifactId>

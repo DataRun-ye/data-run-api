@@ -1,0 +1,19 @@
+package org.nmcpye.datarun.datasubmission.repository;
+
+import org.javers.spring.annotation.JaversSpringDataAuditable;
+import org.nmcpye.datarun.common.mongo.repository.MongoAuditableRepository;
+import org.nmcpye.datarun.mongo.domain.DataFormSubmissionHistory;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+/**
+ * Spring Data MongoDB repository for the DataFormSubmission entity.
+ */
+@Repository
+@JaversSpringDataAuditable
+public interface DataFormSubmissionHistoryRepository
+    extends MongoAuditableRepository<DataFormSubmissionHistory> {
+
+    List<DataFormSubmissionHistory> findAllByDataSubmissionId(String dataSubmissionId);
+}
