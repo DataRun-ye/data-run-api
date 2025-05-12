@@ -17,7 +17,4 @@ public class AssignmentWithAccessDto {
     String team;
     String orgUnit;
     List<UserFormAccess> accessibleForms;
-
-    // Maybe a general flag
-    private boolean canInteractWithAssignment;
 }

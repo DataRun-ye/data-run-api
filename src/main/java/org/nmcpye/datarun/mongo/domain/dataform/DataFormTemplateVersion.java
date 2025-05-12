@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.mongo.domain.dataform;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -56,7 +57,7 @@ public class DataFormTemplateVersion
         formVersion.setCode(template.getCode());
         formVersion.setName(template.getName());
         formVersion.setVersion(template.getVersion());
-        formVersion.setFields(template.getFields());
+        formVersion.setFieldsConf(template.getFieldsConf());
         formVersion.setSections(template.getSections());
         return formVersion;
     }
@@ -83,9 +84,20 @@ public class DataFormTemplateVersion
             "}";
     }
 
+    @JsonIgnore
+    @Override
+    public List<FormDataElementConf> getFieldsConf() {
+        return getFields();
+    }
+
     @Override
     public FormWithFields version(Integer version) {
         this.setVersion(version);
         return this;
+    }
+
+    @Override
+    public void setFieldsConf(List<FormDataElementConf> sections) {
+
     }
 }

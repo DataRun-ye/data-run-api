@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.mongo.domain.dataform;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -69,13 +70,24 @@ public class DataFormTemplate
         setAutoFields();
     }
 
+    @JsonIgnore
+    @Override
+    public List<FormDataElementConf> getFieldsConf() {
+        return getFields();
+    }
+
     public DataFormTemplate version(Integer version) {
         this.setVersion(version);
         return this;
     }
 
-    public DataFormTemplate fields(List<FormDataElementConf> fieldsConf) {
+    @Override
+    public void setFieldsConf(List<FormDataElementConf> fieldsConf) {
         this.setFields(fieldsConf);
+    }
+
+    public DataFormTemplate fields(List<FormDataElementConf> fieldsConf) {
+        this.setFieldsConf(fieldsConf);
         return this;
     }
 

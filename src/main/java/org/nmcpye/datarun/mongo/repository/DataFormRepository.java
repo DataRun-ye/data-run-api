@@ -13,7 +13,8 @@ import java.util.List;
  */
 @Repository
 @JaversSpringDataAuditable
-public interface DataFormRepository extends MongoAuditableRepository<DataForm> {
+public interface DataFormRepository
+    extends MongoAuditableRepository<DataForm> {
 
     @Query("{'activity': ?0}")
     List<DataForm> findAllByActivity(String activity);

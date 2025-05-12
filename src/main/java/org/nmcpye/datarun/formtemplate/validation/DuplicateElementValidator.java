@@ -63,7 +63,7 @@ public class DuplicateElementValidator implements TemplateValidator {
 
         // Validate fields by ID
         final var fieldErrors = validateNoDuplicates(
-            template.getFields(),
+            template.getFieldsConf(),
             FormElementConf::getId,
             template.getUid(),
             "field"

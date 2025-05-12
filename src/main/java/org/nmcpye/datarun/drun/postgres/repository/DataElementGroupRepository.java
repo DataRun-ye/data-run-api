@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.repository;
 
 import org.nmcpye.datarun.common.jpa.repository.JpaAuditableRepository;
-import org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet;
+import org.nmcpye.datarun.drun.postgres.domain.DataElementGroup;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -11,8 +11,8 @@ import java.util.Optional;
  */
 @SuppressWarnings("unused")
 @Repository
-public interface OrgUnitGroupSetRepository
-    extends JpaAuditableRepository<OrgUnitGroupSet> {
+public interface DataElementGroupRepository
+    extends JpaAuditableRepository<DataElementGroup> {
 
-    Optional<OrgUnitGroupSet> findByCode(String code);
+    Optional<DataElementGroup> findByCode(String code);
 }

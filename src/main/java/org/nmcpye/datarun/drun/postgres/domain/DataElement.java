@@ -14,7 +14,9 @@ import org.nmcpye.datarun.common.jpa.JpaBaseIdentifiableObject;
 import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
 import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A OuLevel.
@@ -56,4 +58,10 @@ public class DataElement extends JpaBaseIdentifiableObject {
     @Enumerated(EnumType.STRING)
     @Column(name = "reference_type", updatable = false)
     private ReferenceType resourceType;
+
+    @ManyToMany(mappedBy = "members")
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    @JsonIgnoreProperties(value = {"groupSets", "members", "translations"}, allowSetters = true)
+    private Set<DataElementGroup> groups = new HashSet<>();
+
 }

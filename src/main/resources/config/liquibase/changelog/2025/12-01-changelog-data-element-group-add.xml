@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1747061463278-1-data-element-group-table" author="Hamza (generated)">
+        <createTable tableName="data_element_group">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_data_element_group"/>
+            </column>
+            <column name="uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(255)"/>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="DATETIME"/>
+            <column name="last_modified_by" type="VARCHAR(50)"/>
+            <column name="last_modified_date" type="DATETIME"/>
+            <column name="translations" type="jsonb"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1747061463278-2-data-element-group-members-table" author="Hamza (generated)">
+        <createTable tableName="data_element_group_members">
+            <column name="data_element_group_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_data_element_group_members"/>
+            </column>
+            <column name="data_element_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_data_element_group_members"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="1747061463278-3-data-element-group-set-table" author="Hamza (generated)">
+        <createTable tableName="data_element_groupset">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_data_element_groupset"/>
+            </column>
+            <column name="uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(255)"/>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="DATETIME"/>
+            <column name="last_modified_by" type="VARCHAR(50)"/>
+            <column name="last_modified_date" type="DATETIME"/>
+            <column name="translations" type="jsonb"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1747061463278-4-data-element-group-set-groups-table" author="Hamza (generated)">
+        <createTable tableName="data_element_groupset_groups">
+            <column name="data_element_groupset_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_data_element_groupset_groups"/>
+            </column>
+            <column name="data_element_group_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_data_element_groupset_groups"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="1747061463278-5" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="code" constraintName="uc_data_element_group_code"
+                             tableName="data_element_group"/>
+    </changeSet>
+    <changeSet id="1747061463278-6" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="name" constraintName="uc_data_element_group_name"
+                             tableName="data_element_group"/>
+    </changeSet>
+    <changeSet id="1747061463278-7" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_data_element_group_uid"
+                             tableName="data_element_group"/>
+    </changeSet>
+    <changeSet id="1747061463278-8" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="code" constraintName="uc_data_element_groupset_code"
+                             tableName="data_element_groupset"/>
+    </changeSet>
+    <changeSet id="1747061463278-9" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="name" constraintName="uc_data_element_groupset_name"
+                             tableName="data_element_groupset"/>
+    </changeSet>
+    <changeSet id="1747061463278-10" author="Hamza (generated)">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_data_element_groupset_uid"
+                             tableName="data_element_groupset"/>
+    </changeSet>
+    <changeSet id="1747061463278-11" author="Hamza (generated)">
+        <createIndex indexName="idx_data_element_group_uid_unq" tableName="data_element_group" unique="true">
+            <column name="uid"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1747061463278-12" author="Hamza (generated)">
+        <createIndex indexName="idx_data_element_groupset_uid_unq" tableName="data_element_groupset" unique="true">
+            <column name="uid"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1747061463278-13" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="data_element_group_id" baseTableName="data_element_groupset_groups"
+                                 constraintName="fk_datelegrogro_on_data_element_group" referencedColumnNames="id"
+                                 referencedTableName="data_element_group"/>
+    </changeSet>
+    <changeSet id="1747061463278-14" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="data_element_groupset_id" baseTableName="data_element_groupset_groups"
+                                 constraintName="fk_datelegrogro_on_data_element_group_set" referencedColumnNames="id"
+                                 referencedTableName="data_element_groupset"/>
+    </changeSet>
+    <changeSet id="1747061463278-15" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="data_element_id" baseTableName="data_element_group_members"
+                                 constraintName="fk_datelegromem_on_data_element" referencedColumnNames="id"
+                                 referencedTableName="data_element"/>
+    </changeSet>
+    <changeSet id="1747061463278-16" author="Hamza (generated)">
+        <addForeignKeyConstraint baseColumnNames="data_element_group_id" baseTableName="data_element_group_members"
+                                 constraintName="fk_datelegromem_on_data_element_group" referencedColumnNames="id"
+                                 referencedTableName="data_element_group"/>
+    </changeSet>
+
+</databaseChangeLog>

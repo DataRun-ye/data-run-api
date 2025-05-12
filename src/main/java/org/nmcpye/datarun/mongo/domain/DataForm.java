@@ -33,7 +33,8 @@ import java.util.*;
 @CompoundIndex(name = "form_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataForm
-    extends MongoBaseIdentifiableObject implements FormWithFields {
+    extends MongoBaseIdentifiableObject
+    implements FormWithFields {
 
     @Field("code")
     @Indexed(unique = true, name = "form_code")
@@ -160,7 +161,7 @@ public class DataForm
     }
 
     @Override
-    public void setFields(List<FormDataElementConf> fields) {
+    public void setFieldsConf(List<FormDataElementConf> fields) {
         this.fieldsConf = fields;
     }
 

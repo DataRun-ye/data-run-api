@@ -34,17 +34,17 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
     private final DataFormTemplateRepository dataFormTemplateRepository;
     private final DataElementRepository dataElementRepository;
     private final OptionSetRepository optionSetRepository;
-    private final DataFormMigrationService dataFormMigrationService;
+//    private final DataFormMigrationService dataFormMigrationService;
 
     public DataFormTemplateMigrationService(DataFormRepository dataFormRepository,
                                             DataFormTemplateRepository dataFormTemplateRepository,
                                             DataElementRepository dataElementRepository,
-                                            OptionSetRepository optionSetRepository, DataFormMigrationService dataFormMigrationService) {
+                                            OptionSetRepository optionSetRepository) {
         this.dataFormRepository = dataFormRepository;
         this.dataFormTemplateRepository = dataFormTemplateRepository;
         this.dataElementRepository = dataElementRepository;
         this.optionSetRepository = optionSetRepository;
-        this.dataFormMigrationService = dataFormMigrationService;
+//        this.dataFormMigrationService = dataFormMigrationService;
     }
 
     //    @Override
@@ -57,7 +57,6 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
             dataElementRepository.flush();
             migrateDataForm(dataForm);
         }
-        dataFormMigrationService.run();
     }
 
     private void migrateDataForm(DataForm dataForm) {
@@ -71,7 +70,7 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
             } else if (field instanceof DefaultField formField) {
                 DataElement dataElement = dataElementRepository.findByNameIgnoreCase(formField.getName()).orElseThrow();
                 FormDataElementConf elementConf = createDataElementConf(formField, dataElement.getUid(), dataElement.getCode());
-                template.getFields().add(elementConf);
+                template.getFieldsConf().add(elementConf);
             } else {
                 throw new EntityNotFoundException("DataElement not found: " + field.getName());
             }
@@ -110,7 +109,7 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
         template.setVersion(form.getVersion() != null ? 1 : form.getVersion());
         template.setLabel(form.getLabel());
         template.setDefaultLocale(form.getDefaultLocal());
-        template.getFields().clear();
+        template.getFieldsConf().clear();
         template.getSections().clear();
         return template;
     }

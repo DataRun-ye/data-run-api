@@ -12,8 +12,7 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @Repository
 public interface OrgUnitGroupRepository
-    extends OrgUnitRepositoryWithBagRelationships,
-    JpaAuditableRepository<OrgUnitGroup> {
+    extends JpaAuditableRepository<OrgUnitGroup> {
 
     Optional<OrgUnitGroup> findByCode(String code);
 }

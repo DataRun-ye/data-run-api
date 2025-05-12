@@ -15,4 +15,5 @@ public interface DataElementRepository
     extends JpaAuditableRepository<DataElement> {
     Optional<DataElement> findByNameIgnoreCase(String name);
     Optional<DataElement> findByName(String name);
+    Optional<DataElement> findByCode(String code);
 }

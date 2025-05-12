@@ -2,7 +2,6 @@ package org.nmcpye.datarun.security.useraccess.dataform;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
-import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,8 +16,11 @@ import static org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission
 @Service
 @Transactional(readOnly = true)
 public class FormAccessService {
-    public boolean hasAnyOfPermissions(String formUid, CurrentUserDetails currentUser,
-                                       FormPermission... requiredPermission) {
+    public boolean hasAnyOfPermissions(String formUid, FormPermission... requiredPermission) {
+        if (!SecurityUtils.isAuthenticated()) {
+            return false;
+        }
+        final var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
         if (currentUser.isSuper()) {
             return true;
         }
@@ -32,34 +34,26 @@ public class FormAccessService {
     }
 
     public boolean canSubmitData(String formUid) {
-        if (!SecurityUtils.isAuthenticated()) {
-            return false;
-        }
-        final var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
-        return hasAnyOfPermissions(formUid, currentUser, ADD_SUBMISSIONS, EDIT_SUBMISSIONS);
+        return hasAnyOfPermissions(formUid, ADD_SUBMISSIONS, EDIT_SUBMISSIONS);
     }
 
     public boolean canViewSubmissions(String form) {
-        if (!SecurityUtils.isAuthenticated()) {
-            return false;
-        }
-        return hasAnyOfPermissions(form, SecurityUtils.getCurrentUserDetailsOrThrow(),
-            FormPermission.canViewPermissions());
+        return hasAnyOfPermissions(form, FormPermission.canViewPermissions());
     }
 
     public boolean canEditSubmissions(String form) {
-        return hasAnyOfPermissions(form, SecurityUtils.getCurrentUserDetailsOrThrow(), EDIT_SUBMISSIONS);
+        return hasAnyOfPermissions(form, EDIT_SUBMISSIONS);
     }
 
     public boolean canAddSubmissions(String form) {
-        return hasAnyOfPermissions(form, SecurityUtils.getCurrentUserDetailsOrThrow(), ADD_SUBMISSIONS);
+        return hasAnyOfPermissions(form, ADD_SUBMISSIONS);
     }
 
     public boolean canApproveSubmissions(String form) {
-        return hasAnyOfPermissions(form, SecurityUtils.getCurrentUserDetailsOrThrow(), APPROVE_SUBMISSIONS);
+        return hasAnyOfPermissions(form, APPROVE_SUBMISSIONS);
     }
 
     public boolean canDeleteSubmissions(String form) {
-        return hasAnyOfPermissions(form, SecurityUtils.getCurrentUserDetailsOrThrow(), DELETE_SUBMISSIONS);
+        return hasAnyOfPermissions(form, DELETE_SUBMISSIONS);
     }
 }

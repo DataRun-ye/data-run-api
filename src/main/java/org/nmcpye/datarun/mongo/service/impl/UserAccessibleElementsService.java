@@ -60,7 +60,7 @@ public class UserAccessibleElementsService {
     }
 
     public Set<DataElement> getUserDataElements(String userLogin) {
-        return getAllAccessibleUserForms(userLogin).stream().flatMap(f -> f.getFields().stream())
+        return getAllAccessibleUserForms(userLogin).stream().flatMap(f -> f.getFieldsConf().stream())
             .map(field -> dataElementRepository.findByUid(field.getId()).orElse(null))
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
@@ -68,7 +68,7 @@ public class UserAccessibleElementsService {
 
     public Set<OptionSet> getUserOptionSets(String userLogin) {
         return getAllAccessibleUserForms(userLogin)
-            .stream().flatMap(f -> f.getFields().stream())
+            .stream().flatMap(f -> f.getFieldsConf().stream())
             .filter(f -> f.getType().isOptionsType())
             .map(field -> optionSetRepository.findByUid(field.getOptionSet()).orElse(null))
             .filter(Objects::nonNull)

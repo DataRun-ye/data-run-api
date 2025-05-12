@@ -6,7 +6,6 @@ import org.nmcpye.datarun.drun.postgres.domain.TeamFormPermissions;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.drun.postgres.service.TeamService;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
-import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.ReferenceField;
 import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
@@ -29,12 +28,12 @@ public class MetadataSubmissionGranularRepository {
     final private MongoTemplate mongoTemplate;
     final private TeamService teamService;
     final private MetadataSubmissionRepository metadataSubmissionRepository;
-    final private DataFormRepository dataFormRepository;
+    final private DataFormTemplateRepository dataFormRepository;
     private final AssignmentRepository assignmentRepository;
 
     public MetadataSubmissionGranularRepository(MongoTemplate mongoTemplate, TeamService teamService,
                                                 MetadataSubmissionRepository metadataSubmissionRepository,
-                                                DataFormRepository dataFormRepository,
+                                                DataFormTemplateRepository dataFormRepository,
                                                 AssignmentRepository assignmentRepository) {
         this.mongoTemplate = mongoTemplate;
         this.teamService = teamService;
@@ -73,8 +72,8 @@ public class MetadataSubmissionGranularRepository {
 
     public List<ReferenceField> getUserFieldsOfResourceType() {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return dataFormRepository.findAll().stream().flatMap(form -> form.getFlattenedFields()
-                    .stream()).filter(AbstractField::isResourceTypeField)
+            return dataFormRepository.findAll().stream().flatMap(form -> form.getFieldsConf()
+                    .stream()).filter((field) -> field.getType().isReference())
                 .map(ReferenceField.class::cast).toList();
         }
 
@@ -87,8 +86,8 @@ public class MetadataSubmissionGranularRepository {
 
         List<ReferenceField> typeReferenceFields = forms.stream().flatMap(uid ->
                 dataFormRepository.findByUid(uid).stream())
-            .flatMap(form -> form.flattenFields().stream())
-            .filter(AbstractField::isResourceTypeField)
+            .flatMap(form -> form.getFieldsConf().stream())
+            .filter((field) -> field.getType().isReference())
             .map(ReferenceField.class::cast)
             .toList();
 
