@@ -94,6 +94,7 @@ public class Team extends JpaBaseIdentifiableObject {
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<TeamFormAccess> teamFormAccesses = new LinkedHashSet<>();
 
+    @Deprecated(since = "v 6, use teamFormAccesses")
     public void setFormPermissions(Set<TeamFormPermissions> formPermissions) {
         this.formPermissions = formPermissions;
         final var teamFormAccesses = formPermissions.stream().map((p) -> {

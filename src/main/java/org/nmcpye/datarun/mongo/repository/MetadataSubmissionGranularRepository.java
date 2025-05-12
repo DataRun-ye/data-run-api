@@ -6,7 +6,7 @@ import org.nmcpye.datarun.drun.postgres.domain.TeamFormPermissions;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.drun.postgres.service.TeamService;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
-import org.nmcpye.datarun.mongo.domain.datafield.ReferenceField;
+import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -70,11 +70,28 @@ public class MetadataSubmissionGranularRepository {
         return teamService.findAllByUser(queryRequest).stream().map(Team::getUid).collect(Collectors.toList());
     }
 
-    public List<ReferenceField> getUserFieldsOfResourceType() {
+    public List<FormDataElementConf> getUserFieldsOfResourceType() {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+
             return dataFormRepository.findAll().stream().flatMap(form -> form.getFieldsConf()
                     .stream()).filter((field) -> field.getType().isReference())
-                .map(ReferenceField.class::cast).toList();
+//                .map((field) -> {
+//                    final var refField = new ReferenceField();
+//                    refField.setResourceType(field.getResourceType());
+//                    refField.setResourceMetadataSchema(field.getResourceMetadataSchema());
+//                    refField.setType(field.getType());
+//                    refField.setName(field.getName());
+//                    refField.setMandatory(field.getMandatory());
+//                    refField.setConstraint(field.getConstraint());
+//                    refField.setConstraintMessage(field.getConstraintMessage());
+//                    refField.setLabel(field.getLabel());
+//                    refField.setMainField(field.getMainField());
+//                    refField.setRules(field.getRules());
+//                    refField.setDescription(field.getDescription());
+//                    refField.setDefaultValue(field.getDefaultValue());
+//                    return refField;
+//                })
+                .toList();
         }
 
         var forms = getAssignedAssignments().stream().filter(assignment ->
@@ -84,11 +101,10 @@ public class MetadataSubmissionGranularRepository {
                 new HashSet<TeamFormPermissions>()).stream()).map(TeamFormPermissions::getForm).distinct().toList();
 
 
-        List<ReferenceField> typeReferenceFields = forms.stream().flatMap(uid ->
+        List<FormDataElementConf> typeReferenceFields = forms.stream().flatMap(uid ->
                 dataFormRepository.findByUid(uid).stream())
             .flatMap(form -> form.getFieldsConf().stream())
             .filter((field) -> field.getType().isReference())
-            .map(ReferenceField.class::cast)
             .toList();
 
         return typeReferenceFields;
