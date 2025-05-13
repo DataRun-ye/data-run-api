@@ -2,11 +2,14 @@ package org.nmcpye.datarun.security.useraccess.dataform;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
+import org.nmcpye.datarun.mapper.dto.AssignmentFormDto;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission.*;
 
@@ -55,5 +58,25 @@ public class FormAccessService {
 
     public boolean canDeleteSubmissions(String form) {
         return hasAnyOfPermissions(form, DELETE_SUBMISSIONS);
+    }
+
+    public Set<AssignmentFormDto> getUserForms(Set<String> assignmentForm) {
+        if (!SecurityUtils.isAuthenticated()) {
+            return Set.of();
+        }
+        final var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
+        return assignmentForm
+            .stream()
+            .filter((form) -> currentUser.getUserFormsUIDs()
+                .contains(form))
+            .map((form) -> AssignmentFormDto.builder()
+                .formUid(form)
+                .canViewSubmissions(canViewSubmissions(form))
+                .canAddSubmissions(canAddSubmissions(form))
+                .canEditSubmissions(canEditSubmissions(form))
+                .canApproveSubmissions(canApproveSubmissions(form))
+                .canDeleteSubmissions(canDeleteSubmissions(form))
+                .build())
+            .collect(Collectors.toSet());
     }
 }

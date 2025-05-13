@@ -6,19 +6,21 @@ import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentService;
+import org.nmcpye.datarun.mapper.dto.AssignmentWithAccessDto;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
+import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URISyntaxException;
 import java.util.List;
@@ -46,6 +48,20 @@ public class AssignmentResourceCustom
                                     AssignmentRepository assignmentRepository) {
         super(assignmentService, assignmentRepository);
         this.assignmentService = assignmentService;
+    }
+
+    @RequestMapping(value = "dto", method = {RequestMethod.GET, RequestMethod.POST})
+    protected ResponseEntity<PagedResponse<?>> getAllDto(QueryRequest queryRequest,
+                                                         @RequestBody(required = false) String jsonQuery) throws Exception {
+        final var userLogin = SecurityUtils.getCurrentUserLoginOrThrow();
+        log.debug("REST request to getAll {}:{}", userLogin, getName());
+
+        Page<AssignmentWithAccessDto> processedPage = assignmentService.getAllUserAccessible(queryRequest);
+
+        String next = createNextPageLink(processedPage);
+
+        PagedResponse<AssignmentWithAccessDto> response = initPageResponse(processedPage, next);
+        return ResponseEntity.ok(response);
     }
 
 //    @Override

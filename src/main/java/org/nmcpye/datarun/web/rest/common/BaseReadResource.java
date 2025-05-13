@@ -76,8 +76,8 @@ public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends
         return ResponseEntity.ok(response);
     }
 
-    protected PagedResponse<T> initPageResponse(Page<T> page, String next) {
-        PagedResponse<T> response = new PagedResponse<>(page, getName(), next);
+    protected <E> PagedResponse<E> initPageResponse(Page<E> page, String next) {
+        PagedResponse<E> response = new PagedResponse<>(page, getName(), next);
         response.setNextPage(next);
         response.setEntityName(getName());
         return response;

@@ -37,7 +37,7 @@ public class UserGroupFilter extends DefaultJpaFilter<UserGroup> {
         };
 
         if (!queryRequest.isIncludeDisabled()) {
-            spec = Specification.where(spec).and(isEnabled());
+            spec = spec.and(isEnabled());
         }
         return spec;
     }

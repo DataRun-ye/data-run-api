@@ -59,9 +59,9 @@ public class DataElement extends JpaBaseIdentifiableObject {
     @Column(name = "reference_type", updatable = false)
     private ReferenceType resourceType;
 
-    @ManyToMany(mappedBy = "members")
+    @ManyToMany(mappedBy = "dataElements")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"groupSets", "members", "translations"}, allowSetters = true)
-    private Set<DataElementGroup> groups = new HashSet<>();
+    @JsonIgnoreProperties(value = {"dataElementGroupSets", "dataElements", "translations"}, allowSetters = true)
+    private Set<DataElementGroup> dataElementGroups = new HashSet<>();
 
 }

@@ -43,13 +43,13 @@ public class OrgUnitGroup extends JpaBaseIdentifiableObject {
         inverseJoinColumns = @JoinColumn(name = "member_id")
     )
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"parent", "children", "groups", "assignments", "hierarchyLevel", "ancestors", "translations", "path"}, allowSetters = true)
-    private Set<OrgUnit> members = new HashSet<>();
+    @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors", "translations", "path"}, allowSetters = true)
+    private Set<OrgUnit> orgUnits = new HashSet<>();
 
     @ManyToMany(mappedBy = "orgUnitGroups")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"orgUnitGroups", "translations"}, allowSetters = true)
-    private Set<OrgUnitGroupSet> groupSets = new HashSet<>();
+    private Set<OrgUnitGroupSet> orgUnitGroupSets = new HashSet<>();
 
     @JsonProperty
     public String getColor() {

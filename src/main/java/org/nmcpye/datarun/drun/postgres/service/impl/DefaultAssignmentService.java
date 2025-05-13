@@ -2,10 +2,8 @@ package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
-import org.nmcpye.datarun.common.repository.UserRepository;
 import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
-import org.nmcpye.datarun.drun.postgres.domain.EntityScope;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
@@ -14,6 +12,8 @@ import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepository;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentService;
+import org.nmcpye.datarun.mapper.AssignmentWithAccessMapper;
+import org.nmcpye.datarun.mapper.dto.AssignmentWithAccessDto;
 import org.nmcpye.datarun.mongo.domain.AssignmentSubmissionHistory;
 import org.nmcpye.datarun.mongo.repository.AssignmentSubmissionHistoryRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
@@ -23,37 +23,42 @@ import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @Primary
 @Transactional
 public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignment> implements AssignmentService {
 
-    final AssignmentRepository repository;
-    final TeamRepository teamRepository;
-    final OrgUnitRepository orgUnitRepository;
-    final UserRepository userRepository;
+    private final AssignmentRepository repository;
+    private final TeamRepository teamRepository;
+    private final OrgUnitRepository orgUnitRepository;
     private final AssignmentSubmissionHistoryRepository assignmentHistoryRepository;
     private final AssignmentMaintenanceService maintenanceService;
+    private final AssignmentWithAccessMapper assignmentMapper;
+    private final AssignmentRepository assignmentRepository;
 
-    public DefaultAssignmentService(AssignmentRepository repository, TeamRepository teamRepository, OrgUnitRepository orgUnitRepository, UserRepository userRepository, AssignmentSubmissionHistoryRepository assignmentHistoryRepository, UserAccessService userAccessService, CacheManager cacheManager, AssignmentMaintenanceService maintenanceService) {
+    public DefaultAssignmentService(AssignmentRepository repository,
+                                    TeamRepository teamRepository,
+                                    OrgUnitRepository orgUnitRepository,
+                                    AssignmentSubmissionHistoryRepository assignmentHistoryRepository,
+                                    UserAccessService userAccessService,
+                                    CacheManager cacheManager,
+                                    AssignmentMaintenanceService maintenanceService,
+                                    AssignmentWithAccessMapper assignmentMapper, AssignmentRepository assignmentRepository) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.teamRepository = teamRepository;
         this.orgUnitRepository = orgUnitRepository;
-        this.userRepository = userRepository;
         this.assignmentHistoryRepository = assignmentHistoryRepository;
         this.maintenanceService = maintenanceService;
+        this.assignmentMapper = assignmentMapper;
+        this.assignmentRepository = assignmentRepository;
     }
 
     @Override
@@ -119,26 +124,23 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Assignment> getAllUserAccessible(QueryRequest queryRequest) {
-        Pageable pageable = queryRequest.getPageable();
-
+    public Page<AssignmentWithAccessDto> getAllUserAccessible(QueryRequest queryRequest) {
         Page<Assignment> assignedPage = findAllByUser(queryRequest);
-        List<Assignment> assigned = assignedPage.getContent().stream()
-            .filter(assignment -> !assignment.getActivity().getDisabled())
-            .peek(assignment -> assignment.setEntityScope(EntityScope.Assigned)).toList();
+        return assignedPage.map(assignmentMapper::toDto);
+//        List<Assignment> filteredAssignments = assignedPage.getContent().stream()
+//            .peek(assignment -> {
+//                Set<String> filteredForms = assignment.getForms().stream()
+//                    .filter(accessibleFormUids::contains)
+//                    .collect(Collectors.toSet());
+//                assignment.setForms(filteredForms);
+//            })
+//            .toList();
 
-        List<String> assignedUids = assigned.stream().map(Assignment::getUid).toList();
-
-        List<Assignment> managed = getManagedTeamsAssignmentsWithChildren()
-            .stream().peek(assignment -> assignment.setEntityScope(EntityScope.Managed)).toList();
-
-        List<Assignment> combinedContent = Stream.concat(assigned.stream(), managed.stream())
-            .collect(Collectors.toList());
-
-        // TODO Create AssignmentHistory in app and fetch all and sort the latest out on the app
-        Page<Assignment> assignments = findWithStatus(new PageImpl<>(combinedContent, pageable, assignedPage.getTotalElements() + managed.size()));
-
-        return assignments;
+//        List<AssignmentWithAccessDto> dtoList = filteredAssignments.stream()
+//            .map(assignmentMapper::toDto)
+//            .collect(Collectors.toList());
+//
+//        return new PageImpl<>(dtoList, assignedPage.getPageable(), assignedPage.getTotalElements());
     }
 
     List<Assignment> getAssignmentsWithChildren(Collection<String> uids) {

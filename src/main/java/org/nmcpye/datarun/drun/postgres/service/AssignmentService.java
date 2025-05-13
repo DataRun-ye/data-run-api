@@ -2,6 +2,7 @@ package org.nmcpye.datarun.drun.postgres.service;
 
 import org.nmcpye.datarun.common.jpa.JpaAuditableObjectService;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
+import org.nmcpye.datarun.mapper.dto.AssignmentWithAccessDto;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
 
@@ -18,5 +19,5 @@ public interface AssignmentService
 
     void forceUpdatePaths();
 
-    Page<Assignment> getAllUserAccessible(QueryRequest queryRequest);
+    Page<AssignmentWithAccessDto> getAllUserAccessible(QueryRequest queryRequest);
 }

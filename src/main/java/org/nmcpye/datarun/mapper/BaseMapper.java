@@ -14,7 +14,7 @@ public interface BaseMapper<D, E> {
 
     D toDto(E entity);
 
-    List<E> toEntities(List<D> dtoList);
+//    List<E> toEntities(List<D> dtoList);
 
-    List<D> toDtos(List<E> entityList);
+    List<D> toDtoList(List<E> entityList);
 }

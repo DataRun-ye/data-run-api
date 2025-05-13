@@ -33,11 +33,11 @@ public class DataElementGroup extends JpaBaseIdentifiableObject {
         inverseJoinColumns = @JoinColumn(name = "data_element_id")
     )
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"parent", "children", "groups", "assignments", "hierarchyLevel", "ancestors", "translations", "path"}, allowSetters = true)
-    private Set<DataElement> members = new HashSet<>();
+    @JsonIgnoreProperties(value = {"parent", "children", "dataElementGroups", "assignments", "hierarchyLevel", "ancestors", "translations", "path"}, allowSetters = true)
+    private Set<DataElement> dataElements = new HashSet<>();
 
     @ManyToMany(mappedBy = "dataElementGroups")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"dataElementGroups", "translations"}, allowSetters = true)
-    private Set<DataElementGroupSet> groupSets = new HashSet<>();
+    private Set<DataElementGroupSet> dataElementGroupSets = new HashSet<>();
 }

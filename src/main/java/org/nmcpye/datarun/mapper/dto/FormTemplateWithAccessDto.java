@@ -33,6 +33,4 @@ public class FormTemplateWithAccessDto implements Serializable {
 
     List<FormDataElementConfDto> fields;
     List<FormSectionConfDto> sections;
-
-    PermissionsDto permissions;
 }

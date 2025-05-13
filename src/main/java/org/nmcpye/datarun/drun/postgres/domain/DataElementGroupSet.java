@@ -33,7 +33,7 @@ public class DataElementGroupSet extends JpaBaseIdentifiableObject {
         inverseJoinColumns = @JoinColumn(name = "data_element_group_id")
     )
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"groupSets", "members"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"dataElementGroupSets", "dataElements"}, allowSetters = true)
     private Set<DataElementGroup> dataElementGroups = new HashSet<>();
 
     public boolean hasOrgUnitGroups() {
@@ -42,7 +42,7 @@ public class DataElementGroupSet extends JpaBaseIdentifiableObject {
 
     public boolean isMemberOfOrgUnitGroups(DataElement dataElement) {
         for (DataElementGroup group : dataElementGroups) {
-            if (group.getMembers().contains(dataElement)) {
+            if (group.getDataElements().contains(dataElement)) {
                 return true;
             }
         }
@@ -52,13 +52,13 @@ public class DataElementGroupSet extends JpaBaseIdentifiableObject {
 
     public DataElementGroupSet addOrgUnitGroup(DataElementGroup dataElementGroup) {
         this.dataElementGroups.add(dataElementGroup);
-        dataElementGroup.getGroupSets().add(this);
+        dataElementGroup.getDataElementGroupSets().add(this);
         return this;
     }
 
     public DataElementGroupSet removeOrgUnitGroup(DataElementGroup dataElementGroup) {
         this.dataElementGroups.remove(dataElementGroup);
-        dataElementGroup.getGroupSets().remove(this);
+        dataElementGroup.getDataElementGroupSets().remove(this);
         return this;
     }
 }

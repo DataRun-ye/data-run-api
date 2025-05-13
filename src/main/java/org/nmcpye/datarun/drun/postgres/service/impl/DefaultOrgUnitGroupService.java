@@ -32,13 +32,13 @@ public class DefaultOrgUnitGroupService extends DefaultJpaAuditableService<OrgUn
 
     @Override
     public OrgUnitGroup saveWithRelations(OrgUnitGroup object) {
-        if (!object.getMembers().isEmpty()) {
+        if (!object.getOrgUnits().isEmpty()) {
             Set<OrgUnit> orgUnits = new HashSet<>();
-            for (OrgUnit orgUnit : object.getMembers()) {
+            for (OrgUnit orgUnit : object.getOrgUnits()) {
                 orgUnits.add(findOrgUnit(orgUnit));
             }
 
-            object.setMembers(orgUnits);
+            object.setOrgUnits(orgUnits);
             return save(object);
         }
 

@@ -38,7 +38,7 @@ public class AssignmentForm implements Serializable {
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "assignmentForms", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
-    @JoinColumn(name = "assignment_id", nullable = false)
+//    @JoinColumn(name = "assignment_id", nullable = false)
     private Assignment assignment;
 
     @NotNull

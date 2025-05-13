@@ -12,7 +12,6 @@ import java.util.Set;
 @Getter
 @Setter
 @EqualsAndHashCode
-@Deprecated(since = "v6")
 public class TeamFormPermissions {
     private String form;
     private Set<FormPermission> permissions;

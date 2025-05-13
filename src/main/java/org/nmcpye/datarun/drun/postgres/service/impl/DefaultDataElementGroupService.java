@@ -36,13 +36,13 @@ public class DefaultDataElementGroupService
 
     @Override
     public DataElementGroup saveWithRelations(DataElementGroup object) {
-        if (!object.getMembers().isEmpty()) {
+        if (!object.getDataElements().isEmpty()) {
             Set<DataElement> dataElements = new HashSet<>();
-            for (DataElement dataElement : object.getMembers()) {
+            for (DataElement dataElement : object.getDataElements()) {
                 dataElements.add(findOrgUnit(dataElement));
             }
 
-            object.setMembers(dataElements);
+            object.setDataElements(dataElements);
             return save(object);
         }
 

@@ -30,7 +30,7 @@ public abstract class TeamSpecifications {
         };
 
         if (!queryRequest.isIncludeDisabled()) {
-            spec = Specification.where(spec).and(isEnabled());
+            spec = spec.and(isEnabled());
         }
         return spec;
     }
@@ -51,7 +51,7 @@ public abstract class TeamSpecifications {
         };
 
         if (!queryRequest.isIncludeDisabled()) {
-            spec = Specification.where(spec).and(isEnabled());
+            spec = spec.and(isEnabled());
         }
         return spec;
     }

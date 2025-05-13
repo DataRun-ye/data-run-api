@@ -38,6 +38,6 @@ public abstract class ActivitySpecification {
     }
 
     public static Specification<Activity> canReadAndIsEnabled() {
-        return Specification.where(canRead()).and(isEnabled());
+        return canRead().and(isEnabled());
     }
 }

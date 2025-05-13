@@ -1,29 +1,36 @@
-//package org.nmcpye.datarun.mapper;
-//
-//import org.mapstruct.Mapper;
-//import org.mapstruct.MappingConstants;
-//import org.mapstruct.ReportingPolicy;
-//import org.nmcpye.datarun.drun.postgres.domain.Assignment;
-//import org.nmcpye.datarun.mapper.dto.AssignmentWithAccessDto;
-//import org.nmcpye.datarun.security.useraccess.dataform.FormAccessService;
-//
-//@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,
-//    componentModel = MappingConstants.ComponentModel.SPRING)
-//public abstract class AssignmentWithAccessMapper
-//    implements BaseMapper<AssignmentWithAccessDto, Assignment> {
-//    protected final FormAccessService formAccessService;
-//
-//    protected AssignmentWithAccessMapper(FormAccessService formAccessService) {
-//        this.formAccessService = formAccessService;
-//    }
-//
-//    @Override
-//    public Assignment toEntity(AssignmentWithAccessDto dto) {
-//        return null;
-//    }
-//
-//    @Override
-//    public AssignmentWithAccessDto toDto(Assignment entity) {
-//        return null;
-//    }
-//}
+package org.nmcpye.datarun.mapper;
+
+import org.mapstruct.*;
+import org.nmcpye.datarun.drun.postgres.domain.Assignment;
+import org.nmcpye.datarun.mapper.dto.AssignmentWithAccessDto;
+import org.nmcpye.datarun.security.useraccess.dataform.FormAccessService;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,
+    componentModel = MappingConstants.ComponentModel.SPRING)
+public abstract class AssignmentWithAccessMapper
+    implements BaseMapper<AssignmentWithAccessDto, Assignment> {
+
+    @Autowired
+    public FormAccessService formAccessService;
+
+    @Mappings({
+        @Mapping(source = "activity", target = "activity.uid"),
+        @Mapping(source = "assignment", target = "uid"),
+        @Mapping(source = "orgUnit", target = "orgUnit.uid"),
+        @Mapping(source = "team", target = "team.uid"),
+//        @Mapping(source = "accessibleForms.formUid", target = "forms"),
+    })
+    public abstract Assignment toEntity(AssignmentWithAccessDto dto);
+
+    @Mappings({
+        @Mapping(target = "activity", source = "activity.uid"),
+        @Mapping(target = "assignment", source = "uid"),
+        @Mapping(target = "orgUnit", source = "orgUnit.uid"),
+        @Mapping(target = "team", source = "team.uid"),
+        @Mapping(target = "accessibleForms", expression = "java(formAccessService.getUserForms(entity.getForms()))"),
+    })
+    public abstract AssignmentWithAccessDto toDto(Assignment entity);
+
+
+}

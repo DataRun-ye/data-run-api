@@ -5,6 +5,7 @@ import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.security.useraccess.dataform.AssignmentSummary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,7 +17,10 @@ import java.util.Optional;
 @Repository
 public interface AssignmentRepository
     extends JpaAuditableRepository<Assignment>, AssignmentRepositoryWithBagRelationships {
-
+    default List<Assignment> findAllWithForms(Specification<Assignment> spec, Pageable pageable) {
+        final var a = this.findAll(spec);
+        return fetchBagRelationships(a);
+    }
 
     @Query(
         "select assignment from Assignment assignment " +
@@ -127,7 +131,7 @@ public interface AssignmentRepository
 //    )
 //    Page<Assignment> findAllByStatusAndUser(@Param("disabled") boolean disabled, Pageable pageable);
 
-    //    @Query(
+//    @Query(
 //        value = "select assignment from Assignment assignment " +
 //            "left join assignment.activity " +
 //            "left join assignment.orgUnit " +

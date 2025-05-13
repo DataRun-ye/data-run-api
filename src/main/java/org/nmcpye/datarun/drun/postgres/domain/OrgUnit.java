@@ -50,17 +50,17 @@ public class OrgUnit extends JpaBaseIdentifiableObject {
 
     @ManyToOne//(fetch = FetchType.LAZY)
     @JsonProperty
-    @JsonIgnoreProperties(value = {"parent", "children", "groups", "assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private OrgUnit parent;
 
-    @ManyToMany(mappedBy = "members")
+    @ManyToMany(mappedBy = "orgUnits")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"groupSets", "members", "translations"}, allowSetters = true)
-    private Set<OrgUnitGroup> groups = new HashSet<>();
+    @JsonIgnoreProperties(value = {"orgUnitGroupSets", "orgUnits", "translations"}, allowSetters = true)
+    private Set<OrgUnitGroup> orgUnitGroups = new HashSet<>();
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"parent", "children", "groups", "assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private Set<OrgUnit> children = new HashSet<>();
 
     @Transient
@@ -68,8 +68,8 @@ public class OrgUnit extends JpaBaseIdentifiableObject {
 
     @PreRemove
     private void removeOuGroupsFromOu() {
-        for (OrgUnitGroup g : groups) {
-            g.getMembers().remove(this);
+        for (OrgUnitGroup g : orgUnitGroups) {
+            g.getOrgUnits().remove(this);
         }
         if (parent != null) {
             parent.getChildren().remove(this);
@@ -77,16 +77,16 @@ public class OrgUnit extends JpaBaseIdentifiableObject {
     }
 
     public void removeOrganisationUnitGroup(OrgUnitGroup organisationUnitGroup) {
-        groups.remove(organisationUnitGroup);
-        organisationUnitGroup.getMembers().remove(this);
+        orgUnitGroups.remove(organisationUnitGroup);
+        organisationUnitGroup.getOrgUnits().remove(this);
     }
 
     public void removeAllOrganisationUnitGroups() {
-        for (OrgUnitGroup organisationUnitGroup : groups) {
-            organisationUnitGroup.getMembers().remove(this);
+        for (OrgUnitGroup organisationUnitGroup : orgUnitGroups) {
+            organisationUnitGroup.getOrgUnits().remove(this);
         }
 
-        groups.clear();
+        orgUnitGroups.clear();
     }
 
     public void updateParent(OrgUnit newParent) {
@@ -118,14 +118,14 @@ public class OrgUnit extends JpaBaseIdentifiableObject {
     }
 
     public OrgUnit addGroup(OrgUnitGroup organisationUnitGroup) {
-        this.groups.add(organisationUnitGroup);
-        organisationUnitGroup.getMembers().add(this);
+        this.orgUnitGroups.add(organisationUnitGroup);
+        organisationUnitGroup.getOrgUnits().add(this);
         return this;
     }
 
     public OrgUnit removeGroup(OrgUnitGroup organisationUnitGroup) {
-        this.groups.remove(organisationUnitGroup);
-        organisationUnitGroup.getMembers().remove(this);
+        this.orgUnitGroups.remove(organisationUnitGroup);
+        organisationUnitGroup.getOrgUnits().remove(this);
         return this;
     }
 
@@ -271,7 +271,7 @@ public class OrgUnit extends JpaBaseIdentifiableObject {
      *
      * @throws IllegalStateException if circular parent relationships is detected.
      */
-    @JsonIgnoreProperties(value = {"parent", "children", "ancestors", "groups", "assignments", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"parent", "children", "ancestors", "orgUnitGroups", "assignments", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     public List<OrgUnit> getAncestors() {
         List<OrgUnit> units = new ArrayList<>();
         Set<OrgUnit> visitedUnits = new HashSet<>();

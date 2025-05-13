@@ -37,7 +37,7 @@ public class ActivityFilter extends DefaultJpaFilter<Activity> {
         };
 
         if (!queryRequest.isIncludeDisabled()) {
-            spec = Specification.where(spec).and(isEnabled());
+            spec = spec.and(isEnabled());
         }
         return spec;
     }

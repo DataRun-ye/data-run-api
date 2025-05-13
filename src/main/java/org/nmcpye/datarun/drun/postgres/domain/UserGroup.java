@@ -44,7 +44,7 @@ public class UserGroup extends JpaBaseIdentifiableObject {
         joinColumns = @JoinColumn(name = "user_group_id"),
         inverseJoinColumns = @JoinColumn(name = "user_id")
     )
-    @JsonIgnoreProperties(value = {"teams", "password", "authorities", "groups", "managedGroups"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"teams", "password", "authorities", "userGroups", "managedGroups", "managedByGroups"}, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<User> users = new HashSet<>();
 
@@ -55,26 +55,26 @@ public class UserGroup extends JpaBaseIdentifiableObject {
         joinColumns = @JoinColumn(name = "user_group_id"),
         inverseJoinColumns = @JoinColumn(name = "managed_group_id")
     )
-    @JsonIgnoreProperties(value = {"managedGroups", "managedByGroups", "members",
+    @JsonIgnoreProperties(value = {"managedGroups", "managedByGroups", "users",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<UserGroup> managedGroups = new HashSet<>();
 
     @ManyToMany(mappedBy = "managedGroups")
-    @JsonIgnoreProperties(value = {"managedGroups", "managedByGroups", "members",
+    @JsonIgnoreProperties(value = {"managedGroups", "managedByGroups", "users",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<UserGroup> managedByGroups = new HashSet<>();
 
     public UserGroup addMember(User user) {
         this.users.add(user);
-        user.getGroups().add(this);
+        user.getUserGroups().add(this);
         return this;
     }
 
     public UserGroup removeMember(User user) {
         this.users.remove(user);
-        user.getGroups().remove(this);
+        user.getUserGroups().remove(this);
         return this;
     }
 

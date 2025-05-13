@@ -51,7 +51,7 @@ public class Assignment
     private Integer startDay;
 
     @ManyToOne//(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"parent", "children", "groups", "assignments",
+    @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments",
         "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private OrgUnit orgUnit;
 
@@ -105,19 +105,19 @@ public class Assignment
     @Transient
     private String lastEntryBy;
 
-    @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties(value = {"assignment"}, allowSetters = true)
-    private Set<AssignmentForm> assignmentForms = new LinkedHashSet<>();
+//    @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @JsonIgnoreProperties(value = {"assignment"}, allowSetters = true)
+//    private Set<AssignmentForm> assignmentForms = new LinkedHashSet<>();
 
     public void setForms(Set<String> forms) {
         this.forms = forms;
-        final var assignmentForms = forms.stream().map((f) -> {
-            final var assignmentForm = new AssignmentForm();
-            assignmentForm.setFormUid(f);
-            return assignmentForm;
-        }).collect(Collectors.toSet());
-
-        this.setAssignmentForms(assignmentForms);
+//        final var assignmentForms = forms.stream().map((f) -> {
+//            final var assignmentForm = new AssignmentForm();
+//            assignmentForm.setFormUid(f);
+//            return assignmentForm;
+//        }).collect(Collectors.toSet());
+//
+//        this.setAssignmentForms(assignmentForms);
     }
 
     @JsonProperty
@@ -135,18 +135,18 @@ public class Assignment
         return allocatedResources;
     }
 
-    public void setAssignmentForms(Set<AssignmentForm> assignmentForms) {
-        this.assignmentForms.clear();
-        if (assignmentForms != null) {
-            assignmentForms.forEach(i -> i.setAssignment(this));
-            this.assignmentForms.addAll(assignmentForms);
-        }
-    }
+//    public void setAssignmentForms(Set<AssignmentForm> assignmentForms) {
+//        this.assignmentForms.clear();
+//        if (assignmentForms != null) {
+//            assignmentForms.forEach(i -> i.setAssignment(this));
+//            this.assignmentForms.addAll(assignmentForms);
+//        }
+//    }
 
-    public Assignment assignmentForms(Set<AssignmentForm> assignmentForms) {
-        this.setAssignmentForms(assignmentForms);
-        return this;
-    }
+//    public Assignment assignmentForms(Set<AssignmentForm> assignmentForms) {
+//        this.setAssignmentForms(assignmentForms);
+//        return this;
+//    }
 
     /**
      * Returns the list of ancestor assignment UIDs up to any of the given

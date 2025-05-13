@@ -120,7 +120,7 @@ public class User extends JpaAuditableObject {
     @ManyToMany(mappedBy = "users", fetch = FetchType.EAGER)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"users", "managedGroups", "managedByGroups"}, allowSetters = true)
-    private Set<UserGroup> groups = new HashSet<>();
+    private Set<UserGroup> userGroups = new HashSet<>();
 
     // Lowercase the login before saving it in database
     public void setLogin(String login) {
@@ -132,29 +132,29 @@ public class User extends JpaAuditableObject {
         return password;
     }
 
-    public void setGroups(Set<UserGroup> userGroups) {
-        if (this.groups != null) {
-            this.groups.forEach(i -> i.removeMember(this));
+    public void setUserGroups(Set<UserGroup> userGroups) {
+        if (this.userGroups != null) {
+            this.userGroups.forEach(i -> i.removeMember(this));
         }
         if (userGroups != null) {
             userGroups.forEach(i -> i.addMember(this));
         }
-        this.groups = userGroups;
+        this.userGroups = userGroups;
     }
 
     public User groups(Set<UserGroup> userGroups) {
-        this.setGroups(userGroups);
+        this.setUserGroups(userGroups);
         return this;
     }
 
     public User addGroup(UserGroup userGroup) {
-        this.groups.add(userGroup);
+        this.userGroups.add(userGroup);
         userGroup.getUsers().add(this);
         return this;
     }
 
     public User removeGroup(UserGroup userGroup) {
-        this.groups.remove(userGroup);
+        this.userGroups.remove(userGroup);
         userGroup.getUsers().remove(this);
         return this;
     }
@@ -215,11 +215,11 @@ public class User extends JpaAuditableObject {
      * @return true if the given user is managed by this user, false if not.
      */
     public boolean isManagedBy(User user) {
-        if (user == null || user.getGroups() == null) {
+        if (user == null || user.getUserGroups() == null) {
             return false;
         }
 
-        for (UserGroup group : user.getGroups()) {
+        for (UserGroup group : user.getUserGroups()) {
             if (isManagedBy(group)) {
                 return true;
             }
@@ -242,13 +242,13 @@ public class User extends JpaAuditableObject {
      * not.
      */
     public boolean isManagedBy(UserGroup userGroup) {
-        return userGroup != null && CollectionUtils.containsAny(groups, userGroup.getManagedGroups());
+        return userGroup != null && CollectionUtils.containsAny(userGroups, userGroup.getManagedGroups());
     }
 
     public Set<UserGroup> getManagedGroups() {
         Set<UserGroup> managedGroups = new HashSet<>();
 
-        for (UserGroup group : groups) {
+        for (UserGroup group : userGroups) {
             managedGroups.addAll(group.getManagedGroups());
         }
 
@@ -256,7 +256,7 @@ public class User extends JpaAuditableObject {
     }
 
     public boolean hasManagedGroups() {
-        for (UserGroup group : groups) {
+        for (UserGroup group : userGroups) {
             if (group != null && group.getManagedGroups() != null && !group.getManagedGroups().isEmpty()) {
                 return true;
             }
@@ -273,7 +273,7 @@ public class User extends JpaAuditableObject {
      * if not.
      */
     public boolean canManage(UserGroup userGroup) {
-        return userGroup != null && CollectionUtils.containsAny(groups, userGroup.getManagedByGroups());
+        return userGroup != null && CollectionUtils.containsAny(userGroups, userGroup.getManagedByGroups());
     }
 
     /**
@@ -283,11 +283,11 @@ public class User extends JpaAuditableObject {
      * @return true if the given user can be managed by this user, false if not.
      */
     public boolean canManage(User user) {
-        if (user == null || user.getGroups() == null) {
+        if (user == null || user.getUserGroups() == null) {
             return false;
         }
 
-        for (UserGroup group : user.getGroups()) {
+        for (UserGroup group : user.getUserGroups()) {
             if (canManage(group)) {
                 return true;
             }

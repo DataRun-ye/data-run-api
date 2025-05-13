@@ -70,7 +70,7 @@ public class CacheConfiguration {
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".authorities");
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".teams");
             createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".roles");
-            createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".groups");
+            createCache(cm, org.nmcpye.datarun.domain.User.class.getName() + ".userGroups");
             createCache(cm, org.nmcpye.datarun.domain.Role.class.getName() + ".privileges");
             createCache(cm, org.nmcpye.datarun.domain.Privilege.class.getName() + ".roles");
 
@@ -101,16 +101,23 @@ public class CacheConfiguration {
 
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName() + ".assignments");
-            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName() + ".groups");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName() + ".orgUnitGroups");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnit.class.getName() + ".children");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OuLevel.class.getName());
 
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup.class.getName());
-            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup.class.getName() + ".members");
-            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup.class.getName() + ".groupSets");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup.class.getName() + ".orgUnits");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup.class.getName() + ".orgUnitGroupSets");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet.class.getName() + ".orgUnitGroups");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.DataElement.class.getName());
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.DataElement.class.getName() + ".dataElementGroups");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.DataElementGroup.class.getName());
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.DataElementGroup.class.getName() + ".dataElements");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.DataElementGroup.class.getName() + ".dataElementGroupSets");
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.DataElementGroupSet.class.getName());
+            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.DataElementGroupSet.class.getName() + ".dataElementGroups");
+
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.OptionSet.class.getName());
         };
     }
