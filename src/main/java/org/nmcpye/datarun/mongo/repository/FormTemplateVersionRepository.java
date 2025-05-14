@@ -2,8 +2,10 @@ package org.nmcpye.datarun.mongo.repository;
 
 import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.common.mongo.repository.MongoAuditableRepository;
-import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplateVersion;
+import org.nmcpye.datarun.mongo.domain.dataform.FormTemplateVersion;
 import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -15,17 +17,17 @@ import java.util.Optional;
  */
 @Repository
 @JaversSpringDataAuditable
-public interface DataFormTemplateVersionRepository
-    extends MongoAuditableRepository<DataFormTemplateVersion> {
+public interface FormTemplateVersionRepository
+    extends MongoAuditableRepository<FormTemplateVersion> {
     // Returns the single FormInstance with highest version for this template
-    Optional<DataFormTemplateVersion> findTopByTemplateUidOrderByVersionDesc(String templateId);
+    Optional<FormTemplateVersion> findTopByTemplateUidOrderByVersionDesc(String templateId);
 
     // Returns a specific version, if it exists
-    Optional<DataFormTemplateVersion> findByTemplateUidAndVersion(String templateId, int version);
+    Optional<FormTemplateVersion> findByTemplateUidAndVersion(String templateId, int version);
 
     // List all versions sorted descending
-    List<DataFormTemplateVersion> findAllByTemplateUidOrderByVersionDesc(String templateId);
+    Page<FormTemplateVersion> findAllByTemplateUidOrderByVersionDesc(String templateId, Pageable pageable);
 
     @Query(value = "{ 'fields.type': { $in: ?0 }}")
-    List<DataFormTemplateVersion> findByFieldType(List<ValueType> types);
+    List<FormTemplateVersion> findByFieldType(List<ValueType> types);
 }

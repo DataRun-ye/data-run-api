@@ -2,11 +2,13 @@ package org.nmcpye.datarun.mongo.domain;
 
 import jakarta.el.PropertyNotFoundException;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
 import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
 import org.nmcpye.datarun.utils.CodeGenerator;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -26,6 +28,12 @@ import static java.util.Map.entry;
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class MetadataSubmission
     extends MongoAuditableBaseObject {
+    @Id
+    private String id;
+
+    @Size(max = 11)
+    @Field("uid")
+    private String uid;
 
     @NotNull
     @Field("metadataSchema")

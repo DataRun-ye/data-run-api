@@ -76,6 +76,5 @@ public abstract class MongoBaseResource<T extends AuditableObject<String>>
             }
         }
         return queryService.query(queryRequest, query, getEntityClass());
-//        return super.getList(queryRequest, jsonQueryBody);
     }
 }

@@ -12,6 +12,7 @@ import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.Repeat;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;
 import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -32,6 +33,13 @@ import java.util.Objects;
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class MetadataSchema
     extends MongoAuditableBaseObject {
+    @Id
+    private String id;
+
+    @Size(max = 11)
+    @Field("uid")
+    private String uid;
+
     @NotNull
     @Field("name")
     private String name;

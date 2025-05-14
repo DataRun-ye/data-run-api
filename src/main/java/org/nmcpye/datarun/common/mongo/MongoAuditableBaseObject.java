@@ -1,14 +1,16 @@
 package org.nmcpye.datarun.common.mongo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.javers.core.metamodel.annotation.DiffIgnore;
 import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
 import org.nmcpye.datarun.utils.CodeGenerator;
-import org.springframework.data.annotation.*;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.io.Serializable;
@@ -28,12 +30,11 @@ public abstract class MongoAuditableBaseObject
 
     private static final long serialVersionUID = 1L;
 
-    @Id
-    protected String id;
+    public abstract String getId();
 
-    @Size(max = 11)
-    @Field("uid")
-    protected String uid;
+    public abstract String getUid();
+
+    public abstract void setUid(String uid);
 
     @CreatedBy
     @Field("createdBy")

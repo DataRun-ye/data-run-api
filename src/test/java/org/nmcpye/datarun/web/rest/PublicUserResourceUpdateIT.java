@@ -1,20 +1,14 @@
 package org.nmcpye.datarun.web.rest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 import jakarta.persistence.EntityManager;
-import java.util.Objects;
-import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.IntegrationTest;
-import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.common.repository.UserRepository;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.domain.User;
 import org.nmcpye.datarun.drun.postgres.service.UserService;
+import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.cache.Cache;
@@ -24,13 +18,20 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 /**
  * Integration tests for the {@link PublicUserResource} REST controller.
  */
 @AutoConfigureMockMvc
 @WithMockUser(authorities = AuthoritiesConstants.ADMIN)
 @IntegrationTest
-class PublicUserResourceIT {
+class PublicUserResourceUpdateIT {
 
     private static final String DEFAULT_LOGIN = "johndoe";
 
@@ -59,7 +60,7 @@ class PublicUserResourceIT {
 
     @BeforeEach
     public void initTest() {
-        user = UserResourceIT.initTestUser(em);
+        user = UserResourceUpdateIT.initTestUser(em);
     }
 
     @AfterEach
