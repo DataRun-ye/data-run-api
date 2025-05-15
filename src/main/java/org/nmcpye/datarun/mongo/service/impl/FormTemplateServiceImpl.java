@@ -5,7 +5,6 @@ import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.common.repository.UserRepository;
 import org.nmcpye.datarun.mapper.FormTemplateVersionMapper;
-import org.nmcpye.datarun.mapper.dto.FormTemplateVersionDto;
 import org.nmcpye.datarun.mapper.dto.SaveFormTemplateDto;
 import org.nmcpye.datarun.mongo.domain.dataform.FormTemplate;
 import org.nmcpye.datarun.mongo.domain.dataform.FormTemplateVersion;
@@ -45,7 +44,7 @@ public class FormTemplateServiceImpl implements FormTemplateService {
     }
 
     @Override
-    public Optional<FormTemplateVersionDto> findByUid(String uid) {
+    public Optional<SaveFormTemplateDto> findByUid(String uid) {
         return templateVersionService.findLatestByTemplate(uid);
     }
 
@@ -58,7 +57,7 @@ public class FormTemplateServiceImpl implements FormTemplateService {
     }
 
     @Override
-    public Page<FormTemplateVersionDto> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
+    public Page<SaveFormTemplateDto> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
         return templateVersionService.findAllLatest(queryRequest, jsonQueryBody);
     }
 
@@ -66,12 +65,12 @@ public class FormTemplateServiceImpl implements FormTemplateService {
         UserRepository.USER_ACTIVITY_IDS_CACHE,
         UserRepository.USER_TEAM_IDS_CACHE})
     @Override
-    public FormTemplateVersionDto save(SaveFormTemplateDto saveFormTemplateDto) {
+    public SaveFormTemplateDto save(SaveFormTemplateDto saveFormTemplateDto) {
         return templateVersionService.saveNewVersion(saveFormTemplateDto);
     }
 
     @Override
-    public FormTemplateVersionDto update(SaveFormTemplateDto saveFormTemplateDto) {
+    public SaveFormTemplateDto update(SaveFormTemplateDto saveFormTemplateDto) {
         templateVersionService
             .findLatestByTemplate(saveFormTemplateDto.getUid()).orElseThrow(() -> new IllegalQueryException(
                 new ErrorMessage(ErrorCode.E1004,

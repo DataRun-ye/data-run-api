@@ -45,7 +45,7 @@ public class AssignmentFilter extends DefaultJpaFilter<Assignment> {
 
         };
 
-        if (!queryRequest.isIncludeDisabled()) {
+        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
             spec = spec.and(isEnabled());
         }
         return spec;

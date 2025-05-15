@@ -59,7 +59,7 @@ public abstract class DefaultAuditableObjectService<T extends AuditableObject<ID
 
     @Override
     public void deleteByUid(String uid) {
-        repository.findByUid(uid).ifPresent(repository::delete);
+        findByUid(uid).ifPresent(repository::delete);
     }
 
     @Override
@@ -72,7 +72,7 @@ public abstract class DefaultAuditableObjectService<T extends AuditableObject<ID
     @Transactional
     public T update(T object) {
         log.debug("Request service to update {}:`{}`", getClazz().getSimpleName(), object.getUid());
-        T existingEntity = findByIdentifyingProperties(object)
+        T existingEntity = repository.findByUid(object.getUid())
             .orElseThrow(() ->
                 new IllegalQueryException(
                     new ErrorMessage(ErrorCode.E1004,
@@ -85,14 +85,8 @@ public abstract class DefaultAuditableObjectService<T extends AuditableObject<ID
     }
 
     @Override
-    public Optional<T> findByIdentifyingProperties(T identifiableObject) {
-        return repository
-            .findByUid(identifiableObject.getUid());
-    }
-
-    @Override
     public void delete(T object) {
-        findByIdentifyingProperties(object).ifPresent(repository::delete);
+        findByUid(object.getUid()).ifPresent(repository::delete);
     }
 
     protected void clearCaches(String name, String key) {

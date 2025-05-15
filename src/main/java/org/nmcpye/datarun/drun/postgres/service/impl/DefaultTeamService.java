@@ -104,7 +104,7 @@ public class DefaultTeamService extends DefaultJpaAuditableService<Team> impleme
 //    @Override
 //    public Page<Team> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
 //        Specification<Team> spec = canRead();
-//        if (!queryRequest.isIncludeDisabled()) {
+//        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
 //            spec = spec.and(TeamSpecifications.isEnabled());
 //        }
 //
@@ -114,7 +114,7 @@ public class DefaultTeamService extends DefaultJpaAuditableService<Team> impleme
 //    @Override
 //    public List<Team> findAllByUser(QueryRequest queryRequest) {
 //        Specification<Team> spec = canRead();
-//        if (!queryRequest.isIncludeDisabled()) {
+//        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
 //            spec = spec.and(TeamSpecifications.isEnabled());
 //        }
 //
@@ -125,7 +125,7 @@ public class DefaultTeamService extends DefaultJpaAuditableService<Team> impleme
     public Page<Team> findAllManagedByUser(Pageable pageable, QueryRequest queryRequest) {
 
 //        Specification<Team> specManage = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLoginOrThrow(new ErrorMessage(ErrorCode.E3004, getClass().getName()))).and(TeamSpecifications.isEnabled());
-//        if (!queryRequest.isIncludeDisabled()) {
+//        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
 //            specManage = Specification.where(specManage).and(TeamSpecifications.isEnabled());
 //        }
         final var managedSpec = getManagedSpecification(SecurityUtils

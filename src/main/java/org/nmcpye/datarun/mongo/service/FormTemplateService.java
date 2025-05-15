@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.mongo.service;
 
 
-import org.nmcpye.datarun.mapper.dto.FormTemplateVersionDto;
 import org.nmcpye.datarun.mapper.dto.SaveFormTemplateDto;
 import org.nmcpye.datarun.mongo.domain.dataform.FormTemplate;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -16,11 +15,11 @@ public interface FormTemplateService {
 
     boolean existsByUid(String uid);
 
-    Optional<FormTemplateVersionDto> findByUid(String uid);
+    Optional<SaveFormTemplateDto> findByUid(String uid);
 
     void deleteByUid(String uid);
 
-    Page<FormTemplateVersionDto> findAllByUser(QueryRequest queryRequest, String jsonQueryBody);
+    Page<SaveFormTemplateDto> findAllByUser(QueryRequest queryRequest, String jsonQueryBody);
 
     /**
      * Save an object.
@@ -28,7 +27,7 @@ public interface FormTemplateService {
      * @param object the entity to save.
      * @return the persisted entity.
      */
-    FormTemplateVersionDto save(SaveFormTemplateDto object);
+    SaveFormTemplateDto save(SaveFormTemplateDto object);
 
     /**
      * Updates a object.
@@ -36,7 +35,7 @@ public interface FormTemplateService {
      * @param object the entity to update.
      * @return the persisted entity.
      */
-    FormTemplateVersionDto update(SaveFormTemplateDto object);
+    SaveFormTemplateDto update(SaveFormTemplateDto object);
 
     /**
      * Delete an object.

@@ -18,8 +18,13 @@ public interface JpaAuditableObjectService<T extends JpaAuditableObject>
 
 //    boolean canWrite(Specification<T> spec, QueryRequest queryRequest);
 
+    static <T extends AuditableObject<Long>> Specification<T> hasUid(String uid) {
+        return (root, query, criteriaBuilder) -> uid == null ? criteriaBuilder.disjunction()
+            : criteriaBuilder.equal(root.get("uid"), uid);
+    }
+
     @Deprecated(since = "v 6 use mongo like json query")
-    static <E extends AuditableObject<?>> Specification<E> buildQuerySpecification(QueryRequest queryRequest) {
+    static <E extends AuditableObject<Long>> Specification<E> buildQuerySpecification(QueryRequest queryRequest) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 

@@ -26,9 +26,7 @@ public class FormTemplateMigration implements CommandLineRunner {
     @Override
     public void run(String... args) {
         final var all = templateRepository.findAll();
-        all.stream()
-            .map(dataFormTemplateMapper::toDto)
-            .forEach(templateVersionService::saveNewVersion);
+        all.forEach(templateVersionService::migrateDataFormTemplateVersion);
     }
 }
 

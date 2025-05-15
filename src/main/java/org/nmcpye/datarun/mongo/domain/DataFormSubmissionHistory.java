@@ -8,6 +8,7 @@ import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -15,10 +16,10 @@ import java.time.Instant;
 import java.util.Map;
 
 /**
- * A DataFormSubmission. {'uid': 1, 'timestamp': -1}
+ * A DataFormSubmissionHistory.
  */
 @Document(collection = "data_form_submission_history")
-@CompoundIndex(name = "submission_history_uid_time_idx", def = "{'uid': 1, 'timestamp': -1}", unique = true)
+@CompoundIndex(name = "submission_history_uid_time_idx", def = "{'uid': 1, 'timestamp': -1}")
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
@@ -26,56 +27,60 @@ public class DataFormSubmissionHistory
     extends MongoAuditableBaseObject {
     @Id
     private String id;
-
     /**
      * Submission uid, not unique
      */
     @Size(max = 11)
     @Field("uid")
     private String uid;
-
     @NotNull
     private String form;
-
+    /**
+     * form version uid
+     */
     @NotNull
     @Field("formVersion")
     private String formVersion;
-
-    private String team;
-    private String teamCode;
-
-    private String orgUnit;
-    private String orgUnitCode;
-    private String orgUnitName;
-
-    private String activity;
-
-    private String assignment;
-
-    @Field("status")
-    private AssignmentStatus status;
-
+    /**
+     * form version number
+     */
+    @Field("currentVersion")
+//    @Indexed(name = "history_submission_form_version_no_idx")
+    private Integer version;
     /**
      * previous submission's version, pumped up on master submission with each update
      */
-    @Field("currentVersion")
-    private int version;
-
+    @NotNull
+    @Field("submissionVersion")
+    @Indexed(name = "history_submission_version_idx")
+    private Integer submissionVersion;
+    private String team;
+    private String teamCode;
+    private String orgUnit;
+    private String orgUnitCode;
+    private String orgUnitName;
+    private String activity;
+    private String assignment;
+    @Field("status")
+    private AssignmentStatus status;
     @Field("deleted")
     private Boolean deleted;
-
-
     private Map<String, Object> formData;
-
+    @Field("startEntryTime")
+    private Instant startEntryTime;
+    @Field("finishedEntryTime")
+    private Instant finishedEntryTime;
     private Instant timestamp;
 
     // prettier-ignore
     @Override
     public String toString() {
-        return "DataFormSubmission{" +
+        return "DataFormSubmissionHistory {" +
             "id=" + getId() +
             ", uid='" + getUid() + "'" +
             ", deleted='" + getDeleted() + "'" +
+            ", startEntryTime='" + getStartEntryTime() + "'" +
+            ", finishedEntryTime='" + getFinishedEntryTime() + "'" +
             ", status='" + getStatus() + "'" +
             "}";
     }

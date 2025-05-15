@@ -7,7 +7,6 @@ import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.DataFormTemplateService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.startupmigration.mongo.DataFormTemplateMigrationService;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess.FormTemplateProcessor;
@@ -32,18 +31,14 @@ public class DataFormTemplateResource extends MongoBaseResource<DataFormTemplate
     protected static final String NAME = "/dataFormTemplates";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
 
-    private final DataFormTemplateMigrationService dataFormTemplateMigrationService;
     private final FormTemplateProcessor formTemplateProcessor;
 
     public DataFormTemplateResource(DataFormTemplateService templateService,
                                     DataFormTemplateRepository dataFormRepository,
-                                    DataFormTemplateMigrationService dataFormTemplateMigrationService,
                                     FormTemplateProcessor formTemplateProcessor) {
         super(templateService, dataFormRepository);
-        this.dataFormTemplateMigrationService = dataFormTemplateMigrationService;
         this.formTemplateProcessor = formTemplateProcessor;
     }
-
 
     @Override
     protected String getName() {

@@ -65,7 +65,7 @@ public class SubmissionMaintenanceService {
         List<DataFormSubmission> submissions = submissionRepository.findAll();
 
         for (DataFormSubmission submission : submissions) {
-            submission.createSubmission().populateFormDataAttributes();
+            submission.createSubmission().checkAttributes();
             submissionRepository.save(submission);
         }
     }

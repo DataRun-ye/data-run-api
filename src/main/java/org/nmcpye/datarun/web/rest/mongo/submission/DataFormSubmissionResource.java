@@ -53,7 +53,8 @@ public class DataFormSubmissionResource
     public ResponseEntity<PagedResponse<?>> getAll(QueryRequest queryRequest) {
         QueryRequestValidator.validate(queryRequest);
 
-        Page<DataFormSubmission> resultPage = queryService.query(queryRequest, getEntityClass());
+//        Page<DataFormSubmission> resultPage = queryService.query(queryRequest, getEntityClass());
+        Page<DataFormSubmission> resultPage = getList(queryRequest, null);
 
         Page<Map<String, Object>> processedPage = resultPage.map(submission -> {
             Map<String, Object> formData = submission.getFormData();

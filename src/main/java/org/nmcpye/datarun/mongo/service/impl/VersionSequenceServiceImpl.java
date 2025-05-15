@@ -23,14 +23,19 @@ public class VersionSequenceServiceImpl implements VersionSequenceService {
     @Override
     public FormTemplate incrementAndGet(String templateUid) {
         Query q = Query.query(Criteria.where("uid").is(templateUid));
-        Update u = new Update().inc("currentVersion", 1)
+        Update u = new Update().inc("versionNumber", 1)
             .setOnInsert("uid", templateUid)
             .setOnInsert("disabled", false)    // default on first insert
             .setOnInsert("deleted", false);    // default on first insert
         FindAndModifyOptions opts = FindAndModifyOptions.options()
             .returnNew(true)
             .upsert(true);
-        FormTemplate updated = mongoTemplate.findAndModify(q, u, opts, FormTemplate.class);
+        final FormTemplate updated = mongoTemplate.findAndModify(q, u, opts, FormTemplate.class);
+
+        if (updated == null) {
+            throw new IllegalStateException("Version bump failed for template " + templateUid);
+        }
+//        return updated.getCurrentVersion();
         return updated;
     }
 }

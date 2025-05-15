@@ -48,7 +48,7 @@ public class DataFormTemplateServiceImpl
     @Override
     public Page<DataFormTemplate> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
         return templateService.findAllByUser(queryRequest, jsonQueryBody)
-            .map(dataFormTemplateMapper::fromVersionDto);
+            .map(dataFormTemplateMapper::toEntity);
     }
 
     @Override
@@ -59,8 +59,7 @@ public class DataFormTemplateServiceImpl
     @Override
     public Optional<DataFormTemplate> findByUid(String uid) {
         return templateService
-            .findByUid(uid)
-            .map(dataFormTemplateMapper::fromVersionDto);
+            .findByUid(uid).map(dataFormTemplateMapper::toEntity);
     }
 
     @Override
@@ -71,28 +70,19 @@ public class DataFormTemplateServiceImpl
     @Override
     public DataFormTemplate save(DataFormTemplate object) {
         log.debug("Request service to save {}:`{}`", getClazz().getSimpleName(), object.getUid());
-        return dataFormTemplateMapper.fromVersionDto(
-            templateService.save(
-                dataFormTemplateMapper.toDto(object)));
-    }
-
-    @Override
-    public Optional<DataFormTemplate> findByIdentifyingProperties(DataFormTemplate identifiableObject) {
-        return templateService
-            .findByUid(identifiableObject.getUid())
-            .map(dataFormTemplateMapper::fromVersionDto);
+        return dataFormTemplateMapper
+            .toEntity(templateService.save(dataFormTemplateMapper.toDto(object)));
     }
 
     @Override
     public void delete(DataFormTemplate object) {
-        findByIdentifyingProperties(object).ifPresent(repository::delete);
+        findByUid(object.getUid()).ifPresent(repository::delete);
     }
 
     @Transactional
     public DataFormTemplate update(DataFormTemplate object) {
         log.debug("Request service to update {}:`{}`", getClazz().getSimpleName(), object.getUid());
-
-        return dataFormTemplateMapper
-            .fromVersionDto(templateService.update(dataFormTemplateMapper.toDto(object)));
+        return dataFormTemplateMapper.toEntity(
+            templateService.update(dataFormTemplateMapper.toDto(object)));
     }
 }

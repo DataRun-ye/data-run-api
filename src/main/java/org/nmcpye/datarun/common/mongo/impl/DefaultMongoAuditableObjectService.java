@@ -45,14 +45,15 @@ public abstract class DefaultMongoAuditableObjectService<T extends MongoAuditabl
             applySecurityConstraints(query);
         }
 
-        if (!queryRequest.isIncludeDeleted()) {
+        if (queryRequest == null || !queryRequest.isIncludeDeleted()) {
             query.addCriteria(Criteria.where("deleted").is(false));
         }
 
         if (jsonQueryBody != null && !jsonQueryBody.isEmpty()) {
             try {
                 FilterExpression filterExpression = UnifiedQueryParser.parse(jsonQueryBody);
-                query.addCriteria(mongoQueryBuilder.buildCriteria(List.of(filterExpression)));
+                final var c = mongoQueryBuilder.buildCriteria(List.of(filterExpression));
+                query.addCriteria(c);
             } catch (Exception e) {
                 throw new IllegalQueryException(ErrorCode.E2050, jsonQueryBody);
             }

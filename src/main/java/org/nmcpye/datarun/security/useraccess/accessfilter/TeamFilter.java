@@ -44,7 +44,7 @@ public class TeamFilter extends DefaultJpaFilter<Team> {
 
         };
 
-        if (!queryRequest.isIncludeDisabled()) {
+        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
             spec = spec.and(isEnabled());
         }
         return spec;

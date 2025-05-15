@@ -19,8 +19,6 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import java.time.Instant;
 import java.util.*;
 
-import static java.util.Map.entry;
-
 /**
  * A DataFormSubmission.
  */
@@ -28,71 +26,53 @@ import static java.util.Map.entry;
 @Getter
 @Setter
 @CompoundIndex(name = "data_submission_uid", def = "{'uid': 1}", unique = true)
-@CompoundIndex(name = "submission_form_idx", def = "{'form': 1}")
-@CompoundIndex(name = "submission_from_version_idx", def = "{'version': 1}")
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormSubmission
     extends MongoAuditableBaseObject implements SoftDeleteObject<String> {
     @Id
     private String id;
-
+    @Indexed(unique = true)
+    Long serialNumber;
     @Size(max = 11)
     @Field("uid")
     private String uid;
-
     @Field("deleted")
-    private Boolean deleted;
-
-    @Field("startEntryTime")
-    private Instant startEntryTime;
-
-    @Field("finishedEntryTime")
-    private Instant finishedEntryTime;
-
+    @Indexed(name = "submission_deleted_idx")
+    private Boolean deleted = false;
     @NotNull
+    @Indexed(name = "submission_form_idx")
     private String form;
-
-    @NotNull
+    //    @NotNull
     @Field("formVersion")
+    @Indexed(name = "submission_form_version_uid_idx")
     private String formVersion;
+    /**
+     * form version number
+     */
+    @Field("currentVersion")
+//    @Indexed(name = "submission_form_version_no_idx")
+    private Integer version;
 
+    @Field("submissionVersion")
+    @Indexed(name = "submission_version_idx")
+    private Integer submissionVersion = 1;
+
+    @Indexed(name = "submission_team_idx")
     private String team;
     private String teamCode;
-
     private String orgUnit;
     private String orgUnitCode;
     private String orgUnitName;
-
     private String activity;
-
+    @Indexed(name = "submission_assignment_idx")
     private String assignment;
-
     @Field("status")
     private AssignmentStatus status;
-
+    @Field("startEntryTime")
+    private Instant startEntryTime;
+    @Field("finishedEntryTime")
+    private Instant finishedEntryTime;
     private Map<String, Object> formData = new LinkedHashMap<>();
-    private Map<String, Object> metadata = new LinkedHashMap<>();
-
-    /**
-     * submission version
-     */
-    @Field("currentVersion")
-    private int version = 0;
-
-    @Indexed(unique = true)
-    Long serialNumber;
-
-//    @Field("reassignedTo")
-//    private String reassignedTo;
-//
-//    @Field("rescheduledTo")
-//    private String rescheduledTo;
-//
-//    @Field("mergedWith")
-//    private String mergedWith;
-//
-//    @Field("cancelReason")
-//    private String cancelReason;
 
     /**
      * Populates the form data attributes with additional metadata.
@@ -102,7 +82,7 @@ public class DataFormSubmission
      * @return The current DataFormSubmission instance with updated form data
      * @throws PropertyNotFoundException if any of the main attributes (activity, team, or form) is not set
      */
-    public DataFormSubmission populateFormDataAttributes() {
+    public DataFormSubmission checkAttributes() {
 
         if (Objects.isNull(team)) {
             throw new IllegalQueryException("Submission `" + getUid() + "` team property is not set");
@@ -111,30 +91,6 @@ public class DataFormSubmission
         if (Objects.isNull(form)) {
             throw new IllegalQueryException("Submission `" + getUid() + "` form property is not set");
         }
-
-        Map<String, Object> map = Map.ofEntries(
-            entry("_id", this.getUid()),
-            entry("_deleted", deleted == Boolean.TRUE),
-            entry("_form", this.getForm()),
-            entry("_team", this.getTeam()),
-            entry("_teamCode", this.getTeamCode()),
-            entry("_serialNumber", this.getSerialNumber()),
-            entry("_submissionTime", Objects.requireNonNullElse(this.getCreatedDate(), Instant.now())),
-            entry("_lastModifiedDate", Objects.requireNonNullElse(this.getLastModifiedDate(), Instant.now())),
-            entry("_version", this.getVersion())
-        );
-
-        Map<String, Object> metadata = new LinkedHashMap<>(map);
-
-        if (assignment != null) {
-            metadata.put("_assignment", this.getAssignment());
-            metadata.put("_orgUnit", orgUnit);
-            metadata.put("_orgUnitCode", orgUnitCode);
-            metadata.put("_orgUnitName", orgUnitName);
-            metadata.put("_activity", activity);
-        }
-
-        this.setMetadata(metadata);
 
         return this;
     }
@@ -153,34 +109,47 @@ public class DataFormSubmission
     @SuppressWarnings("unchecked")
     private Map<String, Object> addGroupIndices(Map<String, Object> formData, Object parentId) {
         Map<String, Object> updatedFormData = new HashMap<>();
+
         for (Map.Entry<String, Object> entry : formData.entrySet()) {
             Object value = entry.getValue();
 
             if (value instanceof List<?> list) {
-                if (!list.isEmpty() && list.get(0) instanceof Map) {
-                    if (containUnidentifiedRepeatItem((List<Map<String, Object>>) list)) {
-                        List<Map<String, Object>> updatedList = new ArrayList<>();
-                        for (int i = 0; i < list.size(); i++) {
-                            Map<String, Object> objectInArray = (Map<String, Object>) list.get(i);
-                            objectInArray.putIfAbsent("_id", CodeGenerator.generateCode(16));  // Add groupIndex (s
-                            objectInArray.put("_parentId", parentId);
-                            objectInArray.put("_submissionUid", this.getUid());
-                            objectInArray.putIfAbsent("_index", i + 1);  // Add repeatIndex (starting from 1)
-                            updatedList.add(objectInArray);
-                        }
-                        updatedFormData.put(entry.getKey(), updatedList);
+                // Handle list-of-maps *only* when there are unidentified items
+                if (!list.isEmpty() && list.get(0) instanceof Map
+                    && containUnidentifiedRepeatItem((List<Map<String, Object>>) list)) {
+
+                    List<Map<String, Object>> updatedList = new ArrayList<>();
+                    for (int i = 0; i < list.size(); i++) {
+                        Map<String, Object> item = (Map<String, Object>) list.get(i);
+                        item.putIfAbsent("_id", CodeGenerator.generateCode(16));
+                        item.put("_parentId", parentId);
+                        item.put("_submissionUid", this.getUid());
+                        item.putIfAbsent("_index", i + 1);
+                        updatedList.add(item);
                     }
+                    updatedFormData.put(entry.getKey(), updatedList);
+
                 } else {
+                    // <— copy *any* other list back unmodified
                     updatedFormData.put(entry.getKey(), list);
                 }
+
             } else if (value instanceof Map) {
-                updatedFormData.put(entry.getKey(), addGroupIndices((Map<String, Object>) value, parentId));
+                // recurse into nested objects
+                updatedFormData.put(
+                    entry.getKey(),
+                    addGroupIndices((Map<String, Object>) value, parentId)
+                );
+
             } else {
+                // primitive or other, copy as-is
                 updatedFormData.put(entry.getKey(), value);
             }
         }
+
         return updatedFormData;
     }
+
 
     public boolean containUnidentifiedRepeatItem(List<Map<String, Object>> items) {
         return items

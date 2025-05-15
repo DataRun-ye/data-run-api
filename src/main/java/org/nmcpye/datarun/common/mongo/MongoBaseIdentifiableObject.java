@@ -81,6 +81,11 @@ abstract public class MongoBaseIdentifiableObject
         return translations;
     }
 
+    @JsonIgnore
+    public Map<String, String> getTranslationCache() {
+        return translationCache;
+    }
+
     /**
      * Clears out cache when setting translations.
      */

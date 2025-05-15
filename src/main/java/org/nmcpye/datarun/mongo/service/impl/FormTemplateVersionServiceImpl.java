@@ -2,12 +2,16 @@ package org.nmcpye.datarun.mongo.service.impl;
 
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.mapper.DataFormTemplateMapper;
+import org.nmcpye.datarun.mapper.FormTemplateMapper;
 import org.nmcpye.datarun.mapper.FormTemplateVersionMapper;
+import org.nmcpye.datarun.mapper.SaveDataFormTemplateMapper;
 import org.nmcpye.datarun.mapper.dto.FormTemplateVersionDto;
 import org.nmcpye.datarun.mapper.dto.SaveFormTemplateDto;
+import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.domain.dataform.FormTemplate;
 import org.nmcpye.datarun.mongo.domain.dataform.FormTemplateVersion;
+import org.nmcpye.datarun.mongo.repository.FormTemplateRepository;
 import org.nmcpye.datarun.mongo.repository.FormTemplateVersionRepository;
 import org.nmcpye.datarun.mongo.service.FormTemplateVersionService;
 import org.nmcpye.datarun.mongo.service.VersionSequenceService;
@@ -18,7 +22,6 @@ import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.GenericQueryService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,75 +42,113 @@ import java.util.stream.Collectors;
 @Primary
 @Transactional
 public class FormTemplateVersionServiceImpl
-    extends DefaultMongoAuditableObjectService<FormTemplateVersion>
     implements FormTemplateVersionService {
     private final FormTemplateVersionRepository templateVersionRepository;
+    private final FormTemplateRepository templateRepository;
     private final VersionSequenceService seqSvc;
-    private final FormTemplateVersionMapper versionMapper;
     protected final MongoQueryBuilder mongoQueryBuilder;
     protected final GenericQueryService queryService;
+    private final FormTemplateVersionMapper versionMapper;
+    private final FormTemplateMapper formTemplateMapper;
+    private final SaveDataFormTemplateMapper saveTemplateMapper;
+    private final DataFormTemplateMapper dataFormTemplateMapper;
 
     public FormTemplateVersionServiceImpl(
-        FormTemplateVersionRepository repository,
-        CacheManager cacheManager,
-        FormTemplateVersionRepository templateVersionRepository,
+        FormTemplateVersionRepository templateVersionRepository, FormTemplateRepository templateRepository,
         VersionSequenceService seqSvc,
-        FormTemplateVersionMapper versionMapper,
-        MongoQueryBuilder mongoQueryBuilder, GenericQueryService queryService) {
-        super(repository, cacheManager);
+        FormTemplateVersionMapper versionMapper, SaveDataFormTemplateMapper saveTemplateMapper,
+        MongoQueryBuilder mongoQueryBuilder, GenericQueryService queryService,
+        FormTemplateMapper formTemplateMapper,
+        DataFormTemplateMapper dataFormTemplateMapper) {
         this.templateVersionRepository = templateVersionRepository;
+        this.templateRepository = templateRepository;
         this.seqSvc = seqSvc;
         this.versionMapper = versionMapper;
+        this.saveTemplateMapper = saveTemplateMapper;
         this.mongoQueryBuilder = mongoQueryBuilder;
         this.queryService = queryService;
+        this.formTemplateMapper = formTemplateMapper;
+        this.dataFormTemplateMapper = dataFormTemplateMapper;
+    }
+
+    /**
+     * pumping form template's version, and update/adding formTemplateVersion with the new details and persist into db
+     *
+     * @param saveFormTemplateDto incoming merged template, can be new (uid = null), or update
+     * @return SaveFormTemplateDto with current updated details merged from both
+     */
+    @Transactional
+    @Override
+    public SaveFormTemplateDto saveNewVersion(SaveFormTemplateDto saveFormTemplateDto) {
+        final FormTemplate formTemplate = formTemplateMapper.fromSaveDto(saveFormTemplateDto);
+        // pumping version or adding new and update
+        final FormTemplate ver = seqSvc.incrementAndGet(formTemplate.getUid());
+        // setting form template details and save
+        final FormTemplateVersion templateVersion = templateVersionRepository.save(versionMapper
+            .fromSaveDto(saveFormTemplateDto)
+            .version(ver.getVersionNumber())
+            .templateUid(formTemplate.getUid()));
+
+        templateRepository.save(formTemplate.versionNumber(ver.getVersionNumber())
+            // temporary for migrating old DataFormTemplate
+            .id(ver.getId())
+            .formVersion(templateVersion.getUid()));
+
+
+        // returning SaveFormTemplateDto with current updated details merged from both
+        return saveTemplateMapper.combineMasterAndVersion(formTemplate, templateVersion);
     }
 
     @Transactional
-    public FormTemplateVersionDto saveNewVersion(SaveFormTemplateDto saveFormTemplateDto) {
-        FormTemplateVersion ftv = versionMapper.fromSaveDto(saveFormTemplateDto);
-        final var templateUid = ftv.getTemplateUid();
-        FormTemplate ver = seqSvc.incrementAndGet(templateUid);
-        String versionedId = templateUid + "_" + ver.getCurrentVersion();
+    @Override
+    public void migrateDataFormTemplateVersion(DataFormTemplate formTemplate) {
+        if (!templateRepository.existsByUid(formTemplate.getUid())) {
+            final var formTemplateVersion = formTemplate.getVersion();
+            final var templateUid = formTemplate.getUid();
 
-        // persist the payload
-        // 2) persist the payload
-        ftv.setId(versionedId);
-        ftv.setUid(versionedId);
-        ftv.setVersion(ver.getCurrentVersion());
-        ftv.setTemplateUid(templateUid);
+            final SaveFormTemplateDto saveFormTemplateDto = dataFormTemplateMapper.toDto(formTemplate);
+            final FormTemplate template = formTemplateMapper.fromSaveDto(saveFormTemplateDto);
 
-        return versionMapper.toDto(templateVersionRepository.save(ftv));
+            final FormTemplateVersion templateVersion = templateVersionRepository.save(versionMapper
+                .fromSaveDto(saveFormTemplateDto)
+                .version(formTemplateVersion)
+                .templateUid(templateUid));
+
+            templateRepository.save(template.versionNumber(formTemplateVersion)
+                // temporary for migrating old DataFormTemplate
+                .id(formTemplate.getId())
+                .uid(templateUid)
+                .formVersion(templateVersion.getUid()));
+        }
     }
 
     @Override
-    public Page<FormTemplateVersionDto> findAllLatest(QueryRequest queryRequest, String jsonQueryBody) {
+    public Page<SaveFormTemplateDto> findAllLatest(QueryRequest queryRequest, String jsonQueryBody) {
         // load only lightweight masters
         Page<FormTemplate> masters = getMasterList(queryRequest, jsonQueryBody);
         // batch-load versions
         List<String> ids = masters.stream()
-            .map(m -> m.getUid() + "_" + m.getCurrentVersion())
+            .map(FormTemplate::getFormVersion)
             .toList();
 
-        Map<String, FormTemplateVersion> versions = templateVersionRepository.findAllById(ids).stream()
+        Map<String, FormTemplateVersion> versions = templateVersionRepository.findAllByUidIn(ids).stream()
             .collect(Collectors.toMap(FormTemplateVersion::getTemplateUid, s -> s));
 
-        return masters.map(m -> versionMapper.combineMasterAndVersion(m,
+        return masters.map(m -> saveTemplateMapper.combineMasterAndVersion(m,
             Optional.ofNullable(versions.get(m.getUid())).orElseThrow()));
     }
 
     public FormTemplateVersionDto findByVersion(String masterUid, int version) {
-        String id = masterUid + "_" + version;
-        FormTemplateVersionDto versionDto = templateVersionRepository.findById(id).map(versionMapper::toDto)
-            .orElseThrow(() -> new IllegalQueryException(ErrorCode.E1114, id));
+        FormTemplateVersionDto versionDto = templateVersionRepository.findByTemplateUidAndVersionNumber(masterUid, version).map(versionMapper::toDto)
+            .orElseThrow(() -> new IllegalQueryException(ErrorCode.E1114, masterUid + ":" + version));
         return versionDto;
     }
 
     public Page<FormTemplateVersionDto> pageVersions(String templateId, Pageable pageable) {
-        Page<FormTemplateVersion> page = templateVersionRepository.findAllByTemplateUidOrderByVersionDesc(templateId, pageable);
+        Page<FormTemplateVersion> page = templateVersionRepository.findAllByTemplateUidOrderByVersionNumberDesc(templateId, pageable);
         return page.map(versionMapper::toDto);
     }
 
-    @Override
     public void applySecurityConstraints(Query query) {
         if (SecurityUtils.isSuper()) {
             return;
@@ -124,7 +165,7 @@ public class FormTemplateVersionServiceImpl
             applySecurityConstraints(query);
         }
 
-        if (!queryRequest.isIncludeDeleted()) {
+        if (queryRequest == null || !queryRequest.isIncludeDeleted()) {
             query.addCriteria(Criteria.where("deleted").is(false));
         }
 
@@ -140,8 +181,12 @@ public class FormTemplateVersionServiceImpl
     }
 
     @Override
-    public Optional<FormTemplateVersionDto> findLatestByTemplate(String templateUid) {
-        return templateVersionRepository.findTopByTemplateUidOrderByVersionDesc(templateUid)
-            .map(versionMapper::toDto);
+    public Optional<SaveFormTemplateDto> findLatestByTemplate(String templateUid) {
+        final var template = templateRepository.findByUid(templateUid);
+        final var version = templateVersionRepository.findTopByTemplateUidOrderByVersionNumberDesc(templateUid);
+        if (template.isEmpty() || version.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(saveTemplateMapper.combineMasterAndVersion(template.get(), version.get()));
     }
 }

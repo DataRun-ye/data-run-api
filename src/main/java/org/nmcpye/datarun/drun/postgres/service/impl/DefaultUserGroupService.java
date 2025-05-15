@@ -75,7 +75,7 @@ public class DefaultUserGroupService extends DefaultJpaAuditableService<UserGrou
 //    @Override
 //    public Page<UserGroup> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
 //        Specification<UserGroup> spec = canRead();
-//        if (!queryRequest.isIncludeDisabled()) {
+//        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
 //            spec = spec.and(UserGroupSpecifications.isEnabled());
 //        }
 //
@@ -85,7 +85,7 @@ public class DefaultUserGroupService extends DefaultJpaAuditableService<UserGrou
 //    @Override
 //    public List<UserGroup> findAllByUser(QueryRequest queryRequest) {
 //        Specification<UserGroup> spec = canRead();
-//        if (!queryRequest.isIncludeDisabled()) {
+//        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
 //            spec = spec.and(UserGroupSpecifications.isEnabled());
 //        }
 //

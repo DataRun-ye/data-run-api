@@ -3,24 +3,31 @@ package org.nmcpye.datarun.web.rest.v1.formtemplate;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.mapper.dto.FormTemplateVersionDto;
 import org.nmcpye.datarun.mapper.dto.SaveFormTemplateDto;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.mongo.service.FormTemplateService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
+import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess.FormTemplateProcessor;
+import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import tech.jhipster.web.util.HeaderUtil;
+import tech.jhipster.web.util.ResponseUtil;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.nmcpye.datarun.web.rest.v1.formtemplate.FormTemplateResource.V1;
+import static org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator.createNextPageLink;
+import static org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator.initPageResponse;
 
 /**
  * REST controller for managing {@link DataForm}.
@@ -49,6 +56,30 @@ public class FormTemplateResource {
         return "dataFormTemplates";
     }
 
+    /**
+     * {@code GET  /Ts} : get all the entities.
+     *
+     * @param queryRequest the query request parameters.
+     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of assignments in body.
+     */
+    @GetMapping(value = "")
+    protected ResponseEntity<PagedResponse<?>> getAll(QueryRequest queryRequest,
+                                                      @RequestBody(required = false) String jsonQueryBody) throws Exception {
+        final var userLogin = SecurityUtils.getCurrentUserLoginOrThrow();
+        log.debug("REST request to getAll {}:{}", userLogin, getName());
+
+        Page<SaveFormTemplateDto> processedPage = getList(queryRequest, jsonQueryBody);
+
+        String next = createNextPageLink(processedPage);
+
+        PagedResponse<SaveFormTemplateDto> response = initPageResponse(processedPage, next, getName());
+        return ResponseEntity.ok(response);
+    }
+
+    protected Page<SaveFormTemplateDto> getList(QueryRequest queryRequest, String jsonQueryBody) {
+        return templateService.findAllByUser(queryRequest, jsonQueryBody);
+    }
+
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @PostMapping("/bulk")
     public ResponseEntity<EntitySaveSummaryVM> saveAll(@Valid @RequestBody List<SaveFormTemplateDto> entities) {
@@ -61,7 +92,8 @@ public class FormTemplateResource {
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<EntitySaveSummaryVM> saveOne(SaveFormTemplateDto formTemplate) {
+    @PostMapping
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(@Valid @RequestBody SaveFormTemplateDto formTemplate) {
         log.debug("REST request to saveOne {}", getName());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         final var processedTemplate = formTemplateProcessor.processMetadata(
@@ -80,8 +112,8 @@ public class FormTemplateResource {
         return ResponseEntity.ok(Objects.requireNonNullElse(saved, summary));
     }
 
-    protected FormTemplateVersionDto saveEntity(SaveFormTemplateDto entity, EntitySaveSummaryVM summary) {
-        FormTemplateVersionDto templateVersionDto = null;
+    protected SaveFormTemplateDto saveEntity(SaveFormTemplateDto entity, EntitySaveSummaryVM summary) {
+        SaveFormTemplateDto templateVersionDto = null;
         try {
             if (entity.getUid() != null && templateService.existsByUid(entity.getUid())) {
                 templateVersionDto = templateService.update(entity);
@@ -107,5 +139,12 @@ public class FormTemplateResource {
             .noContent()
             .headers(HeaderUtil
                 .createEntityDeletionAlert(applicationName, true, getName(), id)).build();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SaveFormTemplateDto> getById(@PathVariable("id") String id) {
+        log.debug("REST request to get from {}: {}", getName(), id);
+        Optional<SaveFormTemplateDto> entity = templateService.findByUid(id);
+        return ResponseUtil.wrapOrNotFound(entity);
     }
 }

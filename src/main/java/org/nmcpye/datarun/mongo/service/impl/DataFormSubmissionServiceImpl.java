@@ -12,7 +12,7 @@ import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.mapper.DataFormSubmissionHistoryMapper;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepository;
-import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
+import org.nmcpye.datarun.mongo.repository.FormTemplateVersionRepository;
 import org.nmcpye.datarun.mongo.service.AssignmentSubmissionHistoryService;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionHistoryService;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
@@ -29,7 +29,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,7 +50,7 @@ public class DataFormSubmissionServiceImpl
     private final SequenceGeneratorService sequenceGeneratorService;
     private final SubmissionMaintenanceService maintenanceService;
     private final AssignmentSubmissionHistoryService historyService;
-    private final DataFormTemplateRepository formTemplateRepository;
+    private final FormTemplateVersionRepository versionRepository;
     private final FormAccessService formAccessService;
 
     public DataFormSubmissionServiceImpl(
@@ -63,7 +62,7 @@ public class DataFormSubmissionServiceImpl
         SequenceGeneratorService sequenceGeneratorService,
         SubmissionMaintenanceService maintenanceService,
         AssignmentSubmissionHistoryService historyService,
-        DataFormTemplateRepository formTemplateRepository,
+        FormTemplateVersionRepository versionRepository,
         FormAccessService formAccessService, DataFormSubmissionHistoryMapper historyMapper) {
         super(repository, cacheManager);
         this.repository = repository;
@@ -74,7 +73,7 @@ public class DataFormSubmissionServiceImpl
         this.sequenceGeneratorService = sequenceGeneratorService;
         this.maintenanceService = maintenanceService;
         this.historyService = historyService;
-        this.formTemplateRepository = formTemplateRepository;
+        this.versionRepository = versionRepository;
         this.formAccessService = formAccessService;
     }
 
@@ -92,12 +91,21 @@ public class DataFormSubmissionServiceImpl
         preSave(submission);
 
         // archive existing submission
-        repository.findById(submission.getId())
-            .ifPresent(existingSubmission ->
-                submissionHistoryService.saveToHistory(submission));
+        repository.findByUid(submission.getUid())
+            .ifPresentOrElse(existingSubmission -> {
+                submissionHistoryService.saveToHistory(existingSubmission);
+                // Increment version number and update the current document
+                submission.setSubmissionVersion(existingSubmission.getSubmissionVersion() + 1);
+                submission.setSerialNumber(existingSubmission.getSerialNumber());
 
-        // Increment version number and update the current document
-        submission.setVersion(submission.getVersion() + 1);
+            }, () -> {
+                if (submission.getSerialNumber() == null) {
+                    // Generate a unique serial number for new submissions
+                    long serialNumber = sequenceGeneratorService.getNextSequence("dataFormSubmissionId");
+                    submission.setSerialNumber(serialNumber);
+                }
+            });
+
 
         if (submission.getAssignment() != null) {
             addEntryToHistory(submission);
@@ -106,60 +114,59 @@ public class DataFormSubmissionServiceImpl
         return repository.save(submission);
     }
 
-    public void preSave(DataFormSubmission newSubmission) {
+    public void preSave(DataFormSubmission submission) {
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
 
-        if (!formAccessService.canSubmitData(newSubmission.getForm())) {
+        if (!formAccessService.canSubmitData(submission.getForm())) {
             log.info("User {} cannot submit data", user.getUsername());
-            throw new IllegalQueryException(ErrorCode.E1112, newSubmission.getTeam());
+            throw new IllegalQueryException(ErrorCode.E1112, submission.getTeam());
         }
 
-        formTemplateRepository.findByUid(newSubmission.getForm()).orElseThrow(() -> {
-            log.error("form {} is not in the system for submission by {}  is not in the system",
-                newSubmission.getForm(), user.getUsername());
-            return new IllegalQueryException(
-                new ErrorMessage(ErrorCode.E1106, "Team", newSubmission.getTeam()));
-        });
+        /// TODO move to form template and check for existence of formVersion
+        versionRepository.findByTemplateUidAndVersionNumber(submission.getForm(), submission.getVersion())
+            .ifPresentOrElse((f) -> {
+                submission.setFormVersion(f.getUid());
+            }, () -> {
+                log.error("form {} with version {} is not in the system",
+                    submission.getForm(), submission.getVersion());
+                throw new IllegalQueryException(
+                    new ErrorMessage(ErrorCode.E1114, "Form", submission.getForm() + ":" + submission.getVersion()));
+            });
 
-        if (newSubmission.getAssignment() != null) {
-            assignmentRepository.findByUid(newSubmission.getAssignment())
+        if (submission.getAssignment() != null) {
+            assignmentRepository.findByUid(submission.getAssignment())
                 .ifPresentOrElse((a) -> {
-                        newSubmission.setAssignment(a.getUid());
-                        newSubmission.setOrgUnit(a.getOrgUnit().getUid());
-                        newSubmission.setOrgUnitCode(a.getOrgUnit().getCode());
-                        newSubmission.setOrgUnitName(a.getOrgUnit().getName());
-                        newSubmission.setActivity(a.getActivity().getUid());
+                        submission.setAssignment(a.getUid());
+                        submission.setOrgUnit(a.getOrgUnit().getUid());
+                        submission.setOrgUnitCode(a.getOrgUnit().getCode());
+                        submission.setOrgUnitName(a.getOrgUnit().getName());
+                        submission.setActivity(a.getActivity().getUid());
                     },
                     () -> {
                         log.error("submission by: for form: {}, with assignment: {} not in the system",
-                            newSubmission.getForm(),
-                            newSubmission.getAssignment());
+                            submission.getForm(),
+                            submission.getAssignment());
                         throw new IllegalQueryException(
-                            new ErrorMessage(ErrorCode.E1106, "Assignment", newSubmission.getAssignment()));
+                            new ErrorMessage(ErrorCode.E1106, "Assignment", submission.getAssignment()));
                     });
         }
 
-        teamRepository.findByUid(newSubmission.getTeam())
+        // TODO check if submission team is a user team or managed and edit team
+        teamRepository.findByUid(submission.getTeam())
             .ifPresentOrElse((a) -> {
-                    newSubmission.setTeam(a.getUid());
-                    newSubmission.setTeamCode(a.getCode());
+                    submission.setTeam(a.getUid());
+                    submission.setTeamCode(a.getCode());
                 },
                 () -> {
                     log.error("submission by for form: {}, with team: {} not in the system",
-                        newSubmission.getForm(), newSubmission.getTeam());
+                        submission.getForm(), submission.getTeam());
                     throw new IllegalQueryException(
-                        new ErrorMessage(ErrorCode.E1106, "Team", newSubmission.getTeam()));
+                        new ErrorMessage(ErrorCode.E1106, "Team", submission.getTeam()));
                 });
 
-        if (newSubmission.getSerialNumber() == null) {
-            // Generate a unique serial number for new submissions
-            long serialNumber = sequenceGeneratorService.getNextSequence("dataFormSubmissionId");
-            newSubmission.setSerialNumber(serialNumber);
-        }
-
-        final DataFormSubmission dataFormSubmission = newSubmission
+        submission
             .createSubmission()
-            .populateFormDataAttributes();
+            .checkAttributes();
     }
 
     private void addEntryToHistory(DataFormSubmission dataFormSubmission) {
@@ -194,18 +201,19 @@ public class DataFormSubmissionServiceImpl
             .filter(UserFormAccess::canViewSubmission)
             .map(UserFormAccess::getForm)
             .toList();
+        final var addForms = user.getFormAccess().stream()
+            .filter(UserFormAccess::canAddSubmission)
+            .map(UserFormAccess::getForm)
+            .toList();
 
         if (viewForms.isEmpty()) {
-            query.addCriteria(new Criteria().andOperator(
-                Criteria.where("form").in(Collections.emptyList()) // always false
-            ));
+            // No accessible forms, prevent any matches
+            query.addCriteria(Criteria.where("_id").exists(false));
             return;
         }
 
-        query.addCriteria(new Criteria().andOperator(
-            Criteria.where("form").in(viewForms),
-            Criteria.where("team").in(user.getUserTeamsUIDs())
-        ));
+        query.addCriteria(Criteria.where("form").in(viewForms)
+            .and("team").in(user.getUserTeamsUIDs()));
     }
 
     @Override

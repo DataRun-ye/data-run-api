@@ -1,15 +1,15 @@
 package org.nmcpye.datarun.mapper;
 
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingConstants;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionHistory;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,
     componentModel = MappingConstants.ComponentModel.SPRING)
 public interface DataFormSubmissionHistoryMapper {
-    @Mapping(target = "timestamp", expression = "java(java.time.Instant.now())")
+    @Mappings({
+        @Mapping(target = "timestamp", expression = "java(java.time.Instant.now())"),
+        @Mapping(target = "id", ignore = true),
+    })
     DataFormSubmissionHistory fromSubmission(DataFormSubmission submission);
 }

@@ -53,6 +53,9 @@ public class DataFormTemplate
     @Field("deleted")
     private boolean deleted;
 
+    @Field("formVersion")
+    private String formVersion;
+
     private Integer version;
 
     @Getter

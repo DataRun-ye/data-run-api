@@ -29,7 +29,7 @@ public abstract class TeamSpecifications {
             return root.get("uid").in(user.getUserTeamsUIDs());
         };
 
-        if (!queryRequest.isIncludeDisabled()) {
+        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
             spec = spec.and(isEnabled());
         }
         return spec;
@@ -50,7 +50,7 @@ public abstract class TeamSpecifications {
 
         };
 
-        if (!queryRequest.isIncludeDisabled()) {
+        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
             spec = spec.and(isEnabled());
         }
         return spec;

@@ -24,7 +24,7 @@ public interface SoftDeleteObjectDelete<T extends SoftDeleteObject<ID>, ID>
 
     @Override
     default void delete(T object) {
-        final var toMarkAsDeleted = findByIdentifyingProperties(object).orElseThrow(() ->
+        final var toMarkAsDeleted = findByUid(object.getUid()).orElseThrow(() ->
             new IllegalQueryException(new ErrorMessage(ErrorCode.E1109,
                 object.getClass().getSimpleName(), object.getUid())));
         toMarkAsDeleted.setDeleted(Boolean.TRUE);

@@ -3,20 +3,18 @@ package org.nmcpye.datarun.mongo.domain.dataform;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.nmcpye.datarun.common.mongo.MongoBaseIdentifiableObject;
+import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
 import org.nmcpye.datarun.mongo.common.FormWithFields;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
-import org.springframework.data.mongodb.core.mapping.MongoId;
 
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -25,46 +23,42 @@ import java.util.Objects;
 @Document(collection = "form_template_version")
 @Getter
 @Setter
-@NoArgsConstructor
-@CompoundIndex(name = "template_version_idx", def = "{'templateUid': 1, 'version': -1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class FormTemplateVersion
-    extends MongoBaseIdentifiableObject implements FormWithFields {
-    @MongoId
-    @Field("versionId")
+public class FormTemplateVersion extends MongoAuditableBaseObject implements FormWithFields {
+    @Id
     private String id;
 
-    @Field("uid")
+    @NotNull
+    @Size(max = 11)
     @Indexed(unique = true, name = "template_version_uid_idx")
     private String uid;
 
     @NotNull
     @Size(max = 11)
     @Field("templateUid")
-    @Indexed(name = "parent_template_uid_idx")
+    @Indexed(name = "template_version_master_uid_idx")
     private String templateUid;
 
-    @Field("code")
-    private String code;
-
-    @Field("name")
     @NotNull
-    private String name;
+    private Integer versionNumber;
 
-    @Size(max = 2000)
-    @Field("description")
-    private String description;
+    private List<FormDataElementConf> fields = new LinkedList<>();
 
-    String defaultLocale = "ar";
+    private List<FormSectionConf> sections = new LinkedList<>();
 
-    private Map<String, String> label;
+    public FormTemplateVersion() {
+        setAutoFields();
+    }
 
-    @NotNull
-    private Integer version;
+    public FormTemplateVersion version(Integer version) {
+        this.setVersionNumber(version);
+        return this;
+    }
 
-    private List<FormDataElementConf> fields;
-
-    private List<FormSectionConf> sections;
+    public FormTemplateVersion templateUid(String templateUid) {
+        this.setTemplateUid(templateUid);
+        return this;
+    }
 
     @Override
     public boolean equals(Object o) {

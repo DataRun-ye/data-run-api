@@ -11,8 +11,6 @@ import java.util.Optional;
 public interface AuditableObjectService<T extends AuditableObject<ID>, ID> {
     Class<T> getClazz();
 
-    Optional<T> findByIdentifyingProperties(T identifiableObject);
-
     T saveWithRelations(T object);
 
     boolean existsByUid(String uid);

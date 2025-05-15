@@ -23,6 +23,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.nmcpye.datarun.common.jpa.JpaAuditableObjectService.buildQuerySpecification;
 
@@ -50,6 +51,25 @@ public abstract class DefaultJpaAuditableService
 
     protected Specification<T> baseAccessSpecification(CurrentUserDetails user, QueryRequest queryRequest) {
         return userAccessService.readSpec(getClazz(), user, queryRequest);
+    }
+
+    @Override
+    public Optional<T> findByUid(String uid) {
+        final var user = SecurityUtils.getCurrentUserDetails();
+        final var spec = baseAccessSpecification(user
+            .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), null)
+            .and(JpaAuditableObjectService.hasUid(uid));
+        return jpaAuditableObjectRepository.findOne(spec);
+    }
+
+    @Override
+    public boolean existsByUid(String uid) {
+        final var user = SecurityUtils.getCurrentUserDetails();
+
+        final var spec = baseAccessSpecification(user
+            .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), null)
+            .and(JpaAuditableObjectService.hasUid(uid));
+        return jpaAuditableObjectRepository.exists(spec);
     }
 
     @Override
@@ -91,7 +111,12 @@ public abstract class DefaultJpaAuditableService
     @Transactional
     public T update(T object) {
         log.debug("Request service to update {}:`{}`", getClazz().getSimpleName(), object.getUid());
-        T existingEntity = findByIdentifyingProperties(object)
+        final var user = SecurityUtils.getCurrentUserDetails();
+        final var spec = baseAccessSpecification(user
+            .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), null)
+            .and(JpaAuditableObjectService.hasUid(object.getUid()));
+
+        T existingEntity = jpaAuditableObjectRepository.findOne(spec)
             .orElseThrow(() ->
                 new IllegalQueryException(
                     new ErrorMessage(ErrorCode.E1004,
