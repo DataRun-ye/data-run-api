@@ -25,8 +25,8 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URISyntaxException;
 import java.util.List;
 
-import static org.nmcpye.datarun.web.rest.postgres.assignment.AssignmentResourceCustom.CUSTOM;
-import static org.nmcpye.datarun.web.rest.postgres.assignment.AssignmentResourceCustom.V1;
+import static org.nmcpye.datarun.web.rest.postgres.assignment.AssignmentResource.CUSTOM;
+import static org.nmcpye.datarun.web.rest.postgres.assignment.AssignmentResource.V1;
 
 /**
  * REST Extended controller for managing {@link Assignment}.
@@ -34,18 +34,18 @@ import static org.nmcpye.datarun.web.rest.postgres.assignment.AssignmentResource
 @RestController
 @RequestMapping(value = {CUSTOM, V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class AssignmentResourceCustom
+public class AssignmentResource
     extends JpaBaseResource<Assignment> {
     protected static final String NAME = "/assignments";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
-    private final Logger log = LoggerFactory.getLogger(AssignmentResourceCustom.class);
+    private final Logger log = LoggerFactory.getLogger(AssignmentResource.class);
 
     private final AssignmentService assignmentService;
 
-    public AssignmentResourceCustom(AssignmentService assignmentService,
-                                    AssignmentRepository assignmentRepository) {
+    public AssignmentResource(AssignmentService assignmentService,
+                              AssignmentRepository assignmentRepository) {
         super(assignmentService, assignmentRepository);
         this.assignmentService = assignmentService;
     }
