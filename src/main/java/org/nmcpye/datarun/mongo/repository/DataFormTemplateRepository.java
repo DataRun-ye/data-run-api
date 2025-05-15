@@ -16,7 +16,8 @@ import java.util.Set;
  */
 @Repository
 @JaversSpringDataAuditable
-public interface DataFormTemplateRepository extends MongoAuditableRepository<DataFormTemplate> {
+public interface DataFormTemplateRepository
+    extends MongoAuditableRepository<DataFormTemplate> {
     Set<DataFormTemplate> findAllByUidInAndDisabledIsNot(Collection<String> uids, Boolean disabled);
 
     @Query(value = "{ 'fields.type': { $in: ?0 }}")

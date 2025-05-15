@@ -1,89 +1,46 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
 import org.nmcpye.datarun.common.jpa.JpaAuditableObjectService;
 import org.nmcpye.datarun.common.jpa.repository.JpaAuditableRepository;
-import org.nmcpye.datarun.query.JpaQueryBuilder;
-import org.nmcpye.datarun.query.UnifiedQueryParser;
-import org.nmcpye.datarun.query.filter.FilterExpression;
 import org.nmcpye.datarun.web.rest.common.BaseReadWriteResource;
-import org.nmcpye.datarun.web.rest.common.PagedResponse;
-import org.nmcpye.datarun.web.rest.common.QuerySpecification;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-
-import java.util.List;
 
 public abstract class JpaBaseResource<T extends JpaAuditableObject>
-    extends BaseReadWriteResource<T, Long> implements QuerySpecification<T> {
-
-    private final JpaAuditableObjectService<T> jpaAuditableObjectService;
-
-    @Autowired
-    private JpaQueryBuilder<T> jpaQueryBuilder;
-
+    extends BaseReadWriteResource<T, Long> {
     protected JpaBaseResource(JpaAuditableObjectService<T> jpaAuditableObjectService,
                               JpaAuditableRepository<T> repository) {
         super(jpaAuditableObjectService, repository);
-        this.jpaAuditableObjectService = jpaAuditableObjectService;
-    }
-
-    @Override
-    protected JpaQueryBuilder<T> getQueryBuilder() {
-        return jpaQueryBuilder;
     }
 
     @Override
     protected JpaAuditableRepository<T> getRepository() {
         return (JpaAuditableRepository<T>) super.getRepository();
     }
+//
+//    @Override
+//    protected Page<T> getList(QueryRequest queryRequest, String jsonQueryBody) {
+//        return jpaAuditableObjectService.findAllByUser(queryRequest, jsonQueryBody);
+//    }
 
-    @Override
-    protected Page<T> getList(QueryRequest queryRequest, String jsonQueryBody) {
-        Specification<T> spec;
-        try {
-            spec = buildQuerySpecification(queryRequest);
-        } catch (Exception e) {
-            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2050, e.getMessage()));
-        }
-        if (jsonQueryBody != null && !jsonQueryBody.isEmpty()) {
-            try {
-                FilterExpression filterExpression = UnifiedQueryParser.parse(jsonQueryBody);
-                spec = spec.and(getQueryBuilder().buildQuery(List.of(filterExpression)));
-            } catch (Exception e) {
-                throw new IllegalQueryException(ErrorCode.E2050, jsonQueryBody);
-            }
-        }
-        return jpaAuditableObjectService.findAllByUser(spec, queryRequest);
-    }
-
-    @GetMapping("entities")
-    protected ResponseEntity<PagedResponse<?>> getEntities(
-        QueryRequest queryRequest) {
-        Pageable pageable = queryRequest.getPageable();
-
-        Specification<T> spec;
-        try {
-            spec = buildQuerySpecification(queryRequest);
-        } catch (Exception e) {
-            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2050, e.getMessage()));
-        }
-
-        Page<T> processedPage = getRepository().findAll(spec, pageable);
-
-        String next = createNextPageLink(processedPage);
-
-        PagedResponse<T> response = initPageResponse(processedPage, next);
-        return ResponseEntity.ok(response);
-    }
+//    @GetMapping("entities")
+//    protected ResponseEntity<PagedResponse<?>> getEntities(
+//        QueryRequest queryRequest) {
+//        Pageable pageable = queryRequest.getPageable();
+//
+//        Specification<T> spec;
+//        try {
+//            spec = buildQuerySpecification(queryRequest);
+//        } catch (Exception e) {
+//            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2050, e.getMessage()));
+//        }
+//
+//        Page<T> processedPage = getRepository().findAll(spec, pageable);
+//
+//        String next = createNextPageLink(processedPage);
+//
+//        PagedResponse<T> response = initPageResponse(processedPage, next);
+//        return ResponseEntity.ok(response);
+//    }
 
 //    protected Specification<T> buildSpecification(/*Map<String, Object>*/ String query) throws IOException {
 //        Map<String, Object> filters = parseQuery(query);

@@ -21,9 +21,7 @@ public interface AuditableObjectService<T extends AuditableObject<ID>, ID> {
 
     void deleteByUid(String uid);
 
-    Page<T> findAllByUser(QueryRequest queryRequest);
-
-//    List<T> findAllByUser(QueryRequest queryRequest);
+    Page<T> findAllByUser(QueryRequest queryRequest, String jsonQueryBody);
 
     /**
      * Save an object.

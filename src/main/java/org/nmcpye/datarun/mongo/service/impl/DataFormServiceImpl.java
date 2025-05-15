@@ -14,20 +14,12 @@ import org.nmcpye.datarun.mongo.domain.datafield.Section;
 import org.nmcpye.datarun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.mongo.repository.MetadataSchemaRepository;
 import org.nmcpye.datarun.mongo.service.DataFormService;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,8 +37,6 @@ public class DataFormServiceImpl
     extends DefaultMongoAuditableObjectService<DataForm>
     implements DataFormService {
 
-    private final Logger log = LoggerFactory.getLogger(DataFormServiceImpl.class);
-
     private final DataFormRepository repositoryCustom;
 
     private final MetadataSchemaRepository metadataSchemaRepository;
@@ -56,10 +46,9 @@ public class DataFormServiceImpl
 
     public DataFormServiceImpl(DataFormRepository repositoryCustom,
                                MetadataSchemaRepository metadataSchemaRepository,
-                               MongoTemplate mongoTemplate,
                                CacheManager cacheManager,
                                TeamRepository teamRepository) {
-        super(repositoryCustom, cacheManager, mongoTemplate);
+        super(repositoryCustom, cacheManager);
         this.repositoryCustom = repositoryCustom;
         this.metadataSchemaRepository = metadataSchemaRepository;
         this.teamRepository = teamRepository;
@@ -92,16 +81,16 @@ public class DataFormServiceImpl
         }
     }
 
-    private Integer createOrUpdateVersion(DataForm object) {
-        return repositoryCustom
-            .findByUid(object.getUid()).map(DataForm::getVersion).orElse(0);
-    }
+//    private Integer createOrUpdateVersion(DataForm object) {
+//        return repositoryCustom
+//            .findByUid(object.getUid()).map(DataForm::getVersion).orElse(0);
+//    }
 
     @Override
     public DataForm saveWithRelations(DataForm dataForm) {
         processFields(dataForm.getFields(), "", dataForm);
         dataForm.updateFlattenedFields();
-        dataForm.setVersion(createOrUpdateVersion(dataForm) + 1);
+//        dataForm.setVersion(createOrUpdateVersion(dataForm) + 1);
         return save(dataForm);
     }
 
@@ -135,40 +124,40 @@ public class DataFormServiceImpl
 
 
     @Override
-    public Page<DataForm> findAllByUser(QueryRequest queryRequest) {
+    public Page<DataForm> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
 
-        Pageable pageable = queryRequest.getPageable();
+//        Pageable pageable = queryRequest.getPageable();
+//
+//        if (!SecurityUtils.isAuthenticated()) {
+//            return Page.empty(pageable);
+//        }
+//
+//        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+//            return repositoryCustom.findAll(pageable);
+//        }
+//
+//        Set<String> userForms = teamRepository
+//            .findAllWithEagerRelation().stream().flatMap((team) -> team.getFormsWithPermission(
+//                FormPermission.ADD_SUBMISSIONS).stream()).collect(Collectors.toSet());
+//
+//        Query query = new Query();
+//        query = query.addCriteria(Criteria.where("uid").in(userForms));
+//
+//        if (!queryRequest.isIncludeDeleted()) {
+//            query.addCriteria(Criteria.where("deleted").is(false));
+//        }
+//
+//        query.with(pageable);
+//
+//        final Query totalQuery = Query.of(query).limit(-1).skip(-1);
+//
+//        List<DataForm> results = mongoTemplate.find(query, DataForm.class);
+//
+//        Page<DataForm> resultsPage = PageableExecutionUtils.getPage(
+//            results,
+//            pageable,
+//            () -> mongoTemplate.count(totalQuery, DataForm.class));
 
-        if (!SecurityUtils.isAuthenticated()) {
-            return Page.empty(pageable);
-        }
-
-        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            return repositoryCustom.findAll(pageable);
-        }
-
-        Set<String> userForms = teamRepository
-            .findAllWithEagerRelation().stream().flatMap((team) -> team.getFormsWithPermission(
-                FormPermission.ADD_SUBMISSIONS).stream()).collect(Collectors.toSet());
-
-        Query query = new Query();
-        query = query.addCriteria(Criteria.where("uid").in(userForms));
-
-        if (!queryRequest.isIncludeDeleted()) {
-            query.addCriteria(Criteria.where("deleted").is(false));
-        }
-
-        query.with(pageable);
-
-        final Query totalQuery = Query.of(query).limit(-1).skip(-1);
-
-        List<DataForm> results = mongoTemplate.find(query, DataForm.class);
-
-        Page<DataForm> resultsPage = PageableExecutionUtils.getPage(
-            results,
-            pageable,
-            () -> mongoTemplate.count(totalQuery, DataForm.class));
-
-        return resultsPage;
+        return Page.empty();
     }
 }

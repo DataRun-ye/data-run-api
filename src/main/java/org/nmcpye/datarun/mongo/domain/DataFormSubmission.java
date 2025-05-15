@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.mongo.domain;
 
 import jakarta.el.PropertyNotFoundException;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.SoftDeleteObject;
@@ -8,6 +10,7 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 import org.nmcpye.datarun.utils.CodeGenerator;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -25,9 +28,17 @@ import static java.util.Map.entry;
 @Getter
 @Setter
 @CompoundIndex(name = "data_submission_uid", def = "{'uid': 1}", unique = true)
+@CompoundIndex(name = "submission_form_idx", def = "{'form': 1}")
+@CompoundIndex(name = "submission_from_version_idx", def = "{'version': 1}")
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormSubmission
     extends MongoAuditableBaseObject implements SoftDeleteObject<String> {
+    @Id
+    private String id;
+
+    @Size(max = 11)
+    @Field("uid")
+    private String uid;
 
     @Field("deleted")
     private Boolean deleted;
@@ -38,7 +49,12 @@ public class DataFormSubmission
     @Field("finishedEntryTime")
     private Instant finishedEntryTime;
 
+    @NotNull
     private String form;
+
+    @NotNull
+    @Field("formVersion")
+    private String formVersion;
 
     private String team;
     private String teamCode;
@@ -57,23 +73,26 @@ public class DataFormSubmission
     private Map<String, Object> formData = new LinkedHashMap<>();
     private Map<String, Object> metadata = new LinkedHashMap<>();
 
+    /**
+     * submission version
+     */
     @Field("currentVersion")
-    private int version;
+    private int version = 0;
 
     @Indexed(unique = true)
     Long serialNumber;
 
-    @Field("reassignedTo")
-    private String reassignedTo;
-
-    @Field("rescheduledTo")
-    private String rescheduledTo;
-
-    @Field("mergedWith")
-    private String mergedWith;
-
-    @Field("cancelReason")
-    private String cancelReason;
+//    @Field("reassignedTo")
+//    private String reassignedTo;
+//
+//    @Field("rescheduledTo")
+//    private String rescheduledTo;
+//
+//    @Field("mergedWith")
+//    private String mergedWith;
+//
+//    @Field("cancelReason")
+//    private String cancelReason;
 
     /**
      * Populates the form data attributes with additional metadata.

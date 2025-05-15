@@ -9,17 +9,14 @@ import java.util.List;
  * @author Hamza Assada, 26/03/2025
  */
 public interface FormWithFields {
-    String getName();
+//    String getName();
 
     String getUid();
 
-    List<FormDataElementConf> getFieldsConf();
+    List<FormDataElementConf> getFields();
 
     List<FormSectionConf> getSections();
 
-    Integer getVersion();
-    FormWithFields version(Integer version);
-
     void setSections(List<FormSectionConf> sections);
-    void setFieldsConf(List<FormDataElementConf> sections);
+    void setFields(List<FormDataElementConf> fields);
 }

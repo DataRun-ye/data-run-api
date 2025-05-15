@@ -32,8 +32,8 @@ public class FormTemplate
     @Field("deleted")
     private Boolean deleted = false;
 
-    @Field("latestVersion")
-    private Integer latestVersion = 0; // latestVersion
+    @Field("currentVersion")
+    private Integer currentVersion = 0; // latestVersion
 
     public FormTemplate() {
         setAutoFields();

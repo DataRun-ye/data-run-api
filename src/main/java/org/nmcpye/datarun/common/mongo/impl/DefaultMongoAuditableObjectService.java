@@ -1,20 +1,23 @@
 package org.nmcpye.datarun.common.mongo.impl;
 
 import org.nmcpye.datarun.common.AuditableObjectService;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.impl.DefaultAuditableObjectService;
 import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
 import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
+import org.nmcpye.datarun.query.MongoQueryBuilder;
+import org.nmcpye.datarun.query.UnifiedQueryParser;
+import org.nmcpye.datarun.query.filter.FilterExpression;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.web.rest.mongo.submission.GenericQueryService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.nmcpye.datarun.web.rest.mongo.submission.RequestQueryBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.support.PageableExecutionUtils;
 
 import java.util.List;
 
@@ -24,49 +27,40 @@ import java.util.List;
 public abstract class DefaultMongoAuditableObjectService<T extends MongoAuditableBaseObject>
     extends DefaultAuditableObjectService<T, String>
     implements AuditableObjectService<T, String> {
-    final protected MongoTemplate mongoTemplate;
+    @Autowired
+    protected MongoQueryBuilder mongoQueryBuilder;
+
+    @Autowired
+    protected GenericQueryService queryService;
 
     public DefaultMongoAuditableObjectService(AuditableObjectRepository<T, String> repository,
-                                              CacheManager cacheManager, MongoTemplate mongoTemplate) {
+                                              CacheManager cacheManager) {
         super(repository, cacheManager);
-        this.mongoTemplate = mongoTemplate;
     }
 
     @Override
-    public Page<T> findAllByUser(QueryRequest queryRequest) {
-        return query(queryRequest);
-    }
+    public Page<T> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
+        final Query query = new Query();
+        if (!SecurityUtils.isSuper()) {
+            applySecurityConstraints(query);
+        }
 
-//    @Override
-//    public List<T> findAllByUser(QueryRequest queryRequest) {
-//        Query query = new Query();
-//        return getFormSubmissions(query, queryRequest);
-//    }
-
-    public Page<T> query(QueryRequest request) {
-        final var query = new RequestQueryBuilder(request).buildForMongo(new Query());
-        Pageable pageable = request.getPageable();
-        query.with(pageable);
-
-        final Query totalQuery = Query.of(query).limit(-1).skip(-1);
-
-        List<T> results = mongoTemplate.find(query, getClazz());
-
-        return PageableExecutionUtils.getPage(
-            results,
-            pageable,
-            () -> mongoTemplate.count(totalQuery, getClazz()));
-    }
-
-    protected List<T> getFormSubmissions(Query query, QueryRequest queryRequest) {
-        applySecurityConstraints(query);
         if (!queryRequest.isIncludeDeleted()) {
             query.addCriteria(Criteria.where("deleted").is(false));
         }
-        return mongoTemplate.find(query, getClazz());
+
+        if (jsonQueryBody != null && !jsonQueryBody.isEmpty()) {
+            try {
+                FilterExpression filterExpression = UnifiedQueryParser.parse(jsonQueryBody);
+                query.addCriteria(mongoQueryBuilder.buildCriteria(List.of(filterExpression)));
+            } catch (Exception e) {
+                throw new IllegalQueryException(ErrorCode.E2050, jsonQueryBody);
+            }
+        }
+        return queryService.query(queryRequest, query, getClazz());
     }
 
-    private static void applySecurityConstraints(Query query) {
+    public void applySecurityConstraints(Query query) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             // No additional constraints for admin
             return;

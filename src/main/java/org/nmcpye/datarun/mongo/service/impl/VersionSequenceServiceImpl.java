@@ -23,7 +23,7 @@ public class VersionSequenceServiceImpl implements VersionSequenceService {
     @Override
     public FormTemplate incrementAndGet(String templateUid) {
         Query q = Query.query(Criteria.where("uid").is(templateUid));
-        Update u = new Update().inc("latestVersion", 1)
+        Update u = new Update().inc("currentVersion", 1)
             .setOnInsert("uid", templateUid)
             .setOnInsert("disabled", false)    // default on first insert
             .setOnInsert("deleted", false);    // default on first insert

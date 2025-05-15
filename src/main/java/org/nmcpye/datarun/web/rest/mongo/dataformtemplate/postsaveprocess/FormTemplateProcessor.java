@@ -11,8 +11,6 @@ import org.nmcpye.datarun.formtemplate.FormElementProcessor;
 import org.nmcpye.datarun.formtemplate.validation.DefaultFormTemplateValidator;
 import org.nmcpye.datarun.mongo.common.FormWithFields;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
-import org.nmcpye.datarun.mongo.repository.DataFormRepository;
-import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -31,18 +29,12 @@ public class FormTemplateProcessor {
 
     private final DataElementRepository dataElementRepository;
 
-    private final DataFormTemplateRepository dataFormTemplateRepository;
-
-    private final DataFormRepository legacyFormRepository;
-
     private final DefaultFormTemplateValidator validator;
 
     public FormTemplateProcessor(DataElementRepository dataElementRepository,
-                                 DataFormTemplateRepository dataFormTemplateRepository, DataFormRepository legacyFormRepository, DefaultFormTemplateValidator validator) {
+                                 DefaultFormTemplateValidator validator) {
 
         this.dataElementRepository = dataElementRepository;
-        this.dataFormTemplateRepository = dataFormTemplateRepository;
-        this.legacyFormRepository = legacyFormRepository;
         this.validator = validator;
     }
 
@@ -56,7 +48,7 @@ public class FormTemplateProcessor {
     public <T extends FormWithFields> FormWithFields processMetadata(T formTemplate) {
         log.debug("start processing form template's metadata {}", formTemplate.getUid());
 
-        final var fieldUids = formTemplate.getFieldsConf().stream()
+        final var fieldUids = formTemplate.getFields().stream()
             .map(FormDataElementConf::getId).toList();
         final var dataElements = dataElementRepository.findAllByUidIn(fieldUids);
         validateElementsDataElement(formTemplate, dataElements);
@@ -65,23 +57,8 @@ public class FormTemplateProcessor {
             .get();
     }
 
-//    private <T extends FormWithFields> Integer createOrUpdateVersion(T source) {
-//        Optional<Integer> version = Optional.empty();
-//        if (source instanceof DataFormTemplate) {
-//            version = dataFormTemplateRepository.findByUid(source.getUid())
-//                .map(DataFormTemplate::getVersion);
-//        }
-//
-//        if (source instanceof DataForm) {
-//            version = legacyFormRepository.findByUid(source.getUid())
-//                .map(DataForm::getVersion);
-//        }
-//
-//        return version.orElse(0);
-//    }
-
     private <T extends FormWithFields> void validateElementsDataElement(T formTemplate, Collection<DataElement> dataElements) {
-        final var fieldUids = formTemplate.getFieldsConf().stream()
+        final var fieldUids = formTemplate.getFields().stream()
             .map(FormDataElementConf::getId).toList();
         final var dataElementUids = getUids(dataElements);
         final var notFoundElementUids = fieldUids.stream()

@@ -5,28 +5,17 @@ import org.nmcpye.datarun.mapper.dto.FormTemplateDto;
 import org.nmcpye.datarun.mapper.dto.FormTemplateVersionDto;
 import org.nmcpye.datarun.mapper.dto.SaveFormTemplateDto;
 import org.nmcpye.datarun.mongo.domain.dataform.FormTemplate;
-import org.nmcpye.datarun.mongo.domain.dataform.FormTemplateVersion;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,
-    componentModel = MappingConstants.ComponentModel.SPRING, uses = {FormDataElementMapper.class, FormSectionMapper.class})
+    componentModel = MappingConstants.ComponentModel.SPRING)
 public interface FormTemplateMapper
     extends BaseMapper<FormTemplateDto, FormTemplate> {
 
-    FormTemplate fromSaveDto(SaveFormTemplateDto dto);
-
     @Mappings({
-        @Mapping(target = "uid", source = "version.uid"),
-        @Mapping(target = "templateUid", source = "master.uid"),
-        @Mapping(target = "disabled", source = "master.disabled"),
-        @Mapping(target = "deleted", source = "master.deleted"),
-        @Mapping(target = "code", source = "version.code"),
-        @Mapping(target = "name", source = "version.name"),
-        @Mapping(target = "description", source = "version.description"),
-        @Mapping(target = "version", source = "version.version"),
-        @Mapping(target = "defaultLocale", source = "version.defaultLocale"),
-        @Mapping(target = "label", source = "version.label"),
-        @Mapping(target = "fields", source = "version.fields"),
-        @Mapping(target = "sections", source = "version.sections"),
+        @Mapping(target = "uid", source = "versionDto.templateUid"),
+        @Mapping(target = "currentVersion", source = "versionDto.version"),
     })
-    FormTemplateVersionDto combineMasterAndVersion(FormTemplate master, FormTemplateVersion version);
+    FormTemplate fromVersionDto(FormTemplateVersionDto versionDto);
+
+    FormTemplate fromSaveDto(SaveFormTemplateDto dto);
 }

@@ -21,7 +21,7 @@ public class DataFormSubmissionBuServiceImpl
 
     public DataFormSubmissionBuServiceImpl(
         DataFormSubmissionBuRepository repository,
-        CacheManager cacheManager, MongoTemplate mongoTemplate) {
-        super(repository, cacheManager, mongoTemplate);
+        CacheManager cacheManager) {
+        super(repository, cacheManager);
     }
 }

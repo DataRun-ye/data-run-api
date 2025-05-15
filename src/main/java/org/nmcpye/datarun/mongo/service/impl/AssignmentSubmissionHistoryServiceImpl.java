@@ -28,8 +28,8 @@ public class AssignmentSubmissionHistoryServiceImpl
     public AssignmentSubmissionHistoryServiceImpl(AssignmentSubmissionHistoryRepository repository,
                                                   CacheManager cacheManager,
                                                   AssignmentRepository assignmentRepository,
-                                                  MongoTemplate mongoTemplate, DataFormTemplateRepository dataFormRepository) {
-        super(repository, cacheManager, mongoTemplate);
+                                                  DataFormTemplateRepository dataFormRepository) {
+        super(repository, cacheManager);
         this.repository = repository;
         this.assignmentRepository = assignmentRepository;
         this.dataFormRepository = dataFormRepository;
@@ -74,10 +74,6 @@ public class AssignmentSubmissionHistoryServiceImpl
         entry.setDeleted(submission.getDeleted());
 
         entry.setAssignedTeam(assignment.getTeam().getUid());
-        entry.setReassignedTo(submission.getReassignedTo());
-        entry.setRescheduledTo(submission.getRescheduledTo());
-        entry.setMergedWith(submission.getMergedWith());
-        entry.setCancelReason(submission.getMergedWith());
         entry.setEntryDate(Instant.now());
         entry.setSubmissionDate(submission.getCreatedDate());
         entry.setSubmissionTeam(submission.getTeam());

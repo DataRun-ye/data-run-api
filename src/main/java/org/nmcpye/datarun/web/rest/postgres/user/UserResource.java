@@ -12,7 +12,6 @@ import org.nmcpye.datarun.drun.postgres.service.UserService;
 import org.nmcpye.datarun.service.dto.AdminUserDTO;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
-import org.nmcpye.datarun.web.rest.common.QuerySpecification;
 import org.nmcpye.datarun.web.rest.errors.EmailAlreadyUsedException;
 import org.nmcpye.datarun.web.rest.errors.LoginAlreadyUsedException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -40,6 +39,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static org.nmcpye.datarun.common.jpa.JpaAuditableObjectService.buildQuerySpecification;
+
 /**
  * REST controller for managing users.
  * <p>
@@ -66,8 +67,7 @@ import java.util.Optional;
  */
 @RestController
 @RequestMapping(value = {UserResource.CUSTOM, UserResource.V1})
-public class UserResource extends JpaBaseResource<User>
-    implements QuerySpecification<User> {
+public class UserResource extends JpaBaseResource<User> {
     protected static final String NAME = "/admin/users";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
     protected static final String V1 = ApiVersion.API_V1 + NAME;
@@ -126,17 +126,11 @@ public class UserResource extends JpaBaseResource<User>
         return ResponseEntity.ok(response);
     }
 
-    @Override
-    protected Page<User> getList(QueryRequest queryRequest, String jsonQueryBody) {
-        Specification<User> spec;
-        try {
-            spec = buildQuerySpecification(queryRequest);
-        } catch (Exception e) {
-            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E2014, queryRequest.getFilters()));
-        }
-
-        return userService.findAllByUser(spec, queryRequest);
-    }
+//
+//    @Override
+//    protected Page<User> getList(QueryRequest queryRequest, String jsonQueryBody) {
+//        return userService.findAllByUser(queryRequest, jsonQueryBody);
+//    }
 
     /**
      * {@code GET /admin/users} : get all users with all the details - calling this are only allowed for the administrators.

@@ -19,5 +19,5 @@ public interface AssignmentService
 
     void forceUpdatePaths();
 
-    Page<AssignmentWithAccessDto> getAllUserAccessible(QueryRequest queryRequest);
+    Page<AssignmentWithAccessDto> getAllUserAccessibleDto(QueryRequest queryRequest, String jsonQueryBody);
 }

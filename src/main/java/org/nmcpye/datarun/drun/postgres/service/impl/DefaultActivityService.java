@@ -23,13 +23,14 @@ public class DefaultActivityService extends DefaultJpaAuditableService<Activity>
     private final ActivityRepository repository;
 
 
-    public DefaultActivityService(ActivityRepository repository, CacheManager cacheManager, UserAccessService userAccessService) {
+    public DefaultActivityService(ActivityRepository repository, CacheManager cacheManager,
+                                  UserAccessService userAccessService) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
     }
 
     @Override
-    public Page<Activity> findAllByUser(QueryRequest queryRequest) {
+    public Page<Activity> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
         Pageable pageable = queryRequest.getPageable();
 
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {

@@ -8,7 +8,7 @@ import org.nmcpye.datarun.mongo.domain.dataform.FormTemplate;
 public interface VersionSequenceService {
 
     /**
-     * Atomically increments latestVersion on the master doc and returns the new value.
+     * Atomically increments currentVersion on the master doc and returns the new value.
      */
     FormTemplate incrementAndGet(String templateUid);
 }

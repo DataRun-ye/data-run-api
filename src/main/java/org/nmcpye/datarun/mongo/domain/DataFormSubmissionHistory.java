@@ -1,59 +1,73 @@
 package org.nmcpye.datarun.mongo.domain;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A DataFormSubmission.
+ * A DataFormSubmission. {'uid': 1, 'timestamp': -1}
  */
 @Document(collection = "data_form_submission_history")
+@CompoundIndex(name = "submission_history_uid_time_idx", def = "{'uid': 1, 'timestamp': -1}", unique = true)
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormSubmissionHistory
     extends MongoAuditableBaseObject {
+    @Id
+    private String id;
 
-    private String dataSubmissionId;  // Link to the main document
+    /**
+     * Submission uid, not unique
+     */
+    @Size(max = 11)
+    @Field("uid")
+    private String uid;
 
-    private int version;
-
-    @Field("deleted")
-    private Boolean deleted;
-
+    @NotNull
     private String form;
 
-    private String activity;
+    @NotNull
+    @Field("formVersion")
+    private String formVersion;
 
     private String team;
+    private String teamCode;
+
+    private String orgUnit;
+    private String orgUnitCode;
+    private String orgUnitName;
+
+    private String activity;
 
     private String assignment;
 
     @Field("status")
     private AssignmentStatus status;
 
-    private Map<String, Object> formData = new HashMap<String, Object>();
+    /**
+     * previous submission's version, pumped up on master submission with each update
+     */
+    @Field("currentVersion")
+    private int version;
+
+    @Field("deleted")
+    private Boolean deleted;
+
+
+    private Map<String, Object> formData;
 
     private Instant timestamp;
-
-    public DataFormSubmissionHistory(DataFormSubmission existingDataSubmissionId, Instant timestamp) {
-        this.dataSubmissionId = existingDataSubmissionId.getId();
-        this.uid = existingDataSubmissionId.getUid();
-        this.form = existingDataSubmissionId.getForm();
-//        this.activity = existingDataSubmissionId.getActivity();
-        this.assignment = existingDataSubmissionId.getAssignment();
-        this.status = existingDataSubmissionId.getStatus();
-        this.team = existingDataSubmissionId.getTeam();
-        this.formData = existingDataSubmissionId.getFormData();
-        this.version = existingDataSubmissionId.getVersion();
-    }
 
     // prettier-ignore
     @Override

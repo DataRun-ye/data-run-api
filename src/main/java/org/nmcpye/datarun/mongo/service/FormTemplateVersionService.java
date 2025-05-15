@@ -9,6 +9,8 @@ import org.nmcpye.datarun.mongo.domain.dataform.FormTemplateVersion;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
 
+import java.util.Optional;
+
 /**
  * Service Custom Interface for managing {@link DataFormTemplate}.
  */
@@ -18,5 +20,5 @@ public interface FormTemplateVersionService
 
     Page<FormTemplateVersionDto> findAllLatest(QueryRequest queryRequest, String jsonQueryBody);
 
-    FormTemplateVersionDto findLatestByTemplate(String templateUid);
+    Optional<FormTemplateVersionDto> findLatestByTemplate(String templateUid);
 }

@@ -2,15 +2,12 @@ package org.nmcpye.datarun.mongo.service.impl;
 
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
-import org.nmcpye.datarun.mapper.FormTemplateMapper;
 import org.nmcpye.datarun.mapper.FormTemplateVersionMapper;
 import org.nmcpye.datarun.mapper.dto.FormTemplateVersionDto;
 import org.nmcpye.datarun.mapper.dto.SaveFormTemplateDto;
 import org.nmcpye.datarun.mongo.domain.dataform.FormTemplate;
 import org.nmcpye.datarun.mongo.domain.dataform.FormTemplateVersion;
-import org.nmcpye.datarun.mongo.repository.FormTemplateRepository;
 import org.nmcpye.datarun.mongo.repository.FormTemplateVersionRepository;
 import org.nmcpye.datarun.mongo.service.FormTemplateVersionService;
 import org.nmcpye.datarun.mongo.service.VersionSequenceService;
@@ -25,7 +22,6 @@ import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
@@ -45,10 +41,8 @@ import java.util.stream.Collectors;
 public class FormTemplateVersionServiceImpl
     extends DefaultMongoAuditableObjectService<FormTemplateVersion>
     implements FormTemplateVersionService {
-    private final FormTemplateRepository templateRepository;
     private final FormTemplateVersionRepository templateVersionRepository;
     private final VersionSequenceService seqSvc;
-    private final FormTemplateMapper templateMapper;
     private final FormTemplateVersionMapper versionMapper;
     protected final MongoQueryBuilder mongoQueryBuilder;
     protected final GenericQueryService queryService;
@@ -56,18 +50,13 @@ public class FormTemplateVersionServiceImpl
     public FormTemplateVersionServiceImpl(
         FormTemplateVersionRepository repository,
         CacheManager cacheManager,
-        MongoTemplate mongoTemplate,
-        FormTemplateRepository templateRepository,
         FormTemplateVersionRepository templateVersionRepository,
         VersionSequenceService seqSvc,
-        FormTemplateMapper templateMapper,
         FormTemplateVersionMapper versionMapper,
         MongoQueryBuilder mongoQueryBuilder, GenericQueryService queryService) {
-        super(repository, cacheManager, mongoTemplate);
-        this.templateRepository = templateRepository;
+        super(repository, cacheManager);
         this.templateVersionRepository = templateVersionRepository;
         this.seqSvc = seqSvc;
-        this.templateMapper = templateMapper;
         this.versionMapper = versionMapper;
         this.mongoQueryBuilder = mongoQueryBuilder;
         this.queryService = queryService;
@@ -75,16 +64,16 @@ public class FormTemplateVersionServiceImpl
 
     @Transactional
     public FormTemplateVersionDto saveNewVersion(SaveFormTemplateDto saveFormTemplateDto) {
-        final var templateUid = saveFormTemplateDto.getUid();
+        FormTemplateVersion ftv = versionMapper.fromSaveDto(saveFormTemplateDto);
+        final var templateUid = ftv.getTemplateUid();
         FormTemplate ver = seqSvc.incrementAndGet(templateUid);
-        String versionedId = saveFormTemplateDto.getUid() + "_" + ver.getLatestVersion();
+        String versionedId = templateUid + "_" + ver.getCurrentVersion();
 
-        saveFormTemplateDto.setVersion(ver.getLatestVersion());
         // persist the payload
         // 2) persist the payload
-        FormTemplateVersion ftv = versionMapper.fromSaveDto(saveFormTemplateDto);
         ftv.setId(versionedId);
         ftv.setUid(versionedId);
+        ftv.setVersion(ver.getCurrentVersion());
         ftv.setTemplateUid(templateUid);
 
         return versionMapper.toDto(templateVersionRepository.save(ftv));
@@ -96,32 +85,30 @@ public class FormTemplateVersionServiceImpl
         Page<FormTemplate> masters = getMasterList(queryRequest, jsonQueryBody);
         // batch-load versions
         List<String> ids = masters.stream()
-            .map(m -> m.getUid() + "_" + m.getLatestVersion())
+            .map(m -> m.getUid() + "_" + m.getCurrentVersion())
             .toList();
 
         Map<String, FormTemplateVersion> versions = templateVersionRepository.findAllById(ids).stream()
             .collect(Collectors.toMap(FormTemplateVersion::getTemplateUid, s -> s));
 
-        return masters.map(m -> templateMapper.combineMasterAndVersion(m,
+        return masters.map(m -> versionMapper.combineMasterAndVersion(m,
             Optional.ofNullable(versions.get(m.getUid())).orElseThrow()));
     }
 
     public FormTemplateVersionDto findByVersion(String masterUid, int version) {
         String id = masterUid + "_" + version;
-        FormTemplate master = templateRepository.findById(masterUid)
-            .orElseThrow(() -> new IllegalQueryException(ErrorCode.E1113, masterUid));
         FormTemplateVersionDto versionDto = templateVersionRepository.findById(id).map(versionMapper::toDto)
             .orElseThrow(() -> new IllegalQueryException(ErrorCode.E1114, id));
         return versionDto;
     }
-
 
     public Page<FormTemplateVersionDto> pageVersions(String templateId, Pageable pageable) {
         Page<FormTemplateVersion> page = templateVersionRepository.findAllByTemplateUidOrderByVersionDesc(templateId, pageable);
         return page.map(versionMapper::toDto);
     }
 
-    private void applySecurityConstraints(Query query) {
+    @Override
+    public void applySecurityConstraints(Query query) {
         if (SecurityUtils.isSuper()) {
             return;
         }
@@ -153,11 +140,8 @@ public class FormTemplateVersionServiceImpl
     }
 
     @Override
-    public FormTemplateVersionDto findLatestByTemplate(String templateUid) {
+    public Optional<FormTemplateVersionDto> findLatestByTemplate(String templateUid) {
         return templateVersionRepository.findTopByTemplateUidOrderByVersionDesc(templateUid)
-            .map(versionMapper::toDto)
-            .orElseThrow(() -> new IllegalQueryException(
-                new ErrorMessage(ErrorCode.E1004,
-                    getClazz().getSimpleName(), templateUid)));
+            .map(versionMapper::toDto);
     }
 }

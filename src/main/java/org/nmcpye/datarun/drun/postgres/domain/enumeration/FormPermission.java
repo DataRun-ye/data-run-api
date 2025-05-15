@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.drun.postgres.domain.enumeration;
 
+import java.util.Arrays;
 import java.util.List;
 
 public enum FormPermission {
@@ -40,5 +41,9 @@ public enum FormPermission {
         return List.of(VIEW_SUBMISSIONS, VIEW_SUBMISSIONS_FROM_USERS, EDIT_SUBMISSIONS,
             EDIT_SUBMISSIONS_FROM_USERS, APPROVE_SUBMISSIONS, DELETE_SUBMISSIONS,
             DELETE_SUBMISSIONS_FROM_USERS).toArray(new FormPermission[0]);
+    }
+
+    public boolean canViewSubmission() {
+        return Arrays.stream(canViewPermissions()).toList().contains(this);
     }
 }

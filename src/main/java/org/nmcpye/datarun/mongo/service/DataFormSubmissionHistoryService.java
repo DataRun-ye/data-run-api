@@ -12,4 +12,8 @@ import java.util.List;
 public interface DataFormSubmissionHistoryService
     extends AuditableObjectService<DataFormSubmissionHistory, String> {
     List<DataFormSubmissionHistory> getSubmissionVersions(String dataSubmissionId);
+
+    void saveToHistory(DataFormSubmission submission);
+
+    void pruneOldVersions(String submissionId);
 }

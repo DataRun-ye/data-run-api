@@ -75,7 +75,7 @@
 //        template.setVersion(form.getVersion());
 //        template.setLabel(form.getLabel());
 //        template.setDefaultLocal(form.getDefaultLocal());
-//        template.getFieldsConf().clear();
+//        template.getFields().clear();
 //        template.getSections().clear();
 //        return template;
 //    }

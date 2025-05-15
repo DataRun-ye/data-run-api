@@ -21,7 +21,7 @@ public class FormTemplateDto implements Serializable {
     String description;
     Boolean disabled;
     Boolean deleted;
-    Integer latestVersion;
+    Integer currentVersion;
     String defaultLocale;
     Map<String, String> label;
     Instant createdDate;

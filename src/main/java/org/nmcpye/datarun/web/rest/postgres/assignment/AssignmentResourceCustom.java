@@ -56,7 +56,7 @@ public class AssignmentResourceCustom
         final var userLogin = SecurityUtils.getCurrentUserLoginOrThrow();
         log.debug("REST request to getAll {}:{}", userLogin, getName());
 
-        Page<AssignmentWithAccessDto> processedPage = assignmentService.getAllUserAccessible(queryRequest);
+        Page<AssignmentWithAccessDto> processedPage = assignmentService.getAllUserAccessibleDto(queryRequest, jsonQuery);
 
         String next = createNextPageLink(processedPage);
 

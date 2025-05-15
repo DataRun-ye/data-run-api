@@ -9,13 +9,13 @@ import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.mongo.MongoBaseIdentifiableObject;
 import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
-import org.nmcpye.datarun.mongo.common.FormWithFields;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.FieldDeserializer;
 import org.nmcpye.datarun.mongo.domain.datafield.Repeat;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -33,8 +33,13 @@ import java.util.*;
 @CompoundIndex(name = "form_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataForm
-    extends MongoBaseIdentifiableObject
-    implements FormWithFields {
+    extends MongoBaseIdentifiableObject {
+    @Id
+    private String id;
+
+    @Size(max = 11)
+    @Field("uid")
+    private String uid;
 
     @Field("code")
     @Indexed(unique = true, name = "form_code")
@@ -160,12 +165,7 @@ public class DataForm
             "}";
     }
 
-    @Override
-    public void setFieldsConf(List<FormDataElementConf> fields) {
-        this.fieldsConf = fields;
-    }
-
-    public FormWithFields version(Integer version) {
+    public DataForm version(Integer version) {
         this.setVersion(version);
         return this;
     }

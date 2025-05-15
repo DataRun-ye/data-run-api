@@ -37,28 +37,28 @@ public class MetadataSubmissionServiceImpl
     extends DefaultMongoAuditableObjectService<MetadataSubmission>
     implements MetadataSubmissionService {
 
+    private final MongoTemplate mongoTemplate;
     private final MetadataSubmissionRepository repository;
     private final TeamRepository teamRepository;
     private final ActivityRepository activityRepository;
     private final AssignmentRepository assignmentRepository;
 
     private final OrgUnitRepository orgUnitRepository;
-    final private MongoTemplate mongoTemplate;
     private final SequenceGeneratorService sequenceGeneratorService;
 
     public MetadataSubmissionServiceImpl(
         MetadataSubmissionRepository repository,
-        CacheManager cacheManager,
+        CacheManager cacheManager, MongoTemplate mongoTemplate,
         ActivityRepository activityRepository, TeamRepository teamRepository, AssignmentRepository assignmentRepository,
         OrgUnitRepository orgUnitRepository,
-        MongoTemplate mongoTemplate, SequenceGeneratorService sequenceGeneratorService) {
-        super(repository, cacheManager, mongoTemplate);
+        SequenceGeneratorService sequenceGeneratorService) {
+        super(repository, cacheManager);
         this.repository = repository;
+        this.mongoTemplate = mongoTemplate;
         this.activityRepository = activityRepository;
         this.teamRepository = teamRepository;
         this.assignmentRepository = assignmentRepository;
         this.orgUnitRepository = orgUnitRepository;
-        this.mongoTemplate = mongoTemplate;
         this.sequenceGeneratorService = sequenceGeneratorService;
     }
 
@@ -105,7 +105,7 @@ public class MetadataSubmissionServiceImpl
     }
 
     @Override
-    public Page<MetadataSubmission> findAllByUser(QueryRequest queryRequest) {
+    public Page<MetadataSubmission> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
         Pageable pageable = queryRequest.getPageable();
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
             return repository.findAll(pageable);

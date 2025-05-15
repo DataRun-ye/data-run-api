@@ -41,7 +41,6 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
     private final AssignmentSubmissionHistoryRepository assignmentHistoryRepository;
     private final AssignmentMaintenanceService maintenanceService;
     private final AssignmentWithAccessMapper assignmentMapper;
-    private final AssignmentRepository assignmentRepository;
 
     public DefaultAssignmentService(AssignmentRepository repository,
                                     TeamRepository teamRepository,
@@ -58,7 +57,6 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
         this.assignmentHistoryRepository = assignmentHistoryRepository;
         this.maintenanceService = maintenanceService;
         this.assignmentMapper = assignmentMapper;
-        this.assignmentRepository = assignmentRepository;
     }
 
     @Override
@@ -124,23 +122,9 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
 
     @Override
     @Transactional(readOnly = true)
-    public Page<AssignmentWithAccessDto> getAllUserAccessible(QueryRequest queryRequest) {
-        Page<Assignment> assignedPage = findAllByUser(queryRequest);
+    public Page<AssignmentWithAccessDto> getAllUserAccessibleDto(QueryRequest queryRequest, String jsonQueryBody) {
+        Page<Assignment> assignedPage = findAllByUser(queryRequest, jsonQueryBody);
         return assignedPage.map(assignmentMapper::toDto);
-//        List<Assignment> filteredAssignments = assignedPage.getContent().stream()
-//            .peek(assignment -> {
-//                Set<String> filteredForms = assignment.getForms().stream()
-//                    .filter(accessibleFormUids::contains)
-//                    .collect(Collectors.toSet());
-//                assignment.setForms(filteredForms);
-//            })
-//            .toList();
-
-//        List<AssignmentWithAccessDto> dtoList = filteredAssignments.stream()
-//            .map(assignmentMapper::toDto)
-//            .collect(Collectors.toList());
-//
-//        return new PageImpl<>(dtoList, assignedPage.getPageable(), assignedPage.getTotalElements());
     }
 
     List<Assignment> getAssignmentsWithChildren(Collection<String> uids) {

@@ -5,7 +5,6 @@ import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.common.AuditableObjectService;
 import org.nmcpye.datarun.common.DRunApiVersion;
 import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
-import org.nmcpye.datarun.query.QueryBuilder;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -39,8 +38,6 @@ public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends
 
     final protected AuditableObjectService<T, ID> auditableObjectService;
     final protected AuditableObjectRepository<T, ID> repository;
-
-    protected abstract QueryBuilder<?> getQueryBuilder();
 
     protected BaseReadResource(AuditableObjectService<T, ID> auditableObjectService,
                                AuditableObjectRepository<T, ID> repository) {
@@ -128,7 +125,7 @@ public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends
     }
 
     protected Page<T> getList(QueryRequest queryRequest, String jsonQueryBody) {
-        return auditableObjectService.findAllByUser(queryRequest);
+        return auditableObjectService.findAllByUser(queryRequest, jsonQueryBody);
     }
 
     protected abstract String getName();

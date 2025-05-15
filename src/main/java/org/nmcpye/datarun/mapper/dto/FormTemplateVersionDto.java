@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
+import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
+import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
 
 import java.io.Serializable;
 import java.util.List;
@@ -46,6 +48,6 @@ public class FormTemplateVersionDto implements Serializable {
 
     Map<String, String> label;
 
-    List<FormDataElementConfDto> fields;
-    List<FormSectionConfDto> sections;
+    List<FormDataElementConf> fields;
+    List<FormSectionConf> sections;
 }

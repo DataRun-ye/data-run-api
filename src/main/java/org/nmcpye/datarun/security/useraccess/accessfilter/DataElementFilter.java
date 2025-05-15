@@ -32,7 +32,7 @@ public class DataElementFilter extends DefaultJpaFilter<DataElement> {
         List<String> userDataElements = userAccessibleElementsService
             .getUserFormsWithWritePermission(user.getUsername())
             .stream()
-            .flatMap((form) -> form.getFieldsConf().stream())
+            .flatMap((form) -> form.getFields().stream())
             .map(FormDataElementConf::getId).toList();
 
         return (root, query, cb) -> {

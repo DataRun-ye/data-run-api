@@ -7,17 +7,24 @@ import org.nmcpye.datarun.common.impl.DefaultAuditableObjectService;
 import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
 import org.nmcpye.datarun.common.jpa.JpaAuditableObjectService;
 import org.nmcpye.datarun.common.jpa.repository.JpaAuditableRepository;
+import org.nmcpye.datarun.query.JpaQueryBuilder;
+import org.nmcpye.datarun.query.UnifiedQueryParser;
+import org.nmcpye.datarun.query.filter.FilterExpression;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.security.useraccess.UserAccessService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+import static org.nmcpye.datarun.common.jpa.JpaAuditableObjectService.buildQuerySpecification;
 
 /**
  * @author Hamza Assada, 20/03/2025
@@ -31,6 +38,9 @@ public abstract class DefaultJpaAuditableService
     protected final UserAccessService userAccessService;
     protected final JpaAuditableRepository<T> jpaAuditableObjectRepository;
 
+    @Autowired
+    protected JpaQueryBuilder<T> jpaQueryBuilder;
+
     public DefaultJpaAuditableService(JpaAuditableRepository<T> jpaAuditableObjectRepository,
                                       CacheManager cacheManager, UserAccessService userAccessService) {
         super(jpaAuditableObjectRepository, cacheManager);
@@ -38,36 +48,44 @@ public abstract class DefaultJpaAuditableService
         this.jpaAuditableObjectRepository = jpaAuditableObjectRepository;
     }
 
-    protected Specification<T> baseSpecification(CurrentUserDetails user, QueryRequest queryRequest) {
+    protected Specification<T> baseAccessSpecification(CurrentUserDetails user, QueryRequest queryRequest) {
         return userAccessService.readSpec(getClazz(), user, queryRequest);
     }
 
     @Override
-    public Page<T> findAllByUser(QueryRequest queryRequest) {
+    public Page<T> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
         final var user = SecurityUtils.getCurrentUserDetails();
-        final var spec = baseSpecification(user
-            .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), queryRequest);
+        final var spec = baseAccessSpecification(user
+            .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), queryRequest)
+            .and(buildQuerySpecification(queryRequest))
+            .and(buildJsonQuerySpecification(jsonQueryBody));
         return jpaAuditableObjectRepository.findAll(spec, queryRequest.getPageable());
     }
 
-//    @Override
-//    public List<T> findAllByUser(QueryRequest queryRequest) {
-//        final var readSpec = baseSpecification(SecurityUtils.getCurrentUserDetails()
-//                .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))),
-//            queryRequest);
-//        return jpaAuditableObjectRepository.findAll(readSpec);
-//    }
-
-    @Override
-    public Page<T> findAllByUser(Specification<T> spec, QueryRequest queryRequest) {
-        Pageable pageable = queryRequest.getPageable();
-        final var accessSpec = baseSpecification(
-            SecurityUtils.getCurrentUserDetails()
-                .orElseThrow(() ->
-                    new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))),
-            queryRequest);
-        return jpaAuditableObjectRepository.findAll(spec.and(accessSpec), pageable);
+    protected Specification<T> buildJsonQuerySpecification(String jsonQueryBody) {
+        Specification<T> spec = Specification.where(null);
+        if (jsonQueryBody != null && !jsonQueryBody.isEmpty()) {
+            try {
+                FilterExpression filterExpression = UnifiedQueryParser.parse(jsonQueryBody);
+                spec = spec.and(jpaQueryBuilder.buildQuery(List.of(filterExpression)));
+            } catch (Exception e) {
+                throw new IllegalQueryException(ErrorCode.E2050, jsonQueryBody);
+            }
+        }
+        return spec;
     }
+
+
+//    @Override
+//    public Page<T> findAllByUser(Specification<T> spec, QueryRequest queryRequest) {
+//        Pageable pageable = queryRequest.getPageable();
+//        final var accessSpec = baseAccessSpecification(
+//            SecurityUtils.getCurrentUserDetails()
+//                .orElseThrow(() ->
+//                    new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))),
+//            queryRequest);
+//        return jpaAuditableObjectRepository.findAll(spec.and(accessSpec), pageable);
+//    }
 
     @Override
     @Transactional

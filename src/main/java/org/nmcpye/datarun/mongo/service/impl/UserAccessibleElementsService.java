@@ -21,10 +21,6 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 public class UserAccessibleElementsService {
-//    public static final String TEAMS_BY_LOGIN_CACHE = "teamsByLogin";
-//    public static final String FORMS_BY_LOGIN_CACHE = "formsByLogin";
-//    public static final String DATA_ELEMENTS_BY_LOGIN_CACHE = "dataElementsByLogin";
-//    public static final String OPTION_SETS_BY_LOGIN_CACHE = "optionSetsByLogin";
 
     final private DataFormTemplateRepository templateRepository;
     final private TeamRepository teamRepository;
@@ -60,7 +56,7 @@ public class UserAccessibleElementsService {
     }
 
     public Set<DataElement> getUserDataElements(String userLogin) {
-        return getAllAccessibleUserForms(userLogin).stream().flatMap(f -> f.getFieldsConf().stream())
+        return getAllAccessibleUserForms(userLogin).stream().flatMap(f -> f.getFields().stream())
             .map(field -> dataElementRepository.findByUid(field.getId()).orElse(null))
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
@@ -68,7 +64,7 @@ public class UserAccessibleElementsService {
 
     public Set<OptionSet> getUserOptionSets(String userLogin) {
         return getAllAccessibleUserForms(userLogin)
-            .stream().flatMap(f -> f.getFieldsConf().stream())
+            .stream().flatMap(f -> f.getFields().stream())
             .filter(f -> f.getType().isOptionsType())
             .map(field -> optionSetRepository.findByUid(field.getOptionSet()).orElse(null))
             .filter(Objects::nonNull)

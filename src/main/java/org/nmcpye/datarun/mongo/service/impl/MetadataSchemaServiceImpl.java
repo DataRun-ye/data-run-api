@@ -34,9 +34,8 @@ public class MetadataSchemaServiceImpl
     public MetadataSchemaServiceImpl(MetadataSchemaRepository repository,
                                      CacheManager cacheManager,
                                      DataFormTemplateRepository dataFormRepository,
-                                     AssignmentRepository assignmentRepository,
-                                     MongoTemplate mongoTemplate) {
-        super(repository, cacheManager, mongoTemplate);
+                                     AssignmentRepository assignmentRepository) {
+        super(repository, cacheManager);
         this.repository = repository;
         this.dataFormRepository = dataFormRepository;
         this.assignmentRepository = assignmentRepository;

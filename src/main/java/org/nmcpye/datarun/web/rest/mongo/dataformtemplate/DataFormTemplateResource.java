@@ -7,17 +7,12 @@ import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.DataFormTemplateService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.startupmigration.mongo.DataFormTemplateMigrationService;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess.FormTemplateProcessor;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,23 +21,20 @@ import java.net.URISyntaxException;
 import java.util.List;
 
 import static org.nmcpye.datarun.web.rest.mongo.dataformtemplate.DataFormTemplateResource.CUSTOM;
-import static org.nmcpye.datarun.web.rest.mongo.dataformtemplate.DataFormTemplateResource.V1;
 
 /**
  * REST controller for managing {@link DataForm}.
  */
 @RestController
-@RequestMapping(value = {CUSTOM, V1})
+@RequestMapping(value = {CUSTOM})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class DataFormTemplateResource extends MongoBaseResource<DataFormTemplate> {
     protected static final String NAME = "/dataFormTemplates";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
-    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private final DataFormTemplateMigrationService dataFormTemplateMigrationService;
     private final FormTemplateProcessor formTemplateProcessor;
 
-    //
     public DataFormTemplateResource(DataFormTemplateService templateService,
                                     DataFormTemplateRepository dataFormRepository,
                                     DataFormTemplateMigrationService dataFormTemplateMigrationService,
@@ -52,12 +44,6 @@ public class DataFormTemplateResource extends MongoBaseResource<DataFormTemplate
         this.formTemplateProcessor = formTemplateProcessor;
     }
 
-    @Override
-    protected void applySecurityConstraints(Query query) {
-        final CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
-
-        query.addCriteria(Criteria.where("uid").in(user.getUserFormsUIDs()));
-    }
 
     @Override
     protected String getName() {
@@ -104,18 +90,5 @@ public class DataFormTemplateResource extends MongoBaseResource<DataFormTemplate
     @Override
     public ResponseEntity<DataFormTemplate> updateEntity(String uid, DataFormTemplate entity) throws URISyntaxException {
         return super.updateEntity(uid, entity);
-    }
-
-    @GetMapping("/migrate")
-    public ResponseEntity<String> updatePaths() throws Exception {
-        log.info("REST request to migrate dataFormTemplate elements");
-
-//        try {
-        dataFormTemplateMigrationService.runForDataFormTemplates();
-        return ResponseEntity.ok("Paths updated successfully");
-//        } catch (Exception e) {
-//            log.error("Error occurred while updating paths", e);
-//            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1000, e.getMessage(), "Failed to update paths"));
-//        }
     }
 }

@@ -7,16 +7,12 @@ import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepository;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.utils.FormSubmissionDataUtil;
 import org.nmcpye.datarun.utils.JsonFlattener;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.springframework.data.domain.Page;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -124,14 +120,5 @@ public class DataFormSubmissionResource
     @Override
     protected String getName() {
         return "dataSubmission";
-    }
-
-    @Override
-    protected void applySecurityConstraints(Query query) {
-        final CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
-
-        query.addCriteria(Criteria.where("form").in(user.getUserFormsUIDs()).and("team")
-            .in(user.getUserTeamsUIDs()));
-
     }
 }

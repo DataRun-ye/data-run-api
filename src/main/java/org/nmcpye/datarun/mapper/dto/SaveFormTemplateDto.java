@@ -1,10 +1,13 @@
 package org.nmcpye.datarun.mapper.dto;
 
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.nmcpye.datarun.mongo.common.FormWithFields;
+import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
+import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
+import org.wildfly.common.annotation.NotNull;
 
 import java.io.Serializable;
 import java.util.List;
@@ -16,8 +19,7 @@ import java.util.Map;
 @Setter
 @Getter
 @AllArgsConstructor
-public class SaveFormTemplateDto implements Serializable {
-    @NotNull
+public class SaveFormTemplateDto implements FormWithFields, Serializable {
     @Size(max = 11)
     String uid;
 
@@ -27,8 +29,6 @@ public class SaveFormTemplateDto implements Serializable {
     @Size(max = 2000)
     String description;
 
-    Integer version;
-
     Boolean disabled;
 
     Boolean deleted;
@@ -37,6 +37,6 @@ public class SaveFormTemplateDto implements Serializable {
 
     Map<String, String> label;
 
-    List<FormDataElementConfDto> fields;
-    List<FormSectionConfDto> sections;
+    List<FormDataElementConf> fields;
+    List<FormSectionConf> sections;
 }

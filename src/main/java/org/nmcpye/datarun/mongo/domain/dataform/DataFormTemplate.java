@@ -8,6 +8,7 @@ import org.nmcpye.datarun.common.mongo.MongoBaseIdentifiableObject;
 import org.nmcpye.datarun.mongo.common.FormWithFields;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -28,6 +29,12 @@ import java.util.Map;
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormTemplate
     extends MongoBaseIdentifiableObject implements FormWithFields {
+    @Id
+    private String id;
+
+    @Size(max = 11)
+    @Field("uid")
+    private String uid;
 
     @Field("code")
     private String code;
@@ -46,19 +53,13 @@ public class DataFormTemplate
     @Field("deleted")
     private boolean deleted;
 
-    private Integer version; // latestVersion
-
-    @Field("latestVersionUid")
-    private String latestVersionUid; // points to latest Version uid
+    private Integer version;
 
     @Getter
     @Field("defaultLocale")
     private String defaultLocale;
 
     private Map<String, String> label;
-
-//    @Field("elements")
-//    private List<FormElementConf> elements;
 
     @Field("fields")
     private List<FormDataElementConf> fields = new LinkedList<>();
@@ -71,9 +72,8 @@ public class DataFormTemplate
     }
 
     @JsonIgnore
-    @Override
-    public List<FormDataElementConf> getFieldsConf() {
-        return getFields();
+    public String getId() {
+        return id;
     }
 
     public DataFormTemplate version(Integer version) {
@@ -81,13 +81,8 @@ public class DataFormTemplate
         return this;
     }
 
-    @Override
-    public void setFieldsConf(List<FormDataElementConf> fieldsConf) {
-        this.setFields(fieldsConf);
-    }
-
     public DataFormTemplate fields(List<FormDataElementConf> fieldsConf) {
-        this.setFieldsConf(fieldsConf);
+        this.setFields(fieldsConf);
         return this;
     }
 

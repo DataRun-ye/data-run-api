@@ -70,7 +70,7 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
             } else if (field instanceof DefaultField formField) {
                 DataElement dataElement = dataElementRepository.findByNameIgnoreCase(formField.getName()).orElseThrow();
                 FormDataElementConf elementConf = createDataElementConf(formField, dataElement.getUid(), dataElement.getCode());
-                template.getFieldsConf().add(elementConf);
+                template.getFields().add(elementConf);
             } else {
                 throw new EntityNotFoundException("DataElement not found: " + field.getName());
             }
@@ -109,7 +109,7 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
         template.setVersion(form.getVersion() != null ? 1 : form.getVersion());
         template.setLabel(form.getLabel());
         template.setDefaultLocale(form.getDefaultLocal());
-        template.getFieldsConf().clear();
+        template.getFields().clear();
         template.getSections().clear();
         return template;
     }

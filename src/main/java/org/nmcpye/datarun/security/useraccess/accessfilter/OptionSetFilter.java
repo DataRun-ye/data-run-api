@@ -44,7 +44,7 @@ public class OptionSetFilter extends DefaultJpaFilter<OptionSet> {
 
     private Set<String> getUserOptionSets(String userLogin) {
         return userAccessibleElementsService.getAllAccessibleUserForms(userLogin)
-            .stream().flatMap(f -> f.getFieldsConf().stream())
+            .stream().flatMap(f -> f.getFields().stream())
             .filter(f -> f.getType().isOptionsType())
             .map(FormDataElementConf::getOptionSet)
             .filter(Objects::nonNull)

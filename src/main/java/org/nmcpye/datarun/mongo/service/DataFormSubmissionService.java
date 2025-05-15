@@ -13,8 +13,6 @@ import java.util.List;
 public interface DataFormSubmissionService
     extends AuditableObjectService<DataFormSubmission, String>, SoftDeleteObjectDelete<DataFormSubmission, String> {
 
-    DataFormSubmission saveVersioning(DataFormSubmission submission);
-
     FindExistingSubmissionsDto findExistingAndMissingOrgUnitCodes(List<String> codes, String form);
 
     void findAndFixFormDataSerialNumbers();

@@ -42,9 +42,9 @@ public class AccessFilterRegistry {
     @SuppressWarnings("unchecked")
     public <T extends AuditableObject<?>> Specification<T> getSpecification(
         Class<T> entityClass, CurrentUserDetails user, QueryRequest queryRequest) {
+        Specification<T> spec = Specification.where(null); // Start with empty specification
         AccessFilter<T> filter = (AccessFilter<T>) getFilter(entityClass);
-        final var querySpecification = (Specification<T>) AccessFilter.buildQuerySpecification(queryRequest);
-        return querySpecification.and(filter != null ?
+        return spec.and(filter != null ?
             filter.getAccessSpecification(user, queryRequest) :
             AccessFilter.createDefaultSpecification(user));
     }

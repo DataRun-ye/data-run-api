@@ -67,13 +67,13 @@ public class MetadataSubmissionGranularRepository {
 
     // uids of assigned teams for resourceType == Team
     private List<String> getAssignedTeams(QueryRequest queryRequest) {
-        return teamService.findAllByUser(queryRequest).stream().map(Team::getUid).collect(Collectors.toList());
+        return teamService.findAllByUser(queryRequest, null).stream().map(Team::getUid).collect(Collectors.toList());
     }
 
     public List<FormDataElementConf> getUserFieldsOfResourceType() {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
 
-            return dataFormRepository.findAll().stream().flatMap(form -> form.getFieldsConf()
+            return dataFormRepository.findAll().stream().flatMap(form -> form.getFields()
                     .stream()).filter((field) -> field.getType().isReference())
 //                .map((field) -> {
 //                    final var refField = new ReferenceField();
@@ -103,7 +103,7 @@ public class MetadataSubmissionGranularRepository {
 
         List<FormDataElementConf> typeReferenceFields = forms.stream().flatMap(uid ->
                 dataFormRepository.findByUid(uid).stream())
-            .flatMap(form -> form.getFieldsConf().stream())
+            .flatMap(form -> form.getFields().stream())
             .filter((field) -> field.getType().isReference())
             .toList();
 

@@ -1,35 +1,27 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.FindExistingSubmissionsDto;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
-import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
-import org.nmcpye.datarun.drun.postgres.domain.Team;
+import org.nmcpye.datarun.common.security.UserFormAccess;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
+import org.nmcpye.datarun.mapper.DataFormSubmissionHistoryMapper;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
-import org.nmcpye.datarun.mongo.domain.DataFormSubmissionHistory;
-import org.nmcpye.datarun.mongo.repository.DataFormSubmissionHistoryRepository;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepository;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.AssignmentSubmissionHistoryService;
+import org.nmcpye.datarun.mongo.service.DataFormSubmissionHistoryService;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.security.useraccess.dataform.FormAccessService;
 import org.nmcpye.datarun.startupmigration.mongo.SubmissionMaintenanceService;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -37,7 +29,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,14 +38,14 @@ import java.util.stream.Collectors;
  */
 @Service
 @Primary
+@Slf4j
 public class DataFormSubmissionServiceImpl
     extends DefaultMongoAuditableObjectService<DataFormSubmission>
     implements DataFormSubmissionService {
 
-    private final Logger log = LoggerFactory.getLogger(DataFormSubmissionServiceImpl.class);
-
     private final DataFormSubmissionRepository repository;
-    private final DataFormSubmissionHistoryRepository historyRepository;
+    private final DataFormSubmissionHistoryService submissionHistoryService;
+    private final MongoTemplate mongoTemplate;
     private final AssignmentRepository assignmentRepository;
     private final TeamRepository teamRepository;
     private final SequenceGeneratorService sequenceGeneratorService;
@@ -61,19 +53,22 @@ public class DataFormSubmissionServiceImpl
     private final AssignmentSubmissionHistoryService historyService;
     private final DataFormTemplateRepository formTemplateRepository;
     private final FormAccessService formAccessService;
-    private static final int MAX_HISTORY_VERSIONS = 3; // Keep only the last 10 versions
 
     public DataFormSubmissionServiceImpl(
         DataFormSubmissionRepository repository,
         CacheManager cacheManager,
-        DataFormSubmissionHistoryRepository historyRepository,
+        DataFormSubmissionHistoryService submissionHistoryService, MongoTemplate mongoTemplate,
         AssignmentRepository assignmentRepository,
         TeamRepository teamRepository,
-        MongoTemplate mongoTemplate,
-        SequenceGeneratorService sequenceGeneratorService, SubmissionMaintenanceService maintenanceService, AssignmentSubmissionHistoryService historyService, DataFormTemplateRepository formTemplateRepository, FormAccessService formAccessService) {
-        super(repository, cacheManager, mongoTemplate);
+        SequenceGeneratorService sequenceGeneratorService,
+        SubmissionMaintenanceService maintenanceService,
+        AssignmentSubmissionHistoryService historyService,
+        DataFormTemplateRepository formTemplateRepository,
+        FormAccessService formAccessService, DataFormSubmissionHistoryMapper historyMapper) {
+        super(repository, cacheManager);
         this.repository = repository;
-        this.historyRepository = historyRepository;
+        this.submissionHistoryService = submissionHistoryService;
+        this.mongoTemplate = mongoTemplate;
         this.assignmentRepository = assignmentRepository;
         this.teamRepository = teamRepository;
         this.sequenceGeneratorService = sequenceGeneratorService;
@@ -83,45 +78,36 @@ public class DataFormSubmissionServiceImpl
         this.formAccessService = formAccessService;
     }
 
+    @Transactional
     @Override
-    public DataFormSubmission saveVersioning(DataFormSubmission submission) {
-        DataFormSubmission existingSubmission = repository.findById(submission.getId()).orElse(null);
-        if (existingSubmission != null) {
-            // Create a new version of the current data
-            DataFormSubmissionHistory history = new DataFormSubmissionHistory(
-                existingSubmission,
-                Instant.now()
-            );
-
-            // Save the old version in the history collection
-            historyRepository.save(history);
-
-            // Increment version number and update the current document
-            submission.setVersion(existingSubmission.getVersion() + 1);
-
-            // Prune old versions
-            pruneOldVersions(existingSubmission.getId());
-        }
-
-        return repository.save(submission);
-    }
-
-//    private boolean canSubmit(DataFormSubmission submission) {
-//        final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
-////        formTemplateRepository
-//        return user.getFormAccess().stream().anyMatch((f) -> f.canAddSubmission(submission.getForm())
-//            || f.canEditSubmission(submission.getForm()));
-//    }
-
-    @Override
-    public DataFormSubmission saveWithRelations(DataFormSubmission newSubmission) {
+    public DataFormSubmission saveWithRelations(DataFormSubmission submission) {
 
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
         if (user.getUsername().startsWith("test")) {
             log.info("Pass a Test user save request `{}` save", user.getUsername());
             // pass
-            return newSubmission;
+            return submission;
         }
+
+        preSave(submission);
+
+        // archive existing submission
+        repository.findById(submission.getId())
+            .ifPresent(existingSubmission ->
+                submissionHistoryService.saveToHistory(submission));
+
+        // Increment version number and update the current document
+        submission.setVersion(submission.getVersion() + 1);
+
+        if (submission.getAssignment() != null) {
+            addEntryToHistory(submission);
+        }
+
+        return repository.save(submission);
+    }
+
+    public void preSave(DataFormSubmission newSubmission) {
+        final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
 
         if (!formAccessService.canSubmitData(newSubmission.getForm())) {
             log.info("User {} cannot submit data", user.getUsername());
@@ -174,14 +160,6 @@ public class DataFormSubmissionServiceImpl
         final DataFormSubmission dataFormSubmission = newSubmission
             .createSubmission()
             .populateFormDataAttributes();
-
-        DataFormSubmission savedSubmission = save(dataFormSubmission);
-
-        if (savedSubmission.getAssignment() != null) {
-            addEntryToHistory(savedSubmission);
-        }
-
-        return savedSubmission;
     }
 
     private void addEntryToHistory(DataFormSubmission dataFormSubmission) {
@@ -191,47 +169,6 @@ public class DataFormSubmissionServiceImpl
             log.error("Error saving submission history,  {}:", dataFormSubmission.getUid(), e);
             throw new IllegalQueryException("Failed to update paths");
         }
-    }
-
-    private void pruneOldVersions(String submissionId) {
-        Query query = new Query(Criteria.where("submissionId").is(submissionId));
-        query.with(Sort.by(Sort.Direction.DESC, "timestamp")); // Sort by timestamp in descending order
-
-        List<DataFormSubmissionHistory> historyList = mongoTemplate.find(query, DataFormSubmissionHistory.class);
-        if (historyList.size() > MAX_HISTORY_VERSIONS) {
-            List<String> idsToRemove = historyList.stream()
-                .skip(MAX_HISTORY_VERSIONS)
-                .map(DataFormSubmissionHistory::getId)
-                .collect(Collectors.toList());
-
-            Query removeQuery = new Query(Criteria.where("_id").in(idsToRemove));
-            mongoTemplate.remove(removeQuery, DataFormSubmissionHistory.class);
-        }
-    }
-
-    @Override
-    public Page<DataFormSubmission> findAllByUser(QueryRequest queryRequest) {
-        Pageable pageable = queryRequest.getPageable();
-        Specification<Team> spec = TeamSpecifications.canRead();
-        if (!queryRequest.isIncludeDisabled()) {
-            spec = spec.and(TeamSpecifications.isEnabled());
-        }
-        Query query = new Query();
-        if (!SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            final var userTeams = teamRepository.fetchBagRelationships(teamRepository.findAll(spec)).stream().map(Team::getUid).toList();
-            final var username = SecurityUtils.getCurrentUserLogin();
-            query = Query.query(Criteria.where("team").in(userTeams));
-
-            if (username.isPresent()) {
-                query = Query.query(Criteria.where("team").in(userTeams).orOperator(Criteria.where("formData._username").is(username.get())));
-            }
-        }
-
-        query.with(pageable);
-        List<DataFormSubmission> submissions = mongoTemplate.find(query, getClazz());
-        long total = submissions.size();
-
-        return new PageImpl<>(submissions, pageable, total);
     }
 
     @Override
@@ -248,6 +185,27 @@ public class DataFormSubmissionServiceImpl
 
         return FindExistingSubmissionsDto.builder()
             .existing(existing).missing(missing).build();
+    }
+
+    @Override
+    public void applySecurityConstraints(Query query) {
+        final CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        final var viewForms = user.getFormAccess().stream()
+            .filter(UserFormAccess::canViewSubmission)
+            .map(UserFormAccess::getForm)
+            .toList();
+
+        if (viewForms.isEmpty()) {
+            query.addCriteria(new Criteria().andOperator(
+                Criteria.where("form").in(Collections.emptyList()) // always false
+            ));
+            return;
+        }
+
+        query.addCriteria(new Criteria().andOperator(
+            Criteria.where("form").in(viewForms),
+            Criteria.where("team").in(user.getUserTeamsUIDs())
+        ));
     }
 
     @Override
