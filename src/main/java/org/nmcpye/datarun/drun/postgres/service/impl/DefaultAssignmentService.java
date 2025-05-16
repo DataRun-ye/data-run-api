@@ -6,7 +6,6 @@ import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
 import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.domain.Team;
-import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 import org.nmcpye.datarun.drun.postgres.pathmaintenance.AssignmentMaintenanceService;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepository;
@@ -14,9 +13,6 @@ import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentService;
 import org.nmcpye.datarun.mapper.AssignmentWithAccessMapper;
 import org.nmcpye.datarun.mapper.dto.AssignmentWithAccessDto;
-import org.nmcpye.datarun.mongo.domain.AssignmentSubmissionHistory;
-import org.nmcpye.datarun.mongo.repository.AssignmentSubmissionHistoryRepository;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.security.useraccess.UserAccessService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -38,14 +34,12 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
     private final AssignmentRepository repository;
     private final TeamRepository teamRepository;
     private final OrgUnitRepository orgUnitRepository;
-    private final AssignmentSubmissionHistoryRepository assignmentHistoryRepository;
     private final AssignmentMaintenanceService maintenanceService;
     private final AssignmentWithAccessMapper assignmentMapper;
 
     public DefaultAssignmentService(AssignmentRepository repository,
                                     TeamRepository teamRepository,
                                     OrgUnitRepository orgUnitRepository,
-                                    AssignmentSubmissionHistoryRepository assignmentHistoryRepository,
                                     UserAccessService userAccessService,
                                     CacheManager cacheManager,
                                     AssignmentMaintenanceService maintenanceService,
@@ -54,7 +48,6 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
         this.repository = repository;
         this.teamRepository = teamRepository;
         this.orgUnitRepository = orgUnitRepository;
-        this.assignmentHistoryRepository = assignmentHistoryRepository;
         this.maintenanceService = maintenanceService;
         this.assignmentMapper = assignmentMapper;
     }
@@ -96,28 +89,36 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
     private OrgUnit findOrgUnit(OrgUnit orgUnit) {
         return Optional.ofNullable(orgUnit.getId()).flatMap(orgUnitRepository::findById).or(() -> Optional.ofNullable(orgUnit.getUid()).flatMap(orgUnitRepository::findByUid)).or(() -> Optional.ofNullable(orgUnit.getCode()).flatMap(orgUnitRepository::findByCode)).orElseThrow(() -> new PropertyNotFoundException("OrgUniy not found: " + orgUnit));
     }
-
-    private Page<Assignment> findWithStatus(Page<Assignment> assignments) {
-        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-            assignments.forEach(assignment -> {
-                assignmentHistoryRepository.findLastEntryByUidAndAssignedTeam(assignment.getUid(), assignment.getTeam().getUid()).flatMap(history -> history.getEntries().stream().max(Comparator.comparing(AssignmentSubmissionHistory.HistoryEntry::getEntryDate))).ifPresentOrElse(lastEntry -> {
-                    assignment.setStatus(lastEntry.getSubmissionStatus());
-                    assignment.setLastEntryDate(lastEntry.getEntryDate());
-                    assignment.setLastEntryBy(lastEntry.getSubmissionUser());
-                }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
-            });
-        } else {
-            String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow();
-            assignments.forEach(assignment -> {
-                assignmentHistoryRepository.findLastEntryByUidAndUser(assignment.getUid(), currentUserLogin).flatMap(history -> history.getEntries().stream().max(Comparator.comparing(AssignmentSubmissionHistory.HistoryEntry::getEntryDate))).ifPresentOrElse(lastEntry -> {
-                    assignment.setStatus(lastEntry.getSubmissionStatus());
-                    assignment.setLastEntryDate(lastEntry.getEntryDate());
-                    assignment.setLastEntryBy(lastEntry.getSubmissionUser());
-                }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
-            });
-        }
-        return assignments;
-    }
+    
+//    private Page<Assignment> findWithStatus(Page<Assignment> assignments) {
+//        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+//            assignments.forEach(assignment -> {
+//                assignmentHistoryRepository.findLastEntryByUid(assignment.getUid())
+//                    .flatMap(history -> history.getEntries()
+//                        .stream().max(Comparator
+//                            .comparing(AssignmentSubmissionHistory.HistoryEntry::getEntryDate)))
+//                    .ifPresentOrElse(lastEntry -> {
+//                        assignment.setStatus(lastEntry.getSubmissionStatus());
+//                        assignment.setLastEntryDate(lastEntry.getEntryDate());
+//                        assignment.setLastEntryBy(lastEntry.getSubmissionUser());
+//                    }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
+//            });
+//        } else {
+//            String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow();
+//            assignments.forEach(assignment -> {
+//                assignmentHistoryRepository.findLastEntryByUidAndUser(assignment.getUid(), currentUserLogin)
+//                    .flatMap(history -> history.getEntries()
+//                        .stream().max(Comparator
+//                            .comparing(AssignmentSubmissionHistory.HistoryEntry::getEntryDate)))
+//                    .ifPresentOrElse(lastEntry -> {
+//                        assignment.setStatus(lastEntry.getSubmissionStatus());
+//                        assignment.setLastEntryDate(lastEntry.getEntryDate());
+//                        assignment.setLastEntryBy(lastEntry.getSubmissionUser());
+//                    }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
+//            });
+//        }
+//        return assignments;
+//    }
 
 
     @Override

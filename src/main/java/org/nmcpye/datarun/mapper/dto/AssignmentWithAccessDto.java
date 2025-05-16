@@ -2,7 +2,7 @@ package org.nmcpye.datarun.mapper.dto;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
+import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 
 import java.util.Set;
 
@@ -11,11 +11,11 @@ import java.util.Set;
  */
 @Builder
 @Getter
-@Setter
 public class AssignmentWithAccessDto {
     String activity;
     String assignment;
     String team;
     String orgUnit;
+    AssignmentStatus progressStatus;
     Set<AssignmentFormDto> accessibleForms;
 }

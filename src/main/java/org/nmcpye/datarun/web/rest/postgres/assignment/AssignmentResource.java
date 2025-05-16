@@ -50,7 +50,7 @@ public class AssignmentResource
         this.assignmentService = assignmentService;
     }
 
-    @RequestMapping(value = "dto", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "forms", method = {RequestMethod.GET, RequestMethod.POST})
     protected ResponseEntity<PagedResponse<?>> getAllDto(QueryRequest queryRequest,
                                                          @RequestBody(required = false) String jsonQuery) throws Exception {
         final var userLogin = SecurityUtils.getCurrentUserLoginOrThrow();
@@ -63,15 +63,6 @@ public class AssignmentResource
         PagedResponse<AssignmentWithAccessDto> response = initPageResponse(processedPage, next);
         return ResponseEntity.ok(response);
     }
-
-//    @Override
-//    protected Page<Assignment> getList(Pageable pageable, QueryRequest queryRequest, FilterExpression expression) {
-//        if (queryRequest.getFilters().isEmpty()) {
-//            return assignmentService.getAllUserAccessible(pageable, queryRequest);
-//        }
-//
-//        return super.getList(pageable, queryRequest, expression);
-//    }
 
     @Override
     protected String getName() {
@@ -107,14 +98,6 @@ public class AssignmentResource
     @Override
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<EntitySaveSummaryVM> saveAll(List<Assignment> entities) {
-//        log.debug("REST request to saveAll {}", getName());
-//        var withIds = entities.stream()
-//            .filter((entity) -> entity.getId() != null)
-//            .map(IdentifiableEntity::getId).toList();
-//        if (!withIds.isEmpty()) {
-//            throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + withIds, "idexists");
-//        }
-
         return super.saveAll(entities);
     }
 

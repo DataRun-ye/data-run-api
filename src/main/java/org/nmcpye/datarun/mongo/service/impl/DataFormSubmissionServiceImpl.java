@@ -9,11 +9,9 @@ import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.common.security.UserFormAccess;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
-import org.nmcpye.datarun.mapper.DataFormSubmissionHistoryMapper;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepository;
 import org.nmcpye.datarun.mongo.repository.FormTemplateVersionRepository;
-import org.nmcpye.datarun.mongo.service.AssignmentSubmissionHistoryService;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionHistoryService;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
@@ -49,7 +47,6 @@ public class DataFormSubmissionServiceImpl
     private final TeamRepository teamRepository;
     private final SequenceGeneratorService sequenceGeneratorService;
     private final SubmissionMaintenanceService maintenanceService;
-    private final AssignmentSubmissionHistoryService historyService;
     private final FormTemplateVersionRepository versionRepository;
     private final FormAccessService formAccessService;
 
@@ -61,9 +58,8 @@ public class DataFormSubmissionServiceImpl
         TeamRepository teamRepository,
         SequenceGeneratorService sequenceGeneratorService,
         SubmissionMaintenanceService maintenanceService,
-        AssignmentSubmissionHistoryService historyService,
         FormTemplateVersionRepository versionRepository,
-        FormAccessService formAccessService, DataFormSubmissionHistoryMapper historyMapper) {
+        FormAccessService formAccessService) {
         super(repository, cacheManager);
         this.repository = repository;
         this.submissionHistoryService = submissionHistoryService;
@@ -72,7 +68,6 @@ public class DataFormSubmissionServiceImpl
         this.teamRepository = teamRepository;
         this.sequenceGeneratorService = sequenceGeneratorService;
         this.maintenanceService = maintenanceService;
-        this.historyService = historyService;
         this.versionRepository = versionRepository;
         this.formAccessService = formAccessService;
     }
@@ -80,7 +75,6 @@ public class DataFormSubmissionServiceImpl
     @Transactional
     @Override
     public DataFormSubmission saveWithRelations(DataFormSubmission submission) {
-
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
         if (user.getUsername().startsWith("test")) {
             log.info("Pass a Test user save request `{}` save", user.getUsername());
@@ -106,12 +100,13 @@ public class DataFormSubmissionServiceImpl
                 }
             });
 
+        final var savedSubmission = repository.save(submission);
 
         if (submission.getAssignment() != null) {
             addEntryToHistory(submission);
         }
 
-        return repository.save(submission);
+        return savedSubmission;
     }
 
     public void preSave(DataFormSubmission submission) {
@@ -169,14 +164,6 @@ public class DataFormSubmissionServiceImpl
             .checkAttributes();
     }
 
-    private void addEntryToHistory(DataFormSubmission dataFormSubmission) {
-        try {
-            historyService.updateSubmissionHistory(dataFormSubmission);
-        } catch (Exception e) {
-            log.error("Error saving submission history,  {}:", dataFormSubmission.getUid(), e);
-            throw new IllegalQueryException("Failed to update paths");
-        }
-    }
 
     @Override
     public FindExistingSubmissionsDto findExistingAndMissingOrgUnitCodes(List<String> codes, String form) {
@@ -214,6 +201,18 @@ public class DataFormSubmissionServiceImpl
 
         query.addCriteria(Criteria.where("form").in(viewForms)
             .and("team").in(user.getUserTeamsUIDs()));
+    }
+
+    private void addEntryToHistory(DataFormSubmission dataFormSubmission) {
+        assignmentRepository.findByUid(dataFormSubmission.getAssignment())
+            .ifPresentOrElse((assignment -> {
+                assignment.setLastSubmittedBy(SecurityUtils.getCurrentUserLoginOrThrow());
+                assignment.setStatus(dataFormSubmission.getStatus());
+                assignmentRepository.save(assignment);
+            }), () -> {
+                throw new IllegalQueryException(ErrorCode.E1004, getClazz().getSimpleName(),
+                    dataFormSubmission.getUid());
+            });
     }
 
     @Override

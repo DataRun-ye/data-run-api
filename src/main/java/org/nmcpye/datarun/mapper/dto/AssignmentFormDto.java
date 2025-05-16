@@ -13,9 +13,7 @@ import java.io.Serializable;
 public class AssignmentFormDto implements Serializable {
     private String assignmentUid;
     private String formUid;
-    private boolean canViewSubmissions;
     private boolean canAddSubmissions;
     private boolean canEditSubmissions;
-    private boolean canApproveSubmissions;
     private boolean canDeleteSubmissions;
 }

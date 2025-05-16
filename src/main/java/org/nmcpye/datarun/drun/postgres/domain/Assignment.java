@@ -19,7 +19,6 @@ import org.nmcpye.datarun.domain.Activity;
 import org.nmcpye.datarun.drun.postgres.common.IdentifiableObjectUtils;
 import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -73,7 +72,7 @@ public class Assignment
     @Column(name = "level")
     private Integer hierarchyLevel;
 
-    @ManyToOne//(fetch = FetchType.LAZY)
+    @ManyToOne
     @JsonProperty
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Assignment parent;
@@ -82,71 +81,30 @@ public class Assignment
     @Column(name = "forms", columnDefinition = "jsonb")
     private Set<String> forms = new HashSet<>();
 
-//    @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<AssignmentForm> employees;
-
     @Type(JsonType.class)
     @Column(name = "allocated_resources", columnDefinition = "jsonb")
     private Map<String, Object> allocatedResources = new HashMap<>();
 
-    @JsonProperty
-    @Transient
-    private EntityScope entityScope;
+//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "assignment")
+//    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+//    @JsonIgnoreProperties(value = {"assignment"}, allowSetters = true)
+//    private Set<AssignmentHistory> assignmentHistory = new HashSet<>();
 
-    @JsonProperty
-    @Transient
+    @Enumerated(EnumType.STRING)
     private AssignmentStatus status;
 
-    @JsonProperty
-    @Transient
-    private Instant lastEntryDate;
+    @Column(name = "lastSubmitted_by")
+    private String lastSubmittedBy;
 
-    @JsonProperty
-    @Transient
-    private String lastEntryBy;
-
-//    @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
-//    @JsonIgnoreProperties(value = {"assignment"}, allowSetters = true)
-//    private Set<AssignmentForm> assignmentForms = new LinkedHashSet<>();
-
-    public void setForms(Set<String> forms) {
-        this.forms = forms;
-//        final var assignmentForms = forms.stream().map((f) -> {
-//            final var assignmentForm = new AssignmentForm();
-//            assignmentForm.setFormUid(f);
-//            return assignmentForm;
-//        }).collect(Collectors.toSet());
-//
-//        this.setAssignmentForms(assignmentForms);
-    }
-
-    @JsonProperty
+    @JsonProperty(value = "progressStatus")
     public AssignmentStatus getStatus() {
         return status;
-    }
-
-    @JsonProperty
-    public EntityScope getEntityScope() {
-        return entityScope;
     }
 
     @JsonProperty
     public Map<String, Object> getAllocatedResources() {
         return allocatedResources;
     }
-
-//    public void setAssignmentForms(Set<AssignmentForm> assignmentForms) {
-//        this.assignmentForms.clear();
-//        if (assignmentForms != null) {
-//            assignmentForms.forEach(i -> i.setAssignment(this));
-//            this.assignmentForms.addAll(assignmentForms);
-//        }
-//    }
-
-//    public Assignment assignmentForms(Set<AssignmentForm> assignmentForms) {
-//        this.setAssignmentForms(assignmentForms);
-//        return this;
-//    }
 
     /**
      * Returns the list of ancestor assignment UIDs up to any of the given

@@ -28,7 +28,9 @@ public abstract class AssignmentWithAccessMapper
         @Mapping(target = "assignment", source = "uid"),
         @Mapping(target = "orgUnit", source = "orgUnit.uid"),
         @Mapping(target = "team", source = "team.uid"),
-        @Mapping(target = "accessibleForms", expression = "java(formAccessService.getUserForms(entity.getForms()))"),
+        @Mapping(target = "accessibleForms",
+            expression =
+                "java(formAccessService.getUserForms(entity.getForms(), entity.getUid()))"),
     })
     public abstract AssignmentWithAccessDto toDto(Assignment entity);
 

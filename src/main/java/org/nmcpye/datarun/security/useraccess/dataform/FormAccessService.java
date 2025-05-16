@@ -60,7 +60,7 @@ public class FormAccessService {
         return hasAnyOfPermissions(form, DELETE_SUBMISSIONS);
     }
 
-    public Set<AssignmentFormDto> getUserForms(Set<String> assignmentForm) {
+    public Set<AssignmentFormDto> getUserForms(Set<String> assignmentForm, String assignmentUid) {
         if (!SecurityUtils.isAuthenticated()) {
             return Set.of();
         }
@@ -71,10 +71,9 @@ public class FormAccessService {
                 .contains(form))
             .map((form) -> AssignmentFormDto.builder()
                 .formUid(form)
-                .canViewSubmissions(canViewSubmissions(form))
+                .assignmentUid(assignmentUid)
                 .canAddSubmissions(canAddSubmissions(form))
                 .canEditSubmissions(canEditSubmissions(form))
-                .canApproveSubmissions(canApproveSubmissions(form))
                 .canDeleteSubmissions(canDeleteSubmissions(form))
                 .build())
             .collect(Collectors.toSet());
