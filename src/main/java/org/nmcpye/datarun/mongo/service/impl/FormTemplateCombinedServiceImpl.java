@@ -9,7 +9,7 @@ import org.nmcpye.datarun.mapper.dto.SaveFormTemplateDto;
 import org.nmcpye.datarun.mongo.domain.dataform.FormTemplate;
 import org.nmcpye.datarun.mongo.domain.dataform.FormTemplateVersion;
 import org.nmcpye.datarun.mongo.repository.FormTemplateRepository;
-import org.nmcpye.datarun.mongo.service.FormTemplateService;
+import org.nmcpye.datarun.mongo.service.FormTemplateCombinedService;
 import org.nmcpye.datarun.mongo.service.FormTemplateVersionService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.annotation.CacheEvict;
@@ -26,13 +26,15 @@ import java.util.Optional;
 @Service
 @Primary
 @Transactional
-public class FormTemplateServiceImpl implements FormTemplateService {
+public class FormTemplateCombinedServiceImpl
+    implements FormTemplateCombinedService {
     private final FormTemplateVersionService templateVersionService;
     private final FormTemplateRepository templateRepository;
     private final FormTemplateVersionMapper versionMapper;
 
-    public FormTemplateServiceImpl(FormTemplateVersionService templateVersionService,
-                                   FormTemplateRepository templateRepository, FormTemplateVersionMapper versionMapper) {
+    public FormTemplateCombinedServiceImpl(FormTemplateVersionService templateVersionService,
+                                           FormTemplateRepository templateRepository,
+                                           FormTemplateVersionMapper versionMapper) {
         this.templateVersionService = templateVersionService;
         this.templateRepository = templateRepository;
         this.versionMapper = versionMapper;

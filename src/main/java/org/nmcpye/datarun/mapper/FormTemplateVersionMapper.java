@@ -11,13 +11,15 @@ public interface FormTemplateVersionMapper
     extends BaseMapper<FormTemplateVersionDto, FormTemplateVersion> {
 
     @Mappings({
-//        @Mapping(target = "id", expression = "java(getVersionId(dto))"),
         @Mapping(target = "uid", ignore = true),
         @Mapping(target = "versionNumber", ignore = true),
     })
     FormTemplateVersion fromSaveDto(SaveFormTemplateDto dto);
 
-//    default String getVersionId(SaveFormTemplateDto dto) {
-//        return dto.getUid() + "_" + dto.getVersionNumber();
-//    }
+//    @Mappings({
+//        @Mapping(target = "formVersion", source = "uid"),
+//        @Mapping(target = "uid", source = "templateUid"),
+//        @Mapping(target = "versionNumber", source = "versionNumber"),
+//    })
+//    SaveFormTemplateDto toSaveDto(FormTemplateVersion version);
 }

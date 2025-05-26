@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.acl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.cache.concurrent.ConcurrentMapCache;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +16,7 @@ import org.springframework.security.acls.jdbc.LookupStrategy;
 import org.springframework.security.acls.model.AclCache;
 import org.springframework.security.acls.model.MutableAclService;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
+import org.springframework.security.acls.model.SidRetrievalStrategy;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
@@ -24,12 +27,21 @@ import javax.sql.DataSource;
  */
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)
+@Slf4j
 public class AclConfig {
     @Bean
     public MutableAclService aclService(ObjectProvider<DataSource> dataSource,
                                         LookupStrategy lookupStrategy,
                                         AclCache aclCache) {
         return new JdbcMutableAclService(dataSource.getIfUnique(), lookupStrategy, aclCache);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean({SidRetrievalStrategy.class})
+    public SidRetrievalStrategy sidRetrievalStrategy() {
+        SidRetrievalStrategyImpl impl = new SidRetrievalStrategyImpl();
+        log.info("Creating new 'SidRetrievalStrategy' ...");
+        return impl;
     }
 
     @Bean

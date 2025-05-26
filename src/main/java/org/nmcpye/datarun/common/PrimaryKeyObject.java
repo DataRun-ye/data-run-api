@@ -8,14 +8,16 @@ import java.io.Serializable;
  * that might not have use for a name and other fundamentals that come with
  * {@link IdentifiableObject}s.
  */
-public interface PrimaryKeyObject<T> extends Serializable {
+public interface PrimaryKeyObject<ID> extends Serializable {
 
-//    @JsonIgnore
-    T getId();
+    ID getId();
+
+    void setId(ID id);
 
     /**
      * @return external unique ID of the object as used in the RESTful API
      */
-//    @JsonProperty(value = "id")
     String getUid();
+
+    void setUid(String uid);
 }

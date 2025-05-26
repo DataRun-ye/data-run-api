@@ -2,6 +2,8 @@ package org.nmcpye.datarun.mongo.service.impl;
 
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
 import org.nmcpye.datarun.mapper.DataFormTemplateMapper;
 import org.nmcpye.datarun.mapper.FormTemplateMapper;
 import org.nmcpye.datarun.mapper.FormTemplateVersionMapper;
@@ -22,6 +24,7 @@ import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.GenericQueryService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,7 +44,8 @@ import java.util.stream.Collectors;
 @Service
 @Primary
 @Transactional
-public class FormTemplateVersionServiceImpl
+public class DefaultFormTemplateVersionService
+    extends DefaultMongoAuditableObjectService<FormTemplateVersion>
     implements FormTemplateVersionService {
     private final FormTemplateVersionRepository templateVersionRepository;
     private final FormTemplateRepository templateRepository;
@@ -53,23 +57,19 @@ public class FormTemplateVersionServiceImpl
     private final SaveDataFormTemplateMapper saveTemplateMapper;
     private final DataFormTemplateMapper dataFormTemplateMapper;
 
-    public FormTemplateVersionServiceImpl(
-        FormTemplateVersionRepository templateVersionRepository, FormTemplateRepository templateRepository,
-        VersionSequenceService seqSvc,
-        FormTemplateVersionMapper versionMapper, SaveDataFormTemplateMapper saveTemplateMapper,
-        MongoQueryBuilder mongoQueryBuilder, GenericQueryService queryService,
-        FormTemplateMapper formTemplateMapper,
-        DataFormTemplateMapper dataFormTemplateMapper) {
+    public DefaultFormTemplateVersionService(AuditableObjectRepository<FormTemplateVersion, String> repository, CacheManager cacheManager, FormTemplateVersionRepository templateVersionRepository, FormTemplateRepository templateRepository, VersionSequenceService seqSvc, MongoQueryBuilder mongoQueryBuilder, GenericQueryService queryService, FormTemplateVersionMapper versionMapper, FormTemplateMapper formTemplateMapper, SaveDataFormTemplateMapper saveTemplateMapper, DataFormTemplateMapper dataFormTemplateMapper) {
+        super(repository, cacheManager);
         this.templateVersionRepository = templateVersionRepository;
         this.templateRepository = templateRepository;
         this.seqSvc = seqSvc;
-        this.versionMapper = versionMapper;
-        this.saveTemplateMapper = saveTemplateMapper;
         this.mongoQueryBuilder = mongoQueryBuilder;
         this.queryService = queryService;
+        this.versionMapper = versionMapper;
         this.formTemplateMapper = formTemplateMapper;
+        this.saveTemplateMapper = saveTemplateMapper;
         this.dataFormTemplateMapper = dataFormTemplateMapper;
     }
+
 
     /**
      * pumping form template's version, and update/adding formTemplateVersion with the new details and persist into db
@@ -123,6 +123,18 @@ public class FormTemplateVersionServiceImpl
     }
 
     @Override
+    public Page<FormTemplateVersion> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
+        if (!SecurityUtils.isSuper()) {
+            final CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
+            final var paging = queryRequest.getPageableMongo();
+            return templateVersionRepository.findTopByTemplateUidInOrderByVersionNumberDesc(user.getUserFormsUIDs(),
+                paging);
+        }
+
+        return super.findAllByUser(queryRequest, jsonQueryBody);
+    }
+
+    @Override
     public Page<SaveFormTemplateDto> findAllLatest(QueryRequest queryRequest, String jsonQueryBody) {
         // load only lightweight masters
         Page<FormTemplate> masters = getMasterList(queryRequest, jsonQueryBody);
@@ -156,13 +168,14 @@ public class FormTemplateVersionServiceImpl
 
         final CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
 
-        query.addCriteria(Criteria.where("uid").in(user.getUserFormsUIDs()));
+        query.addCriteria(Criteria.where("templateUid").in(user.getUserFormsUIDs()));
     }
 
     private Page<FormTemplate> getMasterList(QueryRequest queryRequest, String jsonQueryBody) {
         final Query query = new Query();
         if (!SecurityUtils.isSuper()) {
-            applySecurityConstraints(query);
+            final CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
+            query.addCriteria(Criteria.where("uid").in(user.getUserFormsUIDs()));
         }
 
         if (queryRequest == null || !queryRequest.isIncludeDeleted()) {

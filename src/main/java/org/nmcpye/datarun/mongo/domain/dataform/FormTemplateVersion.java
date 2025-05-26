@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.mongo.domain.dataform;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -24,7 +25,10 @@ import java.util.Objects;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class FormTemplateVersion extends MongoAuditableBaseObject implements FormWithFields {
+public class FormTemplateVersion
+    extends MongoAuditableBaseObject
+    implements FormWithFields {
+    @JsonIgnore
     @Id
     private String id;
 

@@ -10,6 +10,8 @@ import lombok.Setter;
 import org.nmcpye.datarun.mongo.common.FormWithFields;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
+import org.nmcpye.datarun.mongo.domain.dataform.FormTemplate;
+import org.nmcpye.datarun.mongo.domain.dataform.FormTemplateVersion;
 
 import java.io.Serializable;
 import java.util.List;
@@ -25,13 +27,13 @@ import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
 @AllArgsConstructor
 public class SaveFormTemplateDto implements FormWithFields, Serializable {
     /**
-     * incoming is the master template uid, version uid can't be externally updated,
-     * each creat or update generate new one
+     * output the master {@link FormTemplate} uid
      */
     @Size(max = 11)
     private String uid;
 
     /**
+     * {@link FormTemplateVersion} uid,
      * formVersion is treated as output-only (i.e. set in backend and ignored on inbound JSON)
      */
     @JsonProperty(access = READ_ONLY)
@@ -47,7 +49,7 @@ public class SaveFormTemplateDto implements FormWithFields, Serializable {
     @NotNull
     @NotEmpty(message = "name cannot be empty")
     private String name;
-    private String code;
+
     @Size(max = 2000)
     private String description;
     private Boolean disabled;

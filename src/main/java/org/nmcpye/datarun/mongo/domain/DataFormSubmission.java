@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.mongo.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.el.PropertyNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -29,6 +30,7 @@ import java.util.*;
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormSubmission
     extends MongoAuditableBaseObject implements SoftDeleteObject<String> {
+    @JsonIgnore
     @Id
     private String id;
     @Indexed(unique = true)
@@ -57,9 +59,17 @@ public class DataFormSubmission
     @Indexed(name = "submission_version_idx")
     private Integer submissionVersion = 1;
 
+    /**
+     * Assigned Team uid
+     */
     @Indexed(name = "submission_team_idx")
     private String team;
+
+    /**
+     * Assigned Team code
+     */
     private String teamCode;
+
     private String orgUnit;
     private String orgUnitCode;
     private String orgUnitName;

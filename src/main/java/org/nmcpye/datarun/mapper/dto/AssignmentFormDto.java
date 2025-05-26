@@ -11,8 +11,8 @@ import java.io.Serializable;
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class AssignmentFormDto implements Serializable {
-    private String assignmentUid;
-    private String formUid;
+    private String assignment;
+    private String form;
     private boolean canAddSubmissions;
     private boolean canEditSubmissions;
     private boolean canDeleteSubmissions;

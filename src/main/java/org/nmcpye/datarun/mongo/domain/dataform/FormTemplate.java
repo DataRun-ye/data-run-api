@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.mongo.domain.dataform;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -22,6 +23,7 @@ import java.util.Objects;
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class FormTemplate
     extends MongoAuditableBaseObject {
+    @JsonIgnore
     @Id
     private String id;
 
@@ -45,8 +47,8 @@ public class FormTemplate
     @Field("deleted")
     private Boolean deleted = false;
 
-    @Field("code")
-    private String code;
+//    @Field("code")
+//    private String code;
 
     @Field("name")
     @NotNull

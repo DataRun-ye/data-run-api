@@ -1,10 +1,11 @@
 package org.nmcpye.datarun.web.rest.v1.formtemplate;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.mongo.domain.dataform.FormTemplate;
+import org.nmcpye.datarun.mongo.domain.dataform.FormTemplateVersion;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
-import org.nmcpye.datarun.mongo.repository.FormTemplateRepository;
-import org.nmcpye.datarun.mongo.service.FormTemplateService;
+import org.nmcpye.datarun.mongo.repository.FormTemplateVersionRepository;
+import org.nmcpye.datarun.mongo.service.FormTemplateVersionService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
@@ -16,48 +17,50 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static org.nmcpye.datarun.web.rest.v1.formtemplate.FormTemplateResource.V1;
+import static org.nmcpye.datarun.web.rest.v1.formtemplate.FormTemplateVersionResource.V1;
 
 /**
- * REST controller for managing {@link FormTemplate}.
+ * REST controller for managing {@link FormTemplateVersion}.
  */
 @RestController
 @RequestMapping(value = {V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 @Slf4j
-public class FormTemplateResource extends MongoBaseResource<FormTemplate> {
-    protected static final String NAME = "/formTemplates";
+public class FormTemplateVersionResource extends MongoBaseResource<FormTemplateVersion> {
+    protected static final String NAME = "/formTemplateVersions";
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
-    private final FormTemplateService templateService;
+    private final FormTemplateVersionService templateService;
+    protected final FormTemplateProcessor formTemplateProcessor;
 
-    protected FormTemplateResource(FormTemplateService service,
-                                   FormTemplateRepository repository,
-                                   FormTemplateProcessor formTemplateProcessor) {
+    protected FormTemplateVersionResource(FormTemplateVersionService service,
+                                          FormTemplateVersionRepository repository,
+                                          FormTemplateProcessor formTemplateProcessor) {
         super(service, repository);
         this.templateService = service;
+        this.formTemplateProcessor = formTemplateProcessor;
     }
 
     @Override
     protected String getName() {
-        return "formTemplates";
+        return "formTemplateVersions";
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<FormTemplate> entities) {
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(@Valid List<FormTemplateVersion> entities) {
         return super.saveAll(entities);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveOne(FormTemplate entity) {
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(@Valid FormTemplateVersion entity) {
         return super.saveOne(entity);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<?> saveReturnSaved(FormTemplate entity) {
+    public ResponseEntity<?> saveReturnSaved(@Valid FormTemplateVersion entity) {
         return super.saveReturnSaved(entity);
     }
 
@@ -65,5 +68,10 @@ public class FormTemplateResource extends MongoBaseResource<FormTemplate> {
     @Override
     public ResponseEntity<Void> deleteByIdUid(String id) {
         return super.deleteByIdUid(id);
+    }
+
+    @Override
+    public ResponseEntity<FormTemplateVersion> getById(String id) {
+        return super.getById(id);
     }
 }

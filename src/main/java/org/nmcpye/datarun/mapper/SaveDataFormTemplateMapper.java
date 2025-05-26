@@ -13,7 +13,6 @@ public interface SaveDataFormTemplateMapper
         @Mapping(target = "uid", source = "master.uid"),
         @Mapping(target = "disabled", source = "master.disabled"),
         @Mapping(target = "deleted", source = "master.deleted"),
-        @Mapping(target = "code", source = "master.code"),
         @Mapping(target = "name", source = "master.name"),
         @Mapping(target = "description", source = "master.description"),
         @Mapping(target = "defaultLocale", source = "master.defaultLocale"),

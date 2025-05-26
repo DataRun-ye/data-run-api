@@ -19,6 +19,7 @@ public abstract class AssignmentWithAccessMapper
         @Mapping(source = "assignment", target = "uid"),
         @Mapping(source = "orgUnit", target = "orgUnit.uid"),
         @Mapping(source = "team", target = "team.uid"),
+        @Mapping(source = "progressStatus", target = "status"),
 //        @Mapping(source = "accessibleForms.formUid", target = "forms"),
     })
     public abstract Assignment toEntity(AssignmentWithAccessDto dto);
@@ -28,6 +29,7 @@ public abstract class AssignmentWithAccessMapper
         @Mapping(target = "assignment", source = "uid"),
         @Mapping(target = "orgUnit", source = "orgUnit.uid"),
         @Mapping(target = "team", source = "team.uid"),
+        @Mapping(target = "progressStatus", source = "status", defaultValue = "NOT_STARTED"),
         @Mapping(target = "accessibleForms",
             expression =
                 "java(formAccessService.getUserForms(entity.getForms(), entity.getUid()))"),

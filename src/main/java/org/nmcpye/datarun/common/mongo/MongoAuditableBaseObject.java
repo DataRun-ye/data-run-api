@@ -30,12 +30,6 @@ public abstract class MongoAuditableBaseObject
 
     private static final long serialVersionUID = 1L;
 
-    public abstract String getId();
-
-    public abstract String getUid();
-
-    public abstract void setUid(String uid);
-
     @CreatedBy
     @Field("createdBy")
     protected String createdBy;

@@ -1,8 +1,10 @@
 package org.nmcpye.datarun.mongo.service;
 
 
+import org.nmcpye.datarun.common.AuditableObjectService;
 import org.nmcpye.datarun.mapper.dto.SaveFormTemplateDto;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
+import org.nmcpye.datarun.mongo.domain.dataform.FormTemplateVersion;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +14,8 @@ import java.util.Optional;
 /**
  * Service Custom Interface for managing {@link DataFormTemplate}.
  */
-public interface FormTemplateVersionService {
+public interface FormTemplateVersionService
+    extends AuditableObjectService<FormTemplateVersion, String> {
     SaveFormTemplateDto saveNewVersion(SaveFormTemplateDto saveFormTemplateDto);
 
     @Transactional

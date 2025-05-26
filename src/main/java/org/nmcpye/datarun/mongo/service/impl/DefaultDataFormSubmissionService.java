@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 @Service
 @Primary
 @Slf4j
-public class DataFormSubmissionServiceImpl
+public class DefaultDataFormSubmissionService
     extends DefaultMongoAuditableObjectService<DataFormSubmission>
     implements DataFormSubmissionService {
 
@@ -50,7 +50,7 @@ public class DataFormSubmissionServiceImpl
     private final FormTemplateVersionRepository versionRepository;
     private final FormAccessService formAccessService;
 
-    public DataFormSubmissionServiceImpl(
+    public DefaultDataFormSubmissionService(
         DataFormSubmissionRepository repository,
         CacheManager cacheManager,
         DataFormSubmissionHistoryService submissionHistoryService, MongoTemplate mongoTemplate,
@@ -117,8 +117,7 @@ public class DataFormSubmissionServiceImpl
             throw new IllegalQueryException(ErrorCode.E1112, submission.getTeam());
         }
 
-        /// TODO move to form template and check for existence of formVersion
-        versionRepository.findByTemplateUidAndVersionNumber(submission.getForm(), submission.getVersion())
+        versionRepository.findByUid(submission.getFormVersion())
             .ifPresentOrElse((f) -> {
                 submission.setFormVersion(f.getUid());
             }, () -> {
@@ -128,37 +127,23 @@ public class DataFormSubmissionServiceImpl
                     new ErrorMessage(ErrorCode.E1114, "Form", submission.getForm() + ":" + submission.getVersion()));
             });
 
-        if (submission.getAssignment() != null) {
-            assignmentRepository.findByUid(submission.getAssignment())
-                .ifPresentOrElse((a) -> {
-                        submission.setAssignment(a.getUid());
-                        submission.setOrgUnit(a.getOrgUnit().getUid());
-                        submission.setOrgUnitCode(a.getOrgUnit().getCode());
-                        submission.setOrgUnitName(a.getOrgUnit().getName());
-                        submission.setActivity(a.getActivity().getUid());
-                    },
-                    () -> {
-                        log.error("submission by: for form: {}, with assignment: {} not in the system",
-                            submission.getForm(),
-                            submission.getAssignment());
-                        throw new IllegalQueryException(
-                            new ErrorMessage(ErrorCode.E1106, "Assignment", submission.getAssignment()));
-                    });
-        }
-
-        // TODO check if submission team is a user team or managed and edit team
-        teamRepository.findByUid(submission.getTeam())
+        assignmentRepository.findByUid(submission.getAssignment())
             .ifPresentOrElse((a) -> {
-                    submission.setTeam(a.getUid());
-                    submission.setTeamCode(a.getCode());
+                    submission.setAssignment(a.getUid());
+                    submission.setOrgUnit(a.getOrgUnit().getUid());
+                    submission.setOrgUnitCode(a.getOrgUnit().getCode());
+                    submission.setOrgUnitName(a.getOrgUnit().getName());
+                    submission.setActivity(a.getActivity().getUid());
+                    submission.setTeam(a.getTeam().getUid());
+                    submission.setTeamCode(a.getTeam().getCode());
                 },
                 () -> {
-                    log.error("submission by for form: {}, with team: {} not in the system",
-                        submission.getForm(), submission.getTeam());
+                    log.error("assignment: `{}` for form: {}, not in the system",
+                        submission.getAssignment(),
+                        submission.getForm());
                     throw new IllegalQueryException(
-                        new ErrorMessage(ErrorCode.E1106, "Team", submission.getTeam()));
+                        new ErrorMessage(ErrorCode.E1106, "Assignment", submission.getAssignment()));
                 });
-
         submission
             .createSubmission()
             .checkAttributes();

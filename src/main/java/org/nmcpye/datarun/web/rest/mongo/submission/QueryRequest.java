@@ -86,6 +86,14 @@ public class QueryRequest {
         return PageRequest.of(getPage(), getSize());
     }
 
+    public Pageable getPageableMongo() {
+        if (!isPaged()) {
+            return PageRequest.of(0, Integer.MAX_VALUE);
+        }
+
+        return PageRequest.of(getPage(), getSize());
+    }
+
     public int getSize() {
         if (!isPaged()) {
             return Integer.MAX_VALUE;

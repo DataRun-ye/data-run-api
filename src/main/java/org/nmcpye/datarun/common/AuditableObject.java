@@ -6,10 +6,6 @@ import java.time.Instant;
  * @author Hamza Assada, 20/03/2025
  */
 public interface AuditableObject<ID> extends PrimaryKeyObject<ID> {
-    void setId(ID id);
-
-    String getUid();
-
     String getCreatedBy();
 
     void setCreatedBy(String user);
@@ -21,5 +17,4 @@ public interface AuditableObject<ID> extends PrimaryKeyObject<ID> {
     void setLastModifiedBy(String user);
 
     Instant getLastModifiedDate();
-
 }

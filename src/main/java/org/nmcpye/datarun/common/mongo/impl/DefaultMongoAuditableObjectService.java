@@ -45,9 +45,9 @@ public abstract class DefaultMongoAuditableObjectService<T extends MongoAuditabl
             applySecurityConstraints(query);
         }
 
-        if (queryRequest == null || !queryRequest.isIncludeDeleted()) {
-            query.addCriteria(Criteria.where("deleted").is(false));
-        }
+//        if (queryRequest == null || !queryRequest.isIncludeDeleted()) {
+//            query.addCriteria(Criteria.where("deleted").is(false));
+//        }
 
         if (jsonQueryBody != null && !jsonQueryBody.isEmpty()) {
             try {
