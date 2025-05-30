@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.security.useraccess.accessfilter;
 
-import org.nmcpye.datarun.domain.Activity;
+import org.nmcpye.datarun.activity.Activity;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;

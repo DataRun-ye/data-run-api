@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mapper;
 
 import org.mapstruct.*;
-import org.nmcpye.datarun.drun.postgres.domain.Assignment;
+import org.nmcpye.datarun.assignment.Assignment;
 import org.nmcpye.datarun.mapper.dto.AssignmentWithAccessDto;
 import org.nmcpye.datarun.security.useraccess.dataform.FormAccessService;
 import org.springframework.beans.factory.annotation.Autowired;

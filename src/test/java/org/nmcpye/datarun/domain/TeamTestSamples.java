@@ -1,6 +1,6 @@
 //package org.nmcpye.datarun.domain;
 //
-//import org.nmcpye.datarun.drun.postgres.domain.Team;
+//import org.nmcpye.datarun.team.Team;
 //
 //import java.util.Random;
 //import java.util.UUID;

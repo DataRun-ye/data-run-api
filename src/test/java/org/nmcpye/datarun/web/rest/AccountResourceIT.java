@@ -1,13 +1,6 @@
 package org.nmcpye.datarun.web.rest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,12 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nmcpye.datarun.IntegrationTest;
+import org.nmcpye.datarun.user.repository.UserRepository;
 import org.nmcpye.datarun.config.Constants;
-import org.nmcpye.datarun.domain.User;
-import org.nmcpye.datarun.repository.AuthorityRepository;
-import org.nmcpye.datarun.common.repository.UserRepository;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.user.User;
 import org.nmcpye.datarun.drun.postgres.service.UserService;
+import org.nmcpye.datarun.userauthority.AuthorityRepository;
+import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.service.dto.AdminUserDTO;
 import org.nmcpye.datarun.service.dto.PasswordChangeDTO;
 import org.nmcpye.datarun.web.rest.vm.KeyAndPasswordVM;
@@ -32,6 +25,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * Integration tests for the {@link AccountResource} REST controller.

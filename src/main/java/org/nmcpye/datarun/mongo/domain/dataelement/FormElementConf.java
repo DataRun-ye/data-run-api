@@ -15,7 +15,8 @@ import java.util.Objects;
 @JsonIgnoreProperties(value = {"path"}, allowGetters = true)
 @Getter
 @Setter
-public abstract class FormElementConf {
+public abstract class FormElementConf
+    implements ElementInterface<String> {
     private String path;
 
     private String parent;
@@ -31,7 +32,7 @@ public abstract class FormElementConf {
     private Map<String, String> label;
 
     private List<DataFieldRule> rules = new ArrayList<>();
-    
+
     private Integer order;
 
     private List<String> appearance;

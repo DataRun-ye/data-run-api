@@ -25,7 +25,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.nmcpye.datarun.IntegrationTest;
 import org.nmcpye.datarun.config.Constants;
-import org.nmcpye.datarun.domain.User;
+import org.nmcpye.datarun.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mail.MailSendException;

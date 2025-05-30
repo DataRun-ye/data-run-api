@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
 import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
+import org.nmcpye.datarun.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.mongo.domain.MetadataSchema;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;
@@ -10,7 +10,6 @@ import org.nmcpye.datarun.mongo.repository.MetadataSchemaRepository;
 import org.nmcpye.datarun.mongo.service.MetadataSchemaService;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

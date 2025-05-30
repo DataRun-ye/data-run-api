@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.nmcpye.datarun.domain.AuthorityTestSamples.*;
 
 import org.junit.jupiter.api.Test;
+import org.nmcpye.datarun.userauthority.Authority;
 import org.nmcpye.datarun.web.rest.TestUtil;
 
 class AuthorityTest {

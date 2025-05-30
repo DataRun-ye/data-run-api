@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.security.useraccess.dataform;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
+import org.nmcpye.datarun.common.enumeration.FormPermission;
 import org.nmcpye.datarun.mapper.dto.AssignmentFormDto;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.stereotype.Service;
@@ -10,8 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission.*;
 
 /**
  * @author Hamza Assada, 25/04/2025

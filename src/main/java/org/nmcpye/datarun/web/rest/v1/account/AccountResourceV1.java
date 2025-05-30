@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.web.rest.v1.account;
 
-import org.nmcpye.datarun.common.repository.UserRepository;
+import org.nmcpye.datarun.user.repository.UserRepository;
 import org.nmcpye.datarun.drun.postgres.service.UserService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;

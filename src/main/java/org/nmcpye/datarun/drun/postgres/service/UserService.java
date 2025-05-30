@@ -2,11 +2,11 @@ package org.nmcpye.datarun.drun.postgres.service;
 
 import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
-import org.nmcpye.datarun.common.repository.UserRepository;
+import org.nmcpye.datarun.user.repository.UserRepository;
 import org.nmcpye.datarun.config.Constants;
-import org.nmcpye.datarun.domain.Authority;
-import org.nmcpye.datarun.domain.User;
-import org.nmcpye.datarun.repository.AuthorityRepository;
+import org.nmcpye.datarun.userauthority.Authority;
+import org.nmcpye.datarun.user.User;
+import org.nmcpye.datarun.userauthority.AuthorityRepository;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.security.useraccess.UserAccessService;
 import org.nmcpye.datarun.service.EmailAlreadyUsedException;

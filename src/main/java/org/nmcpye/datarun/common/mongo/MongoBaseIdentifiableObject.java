@@ -68,7 +68,7 @@ abstract public class MongoBaseIdentifiableObject
     @Override
     @JsonProperty
     public String getDisplayName() {
-        return getTranslation("NAME", getName());
+        return getTranslation("name", getName());
     }
 
     @Override
@@ -110,7 +110,7 @@ abstract public class MongoBaseIdentifiableObject
             return defaultValue;
         }
 
-        return translationCache.computeIfAbsent(Translation.getCacheKey(localeKey, translationKey), key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
+        return translationCache.computeIfAbsent(Translation.getCacheKey(localeKey, translationKey.toLowerCase()), key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
     }
 
     // -------------------------------------------------------------------------

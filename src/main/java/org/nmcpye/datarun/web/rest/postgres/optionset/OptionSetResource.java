@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest.postgres.optionset;
 
-import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
-import org.nmcpye.datarun.drun.postgres.repository.OptionSetRepository;
+import org.nmcpye.datarun.optionset.OptionSet;
+import org.nmcpye.datarun.optionset.repository.OptionSetRepository;
 import org.nmcpye.datarun.drun.postgres.service.OptionSetService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.security.AuthoritiesConstants;

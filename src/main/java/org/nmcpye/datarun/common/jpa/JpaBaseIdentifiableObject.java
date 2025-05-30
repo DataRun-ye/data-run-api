@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
@@ -31,22 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @MappedSuperclass
 @Getter
 @Setter
-public class JpaBaseIdentifiableObject
+abstract public class JpaBaseIdentifiableObject
     extends JpaAuditableObject implements IdentifiableObject<Long> {
-
-
-    /**
-     * The unique code for this object.
-     */
-    @Column(name = "code")
-    protected String code;
-
-    /**
-     * The name of this object. Required and unique.
-     */
-    @NotNull
-    @Column(name = "name", nullable = false)
-    protected String name;
 
     /**
      * Set of available object translation, normally filtered by locale.
@@ -76,6 +61,11 @@ public class JpaBaseIdentifiableObject
     public Map<String, String> getTranslationCache() {
         return translationCache;
     }
+
+    public abstract String getName();
+    public abstract void setName(String name);
+    public abstract String getCode();
+    public abstract void setCode(String code);
 
     /**
      * Compares objects based on display name. A null display name is ordered
@@ -196,7 +186,7 @@ public class JpaBaseIdentifiableObject
      * @param other the identifiable object to compare this object against.
      * @return true if equal.
      */
-    public boolean typedEquals(IdentifiableObject other) {
+    public boolean typedEquals(IdentifiableObject<?> other) {
         if (other == null) {
             return false;
         }

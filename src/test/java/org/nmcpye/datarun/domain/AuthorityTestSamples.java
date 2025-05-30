@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.domain;
 
+import org.nmcpye.datarun.userauthority.Authority;
+
 import java.util.UUID;
 
 public class AuthorityTestSamples {

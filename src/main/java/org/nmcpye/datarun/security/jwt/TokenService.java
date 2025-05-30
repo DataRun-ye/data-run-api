@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.security.jwt;
 
-import org.nmcpye.datarun.common.repository.UserRepository;
-import org.nmcpye.datarun.domain.Authority;
-import org.nmcpye.datarun.drun.postgres.domain.RefreshToken;
+import org.nmcpye.datarun.user.repository.UserRepository;
+import org.nmcpye.datarun.userauthority.Authority;
+import org.nmcpye.datarun.userrefreshtoken.RefreshToken;
 import org.nmcpye.datarun.drun.postgres.dto.RefreshTokenDto;
-import org.nmcpye.datarun.drun.postgres.repository.RefreshTokenRepository;
+import org.nmcpye.datarun.userrefreshtoken.repository.RefreshTokenRepository;
 import org.nmcpye.datarun.security.datarun.TokenRefreshException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;

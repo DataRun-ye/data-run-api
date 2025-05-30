@@ -2,7 +2,7 @@ package org.nmcpye.datarun.drun.postgres.common;
 
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.domain.User;
+import org.nmcpye.datarun.user.User;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.data.jpa.domain.Specification;

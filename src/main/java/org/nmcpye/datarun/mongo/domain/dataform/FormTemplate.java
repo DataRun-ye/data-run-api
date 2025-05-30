@@ -5,7 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
+import org.nmcpye.datarun.common.mongo.MongoBaseIdentifiableObject;
+import org.nmcpye.datarun.drun.postgres.common.translation.Translation;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -13,6 +14,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * A FormTemplate.
@@ -22,7 +24,7 @@ import java.util.Objects;
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class FormTemplate
-    extends MongoAuditableBaseObject {
+    extends MongoBaseIdentifiableObject {
     @JsonIgnore
     @Id
     private String id;
@@ -47,9 +49,6 @@ public class FormTemplate
     @Field("deleted")
     private Boolean deleted = false;
 
-//    @Field("code")
-//    private String code;
-
     @Field("name")
     @NotNull
     private String name;
@@ -64,6 +63,17 @@ public class FormTemplate
 
     public FormTemplate() {
         setAutoFields();
+    }
+
+    public void setLabel(Map<String, String> label) {
+        final var translations = label.entrySet().stream()
+            .map(entry -> Translation
+                .builder()
+                .locale(entry.getKey())
+                .property("name")
+                .value(entry.getValue()).build()).collect(Collectors.toSet());
+        setTranslations(translations);
+        this.label = label;
     }
 
     public FormTemplate versionNumber(Integer currentVersion) {
@@ -117,5 +127,11 @@ public class FormTemplate
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), getUid(), getVersionNumber());
+    }
+
+    @JsonIgnore
+    @Override
+    public String getCode() {
+        return "";
     }
 }

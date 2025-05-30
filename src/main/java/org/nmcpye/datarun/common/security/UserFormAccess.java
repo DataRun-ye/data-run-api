@@ -2,12 +2,10 @@ package org.nmcpye.datarun.common.security;
 
 import lombok.Builder;
 import lombok.Value;
-import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
+import org.nmcpye.datarun.common.enumeration.FormPermission;
 
 import java.time.Instant;
 import java.util.Set;
-
-import static org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission.*;
 
 /**
  * @author Hamza Assada, 24/04/2025

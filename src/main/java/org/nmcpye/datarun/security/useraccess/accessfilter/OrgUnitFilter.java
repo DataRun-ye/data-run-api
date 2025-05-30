@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.security.useraccess.accessfilter;
 
-import org.nmcpye.datarun.drun.postgres.domain.Assignment;
-import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
+import org.nmcpye.datarun.orgunit.OrgUnit;
+import org.nmcpye.datarun.assignment.Assignment;
+import org.nmcpye.datarun.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;

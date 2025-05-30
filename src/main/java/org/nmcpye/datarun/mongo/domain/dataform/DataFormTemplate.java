@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.mongo.MongoBaseIdentifiableObject;
+import org.nmcpye.datarun.drun.postgres.common.translation.Translation;
 import org.nmcpye.datarun.mongo.common.FormWithFields;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
@@ -17,6 +18,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * A DataFormTemplate.
@@ -77,6 +79,17 @@ public class DataFormTemplate
     @JsonIgnore
     public String getId() {
         return id;
+    }
+
+    public void setLabel(Map<String, String> label) {
+        final var translations = label.entrySet().stream()
+            .map(entry -> Translation
+                .builder()
+                .locale(entry.getKey())
+                .property("name")
+                .value(entry.getValue()).build()).collect(Collectors.toSet());
+        setTranslations(translations);
+        this.label = label;
     }
 
     public DataFormTemplate version(Integer version) {

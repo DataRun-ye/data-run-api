@@ -3,7 +3,7 @@ package org.nmcpye.datarun.mongo.service.impl;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.common.repository.UserRepository;
+import org.nmcpye.datarun.user.repository.UserRepository;
 import org.nmcpye.datarun.mapper.FormTemplateVersionMapper;
 import org.nmcpye.datarun.mapper.dto.SaveFormTemplateDto;
 import org.nmcpye.datarun.mongo.domain.dataform.FormTemplate;

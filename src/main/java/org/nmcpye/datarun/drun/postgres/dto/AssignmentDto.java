@@ -7,7 +7,7 @@
 //import java.io.Serializable;
 //
 ///**
-// * DTO for {@link org.nmcpye.datarun.drun.postgres.domain.Assignment}
+// * DTO for {@link org.nmcpye.datarun.assignment.Assignment}
 // */
 //@Value
 //public class AssignmentDto implements Serializable {

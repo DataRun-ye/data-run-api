@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest.postgres.usergroup;
 
-import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
-import org.nmcpye.datarun.drun.postgres.repository.UserGroupRepository;
+import org.nmcpye.datarun.usegroup.UserGroup;
+import org.nmcpye.datarun.usegroup.repository.UserGroupRepository;
 import org.nmcpye.datarun.drun.postgres.service.UserGroupService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;

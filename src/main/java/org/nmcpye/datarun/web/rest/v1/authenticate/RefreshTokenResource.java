@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.rest.v1.authenticate;
 
 import jakarta.validation.Valid;
 import org.nmcpye.datarun.drun.postgres.dto.RefreshTokenDto;
-import org.nmcpye.datarun.drun.postgres.repository.RefreshTokenRepository;
+import org.nmcpye.datarun.userrefreshtoken.repository.RefreshTokenRepository;
 import org.nmcpye.datarun.security.jwt.TokenService;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshRequest;

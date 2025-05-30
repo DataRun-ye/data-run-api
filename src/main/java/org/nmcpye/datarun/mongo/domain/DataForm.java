@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.mongo.MongoBaseIdentifiableObject;
-import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
+import org.nmcpye.datarun.optionset.OptionSet;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;

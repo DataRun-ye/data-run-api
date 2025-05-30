@@ -3,8 +3,8 @@
 //import org.mapstruct.BeanMapping;
 //import org.mapstruct.Mapping;
 //import org.mapstruct.Named;
-//import org.nmcpye.datarun.domain.Authority;
-//import org.nmcpye.datarun.domain.User;
+//import org.nmcpye.datarun.userauthority.Authority;
+//import org.nmcpye.datarun.user.User;
 //import org.nmcpye.datarun.drun.postgres.dto.UserDto;
 //import org.nmcpye.datarun.service.dto.AdminUserDTO;
 //import org.springframework.stereotype.Service;

@@ -7,14 +7,14 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.nmcpye.datarun.domain.User;
+import org.nmcpye.datarun.user.User;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * DTO for {@link org.nmcpye.datarun.domain.User}
+ * DTO for {@link org.nmcpye.datarun.user.User}
  */
 @Getter
 @Setter

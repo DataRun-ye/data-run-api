@@ -4,10 +4,10 @@ import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.domain.User;
-import org.nmcpye.datarun.drun.postgres.domain.Assignment;
-import org.nmcpye.datarun.drun.postgres.domain.Team;
+import org.nmcpye.datarun.activity.Activity;
+import org.nmcpye.datarun.user.User;
+import org.nmcpye.datarun.team.Team;
+import org.nmcpye.datarun.assignment.Assignment;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.data.jpa.domain.Specification;
 

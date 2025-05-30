@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.security.useraccess.accessfilter;
 
-import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
+import org.nmcpye.datarun.activity.Activity;
+import org.nmcpye.datarun.optionset.OptionSet;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
 import org.nmcpye.datarun.mongo.service.impl.UserAccessibleElementsService;
 import org.nmcpye.datarun.security.CurrentUserDetails;

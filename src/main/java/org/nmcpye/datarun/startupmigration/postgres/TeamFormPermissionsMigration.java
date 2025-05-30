@@ -2,8 +2,8 @@ package org.nmcpye.datarun.startupmigration.postgres;
 
 import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.drun.postgres.domain.Team;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
+import org.nmcpye.datarun.team.Team;
+import org.nmcpye.datarun.team.repository.TeamRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

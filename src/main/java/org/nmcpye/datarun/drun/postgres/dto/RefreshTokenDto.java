@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.nmcpye.datarun.drun.postgres.domain.RefreshToken;
+import org.nmcpye.datarun.userrefreshtoken.RefreshToken;
 
 import java.time.Instant;
 import java.util.Objects;

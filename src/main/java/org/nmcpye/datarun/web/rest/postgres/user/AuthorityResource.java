@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.postgres.user;
 
 import jakarta.validation.Valid;
-import org.nmcpye.datarun.domain.Authority;
-import org.nmcpye.datarun.repository.AuthorityRepository;
+import org.nmcpye.datarun.userauthority.Authority;
+import org.nmcpye.datarun.userauthority.AuthorityRepository;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.slf4j.Logger;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * REST controller for managing {@link org.nmcpye.datarun.domain.Authority}.
+ * REST controller for managing {@link Authority}.
  */
 @RestController
 @RequestMapping(value = {AuthorityResource.CUSTOM, AuthorityResource.V1})

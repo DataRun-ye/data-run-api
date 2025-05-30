@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.schema;
 
-import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
+import org.nmcpye.datarun.orgunit.OrgUnit;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;

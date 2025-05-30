@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest.postgres.orgunit;
 
-import org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroup;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitGroupRepository;
+import org.nmcpye.datarun.orgunitgroup.OrgUnitGroup;
+import org.nmcpye.datarun.orgunitgroup.repository.OrgUnitGroupRepository;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitGroupService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;

@@ -7,8 +7,8 @@ import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.common.security.UserFormAccess;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
+import org.nmcpye.datarun.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.team.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepository;
 import org.nmcpye.datarun.mongo.repository.FormTemplateVersionRepository;
@@ -191,7 +191,6 @@ public class DefaultDataFormSubmissionService
     private void addEntryToHistory(DataFormSubmission dataFormSubmission) {
         assignmentRepository.findByUid(dataFormSubmission.getAssignment())
             .ifPresentOrElse((assignment -> {
-                assignment.setLastSubmittedBy(SecurityUtils.getCurrentUserLoginOrThrow());
                 assignment.setStatus(dataFormSubmission.getStatus());
                 assignmentRepository.save(assignment);
             }), () -> {

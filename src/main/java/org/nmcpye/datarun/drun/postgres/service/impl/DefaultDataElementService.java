@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
-import org.nmcpye.datarun.drun.postgres.domain.DataElement;
-import org.nmcpye.datarun.drun.postgres.repository.DataElementRepository;
-import org.nmcpye.datarun.drun.postgres.repository.OptionSetRepository;
+import org.nmcpye.datarun.dataelement.DataElement;
+import org.nmcpye.datarun.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.drun.postgres.service.DataElementService;
+import org.nmcpye.datarun.optionset.repository.OptionSetRepository;
 import org.nmcpye.datarun.security.useraccess.UserAccessService;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;

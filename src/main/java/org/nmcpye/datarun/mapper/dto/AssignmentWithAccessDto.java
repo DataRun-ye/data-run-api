@@ -2,7 +2,7 @@ package org.nmcpye.datarun.mapper.dto;
 
 import lombok.Builder;
 import lombok.Getter;
-import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
+import org.nmcpye.datarun.common.enumeration.AssignmentStatus;
 
 import java.util.Set;
 

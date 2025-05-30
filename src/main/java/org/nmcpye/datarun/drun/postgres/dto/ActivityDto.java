@@ -7,7 +7,7 @@
 //import java.time.Instant;
 //
 ///**
-// * DTO for {@link org.nmcpye.datarun.domain.Activity}
+// * DTO for {@link org.nmcpye.datarun.activity.Activity}
 // */
 //@Value
 //public class ActivityDto implements Serializable {

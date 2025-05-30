@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.service;
 
 import org.nmcpye.datarun.common.jpa.JpaAuditableObjectService;
-import org.nmcpye.datarun.drun.postgres.domain.DataElement;
+import org.nmcpye.datarun.dataelement.DataElement;
 
 /**
  * Service Interface for managing {@link DataElement}.

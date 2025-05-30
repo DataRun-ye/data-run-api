@@ -1,16 +1,16 @@
 package org.nmcpye.datarun.security;
 
-import org.nmcpye.datarun.common.repository.UserRepository;
+import org.nmcpye.datarun.user.repository.UserRepository;
 import org.nmcpye.datarun.common.security.CurrentUserActivityInfo;
 import org.nmcpye.datarun.common.security.CurrentUserGroupInfo;
 import org.nmcpye.datarun.common.security.CurrentUserTeamInfo;
 import org.nmcpye.datarun.common.security.UserFormAccess;
-import org.nmcpye.datarun.domain.Activity;
+import org.nmcpye.datarun.activity.Activity;
 import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
-import org.nmcpye.datarun.drun.postgres.domain.Team;
-import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
-import org.nmcpye.datarun.drun.postgres.repository.UserGroupRepository;
+import org.nmcpye.datarun.team.Team;
+import org.nmcpye.datarun.usegroup.UserGroup;
+import org.nmcpye.datarun.team.repository.TeamRepository;
+import org.nmcpye.datarun.usegroup.repository.UserGroupRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.nmcpye.datarun.common.repository.UserRepository.*;
+import static org.nmcpye.datarun.user.repository.UserRepository.*;
 
 @Service
 @Transactional(readOnly = true)

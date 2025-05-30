@@ -1,11 +1,16 @@
 package org.nmcpye.datarun.drun.postgres.common.translation;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
+import lombok.*;
 
 import java.io.Serializable;
 import java.util.Objects;
 
+@Setter
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Translation implements Serializable {
 
     private String locale;
@@ -13,15 +18,6 @@ public class Translation implements Serializable {
     private String property;
 
     private String value;
-
-    public Translation() {
-    }
-
-    public Translation(String locale, String property, String value) {
-        this.locale = locale;
-        this.property = property;
-        this.value = value;
-    }
 
     /**
      * Creates a cache key.
@@ -63,35 +59,11 @@ public class Translation implements Serializable {
     // Accessors
     // -------------------------------------------------------------------------------
 
-    @JsonProperty
-    public String getLocale() {
-        return locale;
-    }
-
-    public void setLocale(String locale) {
-        this.locale = locale;
-    }
-
-    @JsonProperty
-    public String getProperty() {
-        return property;
-    }
-
-    public void setProperty(String property) {
-        this.property = property;
-    }
-
-    @JsonProperty
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
-
     @Override
     public String toString() {
-        return MoreObjects.toStringHelper(this).add("locale", locale).add("property", property).add("value", value).toString();
+        return MoreObjects.toStringHelper(this)
+            .add("locale", locale)
+            .add("property", property)
+            .add("value", value).toString();
     }
 }

@@ -13,7 +13,7 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.io.Serializable;
+import java.io.Serial;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -26,8 +26,9 @@ import java.util.Objects;
 @Getter
 @Setter
 public abstract class MongoAuditableBaseObject
-    implements AuditableObject<String>, Serializable {
+    implements AuditableObject<String> {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @CreatedBy

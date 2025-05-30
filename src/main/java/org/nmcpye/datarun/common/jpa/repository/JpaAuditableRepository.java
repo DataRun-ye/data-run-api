@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.common.jpa.repository;
 
-import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
+import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,8 +13,8 @@ import java.util.Optional;
 import java.util.Set;
 
 @NoRepositoryBean
-public interface JpaAuditableRepository<T extends JpaAuditableObject>
-    extends JpaRepository<T, Long>, JpaSpecificationExecutor<T>, AuditableObjectRepository<T, Long> {
+public interface JpaAuditableRepository<T extends AuditableObject<Long>>
+        extends JpaRepository<T, Long>, JpaSpecificationExecutor<T>, AuditableObjectRepository<T, Long> {
     void deleteByUid(String uid);
 
     boolean existsByUid(String uid);

@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.utils;
 
-import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
+import org.nmcpye.datarun.optionset.OptionSet;
 import org.nmcpye.datarun.mongo.domain.DataOption;
 
 import java.util.*;

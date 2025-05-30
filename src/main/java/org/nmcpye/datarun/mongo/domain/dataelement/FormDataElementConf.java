@@ -2,7 +2,7 @@ package org.nmcpye.datarun.mongo.domain.dataelement;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.drun.postgres.domain.enumeration.ValueTypeRendering;
+import org.nmcpye.datarun.common.enumeration.ValueTypeRendering;
 import org.nmcpye.datarun.mongo.domain.datafield.ScannedCodeProperties;
 import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
 import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;

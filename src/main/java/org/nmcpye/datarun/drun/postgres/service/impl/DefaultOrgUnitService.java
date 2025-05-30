@@ -2,9 +2,9 @@ package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
-import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
+import org.nmcpye.datarun.orgunit.OrgUnit;
 import org.nmcpye.datarun.drun.postgres.pathmaintenance.OrgUnitMaintenanceService;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepository;
+import org.nmcpye.datarun.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitService;
 import org.nmcpye.datarun.security.useraccess.UserAccessService;
 import org.springframework.cache.CacheManager;

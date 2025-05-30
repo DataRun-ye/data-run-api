@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.drun.postgres.pathmaintenance;
 
 import jakarta.persistence.EntityManager;
-import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
-import org.nmcpye.datarun.drun.postgres.repository.OrgUnitRepository;
+import org.nmcpye.datarun.orgunit.OrgUnit;
+import org.nmcpye.datarun.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.orgunit.repository.OrgUnitRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

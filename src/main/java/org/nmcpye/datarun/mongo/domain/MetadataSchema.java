@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
-import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
+import org.nmcpye.datarun.optionset.OptionSet;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.Repeat;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;

@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest.v1.dataelementgroupset;
 
-import org.nmcpye.datarun.drun.postgres.domain.DataElementGroupSet;
-import org.nmcpye.datarun.drun.postgres.repository.DataElementGroupSetRepository;
+import org.nmcpye.datarun.dataelementgroupset.DataElementGroupSet;
+import org.nmcpye.datarun.dataelementgroupset.repository.DataElementGroupSetRepository;
 import org.nmcpye.datarun.drun.postgres.service.DataElementGroupSetService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;

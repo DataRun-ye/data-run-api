@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.security;
 
 import org.hibernate.validator.internal.constraintvalidators.bv.EmailValidator;
-import org.nmcpye.datarun.common.repository.UserRepository;
+import org.nmcpye.datarun.user.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UserDetails;

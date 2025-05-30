@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.mongo.repository;
 
-import org.nmcpye.datarun.drun.postgres.domain.Assignment;
-import org.nmcpye.datarun.drun.postgres.domain.Team;
-import org.nmcpye.datarun.drun.postgres.domain.TeamFormPermissions;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
+import org.nmcpye.datarun.team.Team;
+import org.nmcpye.datarun.team.TeamFormPermissions;
+import org.nmcpye.datarun.assignment.Assignment;
+import org.nmcpye.datarun.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.drun.postgres.service.TeamService;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
 import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;

@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest.postgres.activity;
 
-import org.nmcpye.datarun.domain.Activity;
-import org.nmcpye.datarun.drun.postgres.repository.ActivityRepository;
+import org.nmcpye.datarun.activity.Activity;
+import org.nmcpye.datarun.activity.repository.ActivityRepository;
 import org.nmcpye.datarun.drun.postgres.service.ActivityService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;

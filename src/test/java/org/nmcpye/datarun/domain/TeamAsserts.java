@@ -1,6 +1,6 @@
 //package org.nmcpye.datarun.domain;
 //
-//import org.nmcpye.datarun.drun.postgres.domain.Team;
+//import org.nmcpye.datarun.team.Team;
 //
 //import static org.assertj.core.api.Assertions.assertThat;
 //

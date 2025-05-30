@@ -7,7 +7,7 @@
 //import java.io.Serializable;
 //
 ///**
-// * DTO for {@link org.nmcpye.datarun.drun.postgres.domain.OrgUnit}
+// * DTO for {@link org.nmcpye.datarun.orgunit.OrgUnit}
 // */
 //@Value
 //public class OrgUnitDto implements Serializable {

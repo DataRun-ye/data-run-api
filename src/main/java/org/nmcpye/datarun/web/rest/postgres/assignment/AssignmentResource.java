@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.web.rest.postgres.assignment;
 
+import org.nmcpye.datarun.assignment.Assignment;
+import org.nmcpye.datarun.assignment.AssignmentService;
+import org.nmcpye.datarun.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.drun.postgres.domain.Assignment;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
-import org.nmcpye.datarun.drun.postgres.service.AssignmentService;
 import org.nmcpye.datarun.mapper.dto.AssignmentWithAccessDto;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;

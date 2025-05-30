@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.postgres.team;
 
 import jakarta.validation.constraints.NotNull;
-import org.nmcpye.datarun.drun.postgres.domain.Team;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
+import org.nmcpye.datarun.team.Team;
+import org.nmcpye.datarun.team.repository.TeamRepository;
 import org.nmcpye.datarun.drun.postgres.service.TeamService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;

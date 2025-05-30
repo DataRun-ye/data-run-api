@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.postgres.orgunit;
 
-import org.nmcpye.datarun.domain.Project;
-import org.nmcpye.datarun.drun.postgres.domain.OuLevel;
-import org.nmcpye.datarun.drun.postgres.repository.OuLevelRepository;
+import org.nmcpye.datarun.project.Project;
+import org.nmcpye.datarun.oulevel.OuLevel;
+import org.nmcpye.datarun.oulevel.repository.OuLevelRepository;
 import org.nmcpye.datarun.drun.postgres.service.OuLevelService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;

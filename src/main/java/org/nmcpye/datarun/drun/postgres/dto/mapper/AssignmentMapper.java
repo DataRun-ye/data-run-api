@@ -1,7 +1,7 @@
 //package org.nmcpye.datarun.drun.postgres.dto.mapper;
 //
 //import org.mapstruct.*;
-//import org.nmcpye.datarun.drun.postgres.domain.Assignment;
+//import org.nmcpye.datarun.assignment.Assignment;
 //import org.nmcpye.datarun.drun.postgres.dto.AssignmentDto;
 //
 //@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING)

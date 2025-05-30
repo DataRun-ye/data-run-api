@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.mongo.mapping.serialization;
 
-import org.nmcpye.datarun.drun.postgres.domain.OrgUnit;
+import org.nmcpye.datarun.orgunit.OrgUnit;
 
 import java.io.Serializable;
 import java.util.Map;

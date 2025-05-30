@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.acl;
 
 import org.nmcpye.datarun.common.security.UserFormAccess;
-import org.nmcpye.datarun.domain.User;
-import org.nmcpye.datarun.drun.postgres.domain.Assignment;
-import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
+import org.nmcpye.datarun.user.User;
+import org.nmcpye.datarun.assignment.Assignment;
+import org.nmcpye.datarun.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.security.CreatUserDetailService;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.domain.PrincipalSid;

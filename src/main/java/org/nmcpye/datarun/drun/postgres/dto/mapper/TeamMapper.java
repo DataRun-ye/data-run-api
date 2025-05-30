@@ -1,7 +1,7 @@
 //package org.nmcpye.datarun.drun.postgres.dto.mapper;
 //
 //import org.mapstruct.*;
-//import org.nmcpye.datarun.drun.postgres.domain.Team;
+//import org.nmcpye.datarun.team.Team;
 //import org.nmcpye.datarun.drun.postgres.dto.TeamDto;
 //
 //@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,

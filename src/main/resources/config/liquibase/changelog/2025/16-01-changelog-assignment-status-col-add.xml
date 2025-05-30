@@ -7,7 +7,6 @@
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <changeSet id="1747358596526-5" author="Hamza">
         <addColumn tableName="assignment">
-            <column name="last_submitted_by" type="VARCHAR(255)"/>
             <column name="status" type="VARCHAR(255)"/>
         </addColumn>
     </changeSet>

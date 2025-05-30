@@ -1,14 +1,14 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
-import org.nmcpye.datarun.drun.postgres.domain.DataElement;
-import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
-import org.nmcpye.datarun.drun.postgres.domain.Team;
-import org.nmcpye.datarun.drun.postgres.domain.enumeration.FormPermission;
-import org.nmcpye.datarun.drun.postgres.repository.DataElementRepository;
-import org.nmcpye.datarun.drun.postgres.repository.OptionSetRepository;
-import org.nmcpye.datarun.drun.postgres.repository.TeamRepository;
+import org.nmcpye.datarun.common.enumeration.FormPermission;
+import org.nmcpye.datarun.dataelement.DataElement;
+import org.nmcpye.datarun.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
+import org.nmcpye.datarun.optionset.OptionSet;
+import org.nmcpye.datarun.optionset.repository.OptionSetRepository;
+import org.nmcpye.datarun.team.Team;
+import org.nmcpye.datarun.team.repository.TeamRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

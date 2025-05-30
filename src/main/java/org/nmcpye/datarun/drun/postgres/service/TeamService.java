@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.service;
 
 import org.nmcpye.datarun.common.jpa.JpaAuditableObjectService;
-import org.nmcpye.datarun.drun.postgres.domain.Team;
+import org.nmcpye.datarun.team.Team;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

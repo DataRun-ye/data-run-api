@@ -7,7 +7,7 @@
 //import java.util.Set;
 //
 ///**
-// * DTO for {@link org.nmcpye.datarun.domain.Project}
+// * DTO for {@link org.nmcpye.datarun.project.Project}
 // */
 //@Value
 //public class ProjectDto implements Serializable {

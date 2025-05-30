@@ -5,9 +5,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.nmcpye.datarun.config.Constants;
-import org.nmcpye.datarun.domain.Authority;
-import org.nmcpye.datarun.domain.User;
-import org.nmcpye.datarun.drun.postgres.domain.Team;
+import org.nmcpye.datarun.userauthority.Authority;
+import org.nmcpye.datarun.user.User;
+import org.nmcpye.datarun.team.Team;
 import org.nmcpye.datarun.utils.CodeGenerator;
 
 import java.io.Serializable;

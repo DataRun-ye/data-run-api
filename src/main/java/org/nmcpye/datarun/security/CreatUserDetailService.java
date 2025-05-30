@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.security;
 
 import org.nmcpye.datarun.common.security.UserFormAccess;
-import org.nmcpye.datarun.domain.Authority;
-import org.nmcpye.datarun.domain.User;
+import org.nmcpye.datarun.userauthority.Authority;
+import org.nmcpye.datarun.user.User;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

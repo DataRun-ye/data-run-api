@@ -3,7 +3,6 @@ package org.nmcpye.datarun.common.jpa;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.AuditableObject;
@@ -15,6 +14,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
@@ -31,19 +31,10 @@ import java.util.Objects;
 @Getter
 @Setter
 public abstract class JpaAuditableObject
-    implements AuditableObject<Long>, Persistable<Long>, Serializable {
+        implements AuditableObject<Long>, Persistable<Long>, Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
-
-    @Size(max = 11)
-    @Column(name = "uid", length = 11, nullable = false, unique = true)
-    protected String uid;
 
     @CreatedBy
     @Column(name = "created_by", nullable = false, length = 50, updatable = false)
@@ -95,13 +86,13 @@ public abstract class JpaAuditableObject
         return this;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getUid() {
-        return uid;
-    }
+//    public Long getId() {
+//        return id;
+//    }
+//
+//    public String getUid() {
+//        return uid;
+//    }
 
     /**
      * Set auto-generated fields on save or update

@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.service;
 
 import org.nmcpye.datarun.common.jpa.JpaAuditableObjectService;
-import org.nmcpye.datarun.drun.postgres.domain.UserGroup;
+import org.nmcpye.datarun.usegroup.UserGroup;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

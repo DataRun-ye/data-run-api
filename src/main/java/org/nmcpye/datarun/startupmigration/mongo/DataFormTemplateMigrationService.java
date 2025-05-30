@@ -1,10 +1,8 @@
 package org.nmcpye.datarun.startupmigration.mongo;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.nmcpye.datarun.drun.postgres.domain.DataElement;
-import org.nmcpye.datarun.drun.postgres.domain.OptionSet;
-import org.nmcpye.datarun.drun.postgres.repository.DataElementRepository;
-import org.nmcpye.datarun.drun.postgres.repository.OptionSetRepository;
+import org.nmcpye.datarun.dataelement.DataElement;
+import org.nmcpye.datarun.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.mongo.domain.DataFieldRule;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.DataOption;
@@ -15,6 +13,8 @@ import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.domain.enumeration.RuleAction;
 import org.nmcpye.datarun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
+import org.nmcpye.datarun.optionset.OptionSet;
+import org.nmcpye.datarun.optionset.repository.OptionSetRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
