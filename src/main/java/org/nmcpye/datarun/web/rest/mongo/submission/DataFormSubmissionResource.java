@@ -34,17 +34,14 @@ public class DataFormSubmissionResource
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
-    final private GenericQueryService queryService;
     final private DataFormSubmissionService dataFormSubmissionService;
     final TeamService teamService;
 
     public DataFormSubmissionResource(DataFormSubmissionService dataFormSubmissionService,
                                       DataFormSubmissionRepository
                                           dataFormSubmissionRepository,
-                                      GenericQueryService queryService,
                                       TeamService teamService) {
         super(dataFormSubmissionService, dataFormSubmissionRepository);
-        this.queryService = queryService;
         this.dataFormSubmissionService = dataFormSubmissionService;
         this.teamService = teamService;
     }
