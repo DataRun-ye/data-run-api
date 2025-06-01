@@ -4,23 +4,18 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.ReportingPolicy;
-import org.nmcpye.datarun.mapper.dto.SaveFormTemplateDto;
+import org.nmcpye.datarun.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,
     componentModel = MappingConstants.ComponentModel.SPRING)
 public interface DataFormTemplateMapper
-    extends BaseMapper<SaveFormTemplateDto, DataFormTemplate> {
-//    @Mappings({
-//        @Mapping(target = "uid", source = "templateUid"),
-//    })
-//    DataFormTemplate fromVersionDto(FormTemplateVersionDto versionDto);
-
+    extends BaseMapper<DataTemplateInstanceDto, DataFormTemplate> {
     @Mapping(target = "version", source = "versionNumber")
     @Override
-    DataFormTemplate toEntity(SaveFormTemplateDto dto);
+    DataFormTemplate toEntity(DataTemplateInstanceDto dto);
 
     @Mapping(target = "versionNumber", source = "version")
     @Override
-    SaveFormTemplateDto toDto(DataFormTemplate entity);
+    DataTemplateInstanceDto toDto(DataFormTemplate entity);
 }

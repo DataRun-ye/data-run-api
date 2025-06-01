@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
 import jakarta.el.PropertyNotFoundException;
-import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
+import org.nmcpye.datarun.common.jpa.DefaultJpaAuditableService;
 import org.nmcpye.datarun.dataelement.DataElement;
 import org.nmcpye.datarun.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.dataelementgroup.DataElementGroup;

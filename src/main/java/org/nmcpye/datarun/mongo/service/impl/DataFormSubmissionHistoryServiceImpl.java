@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
-import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.common.mongo.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.mapper.DataFormSubmissionHistoryMapper;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionHistory;

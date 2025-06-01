@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
-import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
+import org.nmcpye.datarun.common.jpa.DefaultJpaAuditableService;
+import org.nmcpye.datarun.drun.postgres.service.OptionSetService;
 import org.nmcpye.datarun.optionset.OptionSet;
 import org.nmcpye.datarun.optionset.repository.OptionSetRepository;
-import org.nmcpye.datarun.drun.postgres.service.OptionSetService;
 import org.nmcpye.datarun.security.useraccess.UserAccessService;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;

@@ -3,8 +3,8 @@ package org.nmcpye.datarun.mapper.dto;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Value;
-import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
-import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 
 import java.io.Serializable;
 import java.util.List;

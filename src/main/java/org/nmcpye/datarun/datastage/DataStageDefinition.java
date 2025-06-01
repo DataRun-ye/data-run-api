@@ -8,21 +8,22 @@ import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.assignmenttype.AssignmentType;
+import org.nmcpye.datarun.common.SoftDeleteObject;
 import org.nmcpye.datarun.common.jpa.JpaBaseIdentifiableObject;
-import org.nmcpye.datarun.template.FormTemplate;
+import org.nmcpye.datarun.datatemplate.DataTemplate;
 
 /**
  * @author Hamza Assada, <7amza.it@gmail.com> <27-05-2025>
  */
 @Entity
-@Table(name = "stage_definition", uniqueConstraints = {
+@Table(name = "data_stage_definition", uniqueConstraints = {
     @UniqueConstraint(name = "uc_stage_definition_type_template_id",
-        columnNames = {"assignment_type_id", "stage_template_id"})
+        columnNames = {"assignment_type_id", "data_template_id"})
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
-public class DataStageDefinition extends JpaBaseIdentifiableObject {
+public class DataStageDefinition extends JpaBaseIdentifiableObject implements SoftDeleteObject<Long> {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
     @SequenceGenerator(name = "sequenceGenerator")
@@ -32,6 +33,9 @@ public class DataStageDefinition extends JpaBaseIdentifiableObject {
     @Size(max = 11)
     @Column(name = "uid", length = 11, nullable = false, unique = true)
     protected String uid;
+
+    @Column(name = "deleted")
+    protected Boolean deleted = false;
 
     /**
      * The unique code for this object.
@@ -61,6 +65,6 @@ public class DataStageDefinition extends JpaBaseIdentifiableObject {
 
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "stage_template_id")
-    private FormTemplate stageTemplate;
+    @JoinColumn(name = "data_template_id")
+    private DataTemplate dataTemplate;
 }

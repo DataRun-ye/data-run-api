@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mongo.domain.datafield;
 
 import jakarta.validation.constraints.NotNull;
-import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
+import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.List;

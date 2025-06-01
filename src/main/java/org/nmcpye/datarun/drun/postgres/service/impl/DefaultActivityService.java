@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.drun.postgres.service.impl;
 
-import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
 import org.nmcpye.datarun.activity.Activity;
 import org.nmcpye.datarun.activity.repository.ActivityRepository;
+import org.nmcpye.datarun.common.jpa.DefaultJpaAuditableService;
 import org.nmcpye.datarun.drun.postgres.service.ActivityService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;

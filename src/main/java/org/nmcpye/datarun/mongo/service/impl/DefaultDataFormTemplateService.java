@@ -1,12 +1,12 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.common.mongo.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.datatemplate.DataTemplateInstanceService;
 import org.nmcpye.datarun.mapper.DataFormTemplateMapper;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.service.DataFormTemplateService;
-import org.nmcpye.datarun.mongo.service.FormTemplateCombinedService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
@@ -27,13 +27,13 @@ public class DefaultDataFormTemplateService
     extends DefaultMongoAuditableObjectService<DataFormTemplate>
     implements DataFormTemplateService {
     private final DataFormTemplateMapper dataFormTemplateMapper;
-    private final FormTemplateCombinedService templateService;
+    private final DataTemplateInstanceService templateService;
 
     public DefaultDataFormTemplateService(
         DataFormTemplateRepository repository,
         CacheManager cacheManager,
         DataFormTemplateMapper dataFormTemplateMapper,
-        FormTemplateCombinedService templateService) {
+        DataTemplateInstanceService templateService) {
         super(repository, cacheManager);
         this.dataFormTemplateMapper = dataFormTemplateMapper;
         this.templateService = templateService;

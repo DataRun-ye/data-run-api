@@ -12,9 +12,9 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.jpa.JpaBaseIdentifiableObject;
 import org.nmcpye.datarun.dataelementgroup.DataElementGroup;
+import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
+import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.drun.postgres.common.translation.Translation;
-import org.nmcpye.datarun.mongo.domain.enumeration.ReferenceType;
-import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;
 import org.nmcpye.datarun.optionset.OptionSet;
 
 import java.util.HashSet;

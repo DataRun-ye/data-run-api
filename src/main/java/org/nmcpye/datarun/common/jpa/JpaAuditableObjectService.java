@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * @author Hamza Assada, 20/03/2025
  */
-public interface JpaAuditableObjectService<T extends JpaAuditableObject>
+public interface JpaAuditableObjectService<T extends AuditableObject<Long>>
     extends AuditableObjectService<T, Long> {
 
 //    boolean canWrite(Specification<T> spec, QueryRequest queryRequest);

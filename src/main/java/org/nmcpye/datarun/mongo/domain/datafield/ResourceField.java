@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mongo.domain.datafield;
 
 import jakarta.validation.constraints.NotNull;
-import org.nmcpye.datarun.mongo.domain.enumeration.ResourceTransactionType;
+import org.nmcpye.datarun.datatemplateelement.enumeration.ResourceTransactionType;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 public class ResourceField extends DefaultField {

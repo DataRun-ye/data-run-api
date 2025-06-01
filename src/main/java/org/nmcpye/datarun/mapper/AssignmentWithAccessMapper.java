@@ -29,7 +29,7 @@ public abstract class AssignmentWithAccessMapper
         @Mapping(target = "assignment", source = "uid"),
         @Mapping(target = "orgUnit", source = "orgUnit.uid"),
         @Mapping(target = "team", source = "team.uid"),
-        @Mapping(target = "progressStatus", source = "status", defaultValue = "NOT_STARTED"),
+        @Mapping(target = "progressStatus", source = "status", defaultValue = "PLANNED"),
         @Mapping(target = "accessibleForms",
             expression =
                 "java(formAccessService.getUserForms(entity.getForms(), entity.getUid()))"),

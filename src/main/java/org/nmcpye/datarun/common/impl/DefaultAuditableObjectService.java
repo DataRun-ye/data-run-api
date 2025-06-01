@@ -26,7 +26,7 @@ public abstract class DefaultAuditableObjectService<T extends AuditableObject<ID
     protected final AuditableObjectRepository<T, ID> repository;
     protected final CacheManager cacheManager;
 
-    private final Class<T> klass;
+    protected final Class<T> klass;
 
     @SuppressWarnings("unchecked")
     public DefaultAuditableObjectService(AuditableObjectRepository<T, ID> repository,

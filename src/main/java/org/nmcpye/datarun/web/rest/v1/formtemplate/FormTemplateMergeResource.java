@@ -3,10 +3,10 @@ package org.nmcpye.datarun.web.rest.v1.formtemplate;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.mapper.dto.SaveFormTemplateDto;
+import org.nmcpye.datarun.datatemplate.DataTemplateInstanceService;
+import org.nmcpye.datarun.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
-import org.nmcpye.datarun.mongo.service.FormTemplateCombinedService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
@@ -41,12 +41,12 @@ public class FormTemplateMergeResource {
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private final FormTemplateProcessor formTemplateProcessor;
-    private final FormTemplateCombinedService templateService;
+    private final DataTemplateInstanceService templateService;
 
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
 
-    public FormTemplateMergeResource(FormTemplateProcessor formTemplateProcessor, FormTemplateCombinedService templateService) {
+    public FormTemplateMergeResource(FormTemplateProcessor formTemplateProcessor, DataTemplateInstanceService templateService) {
         this.formTemplateProcessor = formTemplateProcessor;
         this.templateService = templateService;
     }
@@ -68,24 +68,24 @@ public class FormTemplateMergeResource {
         final var userLogin = SecurityUtils.getCurrentUserLoginOrThrow();
         log.debug("REST request to getAll {}:{}", userLogin, getName());
 
-        Page<SaveFormTemplateDto> processedPage = getList(queryRequest, jsonQueryBody);
+        Page<DataTemplateInstanceDto> processedPage = getList(queryRequest, jsonQueryBody);
 
         String next = createNextPageLink(processedPage);
 
-        PagedResponse<SaveFormTemplateDto> response = initPageResponse(processedPage, next, getName());
+        PagedResponse<DataTemplateInstanceDto> response = initPageResponse(processedPage, next, getName());
         return ResponseEntity.ok(response);
     }
 
-    protected Page<SaveFormTemplateDto> getList(QueryRequest queryRequest, String jsonQueryBody) {
+    protected Page<DataTemplateInstanceDto> getList(QueryRequest queryRequest, String jsonQueryBody) {
         return templateService.findAllByUser(queryRequest, jsonQueryBody);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @PostMapping("/bulk")
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(@Valid @RequestBody List<SaveFormTemplateDto> entities) {
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(@Valid @RequestBody List<DataTemplateInstanceDto> entities) {
         log.debug("REST request to saveAll all {}", getName());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        for (SaveFormTemplateDto entity : entities) {
+        for (DataTemplateInstanceDto entity : entities) {
             saveEntity(entity, summary);
         }
         return ResponseEntity.ok(summary);
@@ -93,19 +93,19 @@ public class FormTemplateMergeResource {
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @PostMapping
-    public ResponseEntity<EntitySaveSummaryVM> saveOne(@Valid @RequestBody SaveFormTemplateDto formTemplate) {
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(@Valid @RequestBody DataTemplateInstanceDto formTemplate) {
         log.debug("REST request to saveOne {}", getName());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         final var processedTemplate = formTemplateProcessor.processMetadata(
             formTemplateProcessor.validate(formTemplate));
-        this.saveEntity((SaveFormTemplateDto) processedTemplate, summary);
+        this.saveEntity((DataTemplateInstanceDto) processedTemplate, summary);
 
         return ResponseEntity.ok(summary);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @PostMapping("/return")
-    public ResponseEntity<?> saveReturnSaved(@Valid @RequestBody SaveFormTemplateDto entity) {
+    public ResponseEntity<?> saveReturnSaved(@Valid @RequestBody DataTemplateInstanceDto entity) {
         log.info("Request to save and return {}:{}", entity.getClass().getSimpleName(), entity.getUid());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         final var saved = saveEntity(entity, summary);
@@ -113,8 +113,8 @@ public class FormTemplateMergeResource {
         return ResponseEntity.ok(Objects.requireNonNullElse(saved, summary));
     }
 
-    protected SaveFormTemplateDto saveEntity(SaveFormTemplateDto entity, EntitySaveSummaryVM summary) {
-        SaveFormTemplateDto templateVersionDto = null;
+    protected DataTemplateInstanceDto saveEntity(DataTemplateInstanceDto entity, EntitySaveSummaryVM summary) {
+        DataTemplateInstanceDto templateVersionDto = null;
         try {
             if (entity.getUid() != null && templateService.existsByUid(entity.getUid())) {
                 templateVersionDto = templateService.update(entity);
@@ -143,9 +143,9 @@ public class FormTemplateMergeResource {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SaveFormTemplateDto> getById(@PathVariable("id") String id) {
+    public ResponseEntity<DataTemplateInstanceDto> getById(@PathVariable("id") String id) {
         log.debug("REST request to get from {}: {}", getName(), id);
-        Optional<SaveFormTemplateDto> entity = templateService.findByUid(id);
+        Optional<DataTemplateInstanceDto> entity = templateService.findByUid(id);
         return ResponseUtil.wrapOrNotFound(entity);
     }
 }

@@ -35,7 +35,9 @@ public class EntityInstance
     public enum EntityStatus {ACTIVE, INACTIVE, ARCHIVED}
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+    @SequenceGenerator(name = "sequenceGenerator")
+    @Column(name = "id")
     protected Long id;
 
     @Size(max = 11)
@@ -76,6 +78,7 @@ public class EntityInstance
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "entity_type_id")
+    @JsonIgnoreProperties(value = {"entityAttributes"}, allowSetters = true)
     private EntityType entityType;
 
     @Column(name = "created_at_client")

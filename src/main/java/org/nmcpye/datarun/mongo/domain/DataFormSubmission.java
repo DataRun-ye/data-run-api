@@ -6,10 +6,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.SoftDeleteObject;
 import org.nmcpye.datarun.common.enumeration.AssignmentStatus;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
+import org.nmcpye.datarun.common.mongo.MongoSoftDeleteObject;
 import org.nmcpye.datarun.utils.CodeGenerator;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -29,7 +28,7 @@ import java.util.*;
 @CompoundIndex(name = "data_submission_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormSubmission
-    extends MongoAuditableBaseObject implements SoftDeleteObject<String> {
+    extends MongoSoftDeleteObject {
     @JsonIgnore
     @Id
     private String id;

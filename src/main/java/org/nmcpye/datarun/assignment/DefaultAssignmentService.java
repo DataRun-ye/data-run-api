@@ -2,7 +2,7 @@ package org.nmcpye.datarun.assignment;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.assignment.repository.AssignmentRepository;
-import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
+import org.nmcpye.datarun.common.jpa.DefaultJpaAuditableService;
 import org.nmcpye.datarun.drun.postgres.common.TeamSpecifications;
 import org.nmcpye.datarun.drun.postgres.pathmaintenance.AssignmentMaintenanceService;
 import org.nmcpye.datarun.mapper.AssignmentWithAccessMapper;
@@ -99,7 +99,7 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
 //                        assignment.setStatus(lastEntry.getSubmissionStatus());
 //                        assignment.setLastEntryDate(lastEntry.getEntryDate());
 //                        assignment.setLastEntryBy(lastEntry.getSubmissionUser());
-//                    }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
+//                    }, () -> assignment.setStatus(AssignmentStatus.PLANNED));
 //            });
 //        } else {
 //            String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow();
@@ -112,7 +112,7 @@ public class DefaultAssignmentService extends DefaultJpaAuditableService<Assignm
 //                        assignment.setStatus(lastEntry.getSubmissionStatus());
 //                        assignment.setLastEntryDate(lastEntry.getEntryDate());
 //                        assignment.setLastEntryBy(lastEntry.getSubmissionUser());
-//                    }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
+//                    }, () -> assignment.setStatus(AssignmentStatus.PLANNED));
 //            });
 //        }
 //        return assignments;

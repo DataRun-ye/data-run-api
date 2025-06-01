@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.entityattribute;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,7 +12,6 @@ import org.nmcpye.datarun.entityType.EntityType;
  *
  * @author Hamza Assada, <7amza.it@gmail.com> <29-05-2025>
  */
-@Builder
 @Getter
 @Setter
 @NoArgsConstructor

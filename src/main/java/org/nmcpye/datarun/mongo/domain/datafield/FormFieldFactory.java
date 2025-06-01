@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.mongo.domain.datafield;
 
-import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;
+import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 
 public class FormFieldFactory {
     public static Class<? extends AbstractField> getPropertyClass(ValueType valueType) {

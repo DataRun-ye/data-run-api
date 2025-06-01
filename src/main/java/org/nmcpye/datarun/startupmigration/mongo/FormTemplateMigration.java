@@ -1,8 +1,7 @@
 package org.nmcpye.datarun.startupmigration.mongo;
 
-import org.nmcpye.datarun.mapper.DataFormTemplateMapper;
+import org.nmcpye.datarun.datatemplateversion.FormTemplateVersionService;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
-import org.nmcpye.datarun.mongo.service.FormTemplateVersionService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -13,14 +12,11 @@ import org.springframework.stereotype.Component;
 public class FormTemplateMigration implements CommandLineRunner {
     private final DataFormTemplateRepository templateRepository;
     private final FormTemplateVersionService templateVersionService;
-    private final DataFormTemplateMapper dataFormTemplateMapper;
 
     public FormTemplateMigration(DataFormTemplateRepository templateRepository,
-                                 FormTemplateVersionService templateVersionService,
-                                 DataFormTemplateMapper dataFormTemplateMapper) {
+                                 FormTemplateVersionService templateVersionService) {
         this.templateRepository = templateRepository;
         this.templateVersionService = templateVersionService;
-        this.dataFormTemplateMapper = dataFormTemplateMapper;
     }
 
     @Override

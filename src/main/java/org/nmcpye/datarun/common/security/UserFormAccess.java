@@ -7,6 +7,8 @@ import org.nmcpye.datarun.common.enumeration.FormPermission;
 import java.time.Instant;
 import java.util.Set;
 
+import static org.nmcpye.datarun.common.enumeration.FormPermission.*;
+
 /**
  * @author Hamza Assada, 24/04/2025
  */
@@ -22,7 +24,7 @@ public class UserFormAccess {
 
     public boolean canViewSubmission() {
         return permissions.stream()
-                .anyMatch(FormPermission::canViewSubmission);
+            .anyMatch(FormPermission::canViewSubmission);
     }
 
     public boolean canViewSubmissionFromUsers() {

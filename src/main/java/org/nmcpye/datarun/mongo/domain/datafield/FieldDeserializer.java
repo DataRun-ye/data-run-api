@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;
+import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

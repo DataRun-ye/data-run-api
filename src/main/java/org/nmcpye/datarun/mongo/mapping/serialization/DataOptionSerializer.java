@@ -3,7 +3,7 @@ package org.nmcpye.datarun.mongo.mapping.serialization;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import org.nmcpye.datarun.mongo.domain.DataOption;
+import org.nmcpye.datarun.datatemplateelement.DataOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

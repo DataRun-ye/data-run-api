@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.entityType;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
@@ -33,8 +34,11 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 public class EntityType extends JpaBaseIdentifiableObject {
+    @JsonIgnore
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+    @SequenceGenerator(name = "sequenceGenerator")
+    @Column(name = "id")
     protected Long id;
 
     @Size(max = 11)

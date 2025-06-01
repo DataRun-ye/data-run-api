@@ -3,14 +3,11 @@ package org.nmcpye.datarun.startupmigration.mongo;
 import jakarta.persistence.EntityNotFoundException;
 import org.nmcpye.datarun.dataelement.DataElement;
 import org.nmcpye.datarun.dataelement.repository.DataElementRepository;
-import org.nmcpye.datarun.mongo.domain.DataFieldRule;
+import org.nmcpye.datarun.datatemplateelement.*;
+import org.nmcpye.datarun.datatemplateelement.enumeration.RuleAction;
 import org.nmcpye.datarun.mongo.domain.DataForm;
-import org.nmcpye.datarun.mongo.domain.DataOption;
-import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
-import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
 import org.nmcpye.datarun.mongo.domain.datafield.*;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
-import org.nmcpye.datarun.mongo.domain.enumeration.RuleAction;
 import org.nmcpye.datarun.mongo.repository.DataFormRepository;
 import org.nmcpye.datarun.mongo.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.optionset.OptionSet;
@@ -28,6 +25,7 @@ import static org.nmcpye.datarun.utils.PathUtil.replaceLastElement;
 
 @Component
 @Transactional
+@SuppressWarnings("unused")
 public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
 
     private final DataFormRepository dataFormRepository;
@@ -48,7 +46,7 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
     }
 
     //    @Override
-    public void runForDataFormTemplates(String... args) throws Exception {
+    public void runForDataFormTemplates(String... args) {
         List<DataForm> dataForms = dataFormRepository.findAll();
         for (DataForm dataForm : dataForms) {
             migrateOptionSets(dataForm);
@@ -106,7 +104,7 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
         template.setDescription(form.getDescription());
         template.setDeleted(form.getDeleted());
         template.setDisabled(Optional.ofNullable(form.getDisabled()).orElse(false));
-        template.setVersion(form.getVersion() != null ? 1 : form.getVersion());
+        template.setVersion(form.getVersion() != null ? form.getVersion() : 1);
         template.setLabel(form.getLabel());
         template.setDefaultLocale(form.getDefaultLocal());
         template.getFields().clear();
@@ -121,21 +119,12 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
             dataElement.setCode(element.getName().toLowerCase());
             dataElement.setType(element.getType());
             dataElement.setDescription(element.getDescription());
-//        if (dataElement.getDefaultValue() != null) {
-//            dataElement.setDefaultValue(element.getDefaultValue().toString());
-//        }
-//        dataElement.setMandatory(element.getMandatory());
             dataElement.setLabel(element.getLabel());
             if (element.getType().isOptionsType()) {
                 final OptionSet optionSet = optionSetRepository.findByNameIgnoreCase(((OptionField) element)
                     .getListName()).orElseThrow();
                 dataElement.setOptionSet(optionSet);
             }
-
-//        if (element instanceof ScannedCodeField field) {
-//            dataElement.setGs1Enabled(field.getGs1Enabled());
-//            dataElement.setProperties(field.getProperties());
-//        }
 
             if (element instanceof ReferenceField field) {
                 dataElement.setResourceType(field.getResourceType());
@@ -149,14 +138,6 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
 
     }
 
-//    private OptionSet createOptionSet(OptionField field, List<DataOption> options) {
-//        final OptionSet optionSet = optionSetRepository.findByNameIgnoreCase(field.getListName()).orElse(new OptionSet());
-//        final List<DataOption> optionSetOptions = createOptionMap(options).get(field.getListName());
-//        optionSet.setOptions(optionSetOptions);
-//        optionSet.setName(field.getListName().toLowerCase());
-//        return optionSetRepository.save(optionSet);
-//    }
-
     private FormDataElementConf createDataElementConf(DefaultField element, String dataElementUid, String dataElementCode) {
         FormDataElementConf elementConf = new FormDataElementConf();
         elementConf.setId(dataElementUid);
@@ -169,16 +150,24 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
         elementConf.setLabel(element.getLabel());
         elementConf.setMandatory(element.isMandatory());
         elementConf.setDefaultValue(element.getDefaultValue());
-
-        elementConf.setAppearance(element.getAppearance());
         elementConf.setCalculation(element.getCalculation());
-        elementConf.setConstraint(element.getConstraint());
-        elementConf.setConstraintMessage(element.getConstraintMessage());
+
+        if (element.getConstraint() != null) {
+            elementConf.setValidationRule(ElementValidationRule.builder()
+                .expression(element.getConstraint())
+                .ValidationMessage(element.getConstraintMessage())
+                .build());
+        }
+
         elementConf.setRules(element.getRules());
         final var errorRules = getErrorRules(element);
-        if (!errorRules.isEmpty()) {
-            elementConf.setConstraint(errorRules.stream().findFirst().orElseThrow().getExpression());
-            elementConf.setConstraintMessage(errorRules.stream().findFirst().orElseThrow().getMessage());
+
+        if (!errorRules.isEmpty() && element.getConstraint() == null) {
+            final var elementValidationRule = ElementValidationRule.builder()
+                .expression(errorRules.stream().findFirst().orElseThrow().getExpression())
+                .ValidationMessage(errorRules.stream().findFirst().orElseThrow().getMessage())
+                .build();
+            elementConf.setValidationRule(elementValidationRule);
         }
         elementConf.setMainField(element.isMainField());
         elementConf.setOrder(element.getOrder());
@@ -211,7 +200,6 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
         final FormSectionConf sectionConf = new FormSectionConf();
         sectionConf.setPath(section.getPath());
         sectionConf.setName(section.getName());
-        sectionConf.setAppearance(section.getAppearance());
         sectionConf.setDescription(section.getDescription());
         sectionConf.setLabel(section.getLabel());
         sectionConf.setOrder(section.getOrder());

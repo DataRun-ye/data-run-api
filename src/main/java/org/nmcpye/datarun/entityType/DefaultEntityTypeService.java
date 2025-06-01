@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.entityType;
 
-import org.nmcpye.datarun.common.jpa.impl.DefaultJpaAuditableService;
+import org.nmcpye.datarun.common.jpa.DefaultJpaAuditableService;
 import org.nmcpye.datarun.entityType.repository.EntityTypeRepository;
 import org.nmcpye.datarun.security.useraccess.UserAccessService;
 import org.springframework.cache.CacheManager;

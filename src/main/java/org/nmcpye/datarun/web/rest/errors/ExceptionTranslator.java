@@ -3,10 +3,10 @@ package org.nmcpye.datarun.web.rest.errors;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
+import org.nmcpye.datarun.datatemplateprocessor.validation.validators.TemplateValidationException;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.datarun.TokenRefreshException;
 import org.nmcpye.datarun.service.UsernameAlreadyUsedException;
-import org.nmcpye.datarun.templateprocessor.validation.validators.FormTemplateValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,7 +65,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ErrorCodeException.class)
     public ResponseEntity<?> handleBaseException(ErrorCodeException ex) {
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        if (ex instanceof FormTemplateValidationException validationException) {
+        if (ex instanceof TemplateValidationException validationException) {
             summary.getFailed().put("error_code", ex.getErrorCode().toString());
             summary.getFailed().put("message", validationException.getResult().toString());
 

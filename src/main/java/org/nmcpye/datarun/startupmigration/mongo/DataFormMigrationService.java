@@ -6,11 +6,11 @@
 //import org.nmcpye.datarun.optionset.OptionSet;
 //import org.nmcpye.datarun.dataelement.repository.DataElementRepository;
 //import org.nmcpye.datarun.optionset.repository.OptionSetRepository;
-//import org.nmcpye.datarun.mongo.domain.DataFieldRule;
+//import org.nmcpye.datarun.templateelementconf.DataFieldRule;
 //import org.nmcpye.datarun.mongo.domain.DataForm;
-//import org.nmcpye.datarun.mongo.domain.DataOption;
-//import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
-//import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
+//import org.nmcpye.datarun.templateelementconf.DataOption;
+//import org.nmcpye.datarun.templateelementconf.FormDataElementConf;
+//import org.nmcpye.datarun.templateelementconf.FormSectionConf;
 //import org.nmcpye.datarun.mongo.domain.datafield.*;
 //import org.nmcpye.datarun.mongo.domain.enumeration.RuleAction;
 //import org.nmcpye.datarun.mongo.repository.DataFormRepository;
@@ -120,7 +120,6 @@
 //        elementConf.setMandatory(element.isMandatory());
 //        elementConf.setDefaultValue(element.getDefaultValue());
 //
-//        elementConf.setAppearance(element.getAppearance());
 //        elementConf.setCalculation(element.getCalculation());
 //        elementConf.setConstraint(element.getConstraint());
 //        elementConf.setConstraintMessage(element.getConstraintMessage());
@@ -164,7 +163,6 @@
 //        final FormSectionConf sectionConf = new FormSectionConf();
 //        sectionConf.setPath(section.getPath());
 //        sectionConf.setName(section.getName());
-//        sectionConf.setAppearance(section.getAppearance());
 //        sectionConf.setDescription(section.getDescription());
 //        sectionConf.setLabel(section.getLabel());
 //        sectionConf.setOrder(section.getOrder());

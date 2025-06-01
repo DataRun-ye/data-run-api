@@ -9,7 +9,7 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.jpa.JpaBaseIdentifiableObject;
-import org.nmcpye.datarun.mongo.domain.DataOption;
+import org.nmcpye.datarun.datatemplateelement.DataOption;
 
 import java.util.List;
 

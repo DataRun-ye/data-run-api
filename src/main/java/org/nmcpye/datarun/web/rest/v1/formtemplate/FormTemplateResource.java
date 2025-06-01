@@ -1,14 +1,14 @@
 package org.nmcpye.datarun.web.rest.v1.formtemplate;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.mongo.domain.dataform.FormTemplate;
+import org.nmcpye.datarun.datatemplate.DataTemplate;
+import org.nmcpye.datarun.datatemplate.DataTemplateService;
+import org.nmcpye.datarun.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
-import org.nmcpye.datarun.mongo.repository.FormTemplateRepository;
-import org.nmcpye.datarun.mongo.service.FormTemplateService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
-import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess.FormTemplateProcessor;
+import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,20 +19,20 @@ import java.util.List;
 import static org.nmcpye.datarun.web.rest.v1.formtemplate.FormTemplateResource.V1;
 
 /**
- * REST controller for managing {@link FormTemplate}.
+ * REST controller for managing {@link DataTemplate}.
  */
 @RestController
 @RequestMapping(value = {V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 @Slf4j
-public class FormTemplateResource extends MongoBaseResource<FormTemplate> {
+public class FormTemplateResource extends JpaBaseResource<DataTemplate> {
     protected static final String NAME = "/formTemplates";
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
-    private final FormTemplateService templateService;
+    private final DataTemplateService templateService;
 
-    protected FormTemplateResource(FormTemplateService service,
-                                   FormTemplateRepository repository,
+    protected FormTemplateResource(DataTemplateService service,
+                                   DataTemplateRepository repository,
                                    FormTemplateProcessor formTemplateProcessor) {
         super(service, repository);
         this.templateService = service;
@@ -45,19 +45,19 @@ public class FormTemplateResource extends MongoBaseResource<FormTemplate> {
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<FormTemplate> entities) {
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<DataTemplate> entities) {
         return super.saveAll(entities);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveOne(FormTemplate entity) {
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(DataTemplate entity) {
         return super.saveOne(entity);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<?> saveReturnSaved(FormTemplate entity) {
+    public ResponseEntity<?> saveReturnSaved(DataTemplate entity) {
         return super.saveReturnSaved(entity);
     }
 

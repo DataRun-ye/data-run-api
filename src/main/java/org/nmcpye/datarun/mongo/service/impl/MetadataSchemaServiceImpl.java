@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
-import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.common.mongo.DefaultMongoAuditableObjectService;
 import org.nmcpye.datarun.mongo.domain.MetadataSchema;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;

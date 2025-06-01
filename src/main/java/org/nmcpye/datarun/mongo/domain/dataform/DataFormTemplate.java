@@ -5,10 +5,10 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.mongo.MongoBaseIdentifiableObject;
+import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateversion.DataTemplateVersionInterface;
 import org.nmcpye.datarun.drun.postgres.common.translation.Translation;
-import org.nmcpye.datarun.mongo.common.FormWithFields;
-import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
-import org.nmcpye.datarun.mongo.domain.dataelement.FormSectionConf;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 @CompoundIndex(name = "form_template_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormTemplate
-    extends MongoBaseIdentifiableObject implements FormWithFields {
+    extends MongoBaseIdentifiableObject implements DataTemplateVersionInterface {
     @Id
     private String id;
 

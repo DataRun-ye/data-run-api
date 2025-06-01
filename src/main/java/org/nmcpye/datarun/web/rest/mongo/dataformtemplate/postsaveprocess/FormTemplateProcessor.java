@@ -7,10 +7,10 @@ import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.dataelement.DataElement;
 import org.nmcpye.datarun.dataelement.repository.DataElementRepository;
-import org.nmcpye.datarun.mongo.common.FormWithFields;
-import org.nmcpye.datarun.mongo.domain.dataelement.FormDataElementConf;
-import org.nmcpye.datarun.templateprocessor.FormElementProcessor;
-import org.nmcpye.datarun.templateprocessor.validation.DefaultFormTemplateValidator;
+import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.datatemplateprocessor.TemplateElementProcessor;
+import org.nmcpye.datarun.datatemplateprocessor.validation.DefaultTemplateValidator;
+import org.nmcpye.datarun.datatemplateversion.DataTemplateVersionInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -29,23 +29,23 @@ public class FormTemplateProcessor {
 
     private final DataElementRepository dataElementRepository;
 
-    private final DefaultFormTemplateValidator validator;
+    private final DefaultTemplateValidator validator;
 
     public FormTemplateProcessor(DataElementRepository dataElementRepository,
-                                 DefaultFormTemplateValidator validator) {
+                                 DefaultTemplateValidator validator) {
 
         this.dataElementRepository = dataElementRepository;
         this.validator = validator;
     }
 
-    public <T extends FormWithFields> T validate(T formTemplate) {
+    public <T extends DataTemplateVersionInterface> T validate(T formTemplate) {
         log.debug("start validating form template {}", formTemplate.getUid());
 
         validator.validate(formTemplate);
         return formTemplate;
     }
 
-    public <T extends FormWithFields> FormWithFields processMetadata(T formTemplate) {
+    public <T extends DataTemplateVersionInterface> DataTemplateVersionInterface processMetadata(T formTemplate) {
         log.debug("start processing form template's metadata {}", formTemplate.getUid());
 
         final var fieldUids = formTemplate.getFields().stream()
@@ -53,11 +53,11 @@ public class FormTemplateProcessor {
         final var dataElements = dataElementRepository.findAllByUidIn(fieldUids);
         validateElementsDataElement(formTemplate, dataElements);
 
-        return new FormElementProcessor(formTemplate).process(dataElements)
+        return new TemplateElementProcessor(formTemplate).process(dataElements)
             .get();
     }
 
-    private <T extends FormWithFields> void validateElementsDataElement(T formTemplate, Collection<DataElement> dataElements) {
+    private <T extends DataTemplateVersionInterface> void validateElementsDataElement(T formTemplate, Collection<DataElement> dataElements) {
         final var fieldUids = formTemplate.getFields().stream()
             .map(FormDataElementConf::getId).toList();
         final var dataElementUids = getUids(dataElements);

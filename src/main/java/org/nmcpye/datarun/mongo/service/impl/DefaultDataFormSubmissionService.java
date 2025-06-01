@@ -1,17 +1,16 @@
 package org.nmcpye.datarun.mongo.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nmcpye.datarun.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.common.FindExistingSubmissionsDto;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.common.mongo.impl.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.common.mongo.DefaultMongoSoftDeleteService;
 import org.nmcpye.datarun.common.security.UserFormAccess;
-import org.nmcpye.datarun.assignment.repository.AssignmentRepository;
-import org.nmcpye.datarun.team.repository.TeamRepository;
+import org.nmcpye.datarun.datatemplateversion.repository.DataTemplateVersionRepository;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.repository.DataFormSubmissionRepository;
-import org.nmcpye.datarun.mongo.repository.FormTemplateVersionRepository;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionHistoryService;
 import org.nmcpye.datarun.mongo.service.DataFormSubmissionService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
@@ -20,7 +19,6 @@ import org.nmcpye.datarun.security.useraccess.dataform.FormAccessService;
 import org.nmcpye.datarun.startupmigration.mongo.SubmissionMaintenanceService;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -37,35 +35,30 @@ import java.util.stream.Collectors;
 @Primary
 @Slf4j
 public class DefaultDataFormSubmissionService
-    extends DefaultMongoAuditableObjectService<DataFormSubmission>
+    extends DefaultMongoSoftDeleteService<DataFormSubmission>
     implements DataFormSubmissionService {
 
     private final DataFormSubmissionRepository repository;
     private final DataFormSubmissionHistoryService submissionHistoryService;
-    private final MongoTemplate mongoTemplate;
     private final AssignmentRepository assignmentRepository;
-    private final TeamRepository teamRepository;
     private final SequenceGeneratorService sequenceGeneratorService;
     private final SubmissionMaintenanceService maintenanceService;
-    private final FormTemplateVersionRepository versionRepository;
+    private final DataTemplateVersionRepository versionRepository;
     private final FormAccessService formAccessService;
 
     public DefaultDataFormSubmissionService(
         DataFormSubmissionRepository repository,
         CacheManager cacheManager,
-        DataFormSubmissionHistoryService submissionHistoryService, MongoTemplate mongoTemplate,
+        DataFormSubmissionHistoryService submissionHistoryService,
         AssignmentRepository assignmentRepository,
-        TeamRepository teamRepository,
         SequenceGeneratorService sequenceGeneratorService,
         SubmissionMaintenanceService maintenanceService,
-        FormTemplateVersionRepository versionRepository,
+        DataTemplateVersionRepository versionRepository,
         FormAccessService formAccessService) {
         super(repository, cacheManager);
         this.repository = repository;
         this.submissionHistoryService = submissionHistoryService;
-        this.mongoTemplate = mongoTemplate;
         this.assignmentRepository = assignmentRepository;
-        this.teamRepository = teamRepository;
         this.sequenceGeneratorService = sequenceGeneratorService;
         this.maintenanceService = maintenanceService;
         this.versionRepository = versionRepository;

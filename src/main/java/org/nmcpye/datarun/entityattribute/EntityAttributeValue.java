@@ -20,22 +20,23 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "entity_attribute_value",
-        indexes = {@Index(name = "idx_team_form_access_form_uid", columnList = "form_uid")},
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uc_entity_attribute_instance",
-                        columnNames = {"entity_instance_id", "entity_attribute_uid"})
-        })
+    indexes = {@Index(name = "idx_entity_attribute_instance_uid", columnList = "entity_attribute_uid")},
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uc_entity_attribute_instance",
+            columnNames = {"entity_instance_id", "entity_attribute_uid"})
+    })
 @Getter
 @Setter
 @NoArgsConstructor
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
 public class EntityAttributeValue
-        extends JpaAuditable<Long> implements Serializable {
-
+    extends JpaAuditable<Long> implements Serializable {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+    @SequenceGenerator(name = "sequenceGenerator")
+    @Column(name = "id")
+    protected Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "entity_instance_id", nullable = false)

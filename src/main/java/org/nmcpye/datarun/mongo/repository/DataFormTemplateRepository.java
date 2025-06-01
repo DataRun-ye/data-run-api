@@ -2,8 +2,8 @@ package org.nmcpye.datarun.mongo.repository;
 
 import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.common.mongo.repository.MongoAuditableRepository;
+import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
-import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 

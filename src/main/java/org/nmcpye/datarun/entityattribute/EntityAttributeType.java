@@ -10,7 +10,7 @@ import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.common.jpa.JpaBaseIdentifiableObject;
-import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;
+import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.optionset.OptionSet;
 
 /**
@@ -25,7 +25,9 @@ import org.nmcpye.datarun.optionset.OptionSet;
 public class EntityAttributeType extends JpaBaseIdentifiableObject {
     @JsonIgnore
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+    @SequenceGenerator(name = "sequenceGenerator")
+    @Column(name = "id")
     protected Long id;
 
     @Size(max = 11)

@@ -5,8 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.mongo.domain.DataFieldRule;
-import org.nmcpye.datarun.mongo.domain.enumeration.ValueType;
+import org.nmcpye.datarun.datatemplateelement.DataFieldRule;
+import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.io.Serial;

@@ -39,7 +39,9 @@ import org.nmcpye.datarun.common.jpa.JpaBaseIdentifiableObject;
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class AssignmentType extends JpaBaseIdentifiableObject {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+    @SequenceGenerator(name = "sequenceGenerator")
+    @Column(name = "id")
     protected Long id;
 
     @Size(max = 11)
