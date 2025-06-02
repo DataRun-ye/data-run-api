@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,10 +18,11 @@ import org.nmcpye.datarun.common.IdentifiableObjectUtils;
 import org.nmcpye.datarun.common.enumeration.AssignmentStatus;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignmenttype.AssignmentType;
-import org.nmcpye.datarun.jpa.common.JpaAuditableObject;
+import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.team.Team;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -53,8 +53,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class Assignment
-    extends JpaAuditableObject {
+public class Assignment extends JpaSoftDeleteObject {
 
     private static final String PATH_SEP = ",";
 
@@ -62,27 +61,36 @@ public class Assignment
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
     @SequenceGenerator(name = "sequenceGenerator")
     @Column(name = "id")
-    protected Long id;
+    private Long id;
 
     @Size(max = 11)
     @Column(name = "uid", length = 11, nullable = false)
-    protected String uid;
+    private String uid;
 
-    @NotNull
-    @ManyToOne//(fetch = FetchType.LAZY)
+    private String code;
+
+    private String name;
+
+    @Column(name = "deleted")
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    // TODO remove
+    @ManyToOne(optional = false)
     @JsonIgnoreProperties(value = {"project", "translations", "assignments"}, allowSetters = true)
     private Activity activity;
 
     @Column(name = "start_day")
     private Integer startDay;
 
-    @ManyToOne//(fetch = FetchType.LAZY)
+    @ManyToOne
     @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments",
         "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private OrgUnit orgUnit;
 
     @ManyToOne(optional = false)
-    @NotNull
     @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
     private Team team;
@@ -116,6 +124,7 @@ public class Assignment
     @Enumerated(EnumType.STRING)
     private AssignmentStatus status = AssignmentStatus.PLANNED;
 
+    // TODO not null check
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assignment_type_id")
     private AssignmentType assignmentType;
@@ -146,6 +155,11 @@ public class Assignment
     @JsonProperty
     public Map<String, Object> getAllocatedResources() {
         return allocatedResources;
+    }
+
+    @Deprecated(since = "v7")
+    public Activity getActivity() {
+        return activity;
     }
 
     /**

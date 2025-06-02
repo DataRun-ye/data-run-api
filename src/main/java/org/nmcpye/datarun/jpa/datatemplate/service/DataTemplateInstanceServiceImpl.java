@@ -107,7 +107,7 @@ public class DataTemplateInstanceServiceImpl
 
         DataTemplate savedTemplate;
         try {
-            savedTemplate = dataTemplateRepository.save(template);
+            savedTemplate = dataTemplateService.save(template);
             // At this point, we’ve done **two** modifications to Postgres in the same @Transactional:
             //   • either an UPDATE that bumped versionNumber on an existing row (and now sets formVersionUid),
             //   • or an INSERT of a brand‐new row with (uid, versionNumber=1, formVersionUid=<new Mongo UID>).
@@ -159,7 +159,7 @@ public class DataTemplateInstanceServiceImpl
     @Transactional
     @Override
     public void migrateDataFormTemplateVersion(DataFormTemplate formTemplate) {
-        if (!dataTemplateRepository.existsByUid(formTemplate.getUid())) {
+        if (!dataTemplateService.existsByUid(formTemplate.getUid())) {
             final var formTemplateVersion = formTemplate.getVersion();
             final var templateUid = formTemplate.getUid();
 
@@ -168,7 +168,7 @@ public class DataTemplateInstanceServiceImpl
 
             final var newVersionUid = CodeGenerator.generateUid();
 
-            dataTemplateRepository.save(template.versionNumber(formTemplateVersion)
+            dataTemplateService.save(template.versionNumber(formTemplateVersion)
                 // temporary for migrating old DataFormTemplate
                 .uid(templateUid)
                 .versionNumber(formTemplateVersion)
@@ -202,10 +202,7 @@ public class DataTemplateInstanceServiceImpl
 
     @Override
     public void deleteByUid(String uid) {
-        dataTemplateRepository.findByUid(uid).ifPresent((t) -> {
-            t.setDeleted(true);
-            dataTemplateRepository.save(t);
-        });
+        dataTemplateService.deleteByUid(uid);
     }
 
     @Override
@@ -218,7 +215,7 @@ public class DataTemplateInstanceServiceImpl
 
     @Override
     public Optional<DataTemplateInstanceDto> findLatestByTemplate(String templateUid) {
-        final var template = dataTemplateRepository.findByUid(templateUid).map(dataTemplateMapper::toDto);
+        final var template = dataTemplateService.findByUid(templateUid).map(dataTemplateMapper::toDto);
         final var version = templateVersionRepository.findTopByTemplateUidOrderByVersionNumberDesc(templateUid)
             .map(versionMapper::toDto);
         if (template.isEmpty() || version.isEmpty()) {

@@ -27,11 +27,11 @@ import java.util.Objects;
  */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
-@JsonIgnoreProperties(value = {"createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
+@JsonIgnoreProperties(value = {"new", "createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
 @Getter
 @Setter
 public abstract class JpaAuditableObject
-        implements AuditableObject<Long>, Persistable<Long>, Serializable {
+    implements AuditableObject<Long>, Persistable<Long>, Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;

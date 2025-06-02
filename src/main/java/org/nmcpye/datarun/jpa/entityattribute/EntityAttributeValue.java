@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.jpa.entityattribute;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,6 +9,7 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.proxy.HibernateProxy;
 import org.nmcpye.datarun.jpa.common.JpaAuditable;
+import org.nmcpye.datarun.jpa.common.JpaAuditableObject;
 import org.nmcpye.datarun.jpa.entityinstance.EntityInstance;
 
 import java.io.Serializable;
@@ -40,8 +41,9 @@ public class EntityAttributeValue
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "entity_instance_id", nullable = false)
-    @JsonIgnoreProperties(value = {"entityAttributeValues", "entityType", "entityInstanceOwners"}, allowSetters = true)
-    private EntityInstance entityInstance;
+//    @JsonIgnoreProperties(value = {"entityAttributeValues", "entityType", "entityInstanceOwners"}, allowSetters = true)
+    @JsonSerialize(contentAs = JpaAuditableObject.class)
+    protected EntityInstance entityInstance;
 
     @Column(name = "entity_attribute_uid", nullable = false)
     private String entityAttributeUid;

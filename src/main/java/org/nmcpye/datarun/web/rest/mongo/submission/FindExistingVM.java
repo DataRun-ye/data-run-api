@@ -8,7 +8,7 @@ import lombok.Setter;
 import java.util.List;
 
 /**
- * @author Hamza Assada, <7amza.it@gmail.com> <06-05-2025>
+ * @author Hamza Assada (06-05-2025), <7amza.it@gmail.com>
  */
 @Getter
 @Setter

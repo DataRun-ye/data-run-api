@@ -6,7 +6,7 @@ import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentWithAccessDto;
 import org.nmcpye.datarun.jpa.assignment.mapper.AssignmentWithAccessMapper;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
-import org.nmcpye.datarun.jpa.common.DefaultJpaAuditableService;
+import org.nmcpye.datarun.jpa.common.DefaultJpaSoftDeleteService;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.jpa.team.Team;
@@ -28,7 +28,7 @@ import java.util.*;
 @Primary
 @Transactional
 public class DefaultAssignmentService
-    extends DefaultJpaAuditableService<Assignment>
+    extends DefaultJpaSoftDeleteService<Assignment>
     implements AssignmentService {
 
     private final AssignmentRepository repository;

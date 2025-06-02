@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.common;
 
+import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
@@ -14,7 +15,7 @@ public interface AuditableObjectRepository<T extends AuditableObject<ID>, ID>
     extends CrudRepository<T, ID> {
     void deleteByUid(String uid);
 
-    boolean existsByUid(String uid);
+    Boolean existsByUid(@Size(max = 11) String uid);
 
     void deleteAllByUidIn(Collection<String> uids);
 

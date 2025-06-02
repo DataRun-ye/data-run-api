@@ -23,7 +23,7 @@ import java.time.Instant;
  * @author Hamza Assada, 20/03/2025
  */
 @MappedSuperclass
-@JsonIgnoreProperties(value = {"createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
+@JsonIgnoreProperties(value = {"new", "createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
 @Getter
 @Setter
 @NoArgsConstructor

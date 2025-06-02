@@ -12,6 +12,8 @@ import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.Instant;
+
 /**
  * @author Hamza Assada, 20/03/2025
  */
@@ -32,11 +34,22 @@ public abstract class DefaultJpaSoftDeleteService
     }
 
     @Override
+    public T save(T object) {
+        log.debug("Request service to save {}:`{}`", getClazz().getSimpleName(), object.getUid());
+        if (!object.getDeleted() && object.getDeletedAt() != null) {
+            object.setDeletedAt(null);
+        }
+
+        return repository.save(object);
+    }
+
+    @Override
     public void deleteByUid(String uid) {
         log.debug("Request soft delete service to soft delete {}:`{}`", getClazz().getSimpleName(), uid);
         final var toMarkAsDeleted = findByUid(uid).orElseThrow(() ->
             new IllegalQueryException(new ErrorMessage(ErrorCode.E1106, "Id", uid)));
         toMarkAsDeleted.setDeleted(Boolean.TRUE);
+        toMarkAsDeleted.setDeletedAt(Instant.now());
         save(toMarkAsDeleted);
     }
 
@@ -47,6 +60,7 @@ public abstract class DefaultJpaSoftDeleteService
             new IllegalQueryException(new ErrorMessage(ErrorCode.E1109,
                 object.getClass().getSimpleName(), object.getUid())));
         toMarkAsDeleted.setDeleted(Boolean.TRUE);
+        toMarkAsDeleted.setDeletedAt(Instant.now());
         save(toMarkAsDeleted);
     }
 

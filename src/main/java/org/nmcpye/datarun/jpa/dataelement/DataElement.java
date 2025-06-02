@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.dataelement;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.hypersistence.utils.hibernate.type.json.JsonType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -9,7 +9,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
@@ -74,10 +73,6 @@ public class DataElement extends JpaBaseIdentifiableObject {
     @JoinColumn(updatable = false)
     private OptionSet optionSet;
 
-    @Type(JsonType.class)
-    @Column(name = "label", columnDefinition = "jsonb")
-    private Map<String, String> label;
-
     /**
      * resourceType for ReferenceField type
      */
@@ -98,6 +93,13 @@ public class DataElement extends JpaBaseIdentifiableObject {
                 .property("name")
                 .value(entry.getValue()).build()).collect(Collectors.toSet());
         setTranslations(translations);
-        this.label = label;
+    }
+
+    @JsonProperty
+    public Map<String, String> getLabel() {
+        return translations
+            .stream()
+            .collect(Collectors
+                .toMap(Translation::getLocale, Translation::getValue));
     }
 }

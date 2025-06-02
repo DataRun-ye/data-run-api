@@ -6,6 +6,7 @@ import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -30,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @MappedSuperclass
 @Getter
 @Setter
+@NoArgsConstructor
 abstract public class JpaBaseIdentifiableObject
     extends JpaAuditableObject implements IdentifiableObject<Long> {
 
@@ -52,6 +54,12 @@ abstract public class JpaBaseIdentifiableObject
     // Constructors
     // -------------------------------------------------------------------------
 
+    public JpaBaseIdentifiableObject(JpaBaseIdentifiableObject identifiableObject) {
+        this.setId(identifiableObject.getId());
+        this.setUid(identifiableObject.getUid());
+        this.setName(identifiableObject.getName());
+        this.translations = identifiableObject.getTranslations();
+    }
     // -------------------------------------------------------------------------
     // Comparable implementation
     // -------------------------------------------------------------------------
@@ -63,8 +71,11 @@ abstract public class JpaBaseIdentifiableObject
     }
 
     public abstract String getName();
-    public abstract void setName(String name);
+
     public abstract String getCode();
+
+    public abstract void setName(String name);
+
     public abstract void setCode(String code);
 
     /**

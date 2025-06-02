@@ -14,7 +14,7 @@
 //import java.util.*;
 //
 ///**
-// * @author Hamza Assada, <7amza.it@gmail.com> <31-05-2025>
+// * @author Hamza Assada (31-05-2025), <7amza.it@gmail.com>
 // */
 //public class DefaultSidRetrievalStrategy implements SidRetrievalStrategy {
 //

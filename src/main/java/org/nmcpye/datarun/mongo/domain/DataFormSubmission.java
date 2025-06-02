@@ -20,7 +20,7 @@ import java.time.Instant;
 import java.util.*;
 
 /**
- * A DataFormSubmission.
+ * A DataFormSubmission, a Data instance versioned body, containing the actual submission data.
  */
 @Document(collection = "data_form_submission")
 @Getter
@@ -40,6 +40,9 @@ public class DataFormSubmission
     @Field("deleted")
     @Indexed(name = "submission_deleted_idx")
     private Boolean deleted = false;
+    @Field(name = "deletedAt")
+    private Instant deletedAt;
+
     @NotNull
     @Indexed(name = "submission_form_idx")
     private String form;

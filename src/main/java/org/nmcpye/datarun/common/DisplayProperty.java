@@ -9,7 +9,7 @@ public enum DisplayProperty {
     @JsonProperty("shortName")
     SHORTNAME("shortName");
 
-    private String display;
+    private final String display;
 
     DisplayProperty(String display) {
         this.display = display;

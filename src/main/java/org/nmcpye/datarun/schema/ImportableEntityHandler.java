@@ -3,7 +3,7 @@ package org.nmcpye.datarun.schema;
 import java.util.List;
 
 /**
- * @author Hamza Assada, <7amza.it@gmail.com> <01-05-2025>
+ * @author Hamza Assada (01-05-2025), <7amza.it@gmail.com>
  */
 public interface ImportableEntityHandler<T, K> {
     /**

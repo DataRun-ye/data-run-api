@@ -10,7 +10,7 @@
 //import org.springframework.stereotype.Service;
 //
 ///**
-// * @author Hamza Assada, <7amza.it@gmail.com> <13-05-2025>
+// * @author Hamza Assada (13-05-2025), <7amza.it@gmail.com>
 // */
 //@Service
 //public class VersionSequenceServiceImpl implements VersionSequenceService {

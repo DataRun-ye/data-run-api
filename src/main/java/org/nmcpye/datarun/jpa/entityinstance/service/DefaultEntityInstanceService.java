@@ -13,13 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class DefaultEntityInstanceService
     extends DefaultJpaAuditableService<EntityInstance>
     implements EntityInstanceService {
-
-    private final EntityInstanceRepository repository;
-
     public DefaultEntityInstanceService(EntityInstanceRepository repository,
                                         CacheManager cacheManager,
                                         UserAccessService userAccessService) {
         super(repository, cacheManager, userAccessService);
-        this.repository = repository;
     }
 }

@@ -8,7 +8,7 @@ import lombok.experimental.Accessors;
 import java.util.Map;
 
 /**
- * @author Hamza Assada, <7amza.it@gmail.com> <30-05-2025>
+ * @author Hamza Assada (30-05-2025), <7amza.it@gmail.com>
  */
 @NoArgsConstructor
 @Accessors(fluent = true)

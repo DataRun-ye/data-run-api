@@ -11,8 +11,10 @@ import org.nmcpye.datarun.jpa.assignmenttype.AssignmentType;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 
+import java.time.Instant;
+
 /**
- * @author Hamza Assada, <7amza.it@gmail.com> <27-05-2025>
+ * @author Hamza Assada (27-05-2025), <7amza.it@gmail.com>
  */
 @Entity
 @Table(name = "data_stage_definition", uniqueConstraints = {
@@ -27,14 +29,17 @@ public class DataStageDefinition extends JpaSoftDeleteObject {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
     @SequenceGenerator(name = "sequenceGenerator")
     @Column(name = "id")
-    protected Long id;
+    private Long id;
 
     @Size(max = 11)
     @Column(name = "uid", length = 11, nullable = false, unique = true)
-    protected String uid;
+    private String uid;
 
     @Column(name = "deleted")
-    protected Boolean deleted = false;
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     /**
      * The unique code for this object.

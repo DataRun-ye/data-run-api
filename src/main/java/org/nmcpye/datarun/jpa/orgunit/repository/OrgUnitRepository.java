@@ -19,6 +19,7 @@ import java.util.Optional;
 public interface OrgUnitRepository
     extends OrgUnitRepositoryWithBagRelationships,
     JpaAuditableRepository<OrgUnit> {
+    Boolean existsByCode(String code);
 
     Optional<OrgUnit> findByCode(String code);
 

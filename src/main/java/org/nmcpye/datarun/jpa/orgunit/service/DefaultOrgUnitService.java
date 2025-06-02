@@ -40,7 +40,13 @@ public class DefaultOrgUnitService extends DefaultJpaAuditableService<OrgUnit> i
     }
 
     private OrgUnit findParent(OrgUnit parent) {
-        return Optional.ofNullable(parent.getId()).flatMap(repository::findById).or(() -> Optional.ofNullable(parent.getUid()).flatMap(repository::findByUid)).or(() -> Optional.ofNullable(parent.getCode()).flatMap(repository::findByCode)).orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
+        return Optional.ofNullable(parent.getId())
+            .flatMap(repository::findById)
+            .or(() -> Optional.ofNullable(parent.getUid())
+                .flatMap(repository::findByUid))
+            .or(() -> Optional.ofNullable(parent.getCode())
+                .flatMap(repository::findByCode))
+            .orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
     }
 
 //    @Override

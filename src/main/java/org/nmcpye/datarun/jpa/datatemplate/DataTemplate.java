@@ -12,11 +12,12 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * @author Hamza Assada, <7amza.it@gmail.com> <27-05-2025>
+ * @author Hamza Assada (27-05-2025), <7amza.it@gmail.com>
  */
 @Entity
 @Table(name = "data_template")
@@ -58,6 +59,9 @@ public class DataTemplate extends JpaSoftDeleteObject {
 
     @Column(name = "deleted")
     private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     @Column(name = "description", length = 2000)
     private String description;

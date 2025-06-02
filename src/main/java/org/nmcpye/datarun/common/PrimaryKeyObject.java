@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.io.Serializable;
 
 /**
@@ -20,4 +22,13 @@ public interface PrimaryKeyObject<ID> extends Serializable {
     String getUid();
 
     void setUid(String uid);
+
+    /**
+     * Returns the value of the property referred to by the given IdScheme.
+     *
+     * @param idScheme the IdScheme.
+     * @return the value of the property referred to by the IdScheme.
+     */
+    @JsonIgnore
+    String getPropertyValue(IdScheme idScheme);
 }

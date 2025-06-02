@@ -1,7 +1,8 @@
 package org.nmcpye.datarun.jpa.datastage.dto;
 
 import jakarta.validation.constraints.Size;
-import lombok.Value;
+import lombok.Builder;
+import lombok.Getter;
 import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.datastage.DataStageDefinition;
 
@@ -12,20 +13,21 @@ import java.util.Set;
 /**
  * DTO for {@link DataStageDefinition}
  */
-@Value
+@Builder
+@Getter
 public class DataStageDefinitionDto implements Serializable {
     @Size(max = 11)
-    String uid;
-    String code;
-    String name;
-    String description;
-    Boolean repeatable;
-    Integer stageOrder;
-    String assignmentTypeUid;
-    String dataTemplateUid;
-    String createdBy;
-    Instant createdDate;
-    String lastModifiedBy;
-    Instant lastModifiedDate;
-    Set<Translation> translations;
+    private String uid;
+    private String code;
+    private String name;
+    private String description;
+    private Boolean repeatable;
+    private Integer stageOrder;
+    private String assignmentTypeUid;
+    private String dataTemplateUid;
+    private String createdBy;
+    private Instant createdDate;
+    private String lastModifiedBy;
+    private Instant lastModifiedDate;
+    private Set<Translation> translations;
 }

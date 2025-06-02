@@ -3,7 +3,7 @@
 //import org.nmcpye.datarun.template.FormTemplate;
 //
 ///**
-// * @author Hamza Assada, <7amza.it@gmail.com> <13-05-2025>
+// * @author Hamza Assada (13-05-2025), <7amza.it@gmail.com>
 // */
 //public interface VersionSequenceService {
 //

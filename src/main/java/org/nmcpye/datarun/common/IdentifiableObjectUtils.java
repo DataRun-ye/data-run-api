@@ -18,7 +18,7 @@ public class IdentifiableObjectUtils {
      * @param objects the list of IdentifiableObjects.
      * @return a list of uids.
      */
-    public static <T extends PrimaryKeyObject> List<String> getUids(Collection<T> objects) {
+    public static <T extends PrimaryKeyObject<?>> List<String> getUids(Collection<T> objects) {
         return objects != null ? objects.stream().filter(Objects::nonNull).map(o -> o.getUid()).collect(Collectors.toList()) : null;
     }
 
@@ -28,7 +28,7 @@ public class IdentifiableObjectUtils {
      * @param objects the list of IdentifiableObjects.
      * @return a list of codes.
      */
-    public static <T extends IdentifiableObject> List<String> getCodes(Collection<T> objects) {
+    public static <T extends IdentifiableObject<?>> List<String> getCodes(Collection<T> objects) {
         return objects != null ? objects.stream().map(o -> o.getCode()).collect(Collectors.toList()) : null;
     }
 
@@ -48,7 +48,7 @@ public class IdentifiableObjectUtils {
      *
      * @param list the list.
      */
-    public static <T extends IdentifiableObject> List<T> removeDuplicates(List<T> list) {
+    public static <T extends IdentifiableObject<?>> List<T> removeDuplicates(List<T> list) {
         final List<T> temp = new ArrayList<>(list);
         list.clear();
 
@@ -68,7 +68,7 @@ public class IdentifiableObjectUtils {
      * @param objects the identifiable objects.
      * @return mapping between the uid and the name of the given objects.
      */
-    public static <T extends IdentifiableObject> Map<String, T> getUidObjectMap(Collection<T> objects) {
+    public static <T extends IdentifiableObject<?>> Map<String, T> getUidObjectMap(Collection<T> objects) {
         return objects != null ? Maps.uniqueIndex(objects, T::getUid) : Maps.newHashMap();
     }
 
@@ -94,7 +94,7 @@ public class IdentifiableObjectUtils {
      * @return TRUE if both objects are null or have same UID or both UIDs are
      * null. Otherwise, return FALSE.
      */
-    public static boolean equalByUID(IdentifiableObject object, IdentifiableObject target) {
+    public static boolean equalByUID(IdentifiableObject<?> object, IdentifiableObject<?> target) {
         if (ObjectUtils.allNotNull(object, target)) {
             if (ObjectUtils.allNotNull(object.getUid(), target.getUid())) {
                 return object.getUid().equals(target.getUid());

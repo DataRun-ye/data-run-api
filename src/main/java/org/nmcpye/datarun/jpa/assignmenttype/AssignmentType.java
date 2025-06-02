@@ -29,7 +29,7 @@ import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
  *  }
  * </pre>
  *
- * @author Hamza Assada, <7amza.it@gmail.com> <27-05-2025>
+ * @author Hamza Assada (27-05-2025), <7amza.it@gmail.com>
  */
 @Entity
 @Table(name = "assignment_type")
@@ -73,7 +73,7 @@ public class AssignmentType extends JpaBaseIdentifiableObject {
     private Activity activity;
 
     public enum PlanningMode {
-        PLANNED, LOG_AS_YOU_GO
+        PLANNED, LOG_AS_YOU_GO, PERIODIC
     }
 
     public enum SubmissionMode {

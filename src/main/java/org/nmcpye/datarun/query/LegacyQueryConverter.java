@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 /**
- * @author Hamza Assada, <7amza.it@gmail.com> <01-06-2025>
+ * @author Hamza Assada (01-06-2025), <7amza.it@gmail.com>
  */
 @Component
 public class LegacyQueryConverter {
