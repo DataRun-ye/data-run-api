@@ -2,7 +2,7 @@ package org.nmcpye.datarun.datatemplateprocessor.validation;
 
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.TemplateValidationException;
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.TemplateValidator;
-import org.nmcpye.datarun.datatemplateversion.DataTemplateVersionInterface;
+import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

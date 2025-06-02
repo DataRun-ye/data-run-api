@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.web.rest.v1.formtemplate;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.datatemplate.DataTemplate;
-import org.nmcpye.datarun.datatemplate.DataTemplateService;
-import org.nmcpye.datarun.datatemplate.repository.DataTemplateRepository;
+import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
+import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
+import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;

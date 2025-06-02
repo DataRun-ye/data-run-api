@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.postgres.user;
 
 import jakarta.validation.Valid;
-import org.nmcpye.datarun.userauthority.Authority;
-import org.nmcpye.datarun.userauthority.AuthorityRepository;
+import org.nmcpye.datarun.jpa.userauthority.Authority;
+import org.nmcpye.datarun.jpa.userauthority.repository.AuthorityRepository;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.slf4j.Logger;

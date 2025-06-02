@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.postgres.project;
 
-import org.nmcpye.datarun.project.Project;
-import org.nmcpye.datarun.project.repository.ProjectRepository;
-import org.nmcpye.datarun.drun.postgres.service.ProjectService;
+import org.nmcpye.datarun.jpa.project.Project;
+import org.nmcpye.datarun.jpa.project.repository.ProjectRepository;
+import org.nmcpye.datarun.jpa.project.service.ProjectService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;

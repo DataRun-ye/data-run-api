@@ -2,9 +2,9 @@ package org.nmcpye.datarun.web.rest.v1.formtemplate;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.datatemplateversion.DataTemplateTemplateVersion;
-import org.nmcpye.datarun.datatemplateversion.FormTemplateVersionService;
-import org.nmcpye.datarun.datatemplateversion.repository.DataTemplateVersionRepository;
+import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
+import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
+import org.nmcpye.datarun.mongo.datatemplateversion.service.DateTemplateVersionService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
@@ -20,20 +20,20 @@ import java.util.List;
 import static org.nmcpye.datarun.web.rest.v1.formtemplate.FormTemplateVersionResource.V1;
 
 /**
- * REST controller for managing {@link DataTemplateTemplateVersion}.
+ * REST controller for managing {@link DataTemplateVersion}.
  */
 @RestController
 @RequestMapping(value = {V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 @Slf4j
-public class FormTemplateVersionResource extends MongoBaseResource<DataTemplateTemplateVersion> {
+public class FormTemplateVersionResource extends MongoBaseResource<DataTemplateVersion> {
     protected static final String NAME = "/formTemplateVersions";
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
-    private final FormTemplateVersionService templateService;
+    private final DateTemplateVersionService templateService;
     protected final FormTemplateProcessor formTemplateProcessor;
 
-    protected FormTemplateVersionResource(FormTemplateVersionService service,
+    protected FormTemplateVersionResource(DateTemplateVersionService service,
                                           DataTemplateVersionRepository repository,
                                           FormTemplateProcessor formTemplateProcessor) {
         super(service, repository);
@@ -48,19 +48,19 @@ public class FormTemplateVersionResource extends MongoBaseResource<DataTemplateT
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(@Valid List<DataTemplateTemplateVersion> entities) {
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(@Valid List<DataTemplateVersion> entities) {
         return super.saveAll(entities);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveOne(@Valid DataTemplateTemplateVersion entity) {
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(@Valid DataTemplateVersion entity) {
         return super.saveOne(entity);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<?> saveReturnSaved(@Valid DataTemplateTemplateVersion entity) {
+    public ResponseEntity<?> saveReturnSaved(@Valid DataTemplateVersion entity) {
         return super.saveReturnSaved(entity);
     }
 
@@ -71,7 +71,7 @@ public class FormTemplateVersionResource extends MongoBaseResource<DataTemplateT
     }
 
     @Override
-    public ResponseEntity<DataTemplateTemplateVersion> getById(String id) {
+    public ResponseEntity<DataTemplateVersion> getById(String id) {
         return super.getById(id);
     }
 }

@@ -2,12 +2,12 @@ package org.nmcpye.datarun.web.rest.postgres.user;
 
 import jakarta.validation.Valid;
 import org.apache.commons.lang3.StringUtils;
-import org.nmcpye.datarun.user.repository.UserRepository;
-import org.nmcpye.datarun.user.User;
-import org.nmcpye.datarun.drun.postgres.service.UserService;
+import org.nmcpye.datarun.jpa.user.repository.UserRepository;
+import org.nmcpye.datarun.jpa.user.User;
+import org.nmcpye.datarun.jpa.user.service.UserService;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.service.dto.AdminUserDTO;
-import org.nmcpye.datarun.service.dto.PasswordChangeDTO;
+import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
+import org.nmcpye.datarun.jpa.user.dto.PasswordChangeDTO;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.errors.EmailAlreadyUsedException;
 import org.nmcpye.datarun.web.rest.errors.InvalidPasswordException;

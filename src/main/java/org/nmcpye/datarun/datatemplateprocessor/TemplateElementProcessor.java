@@ -3,12 +3,12 @@ package org.nmcpye.datarun.datatemplateprocessor;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.dataelement.DataElement;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.datatemplateprocessor.postprocessors.AbstractFormElementHandler;
-import org.nmcpye.datarun.datatemplateversion.DataTemplateVersionInterface;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,7 +32,7 @@ public class TemplateElementProcessor {
             .map(AbstractFormElementHandler::processSection)
             .peek(s -> s.path(buildPath(s, sectionMap))).toList();
 
-        formTemplate.setSections(sections);
+        formTemplate.sections(sections);
         return this;
     }
 
@@ -48,11 +48,12 @@ public class TemplateElementProcessor {
                 AbstractFormElementHandler
                     .processElement(f,
                         Optional.ofNullable(dataElementMap.get(f.getId()))
-                            .orElseThrow(() -> new IllegalQueryException(ErrorCode.E1100, formTemplate.getUid(), f.getId()))))
+                            .orElseThrow(() -> new IllegalQueryException(ErrorCode.E1100, formTemplate.getUid(),
+                                f.getId()))))
             .peek(f -> f.path(buildPath(f, sectionMap)))
             .toList();
 
-        formTemplate.setFields(fields);
+        formTemplate.fields(fields);
         return this;
     }
 

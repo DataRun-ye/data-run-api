@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.postgres.orgunit;
 
-import org.nmcpye.datarun.orgunitgroupset.OrgUnitGroupSet;
-import org.nmcpye.datarun.orgunitgroupset.repository.OrgUnitGroupSetRepository;
-import org.nmcpye.datarun.drun.postgres.service.OrgUnitGroupSetService;
+import org.nmcpye.datarun.jpa.orgunitgroupset.OrgUnitGroupSet;
+import org.nmcpye.datarun.jpa.orgunitgroupset.repository.OrgUnitGroupSetRepository;
+import org.nmcpye.datarun.jpa.orgunitgroupset.service.OrgUnitGroupSetService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;

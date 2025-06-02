@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.rest.mongo;
 
 import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.common.AuditableObjectService;
-import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
+import org.nmcpye.datarun.common.AuditableObjectRepository;
 import org.nmcpye.datarun.web.rest.common.BaseReadWriteResource;
 
 //@RequestMapping("ApiVersion.API_CUSTOM, ApiVersion.API_V1")

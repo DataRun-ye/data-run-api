@@ -3,7 +3,7 @@
 //import jakarta.validation.constraints.Size;
 //import lombok.Getter;
 //import lombok.Setter;
-//import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
+//import org.nmcpye.datarun.mongo.common.MongoAuditableBaseObject;
 //import org.nmcpye.datarun.drun.postgres.domain.enumeration.AssignmentStatus;
 //import org.springframework.data.annotation.Id;
 //import org.springframework.data.mongodb.core.index.CompoundIndex;

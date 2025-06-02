@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.datatemplateprocessor.postprocessors;
 
 import org.nmcpye.datarun.common.enumeration.ValueTypeRendering;
-import org.nmcpye.datarun.dataelement.DataElement;
 import org.nmcpye.datarun.datatemplateelement.ElementValidationRule;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.RuleAction;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 
 import java.util.Optional;
 
@@ -26,10 +26,9 @@ public class MigrateDeprecatedPropertiesHandler
             .filter(r -> r.getAction() == RuleAction.Error)
             .findAny();
         if (element.getConstraint() == null && errorRule.isPresent()) {
-            final var elementValidationRule = ElementValidationRule.builder()
+            final var elementValidationRule = new ElementValidationRule()
                 .expression(errorRule.get().getExpression())
-                .ValidationMessage(errorRule.get().getMessage())
-                .build();
+                .validationMessage(errorRule.get().getMessage());
             element.setValidationRule(elementValidationRule);
         }
 

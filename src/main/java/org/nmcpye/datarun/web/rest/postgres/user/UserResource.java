@@ -5,11 +5,11 @@ import jakarta.validation.constraints.Pattern;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.user.repository.UserRepository;
+import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.config.Constants;
-import org.nmcpye.datarun.user.User;
-import org.nmcpye.datarun.drun.postgres.service.UserService;
-import org.nmcpye.datarun.service.dto.AdminUserDTO;
+import org.nmcpye.datarun.jpa.user.User;
+import org.nmcpye.datarun.jpa.user.service.UserService;
+import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.errors.EmailAlreadyUsedException;
@@ -39,7 +39,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.nmcpye.datarun.common.jpa.JpaAuditableObjectService.buildQuerySpecification;
+import static org.nmcpye.datarun.jpa.common.JpaAuditableObjectService.buildQuerySpecification;
 
 /**
  * REST controller for managing users.

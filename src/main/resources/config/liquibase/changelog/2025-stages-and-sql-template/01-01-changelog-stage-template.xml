@@ -194,7 +194,6 @@
             <column name="assignment_type_id" type="BIGINT"/>
             <column name="entity_instance_id" type="VARCHAR(255)"/>
             <column name="stage_states" type="jsonb"/>
-            <column name="status" type="VARCHAR(255)"/>
         </addColumn>
     </changeSet>
     <changeSet id="1748791363138-19-dataelement-add-short-name" author="Hamza">
@@ -320,8 +319,4 @@
     <changeSet id="1748791363138-2-team-code-uc" author="Hamza">
         <addNotNullConstraint columnDataType="VARCHAR(255)" columnName="code" tableName="team" validate="true"/>
     </changeSet>
-    <changeSet id="1748791363138-7-data_element-name-unique" author="Hamza">
-        <addUniqueConstraint columnNames="name" constraintName="uc_data_element_uid" tableName="data_element"/>
-    </changeSet>
-
 </databaseChangeLog>

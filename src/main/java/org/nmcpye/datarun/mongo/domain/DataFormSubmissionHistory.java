@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.enumeration.AssignmentStatus;
-import org.nmcpye.datarun.common.mongo.MongoAuditableBaseObject;
+import org.nmcpye.datarun.mongo.common.MongoAuditableBaseObject;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;

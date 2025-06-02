@@ -2,9 +2,9 @@ package org.nmcpye.datarun.web.rest.mongo.metadataschema;
 
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.MetadataSchema;
-import org.nmcpye.datarun.mongo.repository.MetadataSchemaRepository;
-import org.nmcpye.datarun.mongo.repository.MetadataSubmissionGranularRepository;
-import org.nmcpye.datarun.mongo.service.MetadataSchemaService;
+import org.nmcpye.datarun.mongo.metadataschema.repository.MetadataSchemaRepository;
+import org.nmcpye.datarun.mongo.metadataschema.repository.MetadataSubmissionGranularRepository;
+import org.nmcpye.datarun.mongo.metadataschema.service.MetadataSchemaService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;

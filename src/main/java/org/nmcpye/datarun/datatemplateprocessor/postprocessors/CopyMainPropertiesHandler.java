@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.datatemplateprocessor.postprocessors;
 
-import org.nmcpye.datarun.dataelement.DataElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 
 import java.util.Optional;
 

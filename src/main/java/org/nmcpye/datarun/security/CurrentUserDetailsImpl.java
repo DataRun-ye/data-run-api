@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import org.nmcpye.datarun.common.security.UserFormAccess;
+import org.nmcpye.datarun.userdetail.UserFormAccess;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.Collection;

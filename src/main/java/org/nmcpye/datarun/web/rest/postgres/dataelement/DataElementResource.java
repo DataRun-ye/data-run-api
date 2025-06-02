@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.postgres.dataelement;
 
-import org.nmcpye.datarun.dataelement.DataElement;
-import org.nmcpye.datarun.dataelement.repository.DataElementRepository;
-import org.nmcpye.datarun.drun.postgres.service.DataElementService;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
+import org.nmcpye.datarun.jpa.dataelement.service.DataElementService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;

@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.mongo.mapping.serialization;
 
-import org.nmcpye.datarun.orgunit.OrgUnit;
+import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 
 import java.io.Serializable;
 import java.util.Map;

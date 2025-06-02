@@ -17,7 +17,7 @@
 package org.nmcpye.datarun.acl;
 
 import lombok.Getter;
-import org.nmcpye.datarun.team.Team;
+import org.nmcpye.datarun.jpa.team.Team;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.util.Assert;
 

@@ -1,8 +1,9 @@
 package org.nmcpye.datarun.security;
 
-import org.nmcpye.datarun.common.security.UserFormAccess;
-import org.nmcpye.datarun.userauthority.Authority;
-import org.nmcpye.datarun.user.User;
+import org.nmcpye.datarun.jpa.user.User;
+import org.nmcpye.datarun.jpa.user.UserNotActivatedException;
+import org.nmcpye.datarun.jpa.userauthority.Authority;
+import org.nmcpye.datarun.userdetail.UserFormAccess;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

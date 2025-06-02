@@ -3,7 +3,7 @@ package org.nmcpye.datarun.audit;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.PostRemove;
 import jakarta.persistence.PostUpdate;
-import org.nmcpye.datarun.domain.enumeration.EntityAuditAction;
+import org.nmcpye.datarun.jpa.common.enumeration.EntityAuditAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;

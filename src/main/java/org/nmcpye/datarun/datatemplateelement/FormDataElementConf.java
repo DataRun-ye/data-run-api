@@ -9,6 +9,7 @@ import org.nmcpye.datarun.mongo.domain.datafield.ScannedCodeProperties;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.Map;
+import java.util.Objects;
 
 @Getter
 @Setter
@@ -18,12 +19,12 @@ public class FormDataElementConf extends AbstractElement {
     private ValueType type;
     private String calculation;
     private Object defaultValue;
-    private Boolean mandatory;
-    private Boolean readOnly;
-    private ElementValidationRule validationRule;
-    private Boolean mainField;
+    private Boolean mandatory = Boolean.FALSE;
+    private Boolean mainField = Boolean.FALSE;
+    private Boolean readOnly = Boolean.FALSE;
     private String optionSet;
     private String choiceFilter;
+    private ElementValidationRule validationRule;
     /**
      * Deprecated, use {@link ElementValidationRule}'s expression instead
      */
@@ -56,5 +57,17 @@ public class FormDataElementConf extends AbstractElement {
     public FormDataElementConf type(ValueType type) {
         this.setType(type);
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof FormDataElementConf that)) return false;
+        return Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
     }
 }

@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.domain;
 
-import org.nmcpye.datarun.userauthority.Authority;
+import org.nmcpye.datarun.jpa.userauthority.Authority;
 
 import java.util.UUID;
 

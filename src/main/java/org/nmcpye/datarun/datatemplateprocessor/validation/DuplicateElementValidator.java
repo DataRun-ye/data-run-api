@@ -6,7 +6,7 @@ import org.nmcpye.datarun.datatemplateprocessor.validation.validators.ElementGen
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.FormValidationError;
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.TemplateValidationResult;
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.TemplateValidator;
-import org.nmcpye.datarun.datatemplateversion.DataTemplateVersionInterface;
+import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;

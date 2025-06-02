@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.v1.dataelementgroup;
 
-import org.nmcpye.datarun.dataelementgroup.DataElementGroup;
-import org.nmcpye.datarun.dataelementgroup.repository.DataElementGroupRepository;
-import org.nmcpye.datarun.drun.postgres.service.DataElementGroupService;
+import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
+import org.nmcpye.datarun.jpa.dataelementgroup.repository.DataElementGroupRepository;
+import org.nmcpye.datarun.jpa.dataelementgroup.service.DataElementGroupService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;

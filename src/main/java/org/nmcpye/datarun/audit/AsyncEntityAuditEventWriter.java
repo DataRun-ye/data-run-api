@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.audit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
-import org.nmcpye.datarun.domain.EntityAuditEvent;
-import org.nmcpye.datarun.domain.enumeration.EntityAuditAction;
-import org.nmcpye.datarun.repository.EntityAuditEventRepository;
+import org.nmcpye.datarun.jpa.common.JpaAuditableObject;
+import org.nmcpye.datarun.jpa.common.enumeration.EntityAuditAction;
+import org.nmcpye.datarun.jpa.entityauditevent.EntityAuditEvent;
+import org.nmcpye.datarun.jpa.entityauditevent.repository.EntityAuditEventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;

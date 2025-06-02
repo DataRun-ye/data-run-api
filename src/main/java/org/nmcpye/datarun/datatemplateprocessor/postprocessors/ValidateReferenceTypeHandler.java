@@ -3,8 +3,8 @@ package org.nmcpye.datarun.datatemplateprocessor.postprocessors;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.dataelement.DataElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 
 /**
  * @author Hamza Assada, 18/03/2025

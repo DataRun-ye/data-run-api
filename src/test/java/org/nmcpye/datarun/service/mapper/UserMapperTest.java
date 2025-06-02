@@ -3,11 +3,11 @@ package org.nmcpye.datarun.service.mapper;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.userauthority.Authority;
-import org.nmcpye.datarun.user.User;
-import org.nmcpye.datarun.mapper.UserMapper;
+import org.nmcpye.datarun.jpa.userauthority.Authority;
+import org.nmcpye.datarun.jpa.user.User;
+import org.nmcpye.datarun.jpa.user.mapper.UserMapper;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.service.dto.AdminUserDTO;
+import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
 import org.nmcpye.datarun.service.dto.UserDTO;
 
 import java.time.Instant;

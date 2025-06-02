@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.datatemplateprocessor.validation.validators;
 
-import org.nmcpye.datarun.datatemplateversion.DataTemplateVersionInterface;
+import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 
 /**
  * @author Hamza Assada, 25/03/2025

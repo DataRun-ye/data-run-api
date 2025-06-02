@@ -3,8 +3,8 @@ package org.nmcpye.datarun.mongo.mapping.serialization;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import org.nmcpye.datarun.activity.Activity;
-import org.nmcpye.datarun.drun.postgres.service.ActivityService;
+import org.nmcpye.datarun.jpa.activity.Activity;
+import org.nmcpye.datarun.jpa.activity.service.ActivityService;
 
 import java.io.IOException;
 

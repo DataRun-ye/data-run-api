@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mongo.domain.dataform;
 
 import org.javers.spring.annotation.JaversSpringDataAuditable;
-import org.nmcpye.datarun.common.mongo.repository.MongoAuditableRepository;
+import org.nmcpye.datarun.mongo.common.repository.MongoAuditableRepository;
 import org.springframework.stereotype.Repository;
 
 /**

@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.datatemplateprocessor.postprocessors;
 
-import org.nmcpye.datarun.dataelement.DataElement;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.springframework.lang.Nullable;
 
 /**

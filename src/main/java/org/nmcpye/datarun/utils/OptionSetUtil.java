@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.utils;
 
 import org.nmcpye.datarun.datatemplateelement.DataOption;
-import org.nmcpye.datarun.optionset.OptionSet;
+import org.nmcpye.datarun.jpa.optionset.OptionSet;
 
 import java.util.*;
 import java.util.stream.Collectors;

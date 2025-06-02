@@ -2,7 +2,7 @@ package org.nmcpye.datarun.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.nmcpye.datarun.common.security.UserFormAccess;
+import org.nmcpye.datarun.userdetail.UserFormAccess;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 

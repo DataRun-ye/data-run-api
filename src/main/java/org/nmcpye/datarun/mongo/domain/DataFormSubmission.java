@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.enumeration.AssignmentStatus;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.mongo.MongoSoftDeleteObject;
+import org.nmcpye.datarun.mongo.common.MongoSoftDeleteObject;
 import org.nmcpye.datarun.utils.CodeGenerator;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;

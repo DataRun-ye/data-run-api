@@ -2,9 +2,9 @@ package org.nmcpye.datarun.web.rest.postgres.authenticate;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.servlet.http.HttpServletRequest;
-import org.nmcpye.datarun.user.repository.UserRepository;
-import org.nmcpye.datarun.userauthority.Authority;
-import org.nmcpye.datarun.user.User;
+import org.nmcpye.datarun.jpa.user.repository.UserRepository;
+import org.nmcpye.datarun.jpa.userauthority.Authority;
+import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.UserTokenResponse;
 import org.slf4j.Logger;

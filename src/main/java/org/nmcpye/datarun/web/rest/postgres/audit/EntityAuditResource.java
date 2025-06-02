@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest.postgres.audit;
 
-import org.nmcpye.datarun.domain.EntityAuditEvent;
-import org.nmcpye.datarun.repository.EntityAuditEventRepository;
+import org.nmcpye.datarun.jpa.entityauditevent.EntityAuditEvent;
+import org.nmcpye.datarun.jpa.entityauditevent.repository.EntityAuditEventRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

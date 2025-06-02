@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
-import org.nmcpye.datarun.common.jpa.JpaAuditableObject;
-import org.nmcpye.datarun.common.jpa.JpaAuditableObjectService;
-import org.nmcpye.datarun.common.jpa.repository.JpaAuditableRepository;
+import org.nmcpye.datarun.jpa.common.JpaAuditableObject;
+import org.nmcpye.datarun.jpa.common.JpaAuditableObjectService;
+import org.nmcpye.datarun.jpa.common.repository.JpaAuditableRepository;
 import org.nmcpye.datarun.web.rest.common.BaseReadWriteResource;
 
 public abstract class JpaBaseResource<T extends JpaAuditableObject>

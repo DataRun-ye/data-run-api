@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.acl;
 
-import org.nmcpye.datarun.common.security.UserFormAccess;
-import org.nmcpye.datarun.user.User;
-import org.nmcpye.datarun.assignment.Assignment;
-import org.nmcpye.datarun.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.security.CreatUserDetailService;
+import org.nmcpye.datarun.userdetail.UserFormAccess;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.domain.PrincipalSid;
 import org.springframework.security.acls.model.Sid;

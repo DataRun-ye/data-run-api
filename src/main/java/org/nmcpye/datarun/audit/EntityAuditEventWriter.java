@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.audit;
 
-import org.nmcpye.datarun.domain.enumeration.EntityAuditAction;
+import org.nmcpye.datarun.jpa.common.enumeration.EntityAuditAction;
 
 @FunctionalInterface
 public interface EntityAuditEventWriter {
