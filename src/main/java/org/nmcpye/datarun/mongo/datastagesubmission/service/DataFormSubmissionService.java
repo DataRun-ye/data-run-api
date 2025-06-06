@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mongo.datastagesubmission.service;
 
 import org.nmcpye.datarun.common.FindExistingSubmissionsDto;
-import org.nmcpye.datarun.common.SoftDeleteService;
+import org.nmcpye.datarun.common.IdentifiableObjectService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 
 import java.util.List;
@@ -10,7 +10,7 @@ import java.util.List;
  * Service Interface for managing {@link DataFormSubmission}.
  */
 public interface DataFormSubmissionService
-    extends SoftDeleteService<DataFormSubmission, String> {
+    extends IdentifiableObjectService<DataFormSubmission, String> {
 
     FindExistingSubmissionsDto findExistingAndMissingOrgUnitCodes(List<String> codes, String form);
 

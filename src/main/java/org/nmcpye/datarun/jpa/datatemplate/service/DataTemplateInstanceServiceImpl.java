@@ -159,7 +159,7 @@ public class DataTemplateInstanceServiceImpl
     @Transactional
     @Override
     public void migrateDataFormTemplateVersion(DataFormTemplate formTemplate) {
-        if (!dataTemplateService.existsByUid(formTemplate.getUid())) {
+        if (!dataTemplateRepository.existsByUid(formTemplate.getUid())) {
             final var formTemplateVersion = formTemplate.getVersion();
             final var templateUid = formTemplate.getUid();
 

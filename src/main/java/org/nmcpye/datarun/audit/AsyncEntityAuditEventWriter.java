@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.audit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.nmcpye.datarun.jpa.common.JpaAuditableObject;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.common.enumeration.EntityAuditAction;
 import org.nmcpye.datarun.jpa.entityauditevent.EntityAuditEvent;
 import org.nmcpye.datarun.jpa.entityauditevent.repository.EntityAuditEventRepository;
@@ -86,7 +86,7 @@ public class AsyncEntityAuditEventWriter implements EntityAuditEventWriter {
         }
         auditedEntity.setEntityId(conversionService.convert(entityId, String.class));
         auditedEntity.setEntityValue(entityData);
-        final JpaAuditableObject abstractAuditEntity = (JpaAuditableObject) entity;
+        final JpaIdentifiableObject abstractAuditEntity = (JpaIdentifiableObject) entity;
         if (EntityAuditAction.CREATE.equals(action)) {
             auditedEntity.setModifiedBy(abstractAuditEntity.getCreatedBy());
             auditedEntity.setModifiedDate(abstractAuditEntity.getCreatedDate());

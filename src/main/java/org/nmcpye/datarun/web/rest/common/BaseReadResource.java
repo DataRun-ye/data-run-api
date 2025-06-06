@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.web.rest.common;
 
 
-import org.nmcpye.datarun.common.AuditableObject;
-import org.nmcpye.datarun.common.AuditableObjectService;
 import org.nmcpye.datarun.common.DRunApiVersion;
-import org.nmcpye.datarun.common.AuditableObjectRepository;
+import org.nmcpye.datarun.common.IdentifiableObject;
+import org.nmcpye.datarun.common.IdentifiableObjectRepository;
+import org.nmcpye.datarun.common.IdentifiableObjectService;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -29,19 +29,19 @@ import java.util.Optional;
 
 //@RequestMapping("/api")
 @ApiVersion({DRunApiVersion.DEFAULT, DRunApiVersion.ALL})
-public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends Serializable> {
+public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID extends Serializable> {
 
     protected final Logger log = LoggerFactory.getLogger(BaseReadResource.class);
 
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
 
-    final protected AuditableObjectService<T, ID> auditableObjectService;
-    final protected AuditableObjectRepository<T, ID> repository;
+    final protected IdentifiableObjectService<T, ID> identifiableObjectService;
+    final protected IdentifiableObjectRepository<T, ID> repository;
 
-    protected BaseReadResource(AuditableObjectService<T, ID> auditableObjectService,
-                               AuditableObjectRepository<T, ID> repository) {
-        this.auditableObjectService = auditableObjectService;
+    protected BaseReadResource(IdentifiableObjectService<T, ID> identifiableObjectService,
+                               IdentifiableObjectRepository<T, ID> repository) {
+        this.identifiableObjectService = identifiableObjectService;
         this.repository = repository;
     }
 
@@ -120,12 +120,12 @@ public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends
     @GetMapping("/{id}")
     public ResponseEntity<T> getById(@PathVariable("id") String id) {
         log.debug("REST request to get from {}: {}", getName(), id);
-        Optional<T> entity = auditableObjectService.findByUid(id);
+        Optional<T> entity = identifiableObjectService.findByUid(id);
         return ResponseUtil.wrapOrNotFound(entity);
     }
 
     protected Page<T> getList(QueryRequest queryRequest, String jsonQueryBody) {
-        return auditableObjectService.findAllByUser(queryRequest, jsonQueryBody);
+        return identifiableObjectService.findAllByUser(queryRequest, jsonQueryBody);
     }
 
     protected abstract String getName();

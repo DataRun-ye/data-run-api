@@ -67,10 +67,6 @@ public class Assignment extends JpaSoftDeleteObject {
     @Column(name = "uid", length = 11, nullable = false)
     private String uid;
 
-    private String code;
-
-    private String name;
-
     @Column(name = "deleted")
     private Boolean deleted = false;
 
@@ -133,8 +129,8 @@ public class Assignment extends JpaSoftDeleteObject {
      * If you plan to pre-link an entity (e.g. a Household),
      * otherwise = null for “new” entities.
      */
-    @Column(name = "entity_instance_id")
-    private String entityInstanceId;
+    @Column(name = "entity_instance_uid")
+    private String entityInstanceUid;
 
     /**
      * A map of stageId → list of submissionIds (as JSON),
@@ -145,6 +141,17 @@ public class Assignment extends JpaSoftDeleteObject {
      */
     @Column(name = "stage_states", columnDefinition = "jsonb")
     private String stageStates;
+
+
+    @Override
+    public String getCode() {
+        return orgUnit != null ? orgUnit.getCode() : null;
+    }
+
+    @Override
+    public String getName() {
+        return orgUnit != null ? orgUnit.getCode() + ":" + orgUnit.getName() : null;
+    }
 
     @JsonProperty(value = "progressStatus")
     public AssignmentStatus getStatus() {

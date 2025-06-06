@@ -3,7 +3,7 @@ package org.nmcpye.datarun.jpa.user.service;
 import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.jpa.common.DefaultJpaAuditableService;
+import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.user.UsernameAlreadyUsedException;
 import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class UserService
-    extends DefaultJpaAuditableService<User> {
+    extends DefaultJpaIdentifiableService<User> {
 
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 

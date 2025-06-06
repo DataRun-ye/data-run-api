@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.common.IdScheme;
+import org.nmcpye.datarun.common.IdentifiableObject;
+import org.nmcpye.datarun.common.IdentifiableProperty;
 import org.nmcpye.datarun.utils.CodeGenerator;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -23,15 +25,15 @@ import java.util.Objects;
  * Base abstract class for entities which will hold definitions for created, last modified, created by,
  * last modified by attributes.
  *
- * @author Hamza Assada, 20/03/2025
+ * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
  */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @JsonIgnoreProperties(value = {"new", "createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
 @Getter
 @Setter
-public abstract class JpaAuditableObject
-    implements AuditableObject<Long>, Persistable<Long>, Serializable {
+public abstract class JpaIdentifiableObject
+    implements IdentifiableObject<Long>, Persistable<Long>, Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -52,7 +54,7 @@ public abstract class JpaAuditableObject
     @Column(name = "last_modified_date")
     protected Instant lastModifiedDate = Instant.now();
 
-    public JpaAuditableObject() {
+    public JpaIdentifiableObject() {
         setAutoFields();
     }
 
@@ -81,18 +83,10 @@ public abstract class JpaAuditableObject
         return !this.isPersisted;
     }
 
-    public JpaAuditableObject setIsPersisted() {
+    public JpaIdentifiableObject setIsPersisted() {
         this.isPersisted = true;
         return this;
     }
-
-//    public Long getId() {
-//        return id;
-//    }
-//
-//    public String getUid() {
-//        return uid;
-//    }
 
     /**
      * Set auto-generated fields on save or update
@@ -103,10 +97,29 @@ public abstract class JpaAuditableObject
         }
     }
 
+    /**
+     * Returns the value of the property referred to by the given IdScheme.
+     *
+     * @param idScheme the IdScheme.
+     * @return the value of the property referred to by the IdScheme.
+     */
+    @Override
+    public String getPropertyValue(IdScheme idScheme) {
+        if (idScheme.isNull() || idScheme.is(IdentifiableProperty.UID)) {
+            return getUid();
+        } else if (idScheme.is(IdentifiableProperty.CODE)) {
+            return getCode();
+        } else if (idScheme.is(IdentifiableProperty.NAME)) {
+            return getName();
+        }
+
+        return null;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof JpaAuditableObject that)) return false;
+        if (!(o instanceof JpaIdentifiableObject that)) return false;
         return Objects.equals(getUid(), that.getUid());
     }
 

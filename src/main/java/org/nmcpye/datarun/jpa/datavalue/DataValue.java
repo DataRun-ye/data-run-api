@@ -13,7 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.jpa.common.JpaAuditable;
-import org.nmcpye.datarun.jpa.common.JpaAuditableObject;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.datainstance.DataInstance;
 
@@ -21,7 +21,7 @@ import java.time.Instant;
 import java.util.regex.Pattern;
 
 /**
- * @author Hamza Assada (02-06-2025), <7amza.it@gmail.com>
+ * @author Hamza Assada 02/06/2025 <7amza.it@gmail.com>
  */
 @Entity
 @Table(name = "data_value")
@@ -130,7 +130,7 @@ public class DataValue extends JpaAuditable<Long> {
     }
 
     @JsonProperty
-    @JsonSerialize(contentAs = JpaAuditableObject.class)
+    @JsonSerialize(contentAs = JpaIdentifiableObject.class)
     public DataInstance getDataInstance() {
         return dataInstance;
     }

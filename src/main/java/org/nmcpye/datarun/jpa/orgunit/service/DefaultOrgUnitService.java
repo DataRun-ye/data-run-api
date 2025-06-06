@@ -2,7 +2,7 @@ package org.nmcpye.datarun.jpa.orgunit.service;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.jpa.common.DefaultJpaAuditableService;
+import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.springframework.cache.CacheManager;
@@ -16,7 +16,7 @@ import java.util.Optional;
 @Service
 @Primary
 @Transactional
-public class DefaultOrgUnitService extends DefaultJpaAuditableService<OrgUnit> implements OrgUnitService {
+public class DefaultOrgUnitService extends DefaultJpaIdentifiableService<OrgUnit> implements OrgUnitService {
 
     private final OrgUnitRepository repository;
     private final OrgUnitMaintenanceService maintenanceService;

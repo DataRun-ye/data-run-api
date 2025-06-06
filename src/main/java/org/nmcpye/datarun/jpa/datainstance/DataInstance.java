@@ -27,7 +27,7 @@ import java.util.Set;
  * A data template instance-header (i.e, a submission-header submitted from client)
  * containing a submission metadata
  *
- * @author Hamza Assada (02-06-2025), <7amza.it@gmail.com>
+ * @author Hamza Assada 02/06/2025 <7amza.it@gmail.com>
  */
 @Entity
 @Table(name = "data_instance", indexes = {
@@ -51,8 +51,10 @@ public class DataInstance extends JpaSoftDeleteObject {
     @Column(name = "uid", length = 11, nullable = false, unique = true)
     protected String uid;
 
+    @Column(name = "code", unique = true)
     protected String code;
 
+    @Column(name = "name", unique = true)
     protected String name;
 
     @Column(name = "deleted")

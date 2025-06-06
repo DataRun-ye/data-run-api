@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * @author Hamza Assada, 20/03/2025
+ * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
  */
 @AllArgsConstructor
 @Getter

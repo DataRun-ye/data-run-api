@@ -12,9 +12,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.hibernate.annotations.Type;
-import org.nmcpye.datarun.common.IdScheme;
 import org.nmcpye.datarun.common.IdentifiableObject;
-import org.nmcpye.datarun.common.IdentifiableProperty;
 import org.nmcpye.datarun.common.translation.Translatable;
 import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -26,18 +24,18 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * @author Hamza Assada, 20/03/2025
+ * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
  */
 @MappedSuperclass
 @Getter
 @Setter
 @NoArgsConstructor
-abstract public class JpaBaseIdentifiableObject
-    extends JpaAuditableObject implements IdentifiableObject<Long> {
+abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject {
 
     /**
      * Set of available object translation, normally filtered by locale.
      */
+    @JsonIgnore
     @Type(JsonType.class)
     @Column(name = "translations", columnDefinition = "jsonb")
     protected Set<Translation> translations = new HashSet<>();
@@ -53,13 +51,6 @@ abstract public class JpaBaseIdentifiableObject
     // -------------------------------------------------------------------------
     // Constructors
     // -------------------------------------------------------------------------
-
-    public JpaBaseIdentifiableObject(JpaBaseIdentifiableObject identifiableObject) {
-        this.setId(identifiableObject.getId());
-        this.setUid(identifiableObject.getUid());
-        this.setName(identifiableObject.getName());
-        this.translations = identifiableObject.getTranslations();
-    }
     // -------------------------------------------------------------------------
     // Comparable implementation
     // -------------------------------------------------------------------------
@@ -69,14 +60,6 @@ abstract public class JpaBaseIdentifiableObject
     public Map<String, String> getTranslationCache() {
         return translationCache;
     }
-
-    public abstract String getName();
-
-    public abstract String getCode();
-
-    public abstract void setName(String name);
-
-    public abstract void setCode(String code);
 
     /**
      * Compares objects based on display name. A null display name is ordered
@@ -220,26 +203,6 @@ abstract public class JpaBaseIdentifiableObject
     // -------------------------------------------------------------------------
     // Logic
     // -------------------------------------------------------------------------
-
-    /**
-     * Returns the value of the property referred to by the given IdScheme.
-     *
-     * @param idScheme the IdScheme.
-     * @return the value of the property referred to by the IdScheme.
-     */
-    @Override
-    public String getPropertyValue(IdScheme idScheme) {
-        if (idScheme.isNull() || idScheme.is(IdentifiableProperty.UID)) {
-            return getUid();
-        } else if (idScheme.is(IdentifiableProperty.CODE)) {
-            return getCode();
-        } else if (idScheme.is(IdentifiableProperty.NAME)) {
-            return getName();
-        }
-
-        return null;
-    }
-
     @Override
     public String toString() {
         return "{" +

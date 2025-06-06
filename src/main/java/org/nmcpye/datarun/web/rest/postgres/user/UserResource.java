@@ -39,7 +39,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.nmcpye.datarun.jpa.common.JpaAuditableObjectService.buildQuerySpecification;
+import static org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService.buildQuerySpecification;
 
 /**
  * REST controller for managing users.

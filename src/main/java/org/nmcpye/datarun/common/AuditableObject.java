@@ -3,9 +3,9 @@ package org.nmcpye.datarun.common;
 import java.time.Instant;
 
 /**
- * @author Hamza Assada, 20/03/2025
+ * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
  */
-public interface AuditableObject<ID> extends PrimaryKeyObject<ID> {
+public interface AuditableObject<ID> extends WithIdentifierObject<ID> {
 
     String getCreatedBy();
 
@@ -18,13 +18,4 @@ public interface AuditableObject<ID> extends PrimaryKeyObject<ID> {
     void setLastModifiedBy(String user);
 
     Instant getLastModifiedDate();
-
-    @Override
-    default String getPropertyValue(IdScheme idScheme) {
-        if (idScheme.isNull() || idScheme.is(IdentifiableProperty.UID)) {
-            return getUid();
-        }
-
-        return null;
-    }
 }

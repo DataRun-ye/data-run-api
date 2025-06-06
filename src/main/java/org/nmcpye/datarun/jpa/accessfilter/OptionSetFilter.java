@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * @author Hamza Assada, 21/03/2025
+ * @author Hamza Assada 21/03/2025 <7amza.it@gmail.com>
  */
 @Component
 public class OptionSetFilter extends DefaultJpaFilter<OptionSet> {

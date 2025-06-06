@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Collects errors per row index (if known). For simplicity, rowIndex is passed by caller.
  *
- * @author Hamza Assada (02-06-2025), <7amza.it@gmail.com>
+ * @author Hamza Assada 02/06/2025 <7amza.it@gmail.com>
  */
 public class ValidationContext {
     private final Map<Integer, List<String>> rowErrors = new HashMap<>();

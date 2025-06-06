@@ -64,6 +64,9 @@ public class QueryRequest {
     @Schema(description = "Flag to merge DataFormTemplate elements and sections")
     private boolean mergeElements = false;
 
+    public boolean isEmpty() {
+        return fields == null || fields.isEmpty();
+    }
     public Map<String, Object> getParsedFilter() {
         return filters.entrySet().stream().collect(Collectors.toMap(
             Map.Entry::getKey,

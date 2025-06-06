@@ -25,7 +25,7 @@ import static org.nmcpye.datarun.security.SecurityUtils.AUTHORITIES_KEY;
 import static org.nmcpye.datarun.security.SecurityUtils.JWT_ALGORITHM;
 
 /**
- * @author Hamza Assada, 16/04/2025
+ * @author Hamza Assada 16/04/2025 <7amza.it@gmail.com>
  */
 @Service
 @Transactional

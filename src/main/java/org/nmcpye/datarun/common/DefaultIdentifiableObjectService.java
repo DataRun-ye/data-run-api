@@ -13,21 +13,21 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * @author Hamza Assada, 20/03/2025
+ * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
  */
 @Transactional
-public abstract class DefaultAuditableObjectService<T extends AuditableObject<ID>, ID>
-    implements AuditableObjectService<T, ID> {
-    private static final Logger log = LoggerFactory.getLogger(DefaultAuditableObjectService.class);
+public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObject<ID>, ID>
+    implements IdentifiableObjectService<T, ID> {
+    private static final Logger log = LoggerFactory.getLogger(DefaultIdentifiableObjectService.class);
 
-    protected final AuditableObjectRepository<T, ID> repository;
+    protected final IdentifiableObjectRepository<T, ID> repository;
     protected final CacheManager cacheManager;
 
     protected final Class<T> klass;
 
     @SuppressWarnings("unchecked")
-    public DefaultAuditableObjectService(AuditableObjectRepository<T, ID> repository,
-                                         CacheManager cacheManager) {
+    public DefaultIdentifiableObjectService(IdentifiableObjectRepository<T, ID> repository,
+                                            CacheManager cacheManager) {
         this.repository = repository;
         this.cacheManager = cacheManager;
         this.klass = (Class<T>) ((ParameterizedType) getClass()

@@ -7,7 +7,7 @@ import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
-import org.nmcpye.datarun.mongo.common.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.mongo.common.DefaultMongoIdentifiableObjectService;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
 import org.nmcpye.datarun.mongo.metadataschema.repository.MetadataSubmissionRepository;
 import org.nmcpye.datarun.mongo.service.impl.SequenceGeneratorService;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 @Service
 @Primary
 public class MetadataSubmissionServiceImpl
-    extends DefaultMongoAuditableObjectService<MetadataSubmission>
+    extends DefaultMongoIdentifiableObjectService<MetadataSubmission>
     implements MetadataSubmissionService {
 
     private final MongoTemplate mongoTemplate;

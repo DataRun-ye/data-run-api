@@ -1,17 +1,18 @@
 package org.nmcpye.datarun.mongo.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.mongo.common.MongoAuditableBaseObject;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
+import org.nmcpye.datarun.jpa.optionset.OptionSet;
+import org.nmcpye.datarun.mongo.common.MongoBaseIdentifiableObject;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.Repeat;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;
-import org.nmcpye.datarun.jpa.optionset.OptionSet;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -32,7 +33,7 @@ import java.util.Objects;
 @CompoundIndex(name = "schema_name", def = "{'name': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class MetadataSchema
-    extends MongoAuditableBaseObject {
+    extends MongoBaseIdentifiableObject {
     @Id
     private String id;
 
@@ -124,5 +125,11 @@ public class MetadataSchema
             ", description='" + getDescription() + "'" +
             ", disabled='" + getDisabled() + "'" +
             "}";
+    }
+
+    @JsonIgnore
+    @Override
+    public String getCode() {
+        return "";
     }
 }

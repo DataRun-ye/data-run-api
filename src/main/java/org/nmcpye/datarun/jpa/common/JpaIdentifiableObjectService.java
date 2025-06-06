@@ -3,7 +3,7 @@ package org.nmcpye.datarun.jpa.common;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import org.nmcpye.datarun.common.AuditableObject;
-import org.nmcpye.datarun.common.AuditableObjectService;
+import org.nmcpye.datarun.common.IdentifiableObjectService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -11,20 +11,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author Hamza Assada, 20/03/2025
+ * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
  */
-public interface JpaAuditableObjectService<T extends JpaAuditableObject>
-    extends AuditableObjectService<T, Long> {
+public interface JpaIdentifiableObjectService<T extends JpaIdentifiableObject>
+    extends IdentifiableObjectService<T, Long> {
 
-//    boolean canWrite(Specification<T> spec, QueryRequest queryRequest);
-
-    static <T extends AuditableObject<Long>> Specification<T> hasUid(String uid) {
-        return (root, query, criteriaBuilder) -> uid == null ? criteriaBuilder.disjunction()
+    static <T extends JpaIdentifiableObject> Specification<T> hasUid(String uid) {
+        return (root, query, criteriaBuilder) -> uid == null ?
+            criteriaBuilder.disjunction()
             : criteriaBuilder.equal(root.get("uid"), uid);
     }
 
     @Deprecated(since = "v 6 use mongo like json query")
-    static <E extends AuditableObject<Long>> Specification<E> buildQuerySpecification(QueryRequest queryRequest) {
+    static <E extends JpaIdentifiableObject> Specification<E> buildQuerySpecification(QueryRequest queryRequest) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 

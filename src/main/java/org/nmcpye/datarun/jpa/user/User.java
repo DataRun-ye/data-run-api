@@ -15,8 +15,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.jpa.common.JpaAuditableObject;
 import org.nmcpye.datarun.config.Constants;
+import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.usegroup.UserGroup;
 import org.nmcpye.datarun.jpa.userauthority.Authority;
@@ -37,7 +37,7 @@ import java.util.Set;
 @Getter
 @Setter
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
-public class User extends JpaAuditableObject {
+public class User extends JpaBaseIdentifiableObject {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
     @SequenceGenerator(name = "sequenceGenerator")
@@ -133,6 +133,18 @@ public class User extends JpaAuditableObject {
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"users", "managedGroups", "managedByGroups"}, allowSetters = true)
     private Set<UserGroup> userGroups = new HashSet<>();
+
+    @JsonIgnore
+    @Override
+    public String getCode() {
+        return getLogin();
+    }
+
+    @JsonIgnore
+    @Override
+    public String getName() {
+        return getFirstName();
+    }
 
     // Lowercase the login before saving it in database
     public void setLogin(String login) {

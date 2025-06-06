@@ -4,7 +4,7 @@ import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.jpa.common.DefaultJpaAuditableService;
+import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.jpa.usegroup.UserGroup;
 import org.nmcpye.datarun.jpa.usegroup.repository.UserGroupRepository;
 import org.nmcpye.datarun.jpa.usegroup.repository.UserGroupSpecifications;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @Service
 @Primary
 @Transactional
-public class DefaultUserGroupService extends DefaultJpaAuditableService<UserGroup> implements UserGroupService {
+public class DefaultUserGroupService extends DefaultJpaIdentifiableService<UserGroup> implements UserGroupService {
     private static final Logger log = LoggerFactory.getLogger(DefaultUserGroupService.class);
 
     final private UserGroupRepository repository;

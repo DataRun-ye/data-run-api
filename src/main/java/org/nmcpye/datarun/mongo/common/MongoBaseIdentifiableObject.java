@@ -22,9 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
 @Setter
-abstract public class MongoBaseIdentifiableObject
-    extends MongoAuditableBaseObject
-    implements IdentifiableObject<String> {
+abstract public class MongoBaseIdentifiableObject extends MongoIdentifiableObject {
     /**
      * Set of available object translation,
      * normally filtered by locale.

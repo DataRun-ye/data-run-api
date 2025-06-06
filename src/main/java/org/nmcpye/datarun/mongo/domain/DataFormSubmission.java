@@ -27,8 +27,7 @@ import java.util.*;
 @Setter
 @CompoundIndex(name = "data_submission_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataFormSubmission
-    extends MongoSoftDeleteObject {
+public class DataFormSubmission extends MongoSoftDeleteObject {
     @JsonIgnore
     @Id
     private String id;
@@ -182,5 +181,17 @@ public class DataFormSubmission
             ", finishedEntryTime='" + getFinishedEntryTime() + "'" +
             ", status='" + getStatus() + "'" +
             "}";
+    }
+
+    @JsonIgnore
+    @Override
+    public String getCode() {
+        return "";
+    }
+
+    @JsonIgnore
+    @Override
+    public String getName() {
+        return "";
     }
 }

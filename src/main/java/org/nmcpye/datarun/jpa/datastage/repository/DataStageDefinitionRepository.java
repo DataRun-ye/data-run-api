@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.datastage.repository;
 
 import org.javers.spring.annotation.JaversSpringDataAuditable;
-import org.nmcpye.datarun.jpa.common.repository.JpaAuditableRepository;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.datastage.DataStageDefinition;
 import org.springframework.stereotype.Repository;
 
@@ -11,5 +11,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 @JaversSpringDataAuditable
 public interface DataStageDefinitionRepository
-    extends JpaAuditableRepository<DataStageDefinition> {
+    extends JpaIdentifiableRepository<DataStageDefinition> {
 }

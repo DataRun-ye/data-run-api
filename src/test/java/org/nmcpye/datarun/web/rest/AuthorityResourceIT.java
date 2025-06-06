@@ -112,7 +112,7 @@ class AuthorityResourceIT {
     @Transactional
     void createAuthorityWithExistingId() throws Exception {
         // Create the Authority with an existing ID
-        insertedAuthority = authorityRepository.saveAndFlush(authority);
+        insertedAuthority = authorityRepository.save(authority);
 
         long databaseSizeBeforeCreate = getRepositoryCount();
 
@@ -130,7 +130,7 @@ class AuthorityResourceIT {
     void getAllAuthorities() throws Exception {
         // Initialize the database
         authority.setName(UUID.randomUUID().toString());
-        insertedAuthority = authorityRepository.saveAndFlush(authority);
+        insertedAuthority = authorityRepository.save(authority);
 
         // Get all the authorityList
         restAuthorityMockMvc
@@ -145,7 +145,7 @@ class AuthorityResourceIT {
     void getAuthority() throws Exception {
         // Initialize the database
         authority.setName(UUID.randomUUID().toString());
-        insertedAuthority = authorityRepository.saveAndFlush(authority);
+        insertedAuthority = authorityRepository.save(authority);
 
         // Get the authority
         restAuthorityMockMvc
@@ -167,7 +167,7 @@ class AuthorityResourceIT {
     void deleteAuthority() throws Exception {
         // Initialize the database
         authority.setName(UUID.randomUUID().toString());
-        insertedAuthority = authorityRepository.saveAndFlush(authority);
+        insertedAuthority = authorityRepository.save(authority);
 
         long databaseSizeBeforeDelete = getRepositoryCount();
 

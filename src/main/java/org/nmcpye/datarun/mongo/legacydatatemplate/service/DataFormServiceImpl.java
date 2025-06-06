@@ -6,7 +6,7 @@ import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
-import org.nmcpye.datarun.mongo.common.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.mongo.common.DefaultMongoIdentifiableObjectService;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.ReferenceField;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 @Primary
 @Transactional
 public class DataFormServiceImpl
-    extends DefaultMongoAuditableObjectService<DataForm>
+    extends DefaultMongoIdentifiableObjectService<DataForm>
     implements DataFormService {
 
     private final DataFormRepository repositoryCustom;

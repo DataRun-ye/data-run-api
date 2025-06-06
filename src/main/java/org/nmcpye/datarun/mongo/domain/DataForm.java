@@ -7,15 +7,15 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.mongo.common.MongoBaseIdentifiableObject;
 import org.nmcpye.datarun.datatemplateelement.DataOption;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.jpa.optionset.OptionSet;
+import org.nmcpye.datarun.mongo.common.MongoBaseIdentifiableObject;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.FieldDeserializer;
 import org.nmcpye.datarun.mongo.domain.datafield.Repeat;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;
-import org.nmcpye.datarun.jpa.optionset.OptionSet;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -33,8 +33,7 @@ import java.util.*;
 @Setter
 @CompoundIndex(name = "form_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataForm
-    extends MongoBaseIdentifiableObject {
+public class DataForm extends MongoBaseIdentifiableObject {
     @Id
     private String id;
 

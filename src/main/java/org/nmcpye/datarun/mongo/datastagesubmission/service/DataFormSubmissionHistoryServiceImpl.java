@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.mongo.datastagesubmission.service;
 
-import org.nmcpye.datarun.mongo.common.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.mongo.common.DefaultMongoIdentifiableObjectService;
 import org.nmcpye.datarun.mongo.datastagesubmission.mapper.DataFormSubmissionHistoryMapper;
 import org.nmcpye.datarun.mongo.datastagesubmission.repository.DataFormSubmissionHistoryRepository;
 import org.nmcpye.datarun.mongo.datastagesubmission.repository.DataFormSubmissionRepository;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class DataFormSubmissionHistoryServiceImpl
-    extends DefaultMongoAuditableObjectService<DataFormSubmissionHistory>
+    extends DefaultMongoIdentifiableObjectService<DataFormSubmissionHistory>
     implements DataFormSubmissionHistoryService {
     final DataFormSubmissionHistoryRepository repository;
     final DataFormSubmissionRepository submissionRepository;

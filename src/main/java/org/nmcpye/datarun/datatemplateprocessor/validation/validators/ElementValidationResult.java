@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * @author Hamza Assada, 25/03/2025
+ * @author Hamza Assada 25/03/2025 <7amza.it@gmail.com>
  */
 
 public class ElementValidationResult {

@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mongo.metadataschema.repository;
 
 import org.javers.spring.annotation.JaversSpringDataAuditable;
-import org.nmcpye.datarun.mongo.common.repository.MongoAuditableRepository;
+import org.nmcpye.datarun.mongo.common.repository.MongoIdentifiableRepository;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
 import org.springframework.data.domain.Page;
@@ -16,7 +16,7 @@ import java.util.List;
  */
 @Repository
 @JaversSpringDataAuditable
-public interface MetadataSubmissionRepository extends MongoAuditableRepository<MetadataSubmission> {
+public interface MetadataSubmissionRepository extends MongoIdentifiableRepository<MetadataSubmission> {
 
     @Query("{ 'serialNumber' : { $exists: false } }")
     List<DataFormSubmission> findBySerialNumberNull();

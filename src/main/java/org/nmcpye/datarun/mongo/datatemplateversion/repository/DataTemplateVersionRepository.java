@@ -2,7 +2,7 @@ package org.nmcpye.datarun.mongo.datatemplateversion.repository;
 
 import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
-import org.nmcpye.datarun.mongo.common.repository.MongoAuditableRepository;
+import org.nmcpye.datarun.mongo.common.repository.MongoIdentifiableRepository;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,7 +20,7 @@ import java.util.Set;
 @Repository
 @JaversSpringDataAuditable
 public interface DataTemplateVersionRepository
-    extends MongoAuditableRepository<DataTemplateVersion> {
+    extends MongoIdentifiableRepository<DataTemplateVersion> {
     // Returns the single FormInstance with highest version for this template
     Optional<DataTemplateVersion> findTopByTemplateUidOrderByVersionNumberDesc(String templateId);
 

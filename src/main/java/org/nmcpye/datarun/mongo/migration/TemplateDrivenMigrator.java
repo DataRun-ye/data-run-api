@@ -2,7 +2,7 @@ package org.nmcpye.datarun.mongo.migration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.bulk.BulkWriteResult;
-import org.nmcpye.datarun.common.PrimaryKeyObject;
+import org.nmcpye.datarun.common.WithIdentifierObject;
 import org.nmcpye.datarun.jpa.migration.FormDataMigrator;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionBu;
@@ -125,7 +125,7 @@ public class TemplateDrivenMigrator implements CommandLineRunner {
         });
     }
 
-    private <T extends PrimaryKeyObject> void storeInDLQ(T doc, Exception error) {
+    private <T extends WithIdentifierObject> void storeInDLQ(T doc, Exception error) {
         try {
             // Convert entity to Map
             DataFormSubmissionBu errorDocument = objectMapper.convertValue(doc, DataFormSubmissionBu.class);

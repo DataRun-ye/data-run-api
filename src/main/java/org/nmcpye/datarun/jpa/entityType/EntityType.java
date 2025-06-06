@@ -25,7 +25,7 @@ import java.util.Set;
  * instantiated from
  * this Entity type.
  *
- * @author Hamza Assada (27-05-2025), <7amza.it@gmail.com>
+ * @author Hamza Assada 27/05/2025 <7amza.it@gmail.com>
  */
 @Entity
 @Table(name = "entity_type")

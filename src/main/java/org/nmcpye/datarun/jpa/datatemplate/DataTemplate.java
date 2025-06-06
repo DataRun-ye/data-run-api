@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * @author Hamza Assada (27-05-2025), <7amza.it@gmail.com>
+ * @author Hamza Assada 27/05/2025 <7amza.it@gmail.com>
  */
 @Entity
 @Table(name = "data_template")

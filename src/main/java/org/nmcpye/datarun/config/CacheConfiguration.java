@@ -8,7 +8,6 @@ import org.hibernate.cache.jcache.ConfigSettings;
 import org.nmcpye.datarun.caching.UserKeyGenerator;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.AssignmentForm;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
 import org.nmcpye.datarun.jpa.dataelementgroupset.DataElementGroupSet;
@@ -20,7 +19,6 @@ import org.nmcpye.datarun.jpa.orgunitgroupset.OrgUnitGroupSet;
 import org.nmcpye.datarun.jpa.oulevel.OuLevel;
 import org.nmcpye.datarun.jpa.project.Project;
 import org.nmcpye.datarun.jpa.team.Team;
-import org.nmcpye.datarun.jpa.team.TeamFormAccess;
 import org.nmcpye.datarun.jpa.usegroup.UserGroup;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
@@ -105,18 +103,14 @@ public class CacheConfiguration {
             createCache(cm, Activity.class.getName());
             createCache(cm, Activity.class.getName() + ".assignments");
 
-            createCache(cm, AssignmentForm.class.getName());
             createCache(cm, Assignment.class.getName());
             createCache(cm, Assignment.class.getName() + ".children");
-            createCache(cm, Assignment.class.getName() + ".assignmentForms");
 
-            createCache(cm, TeamFormAccess.class.getName());
             createCache(cm, Team.class.getName());
             createCache(cm, Team.class.getName() + ".assignments");
             createCache(cm, Team.class.getName() + ".users");
             createCache(cm, Team.class.getName() + ".managedTeams");
             createCache(cm, Team.class.getName() + ".managedByTeams");
-            createCache(cm, Team.class.getName() + ".teamFormAccesses");
 
 
             createCache(cm, OrgUnit.class.getName());

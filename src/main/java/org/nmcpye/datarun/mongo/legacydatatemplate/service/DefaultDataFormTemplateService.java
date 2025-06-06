@@ -2,7 +2,7 @@ package org.nmcpye.datarun.mongo.legacydatatemplate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceService;
-import org.nmcpye.datarun.mongo.common.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.mongo.common.DefaultMongoIdentifiableObjectService;
 import org.nmcpye.datarun.mongo.datatemplateversion.mapper.DataFormTemplateMapper;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.legacydatatemplate.repository.DataFormTemplateRepository;
@@ -23,7 +23,7 @@ import java.util.Optional;
 @Slf4j
 @Transactional
 public class DefaultDataFormTemplateService
-    extends DefaultMongoAuditableObjectService<DataFormTemplate>
+    extends DefaultMongoIdentifiableObjectService<DataFormTemplate>
     implements DataFormTemplateService {
     private final DataFormTemplateMapper dataFormTemplateMapper;
     private final DataTemplateInstanceService templateInstanceService;

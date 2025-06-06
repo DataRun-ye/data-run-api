@@ -6,9 +6,9 @@ import org.springframework.data.domain.Page;
 import java.util.Optional;
 
 /**
- * @author Hamza Assada, 20/03/2025
+ * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
  */
-public interface AuditableObjectService<T extends AuditableObject<ID>, ID> {
+public interface IdentifiableObjectService<T extends IdentifiableObject<ID>, ID> {
     Class<T> getClazz();
 
     T saveWithRelations(T object);

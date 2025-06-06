@@ -6,27 +6,27 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.jpa.common.repository.JpaAuditableRepository;
-import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.query.filter.*;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.CacheManager;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * @author Hamza Assada, 20/03/2025
+ * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
  */
 @Slf4j
 public abstract class DefaultJpaSoftDeleteService
     <T extends JpaSoftDeleteObject>
-    extends DefaultJpaAuditableService<T>
+    extends DefaultJpaIdentifiableService<T>
     implements SoftDeleteService<T, Long> {
 
     protected final UserAccessService userAccessService;
-    protected final JpaAuditableRepository<T> jpaAuditableObjectRepository;
+    protected final JpaIdentifiableRepository<T> jpaAuditableObjectRepository;
 
-    public DefaultJpaSoftDeleteService(JpaAuditableRepository<T> jpaAuditableObjectRepository,
+    public DefaultJpaSoftDeleteService(JpaIdentifiableRepository<T> jpaAuditableObjectRepository,
                                        CacheManager cacheManager, UserAccessService userAccessService) {
         super(jpaAuditableObjectRepository, cacheManager, userAccessService);
         this.userAccessService = userAccessService;
@@ -64,16 +64,23 @@ public abstract class DefaultJpaSoftDeleteService
         save(toMarkAsDeleted);
     }
 
-    protected Specification<T> baseAccessSpecification(CurrentUserDetails user, QueryRequest queryRequest) {
-        Specification<T> accessSpec = userAccessService.readSpec(getClazz(), user, queryRequest);
-        if (queryRequest == null || !queryRequest.isIncludeDeleted()) {
-            return accessSpec.and(includeDeletedCheckSpecification());
+    protected FilterExpression buildCombinedFilter(QueryRequest queryRequest, String jsonQueryBody) {
+        List<FilterExpression> allFilters = new ArrayList<>();
+        final FilterExpression baseFilter = super.buildCombinedFilter(queryRequest, jsonQueryBody);
+        if(baseFilter != null) {
+            allFilters.add(baseFilter);
         }
-        return accessSpec;
-    }
 
-    private Specification<T> includeDeletedCheckSpecification() {
-        return (root, query, criteriaBuilder) ->
-            criteriaBuilder.isFalse(root.get("deleted"));
+        /// ///
+        // Implicit soft-delete filter
+        if (queryRequest == null || !queryRequest.isIncludeDeleted()) {
+            allFilters.add(new SimpleFilter("deleted", FilterOperator.EQ, false));
+        }
+        //
+
+        if (allFilters.isEmpty()) return null;
+        if (allFilters.size() == 1) return allFilters.get(0);
+
+        return new CompoundFilter(LogicalOperator.AND, allFilters);
     }
 }

@@ -1,18 +1,19 @@
 package org.nmcpye.datarun.web.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import jakarta.persistence.EntityManager;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.IntegrationTest;
-import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.user.User;
-import org.nmcpye.datarun.jpa.user.service.UserService;
-import org.nmcpye.datarun.jpa.user.mapper.UserMapper;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
+import org.nmcpye.datarun.jpa.user.mapper.UserMapper;
+import org.nmcpye.datarun.jpa.user.repository.UserRepository;
+import org.nmcpye.datarun.jpa.user.service.UserService;
+import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.cache.Cache;
@@ -33,7 +34,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Integration tests for the {@link UserResourceUpdate} REST controller.
+ * Integration tests for the REST controller.
  */
 @AutoConfigureMockMvc
 @WithMockUser(authorities = AuthoritiesConstants.ADMIN)
@@ -41,21 +42,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class UserResourceUpdateIT {
 
     private static final String DEFAULT_LOGIN = "johndoe";
-    private static final String UPDATED_LOGIN = "jhipster";
+    private static final String UPDATED_LOGIN = "datarun";
 
     private static final Long DEFAULT_ID = 1L;
 
     private static final String DEFAULT_PASSWORD = "passjohndoe";
-    private static final String UPDATED_PASSWORD = "passjhipster";
+    private static final String UPDATED_PASSWORD = "passdatarun";
 
     private static final String DEFAULT_EMAIL = "johndoe@localhost";
-    private static final String UPDATED_EMAIL = "jhipster@localhost";
+    private static final String UPDATED_EMAIL = "datarun@localhost";
 
     private static final String DEFAULT_FIRSTNAME = "john";
-    private static final String UPDATED_FIRSTNAME = "jhipsterFirstName";
+    private static final String UPDATED_FIRSTNAME = "datarunFirstName";
 
     private static final String DEFAULT_LASTNAME = "doe";
-    private static final String UPDATED_LASTNAME = "jhipsterLastName";
+    private static final String UPDATED_LASTNAME = "datarunLastName";
 
     private static final String DEFAULT_IMAGEURL = "http://placehold.it/50x50";
     private static final String UPDATED_IMAGEURL = "http://placehold.it/40x40";
@@ -180,7 +181,7 @@ class UserResourceUpdateIT {
     @Test
     @Transactional
     void createUserWithExistingId() throws Exception {
-        int databaseSizeBeforeCreate = userRepository.findAll().size();
+        int databaseSizeBeforeCreate = Lists.newArrayList(userRepository.findAll()).size();
 
         AdminUserDTO userDTO = new AdminUserDTO();
         userDTO.setId(DEFAULT_ID);
@@ -206,8 +207,8 @@ class UserResourceUpdateIT {
     @Transactional
     void createUserWithExistingLogin() throws Exception {
         // Initialize the database
-        userRepository.saveAndFlush(user);
-        int databaseSizeBeforeCreate = userRepository.findAll().size();
+        userRepository.persistAndFlush(user);
+        int databaseSizeBeforeCreate = Lists.newArrayList(userRepository.findAll()).size();
 
         AdminUserDTO userDTO = new AdminUserDTO();
         userDTO.setLogin(DEFAULT_LOGIN); // this login should already be used
@@ -232,8 +233,8 @@ class UserResourceUpdateIT {
     @Transactional
     void createUserWithExistingEmail() throws Exception {
         // Initialize the database
-        userRepository.saveAndFlush(user);
-        int databaseSizeBeforeCreate = userRepository.findAll().size();
+        userRepository.persistAndFlush(user);
+        int databaseSizeBeforeCreate = Lists.newArrayList(userRepository.findAll()).size();
 
         AdminUserDTO userDTO = new AdminUserDTO();
         userDTO.setLogin("anotherlogin");
@@ -258,7 +259,7 @@ class UserResourceUpdateIT {
     @Transactional
     void getAllUsers() throws Exception {
         // Initialize the database
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         // Get all the users
         restUserMockMvc
@@ -277,7 +278,7 @@ class UserResourceUpdateIT {
     @Transactional
     void getUser() throws Exception {
         // Initialize the database
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         assertThat(cacheManager.getCache(UserRepository.USERS_BY_LOGIN_CACHE).get(user.getLogin())).isNull();
 
@@ -306,8 +307,8 @@ class UserResourceUpdateIT {
     @Transactional
     void updateUser() throws Exception {
         // Initialize the database
-        userRepository.saveAndFlush(user);
-        int databaseSizeBeforeUpdate = userRepository.findAll().size();
+        userRepository.persistAndFlush(user);
+        int databaseSizeBeforeUpdate = Lists.newArrayList(userRepository.findAll()).size();
 
         // Update the user
         User updatedUser = userRepository.findById(user.getId()).orElseThrow();
@@ -347,8 +348,8 @@ class UserResourceUpdateIT {
     @Transactional
     void updateUserLogin() throws Exception {
         // Initialize the database
-        userRepository.saveAndFlush(user);
-        int databaseSizeBeforeUpdate = userRepository.findAll().size();
+        userRepository.persistAndFlush(user);
+        int databaseSizeBeforeUpdate = Lists.newArrayList(userRepository.findAll()).size();
 
         // Update the user
         User updatedUser = userRepository.findById(user.getId()).orElseThrow();
@@ -389,18 +390,18 @@ class UserResourceUpdateIT {
     @Transactional
     void updateUserExistingEmail() throws Exception {
         // Initialize the database with 2 users
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         User anotherUser = new User();
-        anotherUser.setLogin("jhipster");
+        anotherUser.setLogin("datarun");
         anotherUser.setPassword(RandomStringUtils.randomAlphanumeric(60));
         anotherUser.setActivated(true);
-        anotherUser.setEmail("jhipster@localhost");
+        anotherUser.setEmail("datarun@localhost");
         anotherUser.setFirstName("java");
-        anotherUser.setLastName("hipster");
+        anotherUser.setLastName("datarun");
         anotherUser.setImageUrl("");
         anotherUser.setLangKey("en");
-        userRepository.saveAndFlush(anotherUser);
+        userRepository.persistAndFlush(anotherUser);
 
         // Update the user
         User updatedUser = userRepository.findById(user.getId()).orElseThrow();
@@ -410,7 +411,7 @@ class UserResourceUpdateIT {
         userDTO.setLogin(updatedUser.getLogin());
         userDTO.setFirstName(updatedUser.getFirstName());
         userDTO.setLastName(updatedUser.getLastName());
-        userDTO.setEmail("jhipster@localhost"); // this email should already be used by anotherUser
+        userDTO.setEmail("datarun@localhost"); // this email should already be used by anotherUser
         userDTO.setActivated(updatedUser.isActivated());
         userDTO.setImageUrl(updatedUser.getImageUrl());
         userDTO.setLangKey(updatedUser.getLangKey());
@@ -429,25 +430,25 @@ class UserResourceUpdateIT {
     @Transactional
     void updateUserExistingLogin() throws Exception {
         // Initialize the database
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         User anotherUser = new User();
-        anotherUser.setLogin("jhipster");
+        anotherUser.setLogin("datarun");
         anotherUser.setPassword(RandomStringUtils.randomAlphanumeric(60));
         anotherUser.setActivated(true);
-        anotherUser.setEmail("jhipster@localhost");
+        anotherUser.setEmail("datarun@localhost");
         anotherUser.setFirstName("java");
         anotherUser.setLastName("hipster");
         anotherUser.setImageUrl("");
         anotherUser.setLangKey("en");
-        userRepository.saveAndFlush(anotherUser);
+        userRepository.persistAndFlush(anotherUser);
 
         // Update the user
         User updatedUser = userRepository.findById(user.getId()).orElseThrow();
 
         AdminUserDTO userDTO = new AdminUserDTO();
         userDTO.setId(updatedUser.getId());
-        userDTO.setLogin("jhipster"); // this login should already be used by anotherUser
+        userDTO.setLogin("datarun"); // this login should already be used by anotherUser
         userDTO.setFirstName(updatedUser.getFirstName());
         userDTO.setLastName(updatedUser.getLastName());
         userDTO.setEmail(updatedUser.getEmail());
@@ -469,8 +470,8 @@ class UserResourceUpdateIT {
     @Transactional
     void deleteUser() throws Exception {
         // Initialize the database
-        userRepository.saveAndFlush(user);
-        int databaseSizeBeforeDelete = userRepository.findAll().size();
+        userRepository.persistAndFlush(user);
+        int databaseSizeBeforeDelete = Lists.newArrayList(userRepository.findAll()).size();
 
         // Delete the user
         restUserMockMvc
@@ -498,6 +499,6 @@ class UserResourceUpdateIT {
     }
 
     private void assertPersistedUsers(Consumer<List<User>> userAssertion) {
-        userAssertion.accept(userRepository.findAll());
+        userAssertion.accept(Lists.newArrayList(userRepository.findAll()));
     }
 }

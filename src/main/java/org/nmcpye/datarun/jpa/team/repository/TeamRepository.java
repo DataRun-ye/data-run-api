@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.jpa.team.repository;
 
-import org.nmcpye.datarun.jpa.common.repository.JpaAuditableRepository;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,7 +18,7 @@ import java.util.Optional;
 @Repository
 public interface TeamRepository
     extends TeamRepositoryWithBagRelationships,
-    JpaAuditableRepository<Team> {
+        JpaIdentifiableRepository<Team> {
 
     Optional<Team> findByCodeAndActivityUid(String code, String activityUid);
 

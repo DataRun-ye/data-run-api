@@ -10,6 +10,6 @@
 //@Repository
 //@SuppressWarnings("unused")
 //public interface EntityInstanceOwnerRepository
-//        extends JpaRepository<EntityInstanceOwner, Long>, JpaSpecificationExecutor<EntityInstanceOwner> {
+//        extends BaseJpaIdentifiableRepository<EntityInstanceOwner, Long>, JpaSpecificationExecutor<EntityInstanceOwner> {
 //    Optional<EntityInstanceOwner> findByEntityInstanceIdAndAssignmentTypeId(Long entityInstanceId, Long assignmentTypeId);
 //}

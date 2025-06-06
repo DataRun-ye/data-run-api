@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.Setter;
 import org.javers.core.metamodel.annotation.DiffIgnore;
-import org.nmcpye.datarun.common.AuditableObject;
-import org.nmcpye.datarun.jpa.common.JpaAuditableObject;
+import org.nmcpye.datarun.common.IdentifiableObject;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.utils.CodeGenerator;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -25,8 +25,7 @@ import java.util.Objects;
 @DiffIgnore
 @Getter
 @Setter
-public abstract class MongoAuditableBaseObject
-    implements AuditableObject<String> {
+public abstract class MongoIdentifiableObject implements IdentifiableObject<String> {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -47,7 +46,7 @@ public abstract class MongoAuditableBaseObject
     @Field("lastModifiedDate")
     private Instant lastModifiedDate = Instant.now();
 
-    public MongoAuditableBaseObject() {
+    public MongoIdentifiableObject() {
         setAutoFields();
     }
 
@@ -63,7 +62,7 @@ public abstract class MongoAuditableBaseObject
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof JpaAuditableObject that)) return false;
+        if (!(o instanceof JpaIdentifiableObject that)) return false;
         return Objects.equals(getUid(), that.getUid());
     }
 

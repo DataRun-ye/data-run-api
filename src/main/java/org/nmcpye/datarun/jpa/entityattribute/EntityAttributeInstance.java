@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.jpa.entityattribute;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,13 +9,13 @@ import org.nmcpye.datarun.jpa.entityType.EntityType;
  * an {@link EntityAttributeInstance} links an {@link EntityType} to an {@link EntityAttributeType}
  * and configure it with additional configuration properties
  *
- * @author Hamza Assada (29-05-2025), <7amza.it@gmail.com>
+ * @author Hamza Assada 29/05/2025 <7amza.it@gmail.com>
  */
 @Getter
 @Setter
 @NoArgsConstructor
 public class EntityAttributeInstance
-        extends EntityAttributeType {
+    extends EntityAttributeType {
 
     private Boolean displayInList = false;
 
@@ -25,10 +24,4 @@ public class EntityAttributeInstance
     private Boolean searchable = false;
 
     private String entityTypeUid;
-
-    @JsonIgnore
-    @Override
-    public Long getId() {
-        return super.getId();
-    }
 }

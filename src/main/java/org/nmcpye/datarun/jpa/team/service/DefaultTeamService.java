@@ -7,7 +7,7 @@ import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
-import org.nmcpye.datarun.jpa.common.DefaultJpaAuditableService;
+import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.jpa.migration.TeamFormPermissionsMigration;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
@@ -35,7 +35,7 @@ import static org.nmcpye.datarun.jpa.team.repository.TeamSpecifications.getManag
 @Service
 @Primary
 @Transactional
-public class DefaultTeamService extends DefaultJpaAuditableService<Team> implements TeamService {
+public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> implements TeamService {
     private static final Logger log = LoggerFactory.getLogger(DefaultTeamService.class);
 
     final private TeamRepository repository;

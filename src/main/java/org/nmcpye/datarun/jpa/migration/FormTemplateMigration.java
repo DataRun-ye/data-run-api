@@ -6,7 +6,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 /**
- * @author Hamza Assada (14-05-2025), <7amza.it@gmail.com>
+ * @author Hamza Assada 14/05/2025 <7amza.it@gmail.com>
  */
 @Component
 public class FormTemplateMigration implements CommandLineRunner {

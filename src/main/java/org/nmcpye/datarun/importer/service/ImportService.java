@@ -18,7 +18,7 @@
 //import java.util.List;
 //
 ///**
-// * @author Hamza Assada (02-06-2025), <7amza.it@gmail.com>
+// * @author Hamza Assada 02/06/2025 <7amza.it@gmail.com>
 // */
 //@Service
 //public class ImportService {
@@ -32,7 +32,7 @@
 //    }
 //
 //    @Transactional
-//    public ImportResponse handleImport(Class<? extends AbstractBaseDto> entityType, List<JsonNode> rawRows, boolean dryRun) {
+//    public ImportResponse handleImport(String entityType, List<JsonNode> rawRows, boolean dryRun) {
 //        EntityImportHandler<? extends AbstractBaseDto, ?> rawHandler = handlerRegistry.getHandler(entityType);
 //        if (rawHandler == null) {
 //            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown entityType '" + entityType + "'");

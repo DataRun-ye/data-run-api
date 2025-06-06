@@ -10,7 +10,6 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.common.IdScheme;
 import org.nmcpye.datarun.common.IdentifiableProperty;
 import org.nmcpye.datarun.jpa.common.JpaAuditable;
-import org.nmcpye.datarun.jpa.common.JpaAuditableObject;
 import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 import org.nmcpye.datarun.jpa.entityType.EntityType;
 import org.nmcpye.datarun.jpa.entityattribute.EntityAttributeValue;
@@ -23,7 +22,7 @@ import java.util.UUID;
 /**
  * an {@link EntityType} instance created/updated by a submission
  *
- * @author Hamza Assada (27-05-2025), <7amza.it@gmail.com>
+ * @author Hamza Assada 27/05/2025 <7amza.it@gmail.com>
  */
 @Entity
 @Table(name = "entity_instance")
@@ -31,8 +30,7 @@ import java.util.UUID;
 @Setter
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
-public class EntityInstance extends JpaAuditableObject {
-
+public class EntityInstance extends JpaBaseIdentifiableObject {
     public enum EntityStatus {ACTIVE, INACTIVE, ARCHIVED}
 
     @Id
@@ -48,28 +46,14 @@ public class EntityInstance extends JpaAuditableObject {
     @Column(name = "uuid", unique = true, nullable = false)
     private UUID uuid;
 
-    @Column(name = "code")
+    @Column(name = "code", unique = true)
     protected String code;
 
-    @Column(name = "name")
+    @Column(name = "name", unique = true)
     protected String name;
-
-//    /**
-//     * The assignment that created or most recently updated this entity.
-//     */
-//    @Column(name = "assignment_uid", nullable = false)
-//    private String assignmentUid;
-
-//    /**
-//     * Optionally link back to the exact stage submission that drove this update.
-//     */
-//    @Column(name = "stage_submission_uid")
-//    private String stageSubmissionUid;
 
     @Enumerated(EnumType.STRING)
     private EntityStatus status = EntityStatus.ACTIVE;
-//
-//    private Boolean deleted = false;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "entity_type_id")
@@ -83,7 +67,6 @@ public class EntityInstance extends JpaAuditableObject {
     private Instant updatedAtClient;
 
     @OneToMany(mappedBy = "entityInstance", cascade = CascadeType.ALL, orphanRemoval = true)
-//    @JsonIgnoreProperties(value = {"entityAttribute", "entityInstance"}, allowSetters = true)
     @JsonSerialize(contentAs = JpaAuditable.class)
     protected Set<EntityAttributeValue> entityAttributeValues = new LinkedHashSet<>();
 

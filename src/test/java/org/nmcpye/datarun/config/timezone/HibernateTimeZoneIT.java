@@ -1,10 +1,5 @@
 package org.nmcpye.datarun.config.timezone;
 
-import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.*;
-import java.time.format.DateTimeFormatter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.IntegrationTest;
@@ -15,6 +10,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+
+import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for verifying the behavior of Hibernate in the context of storing various date and time types across different databases.
@@ -63,7 +64,7 @@ class HibernateTimeZoneIT {
     @Test
     @Transactional
     void storeInstantWithZoneIdConfigShouldBeStoredOnConfiguredTimeZone() {
-        dateTimeWrapperRepository.saveAndFlush(dateTimeWrapper);
+        dateTimeWrapperRepository.save(dateTimeWrapper);
 
         String request = generateSqlRequest("instant", dateTimeWrapper.getId());
         SqlRowSet resultSet = jdbcTemplate.queryForRowSet(request);
@@ -75,7 +76,7 @@ class HibernateTimeZoneIT {
     @Test
     @Transactional
     void storeLocalDateTimeWithZoneIdConfigShouldBeStoredOnConfiguredTimeZone() {
-        dateTimeWrapperRepository.saveAndFlush(dateTimeWrapper);
+        dateTimeWrapperRepository.save(dateTimeWrapper);
 
         String request = generateSqlRequest("local_date_time", dateTimeWrapper.getId());
         SqlRowSet resultSet = jdbcTemplate.queryForRowSet(request);
@@ -87,7 +88,7 @@ class HibernateTimeZoneIT {
     @Test
     @Transactional
     void storeOffsetDateTimeWithZoneIdConfigShouldBeStoredOnConfiguredTimeZone() {
-        dateTimeWrapperRepository.saveAndFlush(dateTimeWrapper);
+        dateTimeWrapperRepository.save(dateTimeWrapper);
 
         String request = generateSqlRequest("offset_date_time", dateTimeWrapper.getId());
         SqlRowSet resultSet = jdbcTemplate.queryForRowSet(request);
@@ -99,7 +100,7 @@ class HibernateTimeZoneIT {
     @Test
     @Transactional
     void storeZoneDateTimeWithZoneIdConfigShouldBeStoredOnConfiguredTimeZone() {
-        dateTimeWrapperRepository.saveAndFlush(dateTimeWrapper);
+        dateTimeWrapperRepository.save(dateTimeWrapper);
 
         String request = generateSqlRequest("zoned_date_time", dateTimeWrapper.getId());
         SqlRowSet resultSet = jdbcTemplate.queryForRowSet(request);
@@ -111,7 +112,7 @@ class HibernateTimeZoneIT {
     @Test
     @Transactional
     void storeLocalTimeWithZoneIdConfigShouldBeStoredOnConfiguredTimeZoneAccordingToHis1stJan1970Value() {
-        dateTimeWrapperRepository.saveAndFlush(dateTimeWrapper);
+        dateTimeWrapperRepository.save(dateTimeWrapper);
 
         String request = generateSqlRequest("local_time", dateTimeWrapper.getId());
         SqlRowSet resultSet = jdbcTemplate.queryForRowSet(request);
@@ -127,7 +128,7 @@ class HibernateTimeZoneIT {
     @Test
     @Transactional
     void storeOffsetTimeWithZoneIdConfigShouldBeStoredOnConfiguredTimeZoneAccordingToHis1stJan1970Value() {
-        dateTimeWrapperRepository.saveAndFlush(dateTimeWrapper);
+        dateTimeWrapperRepository.save(dateTimeWrapper);
 
         String request = generateSqlRequest("offset_time", dateTimeWrapper.getId());
         SqlRowSet resultSet = jdbcTemplate.queryForRowSet(request);
@@ -148,7 +149,7 @@ class HibernateTimeZoneIT {
     @Test
     @Transactional
     void storeLocalDateWithZoneIdConfigShouldBeStoredWithoutTransformation() {
-        dateTimeWrapperRepository.saveAndFlush(dateTimeWrapper);
+        dateTimeWrapperRepository.save(dateTimeWrapper);
 
         String request = generateSqlRequest("local_date", dateTimeWrapper.getId());
         SqlRowSet resultSet = jdbcTemplate.queryForRowSet(request);

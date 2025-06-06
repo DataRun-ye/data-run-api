@@ -6,11 +6,11 @@ import java.io.Serializable;
 
 /**
  * <p>
- * Common interface for objects that have a unique ID used in RESTful APIs but
+ * Common interface for objects that have a unique Key used in RESTful APIs but
  * that might not have use for a name and other fundamentals that come with
  * {@link IdentifiableObject}s.
  */
-public interface PrimaryKeyObject<ID> extends Serializable {
+public interface WithIdentifierObject<ID> extends Serializable {
 
     ID getId();
 
@@ -30,5 +30,11 @@ public interface PrimaryKeyObject<ID> extends Serializable {
      * @return the value of the property referred to by the IdScheme.
      */
     @JsonIgnore
-    String getPropertyValue(IdScheme idScheme);
+    default String getPropertyValue(IdScheme idScheme) {
+        if (idScheme.isNull() || idScheme.is(IdentifiableProperty.UID)) {
+            return getUid();
+        }
+
+        return null;
+    }
 }

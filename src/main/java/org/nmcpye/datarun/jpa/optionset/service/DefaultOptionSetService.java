@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.optionset.service;
 
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.jpa.common.DefaultJpaAuditableService;
+import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.jpa.optionset.OptionSet;
 import org.nmcpye.datarun.jpa.optionset.repository.OptionSetRepository;
 import org.springframework.cache.CacheManager;
@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Primary
 @Transactional
-public class DefaultOptionSetService extends DefaultJpaAuditableService<OptionSet> implements OptionSetService {
+public class DefaultOptionSetService extends DefaultJpaIdentifiableService<OptionSet> implements OptionSetService {
     public DefaultOptionSetService(OptionSetRepository repository, CacheManager cacheManager, UserAccessService userAccessService) {
         super(repository, cacheManager, userAccessService);
     }

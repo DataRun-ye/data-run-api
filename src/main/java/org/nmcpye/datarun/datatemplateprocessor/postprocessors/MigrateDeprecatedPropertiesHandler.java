@@ -10,7 +10,7 @@ import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import java.util.Optional;
 
 /**
- * @author Hamza Assada, 18/03/2025
+ * @author Hamza Assada 18/03/2025 <7amza.it@gmail.com>
  */
 public class MigrateDeprecatedPropertiesHandler
     extends AbstractFormElementHandler<FormDataElementConf> {

@@ -5,7 +5,7 @@ import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import org.nmcpye.datarun.audit.EntityAuditEventListener;
-import org.nmcpye.datarun.jpa.common.JpaAuditableObject;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 
 import static com.tngtech.archunit.base.DescribedPredicate.alwaysTrue;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.*;
@@ -33,7 +33,7 @@ class TechnicalStructureTest {
         .whereLayer("Domain").mayOnlyBeAccessedByLayers("Persistence", "Service", "Security", "Web", "Config")
 
         .ignoreDependency(resideInAPackage("org.nmcpye.datarun.audit"), alwaysTrue())
-        .ignoreDependency(type(JpaAuditableObject.class), type(EntityAuditEventListener.class))
+        .ignoreDependency(type(JpaIdentifiableObject.class), type(EntityAuditEventListener.class))
         .ignoreDependency(belongToAnyOf(DataRunApiApp.class), alwaysTrue())
         .ignoreDependency(alwaysTrue(), belongToAnyOf(
             org.nmcpye.datarun.config.Constants.class,

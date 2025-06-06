@@ -9,12 +9,12 @@ import org.springframework.stereotype.Component;
 /**
  * Validation Stage
  *
- * @author Hamza Assada (02-06-2025), <7amza.it@gmail.com>
+ * @author Hamza Assada 02/06/2025 <7amza.it@gmail.com>
  */
 @Component
 public class DataStageDefinitionValidationStage implements ImportStage<DataStageDefinitionDto> {
     public void process(ImportContext<DataStageDefinitionDto> context) {
-        for (DataStageDefinitionDto dto : context.getProcessed()) {
+        for (DataStageDefinitionDto dto : context.processed()) {
             if (dto.getAssignmentTypeUid() == null || dto.getAssignmentTypeUid().isBlank()) {
                 context.addMessage(new ImportMessage("Missing assignmentType", ImportMessage.Severity.ERROR));
             }

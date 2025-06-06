@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.mongo.common;
 
-import org.nmcpye.datarun.common.AuditableObjectService;
+import org.nmcpye.datarun.common.DefaultIdentifiableObjectService;
+import org.nmcpye.datarun.common.IdentifiableObjectRepository;
+import org.nmcpye.datarun.common.IdentifiableObjectService;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.DefaultAuditableObjectService;
-import org.nmcpye.datarun.common.AuditableObjectRepository;
 import org.nmcpye.datarun.query.LegacyQueryConverter;
 import org.nmcpye.datarun.query.MongoQueryBuilder;
 import org.nmcpye.datarun.query.UnifiedQueryParser;
@@ -27,11 +27,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author Hamza Assada, 20/03/2025
+ * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
  */
-public abstract class DefaultMongoAuditableObjectService<T extends MongoAuditableBaseObject>
-    extends DefaultAuditableObjectService<T, String>
-    implements AuditableObjectService<T, String> {
+public abstract class DefaultMongoIdentifiableObjectService<T extends MongoIdentifiableObject>
+    extends DefaultIdentifiableObjectService<T, String>
+    implements IdentifiableObjectService<T, String> {
     @Autowired
     protected MongoTemplate mongoTemplate;
 
@@ -41,8 +41,8 @@ public abstract class DefaultMongoAuditableObjectService<T extends MongoAuditabl
     @Autowired
     protected LegacyQueryConverter legacyQueryConverter;
 
-    public DefaultMongoAuditableObjectService(AuditableObjectRepository<T, String> repository,
-                                              CacheManager cacheManager) {
+    public DefaultMongoIdentifiableObjectService(IdentifiableObjectRepository<T, String> repository,
+                                                 CacheManager cacheManager) {
         super(repository, cacheManager);
     }
 

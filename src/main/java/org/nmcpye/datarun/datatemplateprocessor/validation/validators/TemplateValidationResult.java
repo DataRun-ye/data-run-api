@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * @author Hamza Assada, 25/03/2025
+ * @author Hamza Assada 25/03/2025 <7amza.it@gmail.com>
  */
 
 public class TemplateValidationResult {

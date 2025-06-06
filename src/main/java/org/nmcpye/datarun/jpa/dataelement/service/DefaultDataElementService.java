@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.dataelement.service;
 
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.jpa.common.DefaultJpaAuditableService;
+import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.jpa.optionset.repository.OptionSetRepository;
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Primary
 @Transactional
-public class DefaultDataElementService extends DefaultJpaAuditableService<DataElement> implements DataElementService {
+public class DefaultDataElementService extends DefaultJpaIdentifiableService<DataElement> implements DataElementService {
     private final OptionSetRepository optionSetRepository;
 
     public DefaultDataElementService(DataElementRepository repository, CacheManager cacheManager, OptionSetRepository optionSetRepository, UserAccessService userAccessService) {

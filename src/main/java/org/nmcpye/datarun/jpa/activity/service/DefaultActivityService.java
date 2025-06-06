@@ -3,7 +3,7 @@ package org.nmcpye.datarun.jpa.activity.service;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
-import org.nmcpye.datarun.jpa.common.DefaultJpaAuditableService;
+import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Primary
 @Transactional
-public class DefaultActivityService extends DefaultJpaAuditableService<Activity> implements ActivityService {
+public class DefaultActivityService extends DefaultJpaIdentifiableService<Activity> implements ActivityService {
 
     private final ActivityRepository repository;
 

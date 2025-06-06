@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mongo.metadataschema.service;
 
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
-import org.nmcpye.datarun.mongo.common.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.mongo.common.DefaultMongoIdentifiableObjectService;
 import org.nmcpye.datarun.mongo.domain.MetadataSchema;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;
@@ -21,7 +21,7 @@ import java.util.List;
 @Primary
 @Transactional
 public class MetadataSchemaServiceImpl
-    extends DefaultMongoAuditableObjectService<MetadataSchema>
+    extends DefaultMongoIdentifiableObjectService<MetadataSchema>
     implements MetadataSchemaService {
 
     private final MetadataSchemaRepository repository;

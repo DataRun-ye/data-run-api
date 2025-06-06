@@ -5,8 +5,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.IntegrationTest;
-import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.user.User;
+import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.user.service.UserService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,7 +80,7 @@ class PublicUserResourceUpdateIT {
     @Transactional
     void getAllPublicUsers() throws Exception {
         // Initialize the database
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         // Get all the users
         restUserMockMvc
@@ -98,7 +98,7 @@ class PublicUserResourceUpdateIT {
     @Transactional
     void getAllUsersSortedByParameters() throws Exception {
         // Initialize the database
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         restUserMockMvc.perform(get("/api/users?sort=resetKey,desc").accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
         restUserMockMvc.perform(get("/api/users?sort=password,desc").accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());

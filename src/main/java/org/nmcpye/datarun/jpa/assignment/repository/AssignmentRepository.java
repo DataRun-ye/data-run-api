@@ -2,7 +2,7 @@ package org.nmcpye.datarun.jpa.assignment.repository;
 
 import org.nmcpye.datarun.jpa.accessfilter.AssignmentSummary;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.common.repository.JpaAuditableRepository;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -11,12 +11,47 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface AssignmentRepository
-    extends JpaAuditableRepository<Assignment>, AssignmentRepositoryWithBagRelationships {
+    extends JpaIdentifiableRepository<Assignment>, AssignmentRepositoryWithBagRelationships {
+    @Override
+    default List<Assignment> findAllByCodeIn(Collection<String> codes) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    default Boolean existsByCode(String code) {
+        return false;
+    }
+
+    @Override
+    default Optional<Assignment> findFirstByCode(String code) {
+        return Optional.empty();
+    }
+
+    @Override
+    default Optional<Assignment> findFirstByName(String name) {
+        return Optional.empty();
+    }
+
+    default List<Assignment> findByNameLike(String name) {
+        return Collections.emptyList();
+    }
+
+    ///
+
+    List<Assignment> findAllByOrgUnitCodeIn(Collection<String> orgUnitCodes);
+
+    Optional<Assignment> findFirstByOrgUnitName(String orgUnitName);
+
+    Optional<Assignment> findFirstByOrgUnitCode(String code);
+
+    List<Assignment> findAllByOrgUnitNameLike(String orgUnitName);
+
     default List<Assignment> findAllWithForms(Specification<Assignment> spec, Pageable pageable) {
         final var a = this.findAll(spec);
         return fetchBagRelationships(a);
@@ -60,7 +95,7 @@ public interface AssignmentRepository
 
     Page<Assignment> findAllByPathIsNull(Pageable pageable);
 
-    //// new test
+    /// / new test
     @Query("SELECT ou.id FROM Assignment ou WHERE ou.parent.id IN :parentIds")
     List<Long> findChildIdsByParentIds(@Param("parentIds") List<Long> parentIds);
 

@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.mongo.datastagesubmission.service;
 
-import org.nmcpye.datarun.mongo.common.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.mongo.common.DefaultMongoIdentifiableObjectService;
 import org.nmcpye.datarun.mongo.datastagesubmission.repository.DataFormSubmissionBuRepository;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionBu;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Primary
 public class DataFormSubmissionBuServiceImpl
-    extends DefaultMongoAuditableObjectService<DataFormSubmissionBu>
+    extends DefaultMongoIdentifiableObjectService<DataFormSubmissionBu>
     implements DataFormSubmissionBuService {
 
     public DataFormSubmissionBuServiceImpl(

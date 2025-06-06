@@ -8,14 +8,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nmcpye.datarun.IntegrationTest;
-import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.jpa.user.User;
+import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
+import org.nmcpye.datarun.jpa.user.dto.PasswordChangeDTO;
+import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.user.service.UserService;
 import org.nmcpye.datarun.jpa.userauthority.repository.AuthorityRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
-import org.nmcpye.datarun.jpa.user.dto.PasswordChangeDTO;
 import org.nmcpye.datarun.web.rest.vm.KeyAndPasswordVM;
 import org.nmcpye.datarun.web.rest.vm.ManagedUserVM;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -106,7 +106,7 @@ class AccountResourceIT {
         user.setLogin(TEST_USER_LOGIN);
         user.setFirstName("john");
         user.setLastName("doe");
-        user.setEmail("john.doe@jhipster.com");
+        user.setEmail("john.doe@nmcpye.org");
         user.setImageUrl("http://placehold.it/50x50");
         user.setLangKey("en");
         user.setAuthorities(authorities);
@@ -119,7 +119,7 @@ class AccountResourceIT {
             .andExpect(jsonPath("$.login").value(TEST_USER_LOGIN))
             .andExpect(jsonPath("$.firstName").value("john"))
             .andExpect(jsonPath("$.lastName").value("doe"))
-            .andExpect(jsonPath("$.email").value("john.doe@jhipster.com"))
+            .andExpect(jsonPath("$.email").value("john.doe@nmcpye.org"))
             .andExpect(jsonPath("$.imageUrl").value("http://placehold.it/50x50"))
             .andExpect(jsonPath("$.langKey").value("en"))
             .andExpect(jsonPath("$.authorities").value(AuthoritiesConstants.ADMIN));
@@ -384,7 +384,7 @@ class AccountResourceIT {
         user.setActivated(false);
         user.setActivationKey(activationKey);
 
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         restAccountMockMvc.perform(get("/api/activate?key={activationKey}", activationKey)).andExpect(status().isOk());
 
@@ -409,7 +409,7 @@ class AccountResourceIT {
         user.setEmail("save-account@example.com");
         user.setPassword(RandomStringUtils.randomAlphanumeric(60));
         user.setActivated(true);
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         AdminUserDTO userDTO = new AdminUserDTO();
         userDTO.setLogin("not-used");
@@ -448,7 +448,7 @@ class AccountResourceIT {
         user.setPassword(RandomStringUtils.randomAlphanumeric(60));
         user.setActivated(true);
 
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         AdminUserDTO userDTO = new AdminUserDTO();
         userDTO.setLogin("not-used");
@@ -478,7 +478,7 @@ class AccountResourceIT {
         user.setEmail("save-existing-email@example.com");
         user.setPassword(RandomStringUtils.randomAlphanumeric(60));
         user.setActivated(true);
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         User anotherUser = new User();
         anotherUser.setLogin("save-existing-email2");
@@ -486,7 +486,7 @@ class AccountResourceIT {
         anotherUser.setPassword(RandomStringUtils.randomAlphanumeric(60));
         anotherUser.setActivated(true);
 
-        userRepository.saveAndFlush(anotherUser);
+        userRepository.persistAndFlush(anotherUser);
 
         AdminUserDTO userDTO = new AdminUserDTO();
         userDTO.setLogin("not-used");
@@ -518,7 +518,7 @@ class AccountResourceIT {
         user.setEmail("save-existing-email-and-login@example.com");
         user.setPassword(RandomStringUtils.randomAlphanumeric(60));
         user.setActivated(true);
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         AdminUserDTO userDTO = new AdminUserDTO();
         userDTO.setLogin("not-used");
@@ -549,7 +549,7 @@ class AccountResourceIT {
         user.setPassword(passwordEncoder.encode(currentPassword));
         user.setLogin("change-password-wrong-existing-password");
         user.setEmail("change-password-wrong-existing-password@example.com");
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         restAccountMockMvc
             .perform(
@@ -575,7 +575,7 @@ class AccountResourceIT {
         user.setPassword(passwordEncoder.encode(currentPassword));
         user.setLogin("change-password");
         user.setEmail("change-password@example.com");
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         restAccountMockMvc
             .perform(
@@ -600,7 +600,7 @@ class AccountResourceIT {
         user.setPassword(passwordEncoder.encode(currentPassword));
         user.setLogin("change-password-too-small");
         user.setEmail("change-password-too-small@example.com");
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         String newPassword = RandomStringUtils.random(ManagedUserVM.PASSWORD_MIN_LENGTH - 1);
 
@@ -627,7 +627,7 @@ class AccountResourceIT {
         user.setPassword(passwordEncoder.encode(currentPassword));
         user.setLogin("change-password-too-long");
         user.setEmail("change-password-too-long@example.com");
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         String newPassword = RandomStringUtils.random(ManagedUserVM.PASSWORD_MAX_LENGTH + 1);
 
@@ -654,7 +654,7 @@ class AccountResourceIT {
         user.setPassword(passwordEncoder.encode(currentPassword));
         user.setLogin("change-password-empty");
         user.setEmail("change-password-empty@example.com");
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         restAccountMockMvc
             .perform(
@@ -679,7 +679,7 @@ class AccountResourceIT {
         user.setLogin("password-reset");
         user.setEmail("password-reset@example.com");
         user.setLangKey("en");
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         restAccountMockMvc
             .perform(post("/api/account/reset-password/init").content("password-reset@example.com"))
@@ -697,7 +697,7 @@ class AccountResourceIT {
         user.setLogin("password-reset-upper-case");
         user.setEmail("password-reset-upper-case@example.com");
         user.setLangKey("en");
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         restAccountMockMvc
             .perform(post("/api/account/reset-password/init").content("password-reset-upper-case@EXAMPLE.COM"))
@@ -722,7 +722,7 @@ class AccountResourceIT {
         user.setEmail("finish-password-reset@example.com");
         user.setResetDate(Instant.now().plusSeconds(60));
         user.setResetKey("reset key");
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         KeyAndPasswordVM keyAndPassword = new KeyAndPasswordVM();
         keyAndPassword.setKey(user.getResetKey());
@@ -751,7 +751,7 @@ class AccountResourceIT {
         user.setEmail("finish-password-reset-too-small@example.com");
         user.setResetDate(Instant.now().plusSeconds(60));
         user.setResetKey("reset key too small");
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         KeyAndPasswordVM keyAndPassword = new KeyAndPasswordVM();
         keyAndPassword.setKey(user.getResetKey());

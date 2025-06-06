@@ -7,7 +7,7 @@
 //import java.util.Optional;
 //
 //@Repository
-//public interface TeamFormPermissionRepository extends JpaRepository<TeamFormPermission, Long> {
+//public interface TeamFormPermissionRepository extends BaseJpaIdentifiableRepository<TeamFormPermission, Long> {
 //
 ////    Optional<TeamFormPermission> findByTeamIdAndForm(Long teamId, String form);
 //

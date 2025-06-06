@@ -29,8 +29,7 @@ import java.util.stream.Collectors;
 @Setter
 @CompoundIndex(name = "form_template_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataFormTemplate
-    extends MongoBaseIdentifiableObject implements DataTemplateVersionInterface {
+public class DataFormTemplate extends MongoBaseIdentifiableObject implements DataTemplateVersionInterface {
     @Id
     private String id;
 

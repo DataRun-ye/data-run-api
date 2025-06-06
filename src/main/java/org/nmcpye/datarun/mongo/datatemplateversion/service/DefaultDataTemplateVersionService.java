@@ -7,7 +7,7 @@ import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.mapper.DataTemplateMapper;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateService;
-import org.nmcpye.datarun.mongo.common.DefaultMongoAuditableObjectService;
+import org.nmcpye.datarun.mongo.common.DefaultMongoIdentifiableObjectService;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 import org.nmcpye.datarun.mongo.datatemplateversion.dto.FormTemplateVersionDto;
 import org.nmcpye.datarun.mongo.datatemplateversion.mapper.FormTemplateVersionMapper;
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @SuppressWarnings("unused")
 public class DefaultDataTemplateVersionService
-    extends DefaultMongoAuditableObjectService<DataTemplateVersion>
+    extends DefaultMongoIdentifiableObjectService<DataTemplateVersion>
     implements DateTemplateVersionService {
     private final DataTemplateService dataTemplateService;
     private final DataTemplateVersionRepository templateVersionRepository;

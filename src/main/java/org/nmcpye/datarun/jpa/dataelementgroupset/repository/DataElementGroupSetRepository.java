@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.jpa.dataelementgroupset.repository;
 
-import org.nmcpye.datarun.jpa.common.repository.JpaAuditableRepository;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.dataelementgroupset.DataElementGroupSet;
 import org.springframework.stereotype.Repository;
 
@@ -12,7 +12,7 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @Repository
 public interface DataElementGroupSetRepository
-    extends JpaAuditableRepository<DataElementGroupSet> {
+    extends JpaIdentifiableRepository<DataElementGroupSet> {
 
     Optional<DataElementGroupSet> findByCode(String code);
 }

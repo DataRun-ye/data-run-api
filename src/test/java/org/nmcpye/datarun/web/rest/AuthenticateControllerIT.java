@@ -3,8 +3,8 @@ package org.nmcpye.datarun.web.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.IntegrationTest;
-import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.user.User;
+import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.web.rest.v1.authenticate.AuthenticateResource;
 import org.nmcpye.datarun.web.rest.vm.LoginVM;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +46,7 @@ class AuthenticateControllerIT {
         user.setActivated(true);
         user.setPassword(passwordEncoder.encode("test"));
 
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         LoginVM login = new LoginVM();
         login.setUsername("user-jwt-controller");
@@ -69,7 +69,7 @@ class AuthenticateControllerIT {
         user.setActivated(true);
         user.setPassword(passwordEncoder.encode("test"));
 
-        userRepository.saveAndFlush(user);
+        userRepository.persistAndFlush(user);
 
         LoginVM login = new LoginVM();
         login.setUsername("user-jwt-controller-remember-me");

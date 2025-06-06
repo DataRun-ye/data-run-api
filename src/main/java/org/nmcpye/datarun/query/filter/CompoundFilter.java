@@ -6,7 +6,7 @@ import lombok.Value;
 import java.util.List;
 
 /**
- * @author Hamza Assada, 23/03/2025
+ * @author Hamza Assada 23/03/2025 <7amza.it@gmail.com>
  */
 @Value
 @Getter

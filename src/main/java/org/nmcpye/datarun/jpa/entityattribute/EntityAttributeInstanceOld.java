@@ -22,7 +22,7 @@
 // * an {@link EntityAttributeInstanceOld} links an {@link EntityType} to an {@link EntityAttributeType}
 // * and configure it with additional configuration properties
 // *
-// * @author Hamza Assada (29-05-2025), <7amza.it@gmail.com>
+// * @author Hamza Assada 29/05/2025 <7amza.it@gmail.com>
 // */
 //@Entity
 //@Table(name = "entity_attribute_type_instance", uniqueConstraints = {

@@ -7,7 +7,7 @@ import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.springframework.lang.Nullable;
 
 /**
- * @author Hamza Assada, 18/03/2025
+ * @author Hamza Assada 18/03/2025 <7amza.it@gmail.com>
  */
 public abstract class AbstractFormElementHandler<T extends AbstractElement>
     implements FormElementHandler<T> {

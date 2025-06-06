@@ -22,7 +22,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @Primary
@@ -146,35 +149,6 @@ public class DefaultAssignmentService
             .flatMap(team -> team.getAssignments().stream())
             .map(Assignment::getUid).toList();
         return getAssignmentsWithChildren(managedAssignmentsUids);
-    }
-
-//    @Transactional(readOnly = true)
-//    public List<Assignment> getAllUserAccessibleHierarchy(User user) {
-//        List<Assignment> allAssignments = getAllUserAccessible(user);
-//        return buildHierarchy(allAssignments);
-//    }
-
-    private List<Assignment> buildHierarchy(List<Assignment> allAssignments) {
-        Map<Long, Assignment> assignmentMap = new HashMap<>();
-        List<Assignment> rootAssignments = new ArrayList<>();
-
-        // First pass: map all assignments by their ID
-        for (Assignment assignment : allAssignments) {
-            assignmentMap.put(assignment.getId(), assignment);
-        }
-
-        // Second pass: build the hierarchy
-        for (Assignment assignment : allAssignments) {
-            Assignment parent = assignment.getParent();
-            if (parent == null || !assignmentMap.containsKey(parent.getId())) {
-                rootAssignments.add(assignment);
-            } else {
-                Assignment parentAssignment = assignmentMap.get(parent.getId());
-                parentAssignment.getChildren().add(assignment);
-            }
-        }
-
-        return rootAssignments;
     }
 
     /**

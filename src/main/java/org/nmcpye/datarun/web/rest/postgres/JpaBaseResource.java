@@ -1,20 +1,20 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
-import org.nmcpye.datarun.jpa.common.JpaAuditableObject;
-import org.nmcpye.datarun.jpa.common.JpaAuditableObjectService;
-import org.nmcpye.datarun.jpa.common.repository.JpaAuditableRepository;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.web.rest.common.BaseReadWriteResource;
 
-public abstract class JpaBaseResource<T extends JpaAuditableObject>
+public abstract class JpaBaseResource<T extends JpaIdentifiableObject>
     extends BaseReadWriteResource<T, Long> {
-    protected JpaBaseResource(JpaAuditableObjectService<T> jpaAuditableObjectService,
-                              JpaAuditableRepository<T> repository) {
+    protected JpaBaseResource(JpaIdentifiableObjectService<T> jpaAuditableObjectService,
+                              JpaIdentifiableRepository<T> repository) {
         super(jpaAuditableObjectService, repository);
     }
 
     @Override
-    protected JpaAuditableRepository<T> getRepository() {
-        return (JpaAuditableRepository<T>) super.getRepository();
+    protected JpaIdentifiableRepository<T> getRepository() {
+        return (JpaIdentifiableRepository<T>) super.getRepository();
     }
 //
 //    @Override

@@ -103,6 +103,8 @@ datarun:
         refresh-token-validity-in-seconds: 2592000 # 30 days
         token-validity-in-seconds-for-remember-me: 2592000
 jhipster:
+  client-app:
+    name: "datarun"
   http:
     cache: # Used by the CachingHttpHeadersFilter
       timeToLiveInDays: 1461

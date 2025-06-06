@@ -33,6 +33,10 @@ public final class SecurityUtils {
             .map(CurrentUserDetails.class::cast);
     }
 
+    public static CurrentUserDetails getCurrentUserDetailsOrNull() {
+        return getCurrentUserDetails().orElse(null);
+    }
+
     public static CurrentUserDetails getCurrentUserDetailsOrThrow() {
         return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
             .map(Authentication::getPrincipal)

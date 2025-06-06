@@ -6,12 +6,12 @@ import org.nmcpye.datarun.jpa.datastage.dto.DataStageDefinitionDto;
 import org.springframework.stereotype.Component;
 
 /**
- * @author Hamza Assada (02-06-2025), <7amza.it@gmail.com>
+ * @author Hamza Assada 02/06/2025 <7amza.it@gmail.com>
  */
 @Component
 public class DataStageDefinitionMappingStage implements ImportStage<DataStageDefinitionDto> {
     public void process(ImportContext<DataStageDefinitionDto> context) {
-        for (DataStageDefinitionDto dto : context.getRawData()) {
+        for (DataStageDefinitionDto dto : context.rawData()) {
             // here you could do transformation if needed
             context.addProcessed(dto);
         }

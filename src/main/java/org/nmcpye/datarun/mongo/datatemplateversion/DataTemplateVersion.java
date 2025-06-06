@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
-import org.nmcpye.datarun.mongo.common.MongoAuditableBaseObject;
+import org.nmcpye.datarun.mongo.common.MongoBaseIdentifiableObject;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.IndexDirection;
@@ -29,7 +29,7 @@ import java.util.Objects;
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataTemplateVersion
-    extends MongoAuditableBaseObject
+    extends MongoBaseIdentifiableObject
     implements DataTemplateVersionInterface {
     @JsonIgnore
     @Id
@@ -97,5 +97,17 @@ public class DataTemplateVersion
     public DataTemplateVersion fields(List<FormDataElementConf> fields) {
         this.setFields(fields);
         return this;
+    }
+
+    @JsonIgnore
+    @Override
+    public String getCode() {
+        return "";
+    }
+
+    @JsonIgnore
+    @Override
+    public String getName() {
+        return "";
     }
 }

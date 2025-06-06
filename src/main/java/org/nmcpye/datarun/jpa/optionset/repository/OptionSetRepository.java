@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.jpa.optionset.repository;
 
-import org.nmcpye.datarun.jpa.common.repository.JpaAuditableRepository;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.optionset.OptionSet;
 import org.springframework.stereotype.Repository;
 
@@ -12,6 +12,6 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @Repository
 public interface OptionSetRepository
-    extends JpaAuditableRepository<OptionSet> {
+    extends JpaIdentifiableRepository<OptionSet> {
     Optional<OptionSet> findByNameIgnoreCase(String name);
 }

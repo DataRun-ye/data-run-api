@@ -10,8 +10,7 @@ import java.util.Objects;
 @Getter
 @Setter
 @NoArgsConstructor
-public abstract class MongoSoftDeleteObject
-    extends MongoAuditableBaseObject
+public abstract class MongoSoftDeleteObject extends MongoBaseIdentifiableObject
     implements SoftDeleteObject<String> {
 
     @Override

@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.jpa.orgunitgroupset.repository;
 
-import org.nmcpye.datarun.jpa.common.repository.JpaAuditableRepository;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.orgunitgroupset.OrgUnitGroupSet;
 import org.springframework.stereotype.Repository;
 
@@ -12,7 +12,7 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @Repository
 public interface OrgUnitGroupSetRepository
-    extends JpaAuditableRepository<OrgUnitGroupSet> {
+    extends JpaIdentifiableRepository<OrgUnitGroupSet> {
 
     Optional<OrgUnitGroupSet> findByCode(String code);
 }

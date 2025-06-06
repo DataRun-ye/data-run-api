@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.jpa.assignmenttype.service;
 
 import org.nmcpye.datarun.jpa.assignmenttype.AssignmentType;
-import org.nmcpye.datarun.jpa.common.JpaAuditableObjectService;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
 
 public interface AssignmentTypeService
-        extends JpaAuditableObjectService<AssignmentType> {
+        extends JpaIdentifiableObjectService<AssignmentType> {
 }

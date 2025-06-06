@@ -12,7 +12,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import java.util.Collection;
 
 /**
- * @author Hamza Assada, 21/04/2025
+ * @author Hamza Assada 21/04/2025 <7amza.it@gmail.com>
  */
 public class CustomJwtAuthenticationConverter
     implements Converter<Jwt, AbstractAuthenticationToken> {

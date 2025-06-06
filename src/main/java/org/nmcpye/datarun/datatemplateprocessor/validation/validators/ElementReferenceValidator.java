@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * @author Hamza Assada, 25/03/2025
+ * @author Hamza Assada 25/03/2025 <7amza.it@gmail.com>
  */
 public class ElementReferenceValidator implements ExpressionValidator {
 

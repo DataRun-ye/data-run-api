@@ -17,7 +17,7 @@
 //import java.util.Set;
 //
 ///**
-// * @author Hamza Assada, 24/04/2025
+// * @author Hamza Assada 24/04/2025 <7amza.it@gmail.com>
 // */
 //@Service
 //@Transactional(readOnly = true)

@@ -3,7 +3,7 @@ package org.nmcpye.datarun.importprocessor;
 import java.util.List;
 
 /**
- * @author Hamza Assada (14-05-2025), <7amza.it@gmail.com>
+ * @author Hamza Assada 14/05/2025 <7amza.it@gmail.com>
  */
 public class ImportResult {
     private final List<ImportMessage> messages;

@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.entityType.service;
 
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.jpa.common.DefaultJpaAuditableService;
+import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.jpa.entityType.EntityType;
 import org.nmcpye.datarun.jpa.entityType.repository.EntityTypeRepository;
 import org.springframework.cache.CacheManager;
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Primary
 @Transactional
 public class DefaultEntityTypeService
-        extends DefaultJpaAuditableService<EntityType>
+        extends DefaultJpaIdentifiableService<EntityType>
         implements EntityTypeService {
 
     private final EntityTypeRepository repository;

@@ -1,12 +1,13 @@
 package org.nmcpye.datarun.mongo.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.el.PropertyNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.mongo.common.MongoAuditableBaseObject;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
+import org.nmcpye.datarun.mongo.common.MongoBaseIdentifiableObject;
 import org.nmcpye.datarun.utils.CodeGenerator;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -26,8 +27,7 @@ import static java.util.Map.entry;
 @Setter
 @CompoundIndex(name = "metadata_submission_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class MetadataSubmission
-    extends MongoAuditableBaseObject {
+public class MetadataSubmission extends MongoBaseIdentifiableObject {
     @Id
     private String id;
 
@@ -142,5 +142,17 @@ public class MetadataSubmission
             .anyMatch(obj -> obj.get("_parentId") == null
                 || obj.get("_id") == null
                 || obj.get("_index") == null);
+    }
+
+    @JsonIgnore
+    @Override
+    public String getCode() {
+        return "";
+    }
+
+    @JsonIgnore
+    @Override
+    public String getName() {
+        return "";
     }
 }

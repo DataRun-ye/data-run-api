@@ -2,7 +2,7 @@ package org.nmcpye.datarun.jpa.dataelementgroup.service;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.jpa.common.DefaultJpaAuditableService;
+import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
@@ -20,7 +20,7 @@ import java.util.Set;
 @Primary
 @Transactional
 public class DefaultDataElementGroupService
-    extends DefaultJpaAuditableService<DataElementGroup>
+    extends DefaultJpaIdentifiableService<DataElementGroup>
     implements DataElementGroupService {
 
     private final DataElementRepository dataElementRepository;

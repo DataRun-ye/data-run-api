@@ -8,7 +8,7 @@ import org.nmcpye.datarun.jpa.datastage.repository.DataStageDefinitionRepository
 import org.springframework.stereotype.Component;
 
 /**
- * @author Hamza Assada (02-06-2025), <7amza.it@gmail.com>
+ * @author Hamza Assada 02/06/2025 <7amza.it@gmail.com>
  */
 @Component
 public class DataStageDefinitionDiffStage implements ImportStage<DataStageDefinitionDto> {
@@ -19,7 +19,7 @@ public class DataStageDefinitionDiffStage implements ImportStage<DataStageDefini
     }
 
     public void process(ImportContext<DataStageDefinitionDto> context) {
-        for (DataStageDefinitionDto dto : context.getProcessed()) {
+        for (DataStageDefinitionDto dto : context.processed()) {
             boolean exists = repository.existsByUid(dto.getUid());
             context.addMessage(new ImportMessage(
                 exists ? "Would update stage: " + dto.getUid() : "Would create stage: " + dto.getUid(),

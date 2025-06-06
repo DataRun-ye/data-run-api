@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mongo.common;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.common.AuditableObjectRepository;
+import org.nmcpye.datarun.common.IdentifiableObjectRepository;
 import org.nmcpye.datarun.common.SoftDeleteService;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
@@ -16,15 +16,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author Hamza Assada, 20/03/2025
+ * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
  */
 @Slf4j
 public abstract class DefaultMongoSoftDeleteService<T extends MongoSoftDeleteObject>
-    extends DefaultMongoAuditableObjectService<T>
+    extends DefaultMongoIdentifiableObjectService<T>
     implements SoftDeleteService<T, String> {
 
 
-    public DefaultMongoSoftDeleteService(AuditableObjectRepository<T, String> repository, CacheManager cacheManager) {
+    public DefaultMongoSoftDeleteService(IdentifiableObjectRepository<T, String> repository, CacheManager cacheManager) {
         super(repository, cacheManager);
     }
 

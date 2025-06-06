@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.mongo.datastagesubmission.repository;
 
 import org.javers.spring.annotation.JaversSpringDataAuditable;
-import org.nmcpye.datarun.mongo.common.repository.MongoAuditableRepository;
+import org.nmcpye.datarun.mongo.common.repository.MongoIdentifiableRepository;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmissionBu;
 import org.springframework.stereotype.Repository;
 
@@ -11,5 +11,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 @JaversSpringDataAuditable
 public interface DataFormSubmissionBuRepository
-    extends MongoAuditableRepository<DataFormSubmissionBu> {
+    extends MongoIdentifiableRepository<DataFormSubmissionBu> {
 }

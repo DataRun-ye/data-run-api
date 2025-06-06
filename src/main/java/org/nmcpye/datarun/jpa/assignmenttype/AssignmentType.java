@@ -29,7 +29,7 @@ import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
  *  }
  * </pre>
  *
- * @author Hamza Assada (27-05-2025), <7amza.it@gmail.com>
+ * @author Hamza Assada 27/05/2025 <7amza.it@gmail.com>
  */
 @Entity
 @Table(name = "assignment_type")

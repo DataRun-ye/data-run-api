@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.web.rest.common;
 
 import jakarta.validation.Valid;
-import org.nmcpye.datarun.common.AuditableObject;
-import org.nmcpye.datarun.common.AuditableObjectService;
 import org.nmcpye.datarun.common.DRunApiVersion;
+import org.nmcpye.datarun.common.IdentifiableObject;
+import org.nmcpye.datarun.common.IdentifiableObjectRepository;
+import org.nmcpye.datarun.common.IdentifiableObjectService;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.AuditableObjectRepository;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Objects;
 
 @ApiVersion({DRunApiVersion.DEFAULT, DRunApiVersion.ALL})
-public abstract class BaseReadWriteResource<T extends AuditableObject<ID>, ID extends Serializable>
+public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID extends Serializable>
     extends BaseReadResource<T, ID> {
 
     protected final Logger log = LoggerFactory.getLogger(BaseReadWriteResource.class);
@@ -31,9 +31,9 @@ public abstract class BaseReadWriteResource<T extends AuditableObject<ID>, ID ex
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
 
-    protected BaseReadWriteResource(AuditableObjectService<T, ID> auditableObjectService,
-                                    AuditableObjectRepository<T, ID> repository) {
-        super(auditableObjectService, repository);
+    protected BaseReadWriteResource(IdentifiableObjectService<T, ID> identifiableObjectService,
+                                    IdentifiableObjectRepository<T, ID> repository) {
+        super(identifiableObjectService, repository);
     }
 
     @PostMapping("/bulk")
@@ -66,11 +66,11 @@ public abstract class BaseReadWriteResource<T extends AuditableObject<ID>, ID ex
 
     protected void saveEntity(T entity, EntitySaveSummaryVM summary) {
         try {
-            if (entity.getUid() != null && auditableObjectService.existsByUid(entity.getUid())) {
-                entity = auditableObjectService.update(entity);
+            if (entity.getUid() != null && identifiableObjectService.existsByUid(entity.getUid())) {
+                entity = identifiableObjectService.update(entity);
                 summary.getUpdated().add(entity.getUid());
             } else {
-                entity = auditableObjectService.saveWithRelations(entity);
+                entity = identifiableObjectService.saveWithRelations(entity);
                 summary.getCreated().add(entity.getUid());
             }
         } catch (Exception e) {
@@ -84,7 +84,7 @@ public abstract class BaseReadWriteResource<T extends AuditableObject<ID>, ID ex
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteByIdUid(@PathVariable("id") String id) {
         log.debug("REST request to delete from {}: {}", getName(), id);
-        auditableObjectService.findByUid(id).ifPresent(auditableObjectService::delete);
+        identifiableObjectService.findByUid(id).ifPresent(identifiableObjectService::delete);
         return ResponseEntity
             .noContent()
             .headers(HeaderUtil
@@ -106,7 +106,7 @@ public abstract class BaseReadWriteResource<T extends AuditableObject<ID>, ID ex
             throw new BadRequestAlertException("Invalid ID", getName(), "idinvalid");
         }
 
-        entity = auditableObjectService.update(entity);
+        entity = identifiableObjectService.update(entity);
 
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), entity.getId().toString()))

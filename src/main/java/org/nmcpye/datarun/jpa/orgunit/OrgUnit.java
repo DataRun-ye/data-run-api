@@ -16,7 +16,7 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.common.IdentifiableObjectUtils;
 import org.nmcpye.datarun.common.enumeration.EntityScope;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.common.JpaAuditableObject;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 import org.nmcpye.datarun.jpa.orgunitgroup.OrgUnitGroup;
 
@@ -66,7 +66,7 @@ public class OrgUnit extends JpaBaseIdentifiableObject {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "orgUnit")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonSerialize(contentAs = JpaAuditableObject.class)
+    @JsonSerialize(contentAs = JpaIdentifiableObject.class)
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Set<Assignment> assignments = new HashSet<>();
 

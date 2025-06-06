@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.jpa.user.repository;
 
-import org.nmcpye.datarun.jpa.common.repository.JpaAuditableRepository;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.user.User;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -9,17 +9,18 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Spring Data JPA repository for the {@link User} entity.
  */
 @Repository
-//public interface UserRepository extends JpaRepository<User, Long> {
+//public interface UserRepository extends BaseJpaIdentifiableRepository<User, Long> {
 public interface UserRepository
-    extends JpaAuditableRepository<User> {
+    extends JpaIdentifiableRepository<User> {
     String USERS_BY_LOGIN_CACHE = "usersByLogin";
 
     String USERS_BY_EMAIL_CACHE = "usersByEmail";
@@ -34,6 +35,33 @@ public interface UserRepository
     String USER_TEAM_FORM_ACCESS_CACHE = "userFormAccessByTeamAndForm";
 
 
+    /// ////
+    @Override
+    default List<User> findAllByCodeIn(Collection<String> codes) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    default Boolean existsByCode(String code) {
+        return false;
+    }
+
+
+    @Override
+    default Optional<User> findFirstByCode(String code) {
+        return Optional.empty();
+    }
+
+    @Override
+    default Optional<User> findFirstByName(String name) {
+        return Optional.empty();
+    }
+
+    default List<User> findByNameLike(String name) {
+        return Collections.emptyList();
+    }
+
+    /// /////
     Optional<User> findOneByActivationKey(String activationKey);
 
     List<User> findAllByActivatedIsFalseAndActivationKeyIsNotNullAndCreatedDateBefore(Instant dateTime);
@@ -45,9 +73,7 @@ public interface UserRepository
     @EntityGraph(attributePaths = "authorities")
     Optional<User> findOneByLogin(String login);
 
-    User findUserByLogin(String login);
-
-    List<User> findByLoginIn(Set<String> logins);
+    List<User> findByLoginIn(Collection<String> logins);
 
     @EntityGraph(attributePaths = {"authorities", "roles"})
     @Cacheable(cacheNames = USERS_BY_LOGIN_CACHE)

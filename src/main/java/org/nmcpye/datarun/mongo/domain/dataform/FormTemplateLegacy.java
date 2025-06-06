@@ -23,8 +23,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class FormTemplateLegacy
-    extends MongoBaseIdentifiableObject {
+public class FormTemplateLegacy extends MongoBaseIdentifiableObject {
     @JsonIgnore
     @Id
     private String id;

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * @author Hamza Assada, 26/03/2025
+ * @author Hamza Assada 26/03/2025 <7amza.it@gmail.com>
  */
 @Component
 public class DefaultTemplateValidator {

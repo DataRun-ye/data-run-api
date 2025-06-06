@@ -2,7 +2,7 @@ package org.nmcpye.datarun.jpa.orgunitgroup.service;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.jpa.common.DefaultJpaAuditableService;
+import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.jpa.orgunitgroup.OrgUnitGroup;
@@ -19,7 +19,7 @@ import java.util.Set;
 @Service
 @Primary
 @Transactional
-public class DefaultOrgUnitGroupService extends DefaultJpaAuditableService<OrgUnitGroup> implements OrgUnitGroupService {
+public class DefaultOrgUnitGroupService extends DefaultJpaIdentifiableService<OrgUnitGroup> implements OrgUnitGroupService {
 
     private final OrgUnitRepository orgUnitRepository;
 

@@ -9,7 +9,7 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.proxy.HibernateProxy;
 import org.nmcpye.datarun.jpa.common.JpaAuditable;
-import org.nmcpye.datarun.jpa.common.JpaAuditableObject;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.entityinstance.EntityInstance;
 
 import java.io.Serializable;
@@ -42,7 +42,7 @@ public class EntityAttributeValue
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "entity_instance_id", nullable = false)
 //    @JsonIgnoreProperties(value = {"entityAttributeValues", "entityType", "entityInstanceOwners"}, allowSetters = true)
-    @JsonSerialize(contentAs = JpaAuditableObject.class)
+    @JsonSerialize(contentAs = JpaIdentifiableObject.class)
     protected EntityInstance entityInstance;
 
     @Column(name = "entity_attribute_uid", nullable = false)

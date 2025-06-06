@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.jpa.datainstance.service;
 
-import org.nmcpye.datarun.common.SoftDeleteService;
+import org.nmcpye.datarun.common.IdentifiableObjectService;
 import org.nmcpye.datarun.jpa.datainstance.DataInstance;
 
 public interface DataInstanceService
-    extends SoftDeleteService<DataInstance, Long> {
+    extends IdentifiableObjectService<DataInstance, Long> {
 }
