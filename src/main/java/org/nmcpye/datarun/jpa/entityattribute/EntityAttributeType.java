@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.jpa.entityattribute;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -23,12 +22,12 @@ import org.nmcpye.datarun.jpa.optionset.OptionSet;
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class EntityAttributeType extends JpaBaseIdentifiableObject {
-    @JsonIgnore
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
+//    @JsonIgnore
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+//    @SequenceGenerator(name = "sequenceGenerator")
+//    @Column(name = "id")
+//    protected Long id;
 
     @Size(max = 11)
     @Column(name = "uid", length = 11, nullable = false, unique = true)
@@ -67,7 +66,7 @@ public class EntityAttributeType extends JpaBaseIdentifiableObject {
     @Column(name = "display_when_planned")
     private Boolean displayOnNonSource = false;
 
-//    @Column(name = "generated")
+    //    @Column(name = "generated")
 //    private Boolean generated = false;
 //
 //    @Column(name = "unique_value")
@@ -78,5 +77,16 @@ public class EntityAttributeType extends JpaBaseIdentifiableObject {
 //
 //    public Boolean isSystemWideUnique() {
 //        return getUniqueValue() && !getOrgUnitScope();
+//    }
+
+//    @JsonProperty
+//    public Map<String, String> getLabel() {
+//        if (translations == null || translations.isEmpty()) {
+//            return null;
+//        }
+//        return translations
+//            .stream()
+//            .collect(Collectors
+//                .toMap(Translation::getLocale, Translation::getValue));
 //    }
 }

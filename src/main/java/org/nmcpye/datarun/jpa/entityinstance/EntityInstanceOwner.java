@@ -20,8 +20,8 @@
 // */
 //@Entity
 //@Table(name = "entity_instance_owner", uniqueConstraints = {
-//        @UniqueConstraint(name = "uc_eio_assignment_type",
-//                columnNames = {"entity_instance_id", "assignment_type_id"})})
+//        @UniqueConstraint(name = "uc_eio_flow_type",
+//                columnNames = {"entity_instance_id", "flow_type_id"})})
 //@Getter
 //@Setter
 //@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
@@ -42,7 +42,7 @@
 //
 //    @NotNull
 //    @ManyToOne(optional = false)
-//    @JoinColumn(name = "assignment_type_id")
+//    @JoinColumn(name = "flow_type_id")
 //    @JsonSerialize(as = AuditableObject.class)
 //    private AssignmentType assignmentType;
 //

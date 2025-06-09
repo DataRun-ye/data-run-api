@@ -26,7 +26,7 @@
 // */
 //@Entity
 //@Table(name = "entity_attribute_type_instance", uniqueConstraints = {
-//        @UniqueConstraint(name = "uc_assignment_form_uid",
+//        @UniqueConstraint(name = "uc_flow_run_form_uid",
 //                columnNames = {"entity_type_id", "entity_attribute_type_id"})})
 //@Getter
 //@Setter

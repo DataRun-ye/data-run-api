@@ -1,21 +1,20 @@
 package org.nmcpye.datarun.jpa.datavalue;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.jpa.common.JpaAuditable;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
-import org.nmcpye.datarun.jpa.dataelement.DataElement;
-import org.nmcpye.datarun.jpa.datainstance.DataInstance;
+import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
+import org.nmcpye.datarun.jpa.stepinstance.StepInstance;
 
 import java.time.Instant;
 import java.util.regex.Pattern;
@@ -24,10 +23,14 @@ import java.util.regex.Pattern;
  * @author Hamza Assada 02/06/2025 <7amza.it@gmail.com>
  */
 @Entity
-@Table(name = "data_value")
+@Table(name = "data_value", uniqueConstraints = {
+    @UniqueConstraint(name = "uc_data_value_on_data_element_step_instance",
+        columnNames = {"step_instance_id", "data_element_uid"})
+})
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
+@NoArgsConstructor
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataValue extends JpaAuditable<Long> {
 
@@ -37,12 +40,16 @@ public class DataValue extends JpaAuditable<Long> {
 
     public static final String FALSE = "false";
 
-    @JsonIgnore
+//    @JsonIgnore
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+//    @SequenceGenerator(name = "sequenceGenerator")
+//    @Column(name = "id")
+//    protected Long id;
+
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
+    @Column(name = "id", length = 26, updatable = false, nullable = false)
+    private String id;
 
     @Column(name = "deleted")
     private Boolean deleted = Boolean.FALSE;
@@ -51,88 +58,64 @@ public class DataValue extends JpaAuditable<Long> {
     @Column(name = "value", length = 50000)
     private String value;
 
-    @Column(name = "followup")
-    private Boolean followup = Boolean.FALSE;
-
-    @Column(name = "comment")
-    private String comment;
-
-    @Column(name = "stored_by")
-    private String storedBy;
-
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "data_element_id")
-    @JsonIgnoreProperties(value = {"dataElementGroups", "optionSet", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
-    private DataElement dataElement;
+    @Column(name = "data_element_uid")
+    private String dataElementUid;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "data_instance_id")
-    private DataInstance dataInstance;
+    @JoinColumn(name = "step_instance_id")
+    @JsonSerialize(contentAs = JpaSoftDeleteObject.class)
+    private StepInstance stepInstance;
 
-    public DataValue() {
+    public DataValue(String dataElementUid, StepInstance stepInstance) {
+        this.dataElementUid = dataElementUid;
+        this.stepInstance = stepInstance;
         this.createdDate = Instant.now();
         this.lastModifiedDate = Instant.now();
     }
 
-    public DataValue(DataElement dataElement, DataInstance dataInstance) {
-        this.dataElement = dataElement;
-        this.dataInstance = dataInstance;
-        this.createdDate = Instant.now();
-        this.lastModifiedDate = Instant.now();
-    }
-
-    public DataValue(DataElement dataElement, DataInstance dataInstance, String value) {
-        this.dataElement = dataElement;
-        this.dataInstance = dataInstance;
+    public DataValue(String dataElementUid, StepInstance stepInstance, String value) {
+        this.dataElementUid = dataElementUid;
+        this.stepInstance = stepInstance;
         this.value = value;
         this.createdDate = Instant.now();
         this.lastModifiedDate = Instant.now();
     }
 
-    public DataValue(DataElement dataElement, DataInstance dataInstance,
+    public DataValue(String dataElementUid, StepInstance stepInstance,
                      String value, String storedBy, Instant lastModifiedDate, String comment) {
-        this.dataElement = dataElement;
-        this.dataInstance = dataInstance;
+        this.dataElementUid = dataElementUid;
+        this.stepInstance = stepInstance;
         this.value = value;
-        this.storedBy = storedBy;
         this.createdDate = Instant.now();
         this.lastModifiedDate = lastModifiedDate;
-        this.comment = comment;
     }
 
     @Builder(toBuilder = true)
-    public DataValue(DataElement dataElement, DataInstance dataInstance,
-                     String value, String storedBy, Instant lastModifiedDate, String comment,
-                     Boolean followup, boolean deleted) {
-        this.dataElement = dataElement;
-        this.dataInstance = dataInstance;
+    public DataValue(String dataElementUid, StepInstance stepInstance,
+                     String value, Instant lastModifiedDate, boolean deleted) {
+        this.dataElementUid = dataElementUid;
+        this.stepInstance = stepInstance;
         this.value = value;
-        this.storedBy = storedBy;
         this.createdDate = Instant.now();
         this.lastModifiedDate = lastModifiedDate;
-        this.comment = comment;
-        this.followup = followup;
         this.deleted = deleted;
     }
 
     public boolean isNullValue() {
-        return StringUtils.trimToNull(value) == null && StringUtils.trimToNull(comment) == null;
+        return StringUtils.trimToNull(value) == null;
     }
 
     public void mergeWith(DataValue other) {
         this.value = other.getValue();
-        this.storedBy = other.getStoredBy();
         this.createdDate = other.getCreatedDate();
         this.lastModifiedDate = other.getLastModifiedDate();
-        this.comment = other.getComment();
-        this.followup = other.getFollowup();
         this.deleted = other.getDeleted();
     }
 
     @JsonProperty
     @JsonSerialize(contentAs = JpaIdentifiableObject.class)
-    public DataInstance getDataInstance() {
-        return dataInstance;
+    public StepInstance getStepInstance() {
+        return stepInstance;
     }
 
 
@@ -152,8 +135,8 @@ public class DataValue extends JpaAuditable<Long> {
 
         final DataValue other = (DataValue) o;
 
-        return dataElement.equals(other.getDataElement()) &&
-            dataInstance.equals(other.getDataInstance());
+        return dataElementUid.equals(other.getDataElementUid()) &&
+            stepInstance.equals(other.getStepInstance());
     }
 
     @Override
@@ -161,16 +144,16 @@ public class DataValue extends JpaAuditable<Long> {
         final int prime = 31;
         int result = 1;
 
-        result = result * prime + dataElement.hashCode();
-        result = result * prime + dataInstance.hashCode();
+        result = result * prime + dataElementUid.hashCode();
+        result = result * prime + stepInstance.hashCode();
 
         return result;
     }
 
     @Override
     public String toString() {
-        return "[Data element: " + dataElement.getUid() +
-            ", dataInstance: " + dataInstance.getUid() +
+        return "[Data element: " + dataElementUid +
+            ", dataInstance: " + stepInstance.getUid() +
             ", value: " + value +
             ", deleted: " + deleted + "]";
     }

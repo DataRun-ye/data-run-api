@@ -16,6 +16,8 @@ import java.util.Optional;
 @Repository
 public interface EntityInstanceRepository
     extends JpaIdentifiableRepository<EntityInstance> {
+    Boolean existsByEntityTypeUidAndUid(String entityType, String uid);
+
     @Override
     default List<EntityInstance> findAllByCodeIn(Collection<String> codes) {
         return Collections.emptyList();

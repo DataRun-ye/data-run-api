@@ -1,7 +1,9 @@
 package org.nmcpye.datarun.jpa.entityattribute;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import de.huxhorn.sulky.ulid.ULID;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,7 +23,8 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "entity_attribute_value",
-    indexes = {@Index(name = "idx_entity_attribute_instance_uid", columnList = "entity_attribute_uid")},
+    indexes = {@Index(name = "idx_entity_attribute_instance_uid",
+        columnList = "entity_attribute_uid")},
     uniqueConstraints = {
         @UniqueConstraint(name = "uc_entity_attribute_instance",
             columnNames = {"entity_instance_id", "entity_attribute_uid"})
@@ -32,12 +35,10 @@ import java.util.Objects;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
 public class EntityAttributeValue
-    extends JpaAuditable<Long> implements Serializable {
+    extends JpaAuditable<ULID.Value> implements Serializable {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
+    @Column(name = "id", length = 26, updatable = false, nullable = false)
+    private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "entity_instance_id", nullable = false)
@@ -48,7 +49,8 @@ public class EntityAttributeValue
     @Column(name = "entity_attribute_uid", nullable = false)
     private String entityAttributeUid;
 
-    @Column(name = "value"/*, columnDefinition = "TEXT"*/)
+    @Size(max = 50000)
+    @Column(name = "value", length = 50000)
     private String value;
 
     @Override

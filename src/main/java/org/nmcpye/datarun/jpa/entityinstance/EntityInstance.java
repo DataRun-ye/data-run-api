@@ -25,20 +25,14 @@ import java.util.UUID;
  * @author Hamza Assada 27/05/2025 <7amza.it@gmail.com>
  */
 @Entity
-@Table(name = "entity_instance")
+@Table(name = "entity_instance", indexes = {@Index(name = "idx_entity_attribute_instance_uid",
+    columnList = "entity_type_uid, uid")})
 @Getter
 @Setter
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
 public class EntityInstance extends JpaBaseIdentifiableObject {
     public enum EntityStatus {ACTIVE, INACTIVE, ARCHIVED}
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
-
     @Size(max = 11)
     @Column(name = "uid", length = 11, nullable = false, unique = true)
     protected String uid;
@@ -55,10 +49,8 @@ public class EntityInstance extends JpaBaseIdentifiableObject {
     @Enumerated(EnumType.STRING)
     private EntityStatus status = EntityStatus.ACTIVE;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "entity_type_id")
-    @JsonSerialize(contentAs = JpaBaseIdentifiableObject.class)
-    protected EntityType entityType;
+    @Column(name = "entity_type_uid", nullable = false)
+    protected String entityTypeUid;
 
     @Column(name = "created_at_client")
     private Instant createdAtClient;
