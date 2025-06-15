@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.flowtype;
+package org.nmcpye.datarun.jpa.scopeinstance;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Getter;
@@ -8,25 +8,26 @@ import java.util.Objects;
 /**
  * @author Hamza Assada 08/06/2025 <7amza.it@gmail.com>
  */
-@JsonDeserialize(builder = FlowScopeType.Builder.class)
+@JsonDeserialize(builder = ScopeElement.Builder.class)
 @Getter
-public class FlowScopeType {
+public class ScopeElement {
     private final String key;
-    private final ScopePropertyType type;
+    private final CoreElementType type;
     private final boolean required;
     private final boolean multiple;
-
-    public boolean is(ScopePropertyType type) {
-        return this.type == type;
-    }
 
     /**
      * Only used and required for ENTITY type
      */
     private final String entityTypeId;
 
+    public boolean is(CoreElementType type) {
+        return this.type == type;
+    }
+
+
     // Private constructor (use builder)
-    private FlowScopeType(ScopePropertyType type) {
+    private ScopeElement(CoreElementType type) {
         this.key = type.name();
         this.type = type;
         this.required = true;
@@ -35,20 +36,21 @@ public class FlowScopeType {
     }
 
     // Private constructor (use builder)
-    private FlowScopeType(Builder builder, String entityTypeId) {
+    private ScopeElement(Builder builder, String entityTypeId) {
         this.key = builder.key;
         this.type = builder.type;
         this.required = builder.required;
         this.multiple = builder.multiple;
-        this.entityTypeId = builder.type != ScopePropertyType.ENTITY ? null : entityTypeId;
+        this.entityTypeId = builder.type != CoreElementType.ENTITY ? null : entityTypeId;
     }
+
     // Getters (omitted for brevity)
 
     // Builder Class
     @SuppressWarnings("unused")
     public static class Builder {
         private String key;
-        private ScopePropertyType type;
+        private CoreElementType type;
         private boolean required;
         private boolean multiple;
         private String entityTypeId;
@@ -59,7 +61,7 @@ public class FlowScopeType {
             return this;
         }
 
-        public Builder type(ScopePropertyType type) {
+        public Builder type(CoreElementType type) {
             this.type = type;
             return this;
         }
@@ -79,13 +81,13 @@ public class FlowScopeType {
             return this;
         }
 
-        public FlowScopeType build() {
+        public ScopeElement build() {
             if (type == null) {
                 throw new IllegalArgumentException("Scope Type is required");
             }
 
             // Validate ENTITY constraint
-            if (type == ScopePropertyType.ENTITY && (entityTypeId == null || entityTypeId.isEmpty())) {
+            if (type == CoreElementType.ENTITY && (entityTypeId == null || entityTypeId.isEmpty())) {
                 throw new IllegalArgumentException("entityTypeId is required for ENTITY scope type");
             }
 
@@ -93,13 +95,13 @@ public class FlowScopeType {
                 this.key(type.name());
             }
 
-            return new FlowScopeType(this, entityTypeId);
+            return new ScopeElement(this, entityTypeId);
         }
     }
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof FlowScopeType that)) return false;
+        if (!(o instanceof ScopeElement that)) return false;
         return Objects.equals(getKey(), that.getKey()) && getType() == that.getType();
     }
 
