@@ -2,8 +2,8 @@ package org.nmcpye.datarun.jpa.migration;
 
 import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
+import org.nmcpye.datarun.jpa.flowinstance.repository.FlowInstanceRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,13 +20,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Slf4j
 public class AssignmentFormsMigration /*implements CommandLineRunner*/ {
     private static final int CHUNK_SIZE = 400;
-    final AssignmentRepository repository;
+    final FlowInstanceRepository repository;
 
     private final EntityManager em;
     private final PlatformTransactionManager txm;
 
 
-    public AssignmentFormsMigration(AssignmentRepository repository, EntityManager em, PlatformTransactionManager txm) {
+    public AssignmentFormsMigration(FlowInstanceRepository repository, EntityManager em, PlatformTransactionManager txm) {
         this.repository = repository;
         this.em = em;
         this.txm = txm;
@@ -39,17 +39,17 @@ public class AssignmentFormsMigration /*implements CommandLineRunner*/ {
 
     public void processInChunks() {
         int page = 0;
-        Page<Assignment> chunk;
+        Page<FlowInstance> chunk;
         do {
             Pageable pg = PageRequest.of(page, CHUNK_SIZE);
             chunk = repository.findAll(pg);
 
             if (!chunk.isEmpty()) {
                 // run each chunk in its own transaction to keep EM small
-                Page<Assignment> finalChunk = chunk;
+                Page<FlowInstance> finalChunk = chunk;
                 new TransactionTemplate(txm).execute(status -> {
-                    for (Assignment assignment : finalChunk) {
-                        assignment.setForms(assignment.getForms());
+                    for (FlowInstance flowInstance : finalChunk) {
+                        flowInstance.setForms(flowInstance.getForms());
                     }
                     repository.saveAll(finalChunk.getContent());
 

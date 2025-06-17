@@ -7,13 +7,13 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.nmcpye.datarun.common.uidgenerate.BaseDto;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +25,7 @@ import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
 @Setter
 @Getter
 @AllArgsConstructor
-public class DataTemplateInstanceDto implements DataTemplateVersionInterface, Serializable {
+public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVersionInterface {
     /**
      * output the master {@link DataTemplate} uid
      */

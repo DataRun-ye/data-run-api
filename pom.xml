@@ -342,7 +342,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok-mapstruct-binding</artifactId>
-            <version>0.2.0</version> <!-- Check for latest version -->
+            <version>0.2.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -357,7 +357,6 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <!--            <version>1.7.30</version>-->
         </dependency>
         <!-- debezium   -->
         <dependency>
@@ -392,6 +391,18 @@
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
             <version>2.9.0</version>
+        </dependency>
+
+        <!--   UID generators   -->
+        <dependency>
+            <groupId>de.huxhorn.sulky</groupId>
+            <artifactId>de.huxhorn.sulky.ulid</artifactId>
+            <version>8.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.aventrix.jnanoid</groupId>
+            <artifactId>jnanoid</artifactId>
+            <version>2.0.0</version>
         </dependency>
         <!--  NMC end      -->
     </dependencies>

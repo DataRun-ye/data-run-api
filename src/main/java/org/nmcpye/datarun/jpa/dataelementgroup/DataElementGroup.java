@@ -8,7 +8,7 @@ import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
-import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 import org.nmcpye.datarun.jpa.dataelementgroupset.DataElementGroupSet;
 
 import java.util.HashSet;
@@ -18,24 +18,20 @@ import java.util.Set;
  * A DataElementGroup.
  */
 @Entity
-@Table(name = "data_element_group", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_data_element_group_uid", columnNames = "uid"),
-    @UniqueConstraint(name = "uc_data_element_group_name", columnNames = "name"),
-    @UniqueConstraint(name = "uc_data_element_group_code", columnNames = "code")
-})
+@Table(name = "data_element_group")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataElementGroup extends JpaBaseIdentifiableObject {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+//    @SequenceGenerator(name = "sequenceGenerator")
+//    @Column(name = "id")
+//    protected Long id;
 
     @Size(max = 11)
-    @Column(name = "uid", length = 11, nullable = false)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
 
     /**
@@ -53,12 +49,12 @@ public class DataElementGroup extends JpaBaseIdentifiableObject {
     @ManyToMany
     @JoinTable(
         name = "data_element_group_members",
-        joinColumns = @JoinColumn(name = "data_element_group_id"),
+        joinColumns = @JoinColumn(name = "group_id"),
         inverseJoinColumns = @JoinColumn(name = "data_element_id")
     )
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"parent", "children", "dataElementGroups", "assignments", "hierarchyLevel", "ancestors", "translations", "path"}, allowSetters = true)
-    private Set<DataElement> dataElements = new HashSet<>();
+    private Set<DataTemplateElement> dataTemplateElements = new HashSet<>();
 
     @ManyToMany(mappedBy = "dataElementGroups")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)

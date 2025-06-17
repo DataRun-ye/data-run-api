@@ -3,7 +3,7 @@ package org.nmcpye.datarun.jpa.dataelementgroup.service;
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
-import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
 import org.nmcpye.datarun.jpa.dataelementgroup.repository.DataElementGroupRepository;
@@ -35,26 +35,26 @@ public class DefaultDataElementGroupService
 
     @Override
     public DataElementGroup saveWithRelations(DataElementGroup object) {
-        if (!object.getDataElements().isEmpty()) {
-            Set<DataElement> dataElements = new HashSet<>();
-            for (DataElement dataElement : object.getDataElements()) {
-                dataElements.add(findOrgUnit(dataElement));
+        if (!object.getDataTemplateElements().isEmpty()) {
+            Set<DataTemplateElement> dataTemplateElements = new HashSet<>();
+            for (DataTemplateElement dataTemplateElement : object.getDataTemplateElements()) {
+                dataTemplateElements.add(findOrgUnit(dataTemplateElement));
             }
 
-            object.setDataElements(dataElements);
+            object.setDataTemplateElements(dataTemplateElements);
             return save(object);
         }
 
         return save(object);
     }
 
-    private DataElement findOrgUnit(DataElement dataElement) {
-        return Optional.ofNullable(dataElement.getUid())
+    private DataTemplateElement findOrgUnit(DataTemplateElement dataTemplateElement) {
+        return Optional.ofNullable(dataTemplateElement.getUid())
             .flatMap(dataElementRepository::findByUid)
-            .or(() -> Optional.ofNullable(dataElement.getId())
-                .flatMap(dataElementRepository::findById))
-            .or(() -> Optional.ofNullable(dataElement.getCode())
+            .or(() -> Optional.ofNullable(dataTemplateElement.getId())
+                .flatMap(d -> dataElementRepository.findById(d)))
+            .or(() -> Optional.ofNullable(dataTemplateElement.getCode())
                 .flatMap(dataElementRepository::findByCode))
-            .orElseThrow(() -> new PropertyNotFoundException("data element not found: " + dataElement.getUid()));
+            .orElseThrow(() -> new PropertyNotFoundException("data element not found: " + dataTemplateElement.getUid()));
     }
 }

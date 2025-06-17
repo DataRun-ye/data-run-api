@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.web.rest.mongo.dataformtemplate;
 
 import jakarta.validation.Valid;
-import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.mongo.legacydatatemplate.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.legacydatatemplate.service.DataFormTemplateService;
@@ -22,7 +21,7 @@ import java.util.List;
 import static org.nmcpye.datarun.web.rest.mongo.dataformtemplate.DataFormTemplateResource.CUSTOM;
 
 /**
- * REST controller for managing {@link DataForm}.
+ * REST controller for managing {@link DataFormTemplate}.
  */
 @RestController
 @RequestMapping(value = {CUSTOM})

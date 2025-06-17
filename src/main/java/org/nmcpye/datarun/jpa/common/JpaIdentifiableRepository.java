@@ -22,10 +22,10 @@ import java.util.stream.Collectors;
 
 @NoRepositoryBean
 public interface JpaIdentifiableRepository<T extends JpaIdentifiableObject>
-    extends BaseJpaIdentifiableRepository<T, Long>,
+    extends BaseJpaIdentifiableRepository<T, String>,
     JpaSpecificationExecutor<T>,
-    ListPagingAndSortingRepository<T, Long>,
-    IdentifiableObjectRepository<T, Long> {
+    ListPagingAndSortingRepository<T, String>,
+    IdentifiableObjectRepository<T, String> {
 
     /// custom ////////////////////
 
@@ -92,15 +92,15 @@ public interface JpaIdentifiableRepository<T extends JpaIdentifiableObject>
         return findByUid(uid).filter(o -> canRead(o, user));
     }
 
-    default Optional<T> findById(Long id, CurrentUserDetails user) {
+    default Optional<T> findById(String id, CurrentUserDetails user) {
         return findById(id).filter(o -> canRead(o, user));
     }
 
-    default List<T> findById(Collection<Long> ids) {
+    default List<T> findById(Collection<String> ids) {
         return findAllById(ids).stream().filter(o -> canRead(o, null)).collect(Collectors.toList());
     }
 
-    default Optional<T> findByIdNoAcl(Long id) {
+    default Optional<T> findByIdNoAcl(String id) {
         return findById(id);
     }
 
@@ -115,6 +115,8 @@ public interface JpaIdentifiableRepository<T extends JpaIdentifiableObject>
     Boolean existsByUid(@Size(max = 11) String uid);
 
     Optional<T> findByUid(@Size(max = 11) String uid);
+
+    Optional<T> findByIdOrUid(@Size(max = 26) String id, @Size(max = 11) String uid);
 
     List<T> findAllByUidIn(Collection<String> uids);
 

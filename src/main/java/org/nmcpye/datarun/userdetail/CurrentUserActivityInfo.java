@@ -11,7 +11,7 @@ import java.util.Set;
 @Value
 @Builder
 public class CurrentUserActivityInfo {
-    Long userId;
+    String userId;
     String userUID;
     Set<String> activityUIDs;
 }

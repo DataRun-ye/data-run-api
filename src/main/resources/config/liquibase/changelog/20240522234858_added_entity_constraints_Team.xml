@@ -1,37 +1,43 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
-                        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
-    <!--
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+<!--
         Added the constraints for entity Team.
     -->
-    <changeSet id="20240522234858-2" author="jhipster">
-
-        <addForeignKeyConstraint baseColumnNames="activity_id"
-                                 baseTableName="team"
-                                 constraintName="fk_team__activity_id"
-                                 referencedColumnNames="id"
-                                 referencedTableName="activity"
-                                 />
-
-        <addForeignKeyConstraint baseColumnNames="warehouse_id"
-                                 baseTableName="team"
-                                 constraintName="fk_team__warehouse_id"
-                                 referencedColumnNames="id"
-                                 referencedTableName="warehouse"
-                                 />
-
-        <addForeignKeyConstraint baseColumnNames="user_info_id"
-                                 baseTableName="team"
-                                 constraintName="fk_team__user_info_id"
-                                 referencedColumnNames="id"
-                                 referencedTableName="app_user"
-                                 />
-
-        <addForeignKeyConstraint baseColumnNames="parent_id" baseTableName="team" constraintName="FK_TEAM_ON_PARENT"
-                                 referencedColumnNames="id" referencedTableName="team"/>
+    <changeSet id="1749225850985-102" author="Hamza">
+        <addUniqueConstraint columnNames="code, activity_id" constraintName="uc_team_code_activity_id"
+                             tableName="team"/>
+    </changeSet>
+    <changeSet id="1749225850985-103" author="Hamza">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_team_uid" tableName="team"/>
+    </changeSet>
+    <changeSet id="1749225850985-133" author="Hamza">
+        <addForeignKeyConstraint baseColumnNames="activity_id" baseTableName="team" constraintName="FK_TEAM_ON_ACTIVITY"
+                                 referencedColumnNames="id" referencedTableName="activity"/>
+    </changeSet>
+    <changeSet id="1749225850985-148" author="Hamza">
+        <addForeignKeyConstraint baseColumnNames="team_id" baseTableName="team_user"
+                                 constraintName="fk_team_user_on_team" referencedColumnNames="id"
+                                 referencedTableName="team"/>
+    </changeSet>
+    <changeSet id="1749225850985-151" author="Hamza">
+        <addForeignKeyConstraint baseColumnNames="team_id" baseTableName="team_managed_teams"
+                                 constraintName="fk_teamantea_on_team" referencedColumnNames="id"
+                                 referencedTableName="team"/>
+    </changeSet>
+    <changeSet id="1749225850985-150" author="Hamza">
+        <addForeignKeyConstraint baseColumnNames="managed_team_id" baseTableName="team_managed_teams"
+                                 constraintName="fk_teamantea_on_managed_team" referencedColumnNames="id"
+                                 referencedTableName="team"/>
+    </changeSet>
+    <changeSet id="1749225850985-149" author="Hamza">
+        <addForeignKeyConstraint baseColumnNames="user_id" baseTableName="team_user"
+                                 constraintName="fk_team_user_on_user" referencedColumnNames="id"
+                                 referencedTableName="app_user"/>
     </changeSet>
 </databaseChangeLog>

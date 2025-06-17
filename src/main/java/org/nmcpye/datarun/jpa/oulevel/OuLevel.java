@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.jpa.oulevel;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -13,35 +15,32 @@ import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
  * A OuLevel.
  */
 @Entity
-@Table(name = "ou_level", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_ou_level_name", columnNames = "name"),
-    @UniqueConstraint(name = "uc_ou_level_code", columnNames = "code")
-})
+@Table(name = "ou_level")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class OuLevel extends JpaBaseIdentifiableObject {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+//    @SequenceGenerator(name = "sequenceGenerator")
+//    @Column(name = "id")
+//    protected Long id;
 
     @Size(max = 11)
-    @Column(name = "uid", length = 11, nullable = false, unique = true)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
 
     /**
      * The unique code for this object.
      */
-    @Column(name = "code")
+    @Column(name = "code", unique = true)
     protected String code;
 
     /**
      * The name of this object. Required and unique.
      */
-    @Column(name = "name")
+    @Column(name = "name", unique = true)
     protected String name;
 
     @NotNull

@@ -38,18 +38,18 @@ import java.util.Set;
 @Setter
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
 public class User extends JpaBaseIdentifiableObject {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+//    @SequenceGenerator(name = "sequenceGenerator")
+//    @Column(name = "id")
+//    protected Long id;
 
     @Size(max = 11)
-    @Column(name = "uid", length = 11, nullable = false, unique = true)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
 
     @Size(max = 20)
-    @Column(name = "mobile", length = 20, unique = true)
+    @Column(name = "mobile", length = 20, unique = true, nullable = false)
     private String mobile;
 
     @NotNull
@@ -124,7 +124,7 @@ public class User extends JpaBaseIdentifiableObject {
     Set<Role> roles;
 
     @ManyToMany(mappedBy = "users")
-    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
+    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "flowRuns",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<Team> teams = new LinkedHashSet<>();

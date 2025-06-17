@@ -31,6 +31,11 @@ public enum ErrorCode {
     E1112("Activity or Team is not Active: {0}"),
     E1113("Not found Form template: {0}"),
     E1114("Not found Form template version: {0}"),
+    E1115("Missing required scope: {0}"),
+    E1116("{0} : Expected array for multi-value scope"),
+    E1117("{0} : Expected single value"),
+    E1118("{0} : Invalid reference {1} for {2}"),
+    E1119("RequestBody is empty"),
     E1199("System configuration Error: `{0}`"),
 
     /* Data */

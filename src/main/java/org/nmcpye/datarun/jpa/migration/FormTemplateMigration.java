@@ -3,12 +3,11 @@ package org.nmcpye.datarun.jpa.migration;
 import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceService;
 import org.nmcpye.datarun.mongo.legacydatatemplate.repository.DataFormTemplateRepository;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
 
 /**
  * @author Hamza Assada 14/05/2025 <7amza.it@gmail.com>
  */
-@Component
+//@Component
 public class FormTemplateMigration implements CommandLineRunner {
     private final DataFormTemplateRepository templateRepository;
     private final DataTemplateInstanceService templateVersionService;

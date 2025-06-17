@@ -26,7 +26,7 @@
 // */
 //@Entity
 //@Table(name = "entity_attribute_type_instance", uniqueConstraints = {
-//        @UniqueConstraint(name = "uc_flow_run_form_uid",
+//        @UniqueConstraint(name = "uc_flow_instance_form_uid",
 //                columnNames = {"entity_type_id", "entity_attribute_type_id"})})
 //@Getter
 //@Setter
@@ -39,7 +39,7 @@
 //    protected Long id;
 //
 //    @Size(max = 11)
-//    @Column(name = "uid", length = 11, nullable = false, unique = true)
+//    @Column(name = "uid", length = 11, updatable = false, unique = true)
 //    protected String uid;
 //
 //    /**

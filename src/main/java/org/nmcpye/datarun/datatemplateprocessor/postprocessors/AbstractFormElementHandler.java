@@ -3,7 +3,7 @@ package org.nmcpye.datarun.datatemplateprocessor.postprocessors;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
-import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 import org.springframework.lang.Nullable;
 
 /**
@@ -14,7 +14,7 @@ public abstract class AbstractFormElementHandler<T extends AbstractElement>
 
     private FormElementHandler<T> next;
 
-    public static FormDataElementConf processElement(FormDataElementConf element, @Nullable DataElement source) {
+    public static FormDataElementConf processElement(FormDataElementConf element, @Nullable DataTemplateElement source) {
 
         FormElementHandler<FormDataElementConf> handlerChain = new ValidateValueTypeHandler(source);
         handlerChain

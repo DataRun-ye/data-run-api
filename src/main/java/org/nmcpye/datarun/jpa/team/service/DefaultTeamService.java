@@ -68,7 +68,7 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
 
         team.setActivity(activity);
 
-        Set<Long> usersUids = team.getUsers().stream().map(User::getId).collect(Collectors.toSet());
+        Set<String> usersUids = team.getUsers().stream().map(User::getId).collect(Collectors.toSet());
         Set<User> users = new HashSet<>(userRepository.findAllById(usersUids));
         team.setUsers(users);
 
@@ -167,9 +167,6 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
             }
             if (team.getDisabled() != null) {
                 existingTeam.setDisabled(team.getDisabled());
-            }
-            if (team.getDeleteClientData() != null) {
-                existingTeam.setDeleteClientData(team.getDeleteClientData());
             }
             if (team.getCreatedBy() != null) {
                 existingTeam.setCreatedBy(team.getCreatedBy());

@@ -2,8 +2,8 @@ package org.nmcpye.datarun.mongo.metadataschema.repository;
 
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
+import org.nmcpye.datarun.jpa.flowinstance.repository.FlowInstanceRepository;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.team.TeamFormPermissions;
 import org.nmcpye.datarun.jpa.team.service.TeamService;
@@ -30,22 +30,22 @@ public class MetadataSubmissionGranularRepository {
     final private TeamService teamService;
     final private MetadataSubmissionRepository metadataSubmissionRepository;
     final private DataFormTemplateRepository dataFormRepository;
-    private final AssignmentRepository assignmentRepository;
+    private final FlowInstanceRepository flowInstanceRepository;
 
     public MetadataSubmissionGranularRepository(MongoTemplate mongoTemplate, TeamService teamService,
                                                 MetadataSubmissionRepository metadataSubmissionRepository,
                                                 DataFormTemplateRepository dataFormRepository,
-                                                AssignmentRepository assignmentRepository) {
+                                                FlowInstanceRepository flowInstanceRepository) {
         this.mongoTemplate = mongoTemplate;
         this.teamService = teamService;
         this.metadataSubmissionRepository = metadataSubmissionRepository;
         this.dataFormRepository = dataFormRepository;
-        this.assignmentRepository = assignmentRepository;
+        this.flowInstanceRepository = flowInstanceRepository;
     }
 
     // uids of assigned assignment for resourceType == Assignment
-    public List<Assignment> getAssignedAssignments() {
-        var assignments = assignmentRepository.findAllByStatusUser(false);
+    public List<FlowInstance> getAssignedAssignments() {
+        var assignments = flowInstanceRepository.findAllByStatusUser(false);
         return assignments;
 
     }
@@ -96,7 +96,7 @@ public class MetadataSubmissionGranularRepository {
         }
 
         var forms = getAssignedAssignments().stream().filter(assignment ->
-                !assignment.getActivity().getDisabled()).map(Assignment::getTeam)
+                !assignment.getActivity().getDisabled()).map(FlowInstance::getTeam)
             .filter(team -> !team.getDisabled()).distinct()
             .flatMap(team -> Objects.requireNonNullElse(team.getFormPermissions(),
                 new HashSet<TeamFormPermissions>()).stream()).map(TeamFormPermissions::getForm).distinct().toList();
@@ -134,7 +134,7 @@ public class MetadataSubmissionGranularRepository {
             case Activity -> uids.addAll(getAssignedActivities());
             case Team -> uids.addAll(getAssignedTeams(queryRequest));
             case OrgUnit -> uids.addAll(getAssignedOrgUnits());
-            case Assignment -> uids.addAll(getAssignedAssignments().stream().map(Assignment::getUid).toList());
+            case Assignment -> uids.addAll(getAssignedAssignments().stream().map(FlowInstance::getUid).toList());
         }
         return uids;
     }

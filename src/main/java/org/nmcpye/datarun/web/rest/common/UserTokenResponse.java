@@ -10,7 +10,7 @@ import java.util.Set;
 @Getter
 public class UserTokenResponse {
 
-    private Long id;
+    private String id;
     private String uid;
     private String login;
     private String firstName;

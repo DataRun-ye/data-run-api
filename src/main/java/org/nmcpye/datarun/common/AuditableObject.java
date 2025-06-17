@@ -5,7 +5,7 @@ import java.time.Instant;
 /**
  * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
  */
-public interface AuditableObject<ID> extends WithIdentifierObject<ID> {
+public interface AuditableObject<ID> extends WithIdentifierEntity<ID> {
 
     String getCreatedBy();
 

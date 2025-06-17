@@ -3,18 +3,26 @@ package org.nmcpye.datarun.jpa.entityauditevent;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
+@Setter
+@Getter
 @Entity
-@Table(name = "app_entity_audit_event")
+@Table(name = "app_entity_audit_event", indexes = {
+    @Index(name = "idx_entity_audit_event_entity_type", columnList = "entity_type"),
+})
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class EntityAuditEvent implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @Id
@@ -23,12 +31,12 @@ public class EntityAuditEvent implements Serializable {
     private Long id;
 
     @NotNull
-    @Column(name = "entity_id", nullable = false)
+    @Column(name = "entity_Id", length = 26, nullable = false)
     private String entityId;
 
     @NotNull
-    @Size(max = 255)
-    @Column(name = "entity_type", length = 255, nullable = false)
+    @Size(max = 2500)
+    @Column(name = "entity_type", length = 2500, nullable = false)
     private String entityType;
 
     @NotNull
@@ -36,8 +44,8 @@ public class EntityAuditEvent implements Serializable {
     @Column(name = "action", length = 20, nullable = false)
     private String action;
 
-    @Size(max = 2048)
-    @Column(name = "entity_value")
+    @Size(max = 50000)
+    @Column(name = "entity_value", length = 50000)
     private String entityValue;
 
     @Column(name = "commit_version")
@@ -50,70 +58,6 @@ public class EntityAuditEvent implements Serializable {
     @NotNull
     @Column(name = "modified_date", nullable = false)
     private Instant modifiedDate;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getEntityId() {
-        return entityId;
-    }
-
-    public void setEntityId(String entityId) {
-        this.entityId = entityId;
-    }
-
-    public String getEntityType() {
-        return entityType;
-    }
-
-    public void setEntityType(String entityType) {
-        this.entityType = entityType;
-    }
-
-    public String getAction() {
-        return action;
-    }
-
-    public void setAction(String action) {
-        this.action = action;
-    }
-
-    public String getEntityValue() {
-        return entityValue;
-    }
-
-    public void setEntityValue(String entityValue) {
-        this.entityValue = entityValue;
-    }
-
-    public Integer getCommitVersion() {
-        return commitVersion;
-    }
-
-    public void setCommitVersion(Integer commitVersion) {
-        this.commitVersion = commitVersion;
-    }
-
-    public String getModifiedBy() {
-        return modifiedBy;
-    }
-
-    public void setModifiedBy(String modifiedBy) {
-        this.modifiedBy = modifiedBy;
-    }
-
-    public Instant getModifiedDate() {
-        return modifiedDate;
-    }
-
-    public void setModifiedDate(Instant modifiedDate) {
-        this.modifiedDate = modifiedDate;
-    }
 
     @Override
     public boolean equals(Object o) {
@@ -136,30 +80,30 @@ public class EntityAuditEvent implements Serializable {
     public String toString() {
         return (
             "EntityAuditEvent{" +
-            "id=" +
-            id +
-            ", entityId='" +
-            entityId +
-            "'" +
-            ", entityType='" +
-            entityType +
-            "'" +
-            ", action='" +
-            action +
-            "'" +
-            ", entityValue='" +
-            entityValue +
-            "'" +
-            ", commitVersion='" +
-            commitVersion +
-            "'" +
-            ", modifiedBy='" +
-            modifiedBy +
-            "'" +
-            ", modifiedDate='" +
-            modifiedDate +
-            "'" +
-            '}'
+                "id=" +
+                id +
+                ", entityId='" +
+                entityId +
+                "'" +
+                ", entityType='" +
+                entityType +
+                "'" +
+                ", action='" +
+                action +
+                "'" +
+                ", entityValue='" +
+                entityValue +
+                "'" +
+                ", commitVersion='" +
+                commitVersion +
+                "'" +
+                ", modifiedBy='" +
+                modifiedBy +
+                "'" +
+                ", modifiedDate='" +
+                modifiedDate +
+                "'" +
+                '}'
         );
     }
 }

@@ -5,7 +5,7 @@ import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateprocessor.TemplateElementProcessor;
@@ -57,10 +57,10 @@ public class FormTemplateProcessor {
             .get();
     }
 
-    private <T extends DataTemplateVersionInterface> void validateElementsDataElement(T formTemplate, Collection<DataElement> dataElements) {
+    private <T extends DataTemplateVersionInterface> void validateElementsDataElement(T formTemplate, Collection<DataTemplateElement> dataTemplateElements) {
         final var fieldUids = formTemplate.getFields().stream()
             .map(FormDataElementConf::getId).toList();
-        final var dataElementUids = getUids(dataElements);
+        final var dataElementUids = getUids(dataTemplateElements);
         final var notFoundElementUids = fieldUids.stream()
             .filter(f -> !dataElementUids.contains(f))
             .collect(Collectors.toSet());

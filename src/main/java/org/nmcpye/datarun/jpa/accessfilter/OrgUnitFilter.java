@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
+import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
+import org.nmcpye.datarun.jpa.flowinstance.repository.FlowInstanceRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -17,10 +17,10 @@ import java.util.stream.Stream;
  */
 @Component
 public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
-    private final AssignmentRepository assignmentRepository;
+    private final FlowInstanceRepository flowInstanceRepository;
 
-    public OrgUnitFilter(AssignmentRepository assignmentRepository) {
-        this.assignmentRepository = assignmentRepository;
+    public OrgUnitFilter(FlowInstanceRepository flowInstanceRepository) {
+        this.flowInstanceRepository = flowInstanceRepository;
     }
 
     @Override
@@ -64,7 +64,7 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
     }
 
     Set<OrgUnit> getDirectAndManagedOrgUnit(CurrentUserDetails user, boolean includeDisabled) {
-        final var orgUnitSet = assignmentRepository.findAllByTeamUidIn(
+        final var orgUnitSet = flowInstanceRepository.findAllByTeamUidIn(
             Stream.concat(user.getUserTeamsUIDs().stream(),
                     user.getManagedTeamsUIDs().stream())
                 .collect(Collectors.toSet()));
@@ -72,10 +72,10 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
         return !includeDisabled ? orgUnitSet
             .stream()
             .filter(assignment -> !assignment.getTeam().getDisabled() || !assignment.getActivity().getDisabled())
-            .map(Assignment::getOrgUnit)
+            .map(FlowInstance::getOrgUnit)
             .collect(Collectors.toSet()) : orgUnitSet
             .stream()
-            .map(Assignment::getOrgUnit)
+            .map(FlowInstance::getOrgUnit)
             .collect(Collectors.toSet());
     }
 }

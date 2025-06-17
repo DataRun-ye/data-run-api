@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.datatemplateprocessor.postprocessors;
 
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 
 import java.util.Optional;
 
@@ -10,9 +10,9 @@ import java.util.Optional;
  */
 public class CopyMainPropertiesHandler
     extends AbstractFormElementHandler<FormDataElementConf> {
-    private final DataElement source;
+    private final DataTemplateElement source;
 
-    public CopyMainPropertiesHandler(DataElement source) {
+    public CopyMainPropertiesHandler(DataTemplateElement source) {
         this.source = source;
     }
 

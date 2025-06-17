@@ -2,7 +2,12 @@ package org.nmcpye.datarun.common;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.springframework.format.datetime.standard.InstantFormatter;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -12,14 +17,42 @@ public class IdentifiableObjectUtils {
 
     public static final String SEPARATOR_JOIN = ", ";
 
+//    public static final DateTimeFormatter LONG_DATE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss");
+//
+//    public static final DateTimeFormatter MEDIUM_DATE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd");
+
+    //    public static final Map<String, String> CLASS_ALIAS = ImmutableMap.<String, String> builder()
+    //        .put( "CategoryOption", CategoryOption.class.getSimpleName() ).put( "Category", Category.class.getSimpleName() )
+    //        .put( "CategoryCombo", CategoryCombo.class.getSimpleName() ).build();
+
+    /**
+     * Joins the names of the IdentifiableObjects in the given list and
+     * separates them with {@link IdentifiableObjectUtils#SEPARATOR_JOIN} (a
+     * comma and a space). Returns null if the given list is null or has no
+     * elements.
+     *
+     * @param objects the list of IdentifiableObjects.
+     * @return the joined string.
+     */
+    public static String join(Collection<? extends JpaBaseIdentifiableObject> objects) {
+        if (objects == null || objects.isEmpty()) {
+            return null;
+        }
+
+        List<String> names = objects.stream().map(JpaBaseIdentifiableObject::getDisplayName).collect(Collectors.toList());
+
+        return StringUtils.join(names, SEPARATOR_JOIN);
+    }
+
     /**
      * Returns a list of uids for the given collection of IdentifiableObjects.
      *
      * @param objects the list of IdentifiableObjects.
      * @return a list of uids.
      */
-    public static <T extends WithIdentifierObject<?>> List<String> getUids(Collection<T> objects) {
-        return objects != null ? objects.stream().filter(Objects::nonNull).map(o -> o.getUid()).collect(Collectors.toList()) : null;
+    public static <T extends JpaBaseIdentifiableObject> List<String> getUids(Collection<T> objects) {
+        return objects != null ? objects.stream().filter(o -> o != null)
+            .map(o -> o.getUid()).collect(Collectors.toList()) : null;
     }
 
     /**
@@ -28,27 +61,72 @@ public class IdentifiableObjectUtils {
      * @param objects the list of IdentifiableObjects.
      * @return a list of codes.
      */
-    public static <T extends IdentifiableObject<?>> List<String> getCodes(Collection<T> objects) {
+    public static <T extends JpaBaseIdentifiableObject> List<String> getCodes(Collection<T> objects) {
         return objects != null ? objects.stream().map(o -> o.getCode()).collect(Collectors.toList()) : null;
     }
 
-//    /**
-//     * Returns a list of internal identifiers for the given collection of
-//     * IdentifiableObjects.
-//     *
-//     * @param objects the list of IdentifiableObjects.
-//     * @return a list of identifiers.
-//     */
-//    public static <T extends IdentifiableObject<Long>> List<Long> getIdentifiers(Collection<T> objects) {
-//        return objects != null ? objects.stream().map(o -> o.getId()).collect(Collectors.toList()) : null;
-//    }
+    /**
+     * Returns a list of internal identifiers for the given collection of
+     * IdentifiableObjects.
+     *
+     * @param objects the list of IdentifiableObjects.
+     * @return a list of identifiers.
+     */
+    public static <T extends IdentifiableObject<E>, E> List<E> getIdentifiers(Collection<T> objects) {
+        return objects != null ? objects.stream().map(IdentifiableObject::getId).collect(Collectors.toList()) : null;
+    }
+
+    /**
+     * Returns a map from internal identifiers to IdentifiableObjects, for the
+     * given collection of IdentifiableObjects.
+     *
+     * @param objects the collection of IdentifiableObjects
+     * @return a map from the object internal identifiers to the objects
+     */
+    public static <T extends IdentifiableObject<E>, E> Map<E, T> getIdentifierMap(Collection<T> objects) {
+        Map<E, T> map = new HashMap<>();
+
+        for (T object : objects) {
+            map.put(object.getId(), object);
+        }
+
+        return map;
+    }
+
+    /**
+     * Filters the given list of IdentifiableObjects based on the given key.
+     *
+     * @param identifiableObjects the list of IdentifiableObjects.
+     * @param key                 the key.
+     * @param ignoreCase          indicates whether to ignore case when filtering.
+     * @return a filtered list of IdentifiableObjects.
+     */
+    public static <T extends JpaBaseIdentifiableObject> List<T> filterNameByKey(List<T> identifiableObjects, String key, boolean ignoreCase) {
+        List<T> objects = new ArrayList<>();
+        ListIterator<T> iterator = identifiableObjects.listIterator();
+
+        if (ignoreCase) {
+            key = key.toLowerCase();
+        }
+
+        while (iterator.hasNext()) {
+            T object = iterator.next();
+            String name = ignoreCase ? object.getDisplayName().toLowerCase() : object.getDisplayName();
+
+            if (name.indexOf(key) != -1) {
+                objects.add(object);
+            }
+        }
+
+        return objects;
+    }
 
     /**
      * Removes duplicates from the given list while maintaining the order.
      *
      * @param list the list.
      */
-    public static <T extends IdentifiableObject<?>> List<T> removeDuplicates(List<T> list) {
+    public static <T extends JpaBaseIdentifiableObject> List<T> removeDuplicates(List<T> list) {
         final List<T> temp = new ArrayList<>(list);
         list.clear();
 
@@ -62,39 +140,171 @@ public class IdentifiableObjectUtils {
     }
 
     /**
+     * Generates a tag reflecting the date of when the most recently updated
+     * JpaBaseIdentifiableObject in the given collection was modified.
+     *
+     * @param objects the collection of IdentifiableObjects.
+     * @return a string tag.
+     */
+    public static <T extends JpaBaseIdentifiableObject> String getLastUpdatedTag(Collection<T> objects) {
+        Instant latest = null;
+
+        if (objects != null) {
+            for (JpaBaseIdentifiableObject object : objects) {
+                if (
+                    object != null &&
+                        object.getLastModifiedDate() != null &&
+                        (latest == null || object.getLastModifiedDate().isAfter(latest))
+                ) {
+                    latest = object.getLastModifiedDate();
+                }
+            }
+        }
+
+        return latest != null && objects != null ? objects.size() + SEPARATOR + (new InstantFormatter().print(latest, Locale.US)) : null;
+    }
+
+//    /**
+//     * Generates a tag reflecting the date of when the object was last updated.
+//     *
+//     * @param object the identifiable object.
+//     * @return a string tag.
+//     */
+//    public static String getLastUpdatedTag(JpaBaseIdentifiableObject object) {
+//        return object != null ? LONG_DATE_FORMAT.print(new DateTime(object.getUpdated())) : null;
+//    }
+
+    /**
+     * Returns a mapping between the uid and the display name of the given
+     * identifiable objects.
+     *
+     * @param objects the identifiable objects.
+     * @return mapping between the uid and the display name of the given
+     * objects.
+     */
+    public static Map<String, String> getUidNameMap(Collection<? extends JpaBaseIdentifiableObject> objects) {
+        return objects.stream().collect(Collectors.toMap(JpaBaseIdentifiableObject::getUid, JpaBaseIdentifiableObject::getDisplayName));
+    }
+
+    /**
+     * Returns a mapping between the uid and the property defined by the given
+     * identifiable property for the given identifiable objects.
+     *
+     * @param objects  the identifiable objects.
+     * @param property the identifiable property.
+     * @return a mapping between uid and property.
+     */
+    public static Map<String, String> getUidPropertyMap(Collection<? extends JpaBaseIdentifiableObject> objects, IdentifiableProperty property) {
+        Map<String, String> map = Maps.newHashMap();
+
+        objects.forEach(obj ->
+            map.put(obj.getUid(), obj.getPropertyValue(IdScheme.from(property))));
+
+        return map;
+    }
+
+    /**
      * Returns a mapping between the uid and the name of the given identifiable
      * objects.
      *
      * @param objects the identifiable objects.
      * @return mapping between the uid and the name of the given objects.
      */
-    public static <T extends IdentifiableObject<?>> Map<String, T> getUidObjectMap(Collection<T> objects) {
+    public static <T extends JpaBaseIdentifiableObject> Map<String, T> getUidObjectMap(Collection<T> objects) {
         return objects != null ? Maps.uniqueIndex(objects, T::getUid) : Maps.newHashMap();
     }
 
-//    /**
-//     * Converts the given {@link Set} to a mutable {@link List} and sorts the
-//     * items by the ID property.
-//     *
-//     * @param <T>
-//     * @param set the {@link Set}.
-//     * @return a {@link List}.
-//     */
-//    public static <T extends IdentifiableObject> List<T> sortById(Set<T> set) {
-//        List<T> list = new ArrayList<>(set);
-//        Collections.sort(list, Comparator.comparingLong(T::getId));
-//        return list;
-//    }
+    /**
+     * Returns a map of the identifiable property specified by the given id
+     * scheme and the corresponding object.
+     *
+     * @param objects  the objects.
+     * @param idScheme the id scheme.
+     * @return a map.
+     */
+    public static <T extends JpaBaseIdentifiableObject> Map<String, T> getIdMap(List<T> objects, IdScheme idScheme) {
+        Map<String, T> map = new HashMap<>();
+
+        for (T object : objects) {
+            String value = object.getPropertyValue(idScheme);
+
+            if (value != null) {
+                map.put(value, object);
+            }
+        }
+
+        return map;
+    }
 
     /**
-     * Compare two {@link IdentifiableObject} using UID property.
+     * @param object Object to get display name for
+     * @return A usable display name
+     */
+    public static String getDisplayName(Object object) {
+        if (object == null) {
+            return "[ object is null ]";
+        } else if (object instanceof JpaBaseIdentifiableObject identifiableObject) {
+
+            if (identifiableObject.getDisplayName() != null && !identifiableObject.getDisplayName().isEmpty()) {
+                return identifiableObject.getDisplayName();
+            } else if (identifiableObject.getUid() != null && !identifiableObject.getUid().isEmpty()) {
+                return identifiableObject.getUid();
+            } else if (identifiableObject.getCode() != null && !identifiableObject.getCode().isEmpty()) {
+                return identifiableObject.getCode();
+            }
+        }
+
+        return object.getClass().getName();
+    }
+
+    /**
+     * Returns an ID for given object based on given idScheme. However, does not
+     * work for Attribute idScheme. Attribute idScheme has to have special
+     * treatment in the client code.
+     *
+     * @param object   An identifiable object
+     * @param idScheme An idScheme defining what property should be used as an
+     *                 ID
+     * @param <T>
+     * @return Returns an ID for given object based on given idScheme
+     */
+    public static <T extends JpaIdentifiableObject> String getIdentifierBasedOnIdScheme(T object, IdScheme idScheme) {
+        if (idScheme.isNull() || idScheme.is(IdentifiableProperty.UID)) {
+            return object.getUid();
+        } else if (idScheme.is(IdentifiableProperty.CODE)) {
+            return object.getCode();
+        } else if (idScheme.is(IdentifiableProperty.NAME)) {
+            return object.getName();
+        } else if (idScheme.is(IdentifiableProperty.ID) && object.getId() != null) {
+            return String.valueOf(object.getId());
+        }
+
+        return null;
+    }
+
+    /**
+     * Converts the given {@link Set} to a mutable {@link List} and sorts the
+     * items by the ID property.
+     *
+     * @param <T>
+     * @param set the {@link Set}.
+     * @return a {@link List}.
+     */
+    public static <T extends JpaIdentifiableObject> List<T> sortById(Set<T> set) {
+        List<T> list = new ArrayList<>(set);
+        Collections.sort(list, Comparator.comparing(T::getId));
+        return list;
+    }
+
+    /**
+     * Compare two {@link JpaBaseIdentifiableObject} using UID property.
      *
      * @param object object to compare.
      * @param target object to compare with.
      * @return TRUE if both objects are null or have same UID or both UIDs are
      * null. Otherwise, return FALSE.
      */
-    public static boolean equalByUID(IdentifiableObject<?> object, IdentifiableObject<?> target) {
+    public static boolean equalByUID(JpaBaseIdentifiableObject object, JpaBaseIdentifiableObject target) {
         if (ObjectUtils.allNotNull(object, target)) {
             if (ObjectUtils.allNotNull(object.getUid(), target.getUid())) {
                 return object.getUid().equals(target.getUid());
@@ -106,3 +316,4 @@ public class IdentifiableObjectUtils {
         return ObjectUtils.allNull(object, target);
     }
 }
+

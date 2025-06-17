@@ -12,13 +12,15 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Spring Data JPA repository for the Project entity.
+ * Spring Data JPA repository for the {@link OrgUnit} entity.
+ *
+ * @author Hamza Assada 18/01/2022
  */
 @SuppressWarnings("unused")
 @Repository
 public interface OrgUnitRepository
     extends OrgUnitRepositoryWithBagRelationships,
-        JpaIdentifiableRepository<OrgUnit> {
+    JpaIdentifiableRepository<OrgUnit> {
     Boolean existsByCode(String code);
 
     Optional<OrgUnit> findByCode(String code);
@@ -28,13 +30,13 @@ public interface OrgUnitRepository
     @Query(
         value = "select distinct orgUnit from OrgUnit orgUnit " +
             "left join fetch orgUnit.parent " +
-            "join orgUnit.assignments assignments " +
-            "join assignments.team.users u " +
+            "join orgUnit.flowRuns fr " +
+            "join fr.team.users u " +
             "where u.login = ?#{authentication.name}"
     )
     List<OrgUnit> findAllWithRelation();
 
-    ///////// new testing
+    /// ////// new testing
     @Query(value = """
         SELECT DISTINCT ou.*
         FROM org_unit ou

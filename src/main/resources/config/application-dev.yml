@@ -41,7 +41,7 @@ spring:
       auto-index-creation: true
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:postgresql://localhost:5432/dataRunApi
+    url: jdbc:postgresql://localhost:5432/dataRunApiStages
     username: dataRunApi
     password: dataRunApi
 

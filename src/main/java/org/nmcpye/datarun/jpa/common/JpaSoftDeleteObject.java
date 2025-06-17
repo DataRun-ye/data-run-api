@@ -17,7 +17,7 @@ import java.util.Objects;
 @Getter
 @Setter
 public abstract class JpaSoftDeleteObject extends JpaBaseIdentifiableObject
-    implements SoftDeleteObject<Long> {
+    implements SoftDeleteObject<String> {
 
     @Override
     public boolean equals(Object o) {

@@ -22,7 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
 @Setter
-abstract public class MongoBaseIdentifiableObject extends MongoIdentifiableObject {
+abstract public class MongoBaseIdentifiableObject
+    extends MongoIdentifiableObject implements Comparable<MongoBaseIdentifiableObject> {
     /**
      * Set of available object translation,
      * normally filtered by locale.
@@ -51,7 +52,7 @@ abstract public class MongoBaseIdentifiableObject extends MongoIdentifiableObjec
      * after a non-null display name.
      */
     @Override
-    public int compareTo(IdentifiableObject object) {
+    public int compareTo(MongoBaseIdentifiableObject object) {
         if (this.getDisplayName() == null) {
             return object.getDisplayName() == null ? 0 : 1;
         }
@@ -63,13 +64,13 @@ abstract public class MongoBaseIdentifiableObject extends MongoIdentifiableObjec
     // Setters and getters
     // -------------------------------------------------------------------------
 
-    @Override
+
     @JsonProperty
     public String getDisplayName() {
         return getTranslation("name", getName());
     }
 
-    @Override
+
     @JsonProperty
     public Set<Translation> getTranslations() {
         if (translations == null) {

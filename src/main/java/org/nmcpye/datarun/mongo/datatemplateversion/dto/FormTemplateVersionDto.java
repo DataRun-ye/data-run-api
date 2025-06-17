@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
+import org.nmcpye.datarun.common.uidgenerate.BaseDto;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 
@@ -17,8 +18,8 @@ import java.util.List;
 @Value
 @Getter
 @Setter
-public class FormTemplateVersionDto implements Serializable {
-    @NotNull
+public class FormTemplateVersionDto extends BaseDto implements Serializable {
+    @Size(max = 11)
     String uid;
     @Size(max = 11)
     @NotNull

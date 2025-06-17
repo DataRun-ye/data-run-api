@@ -3,9 +3,9 @@ package org.nmcpye.datarun.jpa.user.mapper;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
-import org.nmcpye.datarun.jpa.userauthority.Authority;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
+import org.nmcpye.datarun.jpa.userauthority.Authority;
 import org.nmcpye.datarun.service.dto.UserDTO;
 import org.springframework.stereotype.Service;
 
@@ -82,7 +82,7 @@ public class UserMapper {
         return authorities;
     }
 
-    public User userFromId(Long id) {
+    public User userFromId(String id) {
         if (id == null) {
             return null;
         }

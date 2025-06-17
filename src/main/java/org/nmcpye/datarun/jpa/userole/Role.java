@@ -1,10 +1,12 @@
 package org.nmcpye.datarun.jpa.userole;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 import org.nmcpye.datarun.jpa.user.User;
 
 import java.util.Collection;
@@ -17,12 +19,17 @@ import java.util.Collection;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
-public class Role {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    private Long id;
+public class Role extends JpaBaseIdentifiableObject {
+
+    @Size(max = 11)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
+    protected String uid;
+
+    /**
+     * The unique code for this object.
+     */
+    @Column(name = "code", unique = true)
+    protected String code;
 
     @Column(nullable = false, unique = true)
     private String name;

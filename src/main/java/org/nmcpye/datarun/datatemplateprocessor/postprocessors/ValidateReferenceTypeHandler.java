@@ -4,16 +4,16 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 
 /**
  * @author Hamza Assada 18/03/2025 <7amza.it@gmail.com>
  */
 public class ValidateReferenceTypeHandler
     extends AbstractFormElementHandler<FormDataElementConf> {
-    private final DataElement source;
+    private final DataTemplateElement source;
 
-    public ValidateReferenceTypeHandler(DataElement source) {
+    public ValidateReferenceTypeHandler(DataTemplateElement source) {
         this.source = source;
     }
 

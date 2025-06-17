@@ -50,5 +50,6 @@ public class CurrentUserDetailsImpl implements CurrentUserDetails {
     private final Set<String> managedTeamsUIDs;
     private final Set<String> userGroupsUIDs;
     private final Set<String> userFormsUIDs;
+    private final Set<String> userActiveFlowIds;
     private final List<UserFormAccess> formAccess;
 }

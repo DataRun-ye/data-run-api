@@ -4,11 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.nmcpye.datarun.common.IdScheme;
 import org.nmcpye.datarun.common.IdentifiableObject;
-import org.nmcpye.datarun.common.IdentifiableProperty;
-import org.nmcpye.datarun.utils.CodeGenerator;
+import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -32,8 +31,16 @@ import java.util.Objects;
 @JsonIgnoreProperties(value = {"new", "createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
 @Getter
 @Setter
+@NoArgsConstructor
 public abstract class JpaIdentifiableObject
-    implements IdentifiableObject<Long>, Persistable<Long>, Serializable {
+    implements IdentifiableObject<String>, Persistable<String>, Serializable {
+    /**
+     * ULID id (Universally Unique Lexicographically Sortable Identifier).
+     * Length: 26 characters, Base32 encoded.
+     */
+    @Id
+    @Column(name = "id", length = 26, updatable = false, nullable = false)
+    private String id;
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -54,17 +61,23 @@ public abstract class JpaIdentifiableObject
     @Column(name = "last_modified_date")
     protected Instant lastModifiedDate = Instant.now();
 
-    public JpaIdentifiableObject() {
-        setAutoFields();
-    }
-
     @Transient
     protected boolean isPersisted;
 
     @PostLoad
     @PostPersist
-    public void updateEntityState() {
+    protected void updateEntityState() {
         this.setIsPersisted();
+    }
+
+    /**
+     * Lifecycle hook to generate a ULID ID before persisting.
+     */
+    @PrePersist
+    public void prePersist() {
+        if (this.id == null) {
+            this.id = CodeGenerator.ULIDGenerator.nextString();
+        }
     }
 
     @JsonIgnore
@@ -88,43 +101,26 @@ public abstract class JpaIdentifiableObject
         return this;
     }
 
-    /**
-     * Set auto-generated fields on save or update
-     */
-    public void setAutoFields() {
-        if (getUid() == null || getUid().isEmpty()) {
-            setUid(CodeGenerator.generateUid());
-        }
-    }
+//    /**
+//     * Set auto-generated fields on save or update
+//     */
+//    public void setAutoFields() {
+//        if (getId() == null) {
+//            setId(CodeGenerator.ULIDGenerator.nextString());
+//        }
 
-    /**
-     * Returns the value of the property referred to by the given IdScheme.
-     *
-     * @param idScheme the IdScheme.
-     * @return the value of the property referred to by the IdScheme.
-     */
-    @Override
-    public String getPropertyValue(IdScheme idScheme) {
-        if (idScheme.isNull() || idScheme.is(IdentifiableProperty.UID)) {
-            return getUid();
-        } else if (idScheme.is(IdentifiableProperty.CODE)) {
-            return getCode();
-        } else if (idScheme.is(IdentifiableProperty.NAME)) {
-            return getName();
-        }
-
-        return null;
-    }
-
+    /// /        if (getUid() == null || getUid().isEmpty()) {
+    /// /            setUid(CodeGenerator.generateUid());
+    /// /        }
+//    }
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
         if (!(o instanceof JpaIdentifiableObject that)) return false;
-        return Objects.equals(getUid(), that.getUid());
+        return Objects.equals(getId(), that.getId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(getUid());
+        return Objects.hashCode(getId());
     }
 }

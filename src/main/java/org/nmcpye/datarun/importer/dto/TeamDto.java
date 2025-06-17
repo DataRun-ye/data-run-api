@@ -22,7 +22,6 @@ public class TeamDto extends AbstractBaseDto {
     private final String name;
     private final String description;
     private final Boolean disabled;
-    private final Boolean deleteClientData;
     private final Instant enabledFrom;
     private final Instant enabledTo;
 }

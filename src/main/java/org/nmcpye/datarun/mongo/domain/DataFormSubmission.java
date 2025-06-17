@@ -6,10 +6,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.enumeration.AssignmentStatus;
+import org.nmcpye.datarun.common.enumeration.FlowStatus;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.mongo.common.MongoSoftDeleteObject;
-import org.nmcpye.datarun.utils.CodeGenerator;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -76,9 +76,10 @@ public class DataFormSubmission extends MongoSoftDeleteObject {
     private String orgUnitName;
     private String activity;
     @Indexed(name = "submission_assignment_idx")
+    @Field("assignment")
     private String assignment;
     @Field("status")
-    private AssignmentStatus status;
+    private FlowStatus status;
     @Field("startEntryTime")
     private Instant startEntryTime;
     @Field("finishedEntryTime")

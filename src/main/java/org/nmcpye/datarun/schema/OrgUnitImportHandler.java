@@ -69,7 +69,7 @@ public class OrgUnitImportHandler implements ImportableEntityHandler<OrgUnit, Lo
         }
 
         if (parent.getId() != null) {
-            Long id = parent.getId();
+            String id = parent.getId();
             if (!orgUnitRepository.existsById(id)) {
                 issues.add(new ImportIssue("parent id",
                     id + " not found", Severity.ERROR));

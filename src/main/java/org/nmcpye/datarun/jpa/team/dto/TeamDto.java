@@ -1,19 +1,25 @@
 package org.nmcpye.datarun.jpa.team.dto;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.Value;
-import org.nmcpye.datarun.jpa.team.Team;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.nmcpye.datarun.common.uidgenerate.BaseDto;
 
-import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- * DTO for {@link Team}
+ * DTO for {@link org.nmcpye.datarun.jpa.team.Team}
+ *
+ * @author Hamza Assada 06/06/2025 <7amza.it@gmail.com>
  */
-@Value
-public class TeamDto implements Serializable {
-    @Size(max = 11)
-    String uid;
-    @NotNull
-    String code;
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+public class TeamDto extends BaseDto {
+    private String description;
+    private BaseDto activity;
+    private Set<BaseDto> users = new HashSet<>();
 }

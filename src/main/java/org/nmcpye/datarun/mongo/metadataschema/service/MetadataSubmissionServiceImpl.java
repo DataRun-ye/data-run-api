@@ -3,7 +3,7 @@ package org.nmcpye.datarun.mongo.metadataschema.service;
 import jakarta.el.PropertyNotFoundException;
 import org.apache.commons.lang3.NotImplementedException;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.flowinstance.repository.FlowInstanceRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
@@ -41,7 +41,7 @@ public class MetadataSubmissionServiceImpl
     private final MetadataSubmissionRepository repository;
     private final TeamRepository teamRepository;
     private final ActivityRepository activityRepository;
-    private final AssignmentRepository assignmentRepository;
+    private final FlowInstanceRepository flowInstanceRepository;
 
     private final OrgUnitRepository orgUnitRepository;
     private final SequenceGeneratorService sequenceGeneratorService;
@@ -49,7 +49,7 @@ public class MetadataSubmissionServiceImpl
     public MetadataSubmissionServiceImpl(
         MetadataSubmissionRepository repository,
         CacheManager cacheManager, MongoTemplate mongoTemplate,
-        ActivityRepository activityRepository, TeamRepository teamRepository, AssignmentRepository assignmentRepository,
+        ActivityRepository activityRepository, TeamRepository teamRepository, FlowInstanceRepository flowInstanceRepository,
         OrgUnitRepository orgUnitRepository,
         SequenceGeneratorService sequenceGeneratorService) {
         super(repository, cacheManager);
@@ -57,7 +57,7 @@ public class MetadataSubmissionServiceImpl
         this.mongoTemplate = mongoTemplate;
         this.activityRepository = activityRepository;
         this.teamRepository = teamRepository;
-        this.assignmentRepository = assignmentRepository;
+        this.flowInstanceRepository = flowInstanceRepository;
         this.orgUnitRepository = orgUnitRepository;
         this.sequenceGeneratorService = sequenceGeneratorService;
     }
@@ -82,7 +82,7 @@ public class MetadataSubmissionServiceImpl
                         throw new PropertyNotFoundException("OrgUnit not found: " + newSubmission.getResourceId());
                     });
 
-            case Assignment -> assignmentRepository.findByUid(newSubmission.getResourceId())
+            case Assignment -> flowInstanceRepository.findByUid(newSubmission.getResourceId())
                 .ifPresentOrElse((a) -> newSubmission.setResourceId(a.getUid()),
                     () -> {
                         throw new PropertyNotFoundException("Assignment not found: " + newSubmission.getResourceId());

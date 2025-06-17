@@ -1,20 +1,24 @@
 package org.nmcpye.datarun.common;
 
+import org.mapstruct.MappingTarget;
+import org.nmcpye.datarun.common.uidgenerate.BaseDto;
+
 import java.util.List;
 
 /**
  * Contract for a generic dto to entity mapper.
  *
- * @param <D> - DTO type parameter.
- * @param <E> - Entity type parameter.
+ * @param <DTO>    - DTO type parameter.
+ * @param <ENTITY> - Entity type parameter.
+ * @author Hamza Assada 07/08/2024 <7amza.it@gmail.com>
  */
 
-public interface BaseMapper<D, E> {
-    E toEntity(D dto);
+public interface BaseMapper<DTO extends BaseDto, ENTITY> {
+    ENTITY toEntity(DTO dto);
 
-    D toDto(E entity);
+    DTO toDto(ENTITY entity);
 
-//    List<E> toEntities(List<D> dtoList);
+    List<DTO> toDtoList(List<ENTITY> entityList);
 
-    List<D> toDtoList(List<E> entityList);
+    ENTITY partialUpdate(@MappingTarget ENTITY entity, DTO dto);
 }

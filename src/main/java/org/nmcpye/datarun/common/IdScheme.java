@@ -4,9 +4,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
 
-/**
- * @author Morten Olav Hansen <mortenoh@gmail.com>
- */
 public class IdScheme {
     public static final IdScheme NULL = new IdScheme(null);
 

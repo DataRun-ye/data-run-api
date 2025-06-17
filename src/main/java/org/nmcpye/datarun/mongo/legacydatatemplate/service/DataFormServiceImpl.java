@@ -96,7 +96,7 @@ public class DataFormServiceImpl
     @Override
     public Page<DataForm> getAccessibleForms(Pageable pageable) {
         // Fetch form template IDs for which the team has the specified permission
-        List<Long> userTeams = teamRepository
+        List<String> userTeams = teamRepository
             .findAllWithEagerRelation()
             .stream().map(Team::getId)
             .toList();

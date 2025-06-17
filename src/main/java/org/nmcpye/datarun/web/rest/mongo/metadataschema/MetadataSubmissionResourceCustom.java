@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.web.rest.mongo.metadataschema;
 
-import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
 import org.nmcpye.datarun.mongo.metadataschema.repository.MetadataSubmissionGranularRepository;
 import org.nmcpye.datarun.mongo.metadataschema.repository.MetadataSubmissionRepository;
@@ -18,7 +17,7 @@ import static org.nmcpye.datarun.web.rest.mongo.metadataschema.MetadataSubmissio
 import static org.nmcpye.datarun.web.rest.mongo.metadataschema.MetadataSubmissionResourceCustom.V1;
 
 /**
- * REST controller for managing {@link DataFormSubmission}.
+ * REST controller for managing {@link MetadataSubmission}.
  */
 @RestController
 @RequestMapping(value = {CUSTOM, V1})

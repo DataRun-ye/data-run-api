@@ -2,7 +2,6 @@ package org.nmcpye.datarun.jpa.common;
 
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
-import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.common.IdentifiableObjectService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -14,7 +13,7 @@ import java.util.List;
  * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
  */
 public interface JpaIdentifiableObjectService<T extends JpaIdentifiableObject>
-    extends IdentifiableObjectService<T, Long> {
+    extends IdentifiableObjectService<T, String> {
 
     static <T extends JpaIdentifiableObject> Specification<T> hasUid(String uid) {
         return (root, query, criteriaBuilder) -> uid == null ?

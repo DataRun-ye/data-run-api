@@ -5,7 +5,6 @@ package org.nmcpye.datarun.common.translation;
  * mapping this translation with the object property name. The capitol Enum
  * string is used as a key when storing translation in Jsonb format.
  *
- * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
 public enum TranslationProperty {
     NAME("name"),

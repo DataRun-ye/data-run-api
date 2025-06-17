@@ -2,15 +2,12 @@ package org.nmcpye.datarun.importer.dto;
 
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.jpa.assignmenttype.AssignmentType;
-
-import java.io.Serializable;
+import org.nmcpye.datarun.jpa.flowtype.FlowType;
 
 /**
- * DTO for {@link org.nmcpye.datarun.jpa.assignmenttype.AssignmentType}
+ * DTO for {@link FlowType}
  */
 @AllArgsConstructor
 @Getter
@@ -20,7 +17,7 @@ public class AssignmentTypeDto extends AbstractBaseDto {
     private final String uid;
     private final String code;
     private final String name;
-    private final AssignmentType.PlanningMode planningMode;
-    private final AssignmentType.SubmissionMode submissionMode;
+    private final FlowType.PlanningMode planningMode;
+    private final FlowType.SubmissionMode submissionMode;
     private final ActivityDto activity;
 }

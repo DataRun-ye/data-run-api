@@ -19,14 +19,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-import static org.nmcpye.datarun.web.rest.mongo.submission.DataFormSubmissionResource.CUSTOM;
-import static org.nmcpye.datarun.web.rest.mongo.submission.DataFormSubmissionResource.V1;
-
 /**
  * REST controller for managing {@link DataFormSubmission}.
  */
 @RestController
-@RequestMapping(value = {CUSTOM, V1})
+@RequestMapping(value = {DataFormSubmissionResource.CUSTOM, DataFormSubmissionResource.V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class DataFormSubmissionResource
     extends MongoBaseResource<DataFormSubmission> {

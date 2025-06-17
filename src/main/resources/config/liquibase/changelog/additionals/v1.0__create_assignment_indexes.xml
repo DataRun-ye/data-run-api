@@ -6,27 +6,27 @@
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.19.xsd">
 
     <!-- Enable pg_trgm extension for GIN indexes (if not already enabled) -->
-    <changeSet id="enable_assignment_pg_trgm" author="Hamza">
+    <changeSet id="enable_flow_instance_pg_trgm" author="Hamza">
         <sql>
             CREATE EXTENSION IF NOT EXISTS pg_trgm;
         </sql>
     </changeSet>
 
     <!-- Index for ancestor queries (GIN with gin_trgm_ops) -->
-    <changeSet id="create_assignment_gin_path_index" author="Hamza">
+    <changeSet id="create_flow_instance_gin_path_index" author="Hamza">
         <!-- For ancestor queries (array operations) -->
         <sql>
-            CREATE INDEX IF NOT EXISTS idx_assignment_path_gin
-                ON assignment USING GIN (path gin_trgm_ops);
+            CREATE INDEX IF NOT EXISTS idx_flow_instance_path_gin
+                ON flowInstance USING GIN (path gin_trgm_ops);
         </sql>
     </changeSet>
 
     <!-- Index for descendant queries (varchar_pattern_ops) -->
-    <changeSet id="create_assignment_varchar_pattern_index" author="Hamza">
+    <changeSet id="create_flow_instance_varchar_pattern_index" author="Hamza">
         <!-- For descendant queries (path prefix matching) -->
         <sql>
-            CREATE INDEX IF NOT EXISTS idx_assignment_path_prefix
-                ON assignment (path varchar_pattern_ops);
+            CREATE INDEX IF NOT EXISTS idx_flow_instance_path_prefix
+                ON flowInstance (path varchar_pattern_ops);
         </sql>
     </changeSet>
 

@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.web.rest.v1.datastagedefinition;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.jpa.datastage.DataStageDefinition;
-import org.nmcpye.datarun.jpa.datastage.repository.DataStageDefinitionRepository;
-import org.nmcpye.datarun.jpa.datastage.service.DataStageDefinitionService;
+import org.nmcpye.datarun.jpa.stagedefinition.StageDefinition;
+import org.nmcpye.datarun.jpa.stagedefinition.repository.StageDefinitionRepository;
+import org.nmcpye.datarun.jpa.stagedefinition.service.DataStageDefinitionService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
@@ -17,20 +17,20 @@ import java.util.List;
 
 
 /**
- * REST controller for managing {@link DataStageDefinition}.
+ * REST controller for managing {@link StageDefinition}.
  */
 @RestController
 @RequestMapping(value = {DataStageDefinitionResource.V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 @Slf4j
-public class DataStageDefinitionResource extends JpaBaseResource<DataStageDefinition> {
+public class DataStageDefinitionResource extends JpaBaseResource<StageDefinition> {
     protected static final String NAME = "/dataStageDefinitions";
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private final DataStageDefinitionService stageDefinitionService;
 
     protected DataStageDefinitionResource(DataStageDefinitionService service,
-                                          DataStageDefinitionRepository repository) {
+                                          StageDefinitionRepository repository) {
         super(service, repository);
         this.stageDefinitionService = service;
     }
@@ -42,19 +42,19 @@ public class DataStageDefinitionResource extends JpaBaseResource<DataStageDefini
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<DataStageDefinition> entities) {
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<StageDefinition> entities) {
         return super.saveAll(entities);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveOne(DataStageDefinition entity) {
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(StageDefinition entity) {
         return super.saveOne(entity);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<?> saveReturnSaved(DataStageDefinition entity) {
+    public ResponseEntity<?> saveReturnSaved(StageDefinition entity) {
         return super.saveReturnSaved(entity);
     }
 

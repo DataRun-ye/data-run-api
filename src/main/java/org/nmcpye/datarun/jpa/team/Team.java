@@ -11,20 +11,20 @@ import org.apache.commons.lang3.stream.Streams;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
-import org.nmcpye.datarun.jpa.activity.Activity;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.common.NameableObject;
 import org.nmcpye.datarun.common.enumeration.EntityScope;
 import org.nmcpye.datarun.common.enumeration.FormPermission;
+import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
 import org.nmcpye.datarun.jpa.user.User;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * A Team.
+ * @author Hamza Assada 02/06/2023 <7amza.it@gmail.com>
  */
 @Entity
 @Table(name = "team", uniqueConstraints = {
@@ -35,14 +35,14 @@ import java.util.stream.Collectors;
 @Setter
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
 public class Team extends JpaBaseIdentifiableObject {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+//    @SequenceGenerator(name = "sequenceGenerator")
+//    @Column(name = "id")
+//    protected Long id;
 
     @Size(max = 11)
-    @Column(name = "uid", length = 11, nullable = false, unique = true)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
 
     /**
@@ -63,11 +63,8 @@ public class Team extends JpaBaseIdentifiableObject {
     @Column(name = "disabled")
     private Boolean disabled = false;
 
-    @Column(name = "delete_client_data")
-    private Boolean deleteClientData = false;
-
     @ManyToOne
-    @JsonIgnoreProperties(value = {"project", "translations", "assignments"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"project", "translations", "flowRuns"}, allowSetters = true)
     @JsonSerialize(contentAs = NameableObject.class)
     private Activity activity;
 
@@ -85,27 +82,21 @@ public class Team extends JpaBaseIdentifiableObject {
         joinColumns = @JoinColumn(name = "team_id"),
         inverseJoinColumns = @JoinColumn(name = "managed_team_id")
     )
-    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
+    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "flowRuns",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<Team> managedTeams = new HashSet<>();
 
     @ManyToMany(mappedBy = "managedTeams")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
+    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "flowRuns",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
     private Set<Team> managedByTeams = new HashSet<>();
-
-    @Column(name = "enabled_from")
-    private Instant enabledFrom;
-
-    @Column(name = "enabled_to")
-    private Instant enabledTo;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "team")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
-    private Set<Assignment> assignments = new HashSet<>();
+    private Set<FlowInstance> flowInstances = new HashSet<>();
 
     @Type(JsonType.class)
     @Column(name = "form_permissions", columnDefinition = "jsonb")
@@ -158,18 +149,18 @@ public class Team extends JpaBaseIdentifiableObject {
         return Collections.emptySet();
     }
 
-    public void setAssignments(Set<Assignment> assignments) {
-        if (this.assignments != null) {
-            this.assignments.forEach(i -> i.setTeam(null));
+    public void setFlowInstances(Set<FlowInstance> flowInstances) {
+        if (this.flowInstances != null) {
+            this.flowInstances.forEach(i -> i.setTeam(null));
         }
-        if (assignments != null) {
-            assignments.forEach(i -> i.setTeam(this));
+        if (flowInstances != null) {
+            flowInstances.forEach(i -> i.setTeam(this));
         }
-        this.assignments = assignments;
+        this.flowInstances = flowInstances;
     }
 
-    public Team assignments(Set<Assignment> assignments) {
-        this.setAssignments(assignments);
+    public Team assignments(Set<FlowInstance> flowInstances) {
+        this.setFlowInstances(flowInstances);
         return this;
     }
 }

@@ -8,6 +8,8 @@ import java.util.List;
 
 /**
  * Utility repository to load bag relationships based on https://vladmihalcea.com/hibernate-multiplebagfetchexception/
+ *
+ * @author Hamza Assada 18/01/2022
  */
 public class OrgUnitRepositoryWithBagRelationshipsImpl
     implements OrgUnitRepositoryWithBagRelationships {

@@ -43,16 +43,6 @@ public interface IdentifiableObjectManager {
     Optional<? extends JpaIdentifiableObject> find(@Nonnull String uid);
 
     /**
-     * Lookup objects of a specific type by database ID.
-     *
-     * @param type the object class type.
-     * @param id   object's database ID
-     * @return the found object
-     */
-    @CheckForNull
-    <T extends JpaIdentifiableObject> T get(@Nonnull Class<T> type, Long id);
-
-    /**
      * Retrieves the object of the given type and UID, or null if no object
      * exists.
      *
@@ -157,7 +147,7 @@ public interface IdentifiableObjectManager {
     <T extends JpaIdentifiableObject> List<T> loadByUid(@Nonnull Class<T> type, @CheckForNull Collection<String> uids)
         throws IllegalQueryException;
 
-    <T extends JpaIdentifiableObject> List<T> getById(Class<T> clazz, Collection<Long> ids);
+    <T extends JpaIdentifiableObject> List<T> getById(Class<T> clazz, Collection<String> ids);
 
 //    <T extends JpaIdentifiableObject> List<T> getOrdered(Class<T> clazz, IdScheme idScheme, Collection<String> values);
 
@@ -183,15 +173,13 @@ public interface IdentifiableObjectManager {
 
     <T extends JpaIdentifiableObject> List<T> getObjects(Class<T> clazz, IdentifiableProperty property, Collection<String> identifiers);
 
-    <T extends JpaIdentifiableObject> List<T> getObjects(Class<T> clazz, Collection<Long> identifiers);
+    <T extends JpaIdentifiableObject> List<T> getObjects(Class<T> clazz, Collection<String> identifiers);
 
     <T extends JpaIdentifiableObject> T getObject(Class<T> clazz, IdentifiableProperty property, String value);
 
     <T extends JpaIdentifiableObject> T getObject(Class<T> clazz, IdScheme idScheme, String value);
 
     JpaIdentifiableObject getObject(String uid, String simpleClassName);
-
-    JpaIdentifiableObject getObject(Long id, String simpleClassName);
 
     <T extends JpaIdentifiableObject> int getCount(Class<T> clazz);
 //

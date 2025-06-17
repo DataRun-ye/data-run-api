@@ -4,10 +4,11 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.enumeration.AssignmentStatus;
+import org.nmcpye.datarun.common.enumeration.FlowStatus;
+import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
 
 /**
- * DTO for {@link org.nmcpye.datarun.jpa.assignment.Assignment}
+ * DTO for {@link FlowInstance}
  */
 @AllArgsConstructor
 @Getter
@@ -19,7 +20,7 @@ public class AssignmentDto extends AbstractBaseDto {
     private final OrgUnitDto orgUnit;
     private final TeamDto team;
     private final AssignmentDto parent;
-    private final AssignmentStatus status;
+    private final FlowStatus status;
     private final AssignmentTypeDto assignmentType;
     private final String entityInstanceId;
     private final String stageStates;

@@ -8,6 +8,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,7 +72,7 @@ public class CreatUserDetailService {
             .userFormsUIDs(userFormAccess.stream()
                 .map(UserFormAccess::getForm)
                 .collect(Collectors.toSet()))
-
+            .userActiveFlowIds(Collections.emptySet())
             .formAccess(userFormAccess)
 
             .build();

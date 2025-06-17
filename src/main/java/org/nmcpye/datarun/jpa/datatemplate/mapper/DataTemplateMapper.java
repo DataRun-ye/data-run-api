@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.jpa.datatemplate.mapper;
 
 import org.mapstruct.*;
+import org.nmcpye.datarun.common.BaseMapper;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateDto;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.mongo.datatemplateversion.dto.FormTemplateVersionDto;
-import org.nmcpye.datarun.common.BaseMapper;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,
     componentModel = MappingConstants.ComponentModel.SPRING)
@@ -14,12 +14,15 @@ public interface DataTemplateMapper
     @Mappings({
         @Mapping(target = "versionUid", ignore = true),
         @Mapping(target = "versionNumber", ignore = true),
-        @Mapping(target = "uid", source = "uid")
+        @Mapping(target = "uid", source = "uid"),
+        @Mapping(target = "id", source = "id")
     })
     DataTemplate fromInstanceDto(DataTemplateInstanceDto dto);
 
     @Mappings({
+        @Mapping(target = "id", source = "templateDto.id"),
         @Mapping(target = "uid", source = "templateDto.uid"),
+        @Mapping(target = "code", source = "templateDto.code"),
         @Mapping(target = "deleted", source = "templateDto.deleted"),
         @Mapping(target = "name", source = "templateDto.name"),
         @Mapping(target = "description", source = "templateDto.description"),

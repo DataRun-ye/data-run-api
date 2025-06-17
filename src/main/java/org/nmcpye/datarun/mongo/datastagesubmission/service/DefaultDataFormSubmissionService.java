@@ -5,7 +5,7 @@ import org.nmcpye.datarun.common.FindExistingSubmissionsDto;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.flowinstance.repository.FlowInstanceRepository;
 import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
 import org.nmcpye.datarun.mongo.common.DefaultMongoSoftDeleteService;
 import org.nmcpye.datarun.mongo.datastagesubmission.repository.DataFormSubmissionRepository;
@@ -39,7 +39,7 @@ public class DefaultDataFormSubmissionService
 
     private final DataFormSubmissionRepository repository;
     private final DataFormSubmissionHistoryService submissionHistoryService;
-    private final AssignmentRepository assignmentRepository;
+    private final FlowInstanceRepository flowInstanceRepository;
     private final SequenceGeneratorService sequenceGeneratorService;
     private final SubmissionMaintenanceService maintenanceService;
     private final DataTemplateVersionRepository versionRepository;
@@ -49,7 +49,7 @@ public class DefaultDataFormSubmissionService
         DataFormSubmissionRepository repository,
         CacheManager cacheManager,
         DataFormSubmissionHistoryService submissionHistoryService,
-        AssignmentRepository assignmentRepository,
+        FlowInstanceRepository flowInstanceRepository,
         SequenceGeneratorService sequenceGeneratorService,
         SubmissionMaintenanceService maintenanceService,
         DataTemplateVersionRepository versionRepository,
@@ -57,7 +57,7 @@ public class DefaultDataFormSubmissionService
         super(repository, cacheManager);
         this.repository = repository;
         this.submissionHistoryService = submissionHistoryService;
-        this.assignmentRepository = assignmentRepository;
+        this.flowInstanceRepository = flowInstanceRepository;
         this.sequenceGeneratorService = sequenceGeneratorService;
         this.maintenanceService = maintenanceService;
         this.versionRepository = versionRepository;
@@ -119,7 +119,7 @@ public class DefaultDataFormSubmissionService
                     new ErrorMessage(ErrorCode.E1114, "Form", submission.getForm() + ":" + submission.getVersion()));
             });
 
-        assignmentRepository.findByUid(submission.getAssignment())
+        flowInstanceRepository.findByUid(submission.getAssignment())
             .ifPresentOrElse((a) -> {
                     submission.setAssignment(a.getUid());
                     submission.setOrgUnit(a.getOrgUnit().getUid());
@@ -181,10 +181,10 @@ public class DefaultDataFormSubmissionService
     }
 
     private void addEntryToHistory(DataFormSubmission dataFormSubmission) {
-        assignmentRepository.findByUid(dataFormSubmission.getAssignment())
+        flowInstanceRepository.findByUid(dataFormSubmission.getAssignment())
             .ifPresentOrElse((assignment -> {
                 assignment.setStatus(dataFormSubmission.getStatus());
-                assignmentRepository.save(assignment);
+                flowInstanceRepository.save(assignment);
             }), () -> {
                 throw new IllegalQueryException(ErrorCode.E1004, getClazz().getSimpleName(),
                     dataFormSubmission.getUid());

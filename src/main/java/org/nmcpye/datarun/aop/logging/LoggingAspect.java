@@ -16,8 +16,10 @@ import java.util.Arrays;
 
 /**
  * Aspect for logging execution of service and repository Spring components.
- *
+ * <p>
  * By default, it only runs with the "dev" profile.
+ *
+ * @author Hamza Assada 01/08/2023 <7amza.it@gmail.com>
  */
 @Aspect
 public class LoggingAspect {
@@ -33,8 +35,8 @@ public class LoggingAspect {
      */
     @Pointcut(
         "within(@org.springframework.stereotype.Repository *)" +
-        " || within(@org.springframework.stereotype.Service *)" +
-        " || within(@org.springframework.web.bind.annotation.RestController *)"
+            " || within(@org.springframework.stereotype.Service *)" +
+            " || within(@org.springframework.web.bind.annotation.RestController *)"
     )
     public void springBeanPointcut() {
         // Method is empty as this is just a Pointcut, the implementations are in the advices.
@@ -49,7 +51,7 @@ public class LoggingAspect {
             " || within(org.nmcpye.datarun.jpa.common..*)" +
             " || within(org.nmcpye.datarun.mongo..*)" +
             " || within(org.nmcpye.datarun.mongo..*)" +
-        " || within(org.nmcpye.datarun.web.rest..*)" +
+            " || within(org.nmcpye.datarun.web.rest..*)" +
             " || within(org.nmcpye.datarun.web.rest.mongo..*)" +
             " || within(org.nmcpye.datarun.common..*)"
     )
@@ -71,7 +73,7 @@ public class LoggingAspect {
      * Advice that logs methods throwing exceptions.
      *
      * @param joinPoint join point for advice.
-     * @param e exception.
+     * @param e         exception.
      */
     @AfterThrowing(pointcut = "applicationPackagePointcut() && springBeanPointcut()", throwing = "e")
     public void logAfterThrowing(JoinPoint joinPoint, Throwable e) {

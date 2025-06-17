@@ -7,11 +7,11 @@ import org.ehcache.jsr107.Eh107Configuration;
 import org.hibernate.cache.jcache.ConfigSettings;
 import org.nmcpye.datarun.caching.UserKeyGenerator;
 import org.nmcpye.datarun.jpa.activity.Activity;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
 import org.nmcpye.datarun.jpa.dataelementgroupset.DataElementGroupSet;
 import org.nmcpye.datarun.jpa.entityauditevent.EntityAuditEvent;
+import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
 import org.nmcpye.datarun.jpa.optionset.OptionSet;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunitgroup.OrgUnitGroup;
@@ -103,8 +103,8 @@ public class CacheConfiguration {
             createCache(cm, Activity.class.getName());
             createCache(cm, Activity.class.getName() + ".assignments");
 
-            createCache(cm, Assignment.class.getName());
-            createCache(cm, Assignment.class.getName() + ".children");
+            createCache(cm, FlowInstance.class.getName());
+            createCache(cm, FlowInstance.class.getName() + ".children");
 
             createCache(cm, Team.class.getName());
             createCache(cm, Team.class.getName() + ".assignments");
@@ -124,8 +124,8 @@ public class CacheConfiguration {
             createCache(cm, OrgUnitGroup.class.getName() + ".orgUnitGroupSets");
             createCache(cm, OrgUnitGroupSet.class.getName());
             createCache(cm, OrgUnitGroupSet.class.getName() + ".orgUnitGroups");
-            createCache(cm, DataElement.class.getName());
-            createCache(cm, DataElement.class.getName() + ".dataElementGroups");
+            createCache(cm, DataTemplateElement.class.getName());
+            createCache(cm, DataTemplateElement.class.getName() + ".dataElementGroups");
             createCache(cm, DataElementGroup.class.getName());
             createCache(cm, DataElementGroup.class.getName() + ".dataElements");
             createCache(cm, DataElementGroup.class.getName() + ".dataElementGroupSets");

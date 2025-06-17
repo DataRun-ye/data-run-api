@@ -5,6 +5,8 @@ import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
 
 /**
  * Service Interface for managing {@link Activity}.
+ *
+ * @author Hamza Assada 11/02/2022
  */
 public interface ActivityService
     extends JpaIdentifiableObjectService<Activity> {

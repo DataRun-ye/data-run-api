@@ -1,10 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
 
-    <changeSet id="00000000000000" author="jhipster">
+<changeSet id="00000000000000" author="jhipster">
         <createSequence sequenceName="sequence_generator" startValue="1050" incrementBy="50"/>
     </changeSet>
 
@@ -14,37 +16,35 @@
     -->
     <changeSet id="00000000000001" author="jhipster">
         <createTable tableName="app_user">
-            <column name="id" type="bigint">
-                <constraints primaryKey="true" nullable="false"/>
+            <column name="id" type="VARCHAR(26)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_app_user"/>
             </column>
-            <column name="uid" type="varchar(11)">
-                <constraints nullable="true" unique="true" uniqueConstraintName="ux_user__uid" />
-            </column>
-            <column name="login" type="varchar(50)">
-                <constraints unique="true" nullable="false" uniqueConstraintName="ux_user_login"/>
-            </column>
-            <column name="password_hash" type="varchar(60)"/>
-            <column name="first_name" type="varchar(50)"/>
-            <column name="last_name" type="varchar(50)"/>
-            <column name="email" type="VARCHAR(254)">
-                <constraints unique="true" nullable="true" uniqueConstraintName="ux_user_email"/>
-            </column>
-            <column name="image_url" type="varchar(256)"/>
-            <column name="activated" type="boolean" valueBoolean="false">
-                <constraints nullable="false" />
-            </column>
-            <column name="lang_key" type="varchar(10)"/>
-            <column name="activation_key" type="varchar(20)"/>
-            <column name="reset_key" type="varchar(20)"/>
-            <column name="created_by" type="varchar(50)">
+            <column name="uid" type="VARCHAR(11)"/>
+            <column name="mobile" type="VARCHAR(20)"/>
+            <column name="login" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
-            <column name="created_date" type="timestamp"/>
-            <column name="reset_date" type="timestamp">
-                <constraints nullable="true"/>
+            <column name="password_hash" type="VARCHAR(60)">
+                <constraints nullable="false"/>
             </column>
-            <column name="last_modified_by" type="varchar(50)"/>
-            <column name="last_modified_date" type="timestamp"/>
+            <column name="first_name" type="VARCHAR(50)"/>
+            <column name="last_name" type="VARCHAR(50)"/>
+            <column name="email" type="VARCHAR(254)"/>
+            <column name="activated" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lang_key" type="VARCHAR(10)"/>
+            <column name="image_url" type="VARCHAR(256)"/>
+            <column name="activation_key" type="VARCHAR(20)"/>
+            <column name="reset_key" type="VARCHAR(20)"/>
+            <column name="reset_date" type="DATETIME"/>
+            <column name="translations" type="jsonb"/>
+            <column name="created_by" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="DATETIME"/>
+            <column name="last_modified_by" type="VARCHAR(50)"/>
+            <column name="last_modified_date" type="DATETIME"/>
         </createTable>
 
         <createTable tableName="app_authority">
@@ -54,15 +54,13 @@
         </createTable>
 
         <createTable tableName="app_user_authority">
-            <column name="user_id" type="bigint">
-                <constraints nullable="false"/>
+            <column name="user_id" type="VARCHAR(26)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_app_user_authority"/>
             </column>
-            <column name="authority_name" type="varchar(50)">
-                <constraints nullable="false"/>
+            <column name="authority_name" type="VARCHAR(50)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_app_user_authority"/>
             </column>
         </createTable>
-
-        <addPrimaryKey columnNames="user_id, authority_name" tableName="app_user_authority"/>
 
         <addForeignKeyConstraint baseColumnNames="authority_name"
                                  baseTableName="app_user_authority"
@@ -75,49 +73,44 @@
                                  constraintName="fk_user_id"
                                  referencedColumnNames="id"
                                  referencedTableName="app_user"/>
-
-        <addNotNullConstraint   columnName="password_hash"
-                                columnDataType="varchar(60)"
-                                tableName="app_user"/>
         <loadData
-                  file="config/liquibase/data/authority.csv"
-                  separator=";"
-                  tableName="app_authority"
-                  usePreparedStatements="true">
+            file="config/liquibase/data/authority.csv"
+            separator=";"
+            tableName="app_authority"
+            usePreparedStatements="true">
             <column name="name" type="string"/>
         </loadData>
         <loadData
-                  file="config/liquibase/data/user.csv"
-                  separator=";"
-                  tableName="app_user"
-                  usePreparedStatements="true">
+            file="config/liquibase/data/user.csv"
+            separator=";"
+            tableName="app_user"
+            usePreparedStatements="true">
             <column name="id" type="numeric"/>
             <column name="uid" type="string"/>
             <column name="activated" type="boolean"/>
             <column name="created_date" type="timestamp"/>
         </loadData>
         <loadData
-                  file="config/liquibase/data/user_authority.csv"
-                  separator=";"
-                  tableName="app_user_authority"
-                  usePreparedStatements="true">
+            file="config/liquibase/data/user_authority.csv"
+            separator=";"
+            tableName="app_user_authority"
+            usePreparedStatements="true">
             <column name="user_id" type="numeric"/>
         </loadData>
-        <dropDefaultValue tableName="app_user" columnName="created_date" columnDataType="${datetimeType}"/>
+<!--        <dropDefaultValue tableName="app_user" columnName="created_date" columnDataType="${datetimeType}"/>-->
     </changeSet>
-
-    <changeSet author="jhipster" id="00000000000002" context="test">
-        <createTable tableName="app_date_time_wrapper">
-            <column  name="id" type="BIGINT">
-                <constraints primaryKey="true" primaryKeyName="app_date_time_wrapperPK"/>
-            </column>
-            <column name="instant" type="timestamp"/>
-            <column name="local_date_time" type="timestamp"/>
-            <column name="offset_date_time" type="timestamp"/>
-            <column name="zoned_date_time" type="timestamp"/>
-            <column name="local_time" type="time"/>
-            <column name="offset_time" type="time"/>
-            <column name="local_date" type="date"/>
-        </createTable>
-    </changeSet>
+    <!--    <changeSet author="jhipster" id="00000000000002" context="test">-->
+    <!--        <createTable tableName="app_date_time_wrapper">-->
+    <!--            <column  name="id" type="BIGINT">-->
+    <!--                <constraints primaryKey="true" primaryKeyName="app_date_time_wrapperPK"/>-->
+    <!--            </column>-->
+    <!--            <column name="instant" type="timestamp"/>-->
+    <!--            <column name="local_date_time" type="timestamp"/>-->
+    <!--            <column name="offset_date_time" type="timestamp"/>-->
+    <!--            <column name="zoned_date_time" type="timestamp"/>-->
+    <!--            <column name="local_time" type="time"/>-->
+    <!--            <column name="offset_time" type="time"/>-->
+    <!--            <column name="local_date" type="date"/>-->
+    <!--        </createTable>-->
+    <!--    </changeSet>-->
 </databaseChangeLog>

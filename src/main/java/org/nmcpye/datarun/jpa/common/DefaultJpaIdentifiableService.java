@@ -31,7 +31,7 @@ import java.util.Optional;
  */
 public abstract class DefaultJpaIdentifiableService
     <T extends JpaIdentifiableObject>
-    extends DefaultIdentifiableObjectService<T, Long>
+    extends DefaultIdentifiableObjectService<T, String>
     implements JpaIdentifiableObjectService<T> {
     private static final Logger log = LoggerFactory.getLogger(DefaultJpaIdentifiableService.class);
 

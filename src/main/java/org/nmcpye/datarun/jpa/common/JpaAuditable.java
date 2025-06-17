@@ -29,7 +29,6 @@ import java.time.Instant;
 @NoArgsConstructor
 public abstract class JpaAuditable<ID>
         implements Persistable<ID>, Serializable {
-
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -51,6 +50,10 @@ public abstract class JpaAuditable<ID>
 
     @Transient
     protected boolean isPersisted;
+
+    public abstract ID getId();
+
+    public abstract void setId(ID id);
 
     @PostLoad
     @PostPersist

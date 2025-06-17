@@ -4,13 +4,13 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.enumeration.AssignmentStatus;
+import org.nmcpye.datarun.common.enumeration.FlowStatus;
+import org.nmcpye.datarun.jpa.stagesubmission.StageInstance;
 
 import java.time.Instant;
-import java.util.Set;
 
 /**
- * DTO for {@link org.nmcpye.datarun.jpa.datainstance.DataInstance}
+ * DTO for {@link StageInstance}
  */
 @AllArgsConstructor
 @Getter
@@ -19,7 +19,7 @@ public class DataInstanceDto extends AbstractBaseDto {
     @Size(max = 11)
     private final String uid;
     private final Boolean deleted;
-    private final AssignmentStatus assignmentStatus;
+    private final FlowStatus flowStatus;
     private final AssignmentDto assignment;
     private final EntityInstanceDto entityInstance;
     private final String orgUnitUid;
@@ -30,5 +30,5 @@ public class DataInstanceDto extends AbstractBaseDto {
     private final Integer dataInstanceVer;
     private final Instant startEntryTime;
     private final Instant finishedEntryTime;
-    private final Set<DataValueDto> dataValues;
+//    private final Set<DataValueDto> dataValues;
 }

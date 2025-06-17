@@ -14,10 +14,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * @author Hamza Assada 11/02/2022
+ */
 @Service
 @Primary
 @Transactional
-public class DefaultActivityService extends DefaultJpaIdentifiableService<Activity> implements ActivityService {
+public class DefaultActivityService
+    extends DefaultJpaIdentifiableService<Activity>
+    implements ActivityService {
 
     private final ActivityRepository repository;
 

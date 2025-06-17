@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.enumeration.AssignmentStatus;
+import org.nmcpye.datarun.common.enumeration.FlowStatus;
 import org.nmcpye.datarun.mongo.common.MongoBaseIdentifiableObject;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -61,9 +61,10 @@ public class DataFormSubmissionHistory
     private String orgUnitCode;
     private String orgUnitName;
     private String activity;
+    @Field("assignment")
     private String assignment;
     @Field("status")
-    private AssignmentStatus status;
+    private FlowStatus status;
     @Field("deleted")
     private Boolean deleted;
     private Map<String, Object> formData;

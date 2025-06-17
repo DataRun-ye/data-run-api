@@ -28,7 +28,7 @@
 //    protected Long id;
 //
 //    @Size(max = 11)
-//    @Column(name = "uid", length = 11, nullable = false, unique = true)
+//    @Column(name = "uid", length = 11, updatable = false, unique = true)
 //    protected String uid;
 //
 //    /**

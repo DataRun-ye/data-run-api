@@ -2,10 +2,11 @@ package org.nmcpye.datarun.jpa.orgunit.service;
 
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
-import org.nmcpye.datarun.jpa.team.Team;
 
 /**
- * Service Interface for managing {@link Team}.
+ * Service Interface for managing {@link OrgUnit}.
+ *
+ * @author Hamza Assada 18/01/2022
  */
 public interface OrgUnitService
     extends JpaIdentifiableObjectService<OrgUnit> {

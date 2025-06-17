@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.jpa.user.service;
 
 import org.apache.commons.lang3.StringUtils;
+import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
@@ -13,7 +14,6 @@ import org.nmcpye.datarun.jpa.userauthority.repository.AuthorityRepository;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.service.EmailAlreadyUsedException;
 import org.nmcpye.datarun.service.dto.UserDTO;
-import org.nmcpye.datarun.utils.CodeGenerator;
 import org.nmcpye.datarun.web.rest.errors.InvalidPasswordException;
 import org.nmcpye.datarun.web.rest.errors.LoginAlreadyUsedException;
 import org.nmcpye.datarun.web.rest.vm.ManagedUserVM;

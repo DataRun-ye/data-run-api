@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.jpa.entityattribute;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import de.huxhorn.sulky.ulid.ULID;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -14,44 +13,57 @@ import org.nmcpye.datarun.jpa.common.JpaAuditable;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.entityinstance.EntityInstance;
 
-import java.io.Serializable;
 import java.util.Objects;
 
 
 /**
- * A EntityAttributeValue.
+ * Stores a single attribute value for an EntityInstance, linked to its EntityAttributeType.
+ * This forms the "value" part of the EAV model for domain objects.
+ *
+ * @author Hamza Assada 29/05/2025 <7amza.it@gmail.com>
  */
 @Entity
 @Table(name = "entity_attribute_value",
-    indexes = {@Index(name = "idx_entity_attribute_instance_uid",
-        columnList = "entity_attribute_uid")},
     uniqueConstraints = {
         @UniqueConstraint(name = "uc_entity_attribute_instance",
-            columnNames = {"entity_instance_id", "entity_attribute_uid"})
+            columnNames = {"entity_instance_id", "entity_attribute_id"})
     })
 @Getter
 @Setter
 @NoArgsConstructor
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
-public class EntityAttributeValue
-    extends JpaAuditable<ULID.Value> implements Serializable {
+public class EntityAttributeValue extends JpaAuditable<Long> {
     @Id
-    @Column(name = "id", length = 26, updatable = false, nullable = false)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Assuming auto-increment for this table's ID
+    private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    /**
+     * the EntityInstance it belongs to.
+     */
+    @ManyToOne(optional = false)
     @JoinColumn(name = "entity_instance_id", nullable = false)
-//    @JsonIgnoreProperties(value = {"entityAttributeValues", "entityType", "entityInstanceOwners"}, allowSetters = true)
     @JsonSerialize(contentAs = JpaIdentifiableObject.class)
-    protected EntityInstance entityInstance;
+    private EntityInstance entityInstance;
 
-    @Column(name = "entity_attribute_uid", nullable = false)
-    private String entityAttributeUid;
+    //    /**
+//     * the definition of this attribute.
+//     */
+//    @ManyToOne(optional = false)
+//    @JoinColumn(name = "entity_attribute_type_id", nullable = false)
+//    @JsonSerialize(contentAs = JpaIdentifiableObject.class)
+//    private EntityAttributeType attributeType;
+    @Column(name = "entity_attribute_id", nullable = false)
+    private String entityAttributeId;
 
+
+    /**
+     * The actual value of the attribute, stored as String to be flexible.
+     */
     @Size(max = 50000)
-    @Column(name = "value", length = 50000)
+    @Column(name = "attribute_value", nullable = false, length = 50000)
     private String value;
+
 
     @Override
     public final boolean equals(Object o) {

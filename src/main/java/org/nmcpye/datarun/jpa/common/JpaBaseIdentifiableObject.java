@@ -12,7 +12,9 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.IdScheme;
 import org.nmcpye.datarun.common.IdentifiableObject;
+import org.nmcpye.datarun.common.IdentifiableProperty;
 import org.nmcpye.datarun.common.translation.Translatable;
 import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -22,6 +24,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
@@ -30,7 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Getter
 @Setter
 @NoArgsConstructor
-abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject {
+abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
+    implements Comparable<JpaBaseIdentifiableObject> {
 
     /**
      * Set of available object translation, normally filtered by locale.
@@ -66,7 +70,7 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject {
      * after a non-null display name.
      */
     @Override
-    public int compareTo(IdentifiableObject object) {
+    public int compareTo(JpaBaseIdentifiableObject object) {
         if (this.getDisplayName() == null) {
             return object.getDisplayName() == null ? 0 : 1;
         }
@@ -79,14 +83,12 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject {
     // Setters and getters
     // -------------------------------------------------------------------------
 
-    @Override
     @JsonProperty
     @Translatable(propertyName = "name", key = "NAME")
     public String getDisplayName() {
         return getTranslation("NAME", getName());
     }
 
-    @Override
     @JsonProperty
     public Set<Translation> getTranslations() {
         if (translations == null) {
@@ -94,6 +96,28 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject {
         }
 
         return translations;
+    }
+
+    public void setLabel(Map<String, String> label) {
+        // Create new name translations from the input map
+        Set<Translation> newNameTranslations = label.entrySet().stream()
+            .map(entry -> Translation.builder()
+                .locale(entry.getKey())
+                .property("name")
+                .value(entry.getValue())
+                .build())
+            .collect(Collectors.toSet());
+
+        // Create updated translation set:
+        // 1. Preserve existing non-name translations
+        // 2. Add/replace name translations from new map
+        Set<Translation> updatedTranslations = getTranslations().stream()
+            .filter(t -> !"name".equals(t.getProperty())) // Keep non-name translations
+            .collect(Collectors.toCollection(HashSet::new));
+
+        updatedTranslations.addAll(newNameTranslations); // Merge new name translations
+
+        setTranslations(updatedTranslations);
     }
 
     /**
@@ -124,13 +148,35 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject {
             key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
     }
 
+    @JsonProperty
+    public Map<String, String> getLabel() {
+        if (translations == null || translations.isEmpty()) {
+            return null;
+        }
+        return Map.ofEntries(
+            Map.entry("ar", getTranslation("name", "ar", getName())),
+            Map.entry("en", getTranslation("name", "en", getName()))
+        );
+    }
+
+    protected String getTranslation(String translationKey, String localeKey, String defaultValue) {
+        final String defaultTranslation = defaultValue != null ? defaultValue.trim() : null;
+
+        if (localeKey == null || translationKey == null || CollectionUtils.isEmpty(translations)) {
+            return defaultValue;
+        }
+
+        return translationCache.computeIfAbsent(Translation.getCacheKey(localeKey, translationKey),
+            key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
+    }
+
     // -------------------------------------------------------------------------
     // hashCode and equals
     // -------------------------------------------------------------------------
 
     @Override
     public int hashCode() {
-        int result = getUid() != null ? getUid().hashCode() : 0;
+        int result = getId() != null ? getId().hashCode() : 0;
         result = 31 * result + (getCode() != null ? getCode().hashCode() : 0);
         result = 31 * result + (getName() != null ? getName().hashCode() : 0);
 
@@ -157,7 +203,7 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject {
 
         final JpaBaseIdentifiableObject other = (JpaBaseIdentifiableObject) o;
 
-        if (getUid() != null ? !getUid().equals(other.getUid()) : other.getUid() != null) {
+        if (getId() != null ? !getId().equals(other.getId()) : other.getId() != null) {
             return false;
         }
 
@@ -185,7 +231,7 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject {
             return false;
         }
 
-        if (getUid() != null ? !getUid().equals(other.getUid()) : other.getUid() != null) {
+        if (getId() != null ? !getId().equals(other.getId()) : other.getId() != null) {
             return false;
         }
 
@@ -208,7 +254,6 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject {
         return "{" +
             "\"class\":\"" + getClass() + "\", " +
             "\"id\":\"" + getId() + "\", " +
-            "\"uid\":\"" + getUid() + "\", " +
             "\"code\":\"" + getCode() + "\", " +
             "\"name\":\"" + getName() + "\", " +
             "\"createdDate\":\"" + getCreatedDate() + "\", " +
@@ -231,6 +276,19 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject {
         }
 
         return defaultValue;
+    }
+
+    @Override
+    public String getPropertyValue(IdScheme idScheme) {
+        if (idScheme.isNull() || idScheme.is(IdentifiableProperty.ID)) {
+            return getId();
+        } else if (idScheme.is(IdentifiableProperty.CODE)) {
+            return getCode();
+        } else if (idScheme.is(IdentifiableProperty.NAME)) {
+            return getName();
+        }
+
+        return null;
     }
 
 }

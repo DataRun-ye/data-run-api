@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.scopeinstance.repository;
 
 import org.nmcpye.datarun.jpa.common.BaseJpaIdentifiableRepository;
-import org.nmcpye.datarun.jpa.scopeinstance.ScopeDefinition;
+import org.nmcpye.datarun.jpa.scopeinstance.DimensionalContext;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -9,6 +9,6 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface FlowScopeDefinitionRepository
-    extends BaseJpaIdentifiableRepository<ScopeDefinition, String> {
+    extends BaseJpaIdentifiableRepository<DimensionalContext, String> {
     // No specific custom methods needed here beyond basic CRUD, as its main content is JSONB.
 }

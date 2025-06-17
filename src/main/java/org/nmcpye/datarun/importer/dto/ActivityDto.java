@@ -23,5 +23,4 @@ public class ActivityDto extends AbstractBaseDto {
     private final Instant startDate;
     private final Instant endDate;
     private final Boolean disabled;
-    private final Boolean deleteClientData;
 }

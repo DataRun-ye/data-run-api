@@ -4,9 +4,10 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.nmcpye.datarun.jpa.stagedefinition.StageDefinition;
 
 /**
- * DTO for {@link org.nmcpye.datarun.jpa.datastage.DataStageDefinition}
+ * DTO for {@link StageDefinition}
  */
 @AllArgsConstructor
 @Getter

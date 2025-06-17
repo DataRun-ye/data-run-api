@@ -37,23 +37,32 @@ public class Translation implements Serializable {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-
-        final Translation other = (Translation) obj;
-
-        return (
-            Objects.equals(this.locale, other.locale) &&
-                Objects.equals(this.property, other.property) &&
-                Objects.equals(this.value, other.value)
-        );
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Translation that = (Translation) o;
+        return Objects.equals(locale, that.locale) &&
+            Objects.equals(property, that.property);
     }
+
+//    @Override
+//    public boolean equals(Object obj) {
+//        if (this == obj) {
+//            return true;
+//        }
+//
+//        if (obj == null || getClass() != obj.getClass()) {
+//            return false;
+//        }
+//
+//        final Translation other = (Translation) obj;
+//
+//        return (
+//            Objects.equals(this.locale, other.locale) &&
+//                Objects.equals(this.property, other.property) &&
+//                Objects.equals(this.value, other.value)
+//        );
+//    }
 
     // -------------------------------------------------------------------------------
     // Accessors

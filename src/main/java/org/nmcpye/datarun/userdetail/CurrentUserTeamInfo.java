@@ -11,7 +11,7 @@ import java.util.Set;
 @Value
 @Builder
 public class CurrentUserTeamInfo {
-    Long userId;
+    String userId;
 
     String userUID;
 

@@ -10,7 +10,6 @@ import java.util.Optional;
  */
 public interface IdentifiableObjectService<T extends IdentifiableObject<ID>, ID> {
     Class<T> getClazz();
-
     T saveWithRelations(T object);
 
     boolean existsByUid(String uid);

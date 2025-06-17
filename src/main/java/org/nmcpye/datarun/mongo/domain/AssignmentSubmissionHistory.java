@@ -15,8 +15,8 @@
 //import java.util.List;
 //import java.util.Map;
 //
-//@Document(collection = "assignment_submission_history")
-//@CompoundIndex(name = "assignment_history_uid_time_idx", def = "{'uid': 1, 'entries.entryDate': -1}")
+//@Document(collection = "flow_instance_submission_history")
+//@CompoundIndex(name = "flow_instance_history_uid_time_idx", def = "{'uid': 1, 'entries.entryDate': -1}")
 //@Getter
 //@Setter
 //@SuppressWarnings("common-java:DuplicatedBlocks")

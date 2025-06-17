@@ -4,11 +4,11 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.config.Constants;
-import org.nmcpye.datarun.jpa.userauthority.Authority;
-import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.team.Team;
-import org.nmcpye.datarun.utils.CodeGenerator;
+import org.nmcpye.datarun.jpa.user.User;
+import org.nmcpye.datarun.jpa.userauthority.Authority;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -22,7 +22,7 @@ public class AdminUserDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private Long id;
+    private String id;
 
     @Size(min = 11, max = 11)
     private String uid;
@@ -92,11 +92,11 @@ public class AdminUserDTO implements Serializable {
         this.teams = teams;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

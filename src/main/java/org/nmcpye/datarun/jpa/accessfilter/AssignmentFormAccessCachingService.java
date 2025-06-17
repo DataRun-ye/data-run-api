@@ -22,7 +22,7 @@
 //@Service
 //@Transactional(readOnly = true)
 //public class AssignmentFormAccessCachingService {
-//    //    final static String USER_ASSIGNMENT_SUMMARIES_CACHE = "assignmentPages";
+//    //    final static String USER_FLOW_INSTANCE_SUMMARIES_CACHE = "assignmentPages";
 //    final public static String USER_FORM_ACCESS_CACHE = "formAccess";
 //    private final AssignmentRepository assignmentRepository;
 //    private final TeamRepository teamRepository;
@@ -32,7 +32,7 @@
 //        this.teamRepository = teamRepository;
 //    }
 //
-//    //    @Cacheable(cacheNames = USER_ASSIGNMENT_SUMMARIES_CACHE, key = "#team + '_' + #pageable.pageNumber")
+//    //    @Cacheable(cacheNames = USER_FLOW_INSTANCE_SUMMARIES_CACHE, key = "#team + '_' + #pageable.pageNumber")
 //    public Page<AssignmentSummary> fetchAssignmentPage(Collection<String> teams, Pageable pageable) {
 //        return assignmentRepository.findSummariesTeam(teams, pageable);
 //    }

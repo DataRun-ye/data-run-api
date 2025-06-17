@@ -8,8 +8,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
 import org.nmcpye.datarun.jpa.project.Project;
 
 import java.time.Instant;
@@ -18,6 +18,8 @@ import java.util.Set;
 
 /**
  * An Activity.
+ *
+ * @author Hamza Assada 11/02/2022
  */
 @Entity
 @Table(name = "activity")
@@ -26,14 +28,13 @@ import java.util.Set;
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Activity extends JpaBaseIdentifiableObject {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
-
+    //    @Id
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+//    @SequenceGenerator(name = "sequenceGenerator")
+//    @Column(name = "id")
+//    protected Long id;
     @Size(max = 11)
-    @Column(name = "uid", length = 11, nullable = false, unique = true)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
 
     /**
@@ -45,7 +46,7 @@ public class Activity extends JpaBaseIdentifiableObject {
     /**
      * The name of this object. Required and unique.
      */
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, unique = true)
     protected String name;
 
     @Column(name = "start_date")
@@ -57,9 +58,6 @@ public class Activity extends JpaBaseIdentifiableObject {
     @Column(name = "disabled")
     private Boolean disabled = false;
 
-    @Column(name = "delete_client_data")
-    private Boolean deleteClientData = false;
-
     @ManyToOne(optional = false)
     @NotNull
     @JsonIgnoreProperties(value = {"activities"}, allowSetters = true)
@@ -68,7 +66,7 @@ public class Activity extends JpaBaseIdentifiableObject {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "activity")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
-    private Set<Assignment> assignments = new HashSet<>();
+    private Set<FlowInstance> flowInstances = new HashSet<>();
 
     // prettier-ignore
     @Override
@@ -81,7 +79,6 @@ public class Activity extends JpaBaseIdentifiableObject {
             ", startDate='" + getStartDate() + "'" +
             ", endDate='" + getEndDate() + "'" +
             ", disabled='" + getDisabled() + "'" +
-            ", deleteClientData='" + getDeleteClientData() + "'" +
             ", createdBy='" + getCreatedBy() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
             ", lastModifiedBy='" + getLastModifiedBy() + "'" +

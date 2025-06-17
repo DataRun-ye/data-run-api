@@ -43,8 +43,7 @@ class UserResourceUpdateIT {
 
     private static final String DEFAULT_LOGIN = "johndoe";
     private static final String UPDATED_LOGIN = "datarun";
-
-    private static final Long DEFAULT_ID = 1L;
+    private static final String DEFAULT_ID = "01ARYZ6S41TSV4RRFFQ69G5FAV";
 
     private static final String DEFAULT_PASSWORD = "passjohndoe";
     private static final String UPDATED_PASSWORD = "passdatarun";
@@ -492,7 +491,7 @@ class UserResourceUpdateIT {
         User user2 = new User();
         user2.setId(user1.getId());
         assertThat(user1).isEqualTo(user2);
-        user2.setId(2L);
+        user2.setId("01ARYZ6S41TSV4RRFFQ69G5FAV");
         assertThat(user1).isNotEqualTo(user2);
         user1.setId(null);
         assertThat(user1).isNotEqualTo(user2);

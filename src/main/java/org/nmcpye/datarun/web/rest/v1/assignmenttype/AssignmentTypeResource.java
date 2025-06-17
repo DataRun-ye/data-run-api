@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.web.rest.v1.assignmenttype;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.jpa.assignmenttype.AssignmentType;
-import org.nmcpye.datarun.jpa.assignmenttype.repository.AssignmentTypeRepository;
-import org.nmcpye.datarun.jpa.assignmenttype.service.AssignmentTypeService;
+import org.nmcpye.datarun.jpa.flowtype.FlowType;
+import org.nmcpye.datarun.jpa.flowtype.repository.FlowTypeRepository;
+import org.nmcpye.datarun.jpa.flowtype.service.FlowTypeService;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
@@ -17,22 +17,22 @@ import java.util.List;
 
 
 /**
- * REST controller for managing {@link AssignmentType}.
+ * REST controller for managing {@link FlowType}.
  */
 @RestController
 @RequestMapping(value = {AssignmentTypeResource.V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 @Slf4j
-public class AssignmentTypeResource extends JpaBaseResource<AssignmentType> {
+public class AssignmentTypeResource extends JpaBaseResource<FlowType> {
     protected static final String NAME = "/assignmentTypes";
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
-    private final AssignmentTypeService assignmentTypeService;
+    private final FlowTypeService flowTypeService;
 
-    protected AssignmentTypeResource(AssignmentTypeService service,
-                                     AssignmentTypeRepository repository) {
+    protected AssignmentTypeResource(FlowTypeService service,
+                                     FlowTypeRepository repository) {
         super(service, repository);
-        this.assignmentTypeService = service;
+        this.flowTypeService = service;
     }
 
     @Override
@@ -42,19 +42,19 @@ public class AssignmentTypeResource extends JpaBaseResource<AssignmentType> {
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<AssignmentType> entities) {
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<FlowType> entities) {
         return super.saveAll(entities);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveOne(AssignmentType entity) {
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(FlowType entity) {
         return super.saveOne(entity);
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @Override
-    public ResponseEntity<?> saveReturnSaved(AssignmentType entity) {
+    public ResponseEntity<?> saveReturnSaved(FlowType entity) {
         return super.saveReturnSaved(entity);
     }
 

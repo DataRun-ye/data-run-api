@@ -5,9 +5,9 @@ import jakarta.el.PropertyNotFoundException;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.enumeration.AssignmentStatus;
+import org.nmcpye.datarun.common.enumeration.FlowStatus;
+import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.mongo.common.MongoBaseIdentifiableObject;
-import org.nmcpye.datarun.utils.CodeGenerator;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -49,7 +49,7 @@ public class DataFormSubmissionBu extends MongoBaseIdentifiableObject {
     private String assignment;
 
     @Field("status")
-    private AssignmentStatus status;
+    private FlowStatus status;
 
     private Map<String, Object> formData = new HashMap<>();
 

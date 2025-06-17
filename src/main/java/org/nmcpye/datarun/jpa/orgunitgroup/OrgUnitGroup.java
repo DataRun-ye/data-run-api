@@ -19,36 +19,26 @@ import java.util.Set;
  * A OrgUnitGroup.
  */
 @Entity
-@Table(name = "org_unit_group", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_org_unit_group_uid", columnNames = "uid"),
-    @UniqueConstraint(name = "uc_org_unit_group_name", columnNames = "name"),
-    @UniqueConstraint(name = "uc_org_unit_group_code", columnNames = "code")
-})
+@Table(name = "org_unit_group")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class OrgUnitGroup extends JpaBaseIdentifiableObject {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
-
     @Size(max = 11)
-    @Column(name = "uid", length = 11, nullable = false)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
 
     /**
      * The unique code for this object.
      */
-    @Column(name = "code")
+    @Column(name = "code", unique = true)
     protected String code;
 
     /**
      * The name of this object. Required and unique.
      */
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, unique = true)
     protected String name;
 
     @Column(name = "symbol")
@@ -63,8 +53,8 @@ public class OrgUnitGroup extends JpaBaseIdentifiableObject {
     @ManyToMany
     @JoinTable(
         name = "org_unit_group_members",
-        joinColumns = @JoinColumn(name = "org_unit_group_id"),
-        inverseJoinColumns = @JoinColumn(name = "member_id")
+        joinColumns = @JoinColumn(name = "group_id"),
+        inverseJoinColumns = @JoinColumn(name = "org_unit_id")
     )
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors", "translations", "path"}, allowSetters = true)

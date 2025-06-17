@@ -21,7 +21,7 @@ import java.util.List;
 public abstract class DefaultJpaSoftDeleteService
     <T extends JpaSoftDeleteObject>
     extends DefaultJpaIdentifiableService<T>
-    implements SoftDeleteService<T, Long> {
+    implements SoftDeleteService<T, String> {
 
     protected final UserAccessService userAccessService;
     protected final JpaIdentifiableRepository<T> jpaAuditableObjectRepository;

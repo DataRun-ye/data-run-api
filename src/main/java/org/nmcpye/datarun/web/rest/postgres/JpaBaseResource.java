@@ -6,7 +6,7 @@ import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.web.rest.common.BaseReadWriteResource;
 
 public abstract class JpaBaseResource<T extends JpaIdentifiableObject>
-    extends BaseReadWriteResource<T, Long> {
+    extends BaseReadWriteResource<T, String> {
     protected JpaBaseResource(JpaIdentifiableObjectService<T> jpaAuditableObjectService,
                               JpaIdentifiableRepository<T> repository) {
         super(jpaAuditableObjectService, repository);

@@ -3,7 +3,7 @@ package org.nmcpye.datarun.mongo.migration;
 import jakarta.persistence.EntityNotFoundException;
 import org.nmcpye.datarun.datatemplateelement.*;
 import org.nmcpye.datarun.datatemplateelement.enumeration.RuleAction;
-import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.jpa.optionset.OptionSet;
 import org.nmcpye.datarun.jpa.optionset.repository.OptionSetRepository;
@@ -66,8 +66,8 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
                 FormSectionConf sectionConf = createSectionConf(section);
                 template.getSections().add(sectionConf);
             } else if (field instanceof DefaultField formField) {
-                DataElement dataElement = dataElementRepository.findByNameIgnoreCase(formField.getName()).orElseThrow();
-                FormDataElementConf elementConf = createDataElementConf(formField, dataElement.getUid(), dataElement.getCode());
+                DataTemplateElement dataTemplateElement = dataElementRepository.findByNameIgnoreCase(formField.getName()).orElseThrow();
+                FormDataElementConf elementConf = createDataElementConf(formField, dataTemplateElement.getUid(), dataTemplateElement.getCode());
                 template.getFields().add(elementConf);
             } else {
                 throw new EntityNotFoundException("DataElement not found: " + field.getName());
@@ -79,8 +79,8 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
 
     private void migrateDataElements(DataForm dataForm) {
         for (AbstractField field : dataForm.flattenFields().stream().filter((f) -> f instanceof DefaultField).collect(Collectors.toSet())) {
-            DataElement dataElement = createDataElement((DefaultField) field, dataForm);
-            dataElementRepository.save(dataElement);
+            DataTemplateElement dataTemplateElement = createDataElement((DefaultField) field, dataForm);
+            dataElementRepository.save(dataTemplateElement);
         }
     }
 
@@ -112,26 +112,26 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
         return template;
     }
 
-    private DataElement createDataElement(DefaultField element, DataForm dataForm) {
+    private DataTemplateElement createDataElement(DefaultField element, DataForm dataForm) {
         try {
-            DataElement dataElement = dataElementRepository.findByName(element.getName()).orElse(new DataElement());
-            dataElement.setName(element.getName().toLowerCase());
-            dataElement.setCode(element.getName().toLowerCase());
-            dataElement.setType(element.getType());
-            dataElement.setDescription(element.getDescription());
-            dataElement.setLabel(element.getLabel());
+            DataTemplateElement dataTemplateElement = dataElementRepository.findByName(element.getName()).orElse(new DataTemplateElement());
+            dataTemplateElement.setName(element.getName().toLowerCase());
+            dataTemplateElement.setCode(element.getName().toLowerCase());
+            dataTemplateElement.setType(element.getType());
+            dataTemplateElement.setDescription(element.getDescription());
+//            dataElement.setLabel(element.getLabel());
             if (element.getType().isOptionsType()) {
                 final OptionSet optionSet = optionSetRepository.findByNameIgnoreCase(((OptionField) element)
                     .getListName()).orElseThrow();
-                dataElement.setOptionSet(optionSet);
+                dataTemplateElement.setOptionSet(optionSet);
             }
 
             if (element instanceof ReferenceField field) {
-                dataElement.setResourceType(field.getResourceType());
+                dataTemplateElement.setResourceType(field.getResourceType());
 //            dataElement.setResourceMetadataSchema(field.getResourceMetadataSchema());
             }
 
-            return dataElement;
+            return dataTemplateElement;
         } catch (Exception e) {
             throw new EntityNotFoundException("DataElement not found: " + element.getName());
         }

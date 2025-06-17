@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.orgunit.service;
 
 import jakarta.persistence.EntityManager;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.flowinstance.repository.FlowInstanceRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.springframework.data.domain.Page;
@@ -12,22 +12,22 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * @author Hamza Assada 24/04/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 18/01/2022
  */
 @Service
 public class OrgUnitMaintenanceService {
     private static final int CHUNK_SIZE = 400;
 
     private final OrgUnitRepository orgUnitRepository;
-    private final AssignmentRepository assignmentRepository;
+    private final FlowInstanceRepository flowInstanceRepository;
     private final EntityManager em;
     private final PlatformTransactionManager txm;
 
-    public OrgUnitMaintenanceService(OrgUnitRepository orgUnitRepository, AssignmentRepository assignmentRepository,
+    public OrgUnitMaintenanceService(OrgUnitRepository orgUnitRepository, FlowInstanceRepository flowInstanceRepository,
                                      EntityManager em,
                                      PlatformTransactionManager txm) {
         this.orgUnitRepository = orgUnitRepository;
-        this.assignmentRepository = assignmentRepository;
+        this.flowInstanceRepository = flowInstanceRepository;
         this.em = em;
         this.txm = txm;
     }

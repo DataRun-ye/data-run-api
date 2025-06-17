@@ -1,17 +1,24 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
-                        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
-    <!--
-        Added the default value for the fields for entity Project.
-    -->
-    <changeSet id="20240806201249-fields-add-default-value" author="jhipster">
-        <addDefaultValue tableName="project"
-            columnName="disabled"
-            columnDataType="boolean"
-            defaultValueBoolean="false"/>
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+<changeSet id="1749225850985-92" author="Hamza">
+        <addUniqueConstraint columnNames="code" constraintName="uc_project_code" tableName="project"/>
     </changeSet>
+    <changeSet id="1749225850985-93" author="Hamza">
+        <addUniqueConstraint columnNames="name" constraintName="uc_project_name" tableName="project"/>
+    </changeSet>
+    <changeSet id="1749225850985-94" author="Hamza">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_project_uid" tableName="project"/>
+    </changeSet>
+<!--    <changeSet id="20240806201249-fields-add-default-value" author="jhipster">-->
+<!--        <addDefaultValue tableName="project"-->
+<!--            columnName="disabled"-->
+<!--            columnDataType="boolean"-->
+<!--            defaultValueBoolean="false"/>-->
+<!--    </changeSet>-->
 </databaseChangeLog>

@@ -125,19 +125,6 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
     @Transactional(readOnly = true)
     @CheckForNull
     @Override
-    public <T extends JpaIdentifiableObject> T get(@Nonnull Class<T> type, Long id) {
-        JpaIdentifiableRepository<T> store = getIdentifiableObjectStore(type);
-
-        if (store == null) {
-            return null;
-        }
-
-        return store.findById(id).orElse(null);
-    }
-
-    @Transactional(readOnly = true)
-    @CheckForNull
-    @Override
     public <T extends JpaIdentifiableObject> T get(@Nonnull Class<T> type, @Nonnull String uid) {
         JpaIdentifiableRepository<T> store = getIdentifiableObjectStore(type);
 
@@ -145,7 +132,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
             return null;
         }
 
-        return store.findByUid(uid).orElse(null);
+        return store.findByIdOrUid(uid, uid).orElse(null);
     }
 
     @Transactional(readOnly = true)
@@ -357,7 +344,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
     @Nonnull
     @Override
     @Transactional(readOnly = true)
-    public <T extends JpaIdentifiableObject> List<T> getById(@Nonnull Class<T> type, @Nonnull Collection<Long> ids) {
+    public <T extends JpaIdentifiableObject> List<T> getById(@Nonnull Class<T> type, @Nonnull Collection<String> ids) {
         JpaIdentifiableRepository<T> store = getIdentifiableObjectStore(type);
 
         if (store == null) {
@@ -424,7 +411,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
 
     @Transactional(readOnly = true)
     @Override
-    public <T extends JpaIdentifiableObject> List<T> getObjects(Class<T> clazz, Collection<Long> identifiers) {
+    public <T extends JpaIdentifiableObject> List<T> getObjects(Class<T> clazz, Collection<String> identifiers) {
         return List.of();
     }
 
@@ -443,12 +430,6 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
     @Transactional(readOnly = true)
     @Override
     public JpaIdentifiableObject getObject(String uid, String simpleClassName) {
-        return null;
-    }
-
-    @Transactional(readOnly = true)
-    @Override
-    public JpaIdentifiableObject getObject(Long id, String simpleClassName) {
         return null;
     }
 

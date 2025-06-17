@@ -1,15 +1,64 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-    <!--
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+<!--
         Added the constraints for entity OrgUnit.
     -->
-    <changeSet id="20240806201619-2" author="jhipster">
-
+    <changeSet id="1749225850985-81" author="Hamza">
+        <addUniqueConstraint columnNames="code" constraintName="uc_org_unit_code" tableName="org_unit"/>
+    </changeSet>
+    <changeSet id="1749225850985-82" author="Hamza">
+        <addUniqueConstraint columnNames="code" constraintName="uc_org_unit_group_code" tableName="org_unit_group"/>
+    </changeSet>
+    <changeSet id="1749225850985-83" author="Hamza">
+        <addUniqueConstraint columnNames="name" constraintName="uc_org_unit_group_name" tableName="org_unit_group"/>
+    </changeSet>
+    <changeSet id="1749225850985-84" author="Hamza">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_org_unit_group_uid" tableName="org_unit_group"/>
+    </changeSet>
+    <changeSet id="1749225850985-85" author="Hamza">
+        <addUniqueConstraint columnNames="code" constraintName="uc_org_unit_groupset_code"
+                             tableName="org_unit_groupset"/>
+    </changeSet>
+    <changeSet id="1749225850985-86" author="Hamza">
+        <addUniqueConstraint columnNames="name" constraintName="uc_org_unit_groupset_name"
+                             tableName="org_unit_groupset"/>
+    </changeSet>
+    <changeSet id="1749225850985-87" author="Hamza">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_org_unit_groupset_uid" tableName="org_unit_groupset"/>
+    </changeSet>
+    <changeSet id="1749225850985-88" author="Hamza">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_org_unit_uid" tableName="org_unit"/>
+    </changeSet>
+    <changeSet id="1749225850985-129" author="Hamza">
         <addForeignKeyConstraint baseColumnNames="parent_id" baseTableName="org_unit"
                                  constraintName="FK_ORG_UNIT_ON_PARENT" referencedColumnNames="id"
                                  referencedTableName="org_unit"/>
+    </changeSet>
+
+    <changeSet id="1749225850985-142" author="Hamza">
+        <addForeignKeyConstraint baseColumnNames="org_unit_id" baseTableName="org_unit_group_members"
+                                 constraintName="fk_orgunigromem_on_org_unit" referencedColumnNames="id"
+                                 referencedTableName="org_unit"/>
+    </changeSet>
+    <changeSet id="1749225850985-143" author="Hamza">
+        <addForeignKeyConstraint baseColumnNames="group_id" baseTableName="org_unit_group_members"
+                                 constraintName="fk_orgunigromem_on_org_unit_group" referencedColumnNames="id"
+                                 referencedTableName="org_unit_group"/>
+    </changeSet>
+    <changeSet id="1749225850985-144" author="Hamza">
+        <addForeignKeyConstraint baseColumnNames="org_unit_group_id" baseTableName="org_unit_groupset_org_unit_group"
+                                 constraintName="fk_orgunigroorgunigro_on_org_unit_group" referencedColumnNames="id"
+                                 referencedTableName="org_unit_group"/>
+    </changeSet>
+    <changeSet id="1749225850985-145" author="Hamza">
+        <addForeignKeyConstraint baseColumnNames="groupset_id" baseTableName="org_unit_groupset_org_unit_group"
+                                 constraintName="fk_orgunigroorgunigro_on_org_unit_group_set" referencedColumnNames="id"
+                                 referencedTableName="org_unit_groupset"/>
     </changeSet>
 </databaseChangeLog>

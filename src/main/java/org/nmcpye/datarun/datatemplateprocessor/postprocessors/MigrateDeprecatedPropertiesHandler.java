@@ -5,7 +5,7 @@ import org.nmcpye.datarun.datatemplateelement.ElementValidationRule;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.RuleAction;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
-import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 
 import java.util.Optional;
 
@@ -14,9 +14,9 @@ import java.util.Optional;
  */
 public class MigrateDeprecatedPropertiesHandler
     extends AbstractFormElementHandler<FormDataElementConf> {
-    private final DataElement source;
+    private final DataTemplateElement source;
 
-    public MigrateDeprecatedPropertiesHandler(DataElement source) {
+    public MigrateDeprecatedPropertiesHandler(DataTemplateElement source) {
         this.source = source;
     }
 

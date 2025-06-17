@@ -14,47 +14,17 @@
     <include file="config/liquibase/changelog/20240522234850_added_entity_Project.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20240522234851_added_entity_Activity.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20240522234858_added_entity_Team.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/20240522234859_added_entity_Warehouse.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/20240806201619_added_entity_OrgUnit.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20240806201620_added_entity_OuLevel.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/20240806201621_added_entity_WarehouseItem.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-changelog - JHipster will add liquibase changelogs here -->
     <include file="config/liquibase/changelog/20240522234851_added_entity_constraints_Activity.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20240522234858_added_entity_constraints_Team.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/20240522234859_added_entity_constraints_Warehouse.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/20240806201619_added_entity_constraints_OrgUnit.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-constraints-changelog - JHipster will add liquibase constraints changelogs here -->
     <include file="config/liquibase/changelog/20240518020044_added_entity_EntityAuditEvent.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20240806201249_updated_entity_constraints_Project.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/20240806201250_updated_entity_constraints_Activity.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/20240806201251_updated_entity_constraints_Team.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/2024/09-01-changelog-user-mobile-code.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/2024/09-01-changelog-assignment.xml" relativeToChangelogFile="false"/>
 <!--    <include file="/config/liquibase/changelog/2024/15-01-changelog-translation-and-drop-audit-not-null.xml" relativeToChangelogFile="false"/>-->
-    <include file="/config/liquibase/changelog/2024/22-01-team-user-table.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/2024/27-02-audit-changelog.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/2024/27-01-date-time-wrapper-changelog.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/2024/04-01-changelog-drop-team-not-null-uid.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/28-01-changelog.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/13-01-remove-hierarchy-uinfo-wh-identifiabletrans-add-managed-teams.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/23-01-assignment-child-parent-allocated-resource-changelog.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/25-04-changelog-assignment-forms-relation.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/25-01-changelog-team-form-permissions-json.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/29-01-changelog-assignment-add-allocated_resources-jsonb.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/26-01-changelog-data-element-create.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/26-01-changelog-option-set-create.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/26-02-changelog-app-entity-audit-modifyDataType.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/2024/05-01-changelog-add-user_group.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/29-01-org-unit-group-and-groupset.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2024/17-01-changelog-dataelement-remove-fields-and-user-group-constraints.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2025/22-02-changelog-user-role.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2025/22-01-changelog-add-new-identifiable-structure.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2025/16-02-changelog-refresh-token-create.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/2025/09-01-changelog-refresh-token-user-fk.xml" relativeToChangelogFile="false"/>
-<!--    <include file="/config/liquibase/changelog/2025/09-01-changelog-add-form-accesses-entities.xml" relativeToChangelogFile="false"/>-->
-    <include file="/config/liquibase/changelog/2025/12-01-changelog-data-element-group-add.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/security/acl-schema.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/2025/16-01-changelog-assignment-status-col-add.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/2025-stages-and-sql-template/01-01-changelog-stage-template.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/v7-2025-merge/09-01-v7-2025-merge-changelog-last.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

@@ -6,6 +6,8 @@ import org.springframework.stereotype.Repository;
 
 /**
  * Spring Data JPA repository for the Project entity.
+ *
+ * @author Hamza Assada 11/02/2022
  */
 @SuppressWarnings("unused")
 @Repository

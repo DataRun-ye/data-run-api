@@ -7,11 +7,15 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 /**
- * Spring Data JPA repository for the Project entity.
+ * Repository for managing EntityType entities.
+ *
+ * @author Hamza Assada 15/06/2025 <7amza.it@gmail.com>
  */
-@SuppressWarnings("unused")
 @Repository
+@SuppressWarnings("unused")
 public interface EntityTypeRepository
     extends JpaIdentifiableRepository<EntityType> {
+    Optional<EntityType> findByName(String name);
+
     Optional<EntityType> findByNameIgnoreCase(String name);
 }

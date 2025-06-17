@@ -18,42 +18,32 @@ import java.util.Set;
  * A OrgUnitGroupSet.
  */
 @Entity
-@Table(name = "org_unit_groupset", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_org_unit_groupset_uid", columnNames = "uid"),
-    @UniqueConstraint(name = "uc_org_unit_groupset_name", columnNames = "name"),
-    @UniqueConstraint(name = "uc_org_unit_groupset_code", columnNames = "code")
-})
+@Table(name = "org_unit_groupset")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
 public class OrgUnitGroupSet extends JpaBaseIdentifiableObject {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
-
     @Size(max = 11)
-    @Column(name = "uid", length = 11, nullable = false)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
 
     /**
      * The unique code for this object.
      */
-    @Column(name = "code")
+    @Column(name = "code", unique = true)
     protected String code;
 
     /**
      * The name of this object. Required and unique.
      */
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, unique = true)
     protected String name;
 
     @ManyToMany
     @JoinTable(
         name = "org_unit_groupset_org_unit_group",
-        joinColumns = @JoinColumn(name = "org_unit_groupset_id"),
+        joinColumns = @JoinColumn(name = "groupset_id"),
         inverseJoinColumns = @JoinColumn(name = "org_unit_group_id")
     )
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)

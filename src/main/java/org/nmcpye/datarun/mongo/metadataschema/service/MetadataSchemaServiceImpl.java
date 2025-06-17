@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.mongo.metadataschema.service;
 
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.flowinstance.repository.FlowInstanceRepository;
 import org.nmcpye.datarun.mongo.common.DefaultMongoIdentifiableObjectService;
 import org.nmcpye.datarun.mongo.domain.MetadataSchema;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
@@ -27,16 +27,16 @@ public class MetadataSchemaServiceImpl
     private final MetadataSchemaRepository repository;
     private final DataFormTemplateRepository dataFormRepository;
 
-    private final AssignmentRepository assignmentRepository;
+    private final FlowInstanceRepository flowInstanceRepository;
 
     public MetadataSchemaServiceImpl(MetadataSchemaRepository repository,
                                      CacheManager cacheManager,
                                      DataFormTemplateRepository dataFormRepository,
-                                     AssignmentRepository assignmentRepository) {
+                                     FlowInstanceRepository flowInstanceRepository) {
         super(repository, cacheManager);
         this.repository = repository;
         this.dataFormRepository = dataFormRepository;
-        this.assignmentRepository = assignmentRepository;
+        this.flowInstanceRepository = flowInstanceRepository;
     }
 
     public void processFields(List<AbstractField> fields, String parentPath) {

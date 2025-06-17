@@ -7,11 +7,12 @@ import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
+import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 
 import java.util.Set;
 
 /**
- * DTO for {@link org.nmcpye.datarun.jpa.dataelement.DataElement}
+ * DTO for {@link DataTemplateElement}
  */
 @AllArgsConstructor
 @Getter

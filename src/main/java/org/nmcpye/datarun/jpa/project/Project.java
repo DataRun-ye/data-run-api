@@ -15,24 +15,24 @@ import java.util.Set;
 
 /**
  * A Project.
+ *
+ * @author Hamza Assada 09/04/2022
  */
 @Entity
-@Table(name = "project", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_project_name", columnNames = "name"),
-})
+@Table(name = "project")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Project extends JpaBaseIdentifiableObject {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
+//    @SequenceGenerator(name = "sequenceGenerator")
+//    @Column(name = "id")
+//    protected Long id;
 
     @Size(max = 11)
-    @Column(name = "uid", length = 11, nullable = false, unique = true)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
 
     /**
@@ -44,7 +44,7 @@ public class Project extends JpaBaseIdentifiableObject {
     /**
      * The name of this object. Required and unique.
      */
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, unique = true)
     protected String name;
 
     @Column(name = "disabled")

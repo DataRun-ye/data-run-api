@@ -3,11 +3,11 @@ package org.nmcpye.datarun.service.mapper;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.jpa.userauthority.Authority;
 import org.nmcpye.datarun.jpa.user.User;
-import org.nmcpye.datarun.jpa.user.mapper.UserMapper;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
+import org.nmcpye.datarun.jpa.user.mapper.UserMapper;
+import org.nmcpye.datarun.jpa.userauthority.Authority;
+import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.service.dto.UserDTO;
 
 import java.time.Instant;
@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class UserMapperTest {
 
     private static final String DEFAULT_LOGIN = "johndoe";
-    private static final Long DEFAULT_ID = 1L;
+    private static final String DEFAULT_ID = "01ARYZ6S41TSV4RRFFQ69G5FAV";
 
     private UserMapper userMapper;
     private User user;

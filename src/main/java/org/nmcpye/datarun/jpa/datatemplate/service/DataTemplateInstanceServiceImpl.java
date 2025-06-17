@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
+import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.jpa.datatemplate.mapper.DataTemplateMapper;
@@ -15,7 +16,6 @@ import org.nmcpye.datarun.mongo.datatemplateversion.mapper.DataFormTemplateMappe
 import org.nmcpye.datarun.mongo.datatemplateversion.mapper.FormTemplateVersionMapper;
 import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
-import org.nmcpye.datarun.utils.CodeGenerator;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Primary;

@@ -2,7 +2,7 @@ package org.nmcpye.datarun.jpa.accessfilter;
 
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.jpa.activity.Activity;
-import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  * @author Hamza Assada 21/03/2025 <7amza.it@gmail.com>
  */
 @Component
-public class DataElementFilter extends DefaultJpaFilter<DataElement> {
+public class DataElementFilter extends DefaultJpaFilter<DataTemplateElement> {
     private final DataTemplateVersionRepository templateRepository;
 
     public DataElementFilter(DataTemplateVersionRepository templateRepository) {
@@ -31,8 +31,8 @@ public class DataElementFilter extends DefaultJpaFilter<DataElement> {
     }
 
     @Override
-    public Specification<DataElement> getAccessSpecification(CurrentUserDetails user,
-                                                             QueryRequest queryRequest) {
+    public Specification<DataTemplateElement> getAccessSpecification(CurrentUserDetails user,
+                                                                     QueryRequest queryRequest) {
         Set<String> userDataElements = getUserFormsWithWritePermission(user.getUsername())
             .stream()
             .flatMap((form) -> form.getFields().stream())

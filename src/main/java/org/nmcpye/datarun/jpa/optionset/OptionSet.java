@@ -1,52 +1,46 @@
 package org.nmcpye.datarun.jpa.optionset;
 
 import io.hypersistence.utils.hibernate.type.json.JsonType;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 import org.nmcpye.datarun.datatemplateelement.DataOption;
+import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 
 import java.util.List;
 
 /**
  * An OptionSet.
+ *
+ * @author Hamza Assada 10/09/2024 <7amza.it@gmail.com>
  */
 @Entity
-@Table(name = "option_set", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_option_set_uid", columnNames = "uid"),
-    @UniqueConstraint(name = "uc_option_set_name", columnNames = "name"),
-    @UniqueConstraint(name = "uc_option_set_code", columnNames = "code")
-})
+@Table(name = "option_set")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class OptionSet extends JpaBaseIdentifiableObject {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
-
     @Size(max = 11)
-    @Column(name = "uid", length = 11, nullable = false)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
 
     /**
      * The unique code for this object.
      */
-    @Column(name = "code")
+    @Column(name = "code", unique = true)
     protected String code;
 
     /**
      * The name of this object. Required and unique.
      */
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, unique = true)
     protected String name;
 
     @Type(JsonType.class)

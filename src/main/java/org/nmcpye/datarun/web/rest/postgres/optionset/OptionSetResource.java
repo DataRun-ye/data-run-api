@@ -1,9 +1,8 @@
 package org.nmcpye.datarun.web.rest.postgres.optionset;
 
-import org.nmcpye.datarun.jpa.optionset.service.OptionSetService;
-import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.jpa.optionset.OptionSet;
 import org.nmcpye.datarun.jpa.optionset.repository.OptionSetRepository;
+import org.nmcpye.datarun.jpa.optionset.service.OptionSetService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
@@ -15,7 +14,7 @@ import static org.nmcpye.datarun.web.rest.postgres.optionset.OptionSetResource.C
 import static org.nmcpye.datarun.web.rest.postgres.optionset.OptionSetResource.V1;
 
 /**
- * REST controller for managing {@link DataFormSubmission}.
+ * REST controller for managing {@link OptionSet}.
  */
 @RestController
 @RequestMapping(value = {CUSTOM, V1})

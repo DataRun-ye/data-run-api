@@ -19,6 +19,7 @@ public interface FormTemplateVersionMapper
 
     @Mappings({
         @Mapping(target = "uid", ignore = true),
+        @Mapping(target = "id", ignore = true),
         @Mapping(target = "versionNumber", ignore = true),
     })
     DataTemplateVersion fromInstanceDto(DataTemplateInstanceDto dto);

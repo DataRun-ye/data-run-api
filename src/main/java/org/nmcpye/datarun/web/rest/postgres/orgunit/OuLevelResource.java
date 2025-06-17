@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.web.rest.postgres.orgunit;
 
-import org.nmcpye.datarun.jpa.project.Project;
 import org.nmcpye.datarun.jpa.oulevel.OuLevel;
 import org.nmcpye.datarun.jpa.oulevel.repository.OuLevelRepository;
 import org.nmcpye.datarun.jpa.oulevel.service.OuLevelService;
@@ -15,7 +14,7 @@ import static org.nmcpye.datarun.web.rest.postgres.orgunit.OuLevelResource.CUSTO
 import static org.nmcpye.datarun.web.rest.postgres.orgunit.OuLevelResource.V1;
 
 /**
- * REST controller for managing {@link Project}.
+ * REST controller for managing {@link OuLevel}.
  */
 @RestController
 @RequestMapping(value = {CUSTOM, V1})

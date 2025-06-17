@@ -6,13 +6,13 @@
 
         * `planningMode` (PLANNED | LOG\_AS\_YOU\_GO)
         * `submissionMode` (SINGLE | MULTI\_STAGE)
-        * **Scopes** (ScopeDefinition, dimensions like team, orgUnit, date, optionally entityInstance)
+        * **Scopes** (ScopeDefinition, contains `ScopeElement` which are the dimensions like: team, orgUnit, entityType,
+          Or an Attribute i.e DATE, STRING, NUMBER e.g invoiceNumber )
         * **Stages** (a StageDefinition each linked to a formTemplate, repeatable flag, optional entityBinding)
     * Example (Receive Inventory Flow type)
 2. **FlowInstance**
 
     * A runtime instantiation of a FlowType, with:
-
         * `scopeInstance` (map of the chosen team/orgUnit/date/… values)
         * `status` (PLANNED → IN\_PROGRESS → COMPLETED | CANCELLED)
         * `stageStates` (map of stageId → list of submissionIds, for repeatable stages)
@@ -27,10 +27,15 @@
 
     * Spawned only when a stage or a stage's form section is **entity-bound**; upserted post-submission and linked back
       to its FlowInstance (and stageInstance).
-
-5. **ScopeInstance**
+5. ScopeDefinition:
+    * Contains different `ScopeElement`s.
+6. ScopeElement: ScopeElementTypes: [ORG_UNIT, TEAM, ENTITY, ATTRIBUTE]
+    * define a scope Element configuration, for example:
+        * TEAM,ORG_UNIT: `{ "key":"team","type":"TEAM","required":true,"multiple":false }`.
+        * ATTRIBUTE: `{ "key":"invoiceNumber", "type":"NUMBER", "required":true, "multiple":false }`
+7. **ScopeInstance**
     * every flow would at least be scoped by `ORGUNIT,` and `DATE`, other optional scoping elements: `TEAM`, `ACTIVITY`,
-      `ENTITY`.
+      `ENTITY`. its the values of the `ScopeDefinition`'s Elements.
     * A single, shareable record that captures “all the context” for either a whole flow (root scope instance) or an
       individual stage submission.
 
@@ -60,6 +65,22 @@ associated with and grouped by, can be one or more of:
     - Easy to query: “show me all stage submissions for Household HH123” ⇒ join `stage_submissions → scope_instances`
       where `scope_data->>entity_instance_id = HH123`.
 
+### Scoping Dimension Flow
+
+```mermaid
+flowchart TD
+    A[Flow Start] --> B{Has Scopes?}
+    B -->|Yes| C[Create Root ScopeInstance]
+    B -->|No| D[Proceed without Scope]
+    C --> E[Process Stages]
+    E --> F{Stage has scope?}
+    F -->|Yes| G[Create new ScopeInstance\extract ou,team,ei reference]
+    F -->|No| H[Use root ScopeInstance]
+    G --> I[Create/Update EntityInstance]
+    H --> J[Persist StageSubmission]
+    I --> J
+```
+
 ### 2. How It Works in Each Scenario
 
 #### 2.1 One‐Off Form
@@ -67,21 +88,72 @@ associated with and grouped by, can be one or more of:
 * **On Start**:
 
     * Create `FlowInstance` (FI-001).
-    * Create `ScopeInstance` (SI-001) with `flow_instance_id = FI-001`, no `stage_submission_id` linking back `=null`
+    * Create `ScopeInstance` (SI-001) with `flow_instance_id = FI-001`, one default `stage_submission_id` linking back
+      `=null`
       and a `scope_data` JSONB with the least defined scope dims, no `entity_instance_id` (unless the flow’s scope
       deliberately included an entity).
 
-#### 2.2 Multi‐Stage, No Repeats
+**One‐Off Form Flow Diagram**
+
+This diagram shows the steps when a user submits a one-off form (SINGLE submission mode).
+
+```mermaid
+
+sequenceDiagram
+    actor User
+    participant App as Application
+    participant DB as Database
+    User ->> App: Start new Flow (one-off form)
+    App ->> DB: Create FlowInstance (status=IN_PROGRESS)
+    DB -->> App: FI-001
+    App ->> DB: Create ScopeInstance (for FI-001, no stageSubmission)
+    DB -->> App: SI-001
+    App ->> User: Show form
+    User ->> App: Submit form data
+    App ->> DB: Create StageSubmission (for FI-001, no entity bound, data=formData)
+    DB -->> App: SS-001
+    App ->> DB: Update FlowInstance status to COMPLETED
+    App ->> User: Success
+```
+
+#### 2.2 Multi‐Stage (ordered), No Repeats
 
 * **Flow Start**: SI-001 created.
-* **Each Stage Submit**:
+* **Each Stage Submit**: ordered (no stage is accepted if previous is not already exist and valid)
 
-    * SS-N is created. `stageSubmission.si_id=null`
-    * **No new** SI: SS-N reuses SI-001 (because scope hasn’t changed).
+    * SS-N is created. `stageSubmission.stageScope=null`
+    * process in sequence (first or check previous if exist in system or in same payload)
 
-#### 2.3 Multi‐Stage, Entity‐Bound at One Stage
+**This diagram shows a multi-stage flow without repeatable stages**
 
-* **Flow Start**: SI-001 usual.
+```mermaid
+
+sequenceDiagram
+    actor User
+    participant App
+    participant DB
+    User ->> App: Start new Flow (multi-stage)
+    App ->> DB: Create FlowInstance (status=IN_PROGRESS)
+    DB -->> App: FI-002
+    App ->> DB: Create ScopeInstance (for FI-002, root scope)
+    DB -->> App: SI-002
+
+    loop For each stage (in order)
+        App ->> User: Show stage form
+        User ->> App: Submit stage data
+        App ->> DB: Create StageSubmission (for current stage, no new ScopeInstance)
+        DB -->> App: SS-00X
+
+    end
+
+    App ->> DB: Update FlowInstance status to COMPLETED
+    App ->> User: Flow completed
+
+```
+
+#### 2.3 Multi‐Stage, Scope with Entity at One Stage (entities pre exist in the system 'dropdown selection')
+
+* **Flow Start**: SI-001 , flow scope with the least flow level's required dims `OrgUnit, and scopeDate` .
 * **Stage “Enroll”**: for each repeated submission:
 
     1. Create SS-2a.
@@ -89,16 +161,50 @@ associated with and grouped by, can be one or more of:
        `scope_data={"entity_instance_id": P001}`.
     3. Next repeat ⇒ SI-003 for P002, etc.
 
+* **This diagram shows a multi-stage flow where one stage is repeatable and entity-bound**
+
+    ```mermaid
+    sequenceDiagram
+        actor User
+        participant App
+        participant DB
+        User ->> App: Start new Flow
+        App ->> DB: Create FlowInstance (FI-003, status=IN_PROGRESS)
+        DB -->> App: FI-003
+        App ->> DB: Create ScopeInstance (root scope for FI-003: SI-003)
+        DB -->> App: SI-003
+        Note over User, DB: Stage 1: Entity-bound and repeatable
+    
+        loop For each entity (e.g., each item)
+            User ->> App: Start new repeat for Stage1
+            App ->> User: Show stage1 form
+            User ->> App: Submit form for one entity (e.g., item)
+            App ->> DB: Create StageSubmission (SS-00Y for FI-003, stage1)
+            DB -->> App: SS-00Y
+            App ->> DB: Create ScopeInstance (for SS-00Y, with entityId=...)
+            DB -->> App: SI-00Y
+            App ->> DB: Create/Update EntityInstance (if new entity, or update attributes)
+    
+        end
+    
+        Note over User, DB: Next stage (non-repeatable)
+        User ->> App: Submit next stage
+        App ->> DB: Create StageSubmission (SS-00Z for FI-003, stage2, no new ScopeInstance)
+        DB -->> App: SS-00Z
+        App ->> DB: Update FlowInstance status to COMPLETED
+        App ->> User: Flow completed
+    ```
+
 #### 2.4 Planned Visit to Existing Entity
 
-* **Flow Start**: FI linked to existing ScopeInstance `SI-001` with `scope_data={entity_instance_id=HH999}`.
-* **Stage 1**: SS-001 is scoped by SI-001.
+* **Flow Start**: FI linked to existing flowScope `SI-001` with `{entity_instance_id=HH999}`.
+* **Stage 1**: SS-001 is just data that is grouped by parent root scope instance.
 * **No extra** SI needed unless a stage binds *another* entity (e.g. enrolling a member).
 
 #### 2.5 Ad‐Hoc (“Log‐As‐You‐Go”)
 
 * **FlowInstance** created on‐demand ⇒ SI-001 created at same time.
-* **Stage Submission** ⇒ SS-1001 reuses SI-001.
+* **Stage Submission** ⇒ null.
 * **When to create**
 
     * **Always on flow start** (tie the flow’s scope).
@@ -106,56 +212,47 @@ associated with and grouped by, can be one or more of:
 
 ---
 
-    * On each `submit`, your `SubmissionProcessor` finds the current SI for that `flow_instance_id` and either updates
-      it (if no stage entity-binding) or creates a new one (if stage has an entityBinding).
+This is supposed to cover different workflows scenarios: campaign-data, inventory, health facility cases, surveys ...
 
 ## Example OF WorkFlow Configuration for “Receive Inventory”:
 
-1. **User sees “Receive Inventory” on their FlowInstance List**
+**User sees “Receive Inventory” on their FlowInstance List**
 
-    * If `planningMode = PLANNED`, in this flowInstance may have been created ahead of time by a warehouse manager for
-      June 1 deliveries.
-    * If `LOG_AS_YOU_GO`, the warehouse staff just taps “New Receive Transaction” and a fresh FlowInstance is created.
+### **FlowInstance**
 
-2. **FlowInstance Detail**
+* **Flow Instance Scope dims Capturing**
+    * Form fields:
 
-    * **Flow Instance Scope Capturing (a recording of a receipt): “Record Purchase/Donation scope Instance info”**
+        1. **ScopeDefinition elements:**
+            * `supplierId` (core dim `ENTITY`: `EntityType` “Supplier” dropdown)
+            * `teamId` (core dim `TEAM`: automatically injected, or selected, current user’s team) or select
+            * `orgUnitId` (core dim `ORG_UNIT`: warehouse location for this assignment)
+            * `invoiceNumber` (extra dim `STRING`) value will be stored in `ScopeAttributes`
+            * `receiveDate` (extra dim `DATE`) value will be stored in `ScopeAttributes`
+        2. **dataTemplate elements**:{`quantityReceived` (number), `qualityStatus` (Good/Damaged)}
 
-        * Form fields:
-            * `supplierId` (EntityType “Supplier” dropdown)
-            * `invoiceNumber` (text)
-            * `receiveDate` (date)
-            * `teamId` (automatically injected, current user’s team) or select
-            * `orgUnitId` (warehouse location for this assignment)
-        * On “Save,” we insert a `FlowInstance` row and `ScopeInstance` row.
-        * No EntityInstances created, just suppliers are selected from a pre-existing entities.
-        * orgUnit, and team are a system , invoiceNumber and receivedDate are just elements entered or scanned.
-    * **Stage 1: “Unpack & Quality Check”** *(repeatable = true)*
+    * On “Save,” we insert a `FlowInstance` row, and `FlowScope` row with core attributes and extra dim
+      scopeAttributes.
+    * No EntityInstances created, just suppliers are selected from a pre-existing entities.
 
-        * Form fields:
+    * **Stage 1: “Unpack & Quality Check”**
+        * Stage definition fields:
+            1. **ScopeDefinition elements:**
+                * `itemId` (core dim `ENTITY`: EntityType “Item” dropdown)
+                * `batchNumber` (extra dim `STRING`:)
+                * `expirationDate` (extra dim `DATE`)
+            2. **dataTemplate elements**:{`quantityReceived` (number), `qualityStatus` (Good/Damaged)}
+            3. repeatable = true
 
-            * `itemId` (EntityType “Item” dropdown)
-            * `batchNumber` (text)
-            * `expirationDate` (date)
-            * `quantityReceived` (number)
-            * `qualityStatus` (Good/Damaged)
-        * Here this Stage is marked *
-          *entity-bound to “ItemBatch”** (or simply “Item entity”) →
-
-            * Each time the user taps “Add Item,” we open the form, then on save we insert a new `StageSubmission` (with
-              Json data: `stageDefinitionId = unpackStage.id`, `itemId`, `batchNumber`, `expirationDate`,
-              `quantityReceived`, `qualityStatus`) **and** a new ScopeInstance with `entity_instance_id=itemId`.
-    * **Stage 3: “Store in Warehouse”**
-
-        * Single‐submission stage:
-
-            * Form fields:
-
+    * **Stage 3: “Store in Warehouse” Single‐submission stage:**
+        * Stage definition fields:
+            1. **ScopeDefinition elements:**
+                * `storageLocationId` (core dim `ENTITY`: “Location/Shelf” or simple dropdown item)
+            2. **dataTemplate elements**:{`quantityReceived` (number), `qualityStatus` (Good/Damaged)}
                 * `storageLocationId` (EntityType “Location” or simple dropdown)
                 * Optionally, a multi‐select of which `EntityInstance` items (from Stage 2) go to that location—though
                   we can also assume “all from Stage 2” if our process dictates.
-            * On “Save,” we write `StageSubmission(stageId=storeStage.id)` and, if needed, update those same
-              `EntityInstance` records with `properties.storageLocationId = <chosenLocation>`.
+            3. repeatable = false.
 
 ### INSERTS SAMPLES
 
@@ -167,6 +264,8 @@ with the metadata‐driven engine. It includes:
 3. Example **FlowInstance** JSON for each.
 4. Sketches of **StageSubmission** and **EntityInstance** behavior.
 
+Receive Inventory Flow Example
+
 ---
 
 ### 1. EntityType Definitions
@@ -176,8 +275,8 @@ with the metadata‐driven engine. It includes:
 ```jsonc
 // POST /api/entity-types
 {
-  "id": "itemEntityDefinitionId",
-  "displayName": "Inventory Item",
+  "id": "itemEntityTypeId",
+  "name": "Inventory Item",
   "attributes": [
     { "id":"itemId",        "type":"string", "required":true },
     { "id":"itemName",      "type":"string", "required":true },
@@ -190,17 +289,15 @@ with the metadata‐driven engine. It includes:
 
 ```jsonc
 {
-  "id": "supplierEntityDefinitionId",
-  "displayName": "Supplier",
+  "id": "supplierEntityTypeId",
+  "name": "Supplier",
   "attributes": [
     { "id":"supplierId",   "type":"string", "required":true },
     { "id":"supplierName", "type":"string", "required":true }
   ]
 }
 ```
-
-but notice here Supplier and Item 's entity instances of this definition are already on the system and will be fetched
-for selection, unless this is used on a registration form.
+// other entityTypes definition as needed
 
 #### 2. FlowType Definitions
 
@@ -211,30 +308,70 @@ for selection, unless this is used on a registration form.
 {
     "id": "receiveInventory",
     "name": "Receive Inventory",
-    "planningMode": "PLANNED",
+    "forceStageOrder": true,
     "submissionMode": "MULTI_STAGE",
-    "scopes": [
-    { "key":"team",    "type":"TEAM",     "required":true,  "multiple":false },
-    { "key":"orgUnit", "type":"ORG_UNIT", "required":true,  "multiple":false },
-    { "key":"date",    "type":"DATE",     "required":true,  "multiple":false },
-    { "key":"invoiceNumber",    "type":"NUMBER",     "required":true,  "multiple":false },
-    { "key":"supplier","type":"ENTITY",   "required":true,  "multiple":false, "entityTypeId":"Supplier" }
-  ],
+    "flowScopeDefinition": {
+    "scopeElements": [
+      {
+        "key": "Warehouse",
+        "type": "ORG_UNIT",
+        "coreElement": true,
+        "required": true
+      },
+      {
+        "key": "Receiving Team",
+        "type": "TEAM",
+        "coreElement": true,
+        "required": false
+      },
+      {
+        "key": "Supplier",
+        "type": "ENTITY",
+        "coreElement": true,
+        "required": true,
+        "entityTypeId": "SUPPLIER"
+      },
+      {
+        "key": "Invoice #",
+        "type": "STRING",
+        "coreElement": false,
+        "required": true
+      }
+    ]
+  },
+    "flowScopeDefinition": {
+        "scopeElements": [
+            { "key":"supplier","type":"ENTITY",   "required":true,  "multiple":false, "entityTypeId":"Supplier" }
+            { "key":"team",    "type":"TEAM",     "required":true,  "multiple":false },
+            { "key":"orgUnit", "type":"ORG_UNIT", "required":true,  "multiple":false },
+            { "key":"date",    "type":"DATE",     "required":true,  "multiple":false },
+            { "key":"invoiceNumber",    "type":"NUMBER",     "required":true,  "multiple":false },
+        ]  
+  },
   "stages": [
     {
       "id":"unpackCheck",
       "name":"Unpack & Quality Check",
       "sortOrder": 2,
-      "formTemplateId":"unpackForm",
+      "formTemplateId":"unpackForm", // {contains: quantityReceived, and qualityStatus elements definitions }
       "repeatable":true,
-      "entityBoundEntityTypeId":"Item"
+      "stageScopeDefinition": {
+        "scopeElements": [
+            { "key":"item","type":"ENTITY",   "required":true,  "multiple":false, "entityTypeId":"ItemEntityTypeId" }         
+        ]
+      }
     },
     {
       "id":"storeItem",
       "sortOrder": 3,
       "name":"Store Items",
       "formTemplateId":"storeForm",
-      "repeatable":false
+      "repeatable":false,
+      "stageScopeDefinition": {
+        "scopeElements": [ // or it can be defined as an optionSet dropdown, not entity.
+            { "key":"item","type":"ENTITY",   "required":true,  "multiple":false, "entityTypeId": "storageLocationEntityTypeId" }         
+        ]
+      }
     }
   ]
 }
@@ -246,30 +383,39 @@ for selection, unless this is used on a registration form.
 {
   "id": "issueInventory",
   "name": "Issue Inventory",
-  "planningMode": "PLANNED",
+  "forceStageOrder": true,
   "submissionMode": "MULTI_STAGE",
-  "scopes": [
-    { "key":"team","type":"TEAM","required":true,"multiple":false },
-    { "key":"orgUnit","type":"ORG_UNIT","required":true,"multiple":false },
-    { "key":"date","type":"DATE","required":true,"multiple":false }
-  ],
+  "stageScopeDefinition": {
+        "scopeElements": [ 
+            { "key":"team","type":"TEAM","required":true,"multiple":false },
+            { "key":"orgUnit","type":"ORG_UNIT","required":true,"multiple":false },
+            { "key":"date","type":"DATE","required":true,"multiple":false }         
+        ]
+   }
   "stages":[
     {
       "id":"pickItems",
       "name":"Pick Items",
       "formTemplateId":"pickForm",
+      "sortOrder": 1,
       "repeatable":true,
-      "entityBoundEntityTypeId":"Item"
+      "stageScopeDefinition": {
+        "scopeElements": [
+            { "key":"item","type":"ENTITY",   "required":true,  "multiple":false, "entityTypeId":"ItemEntityTypeId" }         
+        ]
+      }
     },
     {
       "id":"validateRecipient",
       "name":"Validate Recipient",
+      "sortOrder": 2,
       "formTemplateId":"recipientForm",
       "repeatable":false
     },
     {
       "id":"finalizeIssue",
       "name":"Finalize Issue",
+      "sortOrder": 3,
       "formTemplateId":"issueForm",
       "repeatable":false
     }
@@ -285,12 +431,14 @@ for selection, unless this is used on a registration form.
   "name": "Discard Inventory",
   "planningMode": "PLANNED",
   "submissionMode": "SINGLE",
-  "scopes":[
-    { "key":"team","type":"TEAM","required":true,"multiple":false },
-    { "key":"orgUnit","type":"ORG_UNIT","required":true,"multiple":false },
-    { "key":"date","type":"DATE","required":true,"multiple":false }
-  ],
-  "stages":[]
+  "stageScopeDefinition": {
+        "scopeElements": [ 
+            { "key":"team","type":"TEAM","required":true,"multiple":false },
+            { "key":"orgUnit","type":"ORG_UNIT","required":true,"multiple":false },
+            { "key":"date","type":"DATE","required":true,"multiple":false }     
+        ]
+   }
+  "stages":[...]
 }
 ```
 
@@ -370,6 +518,31 @@ for selection, unless this is used on a registration form.
 
 ---
 
+**Multi-Stage Inventory Flow (Receive Example)**
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant S as System
+    participant DB as Database
+    U ->> S: Start Receive Flow
+    S ->> DB: Create FlowInstance(FI-6001)
+    S ->> DB: Create ScopeInstance(SI-1001: team/orgUnit/date/invoice)
+
+    loop Each Item
+        U ->> S: Submit Unpack Stage
+        S ->> DB: Create StageSubmission(SS-100x)
+        S ->> DB: Create ScopeInstance(SI-100y: itemId)
+        S ->> DB: Upsert EntityInstance(Item)
+    end
+
+    U ->> S: Submit Store Stage
+    S ->> DB: Create StageSubmission(SS-2001)
+    S ->> DB: Update FlowStatus(COMPLETED)
+```
+
+---
+
 ### 4. Issue FlowInstance
 
 1. **FlowInstance**
@@ -428,13 +601,20 @@ erDiagram
     FLOW_TYPE ||--|{ STAGE_DEFINITION: has
     FLOW_TYPE ||--o{ FLOW_INSTANCE: instantiates
     FLOW_INSTANCE ||--o{ STAGE_SUBMISSION: has
-    FLOW_INSTANCE ||--|| SCOPE_INSTANCE: has
+    FLOW_INSTANCE ||--|| SCOPE_INSTANCE: scopedBy
     STAGE_DEFINITION ||--o{ STAGE_SUBMISSION: defines
     DATA_TEMPLATE ||--o{ STAGE_DEFINITION: powers
-    STAGE_SUBMISSION ||--o| SCOPE_INSTANCE: has
+    STAGE_SUBMISSION ||--|| SCOPE_INSTANCE: scopedBy
     DATA_TEMPLATE ||--o{ DATA_ELEMENT: has
     ENTITY_DEFINITION ||--o{ ENTITY_INSTANCE: defines
-    SCOPE_INSTANCE ||--o| ENTITY_INSTANCE: has
+    SCOPE_INSTANCE ||--o| ENTITY_INSTANCE: has_embeddedInJsonB
+    SCOPE_INSTANCE ||--o| ENTITY_INSTANCE: has_embeddedInJsonB
+    SCOPE_INSTANCE ||--o| OTHER_SYSTEM_ENTITIES: has_embeddedInJsonB
+    SCOPE_ELEMENT ||--|{ ENTITY_DEFINITION: has
+    SCOPE_ELEMENT ||--|{ SCOPE_ELEMENT_VALUE: has
+    SCOPE_ELEMENT ||--|{ SCOPE_ELEMENT_VALUE: has
+    SCOPE_ELEMENT ||--|{ SCOPE_ELEMENT_VALUE: has
+    SCOPE_ELEMENT ||--|{ SCOPE_ELEMENT_VALUE: has
 %% Table-entity definitions
     FLOW_TYPE {
         String id PK
@@ -474,7 +654,7 @@ erDiagram
         String id PK
         String name
     %% your existing template JSON (DataElements)
-        List dataElements
+        List dataTemplateElements
         Timestamp created_at
     }
 %% optional pre-created and pre-link scope for planned flow instances
@@ -533,6 +713,14 @@ erDiagram
         String id PK
         String name
         Enum valueType
+    }
+
+    OTHER_SYSTEM_ENTITIES {
+    }
+
+    SCOPE_ELEMENT_VALUE {
+        String element_id
+        Object element_value
     }
 ```
 
@@ -638,16 +826,34 @@ flowchart TD
 
 ---
 
+### 1. Entity Relationships metadata
+
+```mermaid
+erDiagram
+    FlowType ||--|| ScopeDefinition: "1:1 (root dims)"
+    FlowType ||--|| ScopeDefinition: "1:1 (root dims)"
+    FlowType ||--|{ StageDefinition: "1:M"
+    StageDefinition ||--o| ScopeDefinition: "0:1 (stage dims)"
+    StageDefinition ||--|| FormTemplate: "1:1 (stage form def)"
+    FormTemplate ||--|{ DataElement: "1:M (form element def)"
+```
+
 ### 1. Entity Relationships
 
 ```mermaid
 erDiagram
     FlowInstance ||--o{ StageSubmission: "1:M"
-    FlowInstance ||--|| ScopeInstance: "1:1 (root scope)"
-    StageSubmission ||--o| ScopeInstance: "0..1 (stage scope)"
+    FlowInstance ||--|| ScopeInstance: "1:1 (root dims)"
+    StageSubmission ||--o| ScopeInstance: "0..1 (stage dims)"
+    ScopeInstance ||--|| orgUnit: "1:1 (ou dim)"
+    ScopeInstance ||--o| Team: "0..1 (team dim)"
     ScopeInstance ||--o| EntityInstance: "0..1"
     FlowType ||--|{ StageDefinition: "1:M"
-    StageDefinition ||--o| EntityDefinition: "0..1 (binding)"
+    FlowType ||--|{ ScopeDefinition: "1:M (root ctx defs)"
+    StageDefinition ||--o| ScopeDefinition: "1:M (stage ctx defs)"
+    ScopeDefinition ||--|{ ScopeElement: "1:M (scope element def)"
+    StageDefinition ||--|| FormTemplate: "1:1 (stage form def)"
+    FormTemplate ||--|{ DataElement: "1:M (form element def)"
 ```
 
 #### 2. Key Operations Sequence

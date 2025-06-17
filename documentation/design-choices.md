@@ -134,7 +134,7 @@ flowchart TD
 ```sql
 -- Find all item submissions in warehouse WH1
 SELECT ss.*
-FROM stage_submission ss
+FROM step_instance ss
          JOIN scope_instance si ON ss.scope_instance_id = si.id
 WHERE si.scope_data ->> 'orgUnit' = 'WH1'
   AND si.scope_data ? 'entityId'
@@ -303,6 +303,9 @@ void twoEntities_createsSeparateScopes() {
 ```
 
 ---
+
+**Scope Override Semantics**: child Inherits root scope, allows adding new keys, and allow overriding root dimensions (
+e.g., changing entity, date,..., )? (Implement scope inheritance with deep copy)
 
 ### Next Steps & Open Questions
 

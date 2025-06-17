@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.acl;
 
-import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
+import org.nmcpye.datarun.jpa.flowinstance.repository.FlowInstanceRepository;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.security.CreatUserDetailService;
 import org.nmcpye.datarun.userdetail.UserFormAccess;
@@ -25,10 +25,10 @@ import java.util.Set;
 public class AclBootstrap /*implements CommandLineRunner*/ {
 
     private final AclService aclService;
-    private final AssignmentRepository assignments;
+    private final FlowInstanceRepository assignments;
     private final CreatUserDetailService creatUserDetailService;
 
-    public AclBootstrap(AclService aclService, AssignmentRepository assignments, CreatUserDetailService creatUserDetailService) {
+    public AclBootstrap(AclService aclService, FlowInstanceRepository assignments, CreatUserDetailService creatUserDetailService) {
         this.aclService = aclService;
         this.assignments = assignments;
         this.creatUserDetailService = creatUserDetailService;
@@ -41,24 +41,24 @@ public class AclBootstrap /*implements CommandLineRunner*/ {
             new UsernamePasswordAuthenticationToken("system", "", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
         SecurityContextHolder.getContext().setAuthentication(sys);
 
-        for (Assignment assignment : assignments.findAll()) {
+        for (FlowInstance flowInstance : assignments.findAll()) {
             // grant team-level metadata READ
-            Sid teamSid = new GrantedAuthoritySid("ROLE_TEAM_" + assignment.getTeam().getUid());
-            aclService.assignPermissions(assignment, teamSid, MetaPermission.READ);
+            Sid teamSid = new GrantedAuthoritySid("ROLE_TEAM_" + flowInstance.getTeam().getUid());
+            aclService.assignPermissions(flowInstance, teamSid, MetaPermission.READ);
 
             // for each user in that team who can submit:
-            for (UserFormAccess fa : getFormAccessForAssignment(assignment)) {
+            for (UserFormAccess fa : getFormAccessForAssignment(flowInstance)) {
                 if (fa.canAddSubmission()) {
                     Sid userSid = new PrincipalSid(fa.getUser());
                     aclService.assignPermissions(
-                        assignment, userSid, DataPermission.DATA_WRITE);
+                            flowInstance, userSid, DataPermission.DATA_WRITE);
                 }
             }
         }
     }
 
-    Set<UserFormAccess> getFormAccessForAssignment(Assignment assignment) {
-        Set<User> users = assignment.getTeam().getUsers();
+    Set<UserFormAccess> getFormAccessForAssignment(FlowInstance flowInstance) {
+        Set<User> users = flowInstance.getTeam().getUsers();
         Set<UserFormAccess> accesses = new HashSet<>();
         for (User user : users) {
             final var userWithAccess = creatUserDetailService.createUserDetails(user);
