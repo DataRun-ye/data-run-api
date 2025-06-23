@@ -64,4 +64,10 @@ public class DataElement extends JpaBaseIdentifiableObject {
     @JsonIgnoreProperties(value = {"dataElementGroupSets", "dataElements", "translations"}, allowSetters = true)
     private Set<DataElementGroup> dataElementGroups = new HashSet<>();
 
+    @PreRemove
+    private void removeOuGroupsFromOu() {
+        for (DataElementGroup g : dataElementGroups) {
+            g.getDataElements().remove(this);
+        }
+    }
 }

@@ -85,12 +85,10 @@ public class CacheConfiguration {
             createCache(cm, org.nmcpye.datarun.domain.Activity.class.getName());
             createCache(cm, org.nmcpye.datarun.domain.Activity.class.getName() + ".assignments");
 
-            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.AssignmentForm.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Assignment.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Assignment.class.getName() + ".children");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Assignment.class.getName() + ".assignmentForms");
 
-            createCache(cm, org.nmcpye.datarun.drun.postgres.domain.TeamFormAccess.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName());
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName() + ".assignments");
             createCache(cm, org.nmcpye.datarun.drun.postgres.domain.Team.class.getName() + ".users");

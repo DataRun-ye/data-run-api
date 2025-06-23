@@ -7,12 +7,10 @@ import org.nmcpye.datarun.drun.postgres.domain.Assignment;
 import org.nmcpye.datarun.drun.postgres.repository.AssignmentRepository;
 import org.nmcpye.datarun.drun.postgres.service.AssignmentService;
 import org.nmcpye.datarun.mapper.dto.AssignmentWithAccessDto;
-import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
-import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.slf4j.Logger;
@@ -20,10 +18,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.net.URISyntaxException;
-import java.util.List;
 
 import static org.nmcpye.datarun.web.rest.postgres.assignment.AssignmentResource.CUSTOM;
 import static org.nmcpye.datarun.web.rest.postgres.assignment.AssignmentResource.V1;
@@ -52,9 +48,10 @@ public class AssignmentResource
 
     @RequestMapping(value = "forms", method = {RequestMethod.GET, RequestMethod.POST})
     protected ResponseEntity<PagedResponse<?>> getAllDto(QueryRequest queryRequest,
-                                                         @RequestBody(required = false) String jsonQuery) throws Exception {
-        final var userLogin = SecurityUtils.getCurrentUserLoginOrThrow();
-        log.debug("REST request to getAll {}:{}", userLogin, getName());
+                                                         @RequestBody(required = false) String jsonQuery,
+                                                         @AuthenticationPrincipal CurrentUserDetails user) throws Exception {
+        hasMinimalRightsOrThrow(user);
+        log.debug("REST request to getAll {}:{}", user.getUsername(), getName());
 
         Page<AssignmentWithAccessDto> processedPage = assignmentService.getAllUserAccessibleDto(queryRequest, jsonQuery);
 
@@ -69,41 +66,43 @@ public class AssignmentResource
         return "assignments";
     }
 
-    @Override
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<EntitySaveSummaryVM> saveOne(Assignment entity) {
-        log.debug("REST request to saveOne {}", getName());
-        if (entity.getId() != null) {
-            throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + entity.getId().toString(), "idexists");
-        }
-        return super.saveOne(entity);
-    }
+//    @Override
+//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+//    public ResponseEntity<EntitySaveSummaryVM> saveOne(Assignment entity) {
+//        log.debug("REST request to saveOne {}", getName());
+//        if (entity.getId() != null) {
+//            throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + entity.getId().toString(), "idexists");
+//        }
+//        return super.saveOne(entity);
+//    }
+//
+//    @Override
+//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+//    public ResponseEntity<?> saveReturnSaved(Assignment entity) {
+//        log.debug("REST request to saveOne, return saved {}", getName());
+//        if (entity.getId() != null) {
+//            throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + entity.getId().toString(), "idexists");
+//        }
+//        return super.saveReturnSaved(entity);
+//    }
+//
+//    @Override
+//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+//    public ResponseEntity<Assignment> updateEntity(String uid, Assignment entity) throws URISyntaxException {
+//        return super.updateEntity(uid, entity);
+//    }
 
-    @Override
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<?> saveReturnSaved(Assignment entity) {
-        log.debug("REST request to saveOne, return saved {}", getName());
-        if (entity.getId() != null) {
-            throw new BadRequestAlertException("A new entity cannot already have an ID", getName() + ":" + entity.getId().toString(), "idexists");
-        }
-        return super.saveReturnSaved(entity);
-    }
-
-    @Override
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<Assignment> updateEntity(String uid, Assignment entity) throws URISyntaxException {
-        return super.updateEntity(uid, entity);
-    }
-
-    @Override
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<Assignment> entities) {
-        return super.saveAll(entities);
-    }
+//    @Override
+//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+//    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<Assignment> entities) {
+//        return super.saveAll(entities);
+//    }
 
     @GetMapping("/updatePaths")
     public ResponseEntity<String> updatePaths(
-        @RequestParam(name = "forceUpdate", required = false, defaultValue = "false") boolean forceUpdate) {
+        @RequestParam(name = "forceUpdate", required = false, defaultValue = "false") boolean forceUpdate,
+        @AuthenticationPrincipal CurrentUserDetails user) {
+        hasMinimalRightsOrThrow(user);
         log.debug("REST request to update orgUnit Paths");
 
         try {

@@ -1,24 +1,30 @@
 package org.nmcpye.datarun.web.rest.common;
 
 
+import org.nmcpye.datarun.acl.AclService;
 import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.common.AuditableObjectService;
 import org.nmcpye.datarun.common.DRunApiVersion;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.ResponseUtil;
 
@@ -27,7 +33,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Optional;
 
-//@RequestMapping("/api")
 @ApiVersion({DRunApiVersion.DEFAULT, DRunApiVersion.ALL})
 public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends Serializable> {
 
@@ -38,6 +43,9 @@ public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends
 
     final protected AuditableObjectService<T, ID> auditableObjectService;
     final protected AuditableObjectRepository<T, ID> repository;
+
+    @Autowired
+    protected AclService aclService;
 
     protected BaseReadResource(AuditableObjectService<T, ID> auditableObjectService,
                                AuditableObjectRepository<T, ID> repository) {
@@ -53,24 +61,29 @@ public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends
      * {@code GET  /Ts} : get all the entities.
      *
      * @param queryRequest the query request parameters.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of assignments in body.
+     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of entities in body.
      */
     @GetMapping("")
-    protected ResponseEntity<PagedResponse<?>> getAll(QueryRequest queryRequest) throws Exception {
-        final var userLogin = SecurityUtils.getCurrentUserLoginOrThrow();
-        log.debug("REST request to getAll {}:{}", userLogin, getName());
-        Pageable pageable = queryRequest.getPageable();
-
-        if (!queryRequest.isPaged()) {
-            pageable = Pageable.unpaged();
-        }
-
+    protected ResponseEntity<PagedResponse<?>> getAll(QueryRequest queryRequest) {
         Page<T> processedPage = getList(queryRequest, null);
 
         String next = createNextPageLink(processedPage);
 
         PagedResponse<T> response = initPageResponse(processedPage, next);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * minimal Access rights or throw
+     *
+     * @param currentUser user
+     * @throws ResponseStatusException exception if has no business here whatsoever (no minimal rights)
+     */
+    protected void hasMinimalRightsOrThrow(CurrentUserDetails currentUser) throws ResponseStatusException {
+        if (currentUser == null || !aclService.hasMinimalRights(currentUser)) {
+            log.warn("REST Prevent Access, no minimal rights `{}`:`{}`", getEntityClass().getSimpleName(), currentUser);
+            throw new IllegalQueryException(HttpStatus.FORBIDDEN + ", You Hava No Business Here");
+        }
     }
 
     protected <E> PagedResponse<E> initPageResponse(Page<E> page, String next) {
@@ -81,7 +94,8 @@ public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends
     }
 
     @PostMapping("/query")
-    public ResponseEntity<PagedResponse<?>> unifiedMongoLikeQuerying(@RequestBody String jsonQuery, QueryRequest queryRequest) {
+    public ResponseEntity<PagedResponse<?>> unifiedMongoLikeQuerying(QueryRequest queryRequest,
+                                                                     @RequestBody(required = false) String jsonQuery) {
         try {
             Page<T> processedPage = getList(queryRequest, jsonQuery);
 
@@ -118,14 +132,31 @@ public abstract class BaseReadResource<T extends AuditableObject<ID>, ID extends
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<T> getById(@PathVariable("id") String id) {
+    public ResponseEntity<T> getById(@PathVariable("id") String id,
+                                     @AuthenticationPrincipal CurrentUserDetails user) {
+        hasMinimalRightsOrThrow(user);
         log.debug("REST request to get from {}: {}", getName(), id);
         Optional<T> entity = auditableObjectService.findByUid(id);
         return ResponseUtil.wrapOrNotFound(entity);
     }
 
     protected Page<T> getList(QueryRequest queryRequest, String jsonQueryBody) {
-        return auditableObjectService.findAllByUser(queryRequest, jsonQueryBody);
+        final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        log.debug("REST request to getList {}:{}", user.getUsername(), getName());
+        final var isSuper = user.isSuper();
+        final var hasIt = aclService.hasMinimalRights(user);
+        log.debug("has it: {}", hasIt);
+        log.debug("has teams,forms: {}:{}", user.getUserTeamsUIDs(), user.getUserFormsUIDs());
+        if (!aclService.hasMinimalRights(user)) {
+            log.warn("REST Prevent Access to `{}`, no minimal rights: `{}`", getEntityClass().getSimpleName(), user);
+            return Page.empty();
+        }
+        return auditableObjectService.findAllByUser(queryRequest, jsonQueryBody)
+            .map(s -> postProcess(s, queryRequest, jsonQueryBody));
+    }
+
+    protected T postProcess(T entity, QueryRequest queryRequest, String jsonQuery) {
+        return entity;
     }
 
     protected abstract String getName();

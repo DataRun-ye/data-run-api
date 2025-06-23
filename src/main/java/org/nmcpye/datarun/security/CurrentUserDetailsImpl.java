@@ -51,4 +51,15 @@ public class CurrentUserDetailsImpl implements CurrentUserDetails {
     private final Set<String> userGroupsUIDs;
     private final Set<String> userFormsUIDs;
     private final List<UserFormAccess> formAccess;
+
+    @Override
+    public String toString() {
+        return "Details{" +
+            "user='" + username + '\'' +
+            ", enabled=" + enabled +
+            ", teams=" + userTeamsUIDs +
+            ", forms=" + userFormsUIDs +
+            ", name='" + firstName + '\'' +
+            '}';
+    }
 }

@@ -34,12 +34,13 @@ public class DefaultDataElementGroupService
     }
 
 
+    @Transactional
     @Override
     public DataElementGroup saveWithRelations(DataElementGroup object) {
         if (!object.getDataElements().isEmpty()) {
             Set<DataElement> dataElements = new HashSet<>();
             for (DataElement dataElement : object.getDataElements()) {
-                dataElements.add(findOrgUnit(dataElement));
+                dataElements.add(findDataElement(dataElement));
             }
 
             object.setDataElements(dataElements);
@@ -49,7 +50,7 @@ public class DefaultDataElementGroupService
         return save(object);
     }
 
-    private DataElement findOrgUnit(DataElement dataElement) {
+    private DataElement findDataElement(DataElement dataElement) {
         return Optional.ofNullable(dataElement.getUid())
             .flatMap(dataElementRepository::findByUid)
             .or(() -> Optional.ofNullable(dataElement.getId())

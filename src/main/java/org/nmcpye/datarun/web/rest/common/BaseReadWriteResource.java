@@ -7,14 +7,19 @@ import org.nmcpye.datarun.common.DRunApiVersion;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.repository.AuditableObjectRepository;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
+import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import tech.jhipster.web.util.HeaderUtil;
 
 import java.io.Serializable;
@@ -64,39 +69,64 @@ public abstract class BaseReadWriteResource<T extends AuditableObject<ID>, ID ex
         return ResponseEntity.ok(summary);
     }
 
+    protected T preProcess(T entity) {
+        // do nothing
+        return entity;
+    }
+
     protected void saveEntity(T entity, EntitySaveSummaryVM summary) {
+        final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        hasMinimalRightsOrThrow(user);
+        var processedEntity = preProcess(entity);
         try {
-            if (entity.getUid() != null && auditableObjectService.existsByUid(entity.getUid())) {
-                entity = auditableObjectService.update(entity);
-                summary.getUpdated().add(entity.getUid());
+            if (processedEntity.getUid() != null && auditableObjectService.existsByUid(processedEntity.getUid())) {
+                if (!aclService.canUpdate(entity, user)) {
+                    processedEntity = auditableObjectService.update(processedEntity);
+                    summary.getUpdated().add(processedEntity.getUid());
+                } else {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You have no right to send things here");
+                }
             } else {
-                entity = auditableObjectService.saveWithRelations(entity);
-                summary.getCreated().add(entity.getUid());
+                if (aclService.canAddNew(entity, user)) {
+                    processedEntity = auditableObjectService.saveWithRelations(processedEntity);
+                    summary.getCreated().add(processedEntity.getUid());
+                } else {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You have no right to send things here");
+                }
             }
         } catch (Exception e) {
-            log.error("REST Error Saving entity {}:{}", getEntityClass().getSimpleName(), entity.getUid());
-            summary.getFailed().put(entity.getUid(), e.getMessage());
+            log.error("REST Error Saving entity {}:{}", getEntityClass().getSimpleName(), processedEntity.getUid());
+            summary.getFailed().put(processedEntity.getUid(), e.getMessage());
             throw new IllegalQueryException(e.getMessage());
         }
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
-    public ResponseEntity<Void> deleteByIdUid(@PathVariable("id") String id) {
+    public ResponseEntity<Void> deleteByIdUid(@PathVariable("id") String id,
+                                              @AuthenticationPrincipal CurrentUserDetails user) {
+        hasMinimalRightsOrThrow(user);
         log.debug("REST request to delete from {}: {}", getName(), id);
-        auditableObjectService.findByUid(id).ifPresent(auditableObjectService::delete);
+        final var entity = auditableObjectService.findByUid(id).orElseThrow();
+        if (aclService.canDelete(entity, user)) {
+            auditableObjectService.delete(entity);
+        } else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+
         return ResponseEntity
             .noContent()
             .headers(HeaderUtil
-                .createEntityDeletionAlert(applicationName, true, getName(), id.toString())).build();
+                .createEntityDeletionAlert(applicationName, true, getName(), id)).build();
     }
 
     @PutMapping("/{uid}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<T> updateEntity(
         @PathVariable(value = "uid", required = false) final String uid,
-        @Valid @RequestBody T entity
+        @Valid @RequestBody T entity, @AuthenticationPrincipal CurrentUserDetails user
     ) throws URISyntaxException {
+        hasMinimalRightsOrThrow(user);
         log.debug("REST request to delete from {}: {}", getName(), uid);
         if (entity.getUid() == null) {
             throw new BadRequestAlertException("Invalid uid", getName(), "uid is null");
@@ -106,7 +136,12 @@ public abstract class BaseReadWriteResource<T extends AuditableObject<ID>, ID ex
             throw new BadRequestAlertException("Invalid ID", getName(), "idinvalid");
         }
 
-        entity = auditableObjectService.update(entity);
+        if (aclService.canUpdate(entity, user)) {
+            entity = auditableObjectService.update(entity);
+        } else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+
 
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), entity.getId().toString()))

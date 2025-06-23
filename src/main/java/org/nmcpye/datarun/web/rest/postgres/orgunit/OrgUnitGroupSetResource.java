@@ -3,17 +3,12 @@ package org.nmcpye.datarun.web.rest.postgres.orgunit;
 import org.nmcpye.datarun.drun.postgres.domain.OrgUnitGroupSet;
 import org.nmcpye.datarun.drun.postgres.repository.OrgUnitGroupSetRepository;
 import org.nmcpye.datarun.drun.postgres.service.OrgUnitGroupSetService;
-import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.net.URISyntaxException;
-import java.util.List;
 
 import static org.nmcpye.datarun.web.rest.postgres.orgunit.OrgUnitGroupSetResource.CUSTOM;
 import static org.nmcpye.datarun.web.rest.postgres.orgunit.OrgUnitGroupSetResource.V1;
@@ -44,27 +39,27 @@ public class OrgUnitGroupSetResource extends JpaBaseResource<OrgUnitGroupSet> {
     }
 
 
-    @Override
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<OrgUnitGroupSet> updateEntity(String uid, OrgUnitGroupSet entity) throws URISyntaxException {
-        return super.updateEntity(uid, entity);
-    }
-
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    @Override
-    public ResponseEntity<?> saveReturnSaved(OrgUnitGroupSet entity) {
-        return super.saveReturnSaved(entity);
-    }
-
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveOne(OrgUnitGroupSet entity) {
-        return super.saveOne(entity);
-    }
-
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<OrgUnitGroupSet> entities) {
-        return super.saveAll(entities);
-    }
+//    @Override
+//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+//    public ResponseEntity<OrgUnitGroupSet> updateEntity(String uid, OrgUnitGroupSet entity) throws URISyntaxException {
+//        return super.updateEntity(uid, entity);
+//    }
+//
+//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+//    @Override
+//    public ResponseEntity<?> saveReturnSaved(OrgUnitGroupSet entity) {
+//        return super.saveReturnSaved(entity);
+//    }
+//
+//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+//    @Override
+//    public ResponseEntity<EntitySaveSummaryVM> saveOne(OrgUnitGroupSet entity) {
+//        return super.saveOne(entity);
+//    }
+//
+//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+//    @Override
+//    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<OrgUnitGroupSet> entities) {
+//        return super.saveAll(entities);
+//    }
 }

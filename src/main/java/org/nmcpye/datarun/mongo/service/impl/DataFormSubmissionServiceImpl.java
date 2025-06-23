@@ -87,6 +87,10 @@ public class DataFormSubmissionServiceImpl
         // archive existing submission
         repository.findByUid(submission.getUid())
             .ifPresentOrElse(existingSubmission -> {
+                // TODO remove setting formVersion after all old submissions migrate to set formVersionUid
+                if (existingSubmission.getFormVersion() == null || existingSubmission.getFormVersion().isEmpty()) {
+                    existingSubmission.setFormVersion(submission.getFormVersion());
+                }
                 submissionHistoryService.saveToHistory(existingSubmission);
                 // Increment version number and update the current document
                 submission.setSubmissionVersion(existingSubmission.getSubmissionVersion() + 1);

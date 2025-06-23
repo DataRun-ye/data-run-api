@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1750202999559-15" author="Hamza">
+        <dropForeignKeyConstraint baseTableName="assignment" constraintName="fk_assignment_on_assignment_type"/>
+    </changeSet>
+    <changeSet id="1750202999559-16" author="Hamza">
+        <dropForeignKeyConstraint baseTableName="assignment_type" constraintName="fk_assignment_type_on_activity"/>
+    </changeSet>
+    <changeSet id="1750202999559-17" author="Hamza">
+        <dropForeignKeyConstraint baseTableName="data_instance" constraintName="fk_data_instance_on_assignment"/>
+    </changeSet>
+    <changeSet id="1750202999559-18" author="Hamza">
+        <dropForeignKeyConstraint baseTableName="data_instance"
+                                  constraintName="fk_data_instance_on_data_stage_definition"/>
+    </changeSet>
+    <changeSet id="1750202999559-19" author="Hamza">
+        <dropForeignKeyConstraint baseTableName="data_instance" constraintName="fk_data_instance_on_data_template"/>
+    </changeSet>
+    <changeSet id="1750202999559-20" author="Hamza">
+        <dropForeignKeyConstraint baseTableName="data_instance" constraintName="fk_data_instance_on_entity_instance"/>
+    </changeSet>
+    <changeSet id="1750202999559-21" author="Hamza">
+        <dropForeignKeyConstraint baseTableName="data_stage_definition"
+                                  constraintName="fk_data_stage_definition_on_assignment_type"/>
+    </changeSet>
+    <changeSet id="1750202999559-22" author="Hamza">
+        <dropForeignKeyConstraint baseTableName="data_stage_definition"
+                                  constraintName="fk_data_stage_definition_on_data_template"/>
+    </changeSet>
+    <changeSet id="1750202999559-23" author="Hamza">
+        <dropForeignKeyConstraint baseTableName="data_value" constraintName="fk_data_value_on_data_element"/>
+    </changeSet>
+    <changeSet id="1750202999559-24" author="Hamza">
+        <dropForeignKeyConstraint baseTableName="data_value" constraintName="fk_data_value_on_data_instance"/>
+    </changeSet>
+    <changeSet id="1750202999559-25" author="Hamza">
+        <dropForeignKeyConstraint baseTableName="entity_attribute" constraintName="fk_entity_attribute_on_optionset"/>
+    </changeSet>
+    <changeSet id="1750202999559-26" author="Hamza">
+        <dropForeignKeyConstraint baseTableName="entity_attribute_value"
+                                  constraintName="fk_entity_attribute_value_on_entity_instance"/>
+    </changeSet>
+    <changeSet id="1750202999559-27" author="Hamza">
+        <dropForeignKeyConstraint baseTableName="entity_instance" constraintName="fk_entity_instance_on_entity_type"/>
+    </changeSet>
+    <changeSet id="1750202999559-3" author="Hamza">
+        <addColumn tableName="data_element">
+            <column name="label" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1750202999559-4" author="Hamza">
+        <addColumn tableName="assignment">
+            <column name="last_submitted_by" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet><changeSet id="1750202999559-7" author="Hamza">
+        <addForeignKeyConstraint baseColumnNames="user_id" baseTableName="refresh_token"
+                                 constraintName="FK_REFRESH_TOKEN_ON_USER" referencedColumnNames="id"
+                                 referencedTableName="app_user"/>
+    </changeSet>
+    <changeSet id="1750202999559-69" author="Hamza">
+        <dropTable cascadeConstraints="true" tableName="assignment_type"/>
+    </changeSet>
+    <changeSet id="1750202999559-70" author="Hamza">
+        <dropTable cascadeConstraints="true" tableName="data_instance"/>
+    </changeSet>
+    <changeSet id="1750202999559-71" author="Hamza">
+        <dropTable cascadeConstraints="true" tableName="data_stage_definition"/>
+    </changeSet>
+    <changeSet id="1750202999559-72" author="Hamza">
+        <dropTable cascadeConstraints="true" tableName="data_template"/>
+    </changeSet>
+    <changeSet id="1750202999559-73" author="Hamza">
+        <dropTable cascadeConstraints="true" tableName="data_value"/>
+    </changeSet>
+    <changeSet id="1750202999559-74" author="Hamza">
+        <dropTable cascadeConstraints="true" tableName="entity_attribute"/>
+    </changeSet>
+    <changeSet id="1750202999559-75" author="Hamza">
+        <dropTable cascadeConstraints="true" tableName="entity_attribute_value"/>
+    </changeSet>
+    <changeSet id="1750202999559-76" author="Hamza">
+        <dropTable cascadeConstraints="true" tableName="entity_instance"/>
+    </changeSet>
+    <changeSet id="1750202999559-77" author="Hamza">
+        <dropTable cascadeConstraints="true" tableName="entity_type"/>
+    </changeSet>
+    <changeSet id="1750202999559-78" author="Hamza">
+        <dropPrimaryKey constraintName="app_date_time_wrapper_pkey" tableName="app_date_time_wrapper"/>
+    </changeSet>
+    <changeSet id="1750202999559-84" author="Hamza">
+        <dropColumn columnName="assignment_type_id" tableName="assignment"/>
+
+        <dropColumn columnName="deleted" tableName="assignment"/>
+
+        <dropColumn columnName="deleted_at" tableName="assignment"/>
+
+        <dropColumn columnName="entity_instance_uid" tableName="assignment"/>
+
+        <dropColumn columnName="properties" tableName="assignment"/>
+
+        <dropColumn columnName="stage_states" tableName="assignment"/>
+
+        <dropColumn columnName="translations" tableName="assignment"/>
+    </changeSet>
+    <changeSet id="1750202999559-89" author="Hamza">
+        <dropColumn columnName="short_name" tableName="data_element"/>
+    </changeSet>
+    <changeSet id="1750202999559-91" author="Hamza">
+        <dropColumn columnName="translations" tableName="app_user"/>
+    </changeSet>
+    <changeSet id="1750202999559-93" author="Hamza">
+        <dropSequence sequenceName="user_role_seq"/>
+    </changeSet>
+    <changeSet id="1750202999559-1" author="Hamza">
+        <dropNotNullConstraint columnDataType="varchar(255)" columnName="code" tableName="org_unit"/>
+    </changeSet>
+    <changeSet id="1750202999559-2" author="Hamza">
+        <dropNotNullConstraint columnDataType="varchar(255)" columnName="code" tableName="team"/>
+    </changeSet>
+
+</databaseChangeLog>
