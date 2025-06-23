@@ -1,5 +1,9 @@
 package org.nmcpye.datarun.acl;
 
+import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
+import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.springframework.security.acls.domain.CumulativePermission;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.security.acls.model.*;
@@ -20,13 +24,15 @@ public class DefaultAclService implements AclService {
     private final MutableAclService aclService;
     private final MutableAclService lookupService;    // for reading ACLs
     private final SidRetrievalStrategy sidRetrieval;
+    private final FormAccessService formAccessService;
 
     public DefaultAclService(MutableAclService mutableAclService,
                              MutableAclService lookupService,
-                             SidRetrievalStrategy sidRetrieval) {
+                             SidRetrievalStrategy sidRetrieval, FormAccessService formAccessService) {
         this.aclService = mutableAclService;
         this.lookupService = lookupService;
         this.sidRetrieval = sidRetrieval;
+        this.formAccessService = formAccessService;
     }
 
     @Override
@@ -90,5 +96,55 @@ public class DefaultAclService implements AclService {
         } catch (Exception e) {
             throw new IllegalArgumentException("Cannot extract id", e);
         }
+    }
+
+    @Override
+    public boolean canRead(AuditableObject<?> object, CurrentUserDetails userDetails) {
+        if (userDetails == null) return false;
+        if (userDetails.isSuper()) return true;
+        if (userDetails.getUserTeamsUIDs().isEmpty() || userDetails.getUserTeamsUIDs().isEmpty()) return false;
+        return false;
+    }
+
+    @Override
+    public boolean hasMinimalRights(CurrentUserDetails userDetails) {
+        if (userDetails.isSuper()) return true;
+        return !userDetails.getUserTeamsUIDs().isEmpty() || !userDetails.getUserFormsUIDs().isEmpty();
+    }
+
+    @Override
+    public boolean canWrite(AuditableObject<?> object, CurrentUserDetails userDetails) {
+        if (!hasMinimalRights(userDetails)) return false;
+        if (object instanceof DataFormSubmission submission) {
+            return formAccessService.canSubmitData(submission.getForm());
+        }
+        return false;
+    }
+
+    @Override
+    public boolean canUpdate(AuditableObject<?> object, CurrentUserDetails userDetails) {
+        if (!hasMinimalRights(userDetails)) return false;
+        if (object instanceof DataFormSubmission submission) {
+            return formAccessService.canEditSubmissions(submission.getForm());
+        }
+        return false;
+    }
+
+    @Override
+    public boolean canAddNew(AuditableObject<?> object, CurrentUserDetails userDetails) {
+        if (!hasMinimalRights(userDetails)) return false;
+        if (object instanceof DataFormSubmission submission) {
+            return formAccessService.canAddSubmissions(submission.getForm());
+        }
+        return false;
+    }
+
+    @Override
+    public boolean canDelete(AuditableObject<?> object, CurrentUserDetails userDetails) {
+        if (!hasMinimalRights(userDetails)) return false;
+        if (object instanceof DataFormSubmission submission) {
+            return formAccessService.canDeleteSubmissions(submission.getForm());
+        }
+        return false;
     }
 }

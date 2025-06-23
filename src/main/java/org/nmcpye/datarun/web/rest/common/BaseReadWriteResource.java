@@ -66,9 +66,9 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
 
     protected void saveEntity(T entity, EntitySaveSummaryVM summary) {
         try {
-            if (entity.getUid() != null && identifiableObjectService.existsByUid(entity.getUid())) {
+            if (entity.getId() != null && identifiableObjectService.existsById(entity.getId())) {
                 entity = identifiableObjectService.update(entity);
-                summary.getUpdated().add(entity.getUid());
+                summary.getUpdated().add(entity.getId());
             } else {
                 entity = identifiableObjectService.saveWithRelations(entity);
                 summary.getCreated().add(entity.getUid());

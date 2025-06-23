@@ -50,6 +50,11 @@ public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObj
     }
 
     @Override
+    public boolean existsById(ID uid) {
+        return repository.existsById(uid);
+    }
+
+    @Override
     public Optional<T> findByUid(String uid) {
         return repository.findByUid(uid);
     }
