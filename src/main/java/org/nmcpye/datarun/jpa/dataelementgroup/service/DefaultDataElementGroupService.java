@@ -52,7 +52,7 @@ public class DefaultDataElementGroupService
         return Optional.ofNullable(dataTemplateElement.getUid())
             .flatMap(dataElementRepository::findByUid)
             .or(() -> Optional.ofNullable(dataTemplateElement.getId())
-                .flatMap(d -> dataElementRepository.findById(d)))
+                .flatMap(dataElementRepository::findById))
             .or(() -> Optional.ofNullable(dataTemplateElement.getCode())
                 .flatMap(dataElementRepository::findByCode))
             .orElseThrow(() -> new PropertyNotFoundException("data element not found: " + dataTemplateElement.getUid()));

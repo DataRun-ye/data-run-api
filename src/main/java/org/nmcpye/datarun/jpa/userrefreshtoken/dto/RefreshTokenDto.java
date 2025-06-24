@@ -12,8 +12,8 @@ import java.util.Objects;
 /**
  * @author Hamza Assada 25/04/2025 <7amza.it@gmail.com>
  */
-@Setter
 @Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class RefreshTokenDto {
@@ -32,21 +32,9 @@ public class RefreshTokenDto {
     @Getter
     @AllArgsConstructor
     @NoArgsConstructor
-   public class RefreshTokenUser {
+    public static class RefreshTokenUser {
         private String uid;
         private String login;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public Instant getExpiryDate() {
-        return expiryDate;
-    }
-
-    public RefreshTokenUser getUser() {
-        return user;
     }
 
     public boolean isExpired() {

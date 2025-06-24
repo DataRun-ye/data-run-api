@@ -51,18 +51,18 @@ public class DefaultDataFormTemplateService
     }
 
     @Override
-    public boolean existsByUid(String uid) {
+    public boolean existsById(String uid) {
         return templateInstanceService.findByUid(uid).isPresent();
     }
 
     @Override
-    public Optional<DataFormTemplate> findByUid(String uid) {
+    public Optional<DataFormTemplate> findById(String uid) {
         return templateInstanceService
             .findByUid(uid).map(dataFormTemplateMapper::toEntity);
     }
 
     @Override
-    public void deleteByUid(String uid) {
+    public void deleteById(String uid) {
         templateInstanceService.deleteByUid(uid);
     }
 
@@ -75,7 +75,7 @@ public class DefaultDataFormTemplateService
 
     @Override
     public void delete(DataFormTemplate object) {
-        findByUid(object.getUid()).ifPresent(repository::delete);
+        findById(object.getUid()).ifPresent(repository::delete);
     }
 
     @Transactional

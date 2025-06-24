@@ -277,7 +277,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
 
         List<T> objects = new ArrayList<>(uniqueObjects);
 
-        Collections.sort(objects);
+//        Collections.sort(objects);
 
         return objects;
     }

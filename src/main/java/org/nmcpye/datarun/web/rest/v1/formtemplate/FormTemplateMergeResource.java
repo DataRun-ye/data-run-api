@@ -2,22 +2,27 @@ package org.nmcpye.datarun.web.rest.v1.formtemplate;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.nmcpye.datarun.acl.AclService;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceService;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess.FormTemplateProcessor;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
 
@@ -42,6 +47,8 @@ public class FormTemplateMergeResource {
 
     private final FormTemplateProcessor formTemplateProcessor;
     private final DataTemplateInstanceService templateService;
+    @Autowired
+    protected AclService aclService;
 
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
@@ -77,6 +84,8 @@ public class FormTemplateMergeResource {
     }
 
     protected Page<DataTemplateInstanceDto> getList(QueryRequest queryRequest, String jsonQueryBody) {
+        final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        hasMinimalRightsOrThrow(user);
         return templateService.findAllByUser(queryRequest, jsonQueryBody);
     }
 
@@ -114,7 +123,8 @@ public class FormTemplateMergeResource {
     }
 
     protected DataTemplateInstanceDto saveEntity(DataTemplateInstanceDto entity, EntitySaveSummaryVM summary) {
-        DataTemplateInstanceDto templateVersionDto = null;
+//        DataTemplateInstanceDto templateVersionDto = null;
+        var templateVersionDto = preProcess(entity);
         try {
             if (entity.getUid() != null && templateService.existsByUid(entity.getUid())) {
                 templateVersionDto = templateService.update(entity);
@@ -144,8 +154,28 @@ public class FormTemplateMergeResource {
 
     @GetMapping("/{id}")
     public ResponseEntity<DataTemplateInstanceDto> getById(@PathVariable("id") String id) {
+        final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        hasMinimalRightsOrThrow(user);
         log.debug("REST request to get from {}: {}", getName(), id);
         Optional<DataTemplateInstanceDto> entity = templateService.findByUid(id);
         return ResponseUtil.wrapOrNotFound(entity);
+    }
+
+    /**
+     * minimal Access rights or throw
+     *
+     * @param currentUser user
+     * @throws ResponseStatusException exception if has no business here whatsoever (no minimal rights)
+     */
+    protected void hasMinimalRightsOrThrow(CurrentUserDetails currentUser) throws ResponseStatusException {
+        if (currentUser == null || !aclService.hasMinimalRights(currentUser)) {
+            log.warn("REST Prevent Access, no minimal rights `{}`:`{}`", getName(), currentUser);
+            throw new IllegalQueryException(HttpStatus.FORBIDDEN + ", You Hava No Business Here");
+        }
+    }
+
+    protected DataTemplateInstanceDto preProcess(DataTemplateInstanceDto entity) {
+        return (DataTemplateInstanceDto) formTemplateProcessor
+            .processMetadata(formTemplateProcessor.validate(entity));
     }
 }

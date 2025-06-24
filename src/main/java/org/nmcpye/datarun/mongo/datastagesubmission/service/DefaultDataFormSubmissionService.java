@@ -5,10 +5,11 @@ import org.nmcpye.datarun.common.FindExistingSubmissionsDto;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.jpa.flowinstance.repository.FlowInstanceRepository;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
 import org.nmcpye.datarun.mongo.common.DefaultMongoSoftDeleteService;
 import org.nmcpye.datarun.mongo.datastagesubmission.repository.DataFormSubmissionRepository;
+import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.migration.SubmissionMaintenanceService;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -39,7 +41,7 @@ public class DefaultDataFormSubmissionService
 
     private final DataFormSubmissionRepository repository;
     private final DataFormSubmissionHistoryService submissionHistoryService;
-    private final FlowInstanceRepository flowInstanceRepository;
+    private final AssignmentRepository assignmentRepository;
     private final SequenceGeneratorService sequenceGeneratorService;
     private final SubmissionMaintenanceService maintenanceService;
     private final DataTemplateVersionRepository versionRepository;
@@ -49,7 +51,7 @@ public class DefaultDataFormSubmissionService
         DataFormSubmissionRepository repository,
         CacheManager cacheManager,
         DataFormSubmissionHistoryService submissionHistoryService,
-        FlowInstanceRepository flowInstanceRepository,
+        AssignmentRepository assignmentRepository,
         SequenceGeneratorService sequenceGeneratorService,
         SubmissionMaintenanceService maintenanceService,
         DataTemplateVersionRepository versionRepository,
@@ -57,7 +59,7 @@ public class DefaultDataFormSubmissionService
         super(repository, cacheManager);
         this.repository = repository;
         this.submissionHistoryService = submissionHistoryService;
-        this.flowInstanceRepository = flowInstanceRepository;
+        this.assignmentRepository = assignmentRepository;
         this.sequenceGeneratorService = sequenceGeneratorService;
         this.maintenanceService = maintenanceService;
         this.versionRepository = versionRepository;
@@ -101,6 +103,13 @@ public class DefaultDataFormSubmissionService
         return savedSubmission;
     }
 
+    public Optional<DataTemplateVersion> findByVersionNoOrVersionUid(String template, String version, Integer versionNum) {
+        return Optional.ofNullable(version)
+            .flatMap(versionRepository::findByUid)
+            .or(() -> Optional.ofNullable(versionNum)
+                .flatMap(v -> versionRepository.findByTemplateUidAndVersionNumber(template, versionNum)));
+    }
+
     public void preSave(DataFormSubmission submission) {
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
 
@@ -109,7 +118,7 @@ public class DefaultDataFormSubmissionService
             throw new IllegalQueryException(ErrorCode.E1112, submission.getTeam());
         }
 
-        versionRepository.findByUid(submission.getFormVersion())
+        findByVersionNoOrVersionUid(submission.getForm(), submission.getFormVersion(), submission.getVersion())
             .ifPresentOrElse((f) -> {
                 submission.setFormVersion(f.getUid());
             }, () -> {
@@ -119,7 +128,7 @@ public class DefaultDataFormSubmissionService
                     new ErrorMessage(ErrorCode.E1114, "Form", submission.getForm() + ":" + submission.getVersion()));
             });
 
-        flowInstanceRepository.findByUid(submission.getAssignment())
+        assignmentRepository.findByUid(submission.getAssignment())
             .ifPresentOrElse((a) -> {
                     submission.setAssignment(a.getUid());
                     submission.setOrgUnit(a.getOrgUnit().getUid());
@@ -181,10 +190,10 @@ public class DefaultDataFormSubmissionService
     }
 
     private void addEntryToHistory(DataFormSubmission dataFormSubmission) {
-        flowInstanceRepository.findByUid(dataFormSubmission.getAssignment())
+        assignmentRepository.findByUid(dataFormSubmission.getAssignment())
             .ifPresentOrElse((assignment -> {
                 assignment.setStatus(dataFormSubmission.getStatus());
-                flowInstanceRepository.save(assignment);
+                assignmentRepository.save(assignment);
             }), () -> {
                 throw new IllegalQueryException(ErrorCode.E1004, getClazz().getSimpleName(),
                     dataFormSubmission.getUid());

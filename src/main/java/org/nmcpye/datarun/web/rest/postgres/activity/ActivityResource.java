@@ -3,19 +3,14 @@ package org.nmcpye.datarun.web.rest.postgres.activity;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
 import org.nmcpye.datarun.jpa.activity.service.ActivityService;
-import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.net.URISyntaxException;
-import java.util.List;
 
 import static org.nmcpye.datarun.web.rest.postgres.activity.ActivityResource.CUSTOM;
 import static org.nmcpye.datarun.web.rest.postgres.activity.ActivityResource.V1;
@@ -46,29 +41,5 @@ public class ActivityResource extends JpaBaseResource<Activity> {
     @Override
     protected String getName() {
         return "activities";
-    }
-
-    @Override
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<EntitySaveSummaryVM> saveOne(Activity entity) {
-        return super.saveOne(entity);
-    }
-
-    @Override
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<?> saveReturnSaved(Activity entity) {
-        return super.saveReturnSaved(entity);
-    }
-
-    @Override
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<Activity> updateEntity(String uid, Activity entity) throws URISyntaxException {
-        return super.updateEntity(uid, entity);
-    }
-
-    @Override
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<Activity> entities) {
-        return super.saveAll(entities);
     }
 }

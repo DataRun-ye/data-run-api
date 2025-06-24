@@ -49,10 +49,6 @@ public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObj
         return repository.existsByUid(uid);
     }
 
-    @Override
-    public boolean existsById(ID uid) {
-        return repository.existsById(uid);
-    }
 
     @Override
     public Optional<T> findByUid(String uid) {
@@ -65,20 +61,35 @@ public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObj
     }
 
     @Override
+    public Optional<T> findById(ID id) {
+        return repository.findById(id);
+    }
+
+    @Override
+    public boolean existsById(ID uid) {
+        return repository.existsById(uid);
+    }
+
+    @Override
+    public void deleteById(ID uid) {
+        findById(uid).ifPresent(repository::delete);
+    }
+
+    @Override
     public T save(T object) {
-        log.debug("Request service to save {}:`{}`", getClazz().getSimpleName(), object.getUid());
+        log.debug("Request service to save {}:`{}`", getClazz().getSimpleName(), object.getId());
         return repository.save(object);
     }
 
     @Override
     @Transactional
     public T update(T object) {
-        log.debug("Request service to update {}:`{}`", getClazz().getSimpleName(), object.getUid());
-        T existingEntity = repository.findByUid(object.getUid())
+        log.debug("Request service to update {}:`{}`", getClazz().getSimpleName(), object.getId());
+        T existingEntity = findByIdOrUid(object)
             .orElseThrow(() ->
                 new IllegalQueryException(
                     new ErrorMessage(ErrorCode.E1004,
-                        getClazz().getSimpleName(), object.getUid())));
+                        getClazz().getSimpleName(), object.getId())));
 
         object.setId(existingEntity.getId());
         object.setCreatedBy(existingEntity.getCreatedBy());
@@ -88,12 +99,20 @@ public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObj
 
     @Override
     public void delete(T object) {
-        findByUid(object.getUid()).ifPresent(repository::delete);
+        deleteById(object.getId());
     }
 
     protected void clearCaches(String name, String key) {
         if (name != null && key != null) {
             Objects.requireNonNull(cacheManager.getCache(name)).evict(key);
         }
+    }
+
+    @Override
+    public Optional<T> findByIdOrUid(T entity) {
+        return Optional.ofNullable(entity.getUid())
+            .flatMap(repository::findByUid)
+            .or(() -> Optional.ofNullable(entity.getId())
+                .flatMap(repository::findById));
     }
 }

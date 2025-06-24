@@ -12,7 +12,7 @@ import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
  * A DataElement, a configuration definition of a data element
  * A Data Element provide the basic configuration properties for any Field,
  * and can be extended with other special configuration properties
- * Elements that extend this [ScopeElement, EntityAttributeType]
+ * Elements that extend this [DimensionalElement, EntityAttributeType]
  *
  * @author Hamza Assada 08/02/2024 <7amza.it@gmail.com>
  */
@@ -22,6 +22,9 @@ import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 @NoArgsConstructor
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class BaseDataElement extends JpaBaseIdentifiableObject {
+    @Size(max = 11)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
+    protected String uid;
     /**
      * The code for this Element.
      * unique, but not required

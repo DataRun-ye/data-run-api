@@ -2,8 +2,7 @@ package org.nmcpye.datarun.mongo.datatemplateversion.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.nmcpye.datarun.common.uidgenerate.BaseDto;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
@@ -16,8 +15,7 @@ import java.util.List;
  * DTO for {@link org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate}
  */
 @Value
-@Getter
-@Setter
+@EqualsAndHashCode(callSuper = true)
 public class FormTemplateVersionDto extends BaseDto implements Serializable {
     @Size(max = 11)
     String uid;

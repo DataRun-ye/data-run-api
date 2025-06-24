@@ -3,19 +3,14 @@ package org.nmcpye.datarun.web.rest.postgres.project;
 import org.nmcpye.datarun.jpa.project.Project;
 import org.nmcpye.datarun.jpa.project.repository.ProjectRepository;
 import org.nmcpye.datarun.jpa.project.service.ProjectService;
-import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.net.URISyntaxException;
-import java.util.List;
 
 import static org.nmcpye.datarun.web.rest.postgres.project.ProjectResource.CUSTOM;
 import static org.nmcpye.datarun.web.rest.postgres.project.ProjectResource.V1;
@@ -49,27 +44,27 @@ public class ProjectResource extends JpaBaseResource<Project> {
         return "projects";
     }
 
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    @Override
-    public ResponseEntity<Project> updateEntity(String uid, Project entity) throws URISyntaxException {
-        return super.updateEntity(uid, entity);
-    }
-
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    @Override
-    public ResponseEntity<?> saveReturnSaved(Project entity) {
-        return super.saveReturnSaved(entity);
-    }
-
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveOne(Project entity) {
-        return super.saveOne(entity);
-    }
-
-    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-    @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<Project> entities) {
-        return super.saveAll(entities);
-    }
+//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+//    @Override
+//    public ResponseEntity<Project> updateEntity(String uid, Project entity) throws URISyntaxException {
+//        return super.updateEntity(uid, entity);
+//    }
+//
+//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+//    @Override
+//    public ResponseEntity<?> saveReturnSaved(Project entity) {
+//        return super.saveReturnSaved(entity);
+//    }
+//
+//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+//    @Override
+//    public ResponseEntity<EntitySaveSummaryVM> saveOne(Project entity) {
+//        return super.saveOne(entity);
+//    }
+//
+//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+//    @Override
+//    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<Project> entities) {
+//        return super.saveAll(entities);
+//    }
 }

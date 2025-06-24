@@ -30,7 +30,7 @@ public interface OrgUnitRepository
     @Query(
         value = "select distinct orgUnit from OrgUnit orgUnit " +
             "left join fetch orgUnit.parent " +
-            "join orgUnit.flowRuns fr " +
+            "join orgUnit.assignments fr " +
             "join fr.team.users u " +
             "where u.login = ?#{authentication.name}"
     )

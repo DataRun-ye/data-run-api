@@ -4,7 +4,7 @@ import jakarta.persistence.criteria.*;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.activity.Activity;
-import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.user.User;
@@ -86,9 +86,9 @@ public abstract class OrgUnitSpecification {
                 if (Long.class != query.getResultType()) {
                     root.fetch("parent", JoinType.LEFT);
                 }
-                Join<OrgUnit, FlowInstance> assignmentJoin = root.join("flowRuns", JoinType.INNER);
-                Join<FlowInstance, Activity> assignmentActivityJoin = assignmentJoin.join("activity", JoinType.INNER);
-                Join<FlowInstance, Team> teamJoin = assignmentJoin.join("team", JoinType.INNER);
+                Join<OrgUnit, Assignment> assignmentJoin = root.join("assignments", JoinType.INNER);
+                Join<Assignment, Activity> assignmentActivityJoin = assignmentJoin.join("activity", JoinType.INNER);
+                Join<Assignment, Team> teamJoin = assignmentJoin.join("team", JoinType.INNER);
                 Join<Team, User> userJoin = teamJoin.join("users", JoinType.INNER);
 
                 Predicate teamNotDisabled = criteriaBuilder.isFalse(teamJoin.get("disabled"));

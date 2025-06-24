@@ -8,8 +8,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
-import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
 import org.nmcpye.datarun.jpa.project.Project;
 
 import java.time.Instant;
@@ -66,7 +66,7 @@ public class Activity extends JpaBaseIdentifiableObject {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "activity")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
-    private Set<FlowInstance> flowInstances = new HashSet<>();
+    private Set<Assignment> assignments = new HashSet<>();
 
     // prettier-ignore
     @Override

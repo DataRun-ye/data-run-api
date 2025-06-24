@@ -1,15 +1,15 @@
 package org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess;
 
 
-import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
-import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateprocessor.TemplateElementProcessor;
 import org.nmcpye.datarun.datatemplateprocessor.validation.DefaultTemplateValidator;
+import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
+import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +78,7 @@ public class FormTemplateProcessor {
      * @param objects the list of IdentifiableObjects.
      * @return a list of uids.
      */
-    public static <T extends AuditableObject<?>> Collection<String> getUids(Collection<T> objects) {
+    public static <T extends IdentifiableObject<?>> Collection<String> getUids(Collection<T> objects) {
         return objects != null ? objects.stream().filter(o -> o != null).map(o -> o.getUid())
             .collect(Collectors.toSet()) : null;
     }

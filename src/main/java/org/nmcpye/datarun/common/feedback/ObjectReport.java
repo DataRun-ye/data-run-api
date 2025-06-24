@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
-import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.common.IdentifiableObject;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -29,11 +29,11 @@ public class ObjectReport implements ErrorReportContainer {
      */
     private String displayName;
 
-    public ObjectReport(@Nonnull AuditableObject<?> object, @Nonnull ObjectIndexProvider objectIndexProvider) {
+    public ObjectReport(@Nonnull IdentifiableObject<?> object, @Nonnull ObjectIndexProvider objectIndexProvider) {
         this(object, objectIndexProvider, null);
     }
 
-    public ObjectReport(@Nonnull AuditableObject<?> object, @Nonnull ObjectIndexProvider objectIndexProvider,
+    public ObjectReport(@Nonnull IdentifiableObject<?> object, @Nonnull ObjectIndexProvider objectIndexProvider,
                         @Nullable String uid) {
         this(object.getClass(), objectIndexProvider.mergeObjectIndex(object), uid == null ? object.getUid() : uid);
     }

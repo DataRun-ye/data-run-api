@@ -101,6 +101,8 @@ public abstract class JpaIdentifiableObject
         return this;
     }
 
+    abstract protected void setUid(String uid);
+
 //    /**
 //     * Set auto-generated fields on save or update
 //     */
@@ -108,11 +110,12 @@ public abstract class JpaIdentifiableObject
 //        if (getId() == null) {
 //            setId(CodeGenerator.ULIDGenerator.nextString());
 //        }
-
-    /// /        if (getUid() == null || getUid().isEmpty()) {
-    /// /            setUid(CodeGenerator.generateUid());
-    /// /        }
+//
+//        if (getUid() == null || getUid().isEmpty()) {
+//            setUid(CodeGenerator.generateUid());
+//        }
 //    }
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof JpaIdentifiableObject that)) return false;

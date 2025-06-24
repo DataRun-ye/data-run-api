@@ -73,6 +73,20 @@ public class CodeGenerator {
         }
 
         /**
+         * Generate a ULID (Universally Unique Lexicographically Sortable Identifier).
+         * Length: 26 characters, Base32 encoded.
+         * Ideal for distributed systems requiring monotonicity.
+         */
+        public static boolean isValidUlid(String ulid) {
+            try {
+                final var validUlidValue = ULID.parseULID(ulid);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        /**
          * Generate a NanoID (smaller, URL-safe, customizable alphabet).
          * Default length: 21 characters, default alphabet.
          * Ideal for compact, collision-resistant IDs.

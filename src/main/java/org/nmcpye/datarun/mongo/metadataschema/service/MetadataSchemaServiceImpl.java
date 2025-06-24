@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.mongo.metadataschema.service;
 
-import org.nmcpye.datarun.jpa.flowinstance.repository.FlowInstanceRepository;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.mongo.common.DefaultMongoIdentifiableObjectService;
 import org.nmcpye.datarun.mongo.domain.MetadataSchema;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
@@ -27,12 +27,12 @@ public class MetadataSchemaServiceImpl
     private final MetadataSchemaRepository repository;
     private final DataFormTemplateRepository dataFormRepository;
 
-    private final FlowInstanceRepository flowInstanceRepository;
+    private final AssignmentRepository flowInstanceRepository;
 
     public MetadataSchemaServiceImpl(MetadataSchemaRepository repository,
                                      CacheManager cacheManager,
                                      DataFormTemplateRepository dataFormRepository,
-                                     FlowInstanceRepository flowInstanceRepository) {
+                                     AssignmentRepository flowInstanceRepository) {
         super(repository, cacheManager);
         this.repository = repository;
         this.dataFormRepository = dataFormRepository;

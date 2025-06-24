@@ -3,7 +3,7 @@ package org.nmcpye.datarun.mongo.metadataschema.service;
 import jakarta.el.PropertyNotFoundException;
 import org.apache.commons.lang3.NotImplementedException;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
-import org.nmcpye.datarun.jpa.flowinstance.repository.FlowInstanceRepository;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
@@ -41,7 +41,7 @@ public class MetadataSubmissionServiceImpl
     private final MetadataSubmissionRepository repository;
     private final TeamRepository teamRepository;
     private final ActivityRepository activityRepository;
-    private final FlowInstanceRepository flowInstanceRepository;
+    private final AssignmentRepository flowInstanceRepository;
 
     private final OrgUnitRepository orgUnitRepository;
     private final SequenceGeneratorService sequenceGeneratorService;
@@ -49,7 +49,7 @@ public class MetadataSubmissionServiceImpl
     public MetadataSubmissionServiceImpl(
         MetadataSubmissionRepository repository,
         CacheManager cacheManager, MongoTemplate mongoTemplate,
-        ActivityRepository activityRepository, TeamRepository teamRepository, FlowInstanceRepository flowInstanceRepository,
+        ActivityRepository activityRepository, TeamRepository teamRepository, AssignmentRepository flowInstanceRepository,
         OrgUnitRepository orgUnitRepository,
         SequenceGeneratorService sequenceGeneratorService) {
         super(repository, cacheManager);

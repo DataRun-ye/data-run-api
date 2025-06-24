@@ -138,9 +138,9 @@ public class TemplateDrivenMigrator implements CommandLineRunner {
             // Store in the custom error collection
             mongoTemplate.save(errorDocument, "data_form_submission_errors");
 
-            log.info("Stored failed document {} in DLQ", doc.getUid());
+            log.info("Stored failed document {} in DLQ", doc.getId());
         } catch (Exception e) {
-            log.error("Failed to store document {} in DLQ: {}", doc.getUid(), e.getMessage());
+            log.error("Failed to store document {} in DLQ: {}", doc.getId(), e.getMessage());
         }
     }
 

@@ -50,6 +50,7 @@ public abstract class MongoIdentifiableObject implements IdentifiableObject<Stri
         setAutoFields();
     }
 
+    abstract protected void setUid(String uid);
     /**
      * Set auto-generated fields on save or update
      */

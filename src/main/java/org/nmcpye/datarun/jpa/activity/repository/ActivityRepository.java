@@ -17,12 +17,12 @@ public interface ActivityRepository
     extends JpaIdentifiableRepository<Activity> {
     @Query(
         value = "select activity from Activity activity " +
-            "join FlowInstance assignment on assignment.activity = activity " +
+            "join Assignment assignment on assignment.activity = activity " +
             "join Team team on assignment.team = team " +
             "join assignment.team.users u " +
             "where u.login = ?#{authentication.name} and activity.disabled = false",
         countQuery = "select count(activity) from Activity activity " +
-            "join FlowInstance assignment on assignment.activity = activity " +
+            "join Assignment assignment on assignment.activity = activity " +
             "join Team team on assignment.team = team " +
             "join assignment.team.users u " +
             "where u.login = ?#{authentication.name} and activity.disabled = false"

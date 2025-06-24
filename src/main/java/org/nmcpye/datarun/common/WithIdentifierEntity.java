@@ -14,6 +14,8 @@ public interface WithIdentifierEntity<ID> extends Serializable {
 
     ID getId();
 
+    void setId(ID id);
+
     /**
      * Returns the value of the property referred to by the given IdScheme.
      *

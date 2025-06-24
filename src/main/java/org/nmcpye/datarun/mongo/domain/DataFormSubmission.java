@@ -86,6 +86,7 @@ public class DataFormSubmission extends MongoSoftDeleteObject {
     private Instant finishedEntryTime;
     private Map<String, Object> formData = new LinkedHashMap<>();
 
+//    private JsonNode dataRow;
     /**
      * Populates the form data attributes with additional metadata.
      * This method enriches the form data with various attributes such as submission UID,

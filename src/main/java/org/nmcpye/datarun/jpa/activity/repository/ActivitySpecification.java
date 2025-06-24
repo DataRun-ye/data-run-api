@@ -5,7 +5,7 @@ import jakarta.persistence.criteria.JoinType;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.activity.Activity;
-import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
@@ -27,8 +27,8 @@ public abstract class ActivitySpecification {
                 String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow(
                     new ErrorMessage(ErrorCode.E3004, Activity.class.getName()));
 
-                Join<Activity, FlowInstance> assignmentJoin = root.join("assignments", JoinType.INNER);
-                Join<FlowInstance, Team> teamJoin = assignmentJoin.join("team", JoinType.INNER);
+                Join<Activity, Assignment> assignmentJoin = root.join("assignments", JoinType.INNER);
+                Join<Assignment, Team> teamJoin = assignmentJoin.join("team", JoinType.INNER);
                 Join<Team, User> userJoin = teamJoin.join("users", JoinType.INNER);
 
                 return criteriaBuilder.equal(userJoin.get("login"), currentUserLogin);

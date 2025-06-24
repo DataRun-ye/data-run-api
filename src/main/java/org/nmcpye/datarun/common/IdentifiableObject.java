@@ -5,6 +5,9 @@ package org.nmcpye.datarun.common;
  */
 public interface IdentifiableObject<ID>
     extends AuditableObject<ID> {
+
+    String getUid();
+
     String getCode();
 
     String getName();

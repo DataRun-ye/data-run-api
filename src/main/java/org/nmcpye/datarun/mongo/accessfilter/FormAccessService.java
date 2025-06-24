@@ -2,7 +2,7 @@ package org.nmcpye.datarun.mongo.accessfilter;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.nmcpye.datarun.common.enumeration.FormPermission;
-import org.nmcpye.datarun.jpa.flowinstance.dto.AssignmentFormDto;
+import org.nmcpye.datarun.jpa.assignment.dto.AssignmentFormDto;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

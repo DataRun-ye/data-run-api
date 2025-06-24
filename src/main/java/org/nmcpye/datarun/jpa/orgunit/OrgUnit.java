@@ -15,9 +15,9 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.common.IdentifiableObjectUtils;
 import org.nmcpye.datarun.common.enumeration.EntityScope;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
-import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
 import org.nmcpye.datarun.jpa.orgunitgroup.OrgUnitGroup;
 
 import java.util.*;
@@ -64,11 +64,11 @@ public class OrgUnit extends JpaBaseIdentifiableObject {
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonSerialize(contentAs = JpaIdentifiableObject.class)
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
-    private Set<FlowInstance> flowInstances = new HashSet<>();
+    private Set<Assignment> assignments = new HashSet<>();
 
     @ManyToOne//(fetch = FetchType.LAZY)
     @JsonProperty
-    @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "flowRuns", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private OrgUnit parent;
 
     @ManyToMany(mappedBy = "orgUnits")
@@ -78,7 +78,7 @@ public class OrgUnit extends JpaBaseIdentifiableObject {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "flowRuns", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private Set<OrgUnit> children = new HashSet<>();
 
     @Transient
@@ -289,7 +289,7 @@ public class OrgUnit extends JpaBaseIdentifiableObject {
      *
      * @throws IllegalStateException if circular parent relationships is detected.
      */
-    @JsonIgnoreProperties(value = {"parent", "children", "ancestors", "orgUnitGroups", "flowRuns", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"parent", "children", "ancestors", "orgUnitGroups", "assignments", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     public List<OrgUnit> getAncestors() {
         List<OrgUnit> units = new ArrayList<>();
         Set<OrgUnit> visitedUnits = new HashSet<>();

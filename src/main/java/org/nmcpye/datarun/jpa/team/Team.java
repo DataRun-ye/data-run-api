@@ -15,8 +15,8 @@ import org.nmcpye.datarun.common.NameableObject;
 import org.nmcpye.datarun.common.enumeration.EntityScope;
 import org.nmcpye.datarun.common.enumeration.FormPermission;
 import org.nmcpye.datarun.jpa.activity.Activity;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
-import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
 import org.nmcpye.datarun.jpa.user.User;
 
 import java.util.*;
@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 /**
  * A Team.
+ *
  * @author Hamza Assada 02/06/2023 <7amza.it@gmail.com>
  */
 @Entity
@@ -64,7 +65,7 @@ public class Team extends JpaBaseIdentifiableObject {
     private Boolean disabled = false;
 
     @ManyToOne
-    @JsonIgnoreProperties(value = {"project", "translations", "flowRuns"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"project", "translations", "assignments"}, allowSetters = true)
     @JsonSerialize(contentAs = NameableObject.class)
     private Activity activity;
 
@@ -82,21 +83,21 @@ public class Team extends JpaBaseIdentifiableObject {
         joinColumns = @JoinColumn(name = "team_id"),
         inverseJoinColumns = @JoinColumn(name = "managed_team_id")
     )
-    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "flowRuns",
+    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<Team> managedTeams = new HashSet<>();
 
     @ManyToMany(mappedBy = "managedTeams")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "flowRuns",
+    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
     private Set<Team> managedByTeams = new HashSet<>();
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "team")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
-    private Set<FlowInstance> flowInstances = new HashSet<>();
+    private Set<Assignment> assignments = new HashSet<>();
 
     @Type(JsonType.class)
     @Column(name = "form_permissions", columnDefinition = "jsonb")
@@ -149,18 +150,18 @@ public class Team extends JpaBaseIdentifiableObject {
         return Collections.emptySet();
     }
 
-    public void setFlowInstances(Set<FlowInstance> flowInstances) {
-        if (this.flowInstances != null) {
-            this.flowInstances.forEach(i -> i.setTeam(null));
+    public void setAssignments(Set<Assignment> flowInstances) {
+        if (this.assignments != null) {
+            this.assignments.forEach(i -> i.setTeam(null));
         }
         if (flowInstances != null) {
             flowInstances.forEach(i -> i.setTeam(this));
         }
-        this.flowInstances = flowInstances;
+        this.assignments = flowInstances;
     }
 
-    public Team assignments(Set<FlowInstance> flowInstances) {
-        this.setFlowInstances(flowInstances);
+    public Team assignments(Set<Assignment> flowInstances) {
+        this.setAssignments(flowInstances);
         return this;
     }
 }

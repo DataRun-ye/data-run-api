@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.jpa.user.User;
 
 import java.time.Instant;
@@ -21,11 +22,13 @@ import java.util.Objects;
 @Getter
 @Setter
 public class RefreshToken {
+    /**
+     * ULID id (Universally Unique Lexicographically Sortable Identifier).
+     * Length: 26 characters, Base32 encoded.
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
-    @Column(name = "id")
-    protected Long id;
+    @Column(name = "id", length = 26, updatable = false, nullable = false)
+    private String id;
 
 
     @Column(nullable = false, unique = true)
@@ -42,6 +45,16 @@ public class RefreshToken {
 
     public boolean isExpired() {
         return Instant.now().isAfter(expiryDate);
+    }
+
+    /**
+     * Lifecycle hook to generate a ULID ID before persisting.
+     */
+    @PrePersist
+    public void prePersist() {
+        if (this.id == null) {
+            this.id = CodeGenerator.ULIDGenerator.nextString();
+        }
     }
 
     @Override

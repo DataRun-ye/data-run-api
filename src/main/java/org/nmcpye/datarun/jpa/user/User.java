@@ -124,7 +124,7 @@ public class User extends JpaBaseIdentifiableObject {
     Set<Role> roles;
 
     @ManyToMany(mappedBy = "users")
-    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "flowRuns",
+    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<Team> teams = new LinkedHashSet<>();

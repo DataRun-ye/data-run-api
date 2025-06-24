@@ -50,7 +50,7 @@ public class IdentifiableObjectUtils {
      * @param objects the list of IdentifiableObjects.
      * @return a list of uids.
      */
-    public static <T extends JpaBaseIdentifiableObject> List<String> getUids(Collection<T> objects) {
+    public static <T extends JpaIdentifiableObject> List<String> getUids(Collection<T> objects) {
         return objects != null ? objects.stream().filter(o -> o != null)
             .map(o -> o.getUid()).collect(Collectors.toList()) : null;
     }
@@ -61,7 +61,7 @@ public class IdentifiableObjectUtils {
      * @param objects the list of IdentifiableObjects.
      * @return a list of codes.
      */
-    public static <T extends JpaBaseIdentifiableObject> List<String> getCodes(Collection<T> objects) {
+    public static <T extends JpaIdentifiableObject> List<String> getCodes(Collection<T> objects) {
         return objects != null ? objects.stream().map(o -> o.getCode()).collect(Collectors.toList()) : null;
     }
 
@@ -113,7 +113,7 @@ public class IdentifiableObjectUtils {
             T object = iterator.next();
             String name = ignoreCase ? object.getDisplayName().toLowerCase() : object.getDisplayName();
 
-            if (name.indexOf(key) != -1) {
+            if (name.contains(key)) {
                 objects.add(object);
             }
         }

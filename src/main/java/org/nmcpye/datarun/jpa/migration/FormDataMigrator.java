@@ -3,10 +3,11 @@ package org.nmcpye.datarun.jpa.migration;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.map.UnmodifiableMap;
 import org.nmcpye.datarun.common.enumeration.FlowStatus;
-import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
-import org.nmcpye.datarun.jpa.flowinstance.repository.FlowInstanceRepository;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
 import org.nmcpye.datarun.mongo.domain.DataForm;
@@ -16,9 +17,6 @@ import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.DefaultField;
 import org.nmcpye.datarun.mongo.domain.datafield.Repeat;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;
-import org.nmcpye.datarun.mongo.migration.TemplateDrivenMigrator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,17 +26,17 @@ import static java.util.Map.entry;
 
 @Component
 @Transactional
+@Slf4j
 public class FormDataMigrator {
-    private static final Logger log = LoggerFactory.getLogger(TemplateDrivenMigrator.class);
     private final TeamRepository teamRepository;
-    private final FlowInstanceRepository flowInstanceRepository;
+    private final AssignmentRepository assignmentRepository;
     private final Map<String, String> fieldMappings; // Loaded from JSON
     private final Map<String, String> anotherPathMap; // Loaded from JSON
     private final Map<String, Object> defaultValuesMap; // Loaded
 
-    public FormDataMigrator(TeamRepository teamRepository, FlowInstanceRepository flowInstanceRepository) {
+    public FormDataMigrator(TeamRepository teamRepository, AssignmentRepository assignmentRepository) {
         this.teamRepository = teamRepository;
-        this.flowInstanceRepository = flowInstanceRepository;
+        this.assignmentRepository = assignmentRepository;
         this.anotherPathMap = parseJsonMapping(anotherPath);
         this.defaultValuesMap = parseDefaultValues(defaultValues);
         this.fieldMappings = parseJsonMapping(jsonArrayString);
@@ -88,14 +86,14 @@ public class FormDataMigrator {
                     new NoSuchElementException("Not found team of old team: " + v1Submission.getUid()));
         }
 
-        final FlowInstance flowInstance = flowInstanceRepository
+        final Assignment assignment = assignmentRepository
             .findFirstByTeamAndOrgUnit(team.getUid(), submissionOrgUnit.stream().findFirst().get(), v1Submission.getActivity())
             .orElseThrow(() -> {
                 log.error("Failed to fetch assignment: {}", v1Submission.getUid());
                 return new NoSuchElementException("not found assignment: " + v1Submission.getUid());
             });
 
-        final var orgUnit = flowInstance.getOrgUnit();
+        final var orgUnit = assignment.getOrgUnit();
 
         Map<String, Object> metaMap =
             new LinkedHashMap<>(Map.ofEntries(
@@ -104,7 +102,7 @@ public class FormDataMigrator {
                 entry("_deleted", v1Submission.getDeleted()),
                 entry("_activity", activity),
                 entry("_teamOld", v1Submission.getTeamOld()),
-                entry("_assignment", flowInstance.getUid()),
+                entry("_assignment", assignment.getUid()),
                 entry("_orgUnit", orgUnit.getUid()),
                 entry("_orgUnitCode", orgUnit.getCode()),
                 entry("_orgUnitName", orgUnit.getName()),
@@ -123,7 +121,7 @@ public class FormDataMigrator {
         submissionFinal.setSerialNumber(v1Submission.getSerialNumber());
         submissionFinal.setDeleted(v1Submission.getDeleted());
         submissionFinal.setActivity(activity);
-        submissionFinal.setAssignment(flowInstance.getUid());
+        submissionFinal.setAssignment(assignment.getUid());
         submissionFinal.setOrgUnit(orgUnit.getUid());
         submissionFinal.setOrgUnitCode(orgUnit.getCode());
         submissionFinal.setOrgUnitName(orgUnit.getName());

@@ -53,10 +53,10 @@ public abstract class DefaultJpaIdentifiableService
 
     protected Specification<T> baseAccessSpecification(CurrentUserDetails user, QueryRequest queryRequest,
                                                        String jsonQueryBody) {
-        final var accessSpec = userAccessService.readSpec(getClazz(), user, queryRequest);
+        var accessSpec = userAccessService.readSpec(getClazz(), user, queryRequest);
         FilterExpression combinedFilter = buildCombinedFilter(queryRequest, jsonQueryBody);
         if (combinedFilter != null) {
-            accessSpec.and(jpaQueryBuilder.buildQuery(List.of(combinedFilter)));
+            accessSpec = accessSpec.and(jpaQueryBuilder.buildQuery(List.of(combinedFilter)));
         }
         return accessSpec;
     }
@@ -96,21 +96,21 @@ public abstract class DefaultJpaIdentifiableService
     }
 
     @Override
-    public Optional<T> findByUid(String uid) {
+    public Optional<T> findById(String id) {
         final var user = SecurityUtils.getCurrentUserDetails();
         final var spec = baseAccessSpecification(user
             .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), null, null)
-            .and(JpaIdentifiableObjectService.hasUid(uid));
+            .and(JpaIdentifiableObjectService.hasId(id));
         return identifiableRepository.findOne(spec);
     }
 
     @Override
-    public boolean existsByUid(String uid) {
+    public boolean existsById(String id) {
         final var user = SecurityUtils.getCurrentUserDetails();
 
         final var spec = baseAccessSpecification(user
             .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), null, null)
-            .and(JpaIdentifiableObjectService.hasUid(uid));
+            .and(JpaIdentifiableObjectService.hasId(id));
         return identifiableRepository.exists(spec);
     }
 
@@ -141,17 +141,22 @@ public abstract class DefaultJpaIdentifiableService
     @Override
     @Transactional
     public T update(T object) {
-        log.debug("Request service to update {}:`{}`", getClazz().getSimpleName(), object.getUid());
+        log.debug("Request service to update {}:`{}`", getClazz().getSimpleName(), object.getId());
         final var user = SecurityUtils.getCurrentUserDetails();
-        final var spec = baseAccessSpecification(user
-            .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), null, null)
-            .and(JpaIdentifiableObjectService.hasUid(object.getUid()));
-
-        T existingEntity = identifiableRepository.findOne(spec)
+//        final var spec = baseAccessSpecification(user
+//            .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), null, null)
+//            .and(JpaIdentifiableObjectService.hasId(object.getId()));
+        T existingEntity = findByIdOrUid(object)
             .orElseThrow(() ->
                 new IllegalQueryException(
                     new ErrorMessage(ErrorCode.E1004,
-                        getClazz().getSimpleName(), object.getUid())));
+                        getClazz().getSimpleName(), object.getId())));
+
+//        T existingEntity = identifiableRepository.findOne(spec)
+//            .orElseThrow(() ->
+//                new IllegalQueryException(
+//                    new ErrorMessage(ErrorCode.E1004,
+//                        getClazz().getSimpleName(), object.getId())));
 
         object.setId(existingEntity.getId());
         object.setCreatedBy(existingEntity.getCreatedBy());

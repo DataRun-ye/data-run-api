@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
-import org.nmcpye.datarun.jpa.flowinstance.FlowInstance;
-import org.nmcpye.datarun.jpa.flowinstance.repository.FlowInstanceRepository;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -17,9 +17,9 @@ import java.util.stream.Stream;
  */
 @Component
 public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
-    private final FlowInstanceRepository flowInstanceRepository;
+    private final AssignmentRepository flowInstanceRepository;
 
-    public OrgUnitFilter(FlowInstanceRepository flowInstanceRepository) {
+    public OrgUnitFilter(AssignmentRepository flowInstanceRepository) {
         this.flowInstanceRepository = flowInstanceRepository;
     }
 
@@ -72,10 +72,10 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
         return !includeDisabled ? orgUnitSet
             .stream()
             .filter(assignment -> !assignment.getTeam().getDisabled() || !assignment.getActivity().getDisabled())
-            .map(FlowInstance::getOrgUnit)
+            .map(Assignment::getOrgUnit)
             .collect(Collectors.toSet()) : orgUnitSet
             .stream()
-            .map(FlowInstance::getOrgUnit)
+            .map(Assignment::getOrgUnit)
             .collect(Collectors.toSet());
     }
 }
