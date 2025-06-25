@@ -21,6 +21,7 @@ public class JacksonConfiguration {
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer jsonCustomizer() {
         return builder -> builder.serializationInclusion(JsonInclude.Include.NON_NULL);
+//            .visibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
     }
 
     /**

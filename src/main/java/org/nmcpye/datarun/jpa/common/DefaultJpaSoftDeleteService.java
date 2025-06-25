@@ -44,19 +44,9 @@ public abstract class DefaultJpaSoftDeleteService
     }
 
     @Override
-    public void deleteById(String uid) {
-        log.debug("Request soft delete service to soft delete {}:`{}`", getClazz().getSimpleName(), uid);
-        final var toMarkAsDeleted = findById(uid).orElseThrow(() ->
-            new IllegalQueryException(new ErrorMessage(ErrorCode.E1106, "Id", uid)));
-        toMarkAsDeleted.setDeleted(Boolean.TRUE);
-        toMarkAsDeleted.setDeletedAt(Instant.now());
-        save(toMarkAsDeleted);
-    }
-
-    @Override
     public void delete(T object) {
         log.debug("Request soft delete service to soft delete {}:`{}`", getClazz().getSimpleName(), object.getId());
-        final var toMarkAsDeleted = findById(object.getId()).orElseThrow(() ->
+        final var toMarkAsDeleted = findByIdOrUid(object).orElseThrow(() ->
             new IllegalQueryException(new ErrorMessage(ErrorCode.E1109,
                 object.getClass().getSimpleName(), object.getId())));
         toMarkAsDeleted.setDeleted(Boolean.TRUE);

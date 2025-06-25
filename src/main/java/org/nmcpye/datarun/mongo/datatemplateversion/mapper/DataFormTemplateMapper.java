@@ -57,8 +57,8 @@ public interface DataFormTemplateMapper
             return element.getValidationRule();
         } else if (element.getConstraint() != null) {
             return new ElementValidationRule()
-                .expression(element.getConstraint())
-                .validationMessage(element.getConstraintMessage());
+                .setExpression(element.getConstraint())
+                .setValidationMessage(element.getConstraintMessage());
         } else {
             var maybeError = element.getRules()
                 .stream()
@@ -66,8 +66,8 @@ public interface DataFormTemplateMapper
                 .findAny();
             if (maybeError.isPresent()) {
                 return new ElementValidationRule()
-                    .expression(maybeError.get().getExpression())
-                    .validationMessage(maybeError.get().getMessage());
+                    .setExpression(maybeError.get().getExpression())
+                    .setValidationMessage(maybeError.get().getMessage());
             }
         }
         return null;

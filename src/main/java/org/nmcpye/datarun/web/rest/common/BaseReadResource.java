@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.web.rest.common;
 
 
-import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.acl.AclService;
 import org.nmcpye.datarun.common.DRunApiVersion;
 import org.nmcpye.datarun.common.IdentifiableObject;
@@ -134,11 +133,11 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<T> getById(@PathVariable("id") ID id,
+    public ResponseEntity<T> getById(@PathVariable("id") String id,
                                      @AuthenticationPrincipal CurrentUserDetails user) {
         hasMinimalRightsOrThrow(user);
         log.debug("REST request to get from {}: {}", getName(), id);
-        Optional<T> entity = identifiableObjectService.findById(id);
+        Optional<T> entity = identifiableObjectService.findByIdOrUid(id);
         return ResponseUtil.wrapOrNotFound(entity);
     }
 
@@ -155,14 +154,6 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
 
     protected T postProcess(T entity, QueryRequest queryRequest, String jsonQuery) {
         return entity;
-    }
-
-    private T findByIdOrUid(T entity) {
-        return Optional.ofNullable(entity.getId())
-            .flatMap(identifiableObjectService::findById)
-            .or(() -> Optional.ofNullable(entity.getUid())
-                .flatMap(identifiableObjectService::findByUid))
-            .orElseThrow(() -> new PropertyNotFoundException("OrgUnit not found: " + entity));
     }
 
     protected abstract String getName();

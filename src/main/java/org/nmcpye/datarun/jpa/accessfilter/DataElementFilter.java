@@ -11,6 +11,7 @@ import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,7 +34,9 @@ public class DataElementFilter extends DefaultJpaFilter<DataTemplateElement> {
     @Override
     public Specification<DataTemplateElement> getAccessSpecification(CurrentUserDetails user,
                                                                      QueryRequest queryRequest) {
-        Set<String> userDataElements = getUserFormsWithWritePermission(user.getUsername())
+        Collection<DataTemplateVersion> forms = getUserFormsWithWritePermission();
+
+        Set<String> userDataElements = forms
             .stream()
             .flatMap((form) -> form.getFields().stream())
             .map(FormDataElementConf::getId).collect(Collectors.toSet());
@@ -47,9 +50,10 @@ public class DataElementFilter extends DefaultJpaFilter<DataTemplateElement> {
         };
     }
 
-    public List<DataTemplateVersion> getUserFormsWithWritePermission(String userLogin) {
+    public Collection<DataTemplateVersion> getUserFormsWithWritePermission() {
         final var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
-
-        return templateRepository.findTopByTemplateUidInOrderByVersionNumberDesc(currentUser.getUserFormsUIDs());
+        List<DataTemplateVersion> versions = templateRepository
+            .findDistinctByTemplateUidInOrderByVersionNumberDesc(currentUser.getUserFormsUIDs());
+        return versions;
     }
 }

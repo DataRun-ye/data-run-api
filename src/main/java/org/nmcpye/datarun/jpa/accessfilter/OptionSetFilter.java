@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.optionset.OptionSet;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
@@ -11,6 +10,7 @@ import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -27,14 +27,10 @@ public class OptionSetFilter extends DefaultJpaFilter<OptionSet> {
         this.templateRepository = templateRepository;
     }
 
-    public static Specification<Activity> isEnabled() {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.isFalse(root.get("disabled"));
-    }
-
     @Override
     public Specification<OptionSet> getAccessSpecification(CurrentUserDetails user,
                                                            QueryRequest queryRequest) {
-        Set<String> userOptionSets = getUserOptionSets(user.getUsername());
+        Set<String> userOptionSets = getUserOptionSets();
 
         return (root, query, cb) -> {
             if (user.isSuper()) {
@@ -45,8 +41,8 @@ public class OptionSetFilter extends DefaultJpaFilter<OptionSet> {
         };
     }
 
-    private Set<String> getUserOptionSets(String userLogin) {
-        return getUserFormsWithWritePermission(userLogin)
+    private Set<String> getUserOptionSets() {
+        return getUserFormsWithWritePermission()
             .stream().flatMap(f -> f.getFields().stream())
             .filter(f -> f.getType().isOptionsType())
             .map(FormDataElementConf::getOptionSet)
@@ -54,8 +50,10 @@ public class OptionSetFilter extends DefaultJpaFilter<OptionSet> {
             .collect(Collectors.toSet());
     }
 
-    public List<DataTemplateVersion> getUserFormsWithWritePermission(String userLogin) {
+    public Collection<DataTemplateVersion> getUserFormsWithWritePermission() {
         final var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
-        return templateRepository.findTopByTemplateUidInOrderByVersionNumberDesc(currentUser.getUserFormsUIDs());
+        List<DataTemplateVersion> versions = templateRepository
+            .findDistinctByTemplateUidInOrderByVersionNumberDesc(currentUser.getUserFormsUIDs());
+        return versions;
     }
 }

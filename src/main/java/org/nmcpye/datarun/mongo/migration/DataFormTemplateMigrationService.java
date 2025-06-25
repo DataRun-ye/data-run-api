@@ -154,8 +154,8 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
 
         if (element.getConstraint() != null) {
             elementConf.setValidationRule(new ElementValidationRule()
-                .expression(element.getConstraint())
-                .validationMessage(element.getConstraintMessage()));
+                .setExpression(element.getConstraint())
+                .setValidationMessage(element.getConstraintMessage()));
         }
 
         elementConf.setRules(element.getRules());
@@ -163,8 +163,8 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
 
         if (!errorRules.isEmpty() && element.getConstraint() == null) {
             final var elementValidationRule = new ElementValidationRule()
-                .expression(errorRules.stream().findFirst().orElseThrow().getExpression())
-                .validationMessage(errorRules.stream().findFirst().orElseThrow().getMessage());
+                .setExpression(errorRules.stream().findFirst().orElseThrow().getExpression())
+                .setValidationMessage(errorRules.stream().findFirst().orElseThrow().getMessage());
             elementConf.setValidationRule(elementValidationRule);
         }
         elementConf.setMainField(element.isMainField());

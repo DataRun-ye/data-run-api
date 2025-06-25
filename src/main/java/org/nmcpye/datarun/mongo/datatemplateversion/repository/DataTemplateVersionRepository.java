@@ -33,12 +33,12 @@ public interface DataTemplateVersionRepository
 
     Page<DataTemplateVersion> findAllByTemplateUidInOrderByVersionNumberDesc(Collection<String> uids, Pageable pageable);
 
-
-    Page<DataTemplateVersion> findTopByTemplateUidInOrderByVersionNumberDesc(Collection<String> uids, Pageable pageable);
-
     Set<DataTemplateVersion> findAllByTemplateUidInOrderByVersionNumberDesc(Collection<String> uids);
 
-    List<DataTemplateVersion> findTopByTemplateUidInOrderByVersionNumberDesc(Collection<String> uids);
+    List<DataTemplateVersion> findDistinctByTemplateUidInOrderByVersionNumberDesc(Collection<String> uids);
+
+//    @Query(value = "{ 'templateUid': { $in: ?0 }, 'fields.type': { $in: ?1 } }", fields = "{ 'fields.optionSet': 1, '_id': 0 }")
+//    List<String> findByFormsAndPermission(Set<String> templateUid, Set<ValueType> types);
 
     @Query(value = "{ 'fields.type': { $in: ?0 }}")
     List<DataTemplateVersion> findByFieldType(List<ValueType> types);

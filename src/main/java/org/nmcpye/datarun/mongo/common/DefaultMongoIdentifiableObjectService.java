@@ -25,6 +25,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
@@ -110,6 +111,21 @@ public abstract class DefaultMongoIdentifiableObjectService<T extends MongoIdent
         return new CompoundFilter(LogicalOperator.AND, allFilters);
     }
 
+    @Override
+    public Optional<T> findByIdOrUid(T entity) {
+        return Optional.ofNullable(entity.getUid())
+            .flatMap(repository::findByUid)
+            .or(() -> Optional.ofNullable(entity.getId())
+                .flatMap(repository::findById));
+    }
+
+    @Override
+    public Optional<T> findByIdOrUid(String id) {
+        return Optional.ofNullable(id)
+            .flatMap(repository::findByUid)
+            .or(() -> Optional.ofNullable(id)
+                .flatMap(repository::findById));
+    }
 //    protected Criteria buildFiltersCriteria(QueryRequest queryRequest, String jsonQueryBody) {
 //        Criteria criteria = new Criteria();
 //

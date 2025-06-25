@@ -1,21 +1,26 @@
 package org.nmcpye.datarun.web.rest.postgres;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.web.rest.common.BaseReadWriteResource;
 
+@Slf4j
 public abstract class JpaBaseResource<T extends JpaIdentifiableObject>
     extends BaseReadWriteResource<T, String> {
+    protected final JpaIdentifiableObjectService<T> jpaAuditableObjectService;
     protected JpaBaseResource(JpaIdentifiableObjectService<T> jpaAuditableObjectService,
                               JpaIdentifiableRepository<T> repository) {
         super(jpaAuditableObjectService, repository);
+        this.jpaAuditableObjectService = jpaAuditableObjectService;
     }
 
     @Override
     protected JpaIdentifiableRepository<T> getRepository() {
         return (JpaIdentifiableRepository<T>) super.getRepository();
     }
+
 //
 //    @Override
 //    protected Page<T> getList(QueryRequest queryRequest, String jsonQueryBody) {

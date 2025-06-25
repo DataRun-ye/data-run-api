@@ -5,16 +5,17 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
+import java.io.Serializable;
 import java.util.Map;
 
 /**
  * @author Hamza Assada 30/05/2025 <7amza.it@gmail.com>
  */
 @NoArgsConstructor
-@Accessors(fluent = true)
+@Accessors(chain = true)
 @Setter
 @Getter
-public class ElementValidationRule {
+public class ElementValidationRule implements Serializable {
     /**
      * validation's expression
      */

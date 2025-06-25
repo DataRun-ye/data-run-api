@@ -95,24 +95,24 @@ public abstract class DefaultJpaIdentifiableService
         return list;
     }
 
-    @Override
-    public Optional<T> findById(String id) {
-        final var user = SecurityUtils.getCurrentUserDetails();
-        final var spec = baseAccessSpecification(user
-            .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), null, null)
-            .and(JpaIdentifiableObjectService.hasId(id));
-        return identifiableRepository.findOne(spec);
-    }
+//    @Override
+//    public Optional<T> findById(String id) {
+//        final var user = SecurityUtils.getCurrentUserDetails();
+//        final var spec = baseAccessSpecification(user
+//            .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), null, null)
+//            .and(JpaIdentifiableObjectService.hasId(id));
+//        return identifiableRepository.findOne(spec);
+//    }
 
-    @Override
-    public boolean existsById(String id) {
-        final var user = SecurityUtils.getCurrentUserDetails();
-
-        final var spec = baseAccessSpecification(user
-            .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), null, null)
-            .and(JpaIdentifiableObjectService.hasId(id));
-        return identifiableRepository.exists(spec);
-    }
+//    @Override
+//    public boolean existsById(String id) {
+//        final var user = SecurityUtils.getCurrentUserDetails();
+//
+//        final var spec = baseAccessSpecification(user
+//            .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), null, null)
+//            .and(JpaIdentifiableObjectService.hasId(id));
+//        return identifiableRepository.exists(spec);
+//    }
 
 //    @Override
 //    public Page<T> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
@@ -165,4 +165,21 @@ public abstract class DefaultJpaIdentifiableService
         /// update object, overwrite with updates
         return saveWithRelations(object);
     }
+
+    @Override
+    public Optional<T> findByIdOrUid(T entity) {
+        return Optional.ofNullable(entity.getUid())
+            .flatMap(repository::findByUid)
+            .or(() -> Optional.ofNullable(entity.getId())
+                .flatMap(repository::findById));
+    }
+
+    @Override
+    public Optional<T> findByIdOrUid(String entity) {
+        return Optional.ofNullable(entity)
+            .flatMap(repository::findByUid)
+            .or(() -> Optional.ofNullable(entity)
+                .flatMap(repository::findById));
+    }
 }
+

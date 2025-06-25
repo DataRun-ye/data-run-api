@@ -27,8 +27,8 @@ public class MigrateDeprecatedPropertiesHandler
             .findAny();
         if (element.getConstraint() == null && errorRule.isPresent()) {
             final var elementValidationRule = new ElementValidationRule()
-                .expression(errorRule.get().getExpression())
-                .validationMessage(errorRule.get().getMessage());
+                .setExpression(errorRule.get().getExpression())
+                .setValidationMessage(errorRule.get().getMessage());
             element.setValidationRule(elementValidationRule);
         }
 

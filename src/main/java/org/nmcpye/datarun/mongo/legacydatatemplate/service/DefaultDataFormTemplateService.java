@@ -13,8 +13,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
 /**
  * Service Implementation for managing {@link DataFormTemplate}.
  */
@@ -51,22 +49,6 @@ public class DefaultDataFormTemplateService
     }
 
     @Override
-    public boolean existsById(String uid) {
-        return templateInstanceService.findByUid(uid).isPresent();
-    }
-
-    @Override
-    public Optional<DataFormTemplate> findById(String uid) {
-        return templateInstanceService
-            .findByUid(uid).map(dataFormTemplateMapper::toEntity);
-    }
-
-    @Override
-    public void deleteById(String uid) {
-        templateInstanceService.deleteByUid(uid);
-    }
-
-    @Override
     public DataFormTemplate save(DataFormTemplate object) {
         log.debug("Request service to save {}:`{}`", getClazz().getSimpleName(), object.getUid());
         return dataFormTemplateMapper
@@ -75,7 +57,7 @@ public class DefaultDataFormTemplateService
 
     @Override
     public void delete(DataFormTemplate object) {
-        findById(object.getUid()).ifPresent(repository::delete);
+        findByIdOrUid(object).ifPresent(repository::delete);
     }
 
     @Transactional

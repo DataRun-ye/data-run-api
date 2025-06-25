@@ -13,21 +13,18 @@ public interface IdentifiableObjectService<T extends IdentifiableObject<ID>, ID>
 
     T saveWithRelations(T object);
 
-    @Deprecated(since = "V7")
     boolean existsByUid(String uid);
 
 
-    @Deprecated(since = "V7")
     Optional<T> findByUid(String uid);
 
-    @Deprecated(since = "V7")
     void deleteByUid(String uid);
+//
+//    boolean existsById(ID id);
+//
+//    Optional<T> findById(ID id);
 
-    boolean existsById(ID id);
-
-    Optional<T> findById(ID id);
-
-    void deleteById(ID id);
+//    void deleteById(ID id);
 
     Page<T> findAllByUser(QueryRequest queryRequest, String jsonQueryBody);
 
@@ -55,4 +52,5 @@ public interface IdentifiableObjectService<T extends IdentifiableObject<ID>, ID>
     void delete(T object);
 
     Optional<T> findByIdOrUid(T entity);
+    Optional<T> findByIdOrUid(String entity);
 }
