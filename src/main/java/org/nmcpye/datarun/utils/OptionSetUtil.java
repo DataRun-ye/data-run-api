@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.utils;
 
 import org.nmcpye.datarun.datatemplateelement.DataOption;
-import org.nmcpye.datarun.jpa.optionset.OptionSet;
+import org.nmcpye.datarun.jpa.option.OptionSet;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,7 +25,7 @@ public class OptionSetUtil {
         for (Map.Entry<String, List<DataOption>> entry : groupedOptions.entrySet()) {
             OptionSet optionSet = new OptionSet();
             optionSet.setName(entry.getKey());
-            optionSet.setOptions(entry.getValue());
+            optionSet.setLegacyOptions(entry.getValue());
             optionSets.add(optionSet);
         }
 
@@ -49,7 +49,7 @@ public class OptionSetUtil {
         // Print OptionSets for verification
         for (OptionSet optionSet : optionSets) {
             System.out.println("OptionSet Name: " + optionSet.getName());
-            for (DataOption option : optionSet.getOptions()) {
+            for (DataOption option : optionSet.getLegacyOptions()) {
                 System.out.println(" - " + option.getName());
             }
         }

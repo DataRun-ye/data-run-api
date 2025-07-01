@@ -17,7 +17,7 @@ import java.util.Map;
  * processor and iterating over them.
  * </pre>
  *
- * @author Hamza Assada 03/06/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 03/06/2025 (7amza.it@gmail.com)
  */
 @Component
 public class ActivityProcessor

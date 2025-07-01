@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author Hamza Assada 14/05/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 14/05/2025 (7amza.it@gmail.com)
  */
 @Accessors(fluent = true)
 @Getter

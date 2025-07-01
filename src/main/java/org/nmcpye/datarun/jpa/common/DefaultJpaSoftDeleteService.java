@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 20/03/2025 (7amza.it@gmail.com)
  */
 @Slf4j
 public abstract class DefaultJpaSoftDeleteService

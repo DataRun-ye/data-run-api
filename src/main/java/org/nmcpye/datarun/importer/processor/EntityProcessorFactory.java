@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * processors registry
  *
- * @author Hamza Assada 03/06/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 03/06/2025 (7amza.it@gmail.com)
  */
 @Component
 @Slf4j

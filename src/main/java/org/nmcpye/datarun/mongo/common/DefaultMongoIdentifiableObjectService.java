@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 20/03/2025 (7amza.it@gmail.com)
  */
 public abstract class DefaultMongoIdentifiableObjectService<T extends MongoIdentifiableObject>
     extends DefaultIdentifiableObjectService<T, String>

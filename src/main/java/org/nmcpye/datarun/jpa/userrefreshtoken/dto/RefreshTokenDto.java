@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * @author Hamza Assada 25/04/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 25/04/2025 (7amza.it@gmail.com)
  */
 @Getter
 @Setter

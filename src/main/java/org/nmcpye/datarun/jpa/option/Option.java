@@ -1,56 +1,72 @@
-//package org.nmcpye.datarun.option;
-//
-//import jakarta.persistence.*;
-//import jakarta.validation.constraints.Size;
-//import lombok.Getter;
-//import lombok.Setter;
-//import org.hibernate.annotations.Cache;
-//import org.hibernate.annotations.CacheConcurrencyStrategy;
-//import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
-//import org.nmcpye.datarun.optionset.OptionSet;
-//
-///**
-// * A template Element Option.
-// */
-//@Entity
-//@Table(name = "option_value")
-//@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-//@Getter
-//@Setter
-//@SuppressWarnings("common-java:DuplicatedBlocks")
-//public class Option extends
-//    JpaBaseIdentifiableObject {
-//
-//    @Id
-//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-//    @SequenceGenerator(name = "sequenceGenerator")
-//    @Column(name = "id")
-//    protected Long id;
-//
-//    @Size(max = 11)
-//    @Column(name = "uid", length = 11, updatable = false, unique = true)
-//    protected String uid;
-//
-//    /**
-//     * The unique code for this object.
-//     */
-//    @Column(name = "code", unique = true)
-//    protected String code;
-//
-//    /**
-//     * The name of this object. Required and unique.
-//     */
-//    @Column(name = "name", nullable = false, unique = true)
-//    protected String name;
-//
-//
-//    @Column(name = "description")
-//    private String description;
-//
-//    @Column(name = "sort_order")
-//    private Integer sortOrder;
-//
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "id")
-//    private OptionSet optionSet;
-//}
+package org.nmcpye.datarun.jpa.option;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+
+/**
+ * @author Hamza Assada 30/06/2025 (7amza.it@gmail.com)
+ */
+@Entity
+@Table(name = "option_value", uniqueConstraints = {
+        @UniqueConstraint(name = "uc_option_option_set_name", columnNames = {"name", "option_set_id"}),
+        @UniqueConstraint(name = "uc_option_option_set_code", columnNames = {"code", "option_set_id"}),
+})
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+@Getter
+@Setter
+@SuppressWarnings("common-java:DuplicatedBlocks")
+public class Option extends JpaBaseIdentifiableObject {
+
+    /**
+     * The unique code for this object.
+     */
+    @Column(name = "code")
+    private String code;
+
+    /**
+     * The name of this object. Required and unique.
+     */
+    @Column(name = "name", nullable = false)
+    private String name;
+
+    @Column(name = "description")
+    private String description;
+
+    // only getter, setting is done by jpa
+    @Setter(value = AccessLevel.PRIVATE)
+    @Column(name = "sort_order")
+    private Integer sortOrder;
+
+    @NotNull
+    @ManyToOne
+    // prevent JPA from trying to manage this FK twice
+//    @JoinColumn(name = "option_set_id", insertable = false, updatable = false, nullable = false)
+    @JoinColumn(name = "option_set_id", nullable = false)
+    private OptionSet optionSet;
+
+    @JsonProperty
+    @JsonSerialize(as = JpaBaseIdentifiableObject.class)
+    public OptionSet getOptionSet() {
+        return optionSet;
+    }
+
+    @Override
+    protected void setUid(String uid) {
+
+    }
+
+    @JsonIgnore
+    @Override
+    public String getUid() {
+        return "";
+    }
+}

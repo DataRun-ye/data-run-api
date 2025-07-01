@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.postgres.optionset;
 
-import org.nmcpye.datarun.jpa.optionset.OptionSet;
-import org.nmcpye.datarun.jpa.optionset.repository.OptionSetRepository;
-import org.nmcpye.datarun.jpa.optionset.service.OptionSetService;
+import org.nmcpye.datarun.jpa.option.OptionSet;
+import org.nmcpye.datarun.jpa.option.repository.OptionSetRepository;
+import org.nmcpye.datarun.jpa.option.service.OptionSetService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;

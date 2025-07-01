@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.util.Set;
 
 /**
- * @author Hamza Assada 24/04/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 24/04/2025 (7amza.it@gmail.com)
  */
 @AllArgsConstructor
 @NoArgsConstructor

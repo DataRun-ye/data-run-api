@@ -10,7 +10,7 @@ import lombok.Setter;
 import org.nmcpye.datarun.datatemplateelement.DataOption;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
-import org.nmcpye.datarun.jpa.optionset.OptionSet;
+import org.nmcpye.datarun.jpa.option.OptionSet;
 import org.nmcpye.datarun.mongo.common.MongoBaseIdentifiableObject;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.FieldDeserializer;

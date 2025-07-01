@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
- * @author Hamza Assada 03/06/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 03/06/2025 (7amza.it@gmail.com)
  */
 @Component("id")
 public class IdIdentifierStrategy implements IdentifierStrategy {

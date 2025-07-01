@@ -9,7 +9,7 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * @author Hamza Assada 30/05/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 30/05/2025 (7amza.it@gmail.com)
  */
 @NoArgsConstructor
 @Accessors(chain = true)

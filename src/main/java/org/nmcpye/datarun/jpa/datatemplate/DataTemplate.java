@@ -14,7 +14,7 @@ import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
 import java.time.Instant;
 
 /**
- * @author Hamza Assada 27/05/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 27/05/2025 (7amza.it@gmail.com)
  */
 @Entity
 @Table(name = "data_template")

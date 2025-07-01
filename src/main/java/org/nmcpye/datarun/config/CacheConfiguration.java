@@ -11,8 +11,12 @@ import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
 import org.nmcpye.datarun.jpa.dataelementgroupset.DataElementGroupSet;
+import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.entityauditevent.EntityAuditEvent;
-import org.nmcpye.datarun.jpa.optionset.OptionSet;
+import org.nmcpye.datarun.jpa.option.Option;
+import org.nmcpye.datarun.jpa.option.OptionGroup;
+import org.nmcpye.datarun.jpa.option.OptionGroupSet;
+import org.nmcpye.datarun.jpa.option.OptionSet;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunitgroup.OrgUnitGroup;
 import org.nmcpye.datarun.jpa.orgunitgroupset.OrgUnitGroupSet;
@@ -51,13 +55,13 @@ public class CacheConfiguration {
         JHipsterProperties.Cache.Ehcache ehcache = jHipsterProperties.getCache().getEhcache();
 
         jcacheConfiguration = Eh107Configuration.fromEhcacheCacheConfiguration(
-            CacheConfigurationBuilder.newCacheConfigurationBuilder(
-                    Object.class,
-                    Object.class,
-                    ResourcePoolsBuilder.heap(ehcache.getMaxEntries())
-                )
-                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofSeconds(ehcache.getTimeToLiveSeconds())))
-                .build()
+                CacheConfigurationBuilder.newCacheConfigurationBuilder(
+                                Object.class,
+                                Object.class,
+                                ResourcePoolsBuilder.heap(ehcache.getMaxEntries())
+                        )
+                        .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofSeconds(ehcache.getTimeToLiveSeconds())))
+                        .build()
         );
     }
 
@@ -131,8 +135,20 @@ public class CacheConfiguration {
             createCache(cm, DataElementGroup.class.getName() + ".dataElementGroupSets");
             createCache(cm, DataElementGroupSet.class.getName());
             createCache(cm, DataElementGroupSet.class.getName() + ".dataElementGroups");
+            createCache(cm, DataTemplate.class.getName());
+
+            createCache(cm, Option.class.getName());
 
             createCache(cm, OptionSet.class.getName());
+            createCache(cm, OptionSet.class.getName() + ".optionSetOptions");
+
+            createCache(cm, OptionGroup.class.getName());
+            createCache(cm, OptionGroup.class.getName() + ".options");
+
+            createCache(cm, OptionGroupSet.class.getName());
+            createCache(cm, OptionGroupSet.class.getName() + ".optionGroups");
+
+
         };
     }
 

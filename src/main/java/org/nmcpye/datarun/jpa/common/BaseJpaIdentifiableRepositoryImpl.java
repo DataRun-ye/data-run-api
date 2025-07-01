@@ -6,7 +6,7 @@ import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.springframework.data.jpa.repository.support.JpaEntityInformation;
 
 /**
- * @author Hamza Assada 04/06/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 04/06/2025 (7amza.it@gmail.com)
  */
 public class BaseJpaIdentifiableRepositoryImpl<T, ID>
     extends BaseJpaRepositoryImpl<T, ID>

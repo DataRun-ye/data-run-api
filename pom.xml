@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nmcpye.datarun</groupId>
     <artifactId>data-run-api</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>6.1.0</version>
     <packaging>jar</packaging>
     <name>Data Run Api</name>
     <description>Description for Data Run Api</description>
@@ -519,8 +519,17 @@
                                 </platform>
                             </platforms>
                         </from>
+<!--                        <to>-->
+<!--                            <image>kaswarah/datarunapi:latest</image>-->
+<!--                        </to>-->
                         <to>
-                            <image>kaswarah/datarunapi:latest</image>
+                            <image>kaswarah/datarunapi</image>
+                            <tags>
+                                <!-- exact project version, e.g. "1.2.3" -->
+                                <tag>${project.version}</tag>
+                                <!-- optional alias -->
+                                <tag>latest</tag>
+                            </tags>
                         </to>
                         <container>
                             <entrypoint>

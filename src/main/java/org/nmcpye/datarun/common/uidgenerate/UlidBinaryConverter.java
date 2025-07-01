@@ -7,7 +7,7 @@ import jakarta.persistence.Converter;
 /**
  * JPA AttributeConverter for ULID <-> BINARY(16)
  *
- * @author Hamza Assada 09/06/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 09/06/2025 (7amza.it@gmail.com)
  */
 @Converter(autoApply = true)
 public class UlidBinaryConverter implements AttributeConverter<ULID.Value, byte[]> {

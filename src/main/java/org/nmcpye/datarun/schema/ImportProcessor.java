@@ -9,7 +9,7 @@ import java.util.Optional;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * @author Hamza Assada 01/05/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 01/05/2025 (7amza.it@gmail.com)
  */
 public class ImportProcessor {
     private final Map<Class<?>, ImportableEntityHandler<?, ?>> handlers;

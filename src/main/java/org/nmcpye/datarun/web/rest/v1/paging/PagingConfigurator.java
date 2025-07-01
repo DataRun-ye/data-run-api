@@ -5,7 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
- * @author Hamza Assada 05/05/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 05/05/2025 (7amza.it@gmail.com)
  */
 public class PagingConfigurator {
     public static <T> PagedResponse<T> initPageResponse(Page<T> page, String next, String resourceName) {

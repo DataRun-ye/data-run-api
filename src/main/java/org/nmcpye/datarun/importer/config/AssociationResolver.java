@@ -10,7 +10,7 @@ package org.nmcpye.datarun.importer.config;
  * lookups for the same entity in one import (if multiple associations).
  * </blockquote>
  *
- * @author Hamza Assada 03/06/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 03/06/2025 (7amza.it@gmail.com)
  */
 public interface AssociationResolver {
     <T> T resolveEntity(Class<T> entityClass, String keyField, Object keyValue);

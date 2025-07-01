@@ -9,7 +9,7 @@
 ///**
 // * Holds metadata for a single JPA entity.
 // *
-// * @author Hamza Assada 02/06/2025 <7amza.it@gmail.com>
+// * @author Hamza Assada 02/06/2025 (7amza.it@gmail.com)
 // */
 //public class EntitySchema {
 //    @Getter

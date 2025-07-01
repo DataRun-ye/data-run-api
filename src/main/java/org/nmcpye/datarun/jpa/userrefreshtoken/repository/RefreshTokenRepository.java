@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * @author Hamza Assada 16/04/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 16/04/2025 (7amza.it@gmail.com)
  */
 @SuppressWarnings("unused")
 @Repository

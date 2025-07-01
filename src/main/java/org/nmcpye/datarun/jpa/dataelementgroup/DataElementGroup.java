@@ -54,7 +54,7 @@ public class DataElementGroup extends JpaBaseIdentifiableObject {
     )
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"parent", "children", "dataElementGroups", "assignments", "hierarchyLevel", "ancestors", "translations", "path"}, allowSetters = true)
-    private Set<DataTemplateElement> dataTemplateElements = new HashSet<>();
+    private Set<DataTemplateElement> dataElements = new HashSet<>();
 
     @ManyToMany(mappedBy = "dataElementGroups")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)

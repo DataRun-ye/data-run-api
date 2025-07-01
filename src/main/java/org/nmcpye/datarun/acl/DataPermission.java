@@ -6,7 +6,7 @@ import org.springframework.security.acls.model.Permission;
 import java.util.Set;
 
 /**
- * @author Hamza Assada 16/05/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 16/05/2025 (7amza.it@gmail.com)
  */
 public class DataPermission extends BasePermission {
     public static final Permission DATA_READ = new DataPermission(1 << 5, 'r');   // 32

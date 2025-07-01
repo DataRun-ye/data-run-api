@@ -10,7 +10,7 @@ import java.util.Set;
 import static org.nmcpye.datarun.common.enumeration.FormPermission.*;
 
 /**
- * @author Hamza Assada 24/04/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 24/04/2025 (7amza.it@gmail.com)
  */
 @Value
 @Builder

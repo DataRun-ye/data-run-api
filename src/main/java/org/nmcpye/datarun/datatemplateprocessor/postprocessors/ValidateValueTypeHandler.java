@@ -8,7 +8,7 @@ import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 
 /**
- * @author Hamza Assada 18/03/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 18/03/2025 (7amza.it@gmail.com)
  */
 public class ValidateValueTypeHandler
     extends AbstractFormElementHandler<FormDataElementConf> {

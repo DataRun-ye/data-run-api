@@ -62,7 +62,7 @@ public class DataElementGroupSet extends JpaBaseIdentifiableObject {
 
     public boolean isMemberOfOrgUnitGroups(DataTemplateElement dataTemplateElement) {
         for (DataElementGroup group : dataElementGroups) {
-            if (group.getDataTemplateElements().contains(dataTemplateElement)) {
+            if (group.getDataElements().contains(dataTemplateElement)) {
                 return true;
             }
         }

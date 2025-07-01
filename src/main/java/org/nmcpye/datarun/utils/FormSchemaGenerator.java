@@ -9,7 +9,7 @@
 //import org.springframework.stereotype.Service;
 //
 ///**
-// * @author Hamza Assada 24/06/2025 <7amza.it@gmail.com>
+// * @author Hamza Assada 24/06/2025 (7amza.it@gmail.com)
 // */
 //@Service
 //public class FormSchemaGenerator {

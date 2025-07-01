@@ -23,7 +23,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import javax.sql.DataSource;
 
 /**
- * @author Hamza Assada 16/05/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 16/05/2025 (7amza.it@gmail.com)
  */
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)

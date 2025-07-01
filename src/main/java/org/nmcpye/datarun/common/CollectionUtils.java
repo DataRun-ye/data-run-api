@@ -12,7 +12,7 @@ import java.util.stream.StreamSupport;
  * <p>
  * Utility methods for operations on various collections.
  *
- * @author Hamza Assada 27/05/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 27/05/2025 (7amza.it@gmail.com)
  */
 @SuppressWarnings("unused")
 public class CollectionUtils {

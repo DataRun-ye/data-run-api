@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**
- * @author Hamza Assada 19/03/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 19/03/2025 (7amza.it@gmail.com)
  */
 @Component
 @Transactional(readOnly = true)

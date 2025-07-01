@@ -13,7 +13,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 20/03/2025 (7amza.it@gmail.com)
  */
 @Transactional
 public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObject<ID>, ID>

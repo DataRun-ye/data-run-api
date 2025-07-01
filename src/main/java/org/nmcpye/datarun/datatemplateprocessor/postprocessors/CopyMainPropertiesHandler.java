@@ -6,7 +6,7 @@ import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 import java.util.Optional;
 
 /**
- * @author Hamza Assada 18/03/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 18/03/2025 (7amza.it@gmail.com)
  */
 public class CopyMainPropertiesHandler
     extends AbstractFormElementHandler<FormDataElementConf> {

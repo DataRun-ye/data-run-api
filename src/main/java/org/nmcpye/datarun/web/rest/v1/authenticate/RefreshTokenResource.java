@@ -18,7 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import static org.nmcpye.datarun.web.rest.v1.authenticate.RefreshTokenResource.V1;
 
 /**
- * @author Hamza Assada 16/04/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 16/04/2025 (7amza.it@gmail.com)
  */
 @RestController
 @RequestMapping(V1)

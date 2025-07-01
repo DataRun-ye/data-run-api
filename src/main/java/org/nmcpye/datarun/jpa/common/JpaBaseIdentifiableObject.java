@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * @author Hamza Assada 20/03/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 20/03/2025 (7amza.it@gmail.com)
  */
 @MappedSuperclass
 @Getter
@@ -89,7 +89,7 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
         return getTranslation("NAME", getName());
     }
 
-    @JsonProperty
+    @JsonIgnore
     public Set<Translation> getTranslations() {
         if (translations == null) {
             translations = new HashSet<>();
@@ -137,7 +137,7 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
      * @return a translated value.
      */
     protected String getTranslation(String translationKey, String defaultValue) {
-        String localeKey = SecurityUtils.getCurrentUserLocale().orElse(null);
+        String localeKey = SecurityUtils.getCurrentUserLocale().orElse("en");
         final String defaultTranslation = defaultValue != null ? defaultValue.trim() : null;
 
         if (localeKey == null || translationKey == null || CollectionUtils.isEmpty(translations)) {

@@ -10,7 +10,7 @@ import java.util.List;
  *
  * @param <DTO>    - DTO type parameter.
  * @param <ENTITY> - Entity type parameter.
- * @author Hamza Assada 07/08/2024 <7amza.it@gmail.com>
+ * @author Hamza Assada 07/08/2024 (7amza.it@gmail.com)
  */
 
 public interface BaseMapper<DTO extends BaseDto, ENTITY> {

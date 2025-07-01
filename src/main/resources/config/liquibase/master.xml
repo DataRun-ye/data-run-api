@@ -26,5 +26,7 @@
 <!--    <include file="/config/liquibase/changelog/2024/15-01-changelog-translation-and-drop-audit-not-null.xml" relativeToChangelogFile="false"/>-->
     <include file="/config/liquibase/changelog/security/acl-schema.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/v7-2025-merge/24-01-changelog-last-merge.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/app-user-constraints/app-user-add-omitted-constraints.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/option-groups/01-01-option-group-and-group-set-changelog.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

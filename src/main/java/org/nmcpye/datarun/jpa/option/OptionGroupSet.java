@@ -1,0 +1,86 @@
+package org.nmcpye.datarun.jpa.option;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.ListIndexBase;
+import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author Hamza Assada 30/06/2025 (7amza.it@gmail.com)
+ */
+@Entity
+@Table(name = "option_group_set", uniqueConstraints = {
+        @UniqueConstraint(name = "uc_group_set_option_set_name",columnNames = {"name", "option_set_id"}),
+        @UniqueConstraint(name = "uc_group_set_option_set_code",columnNames = {"code", "option_set_id"}),
+})
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+@Getter
+@Setter
+@SuppressWarnings("common-java:DuplicatedBlocks")
+public class OptionGroupSet extends
+        JpaBaseIdentifiableObject {
+    /**
+     * The unique code for this object.
+     */
+    @Column(name = "code")
+    private String code;
+
+    /**
+     * The name of this object. Required and unique.
+     */
+    @Column(name = "name", nullable = false)
+    private String name;
+
+
+    @Column(name = "description")
+    private String description;
+
+    /**
+     * when set you cannot change this association later
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "option_set_id", updatable = false, nullable = false)
+    private OptionSet optionSet;
+
+    @ManyToMany
+    @JoinTable(
+            name = "option_groupset__option_group",
+            joinColumns = @JoinColumn(name = "groupset_id"),
+            inverseJoinColumns = @JoinColumn(name = "option_group_id")
+    )
+    @OrderColumn(name = "sort_order")
+    @ListIndexBase(1)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    private List<OptionGroup> optionGroups = new ArrayList<>();
+
+    @JsonProperty
+    @JsonSerialize(contentAs = JpaBaseIdentifiableObject.class)
+    public List<OptionGroup> getOptionGroups() {
+        return optionGroups;
+    }
+
+    @JsonSerialize(as = JpaBaseIdentifiableObject.class)
+    public OptionSet getOptionSet() {
+        return optionSet;
+    }
+
+    @Override
+    protected void setUid(String uid) {
+
+    }
+
+    @JsonIgnore
+    @Override
+    public String getUid() {
+        return "";
+    }
+}

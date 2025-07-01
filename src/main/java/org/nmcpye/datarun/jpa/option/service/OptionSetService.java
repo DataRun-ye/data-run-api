@@ -1,7 +1,7 @@
-package org.nmcpye.datarun.jpa.optionset.service;
+package org.nmcpye.datarun.jpa.option.service;
 
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
-import org.nmcpye.datarun.jpa.optionset.OptionSet;
+import org.nmcpye.datarun.jpa.option.OptionSet;
 
 /**
  * Service Interface for managing {@link OptionSet}.

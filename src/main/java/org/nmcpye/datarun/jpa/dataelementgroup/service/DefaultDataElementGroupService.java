@@ -35,13 +35,13 @@ public class DefaultDataElementGroupService
 
     @Override
     public DataElementGroup saveWithRelations(DataElementGroup object) {
-        if (!object.getDataTemplateElements().isEmpty()) {
+        if (!object.getDataElements().isEmpty()) {
             Set<DataTemplateElement> dataTemplateElements = new HashSet<>();
-            for (DataTemplateElement dataTemplateElement : object.getDataTemplateElements()) {
+            for (DataTemplateElement dataTemplateElement : object.getDataElements()) {
                 dataTemplateElements.add(findOrgUnit(dataTemplateElement));
             }
 
-            object.setDataTemplateElements(dataTemplateElements);
+            object.setDataElements(dataTemplateElements);
             return save(object);
         }
 

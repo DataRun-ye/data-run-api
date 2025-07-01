@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author Hamza Assada 22/03/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 22/03/2025 (7amza.it@gmail.com)
  */
 @SuppressWarnings("unchecked")
 public class RequestQueryService<T extends AuditableObject<?>> {

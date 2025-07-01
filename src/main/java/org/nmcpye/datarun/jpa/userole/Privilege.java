@@ -15,7 +15,7 @@ import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 import java.util.Collection;
 
 /**
- * @author Hamza Assada 21/03/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 21/03/2025 (7amza.it@gmail.com)
  */
 @Entity
 @Table(name = "role_privilege")

@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * @author Hamza Assada 04/06/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 04/06/2025 (7amza.it@gmail.com)
  */
 @Service
 @Slf4j

@@ -7,7 +7,7 @@ import lombok.Setter;
 /**
  * Object to return as body in the refresh token endpoint.
  *
- * @author Hamza Assada 16/04/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 16/04/2025 (7amza.it@gmail.com)
  */
 @Getter
 @Setter

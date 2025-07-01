@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * @author Hamza Assada 24/04/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 24/04/2025 (7amza.it@gmail.com)
  */
 @Component
 @Transactional

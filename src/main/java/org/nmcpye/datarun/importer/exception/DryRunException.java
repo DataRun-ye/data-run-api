@@ -6,7 +6,7 @@ import org.nmcpye.datarun.common.feedback.ErrorMessage;
 /**
  * Custom exception to force rollback or skip
  *
- * @author Hamza Assada 02/06/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 02/06/2025 (7amza.it@gmail.com)
  */
 public class DryRunException extends IllegalQueryException {
     public DryRunException(String message) {

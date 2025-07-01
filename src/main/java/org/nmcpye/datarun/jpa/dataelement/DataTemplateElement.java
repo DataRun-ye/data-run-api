@@ -10,13 +10,13 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
-import org.nmcpye.datarun.jpa.optionset.OptionSet;
+import org.nmcpye.datarun.jpa.option.OptionSet;
 
 import java.util.HashSet;
 import java.util.Set;
 
 /**
- * @author Hamza Assada 08/02/2024 <7amza.it@gmail.com>
+ * @author Hamza Assada 08/02/2024 (7amza.it@gmail.com)
  */
 @Entity
 @Table(name = "data_element")
@@ -50,7 +50,7 @@ public class DataTemplateElement extends BaseDataElement {
     private ReferenceType resourceType;
 
 
-    @ManyToMany(mappedBy = "dataTemplateElements")
+    @ManyToMany(mappedBy = "dataElements")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"dataElementGroupSets", "dataElements", "translations"}, allowSetters = true)
     protected Set<DataElementGroup> dataElementGroups = new HashSet<>();

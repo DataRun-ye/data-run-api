@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest.common;
 
 /**
- * @author Hamza Assada 27/04/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 27/04/2025 (7amza.it@gmail.com)
  */
 public final class ApiVersion {
     public static final String API_CUSTOM = "/api" + "/custom";

@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import static org.nmcpye.datarun.common.enumeration.FormPermission.*;
 
 /**
- * @author Hamza Assada 25/04/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 25/04/2025 (7amza.it@gmail.com)
  */
 @Service
 @Transactional(readOnly = true)

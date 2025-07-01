@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author Hamza Assada 27/05/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 27/05/2025 (7amza.it@gmail.com)
  */
 public interface ElementInterface extends Serializable {
 //    ID getId();

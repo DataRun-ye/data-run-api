@@ -1,15 +1,14 @@
-package org.nmcpye.datarun.jpa.optionset.repository;
+package org.nmcpye.datarun.jpa.option.repository;
 
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
-import org.nmcpye.datarun.jpa.optionset.OptionSet;
+import org.nmcpye.datarun.jpa.option.OptionSet;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 /**
- * Spring Data JPA repository for the Project entity.
+ * @author Hamza Assada 10/09/2024 (7amza.it@gmail.com)
  */
-@SuppressWarnings("unused")
 @Repository
 public interface OptionSetRepository
     extends JpaIdentifiableRepository<OptionSet> {

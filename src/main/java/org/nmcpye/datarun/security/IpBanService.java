@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
- * @author Hamza Assada, <7amza.it@gmail.com>
+ * @author Hamza Assada, (7amza.it@gmail.com)
  */
 @Service
 public class IpBanService {

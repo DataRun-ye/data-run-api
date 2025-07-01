@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * a state of an import request and its progress
  *
- * @author Hamza Assada 04/06/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 04/06/2025 (7amza.it@gmail.com)
  */
 @Accessors(fluent = true)
 @Getter

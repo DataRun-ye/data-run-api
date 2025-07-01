@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.Value;
 
 /**
- * @author Hamza Assada 23/03/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 23/03/2025 (7amza.it@gmail.com)
  */
 @Value
 @Getter

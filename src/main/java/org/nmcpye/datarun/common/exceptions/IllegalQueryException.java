@@ -6,7 +6,7 @@ import org.nmcpye.datarun.common.feedback.ErrorMessage;
 /**
  * Exception representing an illegal query.
  *
- * @author Hamza Assada 17/03/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 17/03/2025 (7amza.it@gmail.com)
  */
 public class IllegalQueryException
     extends ErrorCodeException {

@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
-import org.nmcpye.datarun.jpa.optionset.OptionSet;
+import org.nmcpye.datarun.jpa.option.OptionSet;
 import org.nmcpye.datarun.mongo.common.MongoBaseIdentifiableObject;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.Repeat;

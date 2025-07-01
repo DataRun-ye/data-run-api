@@ -5,7 +5,7 @@ import org.nmcpye.datarun.mongo.legacydatatemplate.repository.DataFormTemplateRe
 import org.springframework.boot.CommandLineRunner;
 
 /**
- * @author Hamza Assada 14/05/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 14/05/2025 (7amza.it@gmail.com)
  */
 //@Component
 public class FormTemplateMigration implements CommandLineRunner {

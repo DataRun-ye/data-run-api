@@ -5,8 +5,8 @@ import org.nmcpye.datarun.datatemplateelement.*;
 import org.nmcpye.datarun.datatemplateelement.enumeration.RuleAction;
 import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
-import org.nmcpye.datarun.jpa.optionset.OptionSet;
-import org.nmcpye.datarun.jpa.optionset.repository.OptionSetRepository;
+import org.nmcpye.datarun.jpa.option.OptionSet;
+import org.nmcpye.datarun.jpa.option.repository.OptionSetRepository;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.mongo.domain.datafield.*;
 import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
@@ -91,7 +91,7 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
                 .orElse(new OptionSet());
             final List<DataOption> optionSetOptions = createOptionMap(dataForm.getOptions())
                 .get(optionField.getListName());
-            optionSet.setOptions(optionSetOptions);
+            optionSet.setLegacyOptions(optionSetOptions);
             optionSet.setName(optionField.getListName().toLowerCase());
             optionSetRepository.save(optionSet);
         }

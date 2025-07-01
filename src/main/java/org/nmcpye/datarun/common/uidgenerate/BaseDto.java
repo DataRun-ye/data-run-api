@@ -8,7 +8,7 @@ import lombok.Setter;
 import java.io.Serializable;
 
 /**
- * @author Hamza Assada 09/06/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 09/06/2025 (7amza.it@gmail.com)
  */
 @Getter
 @Setter

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Set;
 
 /**
- * @author Hamza Assada 24/04/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 24/04/2025 (7amza.it@gmail.com)
  */
 public interface FlowRunSummary {
     @JsonProperty(value = "id")

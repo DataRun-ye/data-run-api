@@ -3,7 +3,7 @@ package org.nmcpye.datarun.datatemplateprocessor.validation.validators;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 
 /**
- * @author Hamza Assada 25/03/2025 <7amza.it@gmail.com>
+ * @author Hamza Assada 25/03/2025 (7amza.it@gmail.com)
  */
 public interface ExpressionValidator {
     /**
