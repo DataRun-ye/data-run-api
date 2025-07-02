@@ -151,7 +151,9 @@ public class DataTemplateInstanceServiceImpl
             .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, s -> s));
 
         return masters.map(m -> dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
-            Optional.ofNullable(versions.get(m.getUid())).orElseThrow()));
+            Optional.ofNullable(versions.get(m.getUid())).orElseThrow(
+                () -> new IllegalQueryException(ErrorCode.E1120, m.getUid())
+            )));
     }
 
     @Transactional

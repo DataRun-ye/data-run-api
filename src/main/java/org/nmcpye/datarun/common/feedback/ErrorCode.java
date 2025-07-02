@@ -36,6 +36,7 @@ public enum ErrorCode {
     E1117("{0} : Expected single value"),
     E1118("{0} : Invalid reference {1} for {2}"),
     E1119("RequestBody is empty"),
+    E1120("Inconsistent state: FormTemplate `{0}` have no Version in the system"),
     E1199("System configuration Error: `{0}`"),
 
     /* Data */
