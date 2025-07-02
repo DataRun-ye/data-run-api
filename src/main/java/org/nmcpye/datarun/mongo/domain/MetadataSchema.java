@@ -130,6 +130,6 @@ public class MetadataSchema
     @JsonIgnore
     @Override
     public String getCode() {
-        return "";
+        return null;
     }
 }

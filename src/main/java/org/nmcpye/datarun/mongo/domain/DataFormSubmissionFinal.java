@@ -196,12 +196,12 @@ public class DataFormSubmissionFinal extends MongoBaseIdentifiableObject {
     @JsonIgnore
     @Override
     public String getCode() {
-        return "";
+        return null;
     }
 
     @JsonIgnore
     @Override
     public String getName() {
-        return "";
+        return null;
     }
 }

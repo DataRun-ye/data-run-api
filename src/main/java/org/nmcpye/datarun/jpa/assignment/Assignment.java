@@ -346,11 +346,11 @@ public class Assignment
 
     @Override
     public String getCode() {
-        return "";
+        return null;
     }
 
     @Override
     public String getName() {
-        return "";
+        return null;
     }
 }

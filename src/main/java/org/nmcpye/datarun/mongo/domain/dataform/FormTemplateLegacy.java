@@ -131,6 +131,6 @@ public class FormTemplateLegacy extends MongoBaseIdentifiableObject {
     @JsonIgnore
     @Override
     public String getCode() {
-        return "";
+        return null;
     }
 }

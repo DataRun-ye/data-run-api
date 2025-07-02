@@ -102,12 +102,12 @@ public class DataTemplateVersion
     @JsonIgnore
     @Override
     public String getCode() {
-        return "";
+        return null;
     }
 
     @JsonIgnore
     @Override
     public String getName() {
-        return "";
+        return null;
     }
 }
