@@ -25,11 +25,10 @@ import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Option extends JpaBaseIdentifiableObject {
-
     /**
      * The unique code for this object.
      */
-    @Column(name = "code")
+    @Column(name = "code", nullable = false, updatable = false)
     private String code;
 
     /**
@@ -50,7 +49,7 @@ public class Option extends JpaBaseIdentifiableObject {
     @ManyToOne
     // prevent JPA from trying to manage this FK twice
 //    @JoinColumn(name = "option_set_id", insertable = false, updatable = false, nullable = false)
-    @JoinColumn(name = "option_set_id", nullable = false)
+    @JoinColumn(name = "option_set_id", nullable = false, updatable = false)
     private OptionSet optionSet;
 
     @JsonProperty
@@ -67,6 +66,6 @@ public class Option extends JpaBaseIdentifiableObject {
     @JsonIgnore
     @Override
     public String getUid() {
-        return "";
+        return null;
     }
 }

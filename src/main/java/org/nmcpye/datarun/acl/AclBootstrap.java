@@ -42,11 +42,9 @@ public class AclBootstrap /*implements CommandLineRunner*/ {
         SecurityContextHolder.getContext().setAuthentication(sys);
 
         for (Assignment flowInstance : assignments.findAll()) {
-            // grant team-level metadata READ
             Sid teamSid = new GrantedAuthoritySid("ROLE_TEAM_" + flowInstance.getTeam().getUid());
             aclService.assignPermissions(flowInstance, teamSid, MetaPermission.READ);
 
-            // for each user in that team who can submit:
             for (UserFormAccess fa : getFormAccessForAssignment(flowInstance)) {
                 if (fa.canAddSubmission()) {
                     Sid userSid = new PrincipalSid(fa.getUser());

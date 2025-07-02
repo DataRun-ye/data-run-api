@@ -17,6 +17,7 @@ import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.IdentifiableProperty;
 import org.nmcpye.datarun.common.translation.Translatable;
 import org.nmcpye.datarun.common.translation.Translation;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.data.annotation.Transient;
 
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
 @Setter
 @NoArgsConstructor
 abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
-    implements Comparable<JpaBaseIdentifiableObject> {
+        implements Comparable<JpaBaseIdentifiableObject> {
 
     /**
      * Set of available object translation, normally filtered by locale.
@@ -76,7 +77,7 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
         }
 
         return object.getDisplayName() == null ? -1
-            : this.getDisplayName().compareToIgnoreCase(object.getDisplayName());
+                : this.getDisplayName().compareToIgnoreCase(object.getDisplayName());
     }
 
     // -------------------------------------------------------------------------
@@ -84,9 +85,9 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
     // -------------------------------------------------------------------------
 
     @JsonProperty
-    @Translatable(propertyName = "name", key = "NAME")
+    @Translatable(propertyName = "name", key = "name")
     public String getDisplayName() {
-        return getTranslation("NAME", getName());
+        return getTranslation("name", getName());
     }
 
     @JsonIgnore
@@ -101,19 +102,19 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
     public void setLabel(Map<String, String> label) {
         // Create new name translations from the input map
         Set<Translation> newNameTranslations = label.entrySet().stream()
-            .map(entry -> Translation.builder()
-                .locale(entry.getKey())
-                .property("name")
-                .value(entry.getValue())
-                .build())
-            .collect(Collectors.toSet());
+                .map(entry -> Translation.builder()
+                        .locale(entry.getKey())
+                        .property("name")
+                        .value(entry.getValue())
+                        .build())
+                .collect(Collectors.toSet());
 
         // Create updated translation set:
         // 1. Preserve existing non-name translations
         // 2. Add/replace name translations from new map
         Set<Translation> updatedTranslations = getTranslations().stream()
-            .filter(t -> !"name".equals(t.getProperty())) // Keep non-name translations
-            .collect(Collectors.toCollection(HashSet::new));
+                .filter(t -> !"name".equals(t.getProperty())) // Keep non-name translations
+                .collect(Collectors.toCollection(HashSet::new));
 
         updatedTranslations.addAll(newNameTranslations); // Merge new name translations
 
@@ -137,7 +138,9 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
      * @return a translated value.
      */
     protected String getTranslation(String translationKey, String defaultValue) {
-        String localeKey = SecurityUtils.getCurrentUserLocale().orElse("en");
+        String localeKey = SecurityUtils.getCurrentUserDetails()
+                .map(CurrentUserDetails::getLangKey)
+                .orElse(null);
         final String defaultTranslation = defaultValue != null ? defaultValue.trim() : null;
 
         if (localeKey == null || translationKey == null || CollectionUtils.isEmpty(translations)) {
@@ -145,7 +148,7 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
         }
 
         return translationCache.computeIfAbsent(Translation.getCacheKey(localeKey, translationKey),
-            key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
+                key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
     }
 
     @JsonProperty
@@ -154,8 +157,8 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
             return null;
         }
         return Map.ofEntries(
-            Map.entry("ar", getTranslation("name", "ar", getName())),
-            Map.entry("en", getTranslation("name", "en", getName()))
+                Map.entry("ar", getTranslation("name", "ar", getName())),
+                Map.entry("en", getTranslation("name", "en", getName()))
         );
     }
 
@@ -167,7 +170,7 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
         }
 
         return translationCache.computeIfAbsent(Translation.getCacheKey(localeKey, translationKey),
-            key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
+                key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
     }
 
     // -------------------------------------------------------------------------
@@ -252,13 +255,13 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
     @Override
     public String toString() {
         return "{" +
-            "\"class\":\"" + getClass() + "\", " +
-            "\"id\":\"" + getId() + "\", " +
-            "\"code\":\"" + getCode() + "\", " +
-            "\"name\":\"" + getName() + "\", " +
-            "\"createdDate\":\"" + getCreatedDate() + "\", " +
-            "\"lastModifiedDate\":\"" + getLastModifiedDate() + "\" " +
-            "}";
+                "\"class\":\"" + getClass() + "\", " +
+                "\"id\":\"" + getId() + "\", " +
+                "\"code\":\"" + getCode() + "\", " +
+                "\"name\":\"" + getName() + "\", " +
+                "\"createdDate\":\"" + getCreatedDate() + "\", " +
+                "\"lastModifiedDate\":\"" + getLastModifiedDate() + "\" " +
+                "}";
     }
 
     /**
@@ -270,7 +273,7 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
     private String getTranslationValue(String locale, String translationKey, String defaultValue) {
         for (Translation translation : translations) {
             if (locale.equals(translation.getLocale()) && translationKey.equals(translation.getProperty()) &&
-                !StringUtils.isEmpty(translation.getValue())) {
+                    !StringUtils.isEmpty(translation.getValue())) {
                 return translation.getValue();
             }
         }

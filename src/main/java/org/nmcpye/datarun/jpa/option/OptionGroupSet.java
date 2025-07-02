@@ -81,6 +81,6 @@ public class OptionGroupSet extends
     @JsonIgnore
     @Override
     public String getUid() {
-        return "";
+        return null;
     }
 }

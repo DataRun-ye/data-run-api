@@ -44,7 +44,6 @@
 //        EntityImportHandler<? extends AbstractBaseDto, ?> handler = rawHandler;
 //
 //
-//        // 2) Validate
 //        ValidationContext ctx = new ValidationContext();
 //        for (int i = 0; i < dtos.size(); i++) {
 //            var dto = dtos.get(i);
@@ -54,7 +53,6 @@
 //            return ImportResponse.failure(ctx.getErrors(), dtos.size());
 //        }
 //
-//        // 3) Convert DTOs → Entities
 //        List<Object> entities = new ArrayList<>();
 //        for (Object dto : dtos) {
 //            Object entity = handler.toEntity(dto, Collections.emptyMap());
@@ -62,10 +60,8 @@
 //            entities.add(entity);
 //        }
 //
-//        // 4) Persist or simulate
 //        handler.persistAll(entities, dryRun);
 //
-//        // 5) If dryRun, force rollback and return success payload
 //        if (dryRun) {
 //            throw new DryRunException("Dry run successful, rolling back transaction");
 //        }
@@ -74,7 +70,6 @@
 //    }
 //
 //    private <D extends AbstractBaseDto> List<D> parsePayload(List<JsonNode> rawRows, Class<D> dtoClass) {
-//        // 1) Parse rawRows → DTOs
 //        List<D> dtos = new ArrayList<>();
 //        for (int i = 0; i < rawRows.size(); i++) {
 //            JsonNode node = rawRows.get(i);

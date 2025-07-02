@@ -55,7 +55,6 @@ public class OptionSet extends JpaBaseIdentifiableObject {
 
     @OneToMany(mappedBy = "optionSet", cascade = CascadeType.ALL,
             orphanRemoval = true, fetch = FetchType.EAGER)
-//    @JoinColumn(name = "option_set_id")
     @OrderColumn(name = "sort_order")
     @ListIndexBase(1)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
@@ -74,31 +73,37 @@ public class OptionSet extends JpaBaseIdentifiableObject {
 
     @JsonSetter(contentNulls = Nulls.SKIP)
     public void setOptions(List<Option> options) {
+        getOptions().clear();
+        getOptions().addAll(options);
         for (Option option : options) {
-            addOption(option);
+            option.setOptionSet(this);
         }
     }
 
     public void addOption(Option option) {
-        if (option.getSortOrder() == null) {
-            this.options.add(option);
-        } else {
-            boolean added = false;
-            final int size = this.options.size();
-            for (int i = 0; i < size; i++) {
-                Option thisOption = this.options.get(i);
-                if (thisOption.getSortOrder() == null || thisOption.getSortOrder() > option.getSortOrder()) {
-                    this.options.add(i, option);
-                    added = true;
-                    break;
-                }
-            }
-            if (!added) {
-                this.options.add(option);
-            }
-        }
+        this.options.add(option);
         option.setOptionSet(this);
     }
+//    public void addOption(Option option) {
+//        if (option.getSortOrder() == null) {
+//            this.options.add(option);
+//        } else {
+//            boolean added = false;
+//            final int size = this.options.size();
+//            for (int i = 0; i < size; i++) {
+//                Option thisOption = this.options.get(i);
+//                if (thisOption.getSortOrder() == null || thisOption.getSortOrder() > option.getSortOrder()) {
+//                    this.options.add(i, option);
+//                    added = true;
+//                    break;
+//                }
+//            }
+//            if (!added) {
+//                this.options.add(option);
+//            }
+//        }
+//        option.setOptionSet(this);
+//    }
 
     @JsonIgnore
     public Set<String> getOptionCodesAsSet() {

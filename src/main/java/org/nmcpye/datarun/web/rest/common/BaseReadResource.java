@@ -6,7 +6,6 @@ import org.nmcpye.datarun.common.DRunApiVersion;
 import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.IdentifiableObjectRepository;
 import org.nmcpye.datarun.common.IdentifiableObjectService;
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
@@ -19,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -83,7 +83,7 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
     protected void hasMinimalRightsOrThrow(CurrentUserDetails currentUser) throws ResponseStatusException {
         if (currentUser == null || !aclService.hasMinimalRights(currentUser)) {
             log.warn("REST Prevent Access, no minimal rights `{}`:`{}`", getEntityClass().getSimpleName(), currentUser);
-            throw new IllegalQueryException(HttpStatus.FORBIDDEN + ", You Hava No Business Here");
+            throw new AccessDeniedException(HttpStatus.FORBIDDEN + ", You Hava No Business Here");
         }
     }
 

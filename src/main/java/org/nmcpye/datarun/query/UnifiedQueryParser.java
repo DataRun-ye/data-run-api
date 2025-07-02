@@ -53,8 +53,6 @@ public class UnifiedQueryParser {
                     .collect(Collectors.toList());
                 return new CompoundFilter(op, expressions);
             } else {
-                // Assume it's a simple filter expression: field: { operator: value }
-                // There might be multiple fields, so we combine them with AND.
                 List<FilterExpression> expressions = new ArrayList<>();
                 for (Map.Entry<?, ?> entry : map.entrySet()) {
                     String field = entry.getKey().toString();

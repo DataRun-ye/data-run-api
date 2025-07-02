@@ -19,7 +19,8 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @Repository
 public interface OptionRepository
-    extends JpaIdentifiableRepository<Option>, OptionRepositoryCustom {
+        extends JpaIdentifiableRepository<Option>, OptionRepositoryCustom {
+    // no-op
     @Override
     default void deleteByUid(String uid) {
     }

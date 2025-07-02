@@ -18,8 +18,8 @@ import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -106,7 +106,7 @@ public class FormTemplateMergeResource {
         log.debug("REST request to saveOne {}", getName());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         final var processedTemplate = formTemplateProcessor.processMetadata(
-            formTemplateProcessor.validate(formTemplate));
+                formTemplateProcessor.validate(formTemplate));
         this.saveEntity((DataTemplateInstanceDto) processedTemplate, summary);
 
         return ResponseEntity.ok(summary);
@@ -122,23 +122,22 @@ public class FormTemplateMergeResource {
         return ResponseEntity.ok(Objects.requireNonNullElse(saved, summary));
     }
 
-    protected DataTemplateInstanceDto saveEntity(DataTemplateInstanceDto entity, EntitySaveSummaryVM summary) {
-//        DataTemplateInstanceDto templateVersionDto = null;
-        var templateVersionDto = preProcess(entity);
+    protected DataTemplateInstanceDto saveEntity(DataTemplateInstanceDto payLoadEntity, EntitySaveSummaryVM summary) {
+        var processedEntity = preProcess(payLoadEntity);
         try {
-            if (entity.getUid() != null && templateService.existsByUid(entity.getUid())) {
-                templateVersionDto = templateService.update(entity);
-                summary.getUpdated().add(templateVersionDto.getUid());
+            if (payLoadEntity.getUid() != null && templateService.existsByUid(payLoadEntity.getUid())) {
+                processedEntity = templateService.update(payLoadEntity);
+                summary.getUpdated().add(processedEntity.getUid());
             } else {
-                templateVersionDto = templateService.save(entity);
-                summary.getCreated().add(templateVersionDto.getUid());
+                processedEntity = templateService.save(payLoadEntity);
+                summary.getCreated().add(processedEntity.getUid());
             }
         } catch (Exception e) {
-            log.error("REST Error Saving entity {}:{}", "FormTemplate", entity.getUid());
-            summary.getFailed().put(entity.getUid(), e.getMessage());
+            log.error("REST Error Saving payLoadEntity {}:{}", "FormTemplate", payLoadEntity.getUid());
+            summary.getFailed().put(payLoadEntity.getUid(), e.getMessage());
             throw new IllegalQueryException(e.getMessage());
         }
-        return templateVersionDto;
+        return processedEntity;
     }
 
     @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
@@ -147,9 +146,9 @@ public class FormTemplateMergeResource {
         log.debug("REST request to delete from {}: {}", getName(), id);
         templateService.deleteByUid(id);
         return ResponseEntity
-            .noContent()
-            .headers(HeaderUtil
-                .createEntityDeletionAlert(applicationName, true, getName(), id)).build();
+                .noContent()
+                .headers(HeaderUtil
+                        .createEntityDeletionAlert(applicationName, true, getName(), id)).build();
     }
 
     @GetMapping("/{id}")
@@ -170,12 +169,12 @@ public class FormTemplateMergeResource {
     protected void hasMinimalRightsOrThrow(CurrentUserDetails currentUser) throws ResponseStatusException {
         if (currentUser == null || !aclService.hasMinimalRights(currentUser)) {
             log.warn("REST Prevent Access, no minimal rights `{}`:`{}`", getName(), currentUser);
-            throw new IllegalQueryException(HttpStatus.FORBIDDEN + ", You Hava No Business Here");
+            throw new AccessDeniedException("You Hava No Business Here");
         }
     }
 
     protected DataTemplateInstanceDto preProcess(DataTemplateInstanceDto entity) {
         return (DataTemplateInstanceDto) formTemplateProcessor
-            .processMetadata(formTemplateProcessor.validate(entity));
+                .processMetadata(formTemplateProcessor.validate(entity));
     }
 }

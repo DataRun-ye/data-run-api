@@ -38,11 +38,9 @@ public interface FormTemplateVersionMapper
             return;
         }
         for (FormDataElementConf element : entity.getFields()) {
-            // 1) Compute ElementValidationRule from (flat) constraint / constraintMessage / rules[]
             ElementValidationRule vr = validationRuleMap(element);
             element.setValidationRule(vr);
 
-            // 2) Compute the ValueTypeRendering enum from element.getType() + element.getGs1Enabled()
             ValueTypeRendering vtr = valueTypeRenderingMap(element);
             element.setValueTypeRendering(vtr);
         }

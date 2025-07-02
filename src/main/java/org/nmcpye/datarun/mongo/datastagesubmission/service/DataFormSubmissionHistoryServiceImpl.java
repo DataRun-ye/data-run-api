@@ -48,13 +48,10 @@ public class DataFormSubmissionHistoryServiceImpl
 
     @Override
     public void saveToHistory(DataFormSubmission submission) {
-        // Create a new version of the current data
         DataFormSubmissionHistory history = historyMapper.fromSubmission(submission);
 
-        // Save the old version in the history collection
         repository.save(history);
 
-        // Prune old versions
         pruneOldVersions(submission.getUid());
     }
 
@@ -63,7 +60,6 @@ public class DataFormSubmissionHistoryServiceImpl
         Query pruneQuery = Query.query(Criteria.where("uid").is(submissionUid))
             .with(Sort.by(Sort.Direction.DESC, "timestamp"))
             .skip(MAX_HISTORY_VERSIONS);
-        // Only fetch _id to reduce payload
         pruneQuery.fields().include("_id");
 
         List<String> idsToRemove = mongoTemplate

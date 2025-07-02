@@ -40,8 +40,8 @@ public class FormTemplateVersionResource extends MongoBaseResource<DataTemplateV
     }
 
     @Override
-    protected DataTemplateVersion preProcess(DataTemplateVersion entity) {
+    protected DataTemplateVersion preProcess(DataTemplateVersion payLoadEntity) {
         return (DataTemplateVersion) formTemplateProcessor
-            .processMetadata(formTemplateProcessor.validate(entity));
+            .processMetadata(formTemplateProcessor.validate(payLoadEntity));
     }
 }

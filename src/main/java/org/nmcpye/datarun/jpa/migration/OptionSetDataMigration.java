@@ -6,7 +6,6 @@ import org.nmcpye.datarun.jpa.option.OptionSet;
 import org.nmcpye.datarun.jpa.option.repository.OptionSetRepository;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
@@ -15,7 +14,7 @@ import java.util.List;
 /**
  * @author Hamza Assada 01/07/2025 (7amza.it@gmail.com)
  */
-@Component
+//@Component
 public class OptionSetDataMigration implements ApplicationRunner {
 
     private final OptionSetRepository optionSetRepo;
@@ -31,18 +30,14 @@ public class OptionSetDataMigration implements ApplicationRunner {
         for (OptionSet os : allSets) {
             migrateOne(os);
         }
-        // at this point, all Option rows are created and linked
     }
 
     private void migrateOne(OptionSet os) {
-        // 1) Sort the JSON list by its sortOrder field
         List<DataOption> dataOpts = os.getLegacyOptions();
         dataOpts.sort(Comparator.comparingInt(DataOption::getOrder));
 
-        // 2) For safety, clear any existing Option children
         os.getOptions().clear();
 
-        // 3) Map & add each DataOption ➔ Option
         for (DataOption d : dataOpts) {
             Option newOpt = new Option();
 //            newOpt.setOptionSet(os);

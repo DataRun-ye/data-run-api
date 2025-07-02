@@ -66,10 +66,8 @@ public class DataTemplateInstanceServiceImpl
      */
     @Transactional
     public DataTemplateInstanceDto saveNewVersion(DataTemplateInstanceDto dto) {
-        // 1) Map incoming DTO → Postgres entity (in memory only, not yet saved).
         DataTemplate maybeNew = dataTemplateMapper.fromInstanceDto(dto);
 
-        // 2) “Lock‐and‐pump” the versionNumber, or initialize to 1 if this is brand‐new.
         //    We call a custom repository method findByUidForWrite(…) that uses a PESSIMISTIC_WRITE lock
         //    so that two concurrent callers cannot both see versionNumber = N and then both flip to N+1.
         DataTemplate template = dataTemplateRepository

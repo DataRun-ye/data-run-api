@@ -40,11 +40,8 @@
 //
 //    @Override
 //    public void validate(DataInstanceDto dto, ValidationContext ctx, int rowIndex) {
-//        // 1) Bean Validation (via ValidationContext)
 //        ctx.validateBean(dto, rowIndex);
 //
-//        // 2) Custom checks: code non-empty is covered by @NotBlank; verify price positive covered.
-//        // 3) Key-based lookup (if updating rather than creating)
 //        if (dto.getKeyType() != null && dto.getKeyValue() != null) {
 //            KeyType kt;
 //            try {
@@ -58,7 +55,6 @@
 //            }
 //        }
 //
-//        // 4) Uniqueness check on code (for new products)
 //        if (dto.getKeyType() == null && dataInstanceRepository.findByUid(dto.getUid()).isPresent()) {
 //            ctx.addError(rowIndex, "DataInstance with code '" + dto.getUid() + "' already exists");
 //        }

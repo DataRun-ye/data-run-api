@@ -13,12 +13,11 @@ import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import tech.jhipster.web.util.HeaderUtil;
 
 import java.io.Serializable;
@@ -29,7 +28,7 @@ import java.util.Objects;
 @ApiVersion({DRunApiVersion.DEFAULT, DRunApiVersion.ALL})
 @Slf4j
 public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID extends Serializable>
-    extends BaseReadResource<T, ID> {
+        extends BaseReadResource<T, ID> {
 
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
@@ -50,50 +49,50 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
     }
 
     @PostMapping
-    public ResponseEntity<EntitySaveSummaryVM> saveOne(@Valid @RequestBody T entity) {
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(@Valid @RequestBody T payLoadEntity) {
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        saveEntity(entity, summary);
+        saveEntity(payLoadEntity, summary);
         return ResponseEntity.ok(summary);
     }
 
     @PostMapping("/return")
-    public ResponseEntity<?> saveReturnSaved(@Valid @RequestBody T entity) {
-        log.info("Request to save and return {}:{}", entity.getClass().getSimpleName(), entity.getUid());
+    public ResponseEntity<?> saveReturnSaved(@Valid @RequestBody T payLoadEntity) {
+        log.info("Request to save and return {}:{}", payLoadEntity.getClass().getSimpleName(), payLoadEntity.getUid());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        saveEntity(entity, summary);
-        if (entity.getUid() != null) {
-            return ResponseEntity.ok(entity);
+        saveEntity(payLoadEntity, summary);
+        if (payLoadEntity.getUid() != null) {
+            return ResponseEntity.ok(payLoadEntity);
         }
         return ResponseEntity.ok(summary);
     }
 
-    protected T preProcess(T entity) {
+    protected T preProcess(T payLoadEntity) {
         // do nothing
-        return entity;
+        return payLoadEntity;
     }
 
-    protected void saveEntity(T entity, EntitySaveSummaryVM summary) {
+    protected void saveEntity(T payLoadEntity, EntitySaveSummaryVM summary) {
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
         hasMinimalRightsOrThrow(user);
-        var processedEntity = preProcess(entity);
+        var processedEntity = preProcess(payLoadEntity);
         try {
-            if (processedEntity.getUid() != null && identifiableObjectService.existsByUid(processedEntity.getUid())) {
-                if (!aclService.canUpdate(entity, user)) {
+            if (identifiableObjectService.findByIdOrUid(processedEntity).isPresent()) {
+                if (aclService.canUpdate(payLoadEntity, user)) {
                     processedEntity = identifiableObjectService.update(processedEntity);
                     summary.getUpdated().add(processedEntity.getUid());
                 } else {
-                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You have no right to send things here");
+                    throw new AccessDeniedException("You have no right to send things here");
                 }
             } else {
-                if (aclService.canAddNew(entity, user)) {
+                if (aclService.canAddNew(payLoadEntity, user)) {
                     processedEntity = identifiableObjectService.saveWithRelations(processedEntity);
                     summary.getCreated().add(processedEntity.getUid());
                 } else {
-                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You have no right to send things here");
+                    throw new AccessDeniedException("You have no right to send things here");
                 }
             }
         } catch (Exception e) {
-            log.error("REST Error Saving entity {}:{}", getEntityClass().getSimpleName(), processedEntity.getUid());
+            log.error("REST Error Saving payLoadEntity {}:{}", getEntityClass().getSimpleName(), processedEntity.getUid());
             summary.getFailed().put(processedEntity.getUid(), e.getMessage());
             throw new IllegalQueryException(e.getMessage());
         }
@@ -109,20 +108,20 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
         if (aclService.canDelete(entity, user)) {
             identifiableObjectService.delete(entity);
         } else {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            throw new AccessDeniedException("");
         }
 
         return ResponseEntity
-            .noContent()
-            .headers(HeaderUtil
-                .createEntityDeletionAlert(applicationName, true, getName(), id)).build();
+                .noContent()
+                .headers(HeaderUtil
+                        .createEntityDeletionAlert(applicationName, true, getName(), id)).build();
     }
 
     @PutMapping("/{uid}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<T> updateEntity(
-        @PathVariable(value = "uid", required = false) final String uid,
-        @Valid @RequestBody T entity, @AuthenticationPrincipal CurrentUserDetails user
+            @PathVariable(value = "uid", required = false) final String uid,
+            @Valid @RequestBody T entity, @AuthenticationPrincipal CurrentUserDetails user
     ) throws URISyntaxException {
         hasMinimalRightsOrThrow(user);
         log.debug("REST request to delete from {}: {}", getName(), uid);
@@ -137,12 +136,12 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
         if (aclService.canUpdate(entity, user)) {
             entity = identifiableObjectService.update(entity);
         } else {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            throw new AccessDeniedException("AccessDenied");
         }
 
 
         return ResponseEntity.ok()
-            .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), entity.getId().toString()))
-            .body(entity);
+                .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), entity.getId().toString()))
+                .body(entity);
     }
 }

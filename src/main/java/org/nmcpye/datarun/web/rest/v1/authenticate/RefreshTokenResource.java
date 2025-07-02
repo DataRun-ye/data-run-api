@@ -1,9 +1,10 @@
 package org.nmcpye.datarun.web.rest.v1.authenticate;
 
 import jakarta.validation.Valid;
-import org.nmcpye.datarun.jpa.userrefreshtoken.service.TokenService;
+import org.nmcpye.datarun.jpa.userrefreshtoken.TokenRefreshException;
 import org.nmcpye.datarun.jpa.userrefreshtoken.dto.RefreshTokenDto;
 import org.nmcpye.datarun.jpa.userrefreshtoken.repository.RefreshTokenRepository;
+import org.nmcpye.datarun.jpa.userrefreshtoken.service.TokenService;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshRequest;
 import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshResponse;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import static org.nmcpye.datarun.web.rest.v1.authenticate.RefreshTokenResource.V1;
 
@@ -57,7 +57,7 @@ public class RefreshTokenResource {
                     newRefreshToken.getToken()
                 ));
             })
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid refresh token"));
+            .orElseThrow(() -> new TokenRefreshException("Invalid refresh token"));
     }
 
 }

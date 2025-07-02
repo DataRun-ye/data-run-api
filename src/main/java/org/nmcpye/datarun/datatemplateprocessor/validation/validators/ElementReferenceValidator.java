@@ -29,16 +29,12 @@ public class ElementReferenceValidator implements ExpressionValidator {
             referencedElements.add(matcher.group(1));
         }
 
-        // Build a set of valid element names from the template.
-        // Assume DataFormTemplate.getFields() returns a List<Field> where Field has a getName() method.
         Set<String> validElementNames = template.getFields().stream()
             .map(AbstractElement::getName)
             .collect(Collectors.toSet());
 
-        // add section names when they are valid references:
         // validElementNames.addAll(template.getSections().stream().map(Section::getName).collect(Collectors.toSet()));
 
-        // Check that each referenced element exists in the template.
         for (String ref : referencedElements) {
             if (!validElementNames.contains(ref)) {
                 errors.add(

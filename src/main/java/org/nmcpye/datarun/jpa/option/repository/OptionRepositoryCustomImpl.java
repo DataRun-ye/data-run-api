@@ -25,7 +25,7 @@ public class OptionRepositoryCustomImpl
         hql += "order by index(option)";
 
         Query query = entityManager.createQuery(hql, Option.class)
-            .setParameter("optionSetId", optionSetId).setParameter("key", key).setMaxResults(max);
+            .setParameter("optionSetId", optionSetId);
 
         if (key != null) {
             query.setParameter("key", key);

@@ -30,9 +30,9 @@ import java.util.Optional;
  * @author Hamza Assada 20/03/2025 (7amza.it@gmail.com)
  */
 public abstract class DefaultJpaIdentifiableService
-    <T extends JpaIdentifiableObject>
-    extends DefaultIdentifiableObjectService<T, String>
-    implements JpaIdentifiableObjectService<T> {
+        <T extends JpaIdentifiableObject>
+        extends DefaultIdentifiableObjectService<T, String>
+        implements JpaIdentifiableObjectService<T> {
     private static final Logger log = LoggerFactory.getLogger(DefaultJpaIdentifiableService.class);
 
     protected final UserAccessService userAccessService;
@@ -76,7 +76,7 @@ public abstract class DefaultJpaIdentifiableService
 
         // legacy v1 QueryRequest support
         if (queryRequest != null && queryRequest.getParsedFilter() != null &&
-            !queryRequest.getParsedFilter().isEmpty()) {
+                !queryRequest.getParsedFilter().isEmpty()) {
             allFilters.add(legacyQueryConverter.convert(queryRequest));
         }
 
@@ -89,7 +89,7 @@ public abstract class DefaultJpaIdentifiableService
     @Override
     public Page<T> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
         final Specification<T> query = baseAccessSpecification(SecurityUtils.getCurrentUserDetailsOrThrow(),
-            queryRequest, jsonQueryBody);
+                queryRequest, jsonQueryBody);
         final var list = identifiableRepository.findAll(query, queryRequest.getPageable());
         final var size = list.getSize();
         return list;
@@ -142,21 +142,12 @@ public abstract class DefaultJpaIdentifiableService
     @Transactional
     public T update(T object) {
         log.debug("Request service to update {}:`{}`", getClazz().getSimpleName(), object.getId());
-        final var user = SecurityUtils.getCurrentUserDetails();
-//        final var spec = baseAccessSpecification(user
-//            .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E6201))), null, null)
-//            .and(JpaIdentifiableObjectService.hasId(object.getId()));
         T existingEntity = findByIdOrUid(object)
-            .orElseThrow(() ->
-                new IllegalQueryException(
-                    new ErrorMessage(ErrorCode.E1004,
-                        getClazz().getSimpleName(), object.getId())));
-
-//        T existingEntity = identifiableRepository.findOne(spec)
-//            .orElseThrow(() ->
-//                new IllegalQueryException(
-//                    new ErrorMessage(ErrorCode.E1004,
-//                        getClazz().getSimpleName(), object.getId())));
+                .orElseThrow(() ->
+                        new IllegalQueryException(
+                                new ErrorMessage(ErrorCode.E1004,
+                                        getClazz().getSimpleName(), Optional
+                                        .ofNullable(object.getId()).orElse(object.getUid()))));
 
         object.setId(existingEntity.getId());
         object.setCreatedBy(existingEntity.getCreatedBy());
@@ -168,18 +159,18 @@ public abstract class DefaultJpaIdentifiableService
 
     @Override
     public Optional<T> findByIdOrUid(T entity) {
-        return Optional.ofNullable(entity.getUid())
-            .flatMap(repository::findByUid)
-            .or(() -> Optional.ofNullable(entity.getId())
-                .flatMap(repository::findById));
+        return Optional.ofNullable(entity.getId())
+                .flatMap(repository::findById)
+                .or(() -> Optional.ofNullable(entity.getUid())
+                        .flatMap(repository::findByUid));
     }
 
     @Override
     public Optional<T> findByIdOrUid(String entity) {
         return Optional.ofNullable(entity)
-            .flatMap(repository::findByUid)
-            .or(() -> Optional.ofNullable(entity)
-                .flatMap(repository::findById));
+                .flatMap(repository::findById)
+                .or(() -> Optional.ofNullable(entity)
+                        .flatMap(repository::findByUid));
     }
 }
 

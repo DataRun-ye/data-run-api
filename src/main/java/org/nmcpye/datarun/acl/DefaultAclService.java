@@ -89,7 +89,6 @@ public class DefaultAclService implements AclService {
     }
 
     private Serializable getId(Object domainObject) {
-        // assume all your entities have getId()
         try {
             Method m = domainObject.getClass().getMethod("getUid");
             return (Serializable) m.invoke(domainObject);

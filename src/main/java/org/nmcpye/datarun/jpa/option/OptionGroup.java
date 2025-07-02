@@ -113,6 +113,6 @@ public class OptionGroup extends
     @JsonIgnore
     @Override
     public String getUid() {
-        return "";
+        return null;
     }
 }

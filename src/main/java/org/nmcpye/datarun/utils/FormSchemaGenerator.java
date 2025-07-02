@@ -27,7 +27,6 @@
 //        ObjectNode props = MAPPER.createObjectNode();
 //        ArrayNode required = MAPPER.createArrayNode();
 //
-//        // Loop through each element in your template
 //        for (FormDataElementConf elem : template.getFields()) {
 //            String id = elem.getId();
 //            ObjectNode fieldSchema = buildFieldSchema(elem);
@@ -43,7 +42,6 @@
 //            schema.set("required", required);
 //        }
 //
-//        // Handle cross-field rules (show/hide/conditional mandatory)
 //        ArrayNode allOf = MAPPER.createArrayNode();
 //        for (DataFieldRule rule : template.getRules()) {
 //            ObjectNode cond = MAPPER.createObjectNode();
@@ -82,11 +80,9 @@
 //                break;
 //            case "Team":
 //            case "OrgUnit":
-//                // assume you accept a single ULID reference
 //                node.put("type", "string");
 //                node.put("format", "ulid");
 //                break;
-//            // add more types as needed...
 //            default:
 //                node.put("type", "string");
 //        }
@@ -94,11 +90,8 @@
 //    }
 //
 //    private ObjectNode buildIfClause(DataFieldRule rule) {
-//        // simplistic parser: assume expressions like "fieldA == 'foo'"
-//        // real implementation: parse into AST
 //        ObjectNode ifNode = MAPPER.createObjectNode();
 //        ObjectNode props = MAPPER.createObjectNode();
-//        // e.g. parse left/right and operator...
 //        String[] parts = rule.getExpression().split("==");
 //        String field = parts[0].trim();
 //        String value = parts[1].trim().replaceAll("'", "");
@@ -124,7 +117,6 @@
 //                            MAPPER.createObjectNode()
 //                                .put("const", null)));
 //                break;
-//            // handle enable/disable or show similarly if needed
 //            default:
 //        }
 //        return thenNode;

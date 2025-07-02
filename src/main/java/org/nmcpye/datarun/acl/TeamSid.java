@@ -42,8 +42,6 @@ public class TeamSid implements Sid {
         if ((object == null) || !(object instanceof TeamSid)) {
             return false;
         }
-        // Delegate to getPrincipal() to perform actual comparison (both should be
-        // identical)
         return ((TeamSid) object).getTeam().equals(this.getTeam());
     }
 

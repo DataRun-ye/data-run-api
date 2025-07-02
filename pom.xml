@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nmcpye.datarun</groupId>
     <artifactId>data-run-api</artifactId>
-    <version>6.1.0</version>
+    <version>6.1.1</version>
     <packaging>jar</packaging>
     <name>Data Run Api</name>
     <description>Description for Data Run Api</description>
@@ -17,10 +17,6 @@
     </parent>
 
     <properties>
-        <!--
-            Build properties
-            The spring-boot version should match the one managed by https://mvnrepository.com/artifact/tech.jhipster/jhipster-dependencies/${jhipster-dependencies.version}
-        -->
         <maven.version>3.2.5</maven.version>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -685,7 +681,7 @@
                                 <version>[${maven.version},)</version>
                             </requireMavenVersion>
                             <requireJavaVersion>
-                                <message>You are running an incompatible version of Java. JHipster supports JDK 17 to 22.</message>
+                                <message>You are running an incompatible version of Java. Datarun ${version} supports JDK 17 to 22.</message>
                                 <version>[17,18),[18,19),[19,20),[20,21),[21,22),[22,23)</version>
                             </requireJavaVersion>
                         </rules>
