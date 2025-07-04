@@ -107,13 +107,12 @@ public class DefaultAclService implements AclService {
 
     @Override
     public boolean hasMinimalRights(CurrentUserDetails userDetails) {
-        if (userDetails.isSuper()) return true;
-        return !userDetails.getUserTeamsUIDs().isEmpty() || !userDetails.getUserFormsUIDs().isEmpty();
+        return userDetails.isSuper() || !userDetails.getUserTeamsUIDs().isEmpty();
     }
 
     @Override
     public boolean canWrite(AuditableObject<?> object, CurrentUserDetails userDetails) {
-        if (!hasMinimalRights(userDetails)) return false;
+        if (userDetails.isSuper()) return true;
         if (object instanceof DataFormSubmission submission) {
             return formAccessService.canSubmitData(submission.getForm());
         }
@@ -122,7 +121,7 @@ public class DefaultAclService implements AclService {
 
     @Override
     public boolean canUpdate(AuditableObject<?> object, CurrentUserDetails userDetails) {
-        if (!hasMinimalRights(userDetails)) return false;
+        if (userDetails.isSuper()) return true;
         if (object instanceof DataFormSubmission submission) {
             return formAccessService.canEditSubmissions(submission.getForm());
         }
@@ -131,7 +130,7 @@ public class DefaultAclService implements AclService {
 
     @Override
     public boolean canAddNew(AuditableObject<?> object, CurrentUserDetails userDetails) {
-        if (!hasMinimalRights(userDetails)) return false;
+        if (userDetails.isSuper()) return true;
         if (object instanceof DataFormSubmission submission) {
             return formAccessService.canAddSubmissions(submission.getForm());
         }
@@ -140,7 +139,7 @@ public class DefaultAclService implements AclService {
 
     @Override
     public boolean canDelete(AuditableObject<?> object, CurrentUserDetails userDetails) {
-        if (!hasMinimalRights(userDetails)) return false;
+        if (userDetails.isSuper()) return true;
         if (object instanceof DataFormSubmission submission) {
             return formAccessService.canDeleteSubmissions(submission.getForm());
         }

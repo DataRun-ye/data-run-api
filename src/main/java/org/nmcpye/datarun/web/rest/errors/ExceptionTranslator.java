@@ -88,7 +88,8 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     @ExceptionHandler
     public ResponseEntity<Object> handleAnyException(Throwable ex, NativeWebRequest request) {
         ProblemDetailWithCause pdCause = wrapAndCustomizeProblem(ex, request);
-        return handleExceptionInternal((Exception) ex, pdCause, buildHeaders(ex), HttpStatusCode.valueOf(pdCause.getStatus()), request);
+        return handleExceptionInternal((Exception) ex, pdCause, buildHeaders(ex),
+            HttpStatusCode.valueOf(pdCause.getStatus()), request);
     }
 
     @Nullable
@@ -102,8 +103,8 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     ) {
         log.error("Exception handled: {}", ex.getMessage(), ex);
 
-        body = wrapAndCustomizeProblem(ex, (NativeWebRequest) request);
-//        body = body == null ? wrapAndCustomizeProblem((Throwable) ex, (NativeWebRequest) request) : body;
+//        body = wrapAndCustomizeProblem(ex, (NativeWebRequest) request);
+        body = body == null ? wrapAndCustomizeProblem(ex, (NativeWebRequest) request) : body;
         return super.handleExceptionInternal(ex, body, headers, statusCode, request);
     }
 
@@ -114,6 +115,9 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     private ProblemDetailWithCause getProblemDetailWithCause(Throwable ex) {
         if (
             ex instanceof RequestQueryParsingException
+        ) return (ProblemDetailWithCause) new RequestQueryParsingException().getBody();
+        if (
+            ex instanceof ErrorCodeException
         ) return (ProblemDetailWithCause) new RequestQueryParsingException().getBody();
         if (
             ex instanceof UsernameAlreadyUsedException

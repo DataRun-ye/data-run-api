@@ -6,7 +6,9 @@ import org.nmcpye.datarun.common.DRunApiVersion;
 import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.IdentifiableObjectRepository;
 import org.nmcpye.datarun.common.IdentifiableObjectService;
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.repository.CreateAccessDeniedException;
+import org.nmcpye.datarun.common.repository.DeleteAccessDeniedException;
+import org.nmcpye.datarun.common.repository.UpdateAccessDeniedException;
 import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -14,7 +16,6 @@ import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +29,7 @@ import java.util.Objects;
 @ApiVersion({DRunApiVersion.DEFAULT, DRunApiVersion.ALL})
 @Slf4j
 public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID extends Serializable>
-        extends BaseReadResource<T, ID> {
+    extends BaseReadResource<T, ID> {
 
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
@@ -75,27 +76,29 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
         hasMinimalRightsOrThrow(user);
         var processedEntity = preProcess(payLoadEntity);
-        try {
-            if (identifiableObjectService.findByIdOrUid(processedEntity).isPresent()) {
-                if (aclService.canUpdate(payLoadEntity, user)) {
-                    processedEntity = identifiableObjectService.update(processedEntity);
-                    summary.getUpdated().add(processedEntity.getUid());
-                } else {
-                    throw new AccessDeniedException("You have no right to send things here");
-                }
+//        try {
+        if (identifiableObjectService.findByIdOrUid(processedEntity).isPresent()) {
+            if (aclService.canUpdate(payLoadEntity, user)) {
+                processedEntity = identifiableObjectService.update(processedEntity);
+                summary.getUpdated().add(processedEntity.getUid());
             } else {
-                if (aclService.canAddNew(payLoadEntity, user)) {
-                    processedEntity = identifiableObjectService.saveWithRelations(processedEntity);
-                    summary.getCreated().add(processedEntity.getUid());
-                } else {
-                    throw new AccessDeniedException("You have no right to send things here");
-                }
+                throw new CreateAccessDeniedException("You have no right to send things here");
             }
-        } catch (Exception e) {
-            log.error("REST Error Saving payLoadEntity {}:{}", getEntityClass().getSimpleName(), processedEntity.getUid());
-            summary.getFailed().put(processedEntity.getUid(), e.getMessage());
-            throw new IllegalQueryException(e.getMessage());
+        } else {
+            if (aclService.canAddNew(payLoadEntity, user)) {
+                processedEntity = identifiableObjectService.saveWithRelations(processedEntity);
+                summary.getCreated().add(processedEntity.getUid());
+            } else {
+                throw new UpdateAccessDeniedException("You have no right to send things here");
+            }
         }
+//        } catch (Exception e) {
+//            log.error("REST Error Saving payLoadEntity {}:{}",
+//                getEntityClass().getSimpleName(), processedEntity.getUid());
+
+//            summary.getFailed().put(processedEntity.getUid(), e.getMessage());
+//            throw new IllegalQueryException(e.getMessage());
+//        }
     }
 
     @DeleteMapping("/{id}")
@@ -108,20 +111,20 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
         if (aclService.canDelete(entity, user)) {
             identifiableObjectService.delete(entity);
         } else {
-            throw new AccessDeniedException("");
+            throw new DeleteAccessDeniedException("");
         }
 
         return ResponseEntity
-                .noContent()
-                .headers(HeaderUtil
-                        .createEntityDeletionAlert(applicationName, true, getName(), id)).build();
+            .noContent()
+            .headers(HeaderUtil
+                .createEntityDeletionAlert(applicationName, true, getName(), id)).build();
     }
 
     @PutMapping("/{uid}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<T> updateEntity(
-            @PathVariable(value = "uid", required = false) final String uid,
-            @Valid @RequestBody T entity, @AuthenticationPrincipal CurrentUserDetails user
+        @PathVariable(value = "uid", required = false) final String uid,
+        @Valid @RequestBody T entity, @AuthenticationPrincipal CurrentUserDetails user
     ) throws URISyntaxException {
         hasMinimalRightsOrThrow(user);
         log.debug("REST request to delete from {}: {}", getName(), uid);
@@ -136,12 +139,12 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
         if (aclService.canUpdate(entity, user)) {
             entity = identifiableObjectService.update(entity);
         } else {
-            throw new AccessDeniedException("AccessDenied");
+            throw new UpdateAccessDeniedException("AccessDenied");
         }
 
 
         return ResponseEntity.ok()
-                .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), entity.getId().toString()))
-                .body(entity);
+            .headers(HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), entity.getId().toString()))
+            .body(entity);
     }
 }

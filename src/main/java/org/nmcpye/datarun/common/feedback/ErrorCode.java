@@ -10,7 +10,7 @@ public enum ErrorCode {
     E1001("API query contains an illegal string"),
     E1002("API version is invalid"),
     E1003("Failed to update paths: `{0}`"),
-    E1004("Failed to update, entity {0}:`{1}` not found"),
+    E1004("Failed to fulfill request, entity {0}:`{1}` not found"),
 
     /* Basic metadata */
     E1100("Data element not found or not accessible: `{0}`:`{1}`"),
