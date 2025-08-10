@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.jpa.assignment.repository;
 
+import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.springframework.data.domain.Page;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@JaversSpringDataAuditable
 public interface AssignmentRepository
     extends JpaIdentifiableRepository<Assignment>, AssignmentRepositoryWithBagRelationships {
     /// ////

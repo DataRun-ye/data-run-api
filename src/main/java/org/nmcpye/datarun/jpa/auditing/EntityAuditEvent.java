@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.entityauditevent;
+package org.nmcpye.datarun.jpa.auditing;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -47,6 +47,10 @@ public class EntityAuditEvent implements Serializable {
     @Size(max = 50000)
     @Column(name = "entity_value", length = 50000)
     private String entityValue;
+
+//    @Type(JsonType.class)
+//    @Column(name = "entity_value", columnDefinition = "jsonb")
+//    private Map<String, Object> entityValue;
 
     @Column(name = "commit_version")
     private Integer commitVersion;

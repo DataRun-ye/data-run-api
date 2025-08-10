@@ -3,7 +3,7 @@ package org.nmcpye.datarun.jpa.dataelementgroup.service;
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
-import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
 import org.nmcpye.datarun.jpa.dataelementgroup.repository.DataElementGroupRepository;
@@ -36,8 +36,8 @@ public class DefaultDataElementGroupService
     @Override
     public DataElementGroup saveWithRelations(DataElementGroup object) {
         if (!object.getDataElements().isEmpty()) {
-            Set<DataTemplateElement> dataTemplateElements = new HashSet<>();
-            for (DataTemplateElement dataTemplateElement : object.getDataElements()) {
+            Set<DataElement> dataTemplateElements = new HashSet<>();
+            for (DataElement dataTemplateElement : object.getDataElements()) {
                 dataTemplateElements.add(findOrgUnit(dataTemplateElement));
             }
 
@@ -48,7 +48,7 @@ public class DefaultDataElementGroupService
         return save(object);
     }
 
-    private DataTemplateElement findOrgUnit(DataTemplateElement dataTemplateElement) {
+    private DataElement findOrgUnit(DataElement dataTemplateElement) {
         return Optional.ofNullable(dataTemplateElement.getUid())
             .flatMap(dataElementRepository::findByUid)
             .or(() -> Optional.ofNullable(dataTemplateElement.getId())

@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.audit;
+package org.nmcpye.datarun.jpa.auditing.service;
 
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.PostRemove;

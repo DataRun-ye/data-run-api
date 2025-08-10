@@ -1,10 +1,10 @@
-package org.nmcpye.datarun.audit;
+package org.nmcpye.datarun.jpa.auditing.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nmcpye.datarun.jpa.auditing.EntityAuditEvent;
+import org.nmcpye.datarun.jpa.auditing.repository.EntityAuditEventRepository;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.common.enumeration.EntityAuditAction;
-import org.nmcpye.datarun.jpa.entityauditevent.EntityAuditEvent;
-import org.nmcpye.datarun.jpa.entityauditevent.repository.EntityAuditEventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -50,19 +50,19 @@ public class AsyncEntityAuditEventWriter implements EntityAuditEventWriter {
         try {
             EntityAuditEvent auditedEntity = prepareAuditEntity(target, action);
             if (auditedEntity != null) {
-                auditingEntityRepository.save(auditedEntity);
+                auditingEntityRepository.persist(auditedEntity);
             }
         } catch (Exception e) {
-            log.error("Exception while persisting audit entity for {} error: {}", target, e);
+            log.error("Exception while persisting audit entity for {} error: {}", target, e.getMessage());
         }
     }
 
     /**
      * Method to prepare auditing entity
      *
-     * @param entity
-     * @param action
-     * @return
+     * @param entity changed Entity
+     * @param action change type
+     * @return audit event
      */
     private EntityAuditEvent prepareAuditEntity(final Object entity, EntityAuditAction action) {
         EntityAuditEvent auditedEntity = new EntityAuditEvent();
@@ -71,6 +71,7 @@ public class AsyncEntityAuditEventWriter implements EntityAuditEventWriter {
         auditedEntity.setEntityType(entityClass.getName());
         Object entityId;
         String entityData;
+//        Map<String, Object> entityData;
         log.trace("Getting Entity Id and Content");
         try {
             Field privateLongField = entityClass.getDeclaredField("id");
@@ -78,6 +79,7 @@ public class AsyncEntityAuditEventWriter implements EntityAuditEventWriter {
             entityId = privateLongField.get(entity);
             privateLongField.setAccessible(false);
             entityData = objectMapper.writeValueAsString(entity);
+//            entityData = objectMapper.convertValue(entity, new TypeReference<>() {});
         } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException |
                  IOException e) {
             log.error("Exception while getting entity ID and content", e);
@@ -96,7 +98,7 @@ public class AsyncEntityAuditEventWriter implements EntityAuditEventWriter {
             auditedEntity.setModifiedDate(abstractAuditEntity.getLastModifiedDate());
             calculateVersion(auditedEntity);
         }
-        log.trace("Audit Entity --> {} ", auditedEntity.toString());
+        log.trace("Audit Entity --> {} ", auditedEntity);
         return auditedEntity;
     }
 

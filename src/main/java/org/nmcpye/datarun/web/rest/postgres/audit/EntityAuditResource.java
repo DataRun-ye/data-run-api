@@ -1,12 +1,13 @@
 package org.nmcpye.datarun.web.rest.postgres.audit;
 
-import org.nmcpye.datarun.jpa.entityauditevent.EntityAuditEvent;
-import org.nmcpye.datarun.jpa.entityauditevent.repository.EntityAuditEventRepository;
+import org.nmcpye.datarun.jpa.auditing.EntityAuditEvent;
+import org.nmcpye.datarun.jpa.auditing.repository.EntityAuditEventRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -38,6 +39,32 @@ public class EntityAuditResource {
         this.entityAuditEventRepository = entityAuditEventRepository;
     }
 
+
+    /**
+     * NMC: Stream audit events since a given sequence ID.
+     * Clients keep the last seen sequence and pass it back.
+     */
+    @GetMapping("/stream")
+    @PreAuthorize("hasRole(\"" + AuthoritiesConstants.ADMIN + "\")")
+    public ResponseEntity<List<EntityAuditEvent>> stream(
+        @RequestParam(name = "sinceId", defaultValue = "0") Long sinceId,
+        @RequestParam(name = "limit", defaultValue = "100") int limit
+    ) {
+        var page = PageRequest.of(0, limit, Sort.by("id").ascending());
+        Page<EntityAuditEvent> results = entityAuditEventRepository.findAllByIdGreaterThan(sinceId, page);
+
+        // Tell client the highest ID they just received
+        long maxId = results.stream()
+            .mapToLong(EntityAuditEvent::getId)
+            .max()
+            .orElse(sinceId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-Last-Id", Long.toString(maxId));
+
+        return new ResponseEntity<>(results.getContent(), headers, HttpStatus.OK);
+    }
+
     /**
      * fetches all the audited entity types
      *
@@ -52,7 +79,6 @@ public class EntityAuditResource {
     /**
      * fetches the last 100 change list for an entity class, if limit is passed fetches that many changes
      *
-     * @return
      */
     @GetMapping(value = "/audits/entity/changes", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole(\"" + AuthoritiesConstants.ADMIN + "\")")
@@ -67,7 +93,7 @@ public class EntityAuditResource {
     }
 
     /**
-     * fetches a previous version for for an entity class and id
+     * fetches a previous version for an entity class and id
      *
      * @return
      */

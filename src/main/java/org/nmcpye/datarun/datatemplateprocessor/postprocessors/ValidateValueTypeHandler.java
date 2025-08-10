@@ -5,7 +5,7 @@ import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
-import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 
 /**
  * @author Hamza Assada 18/03/2025 (7amza.it@gmail.com)
@@ -13,9 +13,9 @@ import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
 public class ValidateValueTypeHandler
     extends AbstractFormElementHandler<FormDataElementConf> {
 
-    private final DataTemplateElement source;
+    private final DataElement source;
 
-    public ValidateValueTypeHandler(DataTemplateElement source) {
+    public ValidateValueTypeHandler(DataElement source) {
         this.source = source;
     }
 

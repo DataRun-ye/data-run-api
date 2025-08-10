@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.jpa.project.repository;
 
+import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.project.Project;
 import org.springframework.stereotype.Repository;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Repository;
  */
 @SuppressWarnings("unused")
 @Repository
+@JaversSpringDataAuditable
 public interface ProjectRepository
     extends JpaIdentifiableRepository<Project> {
 }

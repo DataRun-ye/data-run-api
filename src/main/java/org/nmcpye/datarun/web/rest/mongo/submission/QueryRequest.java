@@ -5,18 +5,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Getter
 @Setter
+@Accessors(chain = true)
 public class QueryRequest {
 
     @Schema(description = "Filters in format field__operator=value, e.g., status__eq=completed. " +
@@ -64,9 +68,14 @@ public class QueryRequest {
     @Schema(description = "Flag to merge DataFormTemplate elements and sections")
     private boolean mergeElements = false;
 
+    @Schema(description = "Flag to only include elements update since a point of time")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    private Instant since;
+
     public boolean isEmpty() {
         return fields == null || fields.isEmpty();
     }
+
     public Map<String, Object> getParsedFilter() {
         return filters.entrySet().stream().collect(Collectors.toMap(
             Map.Entry::getKey,
@@ -79,6 +88,10 @@ public class QueryRequest {
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.readValue(filter, new TypeReference<Map<String, Object>>() {
         });
+    }
+
+    public Instant getSince() {
+        return since != null ? since : Instant.EPOCH;
     }
 
     public Pageable getPageable() {

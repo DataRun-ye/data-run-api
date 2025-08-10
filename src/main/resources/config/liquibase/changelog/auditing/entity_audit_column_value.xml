@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+       http://www.liquibase.org/xml/ns/dbchangelog
+       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="001_drop_entity_audit_entity_value_col" author="Hamza-ye">
+      <dropColumn tableName="app_entity_audit_event" columnName="entity_value"/>
+    </changeSet>
+    <changeSet id="002_add_entity_audit_entity_value_col" author="Hamza-ye">
+       <addColumn tableName="app_entity_audit_event">
+           <column name="entity_value" type= "jsonb"/>
+       </addColumn>
+    </changeSet>
+</databaseChangeLog>

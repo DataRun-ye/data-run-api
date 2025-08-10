@@ -15,7 +15,6 @@ import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess.FormTemplateProcessor;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -47,15 +46,15 @@ public class FormTemplateMergeResource {
 
     private final FormTemplateProcessor formTemplateProcessor;
     private final DataTemplateInstanceService templateService;
-    @Autowired
-    protected AclService aclService;
+    protected final AclService aclService;
 
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
 
-    public FormTemplateMergeResource(FormTemplateProcessor formTemplateProcessor, DataTemplateInstanceService templateService) {
+    public FormTemplateMergeResource(FormTemplateProcessor formTemplateProcessor, DataTemplateInstanceService templateService, AclService aclService) {
         this.formTemplateProcessor = formTemplateProcessor;
         this.templateService = templateService;
+        this.aclService = aclService;
     }
 
 

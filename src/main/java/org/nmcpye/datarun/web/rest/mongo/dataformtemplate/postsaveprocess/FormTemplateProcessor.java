@@ -8,7 +8,7 @@ import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateprocessor.TemplateElementProcessor;
 import org.nmcpye.datarun.datatemplateprocessor.validation.DefaultTemplateValidator;
-import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 import org.slf4j.Logger;
@@ -57,7 +57,7 @@ public class FormTemplateProcessor {
             .get();
     }
 
-    private <T extends DataTemplateVersionInterface> void validateElementsDataElement(T formTemplate, Collection<DataTemplateElement> dataTemplateElements) {
+    private <T extends DataTemplateVersionInterface> void validateElementsDataElement(T formTemplate, Collection<DataElement> dataTemplateElements) {
         final var fieldUids = formTemplate.getFields().stream()
             .map(FormDataElementConf::getId).toList();
         final var dataElementUids = getUids(dataTemplateElements);

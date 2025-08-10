@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -31,6 +32,8 @@ import tech.jhipster.web.util.ResponseUtil;
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 
 //@RequestMapping("/api")
@@ -65,13 +68,43 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of assignments in body.
      */
     @GetMapping("")
-    protected ResponseEntity<PagedResponse<?>> getAll(QueryRequest queryRequest) {
+    protected ResponseEntity<PagedResponse<?>> getAll(
+        QueryRequest queryRequest) {
+
         Page<T> processedPage = getList(queryRequest, null);
 
         String next = createNextPageLink(processedPage);
 
         PagedResponse<T> response = initPageResponse(processedPage, next);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * {@code GET /api/form-templates?since=2025-07-15T10:23:00Z}
+     *
+     * @param queryRequest filters, since and paging
+     * @param jsonQuery    query sent in body
+     * @return list of items
+     */
+    @GetMapping("/byLastModified")
+    public ResponseEntity<List<?>> getStream(
+        QueryRequest queryRequest,
+        @RequestBody(required = false) String jsonQuery) {
+
+        Page<T> page = getList(queryRequest, jsonQuery);
+
+        var latest = page.stream()
+            .map(IdentifiableObject::getLastModifiedDate)
+            .max(Comparator.naturalOrder())
+            .orElse(queryRequest.getSince());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLastModified(latest.toEpochMilli());
+        headers.add("X-Has-More", String.valueOf(page.hasNext()));
+
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(page.getContent());
     }
 
     /**

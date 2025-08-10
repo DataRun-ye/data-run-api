@@ -2,7 +2,7 @@ package org.nmcpye.datarun.jpa.dataelement.service;
 
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
-import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.jpa.option.repository.OptionSetRepository;
 import org.springframework.cache.CacheManager;
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Transactional
-public class DefaultDataElementService extends DefaultJpaIdentifiableService<DataTemplateElement> implements DataElementService {
+public class DefaultDataElementService extends DefaultJpaIdentifiableService<DataElement> implements DataElementService {
     private final OptionSetRepository optionSetRepository;
 
     public DefaultDataElementService(DataElementRepository repository, CacheManager cacheManager,
@@ -25,7 +25,7 @@ public class DefaultDataElementService extends DefaultJpaIdentifiableService<Dat
     }
 
     @Override
-    public DataTemplateElement saveWithRelations(DataTemplateElement element) {
+    public DataElement saveWithRelations(DataElement element) {
         if (element.getType().isOptionsType() && element.getOptionSet() != null) {
             final var optionSet = optionSetRepository.findByUid(element.getOptionSet().getUid())
                 .or(() -> optionSetRepository

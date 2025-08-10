@@ -10,13 +10,12 @@ import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.MongoBaseResource;
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -45,10 +44,14 @@ public class DataFormSubmissionResource
 
     @Deprecated(since = "V7, main method do the same now")
     @RequestMapping(value = "objects", method = {RequestMethod.GET, RequestMethod.POST})
-    public ResponseEntity<PagedResponse<?>> getObjectSubmissions(QueryRequest queryRequest,
-                                                                 @RequestBody(required = false) String jsonQuery) {
+    public ResponseEntity<PagedResponse<?>> getObjectSubmissions(
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant since,
+        QueryRequest queryRequest,
+        @RequestBody(required = false) String jsonQuery) {
         QueryRequestValidator.validate(queryRequest);
-        Page<DataFormSubmission> resultPage = getList(queryRequest, jsonQuery);
+        Instant effectiveSince = since != null ? since : Instant.EPOCH;
+
+        Page<DataFormSubmission> resultPage = getList(queryRequest.setSince(effectiveSince), jsonQuery);
 
         String next = createNextPageLink(resultPage);
 

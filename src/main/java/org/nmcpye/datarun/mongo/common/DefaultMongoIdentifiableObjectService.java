@@ -8,9 +8,7 @@ import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.query.LegacyQueryConverter;
 import org.nmcpye.datarun.query.MongoQueryBuilder;
 import org.nmcpye.datarun.query.UnifiedQueryParser;
-import org.nmcpye.datarun.query.filter.CompoundFilter;
-import org.nmcpye.datarun.query.filter.FilterExpression;
-import org.nmcpye.datarun.query.filter.LogicalOperator;
+import org.nmcpye.datarun.query.filter.*;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -23,6 +21,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.support.PageableExecutionUtils;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -101,8 +100,17 @@ public abstract class DefaultMongoIdentifiableObjectService<T extends MongoIdent
         }
 
         // legacy v1 QueryRequest support
-        if (queryRequest != null && queryRequest.getParsedFilter() != null) {
+        if (queryRequest != null) {
             allFilters.add(legacyQueryConverter.convert(queryRequest));
+
+            // add the 'since' filter
+            // only if it's not the epoch sentinel
+            if (queryRequest.getSince() != null && !queryRequest.getSince().equals(Instant.EPOCH)) {
+                // assuming your field is called "lastModifiedDate"
+                SimpleFilter sinceFilter = new SimpleFilter(
+                    "lastModifiedDate", FilterOperator.GT, queryRequest.getSince());
+                allFilters.add(sinceFilter);
+            }
         }
 
         if (allFilters.isEmpty()) return null;

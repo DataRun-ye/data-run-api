@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.jpa.orgunit.repository;
 
+import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.springframework.data.domain.Page;
@@ -18,6 +19,7 @@ import java.util.Optional;
  */
 @SuppressWarnings("unused")
 @Repository
+@JaversSpringDataAuditable
 public interface OrgUnitRepository
     extends OrgUnitRepositoryWithBagRelationships,
     JpaIdentifiableRepository<OrgUnit> {

@@ -8,7 +8,7 @@ import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
-import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
 
 import java.util.HashSet;
@@ -60,7 +60,7 @@ public class DataElementGroupSet extends JpaBaseIdentifiableObject {
         return dataElementGroups != null && !dataElementGroups.isEmpty();
     }
 
-    public boolean isMemberOfOrgUnitGroups(DataTemplateElement dataTemplateElement) {
+    public boolean isMemberOfOrgUnitGroups(DataElement dataTemplateElement) {
         for (DataElementGroup group : dataElementGroups) {
             if (group.getDataElements().contains(dataTemplateElement)) {
                 return true;

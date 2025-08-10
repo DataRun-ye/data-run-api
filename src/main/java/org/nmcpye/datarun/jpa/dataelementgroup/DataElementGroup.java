@@ -8,7 +8,7 @@ import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
-import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelementgroupset.DataElementGroupSet;
 
 import java.util.HashSet;
@@ -54,7 +54,7 @@ public class DataElementGroup extends JpaBaseIdentifiableObject {
     )
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"parent", "children", "dataElementGroups", "assignments", "hierarchyLevel", "ancestors", "translations", "path"}, allowSetters = true)
-    private Set<DataTemplateElement> dataElements = new HashSet<>();
+    private Set<DataElement> dataElements = new HashSet<>();
 
     @ManyToMany(mappedBy = "dataElementGroups")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)

@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.web.rest.postgres.dataelement;
 
-import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.jpa.dataelement.service.DataElementService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
@@ -14,13 +14,13 @@ import static org.nmcpye.datarun.web.rest.postgres.dataelement.DataElementResour
 import static org.nmcpye.datarun.web.rest.postgres.dataelement.DataElementResource.V1;
 
 /**
- * REST controller for managing {@link DataTemplateElement}.
+ * REST controller for managing {@link DataElement}.
  */
 @RestController
 @RequestMapping(value = {CUSTOM, V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class DataElementResource
-    extends JpaBaseResource<DataTemplateElement> {
+    extends JpaBaseResource<DataElement> {
     protected static final String NAME = "/dataElements";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
     protected static final String V1 = ApiVersion.API_V1 + NAME;

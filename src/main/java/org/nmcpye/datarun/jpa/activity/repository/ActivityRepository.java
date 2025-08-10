@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.jpa.activity.repository;
 
+import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Repository;
  * @author Hamza Assada 11/02/2022
  */
 @Repository
+@JaversSpringDataAuditable
 public interface ActivityRepository
     extends JpaIdentifiableRepository<Activity> {
     @Query(

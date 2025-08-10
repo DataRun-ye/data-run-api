@@ -7,7 +7,7 @@ import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.datatemplateprocessor.postprocessors.AbstractFormElementHandler;
-import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 
 import java.util.*;
@@ -40,8 +40,8 @@ public class TemplateElementProcessor {
      * @param dataTemplateElements data elements corresponding to the fields, should be fetched from repository and passed
      * @return FormElementConfigService to run the next step of get the formTemplate
      */
-    private TemplateElementProcessor configureAndValidateFields(Collection<DataTemplateElement> dataTemplateElements) {
-        final var dataElementMap = dataTemplateElements.stream().collect(Collectors.toMap(DataTemplateElement::getUid, s -> s));
+    private TemplateElementProcessor configureAndValidateFields(Collection<DataElement> dataTemplateElements) {
+        final var dataElementMap = dataTemplateElements.stream().collect(Collectors.toMap(DataElement::getUid, s -> s));
         final var sectionMap = getSectionMap();
         final var fields = formTemplate.getFields().stream().distinct()
             .map((f) ->
@@ -57,7 +57,7 @@ public class TemplateElementProcessor {
         return this;
     }
 
-    public TemplateElementProcessor process(Collection<DataTemplateElement> dataTemplateElements) {
+    public TemplateElementProcessor process(Collection<DataElement> dataTemplateElements) {
         return configureAndValidateSections().configureAndValidateFields(dataTemplateElements);
     }
 

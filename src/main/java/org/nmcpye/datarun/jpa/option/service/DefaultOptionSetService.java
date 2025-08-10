@@ -16,15 +16,4 @@ public class DefaultOptionSetService extends DefaultJpaIdentifiableService<Optio
     public DefaultOptionSetService(OptionSetRepository repository, CacheManager cacheManager, UserAccessService userAccessService) {
         super(repository, cacheManager, userAccessService);
     }
-
-    @Override
-    public OptionSet saveWithRelations(OptionSet object) {
-        return super.saveWithRelations(object);
-    }
-
-    @Override
-    public OptionSet update(OptionSet object) {
-
-        return super.update(object);
-    }
 }

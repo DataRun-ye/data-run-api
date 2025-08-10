@@ -3,7 +3,7 @@ package org.nmcpye.datarun.mongo.migration;
 import jakarta.persistence.EntityNotFoundException;
 import org.nmcpye.datarun.datatemplateelement.*;
 import org.nmcpye.datarun.datatemplateelement.enumeration.RuleAction;
-import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.jpa.option.OptionSet;
 import org.nmcpye.datarun.jpa.option.repository.OptionSetRepository;
@@ -66,7 +66,7 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
                 FormSectionConf sectionConf = createSectionConf(section);
                 template.getSections().add(sectionConf);
             } else if (field instanceof DefaultField formField) {
-                DataTemplateElement dataTemplateElement = dataElementRepository.findByNameIgnoreCase(formField.getName()).orElseThrow();
+                DataElement dataTemplateElement = dataElementRepository.findByNameIgnoreCase(formField.getName()).orElseThrow();
                 FormDataElementConf elementConf = createDataElementConf(formField, dataTemplateElement.getUid(), dataTemplateElement.getCode());
                 template.getFields().add(elementConf);
             } else {
@@ -79,7 +79,7 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
 
     private void migrateDataElements(DataForm dataForm) {
         for (AbstractField field : dataForm.flattenFields().stream().filter((f) -> f instanceof DefaultField).collect(Collectors.toSet())) {
-            DataTemplateElement dataTemplateElement = createDataElement((DefaultField) field, dataForm);
+            DataElement dataTemplateElement = createDataElement((DefaultField) field, dataForm);
             dataElementRepository.save(dataTemplateElement);
         }
     }
@@ -112,9 +112,9 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
         return template;
     }
 
-    private DataTemplateElement createDataElement(DefaultField element, DataForm dataForm) {
+    private DataElement createDataElement(DefaultField element, DataForm dataForm) {
         try {
-            DataTemplateElement dataTemplateElement = dataElementRepository.findByName(element.getName()).orElse(new DataTemplateElement());
+            DataElement dataTemplateElement = dataElementRepository.findByName(element.getName()).orElse(new DataElement());
             dataTemplateElement.setName(element.getName().toLowerCase());
             dataTemplateElement.setCode(element.getName().toLowerCase());
             dataTemplateElement.setType(element.getType());

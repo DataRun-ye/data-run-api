@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.audit;
+package org.nmcpye.datarun.jpa.auditing.service;
 
 import org.nmcpye.datarun.jpa.common.enumeration.EntityAuditAction;
 

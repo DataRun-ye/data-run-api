@@ -4,7 +4,7 @@ import com.tngtech.archunit.core.importer.ImportOption.DoNotIncludeTests;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
-import org.nmcpye.datarun.audit.EntityAuditEventListener;
+import org.nmcpye.datarun.jpa.auditing.service.EntityAuditEventListener;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 
 import static com.tngtech.archunit.base.DescribedPredicate.alwaysTrue;

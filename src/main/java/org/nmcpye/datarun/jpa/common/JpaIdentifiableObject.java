@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.javers.core.metamodel.annotation.DiffIgnore;
 import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.springframework.data.annotation.CreatedBy;
@@ -29,9 +29,9 @@ import java.util.Objects;
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @JsonIgnoreProperties(value = {"new", "createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
+@DiffIgnore
 @Getter
 @Setter
-@NoArgsConstructor
 public abstract class JpaIdentifiableObject
     implements IdentifiableObject<String>, Persistable<String>, Serializable {
     /**
@@ -40,7 +40,7 @@ public abstract class JpaIdentifiableObject
      */
     @Id
     @Column(name = "id", length = 26, updatable = false, nullable = false)
-    private String id;
+    protected String id;
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -64,6 +64,10 @@ public abstract class JpaIdentifiableObject
     @Transient
     protected boolean isPersisted;
 
+    public JpaIdentifiableObject() {
+        setAutoFields();
+    }
+
     @PostLoad
     @PostPersist
     protected void updateEntityState() {
@@ -76,7 +80,7 @@ public abstract class JpaIdentifiableObject
     @PrePersist
     public void prePersist() {
         if (this.id == null) {
-            this.id = CodeGenerator.ULIDGenerator.nextString();
+            setId(CodeGenerator.ULIDGenerator.nextString());
         }
     }
 
@@ -103,18 +107,14 @@ public abstract class JpaIdentifiableObject
 
     abstract protected void setUid(String uid);
 
-//    /**
-//     * Set auto-generated fields on save or update
-//     */
-//    public void setAutoFields() {
-//        if (getId() == null) {
-//            setId(CodeGenerator.ULIDGenerator.nextString());
-//        }
-//
-//        if (getUid() == null || getUid().isEmpty()) {
-//            setUid(CodeGenerator.generateUid());
-//        }
-//    }
+    /**
+     * Set auto-generated fields on save or update
+     */
+    public void setAutoFields() {
+        if (getUid() == null || getUid().isEmpty()) {
+            setUid(CodeGenerator.generateUid());
+        }
+    }
 
     @Override
     public boolean equals(Object o) {

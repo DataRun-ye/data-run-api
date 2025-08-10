@@ -15,10 +15,12 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.ListPagingAndSortingRepository;
 import org.springframework.data.repository.NoRepositoryBean;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @NoRepositoryBean
 public interface JpaIdentifiableRepository<T extends JpaIdentifiableObject>
@@ -28,6 +30,7 @@ public interface JpaIdentifiableRepository<T extends JpaIdentifiableObject>
     IdentifiableObjectRepository<T, String> {
 
     /// custom ////////////////////
+    Stream<T> streamByLastModifiedDateAfter(Instant lastModifiedDateAfter);
 
     /**
      * Saves the given object instance.

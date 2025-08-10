@@ -74,6 +74,7 @@
         <!--  NMC      -->
         <!--  Override driver due to conflict with debezium -->
         <javers-spring-boot-starter-mongo.version>7.7.0</javers-spring-boot-starter-mongo.version>
+        <javers-spring-boot-starter-sql.version>7.7.0</javers-spring-boot-starter-sql.version>
         <mongock-bom.version>5.5.0</mongock-bom.version>
         <version.debezium>3.1.0.Alpha1</version.debezium>
     </properties>
@@ -381,6 +382,11 @@
             <artifactId>javers-spring-boot-starter-mongo</artifactId>
             <version>${javers-spring-boot-starter-mongo.version}</version>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.javers</groupId>-->
+<!--            <artifactId>javers-spring-boot-starter-sql</artifactId>-->
+<!--            <version>${javers-spring-boot-starter-sql.version}</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>

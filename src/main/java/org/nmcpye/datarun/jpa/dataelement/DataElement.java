@@ -24,7 +24,7 @@ import java.util.Set;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataTemplateElement extends BaseDataElement {
+public class DataElement extends BaseDataElement {
     /**
      * Type of Value (e.g, Text, Number, Integer, OrgUnit, Entity, Team, Date, Coordinates)
      */

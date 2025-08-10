@@ -1,13 +1,13 @@
 package org.nmcpye.datarun.jpa.dataelement.service;
 
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
-import org.nmcpye.datarun.jpa.dataelement.DataTemplateElement;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 
 /**
- * Service Interface for managing {@link DataTemplateElement}.
+ * Service Interface for managing {@link DataElement}.
  *
  * @author Hamza Assada 08/02/2024 (7amza.it@gmail.com)
  */
 public interface DataElementService
-    extends JpaIdentifiableObjectService<DataTemplateElement> {
+    extends JpaIdentifiableObjectService<DataElement> {
 }
