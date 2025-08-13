@@ -204,11 +204,13 @@ public class MathUtils {
     /**
      * Returns true if the provided string argument is to be considered numeric.
      *
-     * @param value the value.
+     * @param v the value.
      * @return true if the provided string argument is to be considered numeric.
      */
-    public static boolean isNumeric(String value) {
-        return value != null && DOUBLE_VALIDATOR.isValid(value, LOCALE) &&
+    public static boolean isNumeric(Object v) {
+        if (v == null) return false;
+        String value = v.toString().trim();
+        return DOUBLE_VALIDATOR.isValid(value, LOCALE) &&
                 NUMERIC_PATTERN.matcher(value).matches() && value.length() < NUMBER_MAX_LENGTH;
     }
 
@@ -216,11 +218,13 @@ public class MathUtils {
      * Returns true if the provided string argument is to be considered numeric.
      * Matches using a lenient pattern where leading zeros are allowed.
      *
-     * @param value the value.
+     * @param v the value.
      * @return true if the provided string argument is to be considered numeric.
      */
-    public static boolean isNumericLenient(String value) {
-        return value != null && DOUBLE_VALIDATOR.isValid(value, LOCALE)
+    public static boolean isNumericLenient(Object v) {
+        if (v == null) return false;
+        String value = v.toString().trim();
+        return DOUBLE_VALIDATOR.isValid(value, LOCALE)
                 && NUMERIC_LENIENT_PATTERN.matcher(value).matches();
     }
 
@@ -229,15 +233,16 @@ public class MathUtils {
      * interval, which implies that the value is numeric and inclusive between 0
      * and 1.
      *
-     * @param value the value.
+     * @param v the value.
      * @return true if the provided string argument is to be considered a unit
      * interval.
      */
-    public static boolean isUnitInterval(String value) {
-        if (!isNumeric(value)) {
+    public static boolean isUnitInterval(Object v) {
+        if (!isNumeric(v)) {
             return false;
         }
 
+        String value = v.toString().trim();
         double dbl = Double.parseDouble(value);
 
         return dbl >= 0d && dbl <= 1d;
@@ -247,13 +252,14 @@ public class MathUtils {
      * Returns true if the provided string argument is a number in the inclusive
      * range of 0 to 100.
      *
-     * @param value the value.
+     * @param v the value.
      * @return true if the provided string argument is a percentage.
      */
-    public static boolean isPercentage(String value) {
-        if (!isNumeric(value)) {
+    public static boolean isPercentage(Object v) {
+        if (!isNumeric(v)) {
             return false;
         }
+        String value = v.toString().trim();
 
         double doubleValue = Double.parseDouble(value);
 
@@ -264,36 +270,45 @@ public class MathUtils {
      * Returns true if the provided string argument is to be considered an
      * integer.
      *
-     * @param value the value.
+     * @param v the value.
      * @return true if the provided string argument is to be considered an
      * integer.
      */
-    public static boolean isInteger(String value) {
-        return value != null && INT_VALIDATOR.isValid(value) && INT_PATTERN.matcher(value).matches();
+    public static boolean isInteger(Object v) {
+        if (v == null) return false;
+        String value = v.toString().trim();
+
+        return INT_VALIDATOR.isValid(value) && INT_PATTERN.matcher(value).matches();
     }
 
     /**
      * Returns true if the provided string argument is to be considered a
      * positive integer.
      *
-     * @param value the value.
+     * @param v the value.
      * @return true if the provided string argument is to be considered a
      * positive integer.
      */
-    public static boolean isPositiveInteger(String value) {
-        return value != null && INT_VALIDATOR.isValid(value) && POSITIVE_INT_PATTERN.matcher(value).matches();
+    public static boolean isPositiveInteger(Object v) {
+        if (v == null) return false;
+        String value = v.toString().trim();
+
+        return INT_VALIDATOR.isValid(value) && POSITIVE_INT_PATTERN.matcher(value).matches();
     }
 
     /**
      * Returns true if the provided string argument is to be considered a
      * positive or zero integer.
      *
-     * @param value the value.
+     * @param v the value.
      * @return true if the provided string argument is to be considered a
      * positive integer.
      */
-    public static boolean isZeroOrPositiveInteger(String value) {
-        return value != null && INT_VALIDATOR.isValid(value)
+    public static boolean isZeroOrPositiveInteger(Object v) {
+        if (v == null) return false;
+        String value = v.toString().trim();
+
+        return INT_VALIDATOR.isValid(value)
                 && POSITIVE_OR_ZERO_INT_PATTERN.matcher(value).matches();
     }
 
@@ -301,14 +316,15 @@ public class MathUtils {
      * Returns true if the provided string argument is to be considered a
      * coordinate.
      *
-     * @param value the value.
+     * @param v the value.
      * @return true if the provided string argument is to be considered a
      * coordinate.
      */
-    public static boolean isCoordinate(String value) {
-        if (value == null) {
+    public static boolean isCoordinate(Object v) {
+        if (v == null) {
             return false;
         }
+        String value = v.toString().trim();
 
         value = value.replaceAll("\\s+", "");
         if (value.length() < 5 || value.indexOf("[") != 0 || value.indexOf("]") != value.length() - 1) {
@@ -329,33 +345,42 @@ public class MathUtils {
      * Returns true if the provided string argument is to be considered a
      * negative integer.
      *
-     * @param value the value.
+     * @param v the value.
      * @return true if the provided string argument is to be considered a
      * negative integer.
      */
-    public static boolean isNegativeInteger(String value) {
-        return value != null && INT_VALIDATOR.isValid(value) && NEGATIVE_INT_PATTERN.matcher(value).matches();
+    public static boolean isNegativeInteger(Object v) {
+        if (v == null) return false;
+        String value = v.toString().trim();
+
+        return INT_VALIDATOR.isValid(value) && NEGATIVE_INT_PATTERN.matcher(value).matches();
     }
 
     /**
      * Returns true if the provided string argument is to be considered a zero.
      *
-     * @param value the value.
+     * @param v the value.
      * @return true if the provided string argument is to be considered a zero.
      */
-    public static boolean isZero(String value) {
-        return value != null && ZERO_PATTERN.matcher(value).matches();
+    public static boolean isZero(Object v) {
+        if (v == null) return false;
+        String value = v.toString().trim();
+
+        return ZERO_PATTERN.matcher(value).matches();
     }
 
     /**
      * Indicates if the provided string argument is to be considered as a
      * boolean, more specifically if it equals "true" or "false".
      *
-     * @param value the value.
+     * @param v the value.
      * @return if the provided string argument is to be considered as a boolean.
      */
-    public static boolean isBool(String value) {
-        return value != null && (value.equals("true") || value.equals("false"));
+    public static boolean isBool(Object v) {
+        if (v == null) return false;
+        String value = v.toString().trim();
+
+        return value.equals("true") || value.equals("false");
     }
 
     /**

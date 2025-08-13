@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.jpa.etl.service;
 
 import org.nmcpye.datarun.jpa.etl.model.NormalizedSubmission;
+import org.nmcpye.datarun.jpa.etl.validation.ValueTypeValidationService;
+import org.nmcpye.datarun.jpa.option.service.OptionService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.springframework.stereotype.Service;
 
@@ -11,16 +13,20 @@ import org.springframework.stereotype.Service;
 @SuppressWarnings("unused")
 public class EtlCoordinatorService {
     private final TemplateElementService elementService;
+    private final OptionService optionService;
+    private final ValueTypeValidationService validationService;
     private final NormalizedSubmissionPersister persister;
 
-    public EtlCoordinatorService(TemplateElementService elementService,
+    public EtlCoordinatorService(TemplateElementService elementService, OptionService optionService, ValueTypeValidationService validationService,
                                  NormalizedSubmissionPersister persister) {
         this.elementService = elementService;
+        this.optionService = optionService;
+        this.validationService = validationService;
         this.persister = persister;
     }
 
     public void processSubmission(DataFormSubmission submission) {
-        final var normalizer = new SubmissionNormalizer(
+        final var normalizer = new SubmissionNormalizer(optionService,
             elementService.getTemplateElementMap(submission.getForm(), submission.getFormVersion()),
             true);
         NormalizedSubmission ns = normalizer.normalize(submission);

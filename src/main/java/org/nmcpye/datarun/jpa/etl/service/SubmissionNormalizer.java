@@ -9,11 +9,13 @@ import org.nmcpye.datarun.jpa.etl.dto.SubmissionValueRow;
 import org.nmcpye.datarun.jpa.etl.exception.MissingRepeatUidException;
 import org.nmcpye.datarun.jpa.etl.model.NormalizedSubmission;
 import org.nmcpye.datarun.jpa.etl.model.TemplateElementMap;
+import org.nmcpye.datarun.jpa.option.service.OptionService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.security.SecurityUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Hamza Assada 13/08/2025 (7amza.it@gmail.com)
@@ -22,29 +24,179 @@ import java.util.Map;
 public class SubmissionNormalizer {
 
     private final TemplateElementMap elementMap;
-
+    private final OptionService optionService;
     /**
      * config: true->generate server-side, false->throw
      */
     private final boolean generateMissingRepeatUids;
 
-    public SubmissionNormalizer(TemplateElementMap elementMap, boolean generateMissingRepeatUids) {
+    public SubmissionNormalizer(OptionService optionService, TemplateElementMap elementMap, boolean generateMissingRepeatUids) {
         this.elementMap = elementMap;
+        this.optionService = optionService;
         this.generateMissingRepeatUids = generateMissingRepeatUids;
     }
 
     public NormalizedSubmission normalize(DataFormSubmission submission) {
         final var currentUser = SecurityUtils.getCurrentUserDetailsOrNull();
-        final NormalizedSubmission ns = NormalizedSubmission
-            .initialValueBuilder(submission, currentUser);
-
-        Map<String, AbstractElement> pathMap = elementMap.getElementPathMapCache();
+        final NormalizedSubmission ns = new NormalizedSubmission(
+            submission.getUid(),
+            submission.getForm(),
+            submission.getAssignment());
 
         // walk root
-        extractNode(submission.getFormData(), /*currentPath*/ null,
+        extractNodeHandleMultiStrategy(submission.getFormData(), /*currentPath*/ null,
             ns, submission, /*repeatId*/ null, /*repeatIndex*/ null, /*categoryId*/ null);
 
         return ns;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void extractNodeHandleMultiStrategy(
+        Map<String, Object> node,
+        String currentPath,
+        NormalizedSubmission ns,
+        DataFormSubmission submission,
+        String currentRepeatId,
+        Long currentRepeatIndex,
+        String currentCategoryId) {
+
+        if (node == null) return;
+
+        for (Map.Entry<String, Object> entry : node.entrySet()) {
+            String key = entry.getKey();
+            Object rawValue = entry.getValue();
+            String childPath = (currentPath == null || currentPath.isEmpty()) ? key : currentPath + "." + key;
+
+            AbstractElement element = elementMap.getElementPathMapCache().get(childPath);
+            if (element == null) {
+                // Not part of template -> skip
+                continue;
+            }
+
+            // Repeatable section
+            if (element instanceof FormSectionConf &&
+                Boolean.TRUE.equals(((FormSectionConf) element).getRepeatable()) &&
+                rawValue instanceof List) {
+
+                List<Map<String, Object>> items = (List<Map<String, Object>>) rawValue;
+                long idx = 0L;
+                for (Map<String, Object> item : items) {
+                    Object uidObj = item.get("_uid");
+                    String repeatId = uidObj != null ? uidObj.toString() : null;
+
+                    if (repeatId == null) {
+                        if (generateMissingRepeatUids) {
+                            repeatId = CodeGenerator.ULIDGenerator.nextString();
+                            item.put("_uid", repeatId); // optionally propagate back
+                        } else {
+                            throw new MissingRepeatUidException(List.of(new MissingRepeatUidException.MissingRepeatUid(childPath, (int) idx)));
+                        }
+                    }
+
+                    RepeatInstance ri = RepeatInstance.builder()
+                        .id(repeatId)
+                        .submission(ns.getSubmissionId())
+                        .repeatPath(childPath)
+                        .repeatIndex(idx)
+                        .clientUpdatedAt(submission.getFinishedEntryTime())
+                        .createdDate(submission.getCreatedDate())
+                        .lastModifiedDate(submission.getLastModifiedDate())
+                        .createdBy("SecurityUtils.getCurrentUserLoginOrThrow()")
+                        .lastModifiedBy("SecurityUtils.getCurrentUserLoginOrThrow()")
+                        .build();
+
+                    ns.addRepeatInstance(ri);
+                    ns.addIncomingUid(childPath, repeatId);
+
+                    // extract category for this repeat if configured
+                    String categoryValue = extractCategoryIdForItem(item, childPath);
+
+                    // Recurse into this repeat item with repeatId context
+                    extractNodeHandleMultiStrategy(item, childPath, ns, submission, repeatId,idx,categoryValue);
+                    idx++;
+                }
+            } else if (rawValue instanceof Map) {
+                // nested non-repeat
+                extractNodeHandleMultiStrategy((Map<String, Object>) rawValue, childPath, ns, submission,
+                    currentRepeatId, currentRepeatIndex, currentCategoryId);
+            } else if (rawValue instanceof List<?> list && element instanceof FormDataElementConf field) {
+                // list-of-primitives (multi-select). Must emit one value row per entry,
+                // and record incoming identities (optionId OR valueText).
+                String elementId = field.getId();
+                String optionSetId = field.getOptionSet(); // may be null
+
+                // If the list is explicitly empty, record presence as empty (so persister can clear stored selections)
+                if (list.isEmpty()) {
+                    ns.markMultiSelectExplicitlyEmpty(currentRepeatId, elementId);
+                    continue;
+                }
+
+                // Convert items to normalized codes (strings), trim them
+                List<String> codes = list.stream()
+                    .filter(Objects::nonNull)
+                    .map(Object::toString)
+                    .map(String::trim)
+                    .toList();
+
+                // Validate & map codes -> optionId using OptionService (throws InvalidOptionCodesException if missing)
+                Map<String, String> codeToOptionId = optionService.validateAndMapOptionCodes(codes, optionSetId);
+
+                // For each code, create a SubmissionValueRow with optionId set (use optionId as identity)
+                for (String code : codes) {
+                    String optionId = codeToOptionId.get(code); // should be present, otherwise service would throw
+
+                    SubmissionValueRow row = SubmissionValueRow.builder()
+                        .element(elementId)
+                        .submission(ns.getSubmissionId())
+                        .repeatInstance(currentRepeatId) // see note below
+                        .category(currentCategoryId)
+                        .assignment(ns.getAssignmentId())
+                        .template(ns.getTemplateId())
+                        .option(optionId)
+                        .lastModifiedDate(submission.getLastModifiedDate())
+                        .createdDate(submission.getLastModifiedDate())
+                        .build();
+
+                    row.setValue(code); // optionally keep label, but we prefer optionId
+
+                    ns.addValueRow(row);
+
+                    // record selection identity used for mark-and-sweep
+                    ns.addMultiSelectIdentity(currentRepeatId, elementId, optionId);
+                }
+            } else {
+                // primitive: single value (text/num/bool) -> store single row
+                String elementId = resolveElementId(element);
+                SubmissionValueRow row = SubmissionValueRow.builder()
+                    .element(elementId)
+                    .submission(ns.getSubmissionId())
+                    .repeatInstance(currentRepeatId) // see note below
+                    .category(currentCategoryId)
+                    .assignment(ns.getAssignmentId())
+                    .template(ns.getTemplateId())
+//                    .deletedAt(submission.getDeletedAt())
+                    .lastModifiedDate(submission.getLastModifiedDate())
+                    .createdDate(submission.getLastModifiedDate())
+                    .build();
+
+                row.setValue(rawValue);
+
+                ns.addValueRow(row);
+            }
+        }
+    }
+
+    private String extractCategoryIdForItem(Map<String, Object> item, String repeatPath) {
+        String categoryElementId = elementMap.getRepeatCategoryElementMapCache().get(repeatPath);
+        if (categoryElementId == null) return null;
+
+        String categoryFullPath = elementMap.getFieldElementReversePathMap().get(categoryElementId);
+
+        if (categoryFullPath == null) return null;
+        String relative = categoryFullPath.startsWith(repeatPath + ".") ?
+            categoryFullPath.substring(repeatPath.length() + 1) : categoryFullPath;
+        Object val = item.get(relative);
+        return val != null ? val.toString() : null;
     }
 
     @SuppressWarnings("unchecked")
@@ -99,11 +251,11 @@ public class SubmissionNormalizer {
                         .submission(ns.getSubmissionId())
                         .repeatPath(childPath)
                         .repeatIndex(idx)
-                        .clientUpdatedAt(ns.getClientUpdatedAt())
-                        .createdBy(ns.getCreatedBy())
-                        .lastModifiedBy(ns.getLastModifiedBy())
-                        .lastModifiedDate(ns.getLastModifiedDate())
-                        .createdDate(ns.getLastModifiedDate())
+                        .createdBy(submission.getCreatedBy())
+                        .lastModifiedBy(submission.getLastModifiedBy())
+                        .clientUpdatedAt(submission.getFinishedEntryTime())
+                        .lastModifiedDate(submission.getLastModifiedDate())
+                        .createdDate(submission.getLastModifiedDate())
                         .build();
                     ns.addRepeatInstance(ri);
                     ns.addIncomingUid(childPath, repeatUid);
@@ -128,8 +280,8 @@ public class SubmissionNormalizer {
                     .category(currentCategoryId)
                     .assignment(ns.getAssignmentId())
                     .template(ns.getTemplateId())
-                    .lastModifiedDate(ns.getLastModifiedDate())
-                    .createdDate(ns.getLastModifiedDate())
+                    .lastModifiedDate(submission.getLastModifiedDate())
+                    .createdDate(submission.getLastModifiedDate())
                     .build();
 
                 row.setValue(rawValue);
@@ -153,16 +305,7 @@ public class SubmissionNormalizer {
         }
     }
 
-    private String extractCategoryIdForItem(Map<String, Object> item, String path) {
-        String categoryElementId = elementMap.getRepeatCategoryElementMapCache().get(path);
-        if (categoryElementId == null) return null;
 
-        String categoryFullPath = elementMap.getFieldElementReversePathMap().get(categoryElementId);
 
-        if (categoryFullPath == null) return null;
-        String relative = categoryFullPath.startsWith(path + ".") ? categoryFullPath.substring(path.length() + 1) : categoryFullPath;
-        Object val = item.get(relative);
-        return val != null ? val.toString() : null;
-    }
 }
 

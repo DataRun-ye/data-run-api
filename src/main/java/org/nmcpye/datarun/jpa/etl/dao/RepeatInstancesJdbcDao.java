@@ -3,9 +3,13 @@ package org.nmcpye.datarun.jpa.etl.dao;
 import org.nmcpye.datarun.jpa.etl.dto.RepeatInstance;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSourceUtils;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -39,8 +43,8 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
     @Override
     public void upsertRepeatInstance(RepeatInstance repeatInstance) {
         Objects.requireNonNull(repeatInstance, "repeatInstance");
-        if (repeatInstance.getCreatedDate() == null) repeatInstance.setCreatedDate(new Date());
-        if (repeatInstance.getLastModifiedDate() == null) repeatInstance.setLastModifiedDate(new Date());
+        if (repeatInstance.getCreatedDate() == null) repeatInstance.setCreatedDate(Instant.now());
+        if (repeatInstance.getLastModifiedDate() == null) repeatInstance.setLastModifiedDate(Instant.now());
         MapSqlParameterSource params = new MapSqlParameterSource()
             .addValue("id", repeatInstance.getId())
             .addValue("submission", repeatInstance.getSubmission())
@@ -68,13 +72,27 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
     public void upsertRepeatInstancesBatch(List<RepeatInstance> batch) {
         if (batch == null || batch.isEmpty()) return;
         // ensure created/last dates are present
+        List<SqlParameterSource> singleBatch = new ArrayList<>();
         batch.forEach(ri -> {
-            if (ri.getCreatedDate() == null) ri.setCreatedDate(new Date());
-            if (ri.getLastModifiedDate() == null) ri.setLastModifiedDate(new Date());
+            if (ri.getCreatedDate() == null) ri.setCreatedDate(Instant.now());
+            if (ri.getLastModifiedDate() == null) ri.setLastModifiedDate(Instant.now());
+            // Create a MapSqlParameterSource for the current row
+            MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("id", ri.getId())
+                .addValue("submission", ri.getSubmission())
+                .addValue("repeatPath", ri.getRepeatPath())
+                .addValue("repeatIndex", ri.getRepeatIndex())
+                .addValue("clientUpdatedAt", Timestamp.from(ri.getClientUpdatedAt() != null ? ri.getClientUpdatedAt() : Instant.now()))
+                .addValue("createdDate", Timestamp.from(ri.getCreatedDate()))
+                .addValue("lastModifiedDate", Timestamp.from(ri.getLastModifiedDate()))
+                .addValue("createdBy", ri.getCreatedBy())
+                .addValue("lastModifiedBy", ri.getLastModifiedBy())
+                .addValue("deletedAt", null);
+            singleBatch.add(params);
         });
 
         // Use BeanPropertySqlParameterSource batch
-        jdbc.batchUpdate(UPSERT_SQL, SqlParameterSourceUtils.createBatch(batch.toArray()));
+        jdbc.batchUpdate(UPSERT_SQL, SqlParameterSourceUtils.createBatch(singleBatch));
     }
 
     private static final String FIND_ACTIVE_UIDS_SQL = ""

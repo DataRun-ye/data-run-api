@@ -7,95 +7,114 @@ import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.etl.util.DateUtils;
 import org.nmcpye.datarun.jpa.etl.util.MathUtils;
 import org.nmcpye.datarun.jpa.etl.util.ValueTypeValidationFunction;
+import org.nmcpye.datarun.jpa.option.exception.InvalidOptionCodesException;
+import org.nmcpye.datarun.jpa.option.service.OptionService;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author Hamza Assada 13/08/2025 (7amza.it@gmail.com)
  */
+@Component
 public class ValueTypeValidationService {
     private static final String VALUE_STRING = "Value";
-    private final List<ValueTypeValidationFunction> valueTypeValidationFunctions;
+    private final List<ValueTypeValidationFunction> validators;
 
     public ValueTypeValidationService(TeamRepository teamRepository,
-                                      OrgUnitRepository orgUnitRepository) {
-        valueTypeValidationFunctions = ImmutableList.of(
+                                      OrgUnitRepository orgUnitRepository, OptionService optionService) {
+
+        validators = ImmutableList.of(
                 ValueTypeValidationFunction.builder().valueType(ValueType.Number)
-                        .function(v -> !MathUtils.isNumeric(v.toString()))
+                        .predicate(v -> !MathUtils.isNumeric(v))
                         .message(" '%s' is not a valid numeric type for element %s ")
                         .build(),
                 ValueTypeValidationFunction.builder().valueType(ValueType.Integer)
-                        .function(v -> !MathUtils.isNumeric(v.toString()))
+                        .predicate(v -> !MathUtils.isNumeric(v))
                         .message(" '%s' is not a valid numeric type for element %s ")
                         .build(),
                 ValueTypeValidationFunction.builder().valueType(ValueType.IntegerPositive)
-                        .function(v -> !MathUtils.isNumeric(v.toString()))
+                        .predicate(v -> !MathUtils.isPositiveInteger(v))
                         .message(" '%s' is not a valid numeric type for element %s ")
                         .build(),
                 ValueTypeValidationFunction.builder().valueType(ValueType.IntegerNegative)
-                        .function(v -> !MathUtils.isNumeric(v.toString()))
+                        .predicate(v -> !MathUtils.isNegativeInteger(v))
                         .message(" '%s' is not a valid numeric type for element %s ")
                         .build(),
                 ValueTypeValidationFunction.builder().valueType(ValueType.IntegerZeroOrPositive)
-                        .function(v -> !MathUtils.isNumeric(v.toString()))
+                        .predicate(v -> !MathUtils.isZeroOrPositiveInteger(v))
                         .message(" '%s' is not a valid numeric type for element %s ")
                         .build(),
                 ValueTypeValidationFunction.builder().valueType(ValueType.Percentage)
-                        .function(v -> !MathUtils.isNumeric(v.toString()))
+                        .predicate(v -> !MathUtils.isPercentage(v))
                         .message(" '%s' is not a valid numeric type for element %s ")
                         .build(),
                 ValueTypeValidationFunction.builder().valueType(ValueType.Boolean)
-                        .function(v -> !MathUtils.isBool(v.toString()))
+                        .predicate(v -> !MathUtils.isBool(v))
                         .message(" '%s' is not a valid boolean type for element %s ")
                         .build(),
                 ValueTypeValidationFunction.builder().valueType(ValueType.Date)
-                        .function(v -> !DateUtils.dateIsValid(v.toString()))
+                        .predicate(v -> !DateUtils.dateIsValid(v))
                         .message(" '%s' is not a valid date type for element %s ")
                         .build(),
                 ValueTypeValidationFunction.builder().valueType(ValueType.DateTime)
-                        .function(v -> !DateUtils.dateTimeIsValid(v.toString()))
+                        .predicate(v -> !DateUtils.dateTimeIsValid(v))
                         .message(" '%s' is not a valid datetime for element %s ")
                         .build(),
                 ValueTypeValidationFunction.builder().valueType(ValueType.Time)
-                        .function(v -> !DateUtils.dateTimeIsValid(v.toString()))
+                        .predicate(v -> !DateUtils.dateTimeIsValid(v))
                         .message(" '%s' is not a valid time for element %s ")
                         .build(),
                 ValueTypeValidationFunction.builder().valueType(ValueType.TrueOnly)
-                        .function(v -> !"true".equals(v))
+                        .predicate(v -> !"true".equals(v))
                         .message(" '%s' is not true (true-only type) for element %s ")
                         .build(),
                 ValueTypeValidationFunction.builder().valueType(ValueType.Team)
-                        .function(v -> teamRepository.findByUid(v.toString()).isEmpty())
+                        .predicate(v -> teamRepository.findByUid(v.toString().trim()).isEmpty())
                         .message(" '%s' is not true (true-only type) for element %s ")
                         .build(),
+                ValueTypeValidationFunction.builder().valueType(ValueType.SelectMulti)
+                        .predicate(v -> {
+                            // validate shape (list of codes)
+                            // invalid shape -> validation fails
+                            if (!(v instanceof List<?> list)) return true;
+                            if (list.isEmpty()) return false; // empty list is valid (explicit clear)
+                            // ensure all items are strings
+                            if (!list.stream()
+                                    .allMatch(x -> x == null || x instanceof String)) return true;
+                            // perform option existence validation by attempting mapping
+                            try {
+                                // you might pass elementConf.getOptionSetId() here if available
+                                optionService.validateAndMapOptionCodes(list.stream()
+                                                .map(Object::toString).collect(Collectors.toSet()),
+                                        null);
+                                return false; // validation OK
+                            } catch (InvalidOptionCodesException ex) {
+                                return true; // validation fails
+                            }
+                        })
+                        .message(" '%s' selected options not in the system for element %s ")
+                        .build(),
                 ValueTypeValidationFunction.builder().valueType(ValueType.OrganisationUnit)
-                        .function(v -> orgUnitRepository.findByUid(v.toString()).isEmpty())
+                        .predicate(v -> orgUnitRepository.findByUid(v.toString().trim()).isEmpty())
                         .message(" '%s' is not true (true-only type) for element %s ")
                         .build());
-
-
     }
 
-    @Transactional(readOnly = true)
-    public String validateValueType(FormDataElementConf elementConf, Object value) {
 
-        ValueType valueType = Optional.ofNullable(elementConf)
-                .orElseThrow(() -> new IllegalArgumentException("tracked entity element is required"))
-                .getType();
-
-
-        ValueTypeValidationFunction function = valueTypeValidationFunctions.stream()
-                .filter(f -> f.getValueType() == valueType)
-                .filter(f -> f.getFunction().apply(value)).findFirst().orElse(null);
-
-        return Optional.ofNullable(function)
-                .map(f -> VALUE_STRING +
-                        String.format(f.getMessage(), StringUtils.substring(value.toString(), 0, 30),
-                                elementConf.getId()))
-                .orElse(null);
+    public Optional<String> validateValueType(FormDataElementConf elementConf, Object value) {
+        ValueType type = elementConf.getType();
+        for (ValueTypeValidationFunction f : validators) {
+            if (f.getValueType() != type) continue;
+            if (f.getPredicate().test(value)) {
+                String snippet = value == null ? "null" : StringUtils.substring(value.toString(), 0, 200);
+                return Optional.of(String.format(f.getMessage(), snippet, elementConf.getId()));
+            }
+        }
+        return Optional.empty();
     }
 }
