@@ -4,21 +4,19 @@ import org.nmcpye.datarun.jpa.etl.dto.RepeatInstance;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
-import org.springframework.jdbc.core.namedparam.SqlParameterSourceUtils;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * @author Hamza Assada 13/08/2025 (7amza.it@gmail.com)
  */
-@SuppressWarnings("ConcatenationWithEmptyString")
 @Repository
+@SuppressWarnings("ConcatenationWithEmptyString")
 public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -28,8 +26,8 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
     }
 
     private static final String UPSERT_SQL = ""
-        + "INSERT INTO repeat_instance (id, submission_id, repeat_path, repeat_index, " +
-        "client_updated_at, created_date, last_modified_date, created_by, last_modified_by, deleted_at) "
+        + "INSERT INTO repeat_instance (id, submission_id, repeat_path, repeat_index, "
+        + "client_updated_at, created_date, last_modified_date, created_by, last_modified_by, deleted_at) "
         + "VALUES (:id, :submission, :repeatPath, :repeatIndex, :clientUpdatedAt, :createdDate, :lastModifiedDate, :createdBy, :lastModifiedBy, :deletedAt) "
         + "ON CONFLICT (id) DO UPDATE SET "
         + "  submission_id = EXCLUDED.submission_id, "
@@ -45,54 +43,44 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
         Objects.requireNonNull(repeatInstance, "repeatInstance");
         if (repeatInstance.getCreatedDate() == null) repeatInstance.setCreatedDate(Instant.now());
         if (repeatInstance.getLastModifiedDate() == null) repeatInstance.setLastModifiedDate(Instant.now());
-        MapSqlParameterSource params = new MapSqlParameterSource()
-            .addValue("id", repeatInstance.getId())
-            .addValue("submission", repeatInstance.getSubmission())
-            .addValue("repeatPath", repeatInstance.getRepeatPath())
-            .addValue("repeatIndex", repeatInstance.getRepeatIndex())
-            .addValue("clientUpdatedAt", repeatInstance.getClientUpdatedAt())
-            .addValue("createdDate", repeatInstance.getCreatedDate())
-            .addValue("lastModifiedDate", repeatInstance.getLastModifiedDate())
-            .addValue("createdBy", repeatInstance.getCreatedBy())
-            .addValue("lastModifiedBy", repeatInstance.getLastModifiedBy())
-            .addValue("deletedAt", null);
 
-        // Ensure created/last dates exist
-        if (repeatInstance.getLastModifiedDate() == null) {
-            params.addValue("lastModifiedDate", new Date());
-        }
-        if (repeatInstance.getCreatedDate() == null) {
-            params.addValue("createdDate", new Date());
-        }
-
+        MapSqlParameterSource params = toParamSource(repeatInstance);
         jdbc.update(UPSERT_SQL, params);
     }
 
     @Override
     public void upsertRepeatInstancesBatch(List<RepeatInstance> batch) {
         if (batch == null || batch.isEmpty()) return;
-        // ensure created/last dates are present
-        List<SqlParameterSource> singleBatch = new ArrayList<>();
-        batch.forEach(ri -> {
+
+        // Ensure timestamps exist and build parameter sources
+        List<MapSqlParameterSource> paramsList = new ArrayList<>(batch.size());
+        for (RepeatInstance ri : batch) {
             if (ri.getCreatedDate() == null) ri.setCreatedDate(Instant.now());
             if (ri.getLastModifiedDate() == null) ri.setLastModifiedDate(Instant.now());
-            // Create a MapSqlParameterSource for the current row
-            MapSqlParameterSource params = new MapSqlParameterSource()
-                .addValue("id", ri.getId())
-                .addValue("submission", ri.getSubmission())
-                .addValue("repeatPath", ri.getRepeatPath())
-                .addValue("repeatIndex", ri.getRepeatIndex())
-                .addValue("clientUpdatedAt", Timestamp.from(ri.getClientUpdatedAt() != null ? ri.getClientUpdatedAt() : Instant.now()))
-                .addValue("createdDate", Timestamp.from(ri.getCreatedDate()))
-                .addValue("lastModifiedDate", Timestamp.from(ri.getLastModifiedDate()))
-                .addValue("createdBy", ri.getCreatedBy())
-                .addValue("lastModifiedBy", ri.getLastModifiedBy())
-                .addValue("deletedAt", null);
-            singleBatch.add(params);
-        });
+            paramsList.add(toParamSource(ri));
+        }
 
-        // Use BeanPropertySqlParameterSource batch
-        jdbc.batchUpdate(UPSERT_SQL, SqlParameterSourceUtils.createBatch(singleBatch));
+        SqlParameterSource[] batchParams = paramsList.toArray(new SqlParameterSource[0]);
+        jdbc.batchUpdate(UPSERT_SQL, batchParams);
+    }
+
+    private MapSqlParameterSource toParamSource(RepeatInstance ri) {
+        MapSqlParameterSource p = new MapSqlParameterSource();
+        p.addValue("id", ri.getId());
+        p.addValue("submission", ri.getSubmission());
+        p.addValue("repeatPath", ri.getRepeatPath());
+        p.addValue("repeatIndex", ri.getRepeatIndex());
+        if (ri.getClientUpdatedAt() != null) {
+            p.addValue("clientUpdatedAt", Timestamp.from(ri.getClientUpdatedAt()));
+        } else {
+            p.addValue("clientUpdatedAt", null);
+        }
+        p.addValue("createdDate", ri.getCreatedDate() != null ? Timestamp.from(ri.getCreatedDate()) : Timestamp.from(Instant.now()));
+        p.addValue("lastModifiedDate", ri.getLastModifiedDate() != null ? Timestamp.from(ri.getLastModifiedDate()) : Timestamp.from(Instant.now()));
+        p.addValue("createdBy", ri.getCreatedBy());
+        p.addValue("lastModifiedBy", ri.getLastModifiedBy());
+        p.addValue("deletedAt", ri.getDeletedAt() != null ? Timestamp.from(ri.getDeletedAt()) : null);
+        return p;
     }
 
     private static final String FIND_ACTIVE_UIDS_SQL = ""
@@ -119,5 +107,14 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
             .addValue("repeatPath", repeatPath)
             .addValue("ids", repeatUids);
         jdbc.update(MARK_DELETED_SQL_BASE, params);
+    }
+
+    /**
+     * Convenience: mark all repeat instances for a submission deleted (used for soft-delete cascade).
+     */
+    @Override
+    public void markRepeatInstancesDeletedBySubmission(String submissionId) {
+        MapSqlParameterSource params = new MapSqlParameterSource().addValue("submission", submissionId);
+        jdbc.update("UPDATE repeat_instance SET deleted_at = now(), last_modified_date = now() WHERE submission_id = :submission AND deleted_at IS NULL", params);
     }
 }

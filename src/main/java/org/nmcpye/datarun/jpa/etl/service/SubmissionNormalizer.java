@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.jpa.etl.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
@@ -21,22 +23,28 @@ import java.util.Objects;
  * @author Hamza Assada 13/08/2025 (7amza.it@gmail.com)
  */
 @SuppressWarnings("unused")
-public class SubmissionNormalizer {
+public class SubmissionNormalizer implements DataNormalizer {
 
     private final TemplateElementMap elementMap;
     private final OptionService optionService;
-    /**
-     * config: true->generate server-side, false->throw
-     */
+    private final ObjectMapper objectMapper;
     private final boolean generateMissingRepeatUids;
 
-    public SubmissionNormalizer(OptionService optionService, TemplateElementMap elementMap, boolean generateMissingRepeatUids) {
+    public SubmissionNormalizer(OptionService optionService,
+                                TemplateElementMap elementMap,
+                                ObjectMapper objectMapper, boolean generateMissingRepeatUids) {
         this.elementMap = elementMap;
         this.optionService = optionService;
+        this.objectMapper = objectMapper;
         this.generateMissingRepeatUids = generateMissingRepeatUids;
     }
 
+    @Override
     public NormalizedSubmission normalize(DataFormSubmission submission) {
+        Object formData = submission.getFormData();
+        Map<String, Object> map = objectMapper.convertValue(formData, new TypeReference<Map<String, Object>>() {
+        });
+
         final var currentUser = SecurityUtils.getCurrentUserDetailsOrNull();
         final NormalizedSubmission ns = new NormalizedSubmission(
             submission.getUid(),
@@ -44,14 +52,14 @@ public class SubmissionNormalizer {
             submission.getAssignment());
 
         // walk root
-        extractNodeHandleMultiStrategy(submission.getFormData(), /*currentPath*/ null,
+        extractNode(/*submission.getFormData()*/ map, /*currentPath*/ null,
             ns, submission, /*repeatId*/ null, /*repeatIndex*/ null, /*categoryId*/ null);
 
         return ns;
     }
 
     @SuppressWarnings("unchecked")
-    private void extractNodeHandleMultiStrategy(
+    private void extractNode(
         Map<String, Object> node,
         String currentPath,
         NormalizedSubmission ns,
@@ -69,11 +77,9 @@ public class SubmissionNormalizer {
 
             AbstractElement element = elementMap.getElementPathMapCache().get(childPath);
             if (element == null) {
-                // Not part of template -> skip
                 continue;
             }
 
-            // Repeatable section
             if (element instanceof FormSectionConf &&
                 Boolean.TRUE.equals(((FormSectionConf) element).getRepeatable()) &&
                 rawValue instanceof List) {
@@ -101,6 +107,7 @@ public class SubmissionNormalizer {
                         .clientUpdatedAt(submission.getFinishedEntryTime())
                         .createdDate(submission.getCreatedDate())
                         .lastModifiedDate(submission.getLastModifiedDate())
+                        // temporarily string for the test to work, because user info comes from the spring contexts,
                         .createdBy("SecurityUtils.getCurrentUserLoginOrThrow()")
                         .lastModifiedBy("SecurityUtils.getCurrentUserLoginOrThrow()")
                         .build();
@@ -108,78 +115,78 @@ public class SubmissionNormalizer {
                     ns.addRepeatInstance(ri);
                     ns.addIncomingUid(childPath, repeatId);
 
-                    // extract category for this repeat if configured
                     String categoryValue = extractCategoryIdForItem(item, childPath);
 
-                    // Recurse into this repeat item with repeatId context
-                    extractNodeHandleMultiStrategy(item, childPath, ns, submission, repeatId,idx,categoryValue);
+                    extractNode(item, childPath, ns, submission, repeatId, idx, categoryValue);
                     idx++;
                 }
             } else if (rawValue instanceof Map) {
-                // nested non-repeat
-                extractNodeHandleMultiStrategy((Map<String, Object>) rawValue, childPath, ns, submission,
+                extractNode((Map<String, Object>) rawValue, childPath, ns, submission,
                     currentRepeatId, currentRepeatIndex, currentCategoryId);
             } else if (rawValue instanceof List<?> list && element instanceof FormDataElementConf field) {
-                // list-of-primitives (multi-select). Must emit one value row per entry,
-                // and record incoming identities (optionId OR valueText).
                 String elementId = field.getId();
                 String optionSetId = field.getOptionSet(); // may be null
 
-                // If the list is explicitly empty, record presence as empty (so persister can clear stored selections)
                 if (list.isEmpty()) {
                     ns.markMultiSelectExplicitlyEmpty(currentRepeatId, elementId);
                     continue;
                 }
 
-                // Convert items to normalized codes (strings), trim them
+                // Normalize codes
                 List<String> codes = list.stream()
                     .filter(Objects::nonNull)
                     .map(Object::toString)
                     .map(String::trim)
                     .toList();
 
-                // Validate & map codes -> optionId using OptionService (throws InvalidOptionCodesException if missing)
+                // Map codes -> option ids (throws InvalidOptionCodesException if any missing)
                 Map<String, String> codeToOptionId = optionService.validateAndMapOptionCodes(codes, optionSetId);
 
-                // For each code, create a SubmissionValueRow with optionId set (use optionId as identity)
                 for (String code : codes) {
-                    String optionId = codeToOptionId.get(code); // should be present, otherwise service would throw
+                    String optionId = codeToOptionId.get(code);
 
                     SubmissionValueRow row = SubmissionValueRow.builder()
                         .element(elementId)
                         .submission(ns.getSubmissionId())
-                        .repeatInstance(currentRepeatId) // see note below
+                        .repeatInstance(currentRepeatId)
                         .category(currentCategoryId)
                         .assignment(ns.getAssignmentId())
                         .template(ns.getTemplateId())
-                        .option(optionId)
-                        .lastModifiedDate(submission.getLastModifiedDate())
-                        .createdDate(submission.getLastModifiedDate())
+                        .option(optionId)           // option id is canonical identity for multi-select
+                        .valueText(code)            // keep the original code/text as denormalized label (optional)
+                        .createdDate(submission.getLastModifiedDate() == null ? submission.getCreatedDate() : submission.getLastModifiedDate())
+                        .lastModifiedDate(submission.getLastModifiedDate() == null ? submission.getCreatedDate() : submission.getLastModifiedDate())
                         .build();
 
-                    row.setValue(code); // optionally keep label, but we prefer optionId
-
                     ns.addValueRow(row);
-
-                    // record selection identity used for mark-and-sweep
                     ns.addMultiSelectIdentity(currentRepeatId, elementId, optionId);
                 }
             } else {
-                // primitive: single value (text/num/bool) -> store single row
+                // --- primitive (single-value e.g text / numeric / boolean) branch ---
                 String elementId = resolveElementId(element);
+
                 SubmissionValueRow row = SubmissionValueRow.builder()
                     .element(elementId)
                     .submission(ns.getSubmissionId())
-                    .repeatInstance(currentRepeatId) // see note below
+                    .repeatInstance(currentRepeatId)
                     .category(currentCategoryId)
                     .assignment(ns.getAssignmentId())
                     .template(ns.getTemplateId())
-//                    .deletedAt(submission.getDeletedAt())
-                    .lastModifiedDate(submission.getLastModifiedDate())
-                    .createdDate(submission.getLastModifiedDate())
+                    .createdDate(submission.getLastModifiedDate() == null ? submission.getCreatedDate() : submission.getLastModifiedDate())
+                    .lastModifiedDate(submission.getLastModifiedDate() == null ? submission.getCreatedDate() : submission.getLastModifiedDate())
                     .build();
 
-                row.setValue(rawValue);
+                // set typed values as best-effort: prefer to store primitive as valueText if not numeric/bool
+                if (rawValue == null) {
+                    row.setValueText(null);
+                } else if (rawValue instanceof Number) {
+                    row.setValueNumber(new java.math.BigDecimal(rawValue.toString()));
+                } else if (rawValue instanceof Boolean) {
+                    row.setValueBoolean((Boolean) rawValue);
+                } else {
+                    // fallback to string representation
+                    row.setValueText(rawValue.toString());
+                }
 
                 ns.addValueRow(row);
             }
@@ -199,102 +206,6 @@ public class SubmissionNormalizer {
         return val != null ? val.toString() : null;
     }
 
-    @SuppressWarnings("unchecked")
-    private void extractNode(
-        Map<String, Object> node,
-        String currentPath,
-        NormalizedSubmission ns,
-        DataFormSubmission submission,
-        String currentRepeatId,
-        Long currentRepeatIndex,
-        String currentCategoryId) {
-
-        if (node == null) return;
-
-        for (Map.Entry<String, Object> entry : node.entrySet()) {
-            String key = entry.getKey();
-            Object rawValue = entry.getValue();
-            String childPath = (currentPath == null || currentPath.isEmpty()) ? key : currentPath + "." + key;
-
-            AbstractElement element = elementMap.getElementPathMapCache().get(childPath);
-
-            if (element == null) {
-                // not part of template -> skip
-                continue;
-            }
-
-            // repeatable section
-            if (element instanceof FormSectionConf sectionConf &&
-                Boolean.TRUE.equals(sectionConf.getRepeatable()) &&
-                rawValue instanceof List) {
-
-                List<Map<String, Object>> items = (List<Map<String, Object>>) rawValue;
-                long idx = 0L;
-                for (Map<String, Object> item : items) {
-                    Object uidObj = item.get("_uid");
-                    String repeatUid = uidObj != null ? uidObj.toString() : null;
-
-                    if (repeatUid == null) {
-                        if (generateMissingRepeatUids) {
-                            repeatUid = CodeGenerator.ULIDGenerator.nextString();
-
-                            // optionally put it back into item for persisting it back to client later
-                            item.put("_uid", repeatUid);
-                        } else {
-                            throw new MissingRepeatUidException(List.of(new MissingRepeatUidException.MissingRepeatUid(childPath, (int) idx)));
-                        }
-                    }
-
-                    // create RepeatInstance candidate (clientUpdatedDate is read from submission)
-                    RepeatInstance ri = RepeatInstance.builder()
-                        .id(repeatUid)
-                        .submission(ns.getSubmissionId())
-                        .repeatPath(childPath)
-                        .repeatIndex(idx)
-                        .createdBy(submission.getCreatedBy())
-                        .lastModifiedBy(submission.getLastModifiedBy())
-                        .clientUpdatedAt(submission.getFinishedEntryTime())
-                        .lastModifiedDate(submission.getLastModifiedDate())
-                        .createdDate(submission.getLastModifiedDate())
-                        .build();
-                    ns.addRepeatInstance(ri);
-                    ns.addIncomingUid(childPath, repeatUid);
-
-                    // extract category id (if configured)
-                    String categoryId = extractCategoryIdForItem(item, childPath);
-
-                    // recurse inside repeat item
-                    extractNode(item, childPath, ns, submission, repeatUid, idx, categoryId);
-                    idx++;
-                }
-            } else if (rawValue instanceof Map) {
-                // nested non-repeat
-                extractNode((Map<String, Object>) rawValue, childPath, ns, submission, currentRepeatId, currentRepeatIndex, currentCategoryId);
-            } else {
-                // primitive: convert to SubmissionValueRow builder
-                String elementId = resolveElementId(element);
-                SubmissionValueRow row = SubmissionValueRow.builder()
-                    .element(elementId)
-                    .submission(ns.getSubmissionId())
-                    .repeatInstance(currentRepeatId) // see note below
-                    .category(currentCategoryId)
-                    .assignment(ns.getAssignmentId())
-                    .template(ns.getTemplateId())
-                    .lastModifiedDate(submission.getLastModifiedDate())
-                    .createdDate(submission.getLastModifiedDate())
-                    .build();
-
-                row.setValue(rawValue);
-                // Note: we set repeatId by looking at context: the extractor passes currentRepeatIndex and also
-                // when recursing into a repeatable item we have added the repeatInstance and added its uid into ns.incomingRepeatUids.
-                // To avoid complex "context stack", we passed the repeatId via a slightly different mechanism above: the recursion uses
-                // item context; in this implementation we should pass the repeatUid explicitly instead of repeatIndex.
-
-                ns.addValueRow(row);
-            }
-        }
-    }
-
     private String resolveElementId(AbstractElement element) {
         if (element instanceof FormDataElementConf) {
             return element.getId();
@@ -304,8 +215,5 @@ public class SubmissionNormalizer {
             throw new IllegalStateException("Unknown element type: " + element.getClass());
         }
     }
-
-
-
 }
 

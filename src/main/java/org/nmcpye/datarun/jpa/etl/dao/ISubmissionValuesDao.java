@@ -34,4 +34,6 @@ public interface ISubmissionValuesDao {
 
     // existing method kept
     void markValuesDeletedForRepeatUids(String submissionId, List<String> repeatUids);
+
+    void markValuesDeletedForSubmission(String submissionId);
 }

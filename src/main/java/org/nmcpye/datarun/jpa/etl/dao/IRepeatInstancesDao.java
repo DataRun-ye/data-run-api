@@ -12,4 +12,5 @@ public interface IRepeatInstancesDao {
     void upsertRepeatInstancesBatch(List<RepeatInstance> batch); // new
     List<String> findActiveRepeatUids(String submissionId, String repeatPath);
     void markRepeatInstancesDeleted(String submissionId, String repeatPath, List<String> repeatUids);
+    void markRepeatInstancesDeletedBySubmission(String submissionId);
 }
