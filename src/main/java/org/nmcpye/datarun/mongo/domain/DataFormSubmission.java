@@ -45,7 +45,6 @@ public class DataFormSubmission extends MongoSoftDeleteObject {
     @NotNull
     @Indexed(name = "submission_form_idx")
     private String form;
-    //    @NotNull
     @Field("formVersion")
     @Indexed(name = "submission_form_version_uid_idx")
     private String formVersion;
@@ -86,6 +85,8 @@ public class DataFormSubmission extends MongoSoftDeleteObject {
     private Instant finishedEntryTime;
     private Map<String, Object> formData = new LinkedHashMap<>();
 
+    // alias for clarity in ETL code
+    public String instanceId() { return uid; }
 //    private JsonNode dataRow;
     /**
      * Populates the form data attributes with additional metadata.

@@ -22,9 +22,10 @@ public abstract class AbstractElement implements ElementInterface {
     private String code;
     @Size(max = 2000)
     private String description;
+    private Integer order;
     private Map<String, String> label;
     private List<DataFieldRule> rules = new ArrayList<>();
-    private Integer order;
+    private Map<String, Object> properties;
 
     @Override
     public AbstractElement path(String path) {

@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.jpa.auditing.repository;
 
 import org.nmcpye.datarun.jpa.auditing.EntityAuditEvent;
-import org.nmcpye.datarun.jpa.common.BaseJpaIdentifiableRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -14,7 +14,8 @@ import java.util.List;
  * Spring Data JPA repository for the EntityAuditEvent entity.
  */
 @Repository
-public interface EntityAuditEventRepository extends BaseJpaIdentifiableRepository<EntityAuditEvent, Long> {
+public interface EntityAuditEventRepository
+    extends JpaRepository<EntityAuditEvent, Long> {
     List<EntityAuditEvent> findAllByEntityTypeAndEntityId(String entityType, String entityId);
 
     @Query("SELECT max(a.commitVersion) FROM EntityAuditEvent a where a.entityType = :type and a.entityId = :entityId")

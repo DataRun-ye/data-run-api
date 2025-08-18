@@ -43,7 +43,7 @@ public class DefaultUserGroupService extends DefaultJpaIdentifiableService<UserG
     }
 
     @Override
-    public UserGroup saveWithRelations(UserGroup userGroup) {
+    public void preSaveHook(UserGroup userGroup) {
         Set<UserGroup> managedGroups = userGroup.getManagedGroups();
         if (!managedGroups.isEmpty()) {
             Set<UserGroup> teamsManaged = managedGroups.stream().map(this::findUserGroup).collect(Collectors.toSet());
@@ -54,7 +54,6 @@ public class DefaultUserGroupService extends DefaultJpaIdentifiableService<UserG
         userGroup.setUsers(users);
 
         this.clearGroupCaches(userGroup);
-        return save(userGroup);
     }
 
     private UserGroup findUserGroup(UserGroup userGroup) {
@@ -70,26 +69,6 @@ public class DefaultUserGroupService extends DefaultJpaIdentifiableService<UserG
             return new PropertyNotFoundException("UserGroup not found: " + user);
         });
     }
-
-//    @Override
-//    public Page<UserGroup> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
-//        Specification<UserGroup> spec = canRead();
-//        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
-//            spec = spec.and(UserGroupSpecifications.isEnabled());
-//        }
-//
-//        return repository.fetchBagRelationships(repository.findAll(spec, pageable));
-//    }
-//
-//    @Override
-//    public List<UserGroup> findAllByUser(QueryRequest queryRequest) {
-//        Specification<UserGroup> spec = canRead();
-//        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
-//            spec = spec.and(UserGroupSpecifications.isEnabled());
-//        }
-//
-//        return repository.fetchBagRelationships(repository.findAll(spec));
-//    }
 
     @Override
     public Page<UserGroup> findAllManagedByUser(Pageable pageable) {

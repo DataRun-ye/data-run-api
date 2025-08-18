@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.web.rest.postgres.optionset;
 
 import org.nmcpye.datarun.common.IdScheme;
+import org.nmcpye.datarun.common.JpaIdentifiableOperationVm;
 import org.nmcpye.datarun.jpa.option.OptionSet;
 import org.nmcpye.datarun.jpa.option.repository.OptionRepository;
 import org.nmcpye.datarun.jpa.option.repository.OptionSetRepository;
@@ -8,12 +9,16 @@ import org.nmcpye.datarun.jpa.option.service.OptionSetService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
+import org.springframework.beans.BeanUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.nmcpye.datarun.web.rest.postgres.optionset.OptionSetResource.CUSTOM;
 import static org.nmcpye.datarun.web.rest.postgres.optionset.OptionSetResource.V1;
@@ -25,7 +30,7 @@ import static org.nmcpye.datarun.web.rest.postgres.optionset.OptionSetResource.V
 @RequestMapping(value = {CUSTOM, V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class OptionSetResource
-        extends JpaBaseResource<OptionSet> {
+    extends JpaBaseResource<OptionSet> {
 
     protected static final String NAME = "/optionSets";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
@@ -45,20 +50,48 @@ public class OptionSetResource
      * to maintain references indexing. if option set exists in db, looks up payload options by their
      * un-updatable codes and set their ids to existing id or null if new options
      *
-     * @param payLoadEntity option set
+     * @param payLoadEntities option set
      * @return processed option set
      */
     @Override
-    protected OptionSet preProcess(OptionSet payLoadEntity) {
-        Optional<OptionSet> optionalOptionSet = identifiableObjectService.findByIdOrUid(payLoadEntity);
-        if (optionalOptionSet.isPresent()) {
-            Map<String, String> codeIdMap = optionalOptionSet.get().getOptionCodePropertyMap(IdScheme.ID);
-            final var options = payLoadEntity.getOptions().stream().peek((option) -> {
-                option.setId(codeIdMap.get(option.getCode()));
-            }).toList();
-            payLoadEntity.setOptions(options);
+    protected List<OptionSet> preProcess(List<OptionSet> payLoadEntities) {
+        List<String> incomingKeys = payLoadEntities.stream()
+            .map(OptionSet::getUid)
+            .collect(Collectors.toList());
+
+        List<OptionSet> existingEntities = optionSetRepository.findAllByUidIn(incomingKeys);
+        JpaIdentifiableOperationVm<OptionSet> operationVm = split(payLoadEntities, existingEntities);
+        return Stream.concat(operationVm.getForUpdateEntities().stream(),
+            operationVm.getForCreatEntities().stream()).toList();
+    }
+
+    JpaIdentifiableOperationVm<OptionSet> split(List<OptionSet> incomingEntities, List<OptionSet> existingEntities) {
+        Map<String, OptionSet> existingMap = existingEntities.stream()
+            .collect(Collectors.toMap(OptionSet::getUid, Function.identity()));
+        final var builder =
+            JpaIdentifiableOperationVm.<OptionSet>builder();
+        for (OptionSet incomingEntity : incomingEntities) {
+            if (existingMap.containsKey(incomingEntity.getUid())) {
+                // It's an update
+                OptionSet existing = existingMap.get(incomingEntity.getUid());
+                processOptions(incomingEntity, existing);
+                // Copy relevant data from incomingEntity to existing
+                BeanUtils.copyProperties(incomingEntity, existing, "id", "uid", "version"); // Use a utility to copy properties, skipping the ID
+                builder.forUpdateEntity(existing);
+            } else {
+                // It's a creation
+                builder.forCreatEntity(incomingEntity);
+            }
         }
-        return payLoadEntity;
+        return builder.build();
+    }
+
+    private void processOptions(OptionSet incomingEntity, OptionSet existing) {
+        Map<String, String> codeIdMap = existing.getOptionCodePropertyMap(IdScheme.ID);
+        final var options = incomingEntity.getOptions().stream().peek((option) -> {
+            option.setId(codeIdMap.get(option.getCode()));
+        }).toList();
+        incomingEntity.setOptions(options);
     }
 
     @Override

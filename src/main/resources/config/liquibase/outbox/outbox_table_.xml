@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <!-- ===================================================================
+         4) Create outbox_event table
+         =================================================================== -->
+    <changeSet id="20250815-04-create-outbox-event" author="hamza">
+        <createTable tableName="outbox_event">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="aggregate_type" type="varchar(128)"/>
+            <column name="aggregate_id" type="varchar(64)"/>
+            <column name="event_type" type="varchar(128)"/>
+            <column name="payload" type="jsonb"/>
+            <column name="status" type="varchar(32)" defaultValue="PENDING"/>
+            <column name="attempts" type="integer" defaultValueNumeric="0"/>
+            <column name="last_error" type="text"/>
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="now()"/>
+            <column name="available_at" type="timestamp with time zone" defaultValueComputed="now()"/>
+            <column name="processed_at" type="timestamp with time zone"/>
+        </createTable>
+
+        <createIndex tableName="outbox_event" indexName="idx_outbox_status_available">
+            <column name="status"/>
+            <column name="available_at"/>
+        </createIndex>
+
+        <createIndex tableName="outbox_event" indexName="idx_outbox_aggregate">
+            <column name="aggregate_type"/>
+            <column name="aggregate_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

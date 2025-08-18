@@ -50,6 +50,11 @@ public interface OptionGroupRepository
         return Optional.empty();
     }
 
+    @Override
+    default List<OptionGroup> findDistinctByIdInOrUidIn(Collection<String> ids, Collection<String> uids){
+        return Collections.emptyList();
+    }
+
     default List<OptionGroup> findAllByUidIn(Collection<String> uids) {
         return Collections.emptyList();
     }

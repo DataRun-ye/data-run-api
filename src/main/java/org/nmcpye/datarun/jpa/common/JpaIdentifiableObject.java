@@ -49,13 +49,13 @@ public abstract class JpaIdentifiableObject
     @Column(name = "created_by", nullable = false, length = 50, updatable = false)
     protected String createdBy;
 
-    @CreatedDate
-    @Column(name = "created_date", updatable = false)
-    protected Instant createdDate = Instant.now();
-
     @LastModifiedBy
     @Column(name = "last_modified_by", length = 50)
     protected String lastModifiedBy;
+
+    @CreatedDate
+    @Column(name = "created_date", updatable = false)
+    protected Instant createdDate = Instant.now();
 
     @LastModifiedDate
     @Column(name = "last_modified_date")
@@ -80,7 +80,7 @@ public abstract class JpaIdentifiableObject
     @PrePersist
     public void prePersist() {
         if (this.id == null) {
-            setId(CodeGenerator.ULIDGenerator.nextString());
+            setId(CodeGenerator.nextUlid());
         }
     }
 

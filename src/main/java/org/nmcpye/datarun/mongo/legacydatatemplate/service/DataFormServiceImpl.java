@@ -86,11 +86,10 @@ public class DataFormServiceImpl
 //    }
 
     @Override
-    public DataForm saveWithRelations(DataForm dataForm) {
+    public void preSaveHook(DataForm dataForm) {
         processFields(dataForm.getFields(), "", dataForm);
         dataForm.updateFlattenedFields();
 //        dataForm.setVersion(createOrUpdateVersion(dataForm) + 1);
-        return save(dataForm);
     }
 
     @Override

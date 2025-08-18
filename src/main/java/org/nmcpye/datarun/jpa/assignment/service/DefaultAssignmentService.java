@@ -7,6 +7,7 @@ import org.nmcpye.datarun.jpa.assignment.dto.AssignmentWithAccessDto;
 import org.nmcpye.datarun.jpa.assignment.mapper.AssignmentWithAccessMapper;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.common.DefaultJpaSoftDeleteService;
+import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.jpa.team.Team;
@@ -32,6 +33,7 @@ public class DefaultAssignmentService
     implements AssignmentService {
 
     private final AssignmentRepository repository;
+    private final DataSubmissionRepository submissionRepository;
     private final TeamRepository teamRepository;
     private final OrgUnitRepository orgUnitRepository;
     private final AssignmentMaintenanceService maintenanceService;
@@ -43,17 +45,18 @@ public class DefaultAssignmentService
                                     UserAccessService userAccessService,
                                     CacheManager cacheManager,
                                     AssignmentMaintenanceService maintenanceService,
-                                    AssignmentWithAccessMapper assignmentMapper, AssignmentRepository assignmentRepository) {
+                                    AssignmentWithAccessMapper assignmentMapper, AssignmentRepository assignmentRepository, DataSubmissionRepository submissionRepository) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.teamRepository = teamRepository;
         this.orgUnitRepository = orgUnitRepository;
         this.maintenanceService = maintenanceService;
         this.assignmentMapper = assignmentMapper;
+        this.submissionRepository = submissionRepository;
     }
 
     @Override
-    public Assignment saveWithRelations(Assignment object) {
+    public void preSaveHook(Assignment object) {
 
         Team team = null;
         OrgUnit orgUnit = null;
@@ -74,8 +77,6 @@ public class DefaultAssignmentService
 
         object.setTeam(team);
         object.setOrgUnit(orgUnit);
-
-        return save(object);
     }
 
     private Assignment findParent(Assignment parent) {
@@ -83,43 +84,16 @@ public class DefaultAssignmentService
     }
 
     private Team findTeam(Team team) {
-        return Optional.ofNullable(team.getId()).flatMap(teamRepository::findById).or(() -> Optional.ofNullable(team.getUid()).flatMap(teamRepository::findByUid)).or(() -> Optional.ofNullable(team.getCode()).flatMap((code) -> teamRepository.findByCodeAndActivityUid(code, team.getActivity().getUid()))).orElseThrow(() -> new PropertyNotFoundException("Team not found: " + team));
+        return Optional.ofNullable(team.getId()).flatMap(teamRepository::findById)
+            .or(() -> Optional.ofNullable(team.getUid())
+                .flatMap(teamRepository::findByUid))
+            .or(() -> Optional.ofNullable(team.getCode())
+                .flatMap((code) -> teamRepository.findByCodeAndActivityUid(code, team.getActivity().getUid()))).orElseThrow(() -> new PropertyNotFoundException("Team not found: " + team));
     }
 
     private OrgUnit findOrgUnit(OrgUnit orgUnit) {
         return Optional.ofNullable(orgUnit.getId()).flatMap(orgUnitRepository::findById).or(() -> Optional.ofNullable(orgUnit.getUid()).flatMap(orgUnitRepository::findByUid)).or(() -> Optional.ofNullable(orgUnit.getCode()).flatMap(orgUnitRepository::findByCode)).orElseThrow(() -> new PropertyNotFoundException("OrgUniy not found: " + orgUnit));
     }
-
-//    private Page<Assignment> findWithStatus(Page<Assignment> assignments) {
-//        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-//            assignments.forEach(assignment -> {
-//                assignmentHistoryRepository.findLastEntryByUid(assignment.getUid())
-//                    .flatMap(history -> history.getEntries()
-//                        .stream().max(Comparator
-//                            .comparing(AssignmentSubmissionHistory.HistoryEntry::getEntryDate)))
-//                    .ifPresentOrElse(lastEntry -> {
-//                        assignment.setStatus(lastEntry.getSubmissionStatus());
-//                        assignment.setLastEntryDate(lastEntry.getEntryDate());
-//                        assignment.setLastEntryBy(lastEntry.getSubmissionUser());
-//                    }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
-//            });
-//        } else {
-//            String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow();
-//            assignments.forEach(assignment -> {
-//                assignmentHistoryRepository.findLastEntryByUidAndUser(assignment.getUid(), currentUserLogin)
-//                    .flatMap(history -> history.getEntries()
-//                        .stream().max(Comparator
-//                            .comparing(AssignmentSubmissionHistory.HistoryEntry::getEntryDate)))
-//                    .ifPresentOrElse(lastEntry -> {
-//                        assignment.setStatus(lastEntry.getSubmissionStatus());
-//                        assignment.setLastEntryDate(lastEntry.getEntryDate());
-//                        assignment.setLastEntryBy(lastEntry.getSubmissionUser());
-//                    }, () -> assignment.setStatus(AssignmentStatus.NOT_STARTED));
-//            });
-//        }
-//        return assignments;
-//    }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -134,6 +108,24 @@ public class DefaultAssignmentService
             assignments.addAll(repository.findAllByPathContaining(uid));
         }
         return assignments;
+    }
+
+    @Override
+    public void updateStatusForSubmission(String submissionId) {
+        final var submission =
+            submissionRepository.findById(submissionId);
+
+        submission.ifPresent(dataSubmission ->
+            repository.findByUid(dataSubmission.getAssignment())
+                .ifPresent(assignment -> {
+                    assignment.setStatus(dataSubmission.getStatus());
+                    assignment.setLastSubmittedBy(dataSubmission.getLastModifiedBy());
+                    // * **`update`**: This method is for updating an entity that's
+                    // already managed by the persistence context.
+                    // The author claims this method is more performant than `merge`
+                    // because it doesn't involve the same checks.
+                    repository.update(assignment);
+                }));
     }
 
     /**

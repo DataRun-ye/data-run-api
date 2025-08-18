@@ -6,6 +6,8 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.etl.dao.IRepeatInstancesDao;
+import org.nmcpye.datarun.jpa.etl.dao.ISubmissionValuesDao;
 import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
 import org.nmcpye.datarun.mongo.common.DefaultMongoSoftDeleteService;
 import org.nmcpye.datarun.mongo.datastagesubmission.repository.DataFormSubmissionRepository;
@@ -46,6 +48,8 @@ public class DefaultDataFormSubmissionService
     private final SubmissionMaintenanceService maintenanceService;
     private final DataTemplateVersionRepository versionRepository;
     private final FormAccessService formAccessService;
+    private final ISubmissionValuesDao submissionValuesDao;
+    private final IRepeatInstancesDao repeatInstancesDao;
 
     public DefaultDataFormSubmissionService(
         DataFormSubmissionRepository repository,
@@ -55,7 +59,7 @@ public class DefaultDataFormSubmissionService
         SequenceGeneratorService sequenceGeneratorService,
         SubmissionMaintenanceService maintenanceService,
         DataTemplateVersionRepository versionRepository,
-        FormAccessService formAccessService) {
+        FormAccessService formAccessService, ISubmissionValuesDao submissionValuesDao, IRepeatInstancesDao repeatInstancesDao) {
         super(repository, cacheManager);
         this.repository = repository;
         this.submissionHistoryService = submissionHistoryService;
@@ -64,11 +68,13 @@ public class DefaultDataFormSubmissionService
         this.maintenanceService = maintenanceService;
         this.versionRepository = versionRepository;
         this.formAccessService = formAccessService;
+        this.submissionValuesDao = submissionValuesDao;
+        this.repeatInstancesDao = repeatInstancesDao;
     }
 
     @Transactional
     @Override
-    public DataFormSubmission saveWithRelations(DataFormSubmission submission) {
+    public DataFormSubmission save(DataFormSubmission submission) {
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
         if (user.getUsername().startsWith("test")) {
             log.info("Pass a Test user save request `{}` save", user.getUsername());
@@ -94,7 +100,7 @@ public class DefaultDataFormSubmissionService
                 }
             });
 
-        final var savedSubmission = repository.save(submission);
+        final var savedSubmission = super.save(submission);
 
         if (submission.getAssignment() != null) {
             addEntryToHistory(submission);
@@ -118,7 +124,8 @@ public class DefaultDataFormSubmissionService
             throw new IllegalQueryException(ErrorCode.E1112, submission.getTeam());
         }
 
-        findByVersionNoOrVersionUid(submission.getForm(), submission.getFormVersion(), submission.getVersion())
+        findByVersionNoOrVersionUid(submission.getForm(),
+            submission.getFormVersion(), submission.getVersion())
             .ifPresentOrElse((f) -> {
                 submission.setFormVersion(f.getUid());
             }, () -> {
@@ -145,6 +152,7 @@ public class DefaultDataFormSubmissionService
                     throw new IllegalQueryException(
                         new ErrorMessage(ErrorCode.E1106, "Assignment", submission.getAssignment()));
                 });
+
         submission
             .createSubmission()
             .checkAttributes();
@@ -205,5 +213,13 @@ public class DefaultDataFormSubmissionService
     @Scheduled(cron = "0 0 3 * * ?")
     public void findAndFixFormDataSerialNumbers() {
         maintenanceService.findAndFixFormDataSerialNumbers();
+    }
+
+    @Transactional
+    @Override
+    public void deleteByUid(String uid) {
+        super.deleteByUid(uid);
+        repeatInstancesDao.markRepeatInstancesDeletedBySubmission(uid);
+        submissionValuesDao.markValuesDeletedForSubmission(uid);
     }
 }

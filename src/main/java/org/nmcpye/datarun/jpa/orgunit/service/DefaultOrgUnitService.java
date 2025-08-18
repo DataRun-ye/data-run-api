@@ -32,14 +32,12 @@ public class DefaultOrgUnitService extends DefaultJpaIdentifiableService<OrgUnit
 
 
     @Override
-    public OrgUnit saveWithRelations(OrgUnit object) {
+    public void preSaveHook(OrgUnit object) {
         OrgUnit parent = object.getParent();
         if (parent != null) {
             parent = findParent(parent);
             object.setParent(parent);
         }
-
-        return save(object);
     }
 
     private OrgUnit findParent(OrgUnit parent) {

@@ -39,10 +39,10 @@ public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObj
         return klass;
     }
 
-    @Override
-    public T saveWithRelations(T object) {
-        return save(object);
-    }
+//    @Override
+//    public T saveWithRelations(T object) {
+//        return save(object);
+//    }
 
     @Override
     public boolean existsByUid(String uid) {
@@ -60,24 +60,10 @@ public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObj
         findByUid(uid).ifPresent(repository::delete);
     }
 
-//    @Override
-//    public Optional<T> findById(ID id) {
-//        return repository.findById(id);
-//    }
-
-//    @Override
-//    public boolean existsById(ID uid) {
-//        return repository.existsById(uid);
-//    }
-
-//    @Override
-//    public void deleteById(ID uid) {
-//        findById(uid).ifPresent(repository::delete);
-//    }
-
     @Override
     public T save(T object) {
         log.debug("Request service to save {}:`{}`", getClazz().getSimpleName(), object.getId());
+        preSaveHook(object);
         return repository.save(object);
     }
 
@@ -93,8 +79,11 @@ public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObj
 
         object.setId(existingEntity.getId());
         object.setCreatedBy(existingEntity.getCreatedBy());
+
+        preSaveHook(object);
         /// update object, overwrite with updates
-        return saveWithRelations(object);
+//        return saveWithRelations(object);
+        return repository.save(object);
     }
 
     @Override
@@ -107,24 +96,4 @@ public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObj
             Objects.requireNonNull(cacheManager.getCache(name)).evict(key);
         }
     }
-
-//    @Override
-//    public Optional<T> findByIdOrUid(T entity) {
-//        return Optional.ofNullable(entity.getUid())
-//            .flatMap(repository::findByUid)
-//            .or(() -> Optional.ofNullable(entity.getId())
-//                .flatMap(repository::findById));
-//    }
-
-//    @Override
-//    public Optional<T> findByIdOrUid(String entity) {
-//        return Optional.ofNullable(entity)
-//            .flatMap(repository::findByUid);
-//    }
-
-//    @Override
-//    public Optional<T> findByIdOrUid(String entity) {
-//        return Optional.ofNullable(entity)
-//            .flatMap(repository::findByUid);
-//    }
 }

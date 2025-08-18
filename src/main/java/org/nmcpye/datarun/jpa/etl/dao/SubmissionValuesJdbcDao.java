@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.jpa.etl.dao;
 
-import org.nmcpye.datarun.jpa.etl.dto.SubmissionValueRow;
+import org.nmcpye.datarun.jpa.etl.dto.ElementDataValue;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
@@ -76,12 +76,12 @@ public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
         """;
 
     @Override
-    public void upsertSubmissionValue(SubmissionValueRow r) {
+    public void upsertSubmissionValue(ElementDataValue r) {
         upsertSubmissionValuesBatch(Collections.singletonList(r));
     }
 
     @Override
-    public void upsertSubmissionValuesBatch(List<SubmissionValueRow> rows) {
+    public void upsertSubmissionValuesBatch(List<ElementDataValue> rows) {
         if (rows == null || rows.isEmpty()) return;
 
         final Instant now = Instant.now();
@@ -90,7 +90,7 @@ public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
         List<MapSqlParameterSource> singleParams = new ArrayList<>();
         List<MapSqlParameterSource> multiParams = new ArrayList<>();
 
-        for (SubmissionValueRow r : rows) {
+        for (ElementDataValue r : rows) {
             if (r.getCreatedDate() == null) r.setCreatedDate(now);
             if (r.getLastModifiedDate() == null) r.setLastModifiedDate(now);
 

@@ -64,7 +64,7 @@ public class MetadataSubmissionServiceImpl
 
 
     @Override
-    public MetadataSubmission saveWithRelations(MetadataSubmission newSubmission) {
+    public void preSaveHook(MetadataSubmission newSubmission) {
         switch (newSubmission.getResourceType()) {
             case Team -> teamRepository.findByUid(newSubmission.getResourceId())
                 .ifPresentOrElse((a) -> newSubmission.setResourceId(a.getUid()),
@@ -97,11 +97,9 @@ public class MetadataSubmissionServiceImpl
             newSubmission.setSerialNumber(serialNumber);
         }
 
-        final MetadataSubmission dataFormSubmission = newSubmission
+        newSubmission
             .createSubmission()
             .populateFormDataAttributes();
-
-        return save(dataFormSubmission);
     }
 
     @Override

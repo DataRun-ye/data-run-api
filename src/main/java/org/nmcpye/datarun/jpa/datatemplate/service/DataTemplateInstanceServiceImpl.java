@@ -225,6 +225,34 @@ public class DataTemplateInstanceServiceImpl
     }
 
     @Override
+    public Optional<DataTemplateInstanceDto> findByTemplateAndVersion(String templateUid,
+                                                                      String versionUid) {
+        final var template = dataTemplateService.findByUid(templateUid).map(dataTemplateMapper::toDto);
+        final var version = templateVersionRepository.findByTemplateUidAndUid(templateUid, versionUid)
+            .map(versionMapper::toDto);
+
+        if (template.isEmpty() || version.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(dataTemplateMapper.toInstanceDto(template.get(), version.get()));
+    }
+
+    @Override
+    public Optional<DataTemplateInstanceDto> findByTemplateAndVersionNumber(String templateUid, Integer versionNumber) {
+        final var template = dataTemplateService.findByUid(templateUid).map(dataTemplateMapper::toDto);
+        final var version =
+            templateVersionRepository.findByTemplateUidAndVersionNumber(templateUid, versionNumber)
+            .map(versionMapper::toDto);
+
+        if (template.isEmpty() || version.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(dataTemplateMapper.toInstanceDto(template.get(), version.get()));
+    }
+
+    @Override
     public void delete(DataTemplateInstanceDto object) {
         deleteByUid(object.getUid());
     }

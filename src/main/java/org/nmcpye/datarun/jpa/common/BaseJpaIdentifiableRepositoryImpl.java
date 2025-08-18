@@ -42,7 +42,6 @@ public class BaseJpaIdentifiableRepositoryImpl<T, ID>
 
     @Override
     public boolean canSave(T object, CurrentUserDetails user) {
-        // TODO check canSave query
         return true;
     }
 

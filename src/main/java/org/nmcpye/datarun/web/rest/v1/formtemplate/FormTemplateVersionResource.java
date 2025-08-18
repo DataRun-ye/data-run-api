@@ -12,6 +12,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * REST controller for managing {@link DataTemplateVersion}.
  */
@@ -40,8 +42,9 @@ public class FormTemplateVersionResource extends MongoBaseResource<DataTemplateV
     }
 
     @Override
-    protected DataTemplateVersion preProcess(DataTemplateVersion payLoadEntity) {
-        return (DataTemplateVersion) formTemplateProcessor
-            .processMetadata(formTemplateProcessor.validate(payLoadEntity));
+    protected List<DataTemplateVersion> preProcess(List<DataTemplateVersion> payLoadEntities) {
+        return payLoadEntities.stream().map(e ->
+            (DataTemplateVersion) formTemplateProcessor
+                .processMetadata(formTemplateProcessor.validate(e))).toList();
     }
 }

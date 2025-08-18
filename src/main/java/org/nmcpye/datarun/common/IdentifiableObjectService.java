@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface IdentifiableObjectService<T extends IdentifiableObject<ID>, ID> {
     Class<T> getClazz();
 
-    T saveWithRelations(T object);
+//    T saveWithRelations(T object);
 
     boolean existsByUid(String uid);
 
@@ -52,5 +52,7 @@ public interface IdentifiableObjectService<T extends IdentifiableObject<ID>, ID>
     void delete(T object);
 
     Optional<T> findByIdOrUid(T entity);
+
     Optional<T> findByIdOrUid(String entity);
+    void preSaveHook(T object);
 }

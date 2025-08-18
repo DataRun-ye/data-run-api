@@ -53,7 +53,7 @@ public class RefreshToken {
     @PrePersist
     public void prePersist() {
         if (this.id == null) {
-            this.id = CodeGenerator.ULIDGenerator.nextString();
+            this.id = CodeGenerator.nextUlid();
         }
     }
 

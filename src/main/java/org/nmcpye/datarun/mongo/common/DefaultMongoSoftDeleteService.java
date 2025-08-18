@@ -35,7 +35,7 @@ public abstract class DefaultMongoSoftDeleteService<T extends MongoSoftDeleteObj
             object.setDeletedAt(null);
         }
 
-        return repository.save(object);
+        return super.save(object);
     }
 
     @Override
@@ -50,13 +50,7 @@ public abstract class DefaultMongoSoftDeleteService<T extends MongoSoftDeleteObj
 
     @Override
     public void delete(T object) {
-        log.debug("Request soft delete service to soft delete {}:`{}`", getClazz().getSimpleName(), object.getUid());
-        final var toMarkAsDeleted = findByUid(object.getUid()).orElseThrow(() ->
-            new IllegalQueryException(new ErrorMessage(ErrorCode.E1109,
-                object.getClass().getSimpleName(), object.getUid())));
-        toMarkAsDeleted.setDeleted(Boolean.TRUE);
-        toMarkAsDeleted.setDeletedAt(Instant.now());
-        save(toMarkAsDeleted);
+        deleteByUid(object.getUid());
     }
 
     @Override

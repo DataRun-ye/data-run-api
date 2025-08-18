@@ -15,13 +15,13 @@ import java.util.Objects;
 @Setter
 public class FormDataElementConf extends AbstractElement {
     private String id;
+
     @Field("type")
     private ValueType type;
     private String calculation;
     private Object defaultValue;
     private Boolean mandatory = Boolean.FALSE;
-    private Boolean mainField = Boolean.FALSE;
-    private Boolean readOnly = Boolean.FALSE;
+    private Boolean showInSummary = Boolean.FALSE;
     private String optionSet;
     private String choiceFilter;
     private ElementValidationRule validationRule;
@@ -36,7 +36,8 @@ public class FormDataElementConf extends AbstractElement {
     @Deprecated(since = "V7")
     Map<String, String> constraintMessage;
     private Boolean gs1Enabled;
-    private ScannedCodeProperties properties;
+
+    private ScannedCodeProperties scannedCodeProperties;
     /**
      * resourceType for ReferenceField type
      */
@@ -47,6 +48,14 @@ public class FormDataElementConf extends AbstractElement {
     private String resourceMetadataSchema;
     private ValueTypeRendering valueTypeRendering = ValueTypeRendering.DEFAULT;
     private AggregationType aggregationType = AggregationType.DEFAULT;
+
+    public Boolean isMultiSelect() {
+        return this.type.isOptionsType() ? this.type == ValueType.SelectMulti : null;
+    }
+
+    public Boolean getMainField() {
+        return showInSummary;
+    }
 
     @Override
     public FormDataElementConf path(String path) {

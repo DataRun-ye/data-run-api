@@ -167,9 +167,9 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
                 .setValidationMessage(errorRules.stream().findFirst().orElseThrow().getMessage());
             elementConf.setValidationRule(elementValidationRule);
         }
-        elementConf.setMainField(element.isMainField());
+        elementConf.setShowInSummary(element.isMainField());
         elementConf.setOrder(element.getOrder());
-        elementConf.setReadOnly(element.isReadOnly());
+//        elementConf.setReadOnly(element.isReadOnly());
 
         if (element instanceof OptionField field) {
             final var de = dataElementRepository.findByUid(dataElementUid).orElseThrow();
@@ -179,7 +179,7 @@ public class DataFormTemplateMigrationService /*implements CommandLineRunner*/ {
 
         if (element instanceof ScannedCodeField field) {
             elementConf.setGs1Enabled(field.getGs1Enabled());
-            elementConf.setProperties(field.getProperties());
+            elementConf.setScannedCodeProperties(field.getProperties());
         }
 
         if (element instanceof ReferenceField field) {

@@ -13,6 +13,7 @@ import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
 import org.nmcpye.datarun.jpa.dataelementgroupset.DataElementGroupSet;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
+import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.jpa.option.Option;
 import org.nmcpye.datarun.jpa.option.OptionGroup;
 import org.nmcpye.datarun.jpa.option.OptionGroupSet;
@@ -84,6 +85,7 @@ public class CacheConfiguration {
             createCache(cm, UserRepository.USER_GROUP_IDS_CACHE);
             createCache(cm, UserRepository.USER_ACTIVITY_IDS_CACHE);
             createCache(cm, UserRepository.USER_TEAM_FORM_ACCESS_CACHE);
+            createCache(cm, TemplateElementService.TEMPLATE_MAP_CACHE);
             createCache(cm, User.class.getName());
             createCache(cm, User.class.getName());
             createCache(cm, Authority.class.getName());

@@ -8,7 +8,7 @@ import java.util.Map;
  * @author Hamza Assada 27/05/2025 (7amza.it@gmail.com)
  */
 public interface ElementInterface extends Serializable {
-//    ID getId();
+    String getId();
 
     String getPath();
 
@@ -26,21 +26,7 @@ public interface ElementInterface extends Serializable {
 
     Integer getOrder();
 
-    void setPath(String path);
-
-    void setParent(String parent);
-
-    void setCode(String code);
-
-    void setName(String name);
-
-    void setDescription(String description);
-
-    void setLabel(Map<String, String> label);
-
-    void setRules(List<DataFieldRule> rules);
-
-    void setOrder(Integer order);
-
     ElementInterface path(String path);
+
+    Map<String, Object> getProperties();
 }

@@ -32,6 +32,8 @@ public class TemplateElementMap {
 
     private final Map<String, AbstractElement> elementPathMapCache;
 
+    private final Map<String, AbstractElement> elementNamePathMapCache;
+
     /**
      * elementId->path reverse map, for getting path by an elementId for retrieving categoryElement's path by its id
      */
@@ -60,6 +62,12 @@ public class TemplateElementMap {
             .filter(FormDataElementConf.class::isInstance)
             .map(FormDataElementConf.class::cast)
             .collect(Collectors.toMap(FormDataElementConf::getId, AbstractElement::getPath)));
+        this.elementNamePathMapCache = this.elementPathMapCache.entrySet().stream()
+            .collect(Collectors.toMap(
+                entry -> entry.getKey()
+                    .replaceFirst(entry.getValue()
+                        .getId(), entry.getValue().getName()),
+                Map.Entry::getValue));
 
     }
 

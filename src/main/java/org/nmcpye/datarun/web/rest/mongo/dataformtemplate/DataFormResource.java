@@ -1,7 +1,7 @@
 //package org.nmcpye.datarun.web.rest.mongo.dataformtemplate;
 //
 //import org.nmcpye.datarun.mongo.domain.DataForm;
-//import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
+//import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 //import org.nmcpye.datarun.mongo.legacydatatemplate.repository.DataFormRepository;
 //import org.nmcpye.datarun.mongo.legacydatatemplate.service.DataFormService;
 //import org.nmcpye.datarun.security.AuthoritiesConstants;

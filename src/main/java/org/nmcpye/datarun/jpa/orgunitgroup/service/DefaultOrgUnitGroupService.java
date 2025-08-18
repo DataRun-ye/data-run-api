@@ -30,7 +30,7 @@ public class DefaultOrgUnitGroupService extends DefaultJpaIdentifiableService<Or
 
 
     @Override
-    public OrgUnitGroup saveWithRelations(OrgUnitGroup object) {
+    public void preSaveHook(OrgUnitGroup object) {
         if (!object.getOrgUnits().isEmpty()) {
             Set<OrgUnit> orgUnits = new HashSet<>();
             for (OrgUnit orgUnit : object.getOrgUnits()) {
@@ -38,10 +38,7 @@ public class DefaultOrgUnitGroupService extends DefaultJpaIdentifiableService<Or
             }
 
             object.setOrgUnits(orgUnits);
-            return save(object);
         }
-
-        return save(object);
     }
 
     private OrgUnit findOrgUnit(OrgUnit orgUnit) {

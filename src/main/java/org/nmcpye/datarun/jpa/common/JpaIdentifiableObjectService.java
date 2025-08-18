@@ -2,7 +2,10 @@ package org.nmcpye.datarun.jpa.common;
 
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
+import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.IdentifiableObjectService;
+import org.nmcpye.datarun.common.JpaIdentifiableOperationVm;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -50,4 +53,9 @@ public interface JpaIdentifiableObjectService<T extends JpaIdentifiableObject>
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
+
+
+    EntitySaveSummaryVM processBatch(JpaIdentifiableOperationVm<T> operationVm, CurrentUserDetails user);
+
+    T trySaveOrUpdate(T payLoadEntity, CurrentUserDetails user);
 }

@@ -50,7 +50,7 @@ public class AsyncEntityAuditEventWriter implements EntityAuditEventWriter {
         try {
             EntityAuditEvent auditedEntity = prepareAuditEntity(target, action);
             if (auditedEntity != null) {
-                auditingEntityRepository.persist(auditedEntity);
+                auditingEntityRepository.save(auditedEntity);
             }
         } catch (Exception e) {
             log.error("Exception while persisting audit entity for {} error: {}", target, e.getMessage());

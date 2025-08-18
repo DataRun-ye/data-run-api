@@ -11,9 +11,12 @@ public enum ValueType {
     @Deprecated(since = "Remove for boolean repeatable in section")
     RepeatableSection,
     Section,
-    @Deprecated(since = "Remove for boolean isMulti with select one")
+    @Deprecated(since = "Remove for boolean isMulti=true with optionSet type, todo")
     SelectMulti,
+    @Deprecated(since = "Remove for boolean isMulti=false with optionSet type, todo")
     SelectOne,
+    // TODO isMulti is set on the element
+    //    OptionSet,
     Age,
     FullName,
     Text,
@@ -49,11 +52,11 @@ public enum ValueType {
     Coordinate,
     GeoJson;
 
-    public List<ValueType> SectionTypes() {
+    public static List<ValueType> SectionTypes() {
         return List.of(Section, RepeatableSection);
     }
 
-    public List<ValueType> numericTypes() {
+    public static List<ValueType> numericTypes() {
         return List.of(Number,
             Integer,
             IntegerPositive,
@@ -61,12 +64,31 @@ public enum ValueType {
             IntegerZeroOrPositive);
     }
 
-    public List<ValueType> textualTypes() {
+    public static List<ValueType> booleanTypes() {
+        return List.of(TrueOnly,
+            Boolean);
+    }
+
+    public static List<ValueType> complexReferenceTypes() {
+        return List.of(/*Progress,*/
+            Activity,
+            OrganisationUnit,
+            Team,
+            Entity,
+            // OptionSet
+            Username);
+    }
+
+    public static List<ValueType> textualTypes() {
         return List.of(FullName, Text, LongText, Letter);
     }
 
     public boolean isNumeric() {
         return numericTypes().contains(this);
+    }
+
+    public boolean isBoolean() {
+        return booleanTypes().contains(this);
     }
 
     public boolean isTextual() {
@@ -79,6 +101,10 @@ public enum ValueType {
 
     public boolean isRepeat() {
         return this == RepeatableSection;
+    }
+
+    public boolean isComplexReference() {
+        return complexReferenceTypes().contains(this);
     }
 
     public boolean isReference() {
@@ -103,9 +129,6 @@ public enum ValueType {
         if (this.isNumeric() && other.isNumeric()) {
             return true;
         }
-        if (this.isTextual() && other.isTextual()) {
-            return true;
-        }
-        return false;
+        return this.isTextual() && other.isTextual();
     }
 }

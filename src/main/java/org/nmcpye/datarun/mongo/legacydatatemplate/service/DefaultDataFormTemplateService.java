@@ -37,12 +37,6 @@ public class DefaultDataFormTemplateService
     }
 
     @Override
-    public DataFormTemplate saveWithRelations(DataFormTemplate object) {
-        log.debug("Request service to save {}:`{}`", getClazz().getSimpleName(), object.getUid());
-        return save(object);
-    }
-
-    @Override
     public Page<DataFormTemplate> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
         return templateInstanceService.findAllByUser(queryRequest, jsonQueryBody)
             .map(dataFormTemplateMapper::toEntity);

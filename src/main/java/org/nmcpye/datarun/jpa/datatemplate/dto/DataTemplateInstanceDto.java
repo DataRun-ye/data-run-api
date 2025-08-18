@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.jpa.datatemplate.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -8,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.uidgenerate.BaseDto;
+import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
@@ -16,12 +18,15 @@ import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
 
 /**
  * DTO for {@link org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate}
  */
+@SuppressWarnings("unused")
 @Setter
 @Getter
 @AllArgsConstructor
@@ -54,8 +59,10 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
     private String description;
     private Boolean deleted;
     private Map<String, String> label;
-    //
-    // versioned (form version)
+
+    /**
+     * the only versioned parts of a form template are fields, and sections (form version)
+     */
     private List<FormDataElementConf> fields;
     private List<FormSectionConf> sections;
 
@@ -69,5 +76,124 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
     public DataTemplateInstanceDto fields(List<FormDataElementConf> fields) {
         this.setFields(fields);
         return this;
+    }
+
+
+    /**
+     * @return mapping of repeatPath -> (relativeChildPath -> elementId). elementId is the last segment of a path, its either a uid for FormFields,
+     * or a name for Sections fields, and they are unique across the form
+     */
+    @JsonIgnore
+    public Map<String, Map<String, String>> getRepeatSectionChildrenMap() {
+        if (sections == null) {
+            return Map.of();
+        }
+        return sections.stream()
+            .filter(FormSectionConf::getRepeatable)
+            .collect(Collectors.toMap(AbstractElement::getPath, (s) ->
+                getChildrenRelativePathMap(s.getPath())));
+    }
+
+
+    /**
+     * @param path parent path
+     * @return list of children of certain path
+     */
+    @JsonIgnore
+    public List<FormDataElementConf> getChildrenOfPath(String path) {
+        if (fields == null) {
+            return List.of();
+        }
+        return fields.stream()
+            .filter(f -> f.getPath().startsWith(path))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @return element path → element map for quick get by path
+     */
+    @JsonIgnore
+    public Map<String, AbstractElement> getAllElementPathMap() {
+        List<AbstractElement> fieldElements = fields != null ? new java.util.ArrayList<>(fields) : List.of();
+        List<AbstractElement> sectionElements = sections != null ? new java.util.ArrayList<>(sections) : List.of();
+        return Stream.concat(fieldElements.stream(), sectionElements.stream())
+            .collect(Collectors.toMap(AbstractElement::getPath, e -> e));
+    }
+
+    /**
+     * elementId->path reverse map. elements Paths keyed by their ids.
+     * Useful for retrieving categoryElement's path by its id
+     *
+     * @return reverse map
+     */
+    public Map<String, String> getFieldElementReversePathMap() {
+        return getAllElementPathMap().entrySet()
+            .stream()
+            .filter(FormDataElementConf.class::isInstance)
+            .collect(Collectors.toMap(entry ->
+                entry.getValue().getId(), Map.Entry::getKey));
+    }
+
+    /**
+     * @param path an ancestor Path
+     * @return path → childPath relative to the ancestor
+     */
+    @JsonIgnore
+    public Map<String, String> getChildrenRelativePathMap(String path) {
+        if (fields == null) {
+            return Map.of();
+        }
+
+        // map child fields: find fields whose path startWith(repeatPath + ".")
+        return getFields().stream()
+            .filter(f -> f.getPath() != null && f.getPath().startsWith(path + "."))
+            .collect(Collectors.toMap(
+//                f -> f.getPath().substring((path + ".").length()), // relative path
+                f -> f.getPath().substring((path + ".").length()), // relative path
+                FormDataElementConf::getId
+            ));
+    }
+
+    /**
+     * @return repeatPath → categoryElementId so ETL can set category_id easily
+     */
+    @JsonIgnore
+    public Map<String, String> getRepeatCategoryElementMap() {
+        if (sections == null) {
+            return Map.of();
+        }
+        return sections.stream()
+            .filter(FormSectionConf::getRepeatable)
+            .filter(r -> r.getRepeatCategoryElement() != null)
+            .collect(Collectors.toMap(AbstractElement::getPath,
+                FormSectionConf::getRepeatCategoryElement));
+    }
+
+
+    /**
+     * @return materialized repeatable paths, e.g. "adult.adultClassification"
+     */
+    @JsonIgnore
+    public List<String> getRepeatSectionsPaths() {
+        if (sections == null) return List.of();
+        return sections.stream()
+            .filter(s -> Boolean.TRUE.equals(s.getRepeatable()))
+            .map(FormSectionConf::getPath)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @return top-level fields mapping: relativePath -> elementId
+     */
+    @JsonIgnore
+    public Map<String, String> getTopLevelFieldPathToElementId() {
+        if (fields == null) return Map.of();
+        List<FormSectionConf> sectionList = sections == null ? List.of() : sections;
+        return getFields().stream()
+            .filter(f -> {
+                String p = f.getPath();
+                return p != null && sectionList.stream().noneMatch(s -> p.startsWith(s.getPath() + "."));
+            })
+            .collect(Collectors.toMap(FormDataElementConf::getPath, FormDataElementConf::getId));
     }
 }

@@ -134,7 +134,13 @@ public abstract class DefaultMongoIdentifiableObjectService<T extends MongoIdent
             .or(() -> Optional.ofNullable(id)
                 .flatMap(repository::findById));
     }
-//    protected Criteria buildFiltersCriteria(QueryRequest queryRequest, String jsonQueryBody) {
+
+    @Override
+    public void preSaveHook(T object) {
+
+    }
+
+    //    protected Criteria buildFiltersCriteria(QueryRequest queryRequest, String jsonQueryBody) {
 //        Criteria criteria = new Criteria();
 //
 //        if (queryRequest == null || !queryRequest.isIncludeDeleted()) {

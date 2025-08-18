@@ -43,6 +43,7 @@ spring:
     hikari:
       poolName: Hikari
       auto-commit: false
+
   #graphql:
   #  servlet:
   #    mapping: /apis/graphql
@@ -101,6 +102,12 @@ datarun:
 #        token-validity-in-seconds: 900 # 15 minutes
         refresh-token-validity-in-seconds: 2592000 # 30 days
         token-validity-in-seconds-for-remember-me: 2592000
+outbox:
+  relay:
+    poll-interval-ms: 2000   # polling delay between polls (ms)
+    batch-size: 50           # how many to claim per poll
+    worker-threads: 6        # number of concurrent worker threads
+    max-attempts: 10
 jhipster:
   client-app:
     name: "datarun"

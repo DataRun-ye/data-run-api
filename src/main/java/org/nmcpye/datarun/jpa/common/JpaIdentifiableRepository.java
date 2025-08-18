@@ -121,6 +121,8 @@ public interface JpaIdentifiableRepository<T extends JpaIdentifiableObject>
 
     Optional<T> findByIdOrUid(@Size(max = 26) String id, @Size(max = 11) String uid);
 
+    List<T> findDistinctByIdInOrUidIn(Collection<String> ids, Collection<String> uids);
+
     List<T> findAllByUidIn(Collection<String> uids);
 
     Page<T> findAllByUidIn(Collection<String> uids, Pageable pageable);

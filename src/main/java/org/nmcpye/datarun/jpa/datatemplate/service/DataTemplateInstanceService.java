@@ -51,4 +51,6 @@ public interface DataTemplateInstanceService {
     void migrateDataFormTemplateVersion(DataFormTemplate formTemplate);
 
     Optional<DataTemplateInstanceDto> findLatestByTemplate(String templateUid);
+    Optional<DataTemplateInstanceDto> findByTemplateAndVersion(String templateUid, String versionUid);
+    Optional<DataTemplateInstanceDto> findByTemplateAndVersionNumber(String templateUid, Integer version);
 }

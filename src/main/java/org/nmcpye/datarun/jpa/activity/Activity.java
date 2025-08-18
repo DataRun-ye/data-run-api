@@ -63,6 +63,7 @@ public class Activity extends JpaBaseIdentifiableObject {
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Set<Assignment> assignments = new HashSet<>();
 
+
     // prettier-ignore
     @Override
     public String toString() {

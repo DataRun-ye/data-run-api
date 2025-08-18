@@ -3,8 +3,8 @@ package org.nmcpye.datarun.jpa.etl.service;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.jpa.etl.dao.IRepeatInstancesDao;
 import org.nmcpye.datarun.jpa.etl.dao.ISubmissionValuesDao;
+import org.nmcpye.datarun.jpa.etl.dto.ElementDataValue;
 import org.nmcpye.datarun.jpa.etl.dto.RepeatInstance;
-import org.nmcpye.datarun.jpa.etl.dto.SubmissionValueRow;
 import org.nmcpye.datarun.jpa.etl.model.NormalizedSubmission;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCallback;
@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
-public class NormalizedSubmissionPersister implements NormalizedDataPersister {
+public class NormalizedSubmissionPersister {
 
     private static final int BATCH_SIZE = 500;
 
@@ -41,7 +41,6 @@ public class NormalizedSubmissionPersister implements NormalizedDataPersister {
     }
 
     @Transactional
-    @Override
     public void persist(NormalizedSubmission ns) {
         long lockKey = computeAdvisoryLockKey(ns.getSubmissionId());
         // inside persist(...)
@@ -108,7 +107,7 @@ public class NormalizedSubmissionPersister implements NormalizedDataPersister {
         }
     }
 
-    private void batchUpsertSubmissionValues(List<SubmissionValueRow> rows) {
+    private void batchUpsertSubmissionValues(List<ElementDataValue> rows) {
         if (rows == null || rows.isEmpty()) return;
         int from = 0;
         while (from < rows.size()) {

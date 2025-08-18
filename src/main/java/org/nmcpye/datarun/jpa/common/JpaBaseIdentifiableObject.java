@@ -99,7 +99,7 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
         return translations;
     }
 
-    public void setLabel(Map<String, String> label) {
+    public JpaIdentifiableObject setLabel(Map<String, String> label) {
         // Create new name translations from the input map
         Set<Translation> newNameTranslations = label.entrySet().stream()
                 .map(entry -> Translation.builder()
@@ -119,6 +119,7 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
         updatedTranslations.addAll(newNameTranslations); // Merge new name translations
 
         setTranslations(updatedTranslations);
+        return this;
     }
 
     /**

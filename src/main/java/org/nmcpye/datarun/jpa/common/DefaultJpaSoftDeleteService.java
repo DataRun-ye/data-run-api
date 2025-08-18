@@ -35,12 +35,11 @@ public abstract class DefaultJpaSoftDeleteService
 
     @Override
     public T save(T object) {
-        log.debug("Request service to save {}:`{}`", getClazz().getSimpleName(), object.getId());
-        if (!object.getDeleted() && object.getDeletedAt() != null) {
+        if (!object.getDeleted()) {
             object.setDeletedAt(null);
         }
 
-        return repository.save(object);
+        return super.save(object);
     }
 
     @Override

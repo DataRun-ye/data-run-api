@@ -1,0 +1,41 @@
+package org.nmcpye.datarun.jpa.datasubmission.events;
+import lombok.Getter;
+
+import java.io.Serializable;
+import java.time.Instant;
+import java.util.Objects;
+
+/**
+ * @author Hamza Assada 14/08/2025 (7amza.it@gmail.com)
+ */
+@Getter
+public class SubmissionSavedEvent implements Serializable {
+    private final String submissionId;   // DataSubmission.id (ULID)
+    private final SubmissionChangeType changeType;
+    private final Long submissionVersion;
+    private final Instant occurredAt;
+
+    public SubmissionSavedEvent(String submissionId,
+                                SubmissionChangeType changeType,
+                                Long submissionVersion) {
+        this.submissionId = submissionId;
+        this.changeType = changeType;
+        this.submissionVersion = submissionVersion;
+        this.occurredAt = Instant.now();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SubmissionSavedEvent)) return false;
+        SubmissionSavedEvent that = (SubmissionSavedEvent) o;
+        return Objects.equals(submissionId, that.submissionId)
+            && changeType == that.changeType
+            && Objects.equals(submissionVersion, that.submissionVersion);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(submissionId, changeType, submissionVersion);
+    }
+}

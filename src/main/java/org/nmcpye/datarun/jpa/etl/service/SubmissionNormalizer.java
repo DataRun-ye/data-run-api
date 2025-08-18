@@ -6,13 +6,14 @@ import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.etl.dto.ElementDataValue;
 import org.nmcpye.datarun.jpa.etl.dto.RepeatInstance;
-import org.nmcpye.datarun.jpa.etl.dto.SubmissionValueRow;
+import org.nmcpye.datarun.jpa.etl.exception.InvalidCategoryException;
 import org.nmcpye.datarun.jpa.etl.exception.MissingRepeatUidException;
 import org.nmcpye.datarun.jpa.etl.model.NormalizedSubmission;
 import org.nmcpye.datarun.jpa.etl.model.TemplateElementMap;
 import org.nmcpye.datarun.jpa.option.service.OptionService;
-import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.security.SecurityUtils;
 
 import java.util.List;
@@ -23,33 +24,31 @@ import java.util.Objects;
  * @author Hamza Assada 13/08/2025 (7amza.it@gmail.com)
  */
 @SuppressWarnings("unused")
-public class SubmissionNormalizer implements DataNormalizer {
+public class SubmissionNormalizer {
 
     private final TemplateElementMap elementMap;
     private final OptionService optionService;
-    private final ObjectMapper objectMapper;
     private final boolean generateMissingRepeatUids;
 
     public SubmissionNormalizer(OptionService optionService,
                                 TemplateElementMap elementMap,
-                                ObjectMapper objectMapper, boolean generateMissingRepeatUids) {
+                                boolean generateMissingRepeatUids) {
         this.elementMap = elementMap;
         this.optionService = optionService;
-        this.objectMapper = objectMapper;
         this.generateMissingRepeatUids = generateMissingRepeatUids;
     }
 
-    @Override
-    public NormalizedSubmission normalize(DataFormSubmission submission) {
+    public NormalizedSubmission normalize(DataSubmission submission) {
         Object formData = submission.getFormData();
-        Map<String, Object> map = objectMapper.convertValue(formData, new TypeReference<Map<String, Object>>() {
+        Map<String, Object> map = new ObjectMapper().convertValue(formData, new TypeReference<Map<String, Object>>() {
         });
 
         final var currentUser = SecurityUtils.getCurrentUserDetailsOrNull();
         final NormalizedSubmission ns = new NormalizedSubmission(
             submission.getUid(),
             submission.getForm(),
-            submission.getAssignment());
+            submission.getAssignment()
+        );
 
         // walk root
         extractNode(/*submission.getFormData()*/ map, /*currentPath*/ null,
@@ -63,7 +62,7 @@ public class SubmissionNormalizer implements DataNormalizer {
         Map<String, Object> node,
         String currentPath,
         NormalizedSubmission ns,
-        DataFormSubmission submission,
+        DataSubmission submission,
         String currentRepeatId,
         Long currentRepeatIndex,
         String currentCategoryId) {
@@ -75,7 +74,7 @@ public class SubmissionNormalizer implements DataNormalizer {
             Object rawValue = entry.getValue();
             String childPath = (currentPath == null || currentPath.isEmpty()) ? key : currentPath + "." + key;
 
-            AbstractElement element = elementMap.getElementPathMapCache().get(childPath);
+            AbstractElement element = elementMap.getElementNamePathMapCache().get(childPath);
             if (element == null) {
                 continue;
             }
@@ -92,10 +91,12 @@ public class SubmissionNormalizer implements DataNormalizer {
 
                     if (repeatId == null) {
                         if (generateMissingRepeatUids) {
-                            repeatId = CodeGenerator.ULIDGenerator.nextString();
+                            repeatId = CodeGenerator.nextUlid();
                             item.put("_uid", repeatId); // optionally propagate back
                         } else {
-                            throw new MissingRepeatUidException(List.of(new MissingRepeatUidException.MissingRepeatUid(childPath, (int) idx)));
+                            throw new MissingRepeatUidException(List.of(
+                                new MissingRepeatUidException.MissingRepeatUid(childPath, (int) idx)
+                            ));
                         }
                     }
 
@@ -108,8 +109,8 @@ public class SubmissionNormalizer implements DataNormalizer {
                         .createdDate(submission.getCreatedDate())
                         .lastModifiedDate(submission.getLastModifiedDate())
                         // temporarily string for the test to work, because user info comes from the spring contexts,
-                        .createdBy("SecurityUtils.getCurrentUserLoginOrThrow()")
-                        .lastModifiedBy("SecurityUtils.getCurrentUserLoginOrThrow()")
+                        .createdBy(submission.getCreatedBy())
+                        .lastModifiedBy(submission.getLastModifiedBy())
                         .build();
 
                     ns.addRepeatInstance(ri);
@@ -144,8 +145,7 @@ public class SubmissionNormalizer implements DataNormalizer {
 
                 for (String code : codes) {
                     String optionId = codeToOptionId.get(code);
-
-                    SubmissionValueRow row = SubmissionValueRow.builder()
+                    ElementDataValue row = ElementDataValue.builder()
                         .element(elementId)
                         .submission(ns.getSubmissionId())
                         .repeatInstance(currentRepeatId)
@@ -165,7 +165,7 @@ public class SubmissionNormalizer implements DataNormalizer {
                 // --- primitive (single-value e.g text / numeric / boolean) branch ---
                 String elementId = resolveElementId(element);
 
-                SubmissionValueRow row = SubmissionValueRow.builder()
+                ElementDataValue row = ElementDataValue.builder()
                     .element(elementId)
                     .submission(ns.getSubmissionId())
                     .repeatInstance(currentRepeatId)
@@ -198,7 +198,6 @@ public class SubmissionNormalizer implements DataNormalizer {
         if (categoryElementId == null) return null;
 
         String categoryFullPath = elementMap.getFieldElementReversePathMap().get(categoryElementId);
-
         if (categoryFullPath == null) return null;
         String relative = categoryFullPath.startsWith(repeatPath + ".") ?
             categoryFullPath.substring(repeatPath.length() + 1) : categoryFullPath;
@@ -213,6 +212,21 @@ public class SubmissionNormalizer implements DataNormalizer {
             return element.getId(); // usually name()
         } else {
             throw new IllegalStateException("Unknown element type: " + element.getClass());
+        }
+    }
+
+//    private void applyCategoryToSiblings(
+//        RepeatInstance repeat,
+//        String categoryValue) {
+//
+//        valuesInRepeat(repeat).forEach(value ->
+//            value.setCategoryId(categoryValue));
+//    }
+
+    public void validateCategoryElement(FormDataElementConf element, Object vale) {
+        if (!element.getType().isComplexReference()) {
+            throw new InvalidCategoryException(element.getId(),
+                element.getType().name());
         }
     }
 }

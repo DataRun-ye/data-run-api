@@ -37,6 +37,8 @@ public enum ErrorCode {
     E1118("{0} : Invalid reference {1} for {2}"),
     E1119("RequestBody is empty"),
     E1120("Inconsistent state: FormTemplate `{0}` have no Version in the system"),
+    E1121("selected Choices {0} in multi select element do not exist"),
+    E1122("element: `{0}`,`{1}` is not a Categorical complex reference type"),
     E1199("System configuration Error: `{0}`"),
 
     /* Data */
@@ -62,6 +64,21 @@ public enum ErrorCode {
     E3004("User `{0}` is not allowed to access objects of type {1}"),
     E3005("You are not allowed to access {}"),
     E3006("Team `{0}` is not available"),
+
+    /* Data Submission Validation */
+    E4110("Submission validation Error: {0}"),
+    E4111("Submission Normalization Errors: `{0}`"),
+//    E4112("Activity or Team is not Active: {0}"),
+//    E4113("Not found Form template: {0}"),
+//    E4114("Not found Form template version: {0}"),
+//    E4115("Missing required scope: {0}"),
+//    E4116("{0} : Expected array for multi-value scope"),
+//    E4117("{0} : Expected single value"),
+//    E4118("{0} : Invalid reference {1} for {2}"),
+//    E4119("RequestBody is empty"),
+//    E4120("Inconsistent state: FormTemplate `{0}` have no Version in the system"),
+//    E4121("selected Choices {0} in multi select element do not exist"),
+//    E4199("System configuration Error: `{0}`"),
 
 
     /* Users */

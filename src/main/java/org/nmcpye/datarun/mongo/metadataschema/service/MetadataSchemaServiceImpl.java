@@ -58,11 +58,10 @@ public class MetadataSchemaServiceImpl
     }
 
     @Override
-    public MetadataSchema saveWithRelations(MetadataSchema newSubmission) {
+    public void preSaveHook(MetadataSchema newSubmission) {
         processFields(newSubmission.getFields(), "");
         newSubmission.updateFlattenedFields();
         newSubmission.setVersion(createOrUpdateVersion(newSubmission) + 1);
-        return save(newSubmission);
     }
 //
 //    @Override

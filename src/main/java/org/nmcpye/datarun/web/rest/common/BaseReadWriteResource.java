@@ -2,14 +2,10 @@ package org.nmcpye.datarun.web.rest.common;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.common.DRunApiVersion;
-import org.nmcpye.datarun.common.IdentifiableObject;
-import org.nmcpye.datarun.common.IdentifiableObjectRepository;
-import org.nmcpye.datarun.common.IdentifiableObjectService;
+import org.nmcpye.datarun.common.*;
 import org.nmcpye.datarun.common.repository.CreateAccessDeniedException;
 import org.nmcpye.datarun.common.repository.DeleteAccessDeniedException;
 import org.nmcpye.datarun.common.repository.UpdateAccessDeniedException;
-import org.nmcpye.datarun.mongo.mapping.importsummary.EntitySaveSummaryVM;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
@@ -67,7 +63,8 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
         return ResponseEntity.ok(summary);
     }
 
-    protected T preProcess(T payLoadEntity) {
+//    protected T preProcess(List<T> payLoadEntity) {
+        protected List<T> preProcess(List<T> payLoadEntity) {
         // do nothing
         return payLoadEntity;
     }
@@ -75,8 +72,7 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
     protected void saveEntity(T payLoadEntity, EntitySaveSummaryVM summary) {
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
         hasMinimalRightsOrThrow(user);
-        var processedEntity = preProcess(payLoadEntity);
-//        try {
+        var processedEntity = preProcess(List.of(payLoadEntity)).stream().findFirst().get();
         if (identifiableObjectService.findByIdOrUid(processedEntity).isPresent()) {
             if (aclService.canUpdate(payLoadEntity, user)) {
                 processedEntity = identifiableObjectService.update(processedEntity);
@@ -86,19 +82,12 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
             }
         } else {
             if (aclService.canAddNew(payLoadEntity, user)) {
-                processedEntity = identifiableObjectService.saveWithRelations(processedEntity);
+                processedEntity = identifiableObjectService.save(processedEntity);
                 summary.getCreated().add(processedEntity.getUid());
             } else {
                 throw new UpdateAccessDeniedException("You have no right to send things here");
             }
         }
-//        } catch (Exception e) {
-//            log.error("REST Error Saving payLoadEntity {}:{}",
-//                getEntityClass().getSimpleName(), processedEntity.getUid());
-
-//            summary.getFailed().put(processedEntity.getUid(), e.getMessage());
-//            throw new IllegalQueryException(e.getMessage());
-//        }
     }
 
     @DeleteMapping("/{id}")

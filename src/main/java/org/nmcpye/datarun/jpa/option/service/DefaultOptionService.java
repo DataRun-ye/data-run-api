@@ -5,6 +5,7 @@ import org.nmcpye.datarun.jpa.option.Option;
 import org.nmcpye.datarun.jpa.option.OptionGroup;
 import org.nmcpye.datarun.jpa.option.OptionGroupSet;
 import org.nmcpye.datarun.jpa.option.OptionSet;
+import org.nmcpye.datarun.jpa.option.exception.InvalidOptionCodesException;
 import org.nmcpye.datarun.jpa.option.repository.OptionGroupRepository;
 import org.nmcpye.datarun.jpa.option.repository.OptionGroupSetRepository;
 import org.nmcpye.datarun.jpa.option.repository.OptionRepository;
@@ -12,9 +13,8 @@ import org.nmcpye.datarun.jpa.option.repository.OptionSetRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service Implementation for managing {@link Option}.
@@ -150,8 +150,46 @@ public class DefaultOptionService implements OptionService {
 
     @Override
     @Transactional(readOnly = true)
+    public Map<String, String> validateAndMapOptionCodes(Collection<String> optionCodes, String optionSetId) throws InvalidOptionCodesException {
+        if (optionCodes == null || optionCodes.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        // Normalize codes: trim.
+        List<String> codesNormalized = optionCodes.stream()
+            .filter(Objects::nonNull)
+            .map(String::trim)
+            .toList();
+
+        Set<String> uniqueCodes = new LinkedHashSet<>(codesNormalized);
+
+        List<Option> found = optionRepository.findAllByOptionSetUid(optionSetId);
+
+
+        Map<String, String> codeToId = found.stream()
+            .collect(Collectors.toMap(Option::getCode, Option::getId));
+
+        List<String> missing = uniqueCodes.stream()
+            .filter(code -> !codeToId.containsKey(code))
+            .collect(Collectors.toList());
+
+        if (!missing.isEmpty()) {
+            throw new InvalidOptionCodesException(missing);
+        }
+
+        // Return mapping for requested codes (preserve original duplicates is caller responsibility)
+        return codeToId;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<Option> getOptionByCode(String code) {
         return optionRepository.findFirstByCode(code);
+    }
+
+    @Override
+    public List<Option> getOptionsByCode(List<String> code) {
+        return optionRepository.findAllByCodeIn(code);
     }
 
     @Override

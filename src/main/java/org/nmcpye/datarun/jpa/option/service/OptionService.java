@@ -1,11 +1,15 @@
 package org.nmcpye.datarun.jpa.option.service;
 
+import jakarta.validation.constraints.NotNull;
 import org.nmcpye.datarun.jpa.option.Option;
 import org.nmcpye.datarun.jpa.option.OptionGroup;
 import org.nmcpye.datarun.jpa.option.OptionGroupSet;
 import org.nmcpye.datarun.jpa.option.OptionSet;
+import org.nmcpye.datarun.jpa.option.exception.InvalidOptionCodesException;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -19,17 +23,6 @@ public interface OptionService {
     OptionSet saveOptionSet(OptionSet optionSet);
 
     void updateOptionSet(OptionSet optionSet);
-
-//    /**
-//     * Validate an {@link OptionSet}.
-//     *
-//     * @param optionSet the set to validate
-//     * @throws IllegalQueryException when the provided {@link OptionSet} has
-//     *                               validation errors
-//     */
-//    void validateOptionSet(OptionSet optionSet) throws IllegalQueryException;
-//
-//    ErrorMessage validateOption(OptionSet optionSet, Option option);
 
     Optional<OptionSet> getOptionSet(String id);
 
@@ -51,7 +44,22 @@ public interface OptionService {
 
     Optional<Option> getOption(String id);
 
+    /**
+     * Validate a set of option codes and return a mapping code -> optionId.
+     * <p>
+     * If any code is missing, this method throws InvalidOptionCodesException containing the missing codes.
+     *
+     * @param optionCodes set of option codes (client-submitted). Null/empty -> empty map.
+     * @param optionSetId optional option set id to restrict lookup; may be null to search globally.
+     * @return map code -> optionId for all codes provided (guaranteed to contain every code in optionCodes)
+     * @throws InvalidOptionCodesException if any code is not found
+     */
+    Map<String, String> validateAndMapOptionCodes(Collection<String> optionCodes, @NotNull String optionSetId)
+        throws InvalidOptionCodesException;
+
     Optional<Option> getOptionByCode(String code);
+
+    List<Option> getOptionsByCode(List<String> code);
 
     void deleteOption(Option option);
 

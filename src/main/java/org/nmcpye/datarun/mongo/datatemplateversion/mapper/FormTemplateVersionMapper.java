@@ -47,7 +47,7 @@ public interface FormTemplateVersionMapper
     }
 
     /**
-     * Your existing helper: if the DTO's FormDataElementConf already has a non‐null validationRule, use it;
+     * existing helper: if the DTO's FormDataElementConf already has a non‐null validationRule, use it;
      * otherwise build one from constraint/constraintMessage or from any RuleAction.Error in element.getRules().
      */
     default ElementValidationRule validationRuleMap(FormDataElementConf element) {

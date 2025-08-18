@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="20250818-create-template-field-and-pivot-tables" author="assistant">
+        <!-- template_field table -->
+        <createTable tableName="template_field">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="template_id" type="varchar(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version_id" type="varchar(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version_no" type="integer">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="element_id" type="varchar(26)"><constraints nullable="false"/></column>
+            <column name="path" type="text"><constraints nullable="false"/></column>
+            <column name="name" type="text"/>
+            <column name="value_type" type="varchar(50)"><constraints nullable="false" /></column>
+            <column name="is_reference" type="boolean" defaultValueBoolean="false"/>
+            <column name="reference_table" type="varchar(100)"/>
+            <column name="option_set_id" type="varchar(100)"/>
+            <column name="is_repeatable" type="boolean" defaultValueBoolean="false"/>
+            <column name="repeat_path" type="text"/>
+            <column name="is_multi" type="boolean" defaultValueBoolean="false"/>
+            <column name="is_measure" type="boolean" defaultValueBoolean="false"/>
+            <column name="default_aggregation" type="varchar(20)"/>
+            <column name="category_for_repeat" type="varchar(26)"/>
+            <column name="display_label" type="jsonb"/>
+            <column name="definition" type="jsonb"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="now()"/>
+        </createTable>
+
+        <createIndex tableName="template_field" indexName="idx_template_field_template_version">
+            <column name="template_id"/>
+            <column name="version_no"/>
+        </createIndex>
+
+        <createIndex tableName="template_field" indexName="idx_template_field_path">
+            <column name="template_id"/>
+            <column name="path"/>
+        </createIndex>
+
+        <createIndex tableName="template_field" indexName="idx_template_field_element">
+            <column name="element_id"/>
+        </createIndex>
+
+        <!-- pivot_rollup table -->
+        <createTable tableName="pivot_rollup">
+            <column name="rollup_id" type="varchar(100)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="template_id" type="varchar(26)"><constraints nullable="false"/></column>
+            <column name="version_id" type="varchar(26)"><constraints nullable="false"/></column>
+            <column name="grouping_fields" type="jsonb"><constraints nullable="false"/></column>
+            <column name="measures" type="jsonb"><constraints nullable="false"/></column>
+            <column name="refresh_policy" type="jsonb"/>
+            <column name="last_refreshed" type="timestamp"/>
+            <column name="active" type="boolean" defaultValueBoolean="true"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="now()"/>
+        </createTable>
+
+        <createIndex tableName="pivot_rollup" indexName="idx_pivot_rollup_template">
+            <column name="template_id"/>
+            <column name="version_id"/>
+        </createIndex>
+
+        <!-- pivot_query_log -->
+        <createTable tableName="pivot_query_log">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="varchar(100)"/>
+            <column name="template_id" type="varchar(26)"/>
+            <column name="version_id" type="varchar(26)"/>
+            <column name="query_hash" type="varchar(100)"/>
+            <column name="dsl" type="jsonb"/>
+            <column name="used_plan" type="varchar(50)"/>
+            <column name="execution_ms" type="integer"/>
+            <column name="scanned_rows" type="bigint"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="now()"/>
+        </createTable>
+
+        <createIndex tableName="pivot_query_log" indexName="idx_pivot_query_log_hash">
+            <column name="query_hash"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20250818-rollback-create-template-field-and-pivot-tables" author="assistant">
+        <rollback>
+            <dropTable tableName="pivot_query_log"/>
+            <dropTable tableName="pivot_rollup"/>
+            <dropTable tableName="template_field"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

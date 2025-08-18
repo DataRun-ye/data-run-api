@@ -2,8 +2,8 @@ package org.nmcpye.datarun.jpa.etl.model;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import org.nmcpye.datarun.jpa.etl.dto.ElementDataValue;
 import org.nmcpye.datarun.jpa.etl.dto.RepeatInstance;
-import org.nmcpye.datarun.jpa.etl.dto.SubmissionValueRow;
 
 import java.util.*;
 
@@ -20,7 +20,7 @@ public class NormalizedSubmission {
     private final String templateId;
     private final String assignmentId;
 
-    private final List<SubmissionValueRow> valueRows = new ArrayList<>();
+    private final List<ElementDataValue> valueRows = new ArrayList<>();
     private final List<RepeatInstance> repeatInstances = new ArrayList<>();
 
     // repeatPath -> set of incoming repeat UIDs (for mark-and-sweep of repeat instances)
@@ -66,8 +66,8 @@ public class NormalizedSubmission {
         this.templateId = templateId;
         this.assignmentId = assignmentId;
     }
-    
-    public void addValueRow(SubmissionValueRow r) {
+
+    public void addValueRow(ElementDataValue r) {
         valueRows.add(r);
     }
 

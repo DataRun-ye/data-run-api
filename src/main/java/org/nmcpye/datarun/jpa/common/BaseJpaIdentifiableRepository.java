@@ -2,6 +2,7 @@ package org.nmcpye.datarun.jpa.common;
 
 import io.hypersistence.utils.spring.repository.BaseJpaRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.springframework.data.repository.NoRepositoryBean;
 
 import java.util.List;
 
@@ -16,8 +17,9 @@ import java.util.List;
  * @author Vlad Mihalcea
  * @version 2.21.0
  */
+@NoRepositoryBean
 public interface BaseJpaIdentifiableRepository<T, ID>
-    extends BaseJpaRepository<T, ID> {
+    extends BaseJpaRepository<T, ID>  {
 
     List<T> findAll();
 

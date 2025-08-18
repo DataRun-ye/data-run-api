@@ -34,7 +34,7 @@ public class DefaultDataElementGroupService
 
 
     @Override
-    public DataElementGroup saveWithRelations(DataElementGroup object) {
+    public void preSaveHook(DataElementGroup object) {
         if (!object.getDataElements().isEmpty()) {
             Set<DataElement> dataTemplateElements = new HashSet<>();
             for (DataElement dataTemplateElement : object.getDataElements()) {
@@ -42,10 +42,7 @@ public class DefaultDataElementGroupService
             }
 
             object.setDataElements(dataTemplateElements);
-            return save(object);
         }
-
-        return save(object);
     }
 
     private DataElement findOrgUnit(DataElement dataTemplateElement) {

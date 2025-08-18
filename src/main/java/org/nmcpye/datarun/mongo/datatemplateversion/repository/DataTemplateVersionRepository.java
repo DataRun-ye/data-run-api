@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.mongo.datatemplateversion.repository;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.mongo.common.repository.MongoIdentifiableRepository;
@@ -25,7 +27,9 @@ public interface DataTemplateVersionRepository
     Optional<DataTemplateVersion> findTopByTemplateUidOrderByVersionNumberDesc(String templateId);
 
     // Returns a specific version, if it exists
-    Optional<DataTemplateVersion> findByTemplateUidAndVersionNumber(String templateId, int version);
+    Optional<DataTemplateVersion> findByTemplateUidAndVersionNumber(@NotNull @Size(max = 11) String templateId, int version);
+
+    Optional<DataTemplateVersion> findByTemplateUidAndUid(@NotNull @Size(max = 11) String templateUid, String id);
 
 
     // List all versions sorted descending

@@ -73,9 +73,7 @@ public class CodeGenerator {
         }
 
         /**
-         * Generate a ULID (Universally Unique Lexicographically Sortable Identifier).
-         * Length: 26 characters, Base32 encoded.
-         * Ideal for distributed systems requiring monotonicity.
+         * validate a String is valid ULID or not.
          */
         public static boolean isValidUlid(String ulid) {
             try {
@@ -104,6 +102,10 @@ public class CodeGenerator {
         public static String generateNanoID(int size, char[] alphabet) {
             return NanoIdUtils.randomNanoId(NanoIdUtils.DEFAULT_NUMBER_GENERATOR, alphabet, size);
         }
+    }
+
+    public static String nextUlid() {
+        return ULIDGenerator.nextString();
     }
 
     /**
@@ -165,17 +167,4 @@ public class CodeGenerator {
     public static boolean isValidUid(String code) {
         return code != null && CODE_PATTERN.matcher(code).matches();
     }
-
-//    /**
-//     * Generates a random 32 character token to be used in URLs.
-//     *
-//     * @return a token.
-//     */
-//    public static String getRandomUrlToken() {
-//        SecureRandom sr = new SecureRandom();
-//        byte[] tokenBytes = new byte[URL_RANDOM_TOKEN_LENGTH];
-//        sr.nextBytes(tokenBytes);
-//
-//        return Base64Utils.encodeToUrlSafeString(tokenBytes);
-//    }
 }

@@ -9,10 +9,20 @@ import lombok.Setter;
 public class FormSectionConf extends AbstractElement {
 
     private Boolean repeatable = false;
+    private String repeatCategoryElement;
 
     @JsonProperty
     public String getId() {
         return getName();
+    }
+
+    public void setRepeatCategoryElement(String repeatCategoryElement) {
+        if (getRepeatable() == null || !getRepeatable() && repeatCategoryElement == null) {
+            // no-op, only in repeatable sections
+            return;
+        }
+
+        this.repeatCategoryElement = repeatCategoryElement;
     }
 
     @Override

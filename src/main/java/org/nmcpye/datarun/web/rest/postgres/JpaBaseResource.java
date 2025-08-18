@@ -19,7 +19,7 @@ public abstract class JpaBaseResource<T extends JpaIdentifiableObject>
         this.jpaIdentifiableRepository = repository;
     }
 
-//    @GetMapping(value = "/stream", produces = MediaType.APPLICATION_NDJSON_VALUE)
+    //    @GetMapping(value = "/stream", produces = MediaType.APPLICATION_NDJSON_VALUE)
 //    public ResponseEntity<StreamingResponseBody> streamAssignments(
 //        @RequestParam(required = false) Instant since) {
 //

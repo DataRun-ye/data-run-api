@@ -13,12 +13,14 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
+@Entity
+@Table(name = "app_entity_audit_event",
+    indexes = {
+        @Index(name = "idx_entity_audit_event_entity_type", columnList = "entity_type"),
+//        @Index(name = "idx_entity_audit_event_entityid_version", columnList = "entity_type, entity_id, commit_version")
+    })
 @Setter
 @Getter
-@Entity
-@Table(name = "app_entity_audit_event", indexes = {
-    @Index(name = "idx_entity_audit_event_entity_type", columnList = "entity_type"),
-})
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class EntityAuditEvent implements Serializable {
 
@@ -47,6 +49,10 @@ public class EntityAuditEvent implements Serializable {
     @Size(max = 50000)
     @Column(name = "entity_value", length = 50000)
     private String entityValue;
+//
+//    @Column(name = "the_value", columnDefinition = "jsonb")
+//    @JdbcTypeCode(SqlTypes.JSON)
+//    private JsonNode theValue;
 
 //    @Type(JsonType.class)
 //    @Column(name = "entity_value", columnDefinition = "jsonb")
