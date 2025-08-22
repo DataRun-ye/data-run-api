@@ -64,6 +64,13 @@ public enum ValueType {
             IntegerZeroOrPositive);
     }
 
+    public static List<ValueType> dateTimeTypes() {
+        return List.of(Date,
+            DateTime,
+            Time,
+            Age);
+    }
+
     public static List<ValueType> booleanTypes() {
         return List.of(TrueOnly,
             Boolean);
@@ -75,6 +82,7 @@ public enum ValueType {
             OrganisationUnit,
             Team,
             Entity,
+            SelectOne,
             // OptionSet
             Username);
     }
@@ -103,7 +111,7 @@ public enum ValueType {
         return this == RepeatableSection;
     }
 
-    public boolean isComplexReference() {
+    public boolean isCategoricalType() {
         return complexReferenceTypes().contains(this);
     }
 
@@ -113,6 +121,10 @@ public enum ValueType {
 
     public boolean isOptionsType() {
         return this == SelectOne || this == SelectMulti;
+    }
+
+    public boolean isDateTimeType() {
+        return dateTimeTypes().contains(this);
     }
 
 

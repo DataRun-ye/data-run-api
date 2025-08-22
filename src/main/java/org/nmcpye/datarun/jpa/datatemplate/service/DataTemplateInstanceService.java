@@ -2,10 +2,12 @@ package org.nmcpye.datarun.jpa.datatemplate.service;
 
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
-import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -18,6 +20,9 @@ public interface DataTemplateInstanceService {
     Optional<DataTemplateInstanceDto> findByUid(String uid);
 
     void deleteByUid(String uid);
+
+    Page<DataTemplateInstanceDto> findAllByUidIn(Collection<String> uids, Pageable pageable);
+    List<DataTemplateInstanceDto> findAllByUidIn(Collection<String> uids);
 
     Page<DataTemplateInstanceDto> findAllByUser(QueryRequest queryRequest, String jsonQueryBody);
 
@@ -48,9 +53,11 @@ public interface DataTemplateInstanceService {
 
 //    void migrateDataFormTemplateVersionToLegacy(DataFormTemplate formTemplate);
 
-    void migrateDataFormTemplateVersion(DataFormTemplate formTemplate);
+//    void migrateDataFormTemplateVersion(DataFormTemplate formTemplate);
 
     Optional<DataTemplateInstanceDto> findLatestByTemplate(String templateUid);
-    Optional<DataTemplateInstanceDto> findByTemplateAndVersion(String templateUid, String versionUid);
-    Optional<DataTemplateInstanceDto> findByTemplateAndVersionNumber(String templateUid, Integer version);
+
+    Optional<DataTemplateInstanceDto> findByTemplateAndVersionUid(String templateUid, String versionUid);
+
+    Optional<DataTemplateInstanceDto> findByTemplateAndVersionNo(String templateUid, Integer version);
 }

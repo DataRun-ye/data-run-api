@@ -10,7 +10,7 @@ import org.nmcpye.datarun.common.uidgenerate.BaseDto;
 import java.util.Map;
 
 /**
- * DTO for {@link org.nmcpye.datarun.mongo.domain.dataform.FormTemplate}
+ * DTO for {@link org.nmcpye.datarun.jpa.datatemplate.DataTemplate}
  */
 @Value
 @EqualsAndHashCode(callSuper = true)

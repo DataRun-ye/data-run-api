@@ -13,6 +13,7 @@ import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
 import org.nmcpye.datarun.jpa.dataelementgroupset.DataElementGroupSet;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
+import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.jpa.option.Option;
 import org.nmcpye.datarun.jpa.option.OptionGroup;
@@ -30,6 +31,7 @@ import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.userauthority.Authority;
 import org.nmcpye.datarun.jpa.userole.Privilege;
 import org.nmcpye.datarun.jpa.userole.Role;
+import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
@@ -56,13 +58,13 @@ public class CacheConfiguration {
         JHipsterProperties.Cache.Ehcache ehcache = jHipsterProperties.getCache().getEhcache();
 
         jcacheConfiguration = Eh107Configuration.fromEhcacheCacheConfiguration(
-                CacheConfigurationBuilder.newCacheConfigurationBuilder(
-                                Object.class,
-                                Object.class,
-                                ResourcePoolsBuilder.heap(ehcache.getMaxEntries())
-                        )
-                        .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofSeconds(ehcache.getTimeToLiveSeconds())))
-                        .build()
+            CacheConfigurationBuilder.newCacheConfigurationBuilder(
+                    Object.class,
+                    Object.class,
+                    ResourcePoolsBuilder.heap(ehcache.getMaxEntries())
+                )
+                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofSeconds(ehcache.getTimeToLiveSeconds())))
+                .build()
         );
     }
 
@@ -86,6 +88,10 @@ public class CacheConfiguration {
             createCache(cm, UserRepository.USER_ACTIVITY_IDS_CACHE);
             createCache(cm, UserRepository.USER_TEAM_FORM_ACCESS_CACHE);
             createCache(cm, TemplateElementService.TEMPLATE_MAP_CACHE);
+            createCache(cm, DataTemplateVersionRepository.TEMPLATE_UID_VERSION_NO_CACHE);
+            createCache(cm, DataTemplateVersionRepository.TEMPLATE_UID_VERSION_UID_CACHE);
+            createCache(cm, DataTemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_CACHE);
+            createCache(cm, DataTemplateRepository.TEMPLATE_BY_UID_CACHE);
             createCache(cm, User.class.getName());
             createCache(cm, User.class.getName());
             createCache(cm, Authority.class.getName());

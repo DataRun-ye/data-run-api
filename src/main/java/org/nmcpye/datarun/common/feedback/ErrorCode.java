@@ -41,7 +41,7 @@ public enum ErrorCode {
     E1122("element: `{0}`,`{1}` is not a Categorical complex reference type"),
     E1199("System configuration Error: `{0}`"),
 
-    /* Data */
+    /* Query */
     E2000("Query parameters cannot be null"),
     E2001("At least one data element must be specified"),
 
@@ -68,10 +68,10 @@ public enum ErrorCode {
     /* Data Submission Validation */
     E4110("Submission validation Error: {0}"),
     E4111("Submission Normalization Errors: `{0}`"),
-//    E4112("Activity or Team is not Active: {0}"),
-//    E4113("Not found Form template: {0}"),
-//    E4114("Not found Form template version: {0}"),
-//    E4115("Missing required scope: {0}"),
+    E4112("Submission `{0}` form and formVersionId must be present"),
+    E4113("Team submitted the data must be present in submission: {0}"),
+    E4114("your user is not part of the team {0} that created the submission: {1}"),
+    E4115("updating submission's form version is not allowed: incoming `{0}` required: `{1}`"),
 //    E4116("{0} : Expected array for multi-value scope"),
 //    E4117("{0} : Expected single value"),
 //    E4118("{0} : Invalid reference {1} for {2}"),

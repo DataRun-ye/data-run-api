@@ -167,6 +167,7 @@ public class DefaultOptionService implements OptionService {
 
 
         Map<String, String> codeToId = found.stream()
+            .filter(Objects::nonNull)
             .collect(Collectors.toMap(Option::getCode, Option::getId));
 
         List<String> missing = uniqueCodes.stream()

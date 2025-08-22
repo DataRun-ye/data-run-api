@@ -5,11 +5,11 @@ import org.nmcpye.datarun.common.IdentifiableObjectRepository;
 import org.nmcpye.datarun.common.SoftDeleteService;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.query.UnifiedQueryParser;
 import org.nmcpye.datarun.query.filter.*;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.CacheManager;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -31,26 +31,32 @@ public abstract class DefaultMongoSoftDeleteService<T extends MongoSoftDeleteObj
     @Override
     public T save(T object) {
         log.debug("Request service to save {}:`{}`", getClazz().getSimpleName(), object.getUid());
-        if (!object.getDeleted() && object.getDeletedAt() != null) {
+        if (!object.getDeleted()) {
             object.setDeletedAt(null);
         }
 
         return super.save(object);
     }
 
+    @Transactional
     @Override
     public void deleteByUid(String uid) {
         log.debug("Request soft delete service to soft delete {}:`{}`", getClazz().getSimpleName(), uid);
-        final var toMarkAsDeleted = findByUid(uid).orElseThrow(() ->
-            new IllegalQueryException(new ErrorMessage(ErrorCode.E1106, "Id", uid)));
-        toMarkAsDeleted.setDeleted(Boolean.TRUE);
-        toMarkAsDeleted.setDeletedAt(Instant.now());
-        save(toMarkAsDeleted);
+        findByIdOrUid(uid).ifPresent(this::softDelete);
+    }
+
+    @Transactional
+    @Override
+    public void delete(T object) {
+        log.debug("Request soft delete service to soft delete {}:`{}`", getClazz().getSimpleName(), object.getUid());
+        findByIdOrUid(object).ifPresent(this::softDelete);
     }
 
     @Override
-    public void delete(T object) {
-        deleteByUid(object.getUid());
+    public void softDelete(T object) {
+        object.setDeleted(Boolean.TRUE);
+        object.setDeletedAt(Instant.now());
+        save(object);
     }
 
     @Override

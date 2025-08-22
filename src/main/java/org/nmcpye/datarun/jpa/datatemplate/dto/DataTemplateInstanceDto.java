@@ -24,7 +24,8 @@ import java.util.stream.Stream;
 import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
 
 /**
- * DTO for {@link org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate}
+ * DTO, a merge of {@link DataTemplate}
+ * and one of its {@link DataTemplateVersion}
  */
 @SuppressWarnings("unused")
 @Setter
@@ -164,9 +165,9 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
         }
         return sections.stream()
             .filter(FormSectionConf::getRepeatable)
-            .filter(r -> r.getRepeatCategoryElement() != null)
+            .filter(r -> r.getCategoryDataElementId() != null)
             .collect(Collectors.toMap(AbstractElement::getPath,
-                FormSectionConf::getRepeatCategoryElement));
+                FormSectionConf::getCategoryDataElementId));
     }
 
 

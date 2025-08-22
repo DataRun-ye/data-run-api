@@ -28,10 +28,9 @@
     <include file="/config/liquibase/changelog/v7-2025-merge/24-01-changelog-last-merge.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/app-user-constraints/app-user-add-omitted-constraints.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/option-groups/01-01-option-group-and-group-set-changelog.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/pivot_changes/value_normalization/repeat_and_values_table_.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/pivot_changes/data_submission_and_history_table_.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/pivot_changes/outbox/outbox_table_.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/pivot_changes/value_normalization/migration_errors.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/pivot_changes/changelog-template-field.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/data_submission/2025-08-14-data-submission-and-history-tables_.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/etl/2025-08-17-normalization-repeat-and-values-tables.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/etl/2025-08-17-outbox-table.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/etl/2025-08-17-batch-submission-migration-errors-table.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

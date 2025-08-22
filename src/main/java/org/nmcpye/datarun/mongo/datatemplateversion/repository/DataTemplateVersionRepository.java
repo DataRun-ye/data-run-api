@@ -6,6 +6,7 @@ import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.mongo.common.repository.MongoIdentifiableRepository;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.Query;
@@ -23,12 +24,19 @@ import java.util.Set;
 @JaversSpringDataAuditable
 public interface DataTemplateVersionRepository
     extends MongoIdentifiableRepository<DataTemplateVersion> {
+    String TEMPLATE_UID_VERSION_NO_CACHE = "templateUidVersionNoCache";
+    String TEMPLATE_UID_VERSION_UID_CACHE = "templateUidVersionUidCache";
+    String TEMPLATE_UID_LATEST_VERSION_CACHE = "templateUidLatestVersionCache";
+
     // Returns the single FormInstance with highest version for this template
+    @Cacheable(cacheNames = TEMPLATE_UID_LATEST_VERSION_CACHE)
     Optional<DataTemplateVersion> findTopByTemplateUidOrderByVersionNumberDesc(String templateId);
 
     // Returns a specific version, if it exists
+    @Cacheable(cacheNames = TEMPLATE_UID_VERSION_NO_CACHE)
     Optional<DataTemplateVersion> findByTemplateUidAndVersionNumber(@NotNull @Size(max = 11) String templateId, int version);
 
+    @Cacheable(cacheNames = TEMPLATE_UID_VERSION_UID_CACHE)
     Optional<DataTemplateVersion> findByTemplateUidAndUid(@NotNull @Size(max = 11) String templateUid, String id);
 
 

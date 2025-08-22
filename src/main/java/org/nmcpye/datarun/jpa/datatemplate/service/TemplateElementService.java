@@ -26,11 +26,11 @@ public class TemplateElementService {
      */
     @Cacheable(cacheNames = TEMPLATE_MAP_CACHE)
     public TemplateElementMap getTemplateElementMap(String id, String versionUid) {
-        return new TemplateElementMap(templateInstanceService.findByTemplateAndVersion(id, versionUid)
+        return new TemplateElementMap(templateInstanceService.findByTemplateAndVersionUid(id, versionUid)
             .orElseThrow());
     }
     public TemplateElementMap getTemplateElementMap(String id, Integer version) {
-        return new TemplateElementMap(templateInstanceService.findByTemplateAndVersionNumber(id, version)
+        return new TemplateElementMap(templateInstanceService.findByTemplateAndVersionNo(id, version)
             .orElseThrow());
     }
 }

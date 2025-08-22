@@ -1,6 +1,0 @@
-<changeSet id="add_my_trigger" author="you">
-    <sqlFile path="/config/liquibase/changelog/sql/triggers.sql"/>
-    <rollback>
-        <sql>DROP TRIGGER IF EXISTS my_trigger;</sql>
-    </rollback>
-</changeSet>

@@ -3,15 +3,17 @@ package org.nmcpye.datarun.jpa.datasubmission;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.jpa.datasubmission.service.FormDataProcessor;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
-import org.nmcpye.datarun.jpa.datasubmission.validation.FormDataProcessor;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
+import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidator;
 import org.nmcpye.datarun.jpa.etl.model.TemplateElementMap;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayDeque;
@@ -24,26 +26,12 @@ import java.util.Map;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class SubmissionDataProcessor {
 
     private final CompositeSubmissionValidator compositeValidator;
-    private final TemplateElementService elementMapService;
     private final FormDataProcessor formDataProcessor;
-    private final ObjectMapper objectMapper;
-
-    public SubmissionDataProcessor(CompositeSubmissionValidator compositeValidator,
-                                   ObjectMapper objectMapper,
-                                   TemplateElementService elementMapService,
-                                   FormDataProcessor formDataProcessor) {
-        this.compositeValidator = compositeValidator;
-        this.elementMapService = elementMapService;
-        this.formDataProcessor = formDataProcessor;
-        this.objectMapper = objectMapper;
-    }
-
-    public CompositeSubmissionValidator getCompositeValidator() {
-        return compositeValidator;
-    }
+    private final SubmissionAccessValidator submissionAccessValidator;
 
     /**
      * '
@@ -54,15 +42,16 @@ public class SubmissionDataProcessor {
      * - set canonical JSON back to submission
      *
      * @param submission   incoming submission
-     * @param objectMapper objectMapper
      */
-    public void processIncomingSubmission(DataSubmission submission, ObjectMapper objectMapper) {
+    public void processIncomingSubmission(DataSubmission submission, CurrentUserDetails user) {
+        submissionAccessValidator.validateAccess(submission, user);
         compositeValidator.validateAndEnrich(submission);
         final var enrichedFormData = formDataProcessor.enrichFormData(submission, true);
 //         assertRepeatIdsPresent(submission.getFormData(),
 //             elementMapService.getTemplateElementMap(submission.getForm(), submission.getFormVersion()));
         submission.setFormData(enrichedFormData);
     }
+
 
     // Validate repeat items have _id (JsonNode version)
     public void assertRepeatIdsPresent(JsonNode root, TemplateElementMap elementMap) {
@@ -85,7 +74,7 @@ public class SubmissionDataProcessor {
                 JsonNode value = e.getValue();
                 String childPath = (path == null || path.isEmpty()) ? key : path + "." + key;
 
-                AbstractElement element = elementMap.getElementPathMapCache().get(childPath);
+                AbstractElement element = elementMap.getElementByIdPathMap().get(childPath);
                 if (element instanceof FormSectionConf section && Boolean.TRUE.equals(section.getRepeatable())) {
                     if (value == null || !value.isArray()) {
                         continue; // no instances to validate

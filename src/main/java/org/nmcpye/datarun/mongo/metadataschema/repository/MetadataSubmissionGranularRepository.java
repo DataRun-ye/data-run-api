@@ -1,14 +1,17 @@
 package org.nmcpye.datarun.mongo.metadataschema.repository;
 
+import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
+import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
+import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceService;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.team.TeamFormPermissions;
 import org.nmcpye.datarun.jpa.team.service.TeamService;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
-import org.nmcpye.datarun.mongo.legacydatatemplate.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -23,39 +26,27 @@ import org.springframework.stereotype.Repository;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("ALL")
 @Repository
+@RequiredArgsConstructor
 public class MetadataSubmissionGranularRepository {
 
-    final private MongoTemplate mongoTemplate;
-    final private TeamService teamService;
-    final private MetadataSubmissionRepository metadataSubmissionRepository;
-    final private DataFormTemplateRepository dataFormRepository;
+    private final MongoTemplate mongoTemplate;
+    private final TeamService teamService;
+    private final DataTemplateInstanceService templateInstanceService;
     private final AssignmentRepository assignmentRepository;
-
-    public MetadataSubmissionGranularRepository(MongoTemplate mongoTemplate, TeamService teamService,
-                                                MetadataSubmissionRepository metadataSubmissionRepository,
-                                                DataFormTemplateRepository dataFormRepository,
-                                                AssignmentRepository assignmentRepository) {
-        this.mongoTemplate = mongoTemplate;
-        this.teamService = teamService;
-        this.metadataSubmissionRepository = metadataSubmissionRepository;
-        this.dataFormRepository = dataFormRepository;
-        this.assignmentRepository = assignmentRepository;
-    }
+    private final DataTemplateRepository templateRepository;
 
     // uids of assigned assignment for resourceType == Assignment
     public List<Assignment> getAssignedAssignments() {
-        var assignments = assignmentRepository.findAllByStatusUser(false);
-        return assignments;
-
+        return assignmentRepository.findAllByStatusUser(false);
     }
 
     // uids of assigned orgUnits for resourceType == OrgUnit
     private List<String> getAssignedOrgUnits() {
-        var assignedOrgs = getAssignedAssignments().stream().map((assignment) ->
+        return getAssignedAssignments().stream().map((assignment) ->
                 assignment.getOrgUnit().getUid())
             .toList();
-        return assignedOrgs;
     }
 
     // uids of assigned activities for resourceType == Activity
@@ -74,7 +65,8 @@ public class MetadataSubmissionGranularRepository {
     public List<FormDataElementConf> getUserFieldsOfResourceType() {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
 
-            return dataFormRepository.findAll().stream().flatMap(form -> form.getFields()
+            final var allForms = templateRepository.findAll().stream().map(DataTemplate::getUid).toList();
+            return templateInstanceService.findAllByUidIn(allForms).stream().flatMap(form -> form.getFields()
                     .stream()).filter((field) -> field.getType().isReference())
 //                .map((field) -> {
 //                    final var refField = new ReferenceField();
@@ -102,13 +94,11 @@ public class MetadataSubmissionGranularRepository {
                 new HashSet<TeamFormPermissions>()).stream()).map(TeamFormPermissions::getForm).distinct().toList();
 
 
-        List<FormDataElementConf> typeReferenceFields = forms.stream().flatMap(uid ->
-                dataFormRepository.findByUid(uid).stream())
+        return forms.stream().flatMap(uid ->
+                templateInstanceService.findByUid(uid).stream())
             .flatMap(form -> form.getFields().stream())
             .filter((field) -> field.getType().isReference())
             .toList();
-
-        return typeReferenceFields;
     }
 
     public Page<MetadataSubmission> getReferencedMetadataSubmissions(QueryRequest queryRequest) {
@@ -142,10 +132,10 @@ public class MetadataSubmissionGranularRepository {
     private List<MetadataSubmission> getMetadataSubmissionsForResource(String resourceType, String metadataSchema, String resourceId) {
         Query query = new Query(Criteria.where("resourceType").is(resourceType)
             .and("metadataSchema").is(metadataSchema).and("resourceId").is(resourceId));
-        var subs = metadataSubmissionRepository.findAllByResourceTypeAndResourceIdAndAndMetadataSchema(resourceType,
-            resourceId, metadataSchema, Pageable.unpaged());
+//        var subs = metadataSubmissionRepository.findAllByResourceTypeAndResourceIdAndAndMetadataSchema(resourceType,
+//            resourceId, metadataSchema, Pageable.unpaged());
 
-        var submissions = mongoTemplate.find(query, MetadataSubmission.class);
+//        var submissions = mongoTemplate.find(query, MetadataSubmission.class);
         return mongoTemplate.find(query, MetadataSubmission.class);
     }
 

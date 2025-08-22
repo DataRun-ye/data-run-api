@@ -1,12 +1,11 @@
 package org.nmcpye.datarun.jpa.etl.dto;
 
 import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Objects;
 
 /**
  * Canonical SubmissionValueRow DTO used by the normalizer and DAO.
@@ -14,127 +13,88 @@ import java.util.Objects;
  *
  * @author Hamza Assada 10/08/2025 (7amza.it@gmail.com)
  */
-@Getter
-@Setter
+@Data
 @Builder
+@EqualsAndHashCode(of = {"submissionId", "repeatInstanceId", "elementId", "optionId"},
+    cacheStrategy = EqualsAndHashCode.CacheStrategy.LAZY)
 public class ElementDataValue {
+    // db bigserial
     private Long id;
 
-    // "submission_id"
-    private String submission;
+    // ------------------------
+    // Submission & Context
+    // ------------------------
+    // db: "submission_id"
+    private String submissionId;
+    // ------------------------
 
-    // "repeat_instance_id"
-    private String repeatInstance;
 
-    // "element_id"
-    private String element;
+    // ------------------------
+    // LEVEL 1: Assignment Dimensions
+    // ------------------------
+    // db: "assignment_id"
+    private String assignmentId;
+    // db: "team_id"
+    private String teamId;
+    // db: "org_unit_id"
+    private String orgUnitId;
+    // db: "activity_id"
+    private String activityId;
+    // ------------------------
 
-    // "option_id" (for multi-select)
-    private String option;
 
-    // "value_text"
+    // ------------------------
+    // Data Element & Value
+    // ------------------------
+    // db: "element_id"
+    private String elementId;
+    // db: element_label (jsonb)
+    private String elementLabel;
+    // ------------------------
+
+    // ------------------------
+    // Form Template parameters
+    // would be deprecated if global
+    // cross domain grouping/filtering
+    // worked (i.e element,orgUnit,team, activity,
+    // assignment, category, single select option...etc)
+    // ------------------------
+    // db: repeat_instance_id
+    private String repeatInstanceId;
+
+    // ------------------------
+
+
+    // ------------------------
+    // For multi-select, this id is not null,
+    // each selected option is stored in a row
+    // ------------------------
+    // db: "option_id"
+    private String optionId;
+    // ------------------------
+
+    // ------------------------
+    // Measures
+    // ------------------------
+    // db: "value_text"
     private String valueText;
-
-    // "value_num"
+    // db: "value_num"
     private BigDecimal valueNum;
-
-    // "value_bool"
+    // db: "value_bool"
     private Boolean valueBool;
 
-    // "assignment_id"
-    private String assignment;
+    private Instant valueTs;
+    // ------------------------
 
-    // "template_id"
-    private String template;
-
-    // "category_id"
-    private String category;
-
-    // timestamps
-    private Instant createdDate;
-    private Instant lastModifiedDate;
+    // ------------------------
+    // value timestamps
+    // ------------------------
+    // db: "deleted_at"
     private Instant deletedAt;
-
-    // convenience setters for numeric/boolean
-    public void setValueNumber(BigDecimal v) {
-        this.valueNum = v;
-    }
-
-    public void setValueBoolean(Boolean b) {
-        this.valueBool = b;
-    }
-
-    // convenience for text value
-    public void setValueTextValue(String t) {
-        this.valueText = t;
-    }
-
-//    public void setValue(Object rawValue) {
-//        if (rawValue != null) {
-//            if (type.isNumeric()) {
-//                this.valueNum = new BigDecimal(rawValue.toString());
-//                this.valueText = null;
-//                this.valueBool = null;
-//            } else if (type.isBoolean()) {
-//                this.valueBool = (Boolean) rawValue;
-//                this.valueText = null;
-//            } else {
-//                this.valueText = rawValue.toString();
-//            }
-//        }
-//    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ElementDataValue that)) return false;
-        return Objects.equals(submission, that.submission) &&
-            Objects.equals(repeatInstance, that.repeatInstance) &&
-            Objects.equals(element, that.element);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(submission, repeatInstance, element);
-    }
+    // db: "created_date"
+    private Instant createdDate;
+    // db: "last_modified_date"
+    private Instant lastModifiedDate;
+    // ------------------------
 }
 
-//@Getter
-//@NoArgsConstructor
-//@Builder
-//public class SubmissionValueRow implements Serializable {
-
-//    @Builder(toBuilder = true)
-//    public static SubmissionValueRow from(String submission, String repeatInstance, String category,
-//                                          String option, String template, String element,
-//                                          String assignment, Instant deletedAt, Instant createdDate,
-//                                          Instant lastModifiedDate) {
-//        final SubmissionValueRow s = new SubmissionValueRow();
-//        s.submission = submission;
-//        s.assignment = assignment;
-//        s.template = template;
-//        s.element = element;
-//        s.repeatInstance = repeatInstance;
-//        s.category = category;
-//        s.deletedAt = deletedAt;
-//        s.createdDate = createdDate;
-//        s.lastModifiedDate = lastModifiedDate;
-//        s.option = option;
-//
-//        return s;
-//    }
-//public void setValue(Object rawValue) {
-//    if (rawValue != null) {
-//        if (rawValue instanceof Number) {
-//            this.valueNum = new BigDecimal(rawValue.toString());
-//            this.valueText = null;
-//            this.valueBool = null;
-//        } else if (rawValue instanceof Boolean) {
-//            this.valueBool = (Boolean) rawValue;
-//            this.valueText = null;
-//        } else {
-//            this.valueText = rawValue.toString();
-//        }
-//    }
-//}
-//}

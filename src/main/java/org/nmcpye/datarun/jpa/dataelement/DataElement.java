@@ -54,4 +54,7 @@ public class DataElement extends BaseDataElement {
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"dataElementGroupSets", "dataElements", "translations"}, allowSetters = true)
     protected Set<DataElementGroup> dataElementGroups = new HashSet<>();
+
+    @Column(name = "is_measure")
+    private Boolean isMeasure = false;
 }

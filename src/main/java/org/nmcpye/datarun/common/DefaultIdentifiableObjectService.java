@@ -88,7 +88,7 @@ public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObj
 
     @Override
     public void delete(T object) {
-        deleteByUid(object.getUid());
+        findByUid(object.getUid()).ifPresent(repository::delete);
     }
 
     protected void clearCaches(String name, String key) {

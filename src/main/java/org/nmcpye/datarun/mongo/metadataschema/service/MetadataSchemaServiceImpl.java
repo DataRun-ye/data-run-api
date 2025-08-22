@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.mongo.metadataschema.service;
 
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceService;
 import org.nmcpye.datarun.mongo.common.DefaultMongoIdentifiableObjectService;
 import org.nmcpye.datarun.mongo.domain.MetadataSchema;
 import org.nmcpye.datarun.mongo.domain.datafield.AbstractField;
 import org.nmcpye.datarun.mongo.domain.datafield.Section;
-import org.nmcpye.datarun.mongo.legacydatatemplate.repository.DataFormTemplateRepository;
 import org.nmcpye.datarun.mongo.metadataschema.repository.MetadataSchemaRepository;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
@@ -25,17 +25,17 @@ public class MetadataSchemaServiceImpl
     implements MetadataSchemaService {
 
     private final MetadataSchemaRepository repository;
-    private final DataFormTemplateRepository dataFormRepository;
+    private final DataTemplateInstanceService templateInstanceService;
 
     private final AssignmentRepository flowInstanceRepository;
 
     public MetadataSchemaServiceImpl(MetadataSchemaRepository repository,
                                      CacheManager cacheManager,
-                                     DataFormTemplateRepository dataFormRepository,
+                                     DataTemplateInstanceService templateInstanceService,
                                      AssignmentRepository flowInstanceRepository) {
         super(repository, cacheManager);
         this.repository = repository;
-        this.dataFormRepository = dataFormRepository;
+        this.templateInstanceService = templateInstanceService;
         this.flowInstanceRepository = flowInstanceRepository;
     }
 
@@ -63,56 +63,4 @@ public class MetadataSchemaServiceImpl
         newSubmission.updateFlattenedFields();
         newSubmission.setVersion(createOrUpdateVersion(newSubmission) + 1);
     }
-//
-//    @Override
-//    public Page<MetadataSchema> findAllByUser(QueryRequest queryRequest) {
-//        Pageable pageable = queryRequest.getPageable();
-//
-//        // If the current user is an admin, fetch all schemas
-//        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-//            return repository.findAll(pageable);
-//        }
-//
-//        // Get all active assignments for the user
-//        List<Assignment> assignments = assignmentRepository.findAllByStatusUser(false);
-//
-//        // Get a list of distinct activity UIDs
-//        List<String> activityUids = assignments.stream()
-//            .map(Assignment::getActivity)
-//            .map(Activity::getUid)
-//            .distinct()
-//            .toList();
-//
-//        // Collect referenced metadata schemas from fields
-//        List<MetadataSchema> schemas = activityUids.stream()
-//            .flatMap(uid -> dataFormRepository.findAllByActivity(uid).stream())
-//            .flatMap(form -> form.getFlattenedFields().stream())
-//            .filter(AbstractField::isResourceTypeField)
-//            .map(ReferenceField.class::cast)
-//            .map(ReferenceField::getResourceMetadataSchema)
-//            .distinct()
-//            .map(repository::findByUid)
-//            .flatMap(Optional::stream) // Unwrap only present values
-//            .toList();
-//
-//        // Handle paging manually if pageable is unpaged or out of bounds
-//        return getPagedSchemas(pageable, schemas);
-//    }
-
-//    // Helper method for paging
-//    private Page<MetadataSchema> getPagedSchemas(Pageable pageable, List<MetadataSchema> schemas) {
-//        if (!pageable.isPaged()) {
-//            return new PageImpl<>(schemas);
-//        }
-//
-//        int start = (int) pageable.getOffset();
-//        int end = Math.min(start + pageable.getPageSize(), schemas.size());
-//
-//        if (start >= end) {
-//            return Page.empty(pageable);
-//        }
-//
-//        List<MetadataSchema> sublist = schemas.subList(start, end);
-//        return new PageImpl<>(sublist, pageable, schemas.size());
-//    }
 }

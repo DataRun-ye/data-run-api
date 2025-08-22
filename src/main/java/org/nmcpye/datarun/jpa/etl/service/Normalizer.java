@@ -17,9 +17,9 @@ import org.nmcpye.datarun.jpa.etl.exception.MissingRepeatUidException;
 import org.nmcpye.datarun.jpa.etl.model.CategoryResolutionResult;
 import org.nmcpye.datarun.jpa.etl.model.NormalizedSubmission;
 import org.nmcpye.datarun.jpa.etl.model.TemplateElementMap;
+import org.nmcpye.datarun.jpa.etl.util.ElementValueParser;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -194,10 +194,14 @@ public class Normalizer {
     /**
      * Centralized builder for ElementDataValue to ensure consistency and align with the new, leaner DTO.
      */
-    private ElementDataValue buildElementDataValue(DataSubmission submission, FormDataElementConf field, RepeatContext context, String optionId, Object rawValue) {
-        ElementDataValue.ElementDataValueBuilder builder = ElementDataValue.builder()
-            // --- CORE IDENTIFIERS & DIMENSIONS ---
-            .submissionId(submission.getUid())
+    private ElementDataValue buildElementDataValue(DataSubmission submission,
+                                                   FormDataElementConf field,
+                                                   RepeatContext context,
+                                                   String optionId, Object rawValue) {
+        // --- try parse value based on valueType
+        ElementDataValue.ElementDataValueBuilder builder = ElementValueParser.parseValue(rawValue, field);
+        // --- CORE IDENTIFIERS & DIMENSIONS ---
+        builder.submissionId(submission.getUid())
             .elementId(field.getId())
             // --- EXPANDED ASSIGNMENT DIMENSIONS ---
             .assignmentId(submission.getAssignment())
@@ -212,17 +216,6 @@ public class Normalizer {
             .elementLabel(getLabel(field))
             .lastModifiedDate(Instant.now())
             .createdDate(Instant.now());
-
-        // Set the typed value based on the raw input
-        if (rawValue == null) {
-            builder.valueText(null);
-        } else if (rawValue instanceof Number) {
-            builder.valueNum(new BigDecimal(rawValue.toString()));
-        } else if (rawValue instanceof Boolean) {
-            builder.valueBool((Boolean) rawValue);
-        } else {
-            builder.valueText(rawValue.toString());
-        }
 
         return builder.build();
     }
@@ -266,24 +259,15 @@ public class Normalizer {
             log.warn("Template metadata: category element id {} has no reverse path", categoryElementId);
             return null;
         }
-        // compute relative key inside the repeat item
-        String relative = categoryFullPath.startsWith(repeatPath + ".")
-            ? categoryFullPath.substring(repeatPath.length() + 1)
-            : categoryFullPath;
+        // we use name as a key, and category is available as an id
+        String categoryKey = categoryFullPath.getName();
 
-        Object rawVal = item.get(relative);
+        Object rawVal = item.get(categoryKey);
         if (rawVal == null) return null;
-
-        // retrieve the element conf (so resolver knows the element type)
-        AbstractElement el = elementMap.getElementByIdPathMap().get(categoryFullPath);
-        if (!(el instanceof FormDataElementConf catField)) {
-            log.warn("Category element {} at path {} is not a FormDataElementConf, skipping", categoryElementId, categoryFullPath);
-            return null;
-        }
 
         // delegate to resolver which may try id->lookup or code->lookup based on field type
         try {
-            return categoryResolver.resolveCategory(rawVal, catField);
+            return categoryResolver.resolveCategory(rawVal, categoryFullPath);
         } catch (InvalidCategoryValueException ex) {
             // policy: treat as hard failure so the submission doesn't silently store wrong category
             throw ex;

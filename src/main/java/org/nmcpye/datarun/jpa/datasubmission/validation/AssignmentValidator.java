@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.jpa.datasubmission.validation;
 
+import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,15 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
  * @author Hamza Assada 15/08/2025 (7amza.it@gmail.com)
  */
 @Component
+@RequiredArgsConstructor
 public class AssignmentValidator implements SubmissionValidator {
 
     private final AssignmentRepository assignmentRepository;
-    private final FormAccessService formAccessService;
-
-    public AssignmentValidator(AssignmentRepository assignmentRepository, FormAccessService formAccessService) {
-        this.assignmentRepository = assignmentRepository;
-        this.formAccessService = formAccessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

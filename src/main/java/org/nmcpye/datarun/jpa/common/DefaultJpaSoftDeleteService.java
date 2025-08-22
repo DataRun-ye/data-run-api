@@ -2,13 +2,11 @@ package org.nmcpye.datarun.jpa.common;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.SoftDeleteService;
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.query.filter.*;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.CacheManager;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -42,21 +40,32 @@ public abstract class DefaultJpaSoftDeleteService
         return super.save(object);
     }
 
+    @Transactional
+    @Override
+    public void deleteByUid(String uid) {
+        log.debug("Request soft delete service to soft delete {}:`{}`", getClazz().getSimpleName(), uid);
+        findByIdOrUid(uid).ifPresent(this::softDelete);
+    }
+
+
+    @Transactional
     @Override
     public void delete(T object) {
-        log.debug("Request soft delete service to soft delete {}:`{}`", getClazz().getSimpleName(), object.getId());
-        final var toMarkAsDeleted = findByIdOrUid(object).orElseThrow(() ->
-            new IllegalQueryException(new ErrorMessage(ErrorCode.E1109,
-                object.getClass().getSimpleName(), object.getId())));
-        toMarkAsDeleted.setDeleted(Boolean.TRUE);
-        toMarkAsDeleted.setDeletedAt(Instant.now());
-        save(toMarkAsDeleted);
+        log.debug("Request soft delete service to soft delete {}:`{}`", getClazz().getSimpleName(), object.getUid());
+        findByIdOrUid(object).ifPresent(this::softDelete);
+    }
+
+    @Override
+    public void softDelete(T object) {
+        object.setDeleted(Boolean.TRUE);
+        object.setDeletedAt(Instant.now());
+        save(object);
     }
 
     protected FilterExpression buildCombinedFilter(QueryRequest queryRequest, String jsonQueryBody) {
         List<FilterExpression> allFilters = new ArrayList<>();
         final FilterExpression baseFilter = super.buildCombinedFilter(queryRequest, jsonQueryBody);
-        if(baseFilter != null) {
+        if (baseFilter != null) {
             allFilters.add(baseFilter);
         }
 

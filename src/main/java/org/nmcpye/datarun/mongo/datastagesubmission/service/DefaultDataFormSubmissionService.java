@@ -218,8 +218,11 @@ public class DefaultDataFormSubmissionService
     @Transactional
     @Override
     public void deleteByUid(String uid) {
+        // check and make sure the batch process of normalize
+        // and upsert will not run after this and
+        // reverse the effect, (soft delete here is an update)
         super.deleteByUid(uid);
-        repeatInstancesDao.markRepeatInstancesDeletedBySubmission(uid);
-        submissionValuesDao.markValuesDeletedForSubmission(uid);
+        repeatInstancesDao.markAllAsDeletedForSubmission(uid);
+        submissionValuesDao.markAllAsDeletedForSubmission(uid);
     }
 }

@@ -63,13 +63,13 @@ public class DataSubmission extends JpaSoftDeleteObject {
     private FlowStatus status;
 
     @NotNull
-    @Column(name = "form", nullable = false)
+    @Column(name = "form", nullable = false, updatable = false)
     private String form;
 
-    @Column(name = "form_version")
+    @Column(name = "form_version", updatable = false)
     private String formVersion;
 
-    @Column(name = "version_number")
+    @Column(name = "version_number", updatable = false)
     private Integer version;
 
     @Column(name = "team")

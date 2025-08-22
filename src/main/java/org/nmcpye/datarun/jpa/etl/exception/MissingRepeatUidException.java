@@ -16,7 +16,7 @@ public class MissingRepeatUidException extends RuntimeException {
     private final List<MissingRepeatUid> details;
 
     public MissingRepeatUidException(List<MissingRepeatUid> details) {
-        super("Missing _uid for repeat items");
+        super("Missing _id for repeat items");
         this.details = details == null ? Collections.emptyList() : details;
     }
 

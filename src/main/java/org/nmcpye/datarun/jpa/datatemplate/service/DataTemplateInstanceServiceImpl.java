@@ -1,10 +1,9 @@
 package org.nmcpye.datarun.jpa.datatemplate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.jpa.datatemplate.mapper.DataTemplateMapper;
@@ -12,17 +11,17 @@ import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 import org.nmcpye.datarun.mongo.datatemplateversion.dto.FormTemplateVersionDto;
-import org.nmcpye.datarun.mongo.datatemplateversion.mapper.DataFormTemplateMapper;
 import org.nmcpye.datarun.mongo.datatemplateversion.mapper.FormTemplateVersionMapper;
 import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
-import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +34,7 @@ import java.util.stream.Collectors;
 @Primary
 @Transactional
 @Slf4j
+@RequiredArgsConstructor
 public class DataTemplateInstanceServiceImpl
     implements DataTemplateInstanceService {
     private final DataTemplateService dataTemplateService;
@@ -43,22 +43,6 @@ public class DataTemplateInstanceServiceImpl
 
     private final DataTemplateVersionRepository templateVersionRepository;
     private final DataTemplateMapper dataTemplateMapper;
-    private final DataFormTemplateMapper dataFormTemplateMapper;
-
-
-    public DataTemplateInstanceServiceImpl(DataTemplateService dataTemplateService,
-                                           DataTemplateRepository dataTemplateRepository,
-                                           FormTemplateVersionMapper versionMapper,
-                                           DataTemplateVersionRepository templateVersionRepository,
-                                           DataTemplateMapper dataTemplateMapper,
-                                           DataFormTemplateMapper dataFormTemplateMapper) {
-        this.dataTemplateService = dataTemplateService;
-        this.dataTemplateRepository = dataTemplateRepository;
-        this.versionMapper = versionMapper;
-        this.templateVersionRepository = templateVersionRepository;
-        this.dataTemplateMapper = dataTemplateMapper;
-        this.dataFormTemplateMapper = dataFormTemplateMapper;
-    }
 
     /**
      * Create a brand‐new version of the FormTemplate (Postgres ↔ Mongo) as a single “unit.”
@@ -138,6 +122,43 @@ public class DataTemplateInstanceServiceImpl
     }
 
     @Override
+    public List<DataTemplateInstanceDto> findAllByUidIn(Collection<String> uids) {
+        final var masters = dataTemplateRepository.findAllByUidIn(uids);
+        // batch-load versions
+        List<String> ids = masters.stream()
+            .map(DataTemplate::getVersionUid)
+            .toList();
+
+        Map<String, FormTemplateVersionDto> versions = templateVersionRepository.findAllByUidIn(ids).stream()
+            .map(versionMapper::toDto)
+            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, s -> s));
+
+        return masters.stream().map(m ->
+            dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
+                Optional.ofNullable(versions.get(m.getUid())).orElseThrow(
+                    () -> new IllegalQueryException(ErrorCode.E1120, m.getUid())
+                ))).toList();
+    }
+
+    @Override
+    public Page<DataTemplateInstanceDto> findAllByUidIn(Collection<String> uids, Pageable pageable) {
+        final var masters = dataTemplateRepository.findAllByUidIn(uids, pageable);
+        // batch-load versions
+        List<String> ids = masters.stream()
+            .map(DataTemplate::getVersionUid)
+            .toList();
+
+        Map<String, FormTemplateVersionDto> versions = templateVersionRepository.findAllByUidIn(ids).stream()
+            .map(versionMapper::toDto)
+            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, s -> s));
+
+        return masters.map(m -> dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
+            Optional.ofNullable(versions.get(m.getUid())).orElseThrow(
+                () -> new IllegalQueryException(ErrorCode.E1120, m.getUid())
+            )));
+    }
+
+    @Override
     public Page<DataTemplateInstanceDto> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
         // load only lightweight masters
         Page<DataTemplate> masters = dataTemplateService.findAllByUser(queryRequest, jsonQueryBody);
@@ -156,35 +177,40 @@ public class DataTemplateInstanceServiceImpl
             )));
     }
 
-    @Transactional
-    @Override
-    public void migrateDataFormTemplateVersion(DataFormTemplate formTemplate) {
-        if (!dataTemplateRepository.existsByUid(formTemplate.getUid())) {
-            final var formTemplateVersion = formTemplate.getVersion();
-            final var templateUid = formTemplate.getUid();
+//    @Transactional
+//    @Override
+//    public void migrateDataFormTemplateVersion(DataFormTemplate formTemplate) {
+//        if (!dataTemplateRepository.existsByUid(formTemplate.getUid())) {
+//            final var formTemplateVersion = formTemplate.getVersion();
+//            final var templateUid = formTemplate.getUid();
+//
+//            final DataTemplateInstanceDto dataTemplateInstanceDto = dataFormTemplateMapper.toDto(formTemplate);
+//            final DataTemplate template = dataTemplateMapper.fromInstanceDto(dataTemplateInstanceDto);
+//
+//            final var newVersionUid = CodeGenerator.generateUid();
+//
+//            dataTemplateService.save(template.versionNumber(formTemplateVersion)
+//                // temporary for migrating old DataFormTemplate
+//                .uid(templateUid)
+//                .versionNumber(formTemplateVersion)
+//                .versionUid(newVersionUid));
+//
+//            templateVersionRepository.save(versionMapper
+//                .fromInstanceDto(dataTemplateInstanceDto)
+//                .uid(newVersionUid)
+//                .version(formTemplateVersion)
+//                .templateUid(templateUid));
+//        }
+//    }
 
-            final DataTemplateInstanceDto dataTemplateInstanceDto = dataFormTemplateMapper.toDto(formTemplate);
-            final DataTemplate template = dataTemplateMapper.fromInstanceDto(dataTemplateInstanceDto);
-
-            final var newVersionUid = CodeGenerator.generateUid();
-
-            dataTemplateService.save(template.versionNumber(formTemplateVersion)
-                // temporary for migrating old DataFormTemplate
-                .uid(templateUid)
-                .versionNumber(formTemplateVersion)
-                .versionUid(newVersionUid));
-
-            templateVersionRepository.save(versionMapper
-                .fromInstanceDto(dataTemplateInstanceDto)
-                .uid(newVersionUid)
-                .version(formTemplateVersion)
-                .templateUid(templateUid));
-        }
-    }
-
-    @CacheEvict(cacheNames = {UserRepository.USER_TEAM_FORM_ACCESS_CACHE,
+    @CacheEvict(cacheNames = {
+        UserRepository.USER_TEAM_FORM_ACCESS_CACHE,
         UserRepository.USER_ACTIVITY_IDS_CACHE,
-        UserRepository.USER_TEAM_IDS_CACHE})
+        UserRepository.USER_TEAM_IDS_CACHE,
+        DataTemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_CACHE,
+        DataTemplateRepository.TEMPLATE_BY_UID_CACHE,
+
+    })
     @Override
     public DataTemplateInstanceDto save(DataTemplateInstanceDto dataTemplateInstanceDto) {
         return saveNewVersion(dataTemplateInstanceDto);
@@ -200,16 +226,29 @@ public class DataTemplateInstanceServiceImpl
         return findLatestByTemplate(uid);
     }
 
+    @CacheEvict(cacheNames = {
+        UserRepository.USER_TEAM_FORM_ACCESS_CACHE,
+        UserRepository.USER_ACTIVITY_IDS_CACHE,
+        UserRepository.USER_TEAM_IDS_CACHE,
+        DataTemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_CACHE,
+        DataTemplateRepository.TEMPLATE_BY_UID_CACHE,
+    })
     @Override
     public void deleteByUid(String uid) {
         dataTemplateService.deleteByUid(uid);
     }
 
+    @CacheEvict(cacheNames = {
+        UserRepository.USER_TEAM_FORM_ACCESS_CACHE,
+        UserRepository.USER_ACTIVITY_IDS_CACHE,
+        UserRepository.USER_TEAM_IDS_CACHE,
+        DataTemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_CACHE,
+        DataTemplateRepository.TEMPLATE_BY_UID_CACHE,
+    })
     @Override
     public DataTemplateInstanceDto update(DataTemplateInstanceDto dataTemplateInstanceDto) {
-        findLatestByTemplate(dataTemplateInstanceDto.getUid()).orElseThrow(() -> new IllegalQueryException(
-            new ErrorMessage(ErrorCode.E1004,
-                DataTemplateVersion.class.getSimpleName(), dataTemplateInstanceDto.getUid())));
+        dataTemplateRepository.findByUid(dataTemplateInstanceDto.getUid()).orElseThrow(() ->
+            new IllegalQueryException(ErrorCode.E1113, dataTemplateInstanceDto.getUid()));
         return save(dataTemplateInstanceDto);
     }
 
@@ -225,8 +264,8 @@ public class DataTemplateInstanceServiceImpl
     }
 
     @Override
-    public Optional<DataTemplateInstanceDto> findByTemplateAndVersion(String templateUid,
-                                                                      String versionUid) {
+    public Optional<DataTemplateInstanceDto> findByTemplateAndVersionUid(String templateUid,
+                                                                         String versionUid) {
         final var template = dataTemplateService.findByUid(templateUid).map(dataTemplateMapper::toDto);
         final var version = templateVersionRepository.findByTemplateUidAndUid(templateUid, versionUid)
             .map(versionMapper::toDto);
@@ -239,11 +278,11 @@ public class DataTemplateInstanceServiceImpl
     }
 
     @Override
-    public Optional<DataTemplateInstanceDto> findByTemplateAndVersionNumber(String templateUid, Integer versionNumber) {
+    public Optional<DataTemplateInstanceDto> findByTemplateAndVersionNo(String templateUid, Integer versionNumber) {
         final var template = dataTemplateService.findByUid(templateUid).map(dataTemplateMapper::toDto);
         final var version =
             templateVersionRepository.findByTemplateUidAndVersionNumber(templateUid, versionNumber)
-            .map(versionMapper::toDto);
+                .map(versionMapper::toDto);
 
         if (template.isEmpty() || version.isEmpty()) {
             return Optional.empty();

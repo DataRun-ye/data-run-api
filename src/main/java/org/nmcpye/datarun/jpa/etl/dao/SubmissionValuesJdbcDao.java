@@ -7,9 +7,8 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,184 +31,83 @@ public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
         this.jdbc = jdbc;
     }
 
-    // Conflict target uses generated columns + row_type + selection_key
-    private static final String UPSERT_SINGLE_SQL = """
+    // A single, unified UPSERT statement handles all cases.
+    private static final String UPSERT_SQL = """
         INSERT INTO element_data_value (
-          submission_id, repeat_instance_id, element_id,
-          value_text, value_num, value_bool,
-          assignment_id, template_id, category_id,
-          row_type, deleted_at, created_date, last_modified_date
+            submission_id, assignment_id, team_id, org_unit_id, activity_id,
+            element_id, element_label, repeat_instance_id, option_id,
+            value_text, value_num, value_bool, value_ts, row_type, created_date, last_modified_date, deleted_at
         ) VALUES (
-          :submission, :repeatInstance, :element,
-          :valueText, :valueNum, :valueBool,
-          :assignment, :template, :category,
-          :rowType, :deletedAt, :createdDate, :lastModifiedDate
+            :submissionId, :assignmentId, :teamId, :orgUnitId, :activityId,
+            :elementId, :elementLabel, :repeatInstanceId, :optionId,
+            :valueText, :valueNum, :valueBool, :valueTs, :rowType, :createdDate, :lastModifiedDate, NULL
         )
         ON CONFLICT (submission_id, element_id, repeat_instance_key, row_type, selection_key)
         DO UPDATE SET
-          value_text = EXCLUDED.value_text,
-          value_num = EXCLUDED.value_num,
-          value_bool = EXCLUDED.value_bool,
-          category_id = EXCLUDED.category_id,
-          deleted_at = NULL,
-          last_modified_date = now();
+            assignment_id = EXCLUDED.assignment_id,
+            team_id = EXCLUDED.team_id,
+            org_unit_id = EXCLUDED.org_unit_id,
+            activity_id = EXCLUDED.activity_id,
+            element_label = EXCLUDED.element_label,
+            value_text = EXCLUDED.value_text,
+            value_num = EXCLUDED.value_num,
+            value_bool = EXCLUDED.value_bool,
+            value_ts = EXCLUDED.value_ts,
+            last_modified_date = now(),
+            deleted_at = NULL;
         """;
-
-    private static final String UPSERT_MULTI_SQL = """
-        INSERT INTO element_data_value (
-          submission_id, repeat_instance_id, element_id,
-          option_id, value_text,
-          assignment_id, template_id, category_id,
-          row_type, deleted_at, created_date, last_modified_date
-        ) VALUES (
-          :submission, :repeatInstance, :element,
-          :optionId, :valueText,
-          :assignment, :template, :category,
-          :rowType, :deletedAt, :createdDate, :lastModifiedDate
-        )
-        ON CONFLICT (submission_id, element_id, repeat_instance_key, row_type, selection_key)
-        DO UPDATE SET
-          value_text = EXCLUDED.value_text,
-          category_id = EXCLUDED.category_id,
-          deleted_at = NULL,
-          last_modified_date = now();
-        """;
-
-    @Override
-    public void upsertSubmissionValue(ElementDataValue r) {
-        upsertSubmissionValuesBatch(Collections.singletonList(r));
-    }
 
     @Override
     public void upsertSubmissionValuesBatch(List<ElementDataValue> rows) {
         if (rows == null || rows.isEmpty()) return;
 
-        final Instant now = Instant.now();
+        SqlParameterSource[] batch = rows.stream()
+            .map(this::toParamSource)
+            .toArray(SqlParameterSource[]::new);
 
-        // Partition rows into singles (optionId == null) and multis (optionId != null)
-        List<MapSqlParameterSource> singleParams = new ArrayList<>();
-        List<MapSqlParameterSource> multiParams = new ArrayList<>();
-
-        for (ElementDataValue r : rows) {
-            if (r.getCreatedDate() == null) r.setCreatedDate(now);
-            if (r.getLastModifiedDate() == null) r.setLastModifiedDate(now);
-
-            MapSqlParameterSource p = new MapSqlParameterSource()
-                .addValue("submission", r.getSubmission())
-                .addValue("repeatInstance", r.getRepeatInstance())
-                .addValue("element", r.getElement())
-                .addValue("valueText", r.getValueText())
-                .addValue("valueNum", r.getValueNum())
-                .addValue("valueBool", r.getValueBool())
-                .addValue("assignment", r.getAssignment())
-                .addValue("template", r.getTemplate())
-                .addValue("category", r.getCategory())
-                .addValue("createdDate", Timestamp.from(r.getCreatedDate()))
-                .addValue("lastModifiedDate", Timestamp.from(r.getLastModifiedDate()))
-                .addValue("deletedAt", r.getDeletedAt());
-
-            if (r.getOption() != null) {
-                // multi-select row: set optionId and row_type = 'M'
-                p.addValue("optionId", r.getOption());
-                p.addValue("rowType", "M");
-                // optionally prefer to clear valueText if storing only optionId: keep whatever r provides
-                multiParams.add(p);
-            } else {
-                // single-value row: row_type = 'S'
-                p.addValue("rowType", "S");
-                singleParams.add(p);
-            }
-        }
-
-        if (!singleParams.isEmpty()) {
-            SqlParameterSource[] batch = singleParams.toArray(new SqlParameterSource[0]);
-            jdbc.batchUpdate(UPSERT_SINGLE_SQL, batch);
-        }
-        if (!multiParams.isEmpty()) {
-            SqlParameterSource[] batch = multiParams.toArray(new SqlParameterSource[0]);
-            jdbc.batchUpdate(UPSERT_MULTI_SQL, batch);
-        }
+        jdbc.batchUpdate(UPSERT_SQL, batch);
     }
 
     @Override
-    public List<String> findSelectionIdentitiesForElementRepeat(String submissionId, String repeatInstanceId, String elementId) {
-        String sql;
-        MapSqlParameterSource params = new MapSqlParameterSource()
-            .addValue("submission", submissionId)
-            .addValue("element", elementId);
+    public void markAllAsDeletedForSubmission(String submissionId) {
+        String sql = "UPDATE element_data_value SET deleted_at = now(), last_modified_date = now() " +
+            "WHERE submission_id = :submissionId AND deleted_at IS NULL";
+        jdbc.update(sql, new MapSqlParameterSource("submissionId", submissionId));
+    }
 
-        if (repeatInstanceId == null) {
-            sql = """
-                SELECT COALESCE(option_id, value_text) AS identity
-                FROM element_data_value
-                WHERE submission_id = :submission
-                  AND element_id = :element
-                  AND deleted_at IS NULL
-                  AND repeat_instance_id IS NULL
-                """;
-        } else {
-            sql = """
-                SELECT COALESCE(option_id, value_text) AS identity
-                FROM element_data_value
-                WHERE submission_id = :submission
-                  AND element_id = :element
-                  AND deleted_at IS NULL
-                  AND repeat_instance_id = :repeatInstance
-                """;
-            params.addValue("repeatInstance", repeatInstanceId);
+    private MapSqlParameterSource toParamSource(ElementDataValue r) {
+        // Ensure timestamps are set for new rows
+        if (r.getCreatedDate() == null) r.setCreatedDate(Instant.now());
+        if (r.getLastModifiedDate() == null) r.setLastModifiedDate(Instant.now());
+
+        return new MapSqlParameterSource()
+            .addValue("submissionId", r.getSubmissionId())
+            .addValue("assignmentId", r.getAssignmentId())
+            .addValue("teamId", r.getTeamId())
+            .addValue("orgUnitId", r.getOrgUnitId())
+            .addValue("activityId", r.getActivityId())
+            .addValue("elementId", r.getElementId())
+            .addValue("elementLabel", toJsonbObject(r.getElementLabel()), Types.OTHER)
+            .addValue("repeatInstanceId", r.getRepeatInstanceId())
+            .addValue("optionId", r.getOptionId())
+            .addValue("valueText", r.getValueText())
+            .addValue("valueNum", r.getValueNum())
+            .addValue("valueBool", r.getValueBool())
+            .addValue("valueTs", r.getValueTs() != null ? Timestamp.from(r.getValueTs()) : null)
+            .addValue("rowType", r.getOptionId() != null ? "M" : "S") // Set row_type dynamically
+            .addValue("createdDate", Timestamp.from(r.getCreatedDate()))
+            .addValue("lastModifiedDate", Timestamp.from(r.getLastModifiedDate()));
+    }
+
+    private Object toJsonbObject(String json) {
+        if (json == null) return null;
+        try {
+            org.postgresql.util.PGobject pg = new org.postgresql.util.PGobject();
+            pg.setType("jsonb");
+            pg.setValue(json);
+            return pg;
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to convert label to jsonb", e);
         }
-
-        List<String> list = jdbc.queryForList(sql, params, String.class);
-        return list == null ? Collections.emptyList() : list;
-    }
-
-    @Override
-    public void markSelectionValuesDeletedByIdentity(String submissionId, String repeatInstanceId, String elementId, List<String> identities) {
-        if (identities == null || identities.isEmpty()) return;
-        MapSqlParameterSource params = new MapSqlParameterSource()
-            .addValue("submission", submissionId)
-            .addValue("element", elementId)
-            .addValue("idents", identities);
-
-        String sql;
-        if (repeatInstanceId == null) {
-            sql = """
-                UPDATE element_data_value
-                SET deleted_at = now(), last_modified_date = now()
-                WHERE submission_id = :submission
-                  AND element_id = :element
-                  AND COALESCE(option_id, value_text) IN (:idents)
-                  AND repeat_instance_id IS NULL
-                """;
-        } else {
-            sql = """
-                UPDATE element_data_value
-                SET deleted_at = now(), last_modified_date = now()
-                WHERE submission_id = :submission
-                  AND element_id = :element
-                  AND COALESCE(option_id, value_text) IN (:idents)
-                  AND repeat_instance_id = :repeatInstance
-                """;
-            params.addValue("repeatInstance", repeatInstanceId);
-        }
-
-        jdbc.update(sql, params);
-    }
-
-    @Override
-    public void markValuesDeletedForRepeatUids(String submissionId, List<String> repeatUids) {
-        if (repeatUids == null || repeatUids.isEmpty()) return;
-        String sql = "UPDATE element_data_value SET deleted_at = now(), last_modified_date = now() WHERE submission_id = :submission AND repeat_instance_id IN (:uids)";
-        MapSqlParameterSource params = new MapSqlParameterSource()
-            .addValue("submission", submissionId)
-            .addValue("uids", repeatUids);
-        jdbc.update(sql, params);
-    }
-
-    @Override
-    public void markValuesDeletedForSubmission(String submissionId) {
-        MapSqlParameterSource params = new MapSqlParameterSource().addValue("submission", submissionId);
-        jdbc.update("UPDATE element_data_value SET deleted_at = now(), last_modified_date = now() " +
-            "WHERE submission_id = :submission AND deleted_at IS NULL", params);
     }
 }

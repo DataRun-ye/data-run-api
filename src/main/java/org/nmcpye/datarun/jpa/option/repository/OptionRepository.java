@@ -25,8 +25,8 @@ public interface OptionRepository
 
     @Cacheable(cacheNames = OPTIONS_OPTION_SET_UID)
     List<Option> findAllByOptionSetUid(@Size(max = 11) String optionSetUid);
-//    List<Option> findAllByCodeInAndOptionSetUid(Collection<String> codes, @Size(max = 11) String optionSetUid);
 
+    Optional<Option> findByCodeAndOptionSetUid(String code, @Size(max = 11) String optionSetUid);
 
     // no-op
     @Override

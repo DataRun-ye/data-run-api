@@ -186,10 +186,10 @@ public abstract class DefaultJpaIdentifiableService
 
     @Override
     public Page<T> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
-        final Specification<T> query = baseAccessSpecification(SecurityUtils.getCurrentUserDetailsOrThrow(),
+        final Specification<T> query = baseAccessSpecification(
+            SecurityUtils.getCurrentUserDetailsOrThrow(),
             queryRequest, jsonQueryBody);
-        final var list = jpaIdentifiableRepository.findAll(query, queryRequest.getPageable());
-        return list;
+        return jpaIdentifiableRepository.findAll(query, queryRequest.getPageable());
     }
 
     protected Specification<T> buildJsonQuerySpecification(String jsonQueryBody) {

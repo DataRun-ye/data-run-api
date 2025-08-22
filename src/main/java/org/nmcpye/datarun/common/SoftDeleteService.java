@@ -8,4 +8,5 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public interface SoftDeleteService<T extends SoftDeleteObject<ID>, ID>
     extends IdentifiableObjectService<T, ID> {
+    void softDelete(T object);
 }

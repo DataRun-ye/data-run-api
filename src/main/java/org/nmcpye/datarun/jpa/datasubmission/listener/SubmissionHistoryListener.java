@@ -2,9 +2,9 @@ package org.nmcpye.datarun.jpa.datasubmission.listener;
 
 import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.DataSubmissionLog;
+import org.nmcpye.datarun.jpa.datasubmission.DataSubmissionHistory;
 import org.nmcpye.datarun.jpa.datasubmission.events.SubmissionSavedEvent;
-import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionLogRepository;
+import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionHistoryRepository;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,11 +23,11 @@ public class SubmissionHistoryListener {
 
     private final Logger log = LoggerFactory.getLogger(SubmissionHistoryListener.class);
 
-    private final DataSubmissionLogRepository historyRepo;
+    private final DataSubmissionHistoryRepository historyRepo;
     private final DataSubmissionRepository submissionRepo;
     private final AssignmentService assignmentService;
 
-    public SubmissionHistoryListener(DataSubmissionLogRepository historyRepo,
+    public SubmissionHistoryListener(DataSubmissionHistoryRepository historyRepo,
                                      DataSubmissionRepository submissionRepo,
                                      AssignmentService assignmentService) {
         this.historyRepo = historyRepo;
@@ -46,7 +46,7 @@ public class SubmissionHistoryListener {
             DataSubmission committed = submissionRepo.findById(submissionId)
                 .orElseThrow(() -> new IllegalStateException("Committed DataSubmission not found: " + submissionId));
 
-            DataSubmissionLog h = new DataSubmissionLog();
+            DataSubmissionHistory h = new DataSubmissionHistory();
             h.setSubmissionId(committed.getId());
             h.setVersionNo(committed.getLockVersion());
             // createdAt: prefer lastModifiedDate if set, otherwise now

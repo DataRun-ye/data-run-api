@@ -3,14 +3,13 @@ package org.nmcpye.datarun.mongo.datatemplateversion.service;
 import org.nmcpye.datarun.common.IdentifiableObjectService;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 import org.nmcpye.datarun.mongo.datatemplateversion.dto.FormTemplateVersionDto;
-import org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.Optional;
 
 /**
- * Service Custom Interface for managing {@link DataFormTemplate}.
+ * Service Custom Interface for managing {@link DataTemplateVersion}.
  */
 public interface DateTemplateVersionService
     extends IdentifiableObjectService<DataTemplateVersion, String> {

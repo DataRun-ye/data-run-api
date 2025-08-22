@@ -1,8 +1,7 @@
 package org.nmcpye.datarun.jpa.pivot.query;
 
+import org.jooq.Condition;
 import org.jooq.Field;
-
-import java.util.List;
 
 /**
  * Complete metadata for a field that can be used in a pivot query.
@@ -16,12 +15,22 @@ import java.util.List;
  * @author Hamza Assada 17/08/2025 (7amza.it@gmail.com)
  * @see JoinInfo
  */
+/**
+ * A simplified mapping for fields within the pivot_grid_facts materialized view.
+ */
 public record PivotableFieldMapping(
     String id,
-    Field<?> field,
+    Field<?> dimensionField, // Field for GROUP BY and filtering (e.g., TEAM_ID, ELEMENT_ID)
+    Field<?> measureField,   // Field for aggregation (e.g., VALUE_NUM)
     PivotDataType dataType,
-    Scope scope, // The scope of the field
-    List<JoinInfo> requiredJoins,
-    boolean isMeasure
-) {
-}
+    Condition condition // Optional condition for element-specific measures
+) {}
+//public record PivotableFieldMapping(
+//    String id,
+//    Field<?> field,
+//    PivotDataType dataType,
+//    Scope scope, // The scope of the field
+//    List<JoinInfo> requiredJoins,
+//    boolean isMeasure
+//) {
+//}

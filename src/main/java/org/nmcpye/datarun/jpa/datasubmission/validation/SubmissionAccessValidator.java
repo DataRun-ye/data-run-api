@@ -1,0 +1,42 @@
+package org.nmcpye.datarun.jpa.datasubmission.validation;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
+import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.springframework.stereotype.Component;
+
+import java.util.Objects;
+
+/**
+ * @author Hamza Assada 20/08/2025 (7amza.it@gmail.com)
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class SubmissionAccessValidator {
+    private final FormAccessService formAccessService;
+
+    public DataSubmission validateAccess(DataSubmission submission, CurrentUserDetails user) {
+        if (!user.isSuper()) {
+            if (!formAccessService.canSubmitData(submission.getForm())) {
+                log.error("User {} cannot submit data", user.getUsername());
+                throw new IllegalQueryException(ErrorCode.E1112, submission.getTeam());
+            }
+            if (Objects.isNull(submission.getTeam())) {
+                log.error("Team is not present in submission {}", submission.getUid());
+                throw new IllegalQueryException(ErrorCode.E4113, submission.getUid());
+            }
+            final var incomingTeam = submission.getTeam();
+            if (!user.getUserTeamsUIDs().contains(incomingTeam)) {
+                log.error("User {}, with team {} cannot submit data", user.getUsername(), incomingTeam);
+                throw new IllegalQueryException(ErrorCode.E4114, submission.getTeam(), submission.getUid());
+            }
+        }
+
+        return submission;
+    }
+}

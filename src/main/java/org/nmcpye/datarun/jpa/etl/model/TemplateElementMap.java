@@ -23,46 +23,46 @@ public class TemplateElementMap {
     /**
      * materialized repeatable paths cache, e.g. "adult.adultClassification"
      */
-    private final List<String> repeatPathsCache;
+    private final List<String> repeatIdPaths;
 
     /**
      * mapping of repeatPath -> (relativeChildPath -> elementId)
      */
-    private final Map<String, Map<String, String>> repeatChildrenMapCache;
+    private final Map<String, Map<String, String>> repeatChildrenMap;
 
-    private final Map<String, AbstractElement> elementPathMapCache;
+    private final Map<String, AbstractElement> elementByIdPathMap;
 
-    private final Map<String, AbstractElement> elementNamePathMapCache;
+    private final Map<String, AbstractElement> elementByNamePathMap;
 
     /**
      * elementId->path reverse map, for getting path by an elementId for retrieving categoryElement's path by its id
      */
-    private final Map<String, String> fieldElementReversePathMap;
+    private final Map<String, FormDataElementConf> fieldElementReverseIdPathMap;
 
     /**
      * top-level fields mapping: relativePath -> elementId
      */
-    private final Map<String, String> topLevelFieldPathToElementIdCache;
+    private final Map<String, String> topLevelFieldIdPathToElementIdCache;
 
     /**
      * repeatPath → categoryElementId so ETL can set category_id easily
      */
-    private final Map<String, String> repeatCategoryElementMapCache;
+    private final Map<String, String> repeatPathToCategoryElementIdMap;
 
     public TemplateElementMap(DataTemplateInstanceDto dto) {
         this.templateInstanceDto = dto;
-        this.repeatPathsCache = List.copyOf(dto.getRepeatSectionsPaths() == null ? List.of() : dto.getRepeatSectionsPaths());
-        this.topLevelFieldPathToElementIdCache = Map.copyOf(dto.getTopLevelFieldPathToElementId() == null ? Map.of() : dto.getTopLevelFieldPathToElementId());
-        this.repeatChildrenMapCache = dto.getRepeatSectionChildrenMap() == null ? Map.of() : dto.getRepeatSectionChildrenMap().entrySet().stream()
+        this.repeatIdPaths = List.copyOf(dto.getRepeatSectionsPaths() == null ? List.of() : dto.getRepeatSectionsPaths());
+        this.topLevelFieldIdPathToElementIdCache = Map.copyOf(dto.getTopLevelFieldPathToElementId() == null ? Map.of() : dto.getTopLevelFieldPathToElementId());
+        this.repeatChildrenMap = dto.getRepeatSectionChildrenMap() == null ? Map.of() : dto.getRepeatSectionChildrenMap().entrySet().stream()
             .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> Map.copyOf(e.getValue())));
-        this.repeatCategoryElementMapCache = Map.copyOf(dto.getRepeatCategoryElementMap() == null ? Map.of() : dto.getRepeatCategoryElementMap());
-        this.elementPathMapCache = Map.copyOf(dto.getAllElementPathMap() == null ? Map.of() : dto.getAllElementPathMap());
-        this.fieldElementReversePathMap = Map.copyOf(elementPathMapCache.values()
+        this.repeatPathToCategoryElementIdMap = Map.copyOf(dto.getRepeatCategoryElementMap() == null ? Map.of() : dto.getRepeatCategoryElementMap());
+        this.elementByIdPathMap = Map.copyOf(dto.getAllElementPathMap() == null ? Map.of() : dto.getAllElementPathMap());
+        this.fieldElementReverseIdPathMap = Map.copyOf(elementByIdPathMap.values()
             .stream()
             .filter(FormDataElementConf.class::isInstance)
             .map(FormDataElementConf.class::cast)
-            .collect(Collectors.toMap(FormDataElementConf::getId, AbstractElement::getPath)));
-        this.elementNamePathMapCache = this.elementPathMapCache.entrySet().stream()
+            .collect(Collectors.toMap(FormDataElementConf::getId, f -> f)));
+        this.elementByNamePathMap = this.elementByIdPathMap.entrySet().stream()
             .collect(Collectors.toMap(
                 entry -> entry.getKey()
                     .replaceFirst(entry.getValue()
@@ -76,6 +76,6 @@ public class TemplateElementMap {
      * @return the path children
      */
     public Map<String, String> getChildrenFieldPathsUnderRepeat(String repeatPath) {
-        return repeatChildrenMapCache.getOrDefault(repeatPath, Map.of());
+        return repeatChildrenMap.getOrDefault(repeatPath, Map.of());
     }
 }

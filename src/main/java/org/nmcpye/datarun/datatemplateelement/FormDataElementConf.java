@@ -48,9 +48,10 @@ public class FormDataElementConf extends AbstractElement {
     private String resourceMetadataSchema;
     private ValueTypeRendering valueTypeRendering = ValueTypeRendering.DEFAULT;
     private AggregationType aggregationType = AggregationType.DEFAULT;
+    private Boolean isMeasure;
 
     public Boolean isMultiSelect() {
-        return this.type.isOptionsType() ? this.type == ValueType.SelectMulti : null;
+        return this.type != null && this.type.isOptionsType() ? this.type == ValueType.SelectMulti : null;
     }
 
     public Boolean getMainField() {

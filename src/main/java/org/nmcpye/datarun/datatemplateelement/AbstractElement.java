@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,10 @@ public abstract class AbstractElement implements ElementInterface {
     public AbstractElement path(String path) {
         setPath(path);
         return this;
+    }
+
+    public ValueType getType() {
+        return null;
     }
 
     @Override
