@@ -1,9 +1,11 @@
 package org.nmcpye.datarun.jpa.datatemplate.elementmapping;
 
+import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.AggregationType;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
-import org.nmcpye.datarun.jpa.datatemplate.ElementTemplate;
+import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
 
 import java.util.Objects;
 
@@ -26,42 +28,51 @@ public final class TemplateFieldMapper {
         };
     }
 
-    public static ElementTemplate from(
+    public static ElementTemplateConfig from(
         String templateId,
         String versionId,
         int versionNo,
-        FormDataElementConf conf,
+        AbstractElement conf,
         DataElementMeta meta,
         String repeatPath,
         String categoryForRepeatElementId) {
 
         Objects.requireNonNull(conf);
         Objects.requireNonNull(meta);
+        var tf = ElementTemplateConfig.builder();
+        tf.templateId(templateId);
+        tf.templateVersionId(versionId);
+        tf.versionNo(versionNo);
+        tf.dataElementId(meta.elementId());
+        tf.idPath(conf.getPath());
+        tf.name(conf.getName());
+        tf.repeatPath(repeatPath);
+        tf.categoryForRepeat(categoryForRepeatElementId);
+        if (conf instanceof FormDataElementConf field) {
+            tf.elementKind(ElementTemplateConfig.ElementKind.FIELD);
+            tf.valueType(meta.valueType());
+            tf.namePath(field.getPath().replaceFirst(field.getId(), field.getName()));
+            // get it from passed category
+            // conf may override meta
+            tf.isReference(meta.isReference());
+            tf.referenceTable(meta.referenceTable());
+            tf.optionSetId(field.getOptionSet()); // conf may override meta
+            tf.isMulti(Boolean.TRUE.equals(field.isMultiSelect())); // adapt to your properties structure
+            tf.aggregationType(field.getAggregationType().isDefault() ?
+                getDefaultAggregationType(field.getType()) :
+                field.getAggregationType());
+            // Create a canonical metadata layer describing:
+            //available measures (aggregate-able fields: count, sum, avg, min, max),
+            //available dimensions (attributes to group by),
+            tf.isMeasure(field.getIsMeasure());
+        } else if (conf instanceof FormSectionConf sectionConf) {
+            tf.elementKind(ElementTemplateConfig.ElementKind.SECTION);
+            // conf may override meta
+            tf.isRepeatable(sectionConf.getRepeatable());
+        }
 
-        ElementTemplate tf = new ElementTemplate();
-        tf.setTemplateId(templateId);
-        tf.setTemplateVersionId(versionId);
-        tf.setVersionNo(versionNo);
-        tf.setDataElementId(meta.elementId());
-        tf.setPath(conf.getPath());
-        tf.setName(conf.getName());
-        tf.setValueType(meta.valueType());
-        tf.setIsReference(meta.isReference());
-        tf.setReferenceTable(meta.referenceTable());
-        tf.setOptionSetId(conf.getOptionSet()); // conf may override meta
-        tf.setIsRepeatable(repeatPath != null);
-        tf.setRepeatPath(repeatPath);
-        tf.setIsMulti(Boolean.TRUE.equals(conf.isMultiSelect())); // adapt to your properties structure
-        // Create a canonical metadata layer describing:
-        //available measures (aggregate-able fields: count, sum, avg, min, max),
-        //available dimensions (attributes to group by),
-        tf.setIsMeasure(conf.isMultiSelect());
-        tf.setAggregationType(conf.getAggregationType().isDefault() ?
-            getDefaultAggregationType(conf.getType()) :
-            conf.getAggregationType());
-        tf.setCategoryForRepeat(categoryForRepeatElementId);
         // serialize displayLabel and full conf as JSON strings for storage; caller may set via ObjectMapper
         // caller should set displayLabelJson / definitionJson before inserting
-        return tf;
+        return tf.build();
     }
 }
