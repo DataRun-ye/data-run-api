@@ -17,9 +17,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/**
- * @author Hamza Assada 13/08/2025 (7amza.it@gmail.com)
- */
+/// @author Hamza Assada
+/// @since 13/08/2025
 @Component
 public class ValueTypeValidationService {
     private static final String VALUE_STRING = "Value";

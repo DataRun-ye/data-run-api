@@ -4,6 +4,7 @@ package org.nmcpye.datarun.jpa.etl.model;
 import lombok.Getter;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 
 import java.util.List;
@@ -14,7 +15,8 @@ import java.util.stream.Collectors;
  * used by ETL service to temporarily cache the elements mapping of a {@link DataTemplateInstanceDto}
  * during processing
  *
- * @author Hamza Assada 12/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 12/08/2025
  */
 @Getter
 public class TemplateElementMap {
@@ -34,6 +36,8 @@ public class TemplateElementMap {
 
     private final Map<String, AbstractElement> elementByNamePathMap;
 
+    private final Map<String, ElementTemplateConfig> elementConfigByNamePathMap;
+
     /**
      * elementId->path reverse map, for getting path by an elementId for retrieving categoryElement's path by its id
      */
@@ -49,7 +53,7 @@ public class TemplateElementMap {
      */
     private final Map<String, String> repeatPathToCategoryElementIdMap;
 
-    public TemplateElementMap(DataTemplateInstanceDto dto) {
+    public TemplateElementMap(DataTemplateInstanceDto dto, Map<String, ElementTemplateConfig> elementConfigByNamePathMap) {
         this.templateInstanceDto = dto;
         this.repeatIdPaths = List.copyOf(dto.getRepeatSectionsPaths() == null ? List.of() : dto.getRepeatSectionsPaths());
         this.topLevelFieldIdPathToElementIdCache = Map.copyOf(dto.getTopLevelFieldPathToElementId() == null ? Map.of() : dto.getTopLevelFieldPathToElementId());
@@ -68,6 +72,7 @@ public class TemplateElementMap {
                     .replaceFirst(entry.getValue()
                         .getId(), entry.getValue().getName()),
                 Map.Entry::getValue));
+        this.elementConfigByNamePathMap = elementConfigByNamePathMap;
 
     }
 

@@ -25,7 +25,8 @@ import java.util.Set;
  * the context of a single option set and cannot span multiple option sets Manage
  * option sets.
  *
- * @author Hamza Assada 30/06/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 30/06/2025
  */
 @Entity
 @Table(name = "option_group", uniqueConstraints = {

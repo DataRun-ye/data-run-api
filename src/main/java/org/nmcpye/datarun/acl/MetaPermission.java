@@ -12,7 +12,8 @@ import java.util.Set;
  * {@code DELETE (8)}
  * {@code ADMINISTRATION (16)}
  *
- * @author Hamza Assada 16/05/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 16/05/2025
  */
 public class MetaPermission extends BasePermission {
     // bit 0 → mask = 1, code = 'R' (or any unique char)

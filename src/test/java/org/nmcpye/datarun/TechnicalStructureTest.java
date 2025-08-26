@@ -18,20 +18,6 @@ class TechnicalStructureTest {
     @ArchTest
     static final ArchRule respectsTechnicalArchitectureLayers = layeredArchitecture()
         .consideringAllDependencies()
-//        .layer("Config").definedBy("..config..")
-//        .layer("Web").definedBy("..web..")
-//        .optionalLayer("Service").definedBy("..service..")
-//        .layer("Security").definedBy("..security..")
-//        .optionalLayer("Persistence").definedBy("..repository..")
-//        .layer("Domain").definedBy("..domain..")
-//
-//        .whereLayer("Config").mayNotBeAccessedByAnyLayer()
-//        .whereLayer("Web").mayOnlyBeAccessedByLayers("Config")
-//        .whereLayer("Service").mayOnlyBeAccessedByLayers("Web", "Config")
-//        .whereLayer("Security").mayOnlyBeAccessedByLayers("Config", "Service", "Web")
-//        .whereLayer("Persistence").mayOnlyBeAccessedByLayers("Service", "Security", "Web", "Config")
-//        .whereLayer("Domain").mayOnlyBeAccessedByLayers("Persistence", "Service", "Security", "Web", "Config")
-
         .ignoreDependency(resideInAPackage("org.nmcpye.datarun.acl"), alwaysTrue())
         .ignoreDependency(resideInAPackage("org.nmcpye.datarun.jpa.auditing"), alwaysTrue())
         .ignoreDependency(type(JpaIdentifiableObject.class), type(EntityAuditEventListener.class))

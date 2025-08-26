@@ -19,7 +19,8 @@ import java.util.Arrays;
  * <p>
  * By default, it only runs with the "dev" profile.
  *
- * @author Hamza Assada 01/08/2023 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 01/08/2023
  */
 @Aspect
 public class LoggingAspect {

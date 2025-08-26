@@ -1,12 +1,16 @@
 package org.nmcpye.datarun.datatemplateelement;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -14,8 +18,15 @@ import java.util.Objects;
 
 @Getter
 @Setter
-@JsonIgnoreProperties(value = {"path"}, allowGetters = true)
-public abstract class AbstractElement implements ElementInterface {
+@JsonIgnoreProperties(ignoreUnknown = true) // tolerate extra fields in DB
+@JsonInclude(JsonInclude.Include.NON_NULL)  // omit nulls when serializing
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY,
+        getterVisibility = JsonAutoDetect.Visibility.NONE,
+        isGetterVisibility = JsonAutoDetect.Visibility.NONE)
+public abstract class AbstractElement implements ElementInterface, Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private String parent;
     @NotNull
     private String name;
@@ -28,12 +39,17 @@ public abstract class AbstractElement implements ElementInterface {
     private List<DataFieldRule> rules = new ArrayList<>();
     private Map<String, Object> properties;
 
-    @Override
     public AbstractElement path(String path) {
         setPath(path);
         return this;
     }
 
+    /**
+     * only {@link FormDataElementConf} can define a type
+     * defined here to provide a uniform iteration over elements without needing knowledge about certain type
+     *
+     * @return {@link FormDataElementConf#getType()} or null for {@link FormSectionConf}
+     */
     public ValueType getType() {
         return null;
     }

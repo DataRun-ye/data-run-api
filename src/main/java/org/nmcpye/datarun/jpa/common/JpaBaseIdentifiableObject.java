@@ -28,7 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * @author Hamza Assada 20/03/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 20/03/2025
  */
 @MappedSuperclass
 @Getter

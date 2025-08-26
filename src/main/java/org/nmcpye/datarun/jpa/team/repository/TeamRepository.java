@@ -16,7 +16,8 @@ import java.util.Optional;
 /**
  * Spring Data JPA repository for the Team entity.
  *
- * @author Hamza Assada 06/06/2023 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 06/06/2023
  */
 @Repository
 @JaversSpringDataAuditable

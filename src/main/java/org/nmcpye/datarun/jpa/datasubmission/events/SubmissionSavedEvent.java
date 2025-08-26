@@ -6,7 +6,8 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * @author Hamza Assada 14/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 14/08/2025
  */
 @Getter
 public class SubmissionSavedEvent implements Serializable {

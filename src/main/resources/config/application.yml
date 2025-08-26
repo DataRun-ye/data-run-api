@@ -218,3 +218,35 @@ jhipster:
 # ===================================================================
 
 # application:
+#application:
+#  pivot:
+#    metadata:
+#      dimensions:
+#        - apiName: team_id
+#          displayName: Team
+#          dataType: TEXT
+#        - apiName: org_unit_id
+#          displayName: Org Unit
+#          dataType: TEXT
+#        - apiName: activity_id
+#          displayName: Activity
+#          dataType: TEXT
+#        - apiName: element_name
+#          displayName: Data Element
+#          dataType: TEXT
+#        - apiName: option_name
+#          displayName: Selected Option
+#          dataType: TEXT
+#        - apiName: category_name
+#          displayName: Repeat Category
+#          dataType: TEXT
+#        - apiName: submission_completed_at
+#          displayName: Submission Date
+#          dataType: DATETIME
+#      measures:
+#        - apiName: value_num
+#          displayName: Numeric Value
+#          allowedAggregations: [SUM, AVG, MIN, MAX, COUNT]
+#        - apiName: value_id # Can be used for counting rows
+#          displayName: Count
+#          allowedAggregations: [COUNT]

@@ -11,9 +11,6 @@ import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * DTO for {@link org.nmcpye.datarun.mongo.domain.dataform.DataFormTemplate}
- */
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class FormTemplateVersionDto extends BaseDto implements Serializable {

@@ -15,7 +15,8 @@ import java.util.stream.IntStream;
 /**
  * Utility repository to load bag relationships based on https://vladmihalcea.com/hibernate-multiplebagfetchexception/
  *
- * @author Hamza Assada 06/06/2023 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 06/06/2023
  */
 public class TeamRepositoryWithBagRelationshipsImpl
     implements TeamRepositoryWithBagRelationships {

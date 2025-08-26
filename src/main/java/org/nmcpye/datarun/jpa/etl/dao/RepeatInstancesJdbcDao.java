@@ -12,7 +12,8 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * @author Hamza Assada 13/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 13/08/2025
  */
 @Repository
 public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
@@ -28,11 +29,12 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
         INSERT INTO repeat_instance (
             id, submission_id, repeat_path, parent_repeat_instance_id, repeat_index,
             client_updated_at, created_date, last_modified_date, created_by, last_modified_by,
-            category_kind, category_id, repeat_section_label, submission_completed_at, deleted_at
+            category_kind, category_id, category_name, category_Label, repeat_section_label,
+                                     submission_completed_at, deleted_at
         ) VALUES (
             :id, :submissionId, :repeatPath, :parentRepeatInstanceId, :repeatIndex,
             :clientUpdatedAt, :createdDate, :lastModifiedDate, :createdBy, :lastModifiedBy,
-            :categoryKind, :categoryId, :repeatSectionLabel, :submissionCompletedAt, NULL
+            :categoryKind, :categoryId, :categoryName, :categoryLabel, :repeatSectionLabel, :submissionCompletedAt, NULL
         )
         ON CONFLICT (id) DO UPDATE SET
             repeat_path = EXCLUDED.repeat_path,
@@ -42,6 +44,8 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
             repeat_section_label = EXCLUDED.repeat_section_label,
             category_kind = EXCLUDED.category_kind,
             category_id = EXCLUDED.category_id,
+            category_name = EXCLUDED.category_name,
+            category_label = EXCLUDED.category_label,
             submission_completed_at = EXCLUDED.submission_completed_at,
             last_modified_date = now(),
             last_modified_by = EXCLUDED.last_modified_by,
@@ -86,6 +90,8 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
 
             .addValue("categoryKind", ri.getCategoryKind())
             .addValue("categoryId", ri.getCategoryId())
+            .addValue("categoryName", ri.getCategoryName())
+            .addValue("categoryLabel", toJsonbObject(ri.getCategoryLabel()), Types.OTHER)
 
             .addValue("repeatSectionLabel",
                 toJsonbObject(ri.getRepeatSectionLabel()), Types.OTHER)

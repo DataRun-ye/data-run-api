@@ -11,7 +11,8 @@ import java.time.Instant;
  * Canonical SubmissionValueRow DTO used by the normalizer and DAO.
  * Field names and getter names must match those used by SubmissionValuesJdbcDao.
  *
- * @author Hamza Assada 10/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 10/08/2025
  */
 @Data
 @Builder
@@ -20,6 +21,9 @@ import java.time.Instant;
 public class ElementDataValue {
     // db bigserial
     private Long id;
+
+    // db: element_config_id: the element config that produced this value
+    private Long elementConfigId;
 
     // ------------------------
     // Submission & Context
@@ -84,6 +88,8 @@ public class ElementDataValue {
     private Boolean valueBool;
 
     private Instant valueTs;
+    private String valueRef;
+
     // ------------------------
 
     // ------------------------

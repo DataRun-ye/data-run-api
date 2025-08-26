@@ -12,7 +12,8 @@ import org.nmcpye.datarun.jpa.user.User;
 import java.util.Collection;
 
 /**
- * @author Hamza Assada 21/03/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 21/03/2025
  */
 @Entity
 @Table(name = "role")

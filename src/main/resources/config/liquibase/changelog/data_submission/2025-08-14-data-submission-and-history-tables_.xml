@@ -52,8 +52,8 @@
 
             <!-- status and timestamps -->
             <column name="status" type="varchar(32)"/>
-            <column name="start_entry_time" type="timestamp with time zone"/>
-            <column name="finished_entry_time" type="timestamp with time zone"/>
+            <column name="start_entry_time" type="DATETIME"/>
+            <column name="finished_entry_time" type="DATETIME"/>
 
             <!-- flexible JSON payload -->
             <column name="form_data" type="jsonb" defaultValueComputed="'{}'::jsonb"/>
@@ -65,14 +65,14 @@
             <column name="created_by" type="varchar(100)">
                 <constraints nullable="false"/>
             </column>
-            <column name="created_date" type="timestamp with time zone">
+            <column name="created_date" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
             <column name="last_modified_by" type="varchar(100)"/>
-            <column name="last_modified_date" type="timestamp with time zone"/>
+            <column name="last_modified_date" type="DATETIME"/>
             <column name="translations" type="jsonb"/>
             <column name="deleted" type="boolean" defaultValueBoolean="false"/>
-            <column name="deleted_at" type="timestamp with time zone"/>
+            <column name="deleted_at" type="DATETIME"/>
         </createTable>
 
         <!-- Constraints and indexes -->
@@ -126,7 +126,7 @@
             </column>
 
             <column name="version_no" type="integer"/>
-            <column name="created_at" type="timestamp with time zone">
+            <column name="created_at" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
             <column name="created_by" type="varchar(100)">

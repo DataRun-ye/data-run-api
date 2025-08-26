@@ -8,7 +8,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * @author Hamza Assada 10/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 10/08/2025
  */
 @Getter
 @ResponseStatus(HttpStatus.BAD_REQUEST)

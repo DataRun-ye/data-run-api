@@ -6,7 +6,8 @@ import org.nmcpye.datarun.jpa.dataelement.DataElement;
 /**
  * Service Interface for managing {@link DataElement}.
  *
- * @author Hamza Assada 08/02/2024 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 08/02/2024
  */
 public interface DataElementService
     extends JpaIdentifiableObjectService<DataElement> {

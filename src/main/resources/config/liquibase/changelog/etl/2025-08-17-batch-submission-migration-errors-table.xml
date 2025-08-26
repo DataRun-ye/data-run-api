@@ -29,7 +29,7 @@
             <!-- payload snapshot (jsonb) -->
             <column name="payload" type="jsonb"/>
 
-            <column name="created_at" type="timestamp with time zone" defaultValueComputed="now()"/>
+            <column name="created_at" type="DATETIME" defaultValueComputed="now()"/>
         </createTable>
 
         <createIndex indexName="idx_migration_errors_source" tableName="migration_errors">

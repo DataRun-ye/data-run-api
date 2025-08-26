@@ -3,15 +3,16 @@ package org.nmcpye.datarun.jpa.accessfilter;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
-import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.usegroup.UserGroup;
+import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 /**
- * @author Hamza Assada 21/03/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 21/03/2025
  */
 @Component
 public class UserGroupFilter extends DefaultJpaFilter<UserGroup> {

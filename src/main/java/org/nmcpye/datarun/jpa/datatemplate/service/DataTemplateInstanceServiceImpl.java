@@ -4,13 +4,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.jpa.datatemplate.mapper.DataTemplateMapper;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
+import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 import org.nmcpye.datarun.mongo.datatemplateversion.dto.FormTemplateVersionDto;
+import org.nmcpye.datarun.mongo.datatemplateversion.mapper.FormJpaTemplateVersionMapper;
 import org.nmcpye.datarun.mongo.datatemplateversion.mapper.FormTemplateVersionMapper;
 import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -27,9 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/**
- * Service Implementation for managing {@link DataTemplate}.
- */
+/// Service Implementation for managing [DataTemplate].
 @Service
 @Primary
 @Transactional
@@ -39,21 +41,67 @@ public class DataTemplateInstanceServiceImpl
     implements DataTemplateInstanceService {
     private final DataTemplateService dataTemplateService;
     private final DataTemplateRepository dataTemplateRepository;
-    private final FormTemplateVersionMapper versionMapper;
+    private final FormTemplateVersionMapper mongoVersionMapper;
+    private final FormJpaTemplateVersionMapper jpaVersionMapper;
 
-    private final DataTemplateVersionRepository templateVersionRepository;
+    private final DataTemplateVersionRepository templateVersionMongoRepository;
+    private final TemplateVersionRepository jpaTemplateVersionRepository;
     private final DataTemplateMapper dataTemplateMapper;
 
-    /**
-     * Create a brand‐new version of the FormTemplate (Postgres ↔ Mongo) as a single “unit.”
-     * If anything fails, neither side is left half‐updated.
-     */
     @Transactional
     public DataTemplateInstanceDto saveNewVersion(DataTemplateInstanceDto dto) {
         DataTemplate maybeNew = dataTemplateMapper.fromInstanceDto(dto);
 
+        DataTemplate template = dataTemplateRepository
+                .findByUidForWrite(maybeNew.getUid())   // PESSIMISTIC_WRITE lock
+                .map(existing -> {
+                    existing.setVersionNumber(existing.getVersionNumber() + 1);
+                    // keep other fields as needed
+                    return existing;
+                })
+                .orElseGet(() -> {
+                    maybeNew.setVersionNumber(1);
+                    return maybeNew;
+                });
+
+        int newVersion = template.getVersionNumber();
+
+        // Build new version entity
+        TemplateVersion versionEntity = jpaVersionMapper.fromInstanceDto(dto);
+        versionEntity.setVersionNumber(newVersion);
+        versionEntity.setTemplateUid(template.getUid());
+        // generate id/uid if you have a generator; keep same uid semantics
+        if (versionEntity.getId() == null) {
+            versionEntity.setId(CodeGenerator.nextUlid());
+        }
+        if (versionEntity.getUid() == null) {
+            versionEntity.setUid(CodeGenerator.generateUid());
+        }
+
+        // Save version first so we ensure it has PK/uid for the master row
+        TemplateVersion savedVersion = jpaTemplateVersionRepository.save(versionEntity);
+
+        // update template to reference new version uid and persist
+        template.setVersionUid(savedVersion.getUid());
+        template.setVersionNumber(newVersion);
+        DataTemplate savedTemplate = dataTemplateService.save(template); // still within @Transactional
+
+        // both saved, return DTO
+        return dataTemplateMapper.toInstanceDto(
+                dataTemplateMapper.toDto(savedTemplate),
+                jpaVersionMapper.toDto(savedVersion)
+        );
+    }
+
+    /// Create a brand‐new version of the FormTemplate (Postgres ↔ Mongo) as a single “unit.”
+    /// If anything fails, neither side is left half‐updated.
+    @Transactional
+    public DataTemplateInstanceDto saveNewVersionDeprecated(DataTemplateInstanceDto dto) {
+        DataTemplate maybeNew = dataTemplateMapper.fromInstanceDto(dto);
+
         //    We call a custom repository method findByUidForWrite(…) that uses a PESSIMISTIC_WRITE lock
         //    so that two concurrent callers cannot both see versionNumber = N and then both flip to N+1.
+        // postgresql
         DataTemplate template = dataTemplateRepository
             .findByUidForWrite(maybeNew.getUid())
             .map(existing -> {
@@ -69,13 +117,13 @@ public class DataTemplateInstanceServiceImpl
         int newVersion = template.getVersionNumber();
 
         // 3) Build the new Mongo “version document” but do NOT touch Postgres yet.
-        DataTemplateVersion versionDoc = versionMapper.fromInstanceDto(dto)
+        DataTemplateVersion versionDoc = mongoVersionMapper.fromInstanceDto(dto)
             .version(newVersion)
             .templateUid(template.getUid());
 
         DataTemplateVersion savedVersion;
         try {
-            savedVersion = templateVersionRepository.save(versionDoc);
+            savedVersion = templateVersionMongoRepository.save(versionDoc);
             // If this throws (Mongo down, or constraint violation), we immediately bubble up an exception.
             // Because we are @Transactional on Postgres, any Postgres changes (the versionNumber bump) have not been committed yet,
             // so they will roll back automatically. NO need for extra compensation for a Mongo failure.
@@ -99,7 +147,7 @@ public class DataTemplateInstanceServiceImpl
         } catch (RuntimeException postgresEx) {
             // COMPENSATE: remove the Mongo doc we just created, because Postgres did not accept the final save.
             try {
-                templateVersionRepository.deleteById(savedVersion.getUid());
+                templateVersionMongoRepository.deleteById(savedVersion.getUid());
             } catch (Exception deleteEx) {
                 // If we cannot delete the Mongo doc, log—someone may need to clean it up manually.
                 // Either way, we still abort the entire transaction by rethrowing below.
@@ -117,7 +165,7 @@ public class DataTemplateInstanceServiceImpl
         // 5) If we reach here, **both** Mongo AND Postgres succeeded. Build the response DTO:
         return dataTemplateMapper.toInstanceDto(
             dataTemplateMapper.toDto(savedTemplate),
-            versionMapper.toDto(savedVersion)
+            mongoVersionMapper.toDto(savedVersion)
         );
     }
 
@@ -129,8 +177,27 @@ public class DataTemplateInstanceServiceImpl
             .map(DataTemplate::getVersionUid)
             .toList();
 
-        Map<String, FormTemplateVersionDto> versions = templateVersionRepository.findAllByUidIn(ids).stream()
-            .map(versionMapper::toDto)
+        Map<String, FormTemplateVersionDto> versions = templateVersionMongoRepository.findAllByUidIn(ids).stream()
+            .map(mongoVersionMapper::toDto)
+            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, s -> s));
+
+        return masters.stream().map(m ->
+            dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
+                Optional.ofNullable(versions.get(m.getUid())).orElseThrow(
+                    () -> new IllegalQueryException(ErrorCode.E1120, m.getUid())
+                ))).toList();
+    }
+
+    @Override
+    public List<DataTemplateInstanceDto> findAll() {
+        final var masters = dataTemplateRepository.findAll();
+        // batch-load versions
+        List<String> ids = masters.stream()
+            .map(DataTemplate::getVersionUid)
+            .toList();
+
+        Map<String, FormTemplateVersionDto> versions = templateVersionMongoRepository.findAllByUidIn(ids).stream()
+            .map(mongoVersionMapper::toDto)
             .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, s -> s));
 
         return masters.stream().map(m ->
@@ -148,8 +215,8 @@ public class DataTemplateInstanceServiceImpl
             .map(DataTemplate::getVersionUid)
             .toList();
 
-        Map<String, FormTemplateVersionDto> versions = templateVersionRepository.findAllByUidIn(ids).stream()
-            .map(versionMapper::toDto)
+        Map<String, FormTemplateVersionDto> versions = templateVersionMongoRepository.findAllByUidIn(ids).stream()
+            .map(mongoVersionMapper::toDto)
             .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, s -> s));
 
         return masters.map(m -> dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
@@ -167,8 +234,8 @@ public class DataTemplateInstanceServiceImpl
             .map(DataTemplate::getVersionUid)
             .toList();
 
-        Map<String, FormTemplateVersionDto> versions = templateVersionRepository.findAllByUidIn(ids).stream()
-            .map(versionMapper::toDto)
+        Map<String, FormTemplateVersionDto> versions = templateVersionMongoRepository.findAllByUidIn(ids).stream()
+            .map(mongoVersionMapper::toDto)
             .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, s -> s));
 
         return masters.map(m -> dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
@@ -255,8 +322,8 @@ public class DataTemplateInstanceServiceImpl
     @Override
     public Optional<DataTemplateInstanceDto> findLatestByTemplate(String templateUid) {
         final var template = dataTemplateService.findByUid(templateUid).map(dataTemplateMapper::toDto);
-        final var version = templateVersionRepository.findTopByTemplateUidOrderByVersionNumberDesc(templateUid)
-            .map(versionMapper::toDto);
+        final var version = templateVersionMongoRepository.findTopByTemplateUidOrderByVersionNumberDesc(templateUid)
+            .map(mongoVersionMapper::toDto);
         if (template.isEmpty() || version.isEmpty()) {
             return Optional.empty();
         }
@@ -267,8 +334,8 @@ public class DataTemplateInstanceServiceImpl
     public Optional<DataTemplateInstanceDto> findByTemplateAndVersionUid(String templateUid,
                                                                          String versionUid) {
         final var template = dataTemplateService.findByUid(templateUid).map(dataTemplateMapper::toDto);
-        final var version = templateVersionRepository.findByTemplateUidAndUid(templateUid, versionUid)
-            .map(versionMapper::toDto);
+        final var version = templateVersionMongoRepository.findByTemplateUidAndUid(templateUid, versionUid)
+            .map(mongoVersionMapper::toDto);
 
         if (template.isEmpty() || version.isEmpty()) {
             return Optional.empty();
@@ -281,8 +348,8 @@ public class DataTemplateInstanceServiceImpl
     public Optional<DataTemplateInstanceDto> findByTemplateAndVersionNo(String templateUid, Integer versionNumber) {
         final var template = dataTemplateService.findByUid(templateUid).map(dataTemplateMapper::toDto);
         final var version =
-            templateVersionRepository.findByTemplateUidAndVersionNumber(templateUid, versionNumber)
-                .map(versionMapper::toDto);
+            templateVersionMongoRepository.findByTemplateUidAndVersionNumber(templateUid, versionNumber)
+                .map(mongoVersionMapper::toDto);
 
         if (template.isEmpty() || version.isEmpty()) {
             return Optional.empty();

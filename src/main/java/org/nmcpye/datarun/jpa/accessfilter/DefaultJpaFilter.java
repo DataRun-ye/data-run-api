@@ -8,7 +8,8 @@ import org.springframework.data.jpa.domain.Specification;
 import java.lang.reflect.ParameterizedType;
 
 /**
- * @author Hamza Assada 21/03/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 21/03/2025
  */
 @SuppressWarnings("unchecked")
 public class DefaultJpaFilter<T extends AuditableObject<?>>

@@ -6,7 +6,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * @author Hamza Assada 14/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 14/08/2025
  */
 @Getter
 public class InvalidOptionCodesException extends RuntimeException {

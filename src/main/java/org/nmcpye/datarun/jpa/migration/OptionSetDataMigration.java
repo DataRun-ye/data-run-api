@@ -11,9 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * @author Hamza Assada 01/07/2025 (7amza.it@gmail.com)
- */
+/// @author Hamza Assada
+/// @since 01/07/2025
 //@Component
 public class OptionSetDataMigration implements ApplicationRunner {
 

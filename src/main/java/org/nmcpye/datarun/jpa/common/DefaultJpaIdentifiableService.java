@@ -31,7 +31,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * @author Hamza Assada 20/03/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 20/03/2025
  */
 public abstract class DefaultJpaIdentifiableService
     <T extends JpaIdentifiableObject>

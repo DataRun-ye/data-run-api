@@ -13,7 +13,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * @author Hamza Assada 21/03/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 21/03/2025
  */
 @Component
 public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {

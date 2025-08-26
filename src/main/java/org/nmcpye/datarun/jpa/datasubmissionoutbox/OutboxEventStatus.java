@@ -1,7 +1,8 @@
 package org.nmcpye.datarun.jpa.datasubmissionoutbox;
 
 /**
- * @author Hamza Assada 15/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 15/08/2025
  */
 public enum OutboxEventStatus {
     PENDING,

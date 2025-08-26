@@ -25,7 +25,8 @@ import java.util.stream.Collectors;
 /**
  * A Team.
  *
- * @author Hamza Assada 02/06/2023 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 02/06/2023
  */
 @Entity
 @Table(name = "team", uniqueConstraints = {

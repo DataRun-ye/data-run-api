@@ -20,7 +20,8 @@ import java.util.List;
  * <p>
  * and the table element_data_value with columns including option_id, value_text, deleted_at etc.
  *
- * @author Hamza Assada 13/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 13/08/2025
  */
 @Repository
 public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
@@ -31,16 +32,17 @@ public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
         this.jdbc = jdbc;
     }
 
+    // TODO(Hamza) add project for partitioning by domain
     // A single, unified UPSERT statement handles all cases.
     private static final String UPSERT_SQL = """
         INSERT INTO element_data_value (
             submission_id, assignment_id, team_id, org_unit_id, activity_id,
-            element_id, element_label, repeat_instance_id, option_id,
-            value_text, value_num, value_bool, value_ts, row_type, created_date, last_modified_date, deleted_at
+            element_id, element_config_id, element_label, repeat_instance_id, option_id,
+            value_text, value_num, value_bool, value_ts, value_ref, row_type, created_date, last_modified_date, deleted_at
         ) VALUES (
             :submissionId, :assignmentId, :teamId, :orgUnitId, :activityId,
-            :elementId, :elementLabel, :repeatInstanceId, :optionId,
-            :valueText, :valueNum, :valueBool, :valueTs, :rowType, :createdDate, :lastModifiedDate, NULL
+            :elementId, :elementConfigId, :elementLabel, :repeatInstanceId, :optionId,
+            :valueText, :valueNum, :valueBool, :valueTs, :valueRef,:rowType, :createdDate, :lastModifiedDate, NULL
         )
         ON CONFLICT (submission_id, element_id, repeat_instance_key, row_type, selection_key)
         DO UPDATE SET
@@ -53,6 +55,8 @@ public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
             value_num = EXCLUDED.value_num,
             value_bool = EXCLUDED.value_bool,
             value_ts = EXCLUDED.value_ts,
+            value_ref = EXCLUDED.value_ref,
+            element_config_id = EXCLUDED.element_config_id,
             last_modified_date = now(),
             deleted_at = NULL;
         """;
@@ -87,12 +91,14 @@ public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
             .addValue("orgUnitId", r.getOrgUnitId())
             .addValue("activityId", r.getActivityId())
             .addValue("elementId", r.getElementId())
+            .addValue("elementConfigId", r.getElementConfigId())
             .addValue("elementLabel", toJsonbObject(r.getElementLabel()), Types.OTHER)
             .addValue("repeatInstanceId", r.getRepeatInstanceId())
             .addValue("optionId", r.getOptionId())
             .addValue("valueText", r.getValueText())
             .addValue("valueNum", r.getValueNum())
             .addValue("valueBool", r.getValueBool())
+            .addValue("valueRef", r.getValueRef())
             .addValue("valueTs", r.getValueTs() != null ? Timestamp.from(r.getValueTs()) : null)
             .addValue("rowType", r.getOptionId() != null ? "M" : "S") // Set row_type dynamically
             .addValue("createdDate", Timestamp.from(r.getCreatedDate()))

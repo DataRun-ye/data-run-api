@@ -5,9 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * @author Hamza Assada 10/08/2025 (7amza.it@gmail.com)
- */
+/// @author Hamza Assada
+/// @since 10/08/2025
 public final class FormDataUtils {
     // extract list at materialized repeatPath (dot delim), like "adult.adultClassification"
     @SuppressWarnings("unchecked")

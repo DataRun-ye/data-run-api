@@ -15,7 +15,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * @author Hamza Assada 30/06/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 30/06/2025
  */
 @SuppressWarnings("unused")
 @Repository

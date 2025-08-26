@@ -13,7 +13,8 @@ import java.util.List;
  * A container for the complete, normalized state of a single submission.
  * This object is the output of the Normalizer and the input for the Persister.
  *
- * @author Hamza Assada 13/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 13/08/2025
  */
 @Getter
 @Accessors(chain = true)

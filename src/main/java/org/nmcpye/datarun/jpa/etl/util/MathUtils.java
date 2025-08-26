@@ -9,9 +9,8 @@ import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 
-/**
- * @author Hamza Assada 13/08/2025 (7amza.it@gmail.com)
- */
+/// @author Hamza Assada
+/// @since 13/08/2025
 @SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
 public class MathUtils {
     public static final Double ZERO = 0d;

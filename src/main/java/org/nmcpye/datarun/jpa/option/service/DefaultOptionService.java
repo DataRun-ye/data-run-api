@@ -19,7 +19,8 @@ import java.util.stream.Collectors;
 /**
  * Service Implementation for managing {@link Option}.
  *
- * @author Hamza Assada 30/06/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 30/06/2025
  */
 @Service
 @Slf4j
@@ -34,10 +35,10 @@ public class DefaultOptionService implements OptionService {
     private final OptionGroupSetRepository optionGroupSetRepository;
 
     public DefaultOptionService(
-        OptionSetRepository optionSetRepository,
-        OptionRepository optionRepository,
-        OptionGroupRepository optionGroupRepository,
-        OptionGroupSetRepository optionGroupSetRepository) {
+            OptionSetRepository optionSetRepository,
+            OptionRepository optionRepository,
+            OptionGroupRepository optionGroupRepository,
+            OptionGroupSetRepository optionGroupSetRepository) {
         this.optionRepository = optionRepository;
         this.optionSetRepository = optionSetRepository;
         this.optionGroupRepository = optionGroupRepository;
@@ -157,22 +158,23 @@ public class DefaultOptionService implements OptionService {
 
         // Normalize codes: trim.
         List<String> codesNormalized = optionCodes.stream()
-            .filter(Objects::nonNull)
-            .map(String::trim)
-            .toList();
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .toList();
 
         Set<String> uniqueCodes = new LinkedHashSet<>(codesNormalized);
 
         List<Option> found = optionRepository.findAllByOptionSetUid(optionSetId);
 
 
+        @SuppressWarnings("DataFlowIssue") // Option::getId from db, can't be null
         Map<String, String> codeToId = found.stream()
-            .filter(Objects::nonNull)
-            .collect(Collectors.toMap(Option::getCode, Option::getId));
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(Option::getCode, Option::getId));
 
         List<String> missing = uniqueCodes.stream()
-            .filter(code -> !codeToId.containsKey(code))
-            .collect(Collectors.toList());
+                .filter(code -> !codeToId.containsKey(code))
+                .collect(Collectors.toList());
 
         if (!missing.isEmpty()) {
             throw new InvalidOptionCodesException(missing);

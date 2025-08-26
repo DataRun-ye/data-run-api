@@ -14,10 +14,12 @@
             CREATE TABLE IF NOT EXISTS repeat_instance (
                 id varchar(26) PRIMARY KEY,
                 parent_repeat_instance_id varchar(26),
-                repeat_section_label jsonb,
+                repeat_section_label jsonb DEFAULT '{}'::jsonb,
                 submission_id varchar(50) NOT NULL,
                 category_kind varchar(200),
                 category_id varchar(200),
+                category_name varchar(200),
+                category_label jsonb DEFAULT '{}'::jsonb,
                 repeat_path varchar(3000) NOT NULL,
                 repeat_index bigint,
                 client_updated_at timestamp,
@@ -60,13 +62,15 @@
                 org_unit_id varchar(50),
                 activity_id varchar(50),
                 element_id varchar(200) NOT NULL,
+                element_config_id bigint NOT NULL,
                 element_label jsonb,
                 repeat_instance_id varchar(26),
-                option_id varchar(100),
+                option_id varchar(100), -- only for multi select or null
                 value_text text,
                 value_num numeric,
                 value_bool boolean,
-                value_ts TIMESTAMP WITH TIME ZONE,
+                value_ref varchar(26),
+                value_ts timestamp,
                 deleted_at timestamp,
                 created_date timestamp NOT NULL DEFAULT now(),
                 last_modified_date timestamp,
@@ -90,19 +94,6 @@
         <sql>
             CREATE INDEX IF NOT EXISTS idx_element_data_value_submission_repeat ON element_data_value(submission_id, repeat_instance_id);
         </sql>
-        <sql>
-            ALTER TABLE element_data_value
-                ADD CONSTRAINT chk_row_type_option
-                    CHECK ( (row_type = 'S' AND option_id IS NULL)
-                            OR (row_type = 'M' AND option_id IS NOT NULL)
-                        );
-        </sql>
-        <sql>
-            ALTER TABLE element_data_value
-                ADD CONSTRAINT fk_edv_option_value
-                    FOREIGN KEY (option_id) REFERENCES option_value(id);
-        </sql>
-
         <sql>
             CREATE INDEX idx_edv_element_active ON element_data_value(element_id)
                 WHERE deleted_at IS NULL;

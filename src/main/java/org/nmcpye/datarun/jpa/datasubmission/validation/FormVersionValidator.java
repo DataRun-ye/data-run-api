@@ -12,7 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Objects;
 
 /**
- * @author Hamza Assada 15/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 15/08/2025
  */
 @Slf4j
 @Component

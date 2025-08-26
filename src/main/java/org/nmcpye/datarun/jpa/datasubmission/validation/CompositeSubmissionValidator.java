@@ -7,7 +7,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * @author Hamza Assada 15/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 15/08/2025
  */
 @Component
 @RequiredArgsConstructor

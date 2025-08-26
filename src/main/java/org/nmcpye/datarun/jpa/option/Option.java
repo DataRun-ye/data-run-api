@@ -13,7 +13,8 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 
 /**
- * @author Hamza Assada 30/06/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 30/06/2025
  */
 @Entity
 @Table(name = "option_value", uniqueConstraints = {

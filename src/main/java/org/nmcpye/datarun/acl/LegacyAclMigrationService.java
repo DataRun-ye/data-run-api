@@ -10,7 +10,8 @@ package org.nmcpye.datarun.acl;
  * <pre> 4. Call `aclService.updateAcl(acl)`. </pre>
  * </blockquote>
  *
- * @author Hamza Assada 16/05/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 16/05/2025
  */
 public class LegacyAclMigrationService {
     // ## 3. Bootstrap Existing State into ACL Tables

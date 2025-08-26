@@ -11,6 +11,7 @@ import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class TemplateElementProcessor {
@@ -111,6 +112,6 @@ public class TemplateElementProcessor {
 
     private Map<String, FormSectionConf> getSectionMap() {
         return formTemplate.getSections()
-            .stream().collect(Collectors.toMap(AbstractElement::getName, s -> s));
+            .stream().collect(Collectors.toMap(AbstractElement::getName, Function.identity()));
     }
 }

@@ -24,7 +24,8 @@ import java.util.stream.Collectors;
 /**
  * An OptionSet.
  *
- * @author Hamza Assada 10/09/2024 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 10/09/2024
  */
 @Entity
 @Table(name = "option_set")

@@ -11,7 +11,8 @@ import java.time.Instant;
  *  outboxRepo.reschedule(event.getId(), ex.getMessage(), next);
  * }
  * </pre>
- * @author Hamza Assada 15/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 15/08/2025
  */
 public final class BackoffPolicy {
 

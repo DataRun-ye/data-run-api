@@ -5,13 +5,12 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
-/**
- * @author Hamza Assada 13/08/2025 (7amza.it@gmail.com)
- */
+/// @author Hamza Assada
+/// @since 13/08/2025
 @SuppressWarnings("BooleanMethodIsAlwaysInverted")
 public class DateUtils {
 
-    // DateTimeFormatter for ISO 8601 formats
+    /// DateTimeFormatter for ISO 8601 formats
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
@@ -36,7 +35,7 @@ public class DateUtils {
         }
     }
 
-    // You can also add methods to parse the values directly
+    /// You can also add methods to parse the values directly
     public static LocalDate parseDate(String dateStr) {
         try {
             return LocalDate.parse(dateStr, DATE_FORMATTER);

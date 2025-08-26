@@ -10,7 +10,8 @@ import java.util.Optional;
 /**
  * Spring Data JPA repository for the DataElement entity.
  *
- * @author Hamza Assada 08/02/2024 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 08/02/2024
  */
 @SuppressWarnings("unused")
 @Repository

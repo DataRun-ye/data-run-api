@@ -10,7 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * @author Hamza Assada 08/02/2024 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 08/02/2024
  */
 @Service
 @Transactional

@@ -16,7 +16,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * @author Hamza Assada 08/02/2024 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 08/02/2024
  */
 @Entity
 @Table(name = "data_element")

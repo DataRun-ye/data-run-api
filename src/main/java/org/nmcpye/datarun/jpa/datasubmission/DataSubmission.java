@@ -20,7 +20,8 @@ import java.util.Objects;
 /**
  * A DataSubmission, a Data instance versioned body, containing the actual submission data.
  *
- * @author Hamza Assada 14/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 14/08/2025
  */
 @Entity
 @Table(

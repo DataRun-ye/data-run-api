@@ -19,7 +19,8 @@ import java.util.List;
  * <p>
  * - Markers keep a full audit trail (attempts, last error, timestamps).
  *
- * @author Hamza Assada 15/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 15/08/2025
  */
 @Repository
 @Transactional

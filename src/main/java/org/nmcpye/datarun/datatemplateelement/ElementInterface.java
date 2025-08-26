@@ -1,13 +1,13 @@
 package org.nmcpye.datarun.datatemplateelement;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
 /**
- * @author Hamza Assada 27/05/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 27/05/2025
  */
-public interface ElementInterface extends Serializable {
+public interface ElementInterface {
     String getId();
 
     String getPath();

@@ -14,7 +14,8 @@ import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
  * and can be extended with other special configuration properties
  * Elements that extend this [DimensionalElement, EntityAttributeType]
  *
- * @author Hamza Assada 08/02/2024 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 08/02/2024
  */
 @MappedSuperclass
 @Getter

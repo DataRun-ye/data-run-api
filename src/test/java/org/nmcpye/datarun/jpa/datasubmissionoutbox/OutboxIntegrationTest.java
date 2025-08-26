@@ -3,8 +3,8 @@
 //import com.fasterxml.jackson.databind.ObjectMapper;
 //import com.fasterxml.jackson.databind.node.ObjectNode;
 //import org.junit.jupiter.api.*;
-//import org.nmcpye.datarun.config.OutboxConfig;
-//import org.nmcpye.datarun.config.OutboxProperties;
+//import org.nmcpye.datarun.config.datarun.OutboxConfig;
+//import org.nmcpye.datarun.config.datarun.OutboxProperties;
 //import org.nmcpye.datarun.jpa.etl.service.EtlCoordinatorService;
 //import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.boot.test.context.SpringBootTest;

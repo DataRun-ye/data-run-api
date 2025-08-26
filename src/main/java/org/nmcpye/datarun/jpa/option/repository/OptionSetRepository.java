@@ -8,7 +8,8 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 /**
- * @author Hamza Assada 10/09/2024 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 10/09/2024
  */
 @Repository
 @JaversSpringDataAuditable

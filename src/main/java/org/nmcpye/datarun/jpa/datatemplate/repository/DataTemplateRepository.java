@@ -12,9 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/**
- * Spring Data MongoDB repository for the DataFormTemplate entity.
- */
+/// Spring Data jpa repository for the DataTemplate entity.
 @Repository
 @JaversSpringDataAuditable
 public interface DataTemplateRepository

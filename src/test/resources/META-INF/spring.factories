@@ -1,2 +1,3 @@
-org.springframework.test.context.ContextCustomizerFactory = org.nmcpye.datarun.\
-    config.SqlTestContainersSpringContextCustomizerFactory
+# Make the TestContext aware of our ContextCustomizerFactory so EmbeddedSQL works
+org.springframework.test.context.ContextCustomizerFactory=\
+org.nmcpye.datarun.config.SqlTestContainersSpringContextCustomizerFactory

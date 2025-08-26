@@ -22,7 +22,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * @author Hamza Assada 14/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 14/08/2025
  */
 @Component
 @Slf4j

@@ -9,6 +9,7 @@ import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.jpa.etl.dto.ElementDataValue;
 import org.nmcpye.datarun.jpa.etl.dto.RepeatInstance;
@@ -17,7 +18,9 @@ import org.nmcpye.datarun.jpa.etl.exception.MissingRepeatUidException;
 import org.nmcpye.datarun.jpa.etl.model.CategoryResolutionResult;
 import org.nmcpye.datarun.jpa.etl.model.NormalizedSubmission;
 import org.nmcpye.datarun.jpa.etl.model.TemplateElementMap;
-import org.nmcpye.datarun.jpa.etl.util.ElementValueParser;
+import org.nmcpye.datarun.jpa.etl.util.CategoryResolver;
+import org.nmcpye.datarun.jpa.etl.util.ElementValueResolver;
+import org.nmcpye.datarun.jpa.etl.util.ReferenceResolver;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -26,43 +29,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Normalizes a {@link DataSubmission} into a {@link NormalizedSubmission} (repeat instances + element rows).
- *
- * @author Hamza Assada 19/08/2025 (7amza.it@gmail.com)
- * @see TemplateElementMap
- * @see CategoryResolver
- * @see EtlCoordinatorService
- */
+/// Normalizes a [DataSubmission] into a [NormalizedSubmission] (repeat instances + element rows).
+///
+/// @author Hamza Assada 19/08/2025 (7amza.it@gmail.com)
+/// @see TemplateElementMap
+/// @see CategoryResolver
+/// @see EtlCoordinatorService
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class Normalizer {
 
-    /**
-     * For mapping option codes and resolving categories
-     */
+    /// For mapping option codes and resolving categories
     private final CategoryResolver categoryResolver;
-    /**
-     * fetch a Cached template elements maps
-     */
+    private final ReferenceResolver referenceResolver;
+    private final ElementValueResolver elementValueResolver;
+    /// fetch a Cached template elements maps
     private final TemplateElementService templateElementService;
     private final ObjectMapper objectMapper;
 
-    /**
-     * A small, immutable helper class to pass context down the recursion.
-     *
-     * @param instanceId The ID of the immediate repeat instance container. Null for the root.
-     */
+    /// A small, immutable helper class to pass context down the recursion.
+    ///
+    /// @param instanceId The ID of the immediate repeat instance container. Null for the root.
     private record RepeatContext(String instanceId) {
         public static final RepeatContext ROOT = new RepeatContext(null);
     }
 
-    /**
-     * Main entry point for normalization.
-     * Translates a {@link DataSubmission}'s data into a complete,
-     * self-contained {@link NormalizedSubmission}
-     */
+    /// Main entry point for normalization.
+    /// Translates a [DataSubmission]'s data into a complete,
+    /// self-contained [NormalizedSubmission]
     public NormalizedSubmission normalize(DataSubmission submission, boolean generateMissingRepeatUids) {
         final TemplateElementMap elementMap =
             templateElementService.getTemplateElementMap(submission.getForm(),
@@ -102,6 +97,7 @@ public class Normalizer {
             final Object rawValue = entry.getValue();
             final String childPath = currentPath.isEmpty() ? key : currentPath + "." + key;
             final AbstractElement element = elementMap.getElementByNamePathMap().get(childPath);
+            final ElementTemplateConfig elementConf = elementMap.getElementConfigByNamePathMap().get(childPath);
 
             if (element == null) continue; // Skip data not defined in the template
 
@@ -128,10 +124,12 @@ public class Normalizer {
                         .submissionId(ns.getSubmissionId())
                         .categoryId(category != null ? category.getId() : null)
                         .categoryKind(category != null ? category.getKind() : null)
+                        .categoryName(category != null ? category.getName() : null)
+                        .categoryLabel(toStringLabel(category != null ? category.getLabel() : null))
                         .repeatPath(childPath)
                         .parentRepeatInstanceId(context.instanceId()) // NESTED HIERARCHY LINK
                         .repeatIndex(idx)
-                        .repeatSectionLabel(getLabel(section))
+                        .repeatSectionLabel(toStringLabel(section.getLabel()))
                         .submissionCompletedAt(submission.getFinishedEntryTime())
                         .clientUpdatedAt(submission.getLastModifiedDate())
                         .createdDate(Instant.now())
@@ -178,28 +176,31 @@ public class Normalizer {
                 if (list.isEmpty()) continue; // With Purge/Replace, we simply do nothing for empty lists.
 
                 List<String> codes = list.stream().filter(Objects::nonNull).map(Object::toString).map(String::trim).toList();
-                Map<String, String> codeToOptionId = categoryResolver.mapOptionCodesToIds(codes, field.getOptionSet());
+                Map<String, String> codeToOptionId = referenceResolver.mapOptionCodesToIds(codes, field.getOptionSet());
 
                 for (String code : codes) {
-                    ns.addValueRow(buildElementDataValue(submission, field, context, codeToOptionId.get(code), code));
+                    ns.addValueRow(buildElementDataValue(submission, field, context,
+                        codeToOptionId.get(code), code, elementConf.getId()));
                 }
             }
             // --- PRIMITIVE SINGLE-VALUE ELEMENT ---
             else if (element instanceof FormDataElementConf field) {
-                ns.addValueRow(buildElementDataValue(submission, field, context, null, rawValue));
+                ns.addValueRow(buildElementDataValue(submission, field, context, null, rawValue, elementConf.getId()));
             }
         }
     }
 
-    /**
-     * Centralized builder for ElementDataValue to ensure consistency and align with the new, leaner DTO.
-     */
+    /// Centralized builder for ElementDataValue to ensure consistency and align with the new, leaner DTO.
     private ElementDataValue buildElementDataValue(DataSubmission submission,
                                                    FormDataElementConf field,
                                                    RepeatContext context,
-                                                   String optionId, Object rawValue) {
+                                                   String optionId, Object rawValue, Long elementConfId) {
         // --- try parse value based on valueType
-        ElementDataValue.ElementDataValueBuilder builder = ElementValueParser.parseValue(rawValue, field);
+        ElementDataValue.ElementDataValueBuilder builder =
+            elementValueResolver.resolveValue(rawValue, field);
+
+        // if single select validate option
+
         // --- CORE IDENTIFIERS & DIMENSIONS ---
         builder.submissionId(submission.getUid())
             .elementId(field.getId())
@@ -208,12 +209,13 @@ public class Normalizer {
             .teamId(submission.getTeam())
             .orgUnitId(submission.getOrgUnit())
             .activityId(submission.getActivity())
+            .elementConfigId(elementConfId)
             // --- CONTEXT FROM REPEAT ---
             .repeatInstanceId(context.instanceId())
             // --- VALUE ---
             .optionId(optionId) // Set for multi-select, null otherwise
             // --- METADATA ---
-            .elementLabel(getLabel(field))
+            .elementLabel(toStringLabel(field.getLabel()))
             .lastModifiedDate(Instant.now())
             .createdDate(Instant.now());
 
@@ -233,21 +235,20 @@ public class Normalizer {
         throw new MissingRepeatUidException(List.of(new MissingRepeatUidException.MissingRepeatUid(path, (int) index)));
     }
 
-    private String getLabel(AbstractElement field) {
-        String label = null;
+    private String toStringLabel(Map<String, String> label) {
+        String labelString = null;
         try {
-            label = objectMapper.writeValueAsString(field.getLabel());
+            labelString = objectMapper.writeValueAsString(label);
         } catch (Exception ex) {
             log.warn("could not serialize element label into json string for template field table: {}, {}",
-                field.getName(), field.getLabel());
+                label, label);
         }
-        return label;
+
+        return labelString;
     }
 
-    /**
-     * Resolve category for an item given the repeatPath.
-     * Returns null if there is no category configured for this repeat.
-     */
+    /// Resolve category for an item given the repeatPath.
+    /// Returns null if there is no category configured for this repeat.
     private CategoryResolutionResult extractCategoryForItem(Map<String, Object> item, String repeatPath,
                                                             TemplateElementMap elementMap) {
         String categoryElementId = elementMap.getRepeatPathToCategoryElementIdMap().get(repeatPath);

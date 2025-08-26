@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1756137470326-33-template-version"
+               author="Hamza">
+        <createTable tableName="data_template_version">
+            <column name="id"
+                    type="VARCHAR(26)">
+                <constraints nullable="false"
+                             primaryKey="true"
+                             primaryKeyName="pk_data_template_version"/>
+            </column>
+            <column name="uid"
+                    type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="template_uid"
+                    type="VARCHAR(11)"/>
+            <column name="version_number"
+                    type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="release_notes"
+                    type="VARCHAR(4000)"/>
+            <column name="fields"
+                    type="jsonb">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sections"
+                    type="jsonb">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_template_id"
+                    type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by"
+                    type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified_by"
+                    type="VARCHAR(50)"/>
+            <column name="created_date"
+                    type="DATETIME"/>
+            <column name="last_modified_date"
+                    type="DATETIME"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1756137470326-35-template-version"
+               author="Hamza">
+        <addUniqueConstraint columnNames="uid"
+                             constraintName="uc_template_version_uid"
+                             tableName="data_template_version"/>
+    </changeSet>
+    <changeSet id="1756137470326-36-template-version"
+               author="Hamza">
+        <addUniqueConstraint columnNames="id, data_template_id"
+                             constraintName="ux_tv_id_data_template_id"
+                             tableName="data_template_version"/>
+    </changeSet>
+    <changeSet id="1756137470326-37-template-version"
+               author="Hamza">
+        <addUniqueConstraint columnNames="version_number, data_template_id"
+                             constraintName="ux_tv_no_data_template_id"
+                             tableName="data_template_version"/>
+    </changeSet>
+<!--    <changeSet id="1756137470326-38-template-version"-->
+<!--               author="Hamza">-->
+<!--        <createIndex indexName="idx_tv_data_template_id_version_desc"-->
+<!--                     tableName="data_template_version">-->
+<!--            <column name="version_number"/>-->
+<!--            <column name="data_template_id"/>-->
+<!--        </createIndex>-->
+<!--    </changeSet>-->
+    <changeSet id="1756137470326-39-template-version"
+               author="Hamza">
+        <createIndex indexName="idx_tv_template_uid"
+                     tableName="data_template_version">
+            <column name="template_uid"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1756137470326-40-template-version"
+               author="Hamza">
+        <createIndex indexName="idx_tv_template_uid_version_desc"
+                     tableName="data_template_version">
+            <column name="template_uid"/>
+            <column name="version_number"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1756137470326-41-template-version"
+               author="Hamza">
+        <createIndex indexName="idx_tv_version_no"
+                     tableName="data_template_version">
+            <column name="version_number"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1756137470326-42-template-version"
+               author="Hamza">
+        <addForeignKeyConstraint baseColumnNames="data_template_id"
+                                 baseTableName="data_template_version"
+                                 constraintName="FK_DATA_TEMPLATE_VERSION_ON_DATA_TEMPLATE"
+                                 referencedColumnNames="id"
+                                 referencedTableName="data_template"/>
+    </changeSet>
+</databaseChangeLog>

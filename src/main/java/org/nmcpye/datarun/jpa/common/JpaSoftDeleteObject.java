@@ -11,7 +11,8 @@ import java.util.Objects;
  * Base abstract class for entities which will hold definitions for created, last modified, created by,
  * last modified by attributes.
  *
- * @author Hamza Assada 20/03/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 20/03/2025
  */
 @MappedSuperclass
 @Getter

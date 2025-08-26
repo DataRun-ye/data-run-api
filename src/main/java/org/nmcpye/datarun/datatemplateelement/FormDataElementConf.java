@@ -1,40 +1,49 @@
 package org.nmcpye.datarun.datatemplateelement;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.enumeration.ValueTypeRendering;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.mongo.domain.datafield.ScannedCodeProperties;
-import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
 @Getter
 @Setter
-public class FormDataElementConf extends AbstractElement {
+public class FormDataElementConf extends AbstractElement implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private String id;
 
-    @Field("type")
     private ValueType type;
-    private String calculation;
     private Object defaultValue;
     private Boolean mandatory = Boolean.FALSE;
     private Boolean showInSummary = Boolean.FALSE;
+
     private String optionSet;
     private String choiceFilter;
     private ElementValidationRule validationRule;
+
+    private String mainField;
+
     /**
-     * Deprecated, use {@link ElementValidationRule}'s expression instead
+     * Deprecated, use {@link #validationRule#expression}'sinstead
      */
-    @Deprecated(since = "V7")
-    String constraint;
+    @Deprecated(since = "V7", forRemoval = true)
+    private String constraint;
     /**
-     * Deprecated, use {@link ElementValidationRule}'s message instead
+     * Deprecated, use {@link #validationRule#validationMessage} instead
      */
-    @Deprecated(since = "V7")
-    Map<String, String> constraintMessage;
+    @Deprecated(since = "V7", forRemoval = true)
+    private Map<String, String> constraintMessage;
+
     private Boolean gs1Enabled;
 
     private ScannedCodeProperties scannedCodeProperties;
@@ -54,9 +63,72 @@ public class FormDataElementConf extends AbstractElement {
         return this.type != null && this.type.isOptionsType() ? this.type == ValueType.SelectMulti : null;
     }
 
-    public Boolean getMainField() {
-        return showInSummary;
+
+    // --- Legacy compatibility for old 'constraint' and 'constraintMessage' ---
+
+    /**
+     * Legacy: constraint (single string). Map into validationRule.validationMessage (pick a default locale if needed).
+     * Accept legacy input but DO NOT emit it (no @JsonGetter).
+     */
+    @Deprecated(since = "V7", forRemoval = true)
+    @JsonSetter("constraint")
+    public void setConstraintLegacy(String legacyConstraint) {
+        if (legacyConstraint == null) return;
+        if (this.validationRule == null) {
+            this.validationRule = new ElementValidationRule();
+        }
+        // Put legacy constraint into the validationMessage map; choose a default key e.g. "default"
+        Map<String, String> vm = this.validationRule.getValidationMessage();
+        if (vm == null) {
+            vm = new LinkedHashMap<>();
+            this.validationRule.setValidationMessage(vm);
+        }
+        // only set if not already present (prefer newer validationRule)
+        vm.putIfAbsent("default", legacyConstraint);
     }
+
+    /**
+     * Legacy: constraintMessage (map of locale->message). Map into validationRule.validationMessage.
+     */
+    @Deprecated(since = "V7", forRemoval = true)
+    @JsonSetter("constraintMessage")
+    public void setConstraintMessageLegacy(Map<String, String> legacyConstraintMessage) {
+        if (legacyConstraintMessage == null || legacyConstraintMessage.isEmpty()) return;
+        if (this.validationRule == null) {
+            this.validationRule = new ElementValidationRule();
+        }
+
+        Map<String, String> vm = this.validationRule.getValidationMessage();
+        if (vm == null) {
+            vm = new LinkedHashMap<>();
+            this.validationRule.setValidationMessage(vm);
+        }
+        // merge legacy map, but do not overwrite existing keys
+        legacyConstraintMessage.forEach(vm::putIfAbsent);
+    }
+
+    // Optionally expose the old getters as read-only and deprecated if you really must emit them:
+    // @Deprecated
+    // @JsonGetter("constraint")
+    // public String getConstraintLegacy() { ... } // map from validationRule as needed
+
+    /**
+     * deprecated property use {@link #showInSummary} instead
+     *
+     * @return show in summary or not
+     */
+    // Accept legacy property when reading JSON:
+    // Accept legacy JSON input "mainField" but do not emit it when serializing:
+    @Deprecated(forRemoval = true)
+    @JsonSetter("mainField")
+    public void setMainFieldLegacy(Boolean legacyMain) {
+        if (legacyMain != null) this.showInSummary = legacyMain;
+    }
+
+    // If you want to emit it (not recommended), add:
+    // Optionally expose replacement property for older clients when serializing:
+    // @JsonGetter("mainField")
+    // public Boolean getMainFieldLegacy() { return this.showInSummary; }
 
     @Override
     public FormDataElementConf path(String path) {

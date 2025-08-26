@@ -11,12 +11,8 @@ public enum ValueType {
     @Deprecated(since = "Remove for boolean repeatable in section")
     RepeatableSection,
     Section,
-    @Deprecated(since = "Remove for boolean isMulti=true with optionSet type, todo")
     SelectMulti,
-    @Deprecated(since = "Remove for boolean isMulti=false with optionSet type, todo")
     SelectOne,
-    // TODO isMulti is set on the element
-    //    OptionSet,
     Age,
     FullName,
     Text,
@@ -40,7 +36,6 @@ public enum ValueType {
     URL,
     Image,
     Progress,
-
     Activity,
     OrganisationUnit,
     Team,
@@ -58,33 +53,33 @@ public enum ValueType {
 
     public static List<ValueType> numericTypes() {
         return List.of(Number,
-            Integer,
-            IntegerPositive,
-            IntegerNegative,
-            IntegerZeroOrPositive);
+                Integer,
+                IntegerPositive,
+                IntegerNegative,
+                IntegerZeroOrPositive);
     }
 
     public static List<ValueType> dateTimeTypes() {
         return List.of(Date,
-            DateTime,
-            Time,
-            Age);
+                DateTime,
+                Time,
+                Age);
     }
 
     public static List<ValueType> booleanTypes() {
         return List.of(TrueOnly,
-            Boolean);
+                Boolean);
     }
 
     public static List<ValueType> complexReferenceTypes() {
         return List.of(/*Progress,*/
-            Activity,
-            OrganisationUnit,
-            Team,
-            Entity,
-            SelectOne,
-            // OptionSet
-            Username);
+                Activity,
+                OrganisationUnit,
+                Team,
+                Entity,
+                SelectOne,
+                // OptionSet
+                Username);
     }
 
     public static List<ValueType> textualTypes() {
@@ -111,7 +106,7 @@ public enum ValueType {
         return this == RepeatableSection;
     }
 
-    public boolean isCategoricalType() {
+    public boolean isSystemReferenceType() {
         return complexReferenceTypes().contains(this);
     }
 

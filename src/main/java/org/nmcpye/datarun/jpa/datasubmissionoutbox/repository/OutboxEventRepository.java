@@ -4,7 +4,8 @@ import org.nmcpye.datarun.jpa.common.BaseJpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.datasubmissionoutbox.OutboxEvent;
 
 /**
- * @author Hamza Assada 15/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 15/08/2025
  */
 public interface OutboxEventRepository
     extends BaseJpaIdentifiableRepository<OutboxEvent, Long>, OutboxEventClaimsRepository {

@@ -16,7 +16,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 /**
- * @author Hamza Assada 13/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 13/08/2025
  */
 @Service
 @RequiredArgsConstructor

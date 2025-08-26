@@ -15,7 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author Hamza Assada 30/06/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 30/06/2025
  */
 @Entity
 @Table(name = "option_group_set", uniqueConstraints = {

@@ -12,7 +12,8 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * @author Hamza Assada 14/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 14/08/2025
  */
 @Entity
 @Table(name = "data_submission_history",

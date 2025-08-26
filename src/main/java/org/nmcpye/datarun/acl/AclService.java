@@ -21,7 +21,8 @@ import java.util.Set;
  * }
  * </pre>
  *
- * @author Hamza Assada 16/05/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 16/05/2025
  */
 public interface AclService {
     /**

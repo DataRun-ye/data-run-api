@@ -13,7 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author Hamza Assada 20/03/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 20/03/2025
  */
 public interface JpaIdentifiableObjectService<T extends JpaIdentifiableObject>
     extends IdentifiableObjectService<T, String> {

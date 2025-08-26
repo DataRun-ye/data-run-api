@@ -1,21 +1,24 @@
 package org.nmcpye.datarun.jpa.datatemplate;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.nmcpye.datarun.common.IdScheme;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
 
 import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
 
-/**
- * @author Hamza Assada 27/05/2025 (7amza.it@gmail.com)
- */
+/// @author Hamza Assada
+/// @since 27/05/2025
 @Entity
 @Table(name = "data_template")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
@@ -27,15 +30,11 @@ public class DataTemplate extends JpaSoftDeleteObject {
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
 
-    /**
-     * The unique code for this object.
-     */
+    /// The unique code for this object.
     @Column(name = "code", unique = true)
     protected String code;
 
-    /**
-     * The name of this object. Required and unique.
-     */
+    /// The name of this object. Required and unique.
     @Column(name = "name", nullable = false, unique = true)
     protected String name;
 
@@ -55,6 +54,9 @@ public class DataTemplate extends JpaSoftDeleteObject {
 
     @Column(name = "description", length = 2000)
     private String description;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "dataTemplate"/*, cascade = CascadeType.PERSIST*/)
+    private List<TemplateVersion> templateVersions = new LinkedList<>();
 
     public DataTemplate pumpVersion() {
         this.setVersionNumber(versionNumber + 1);
@@ -79,5 +81,52 @@ public class DataTemplate extends JpaSoftDeleteObject {
     public DataTemplate versionUid(String versionUid) {
         this.setVersionUid(versionUid);
         return this;
+    }
+
+    @JsonSetter(contentNulls = Nulls.SKIP)
+    public void setTemplateVersions(List<TemplateVersion> templateVersions) {
+        getTemplateVersions().clear();
+        getTemplateVersions().addAll(templateVersions);
+        for (TemplateVersion templateVersion : templateVersions) {
+            templateVersion.setDataTemplate(this);
+        }
+    }
+
+    @JsonIgnore
+    public Set<String> getVersionUidsAsSet() {
+        return templateVersions.stream()
+                .filter(Objects::nonNull)
+                .map(TemplateVersion::getUid)
+                .collect(Collectors.toSet());
+    }
+
+    public TemplateVersion getLatestVersion() {
+        return templateVersions.stream()
+                .max(Comparator.comparing(TemplateVersion::getVersionNumber))
+                .orElseThrow();
+    }
+
+    public Map<String, String> getByUidVersionPropertyMap(IdScheme idScheme) {
+        return templateVersions.stream().collect(Collectors.toMap(TemplateVersion::getUid, o -> o.getPropertyValue(idScheme)));
+    }
+
+    public TemplateVersion getVersionByUid(String uid) {
+        for (TemplateVersion templateVersion : templateVersions) {
+            if (templateVersion != null && templateVersion.getUid().equals(uid)) {
+                return templateVersion;
+            }
+        }
+
+        return null;
+    }
+
+    public TemplateVersion getVersionByNo(Integer versionNumber) {
+        for (TemplateVersion templateVersion : templateVersions) {
+            if (templateVersion != null && templateVersion.getVersionNumber().equals(versionNumber)) {
+                return templateVersion;
+            }
+        }
+
+        return null;
     }
 }

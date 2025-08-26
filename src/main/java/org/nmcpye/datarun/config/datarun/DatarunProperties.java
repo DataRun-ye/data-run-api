@@ -3,6 +3,7 @@ package org.nmcpye.datarun.config.datarun;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Profile;
 
 /**
  * @author Hamza Assada 16/04/2025 (7amza.it@gmail.com)
@@ -13,6 +14,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
     ignoreUnknownFields = true,
     ignoreInvalidFields = true
 )
+@Profile("!testdev & !testprod")
 public class DatarunProperties {
     private final Security security = new Security();
 

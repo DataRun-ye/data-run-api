@@ -17,7 +17,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * @author Hamza Assada 21/03/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 21/03/2025
  */
 @Component
 public class DataElementFilter extends DefaultJpaFilter<DataElement> {

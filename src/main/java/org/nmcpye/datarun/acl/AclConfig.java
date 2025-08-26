@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.cache.concurrent.ConcurrentMapCache;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.acls.AclPermissionEvaluator;
@@ -23,11 +24,13 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import javax.sql.DataSource;
 
 /**
- * @author Hamza Assada 16/05/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 16/05/2025
  */
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)
 @Slf4j
+@Profile("!testdev & !testprod")
 public class AclConfig {
     @Bean
     public MutableAclService aclService(ObjectProvider<DataSource> dataSource,

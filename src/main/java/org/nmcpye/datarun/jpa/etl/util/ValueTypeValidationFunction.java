@@ -6,9 +6,8 @@ import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 
 import java.util.function.Predicate;
 
-/**
- * @author Hamza Assada 13/08/2025 (7amza.it@gmail.com)
- */
+/// @author Hamza Assada
+/// @since 13/08/2025
 @Builder
 //@Getter
 @Getter

@@ -19,7 +19,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * @author Hamza Assada 17/05/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 17/05/2025
  */
 @Component
 public class AclBootstrap /*implements CommandLineRunner*/ {
