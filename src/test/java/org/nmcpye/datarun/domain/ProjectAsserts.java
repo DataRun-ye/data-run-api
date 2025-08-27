@@ -49,7 +49,7 @@
 //    public static void assertProjectUpdatableFieldsEquals(Project expected, Project actual) {
 //        assertThat(expected)
 //            .as("Verify Project relevant properties")
-//            .satisfies(e -> assertThat(e.getUid()).as("check uid").isEqualTo(actual.getUid()))
+//            .satisfies(e -> assertThat(e.getUid()).as("check id").isEqualTo(actual.getUid()))
 //            .satisfies(e -> assertThat(e.getCode()).as("check code").isEqualTo(actual.getCode()))
 //            .satisfies(e -> assertThat(e.getName()).as("check name").isEqualTo(actual.getName()))
 //            .satisfies(e -> assertThat(e.getDisabled()).as("check disabled").isEqualTo(actual.getDisabled()));

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.javers.core.metamodel.annotation.DiffIgnore;
 import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.springframework.data.annotation.CreatedBy;
@@ -30,7 +29,7 @@ import java.util.Objects;
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @JsonIgnoreProperties(value = {"new", "createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
-@DiffIgnore
+//@DiffIgnore
 @Getter
 @Setter
 public abstract class JpaIdentifiableObject

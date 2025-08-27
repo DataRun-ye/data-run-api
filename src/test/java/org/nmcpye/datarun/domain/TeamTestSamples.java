@@ -16,7 +16,7 @@
 //    public static Team getTeamSample1() {
 //        return new Team()
 //            .id(1L)
-//            .uid("uid1")
+//            .id("uid1")
 //            .code("code1")
 //            .name("name1")
 //            .description("description1")
@@ -27,7 +27,7 @@
 //    public static Team getTeamSample2() {
 //        return new Team()
 //            .id(2L)
-//            .uid("uid2")
+//            .id("uid2")
 //            .code("code2")
 //            .name("name2")
 //            .description("description2")
@@ -38,7 +38,7 @@
 //    public static Team getTeamRandomSampleGenerator() {
 //        return new Team()
 //            .id(longCount.incrementAndGet())
-//            .uid(UUID.randomUUID().toString())
+//            .id(UUID.randomUUID().toString())
 //            .code(UUID.randomUUID().toString())
 //            .name(UUID.randomUUID().toString())
 //            .description(UUID.randomUUID().toString())

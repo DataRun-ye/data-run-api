@@ -27,15 +27,15 @@
 //@Document(collection = "data_form_template")
 //@Getter
 //@Setter
-//@CompoundIndex(name = "form_template_uid", def = "{'uid': 1}", unique = true)
+//@CompoundIndex(name = "form_template_uid", def = "{'id': 1}", unique = true)
 //@SuppressWarnings("common-java:DuplicatedBlocks")
 //public class DataFormTemplate extends MongoBaseIdentifiableObject implements DataTemplateVersionInterface {
 //    @Id
 //    private String id;
 //
 //    @Size(max = 11)
-//    @Field("uid")
-//    private String uid;
+//    @Field("id")
+//    private String id;
 //
 //    @Field("code")
 //    private String code;
@@ -111,7 +111,7 @@
 //    public String toString() {
 //        return "DataFormTemplate{" +
 //            "id=" + getId() +
-//            ", uid='" + getUid() + "'" +
+//            ", id='" + getUid() + "'" +
 //            ", name='" + getName() + "'" +
 //            ", description='" + getDescription() + "'" +
 //            ", disabled='" + getDisabled() + "'" +

@@ -14,7 +14,7 @@ public class JsonSchemaGenerator {
 //        SchemaFactoryWrapper visitor = new SchemaFactoryWrapper();
 //
 //        ObjectSchema schema = new ObjectSchema();
-//        schema.setId(formTemplate.get("uid").asText());
+//        schema.setId(formTemplate.get("id").asText());
 //        schema.setTitle(formTemplate.get("name").asText());
 //
 //        formTemplate.get("fields").forEach(field -> {

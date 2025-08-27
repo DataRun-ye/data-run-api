@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.mongo.domain.dataform;
 
-import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.mongo.common.repository.MongoIdentifiableRepository;
 import org.springframework.stereotype.Repository;
 
@@ -8,7 +7,7 @@ import org.springframework.stereotype.Repository;
  * Spring Data MongoDB repository for the DataFormTemplate entity.
  */
 @Repository
-@JaversSpringDataAuditable
+//@JaversSpringDataAuditable
 public interface FormTemplateLegacyRepository
     extends MongoIdentifiableRepository<FormTemplateLegacy> {
 }

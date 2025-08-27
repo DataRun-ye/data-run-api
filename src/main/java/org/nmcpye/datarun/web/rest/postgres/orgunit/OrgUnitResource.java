@@ -81,8 +81,8 @@ public class OrgUnitResource extends JpaBaseResource<OrgUnit> {
 
 //    @Override
 //    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    public ResponseEntity<OrgUnit> updateEntity(String uid, OrgUnit entity) throws URISyntaxException {
-//        return super.updateEntity(uid, entity);
+//    public ResponseEntity<OrgUnit> updateEntity(String id, OrgUnit entity) throws URISyntaxException {
+//        return super.updateEntity(id, entity);
 //    }
 //
 //    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")

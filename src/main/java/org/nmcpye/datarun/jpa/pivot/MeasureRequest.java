@@ -4,6 +4,7 @@
 //import lombok.Builder;
 //import lombok.Data;
 //import lombok.NoArgsConstructor;
+//import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
 //
 ///**
 // * Request describing a measure (element + aggregation).
@@ -35,4 +36,6 @@
 //     * If true and aggregation is COUNT, use COUNT(DISTINCT ...).
 //     */
 //    private Boolean distinct;
+//
+//    private String optionId;
 //}

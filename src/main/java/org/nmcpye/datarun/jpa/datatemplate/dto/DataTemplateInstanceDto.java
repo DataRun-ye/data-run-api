@@ -33,13 +33,13 @@ import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
 @AllArgsConstructor
 public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVersionInterface {
     /**
-     * output the master {@link DataTemplate} uid
+     * output the master {@link DataTemplate} id
      */
     @Size(max = 11)
     private String uid;
 
     /**
-     * {@link DataTemplateVersion} uid,
+     * {@link DataTemplateVersion} id,
      * formVersion is treated as output-only (i.e. set in backend and ignored on inbound JSON)
      */
     @JsonProperty(access = READ_ONLY)
@@ -81,7 +81,7 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
 
 
     /**
-     * @return mapping of repeatPath -> (relativeChildPath -> elementId). elementId is the last segment of a path, its either a uid for FormFields,
+     * @return mapping of repeatPath -> (relativeChildPath -> elementId). elementId is the last segment of a path, its either a id for FormFields,
      * or a name for Sections fields, and they are unique across the form
      */
     @JsonIgnore

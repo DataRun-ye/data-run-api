@@ -42,8 +42,8 @@ public class DataElementGroupSetResource extends JpaBaseResource<DataElementGrou
 
 //    @Override
 //    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    public ResponseEntity<DataElementGroupSet> updateEntity(String uid, DataElementGroupSet entity) throws URISyntaxException {
-//        return super.updateEntity(uid, entity);
+//    public ResponseEntity<DataElementGroupSet> updateEntity(String id, DataElementGroupSet entity) throws URISyntaxException {
+//        return super.updateEntity(id, entity);
 //    }
 //
 //    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")

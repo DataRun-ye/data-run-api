@@ -14,7 +14,7 @@
             <!-- original source id (mongo _id or other identifier) -->
             <column name="source_id" type="varchar(100)"/>
 
-            <!-- optional submission uid discovered in doc -->
+            <!-- optional submission id discovered in doc -->
             <column name="submission_uid" type="varchar(26)"/>
 
             <!-- stage where error occurred: READ | PROCESS | WRITE -->

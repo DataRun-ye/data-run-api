@@ -72,7 +72,7 @@ public class ReferenceResolver {
                                                      Function<String, Optional<T>> findByUid,
                                                      Function<String, Optional<T>> findById,
                                                      String kind) {
-        // try by (uid)
+        // try by (id)
         Optional<T> byUid = findByUid.apply(candidate);
         if (byUid.isPresent()) {
             var referenceObject = byUid.get();

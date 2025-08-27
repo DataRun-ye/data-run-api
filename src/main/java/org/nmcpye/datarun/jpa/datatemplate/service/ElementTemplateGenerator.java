@@ -98,7 +98,7 @@ public class ElementTemplateGenerator {
             ValueType vt = de.getType();
 
             if (!vt.isSystemReferenceType()) {
-                validationErrors.add("Category element '" + catElemId + "' has valueType '" + vt + "' which is not allowed as a repeat category (must be reference or select-one).");
+                validationErrors.add("Category element '" + catElemId + "' has dataType '" + vt + "' which is not allowed as a repeat category (must be reference or select-one).");
                 continue;
             }
 

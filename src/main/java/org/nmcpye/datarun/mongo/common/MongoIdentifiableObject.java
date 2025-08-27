@@ -3,7 +3,6 @@ package org.nmcpye.datarun.mongo.common;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.Setter;
-import org.javers.core.metamodel.annotation.DiffIgnore;
 import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
@@ -22,7 +21,7 @@ import java.util.Objects;
  * last modified by attributes.
  */
 @JsonIgnoreProperties(value = {"createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
-@DiffIgnore
+//@DiffIgnore
 @Getter
 @Setter
 public abstract class MongoIdentifiableObject implements IdentifiableObject<String> {
@@ -51,6 +50,7 @@ public abstract class MongoIdentifiableObject implements IdentifiableObject<Stri
     }
 
     abstract protected void setUid(String uid);
+
     /**
      * Set auto-generated fields on save or update
      */

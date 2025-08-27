@@ -8,10 +8,22 @@ import org.nmcpye.datarun.jpa.etl.dto.RepeatInstance;
 import java.util.ArrayList;
 import java.util.List;
 
-
 /**
- * A container for the complete, normalized state of a single submission.
- * This object is the output of the Normalizer and the input for the Persister.
+ * Container holding the complete, normalized representation of a single submission.
+ *
+ * <p>Produced by {@code Normalizer} and consumed by persisters/DAOs.
+ * Contains:
+ * <ul>
+ *   <li>submission identifiers and context</li>
+ *   <li>a list of RepeatInstance DTOs (repeat sections)</li>
+ *   <li>a list of ElementDataValue rows (normalized element values)</li>
+ * </ul>
+ *
+ * <p>Design notes:
+ * <ul>
+ *   <li>Mutable lists for incremental population during normalization.</li>
+ *   <li>Lightweight: does not itself persist anything; intended as an in-memory transfer object.</li>
+ * </ul>
  *
  * @author Hamza Assada
  * @since 13/08/2025
@@ -40,4 +52,3 @@ public class NormalizedSubmission {
         this.values.add(value);
     }
 }
-

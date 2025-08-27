@@ -93,7 +93,7 @@ public class CurrentUserInfoService {
         final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
             new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
         final var teams = new HashSet<>(teamRepository.findAll(TeamSpecifications.isEnabled()
-            .and((root, query, cb) -> root.get("uid").in(teamUIDs))));
+            .and((root, query, cb) -> root.get("id").in(teamUIDs))));
 
         List<UserFormAccess> formAccesses = new ArrayList<>();
         for (final Team team : teams) {

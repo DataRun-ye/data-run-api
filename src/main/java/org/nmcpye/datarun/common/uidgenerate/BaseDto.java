@@ -22,16 +22,16 @@ public class BaseDto implements Serializable {
 //@MappedSuperclass
 //public abstract class BaseEntity {
 //    @Id
-//    @Column(name = "uid", columnDefinition = "BINARY(16)", updatable = false, nullable = false)
-//    private ULID.Value uid;
+//    @Column(name = "id", columnDefinition = "BINARY(16)", updatable = false, nullable = false)
+//    private ULID.Value id;
 //
 //    public BaseEntity() {
-//        this.uid = new ULID().nextValue();
+//        this.id = new ULID().nextValue();
 //    }
 //
 //    public ULID.Value getUid() {
-//        return uid;
+//        return id;
 //    }
 //
-//    // Optionally: equals/hashCode based on uid
+//    // Optionally: equals/hashCode based on id
 //}

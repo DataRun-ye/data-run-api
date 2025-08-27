@@ -14,7 +14,7 @@ public interface MetadataSubmissionService
 
 //    Page<MetadataSubmission> findAllByEntity(List<String> entityUids, Pageable pageable);
 //    Page<MetadataSubmission> findAllByResourceType(String resourceType, Pageable pageable);
-//    Page<MetadataSubmission> findAllByEntity(String uid, Pageable pageable);
+//    Page<MetadataSubmission> findAllByEntity(String id, Pageable pageable);
 
 //    Page<MetadataSubmission> findSubmissionsBySerialNumber(Long serialNumber, String form, Pageable pageable);
 }

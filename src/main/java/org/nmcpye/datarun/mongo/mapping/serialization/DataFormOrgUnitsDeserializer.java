@@ -27,7 +27,7 @@
 //    public Set<OrgUnit> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 //        var uidList = p.readValueAs(String[].class);
 //        return Set.of(uidList).stream()
-//            .map(uid -> orgUnitService.findAssignedByUid(uid).orElse(null)) // Handle Optional
+//            .map(id -> orgUnitService.findAssignedByUid(id).orElse(null)) // Handle Optional
 //            .filter(Objects::nonNull) // Filter out null values
 ////            .map(OrgUnitReference::new)
 //            .collect(Collectors.toSet());

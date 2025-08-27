@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.jpa.assignment.repository;
 
-import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.springframework.data.domain.Page;
@@ -15,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-@JaversSpringDataAuditable
+//@JaversSpringDataAuditable
 public interface AssignmentRepository
     extends JpaIdentifiableRepository<Assignment>, AssignmentRepositoryWithBagRelationships {
     /// ////
@@ -126,7 +125,7 @@ public interface AssignmentRepository
 //        SELECT assi.*
 //        FROM assignment assi
 //        Join team t on t.id = assi.team_id
-//        WHERE t.uid IN :teamIds
+//        WHERE t.id IN :teamIds
 //        """, nativeQuery = true)
 //    Page<AssignmentSummary> findSummariesTeam(@Param("teamIds") Collection<String> teamIds, Pageable pageable);
 //
@@ -134,7 +133,7 @@ public interface AssignmentRepository
 //        SELECT assi.*
 //        FROM assignment assi
 //        Join team t on t.id = assi.team_id
-//        WHERE t.uid IN :teamId
+//        WHERE t.id IN :teamId
 //        """, nativeQuery = true)
 //    Page<AssignmentSummary> findSummariesTeam(@Param("teamId") String teamId, Pageable pageable);
 
@@ -182,7 +181,7 @@ public interface AssignmentRepository
 //            "left join assignment.orgUnit " +
 //            "left join assignment.team " +
 //            "join assignment.team.users user " +
-//            "where assignment.uid =:uid and user.login = ?#{authentication.name}"
+//            "where assignment.id =:id and user.login = ?#{authentication.name}"
 //    )
-//    Optional<Assignment> findOneWithToOneRelationshipsByUser(@Param("uid") String uid);
+//    Optional<Assignment> findOneWithToOneRelationshipsByUser(@Param("id") String id);
 }

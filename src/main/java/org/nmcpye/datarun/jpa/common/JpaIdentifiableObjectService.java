@@ -19,10 +19,10 @@ import java.util.List;
 public interface JpaIdentifiableObjectService<T extends JpaIdentifiableObject>
     extends IdentifiableObjectService<T, String> {
 
-//    static <T extends JpaIdentifiableObject> Specification<T> hasUid(String uid) {
-//        return (root, query, criteriaBuilder) -> uid == null ?
+//    static <T extends JpaIdentifiableObject> Specification<T> hasUid(String id) {
+//        return (root, query, criteriaBuilder) -> id == null ?
 //            criteriaBuilder.disjunction()
-//            : criteriaBuilder.equal(root.get("uid"), uid);
+//            : criteriaBuilder.equal(root.get("id"), id);
 //    }
 
     static <T extends JpaIdentifiableObject> Specification<T> hasId(String id) {
@@ -38,7 +38,7 @@ public interface JpaIdentifiableObjectService<T extends JpaIdentifiableObject>
 
             queryRequest.getFilters().forEach((key, value) -> {
                 if (key.contains(".")) {
-                    // Handle nested properties, for example: parent.uid
+                    // Handle nested properties, for example: parent.id
                     String[] parts = key.split("\\.");
                     Path<Object> path = root.get(parts[0]);
                     for (int i = 1; i < parts.length; i++) {

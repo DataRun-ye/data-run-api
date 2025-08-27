@@ -22,9 +22,9 @@
 //
 //    @Override
 //    public FormTemplate incrementAndGet(String templateUid) {
-//        Query q = Query.query(Criteria.where("uid").is(templateUid));
+//        Query q = Query.query(Criteria.where("id").is(templateUid));
 //        Update u = new Update().inc("versionNumber", 1)
-//            .setOnInsert("uid", templateUid)
+//            .setOnInsert("id", templateUid)
 //            .setOnInsert("disabled", false)    // default on first insert
 //            .setOnInsert("deleted", false);    // default on first insert
 //        FindAndModifyOptions opts = FindAndModifyOptions.options()

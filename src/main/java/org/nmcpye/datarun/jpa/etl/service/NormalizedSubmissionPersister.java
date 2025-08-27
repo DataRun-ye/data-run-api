@@ -13,9 +13,24 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
 
 /**
+ * Persist a fully-normalized submission into the database using DAOs.
+ *
+ * <p>Responsibilities:
+ * <ul>
+ *   <li>Acquire a per-submission advisory lock (transaction-scoped) to prevent concurrent ETL runs for the same submission.</li>
+ *   <li>Holistic purge: mark existing repeat instances and value rows for the submission as deleted.</li>
+ *   <li>Upsert new state: write repeat instances first (to satisfy FK constraints), then element value rows.</li>
+ *   <li>Let the transaction commit/rollback handle release of the advisory lock and DB consistency.</li>
+ * </ul>
+ *
+ * <p>Design notes:
+ * <ul>
+ *   <li>Uses JDBC/NamedParameterJdbcTemplate only for acquiring advisory lock (pg_advisory_xact_lock).</li>
+ *   <li>Deterministic 64-bit lock key derived from SHA-256 of submissionId for portability and low collision risk.</li>
+ * </ul>
+ *
  * @author Hamza Assada
  * @since 13/08/2025
  */
@@ -32,35 +47,31 @@ public class NormalizedSubmissionPersister {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     /**
-     * Does the following:
-     * <ul>
-     * <ol>1. Acquire per-submission advisory lock through {@link #acquireAdvisoryLock(String)}</ol>
-     * <ol>2. HOLISTIC PURGE: Mark all existing data for this submission as deleted
-     * {@link ISubmissionValuesDao#markAllAsDeletedForSubmission(String)},
-     * {@link IRepeatInstancesDao#markAllAsDeletedForSubmission(String)}.
-     *  <pre>(The order here doesn't strictly matter due to the transaction, but purging values first is logical.)</pre></ol>
-     * <ol>3. UPSERT NEW STATE: Insert the new data. The UPSERT logic will "undelete" any rows that
-     * existed before and are still present in the new submission.
-     *      <pre> (Process repeats first {@link IRepeatInstancesDao#upsertRepeatInstancesBatch(List)} so value table's foreign key (if any) is valid..)</pre></ol>
-     * <ol>4. Lock is released automatically when the transaction commits.</ol>
-     * </ul>
+     * Persist the provided NormalizedSubmission.
      *
-     * @param ns the normalized submission to upsert. usually incoming from the normalization stage
-     * @see EtlCoordinatorService
-     * @see Normalizer
+     * <ol>
+     *   <li>Acquire advisory lock for submissionId</li>
+     *   <li>Mark existing data as deleted for the submission (values, repeats)</li>
+     *   <li>Upsert repeat instances (if any)</li>
+     *   <li>Upsert element value rows (if any)</li>
+     * </ol>
+     * <p>
+     * The method is transaction-scoped; lock is released when the transaction ends.
+     *
+     * @param ns normalized submission to persist
      */
     @Transactional
     public void persist(NormalizedSubmission ns) {
         final String submissionId = ns.getSubmissionId();
 
-        // 1. Acquire per-submission advisory lock
+        // Acquire per-submission advisory lock
         acquireAdvisoryLock(submissionId);
 
-        // 2. HOLISTIC PURGE: Mark all existing data for this submission as deleted.
+        // HOLISTIC PURGE: Mark all existing data for this submission as deleted.
         submissionValuesDao.markAllAsDeletedForSubmission(submissionId);
         repeatInstancesDao.markAllAsDeletedForSubmission(submissionId);
 
-        // 3. UPSERT NEW STATE: Insert the new data. The UPSERT logic will "undelete" any
+        // UPSERT NEW STATE: Insert the new data. The UPSERT logic will "undelete" any
         if (!ns.getRepeatInstances().isEmpty()) {
             repeatInstancesDao.upsertRepeatInstancesBatch(ns.getRepeatInstances());
         }
@@ -68,9 +79,15 @@ public class NormalizedSubmissionPersister {
             submissionValuesDao.upsertSubmissionValuesBatch(ns.getValues());
         }
 
-        // 4. Lock is released automatically when the transaction commits.
+        // Lock is released automatically when the transaction commits.
     }
 
+    /**
+     * Blocking, transaction-scoped advisory lock for a submission.
+     * Uses pg_advisory_xact_lock(:key).
+     *
+     * @param submissionId submission identifier
+     */
     private void acquireAdvisoryLock(String submissionId) {
         long key = stableLongFromString(submissionId);
         String sql = "SELECT pg_advisory_xact_lock(:key)"; // blocking, transaction-scoped lock
@@ -83,9 +100,11 @@ public class NormalizedSubmissionPersister {
     }
 
     /**
-     * Deterministic 64-bit value derived from the SHA-256 of the input string.
-     * We take the first 8 bytes of the digest as a long (big-endian).
-     * This is portable (no DB extension) and has very low collision probability.
+     * Deterministic 64-bit long derived from SHA-256(submissionId).
+     * Returns the first 8 bytes as a big-endian long.
+     *
+     * @param s input string (submissionId)
+     * @return 64-bit long key
      */
     private static long stableLongFromString(String s) {
         try {

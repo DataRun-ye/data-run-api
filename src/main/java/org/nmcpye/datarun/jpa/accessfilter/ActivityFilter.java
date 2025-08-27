@@ -33,7 +33,7 @@ public class ActivityFilter extends DefaultJpaFilter<Activity> {
 //                Join<Team, User> userJoin = teamJoin.join("users", JoinType.INNER);
 //
 //                return criteriaBuilder.equal(userJoin.get("login"), user.getUsername());
-            return root.get("uid").in(user.getActivityUIDs());
+            return root.get("id").in(user.getActivityUIDs());
 
         };
 

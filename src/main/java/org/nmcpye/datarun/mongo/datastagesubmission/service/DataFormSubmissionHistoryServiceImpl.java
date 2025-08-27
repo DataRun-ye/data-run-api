@@ -40,7 +40,7 @@ public class DataFormSubmissionHistoryServiceImpl
 
     @Override
     public List<DataFormSubmissionHistory> getSubmissionVersions(String submissionUid) {
-        Query query = new Query(Criteria.where("uid").is(submissionUid));
+        Query query = new Query(Criteria.where("id").is(submissionUid));
         List<DataFormSubmissionHistory> submissions = mongoTemplate.find(query, DataFormSubmissionHistory.class);
 
         return submissions;
@@ -57,7 +57,7 @@ public class DataFormSubmissionHistoryServiceImpl
 
     @Override
     public void pruneOldVersions(String submissionUid) {
-        Query pruneQuery = Query.query(Criteria.where("uid").is(submissionUid))
+        Query pruneQuery = Query.query(Criteria.where("id").is(submissionUid))
             .with(Sort.by(Sort.Direction.DESC, "timestamp"))
             .skip(MAX_HISTORY_VERSIONS);
         pruneQuery.fields().include("_id");

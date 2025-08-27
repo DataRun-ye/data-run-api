@@ -2,7 +2,6 @@ package org.nmcpye.datarun.jpa.datatemplate.repository;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.springframework.cache.annotation.Cacheable;
@@ -14,9 +13,9 @@ import java.util.*;
 
 /// Spring Data jpa repository for the DataTemplate entity.
 @Repository
-@JaversSpringDataAuditable
+//@JaversSpringDataAuditable
 public interface TemplateVersionRepository
-        extends JpaIdentifiableRepository<TemplateVersion> {
+    extends JpaIdentifiableRepository<TemplateVersion> {
     String TEMPLATE_UID_VERSION_NO_JPA_CACHE = "templateUidVersionNoCache";
     String TEMPLATE_UID_VERSION_UID_JPA_CACHE = "templateUidVersionUidCache";
     String TEMPLATE_UID_LATEST_VERSION_JPA_CACHE = "templateUidLatestVersionCache";

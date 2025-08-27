@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.jpa.datatemplate.repository;
 
 import jakarta.persistence.LockModeType;
-import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.springframework.cache.annotation.Cacheable;
@@ -14,14 +13,14 @@ import java.util.Optional;
 
 /// Spring Data jpa repository for the DataTemplate entity.
 @Repository
-@JaversSpringDataAuditable
+//@JaversSpringDataAuditable
 public interface DataTemplateRepository
     extends JpaIdentifiableRepository<DataTemplate> {
     String TEMPLATE_BY_UID_CACHE = "templateByUidCache";
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT f FROM DataTemplate f WHERE f.uid = :uid")
-    Optional<DataTemplate> findByUidForWrite(@Param("uid") String uid);
+    Optional<DataTemplate> findByUidForWrite(@Param("id") String uid);
 
     @Cacheable(cacheNames = TEMPLATE_BY_UID_CACHE)
     @Override

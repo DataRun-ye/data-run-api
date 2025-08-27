@@ -38,8 +38,8 @@ public class OrgUnitGroupResource extends JpaBaseResource<OrgUnitGroup> {
 //
 //    @Override
 //    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    public ResponseEntity<OrgUnitGroup> updateEntity(String uid, OrgUnitGroup entity) throws URISyntaxException {
-//        return super.updateEntity(uid, entity);
+//    public ResponseEntity<OrgUnitGroup> updateEntity(String id, OrgUnitGroup entity) throws URISyntaxException {
+//        return super.updateEntity(id, entity);
 //    }
 //
 //    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")

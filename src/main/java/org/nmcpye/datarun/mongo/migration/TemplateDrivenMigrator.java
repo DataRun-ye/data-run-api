@@ -43,7 +43,7 @@ public class TemplateDrivenMigrator implements CommandLineRunner {
     }
 
     private void runMainStream() {
-        Query formTemplateQuery = Query.query(Criteria.where("uid").is("Tcf3Ks9ZRpB"));
+        Query formTemplateQuery = Query.query(Criteria.where("id").is("Tcf3Ks9ZRpB"));
 
         DataForm formTemplate = mongoTemplate.findOne(formTemplateQuery, DataForm.class);
 

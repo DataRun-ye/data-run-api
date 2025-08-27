@@ -223,7 +223,7 @@
 //            }
 //
 //            @Override
-//            public Optional<OptionGroup> getOptionGroup(String uid) {
+//            public Optional<OptionGroup> getOptionGroup(String id) {
 //                return Optional.empty();
 //            }
 //
@@ -248,7 +248,7 @@
 //            }
 //
 //            @Override
-//            public Optional<OptionGroupSet> getOptionGroupSet(String uid) {
+//            public Optional<OptionGroupSet> getOptionGroupSet(String id) {
 //                return Optional.empty();
 //            }
 //

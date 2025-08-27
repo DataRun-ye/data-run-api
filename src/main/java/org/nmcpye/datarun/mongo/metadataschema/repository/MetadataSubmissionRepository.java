@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.mongo.metadataschema.repository;
 
-import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.mongo.common.repository.MongoIdentifiableRepository;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.mongo.domain.MetadataSubmission;
@@ -15,7 +14,7 @@ import java.util.List;
  * Spring Data MongoDB repository for the DataFormSubmission entity.
  */
 @Repository
-@JaversSpringDataAuditable
+//@JaversSpringDataAuditable
 public interface MetadataSubmissionRepository extends MongoIdentifiableRepository<MetadataSubmission> {
 
     @Query("{ 'serialNumber' : { $exists: false } }")

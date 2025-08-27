@@ -26,7 +26,7 @@ public class IdentifiableAccessSpecification {
 
     public static <T extends IdentifiableObject<Long>> Specification<T> hasUid(String uid) {
         return (root, query, criteriaBuilder) -> uid == null ? criteriaBuilder.disjunction()
-            : criteriaBuilder.equal(root.get("uid"), uid);
+            : criteriaBuilder.equal(root.get("id"), uid);
     }
 
     public static <T extends IdentifiableObject<Long>> Specification<T> hasCode(String code) {

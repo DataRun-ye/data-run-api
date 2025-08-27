@@ -8,6 +8,19 @@ import org.nmcpye.datarun.jpa.etl.model.NormalizedSubmission;
 import org.springframework.stereotype.Service;
 
 /**
+ * Orchestrates the ETL flow for a submission:
+ * <ol>
+ *   <li>Fetch DataSubmission from repository</li>
+ *   <li>Normalize it using Normalizer (optionally generate missing repeat UIDs)</li>
+ *   <li>Persist the resulting NormalizedSubmission using NormalizedSubmissionPersister</li>
+ * </ol>
+ *
+ * <p>Design notes:
+ * <ul>
+ *   <li>Thin coordinator: delegates responsibilities to dedicated components (single responsibility).</li>
+ *   <li>Does not itself manage transactions; persister handles transactional semantics.</li>
+ * </ul>
+ *
  * @author Hamza Assada
  * @since 13/08/2025
  */
@@ -19,6 +32,12 @@ public class EtlCoordinatorService {
     private final Normalizer normalizer;
     private final ElementMetadataService elementMetadataService;
 
+    /**
+     * Process a submission end-to-end.
+     *
+     * @param submissionId       id of the submission to process
+     * @param generateMissingIds whether the Normalizer should synthesize missing repeat-instance UIDs
+     */
     public void processSubmission(String submissionId, boolean generateMissingIds) {
         DataSubmission submission = submissionRepo.findById(submissionId)
             .orElseThrow(() -> new IllegalStateException("Submission not found: " + submissionId));

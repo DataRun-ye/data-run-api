@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.jpa.dataelement.repository;
 
-import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.springframework.stereotype.Repository;
@@ -15,7 +14,7 @@ import java.util.Optional;
  */
 @SuppressWarnings("unused")
 @Repository
-@JaversSpringDataAuditable
+//@JaversSpringDataAuditable
 public interface DataElementRepository
     extends JpaIdentifiableRepository<DataElement> {
     Optional<DataElement> findByNameIgnoreCase(String name);

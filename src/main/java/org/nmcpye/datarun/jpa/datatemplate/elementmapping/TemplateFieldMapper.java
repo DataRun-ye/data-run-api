@@ -96,7 +96,7 @@ public final class TemplateFieldMapper {
 //        tf.categoryForRepeat(categoryForRepeatElementId);
 //        if (conf instanceof FormDataElementConf field) {
 //            tf.elementKind(ElementTemplateConfig.ElementKind.FIELD);
-//            tf.valueType(meta.valueType());
+//            tf.dataType(meta.dataType());
 //            tf.namePath(field.getPath().replaceFirst(field.getId(), field.getName()));
 //            // get it from passed category
 //            // conf may override meta

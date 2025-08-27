@@ -43,7 +43,7 @@
 //            "template_id, version_id, version_no, element_id, path, name, value_type, is_reference, reference_table, option_set_id," +
 //            "is_repeatable, repeat_path, is_multi, is_measure, default_aggregation, category_for_repeat, display_label, definition, created_at" +
 //            ") VALUES (" +
-//            ":templateId, :versionId, :versionNo, :elementId, :path, :name, :valueType, :isReference, :referenceTable, :optionSetId," +
+//            ":templateId, :versionId, :versionNo, :elementId, :path, :name, :dataType, :isReference, :referenceTable, :optionSetId," +
 //            ":isRepeatable, :repeatPath, :isMulti, :isMeasure, :defaultAggregation, :categoryForRepeat, :displayLabel, :definition, :createdAt" +
 //            ")";
 //
@@ -64,7 +64,7 @@
 //                .addValue("elementId", r.getDataElementId())
 //                .addValue("path", r.getPath())
 //                .addValue("name", r.getName())
-//                .addValue("valueType", r.getValueType())
+//                .addValue("dataType", r.getValueType())
 //                .addValue("isReference", r.getIsReference())
 //                .addValue("referenceTable", r.getReferenceTable())
 //                .addValue("optionSetId", r.getOptionSetId())

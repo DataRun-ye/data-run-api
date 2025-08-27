@@ -152,7 +152,9 @@
 //                try {
 //                    return DSL.max(target).filterWhere(filter).as(alias);
 //                } catch (Throwable ignored) {
-//                    return DSL.max(DSL.when((Condition) filter, target).otherwise((Object) null)).as(alias);
+//                    return DSL.max(DSL.when((Condition) filter, target)
+//                        .otherwise((Object) null))
+//                        .as(alias);
 //                }
 //            }
 //            case COUNT -> {
@@ -160,7 +162,8 @@
 //                    try {
 //                        return DSL.countDistinct(target).filterWhere(filter).as(alias);
 //                    } catch (Throwable ignored) {
-//                        return DSL.countDistinct(DSL.when(filter, target).otherwise((Object) null)).as(alias);
+//                        return DSL.countDistinct(DSL.when(filter, target)
+//                            .otherwise((Object) null)).as(alias);
 //                    }
 //                } else {
 //                    try {
@@ -175,7 +178,8 @@
 //                try {
 //                    return DSL.countDistinct(target).filterWhere(filter).as(alias);
 //                } catch (Throwable ignored) {
-//                    return DSL.countDistinct(DSL.when(filter, target).otherwise((Object) null)).as(alias);
+//                    return DSL.countDistinct(DSL.when(filter, target)
+//                        .otherwise((Object) null)).as(alias);
 //                }
 //            }
 //            case SUM_TRUE -> {

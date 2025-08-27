@@ -16,7 +16,7 @@
 //import java.util.Map;
 //
 //@Document(collection = "flow_instance_submission_history")
-//@CompoundIndex(name = "flow_instance_history_uid_time_idx", def = "{'uid': 1, 'entries.entryDate': -1}")
+//@CompoundIndex(name = "flow_instance_history_uid_time_idx", def = "{'id': 1, 'entries.entryDate': -1}")
 //@Getter
 //@Setter
 //@SuppressWarnings("common-java:DuplicatedBlocks")
@@ -27,8 +27,8 @@
 //    private String id;
 //
 //    @Size(max = 11)
-//    @Field("uid")
-//    private String uid;
+//    @Field("id")
+//    private String id;
 //
 //    @Field("entries")
 //    private List<HistoryEntry> entries = new ArrayList<>();

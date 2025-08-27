@@ -235,7 +235,7 @@ public class OrgUnit extends JpaBaseIdentifiableObject {
     }
 
     /**
-     * Returns a mapping between the uid and the uid parent graph of the given
+     * Returns a mapping between the id and the id parent graph of the given
      * organisation units.
      */
     public static Map<String, String> getParentGraphMap(List<OrgUnit> organisationUnits, Collection<OrgUnit> roots) {
@@ -347,7 +347,7 @@ public class OrgUnit extends JpaBaseIdentifiableObject {
     public String toString() {
         return "OrgUnit{" +
             "id=" + getId() +
-            ", uid='" + getUid() + "'" +
+            ", id='" + getUid() + "'" +
             ", code='" + getCode() + "'" +
             ", name='" + getName() + "'" +
             ", ouPath='" + getPath() + "'" +

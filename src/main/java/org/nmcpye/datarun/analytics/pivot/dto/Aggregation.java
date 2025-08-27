@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.pivot;
+package org.nmcpye.datarun.analytics.pivot.dto;
 
 /**
  * Aggregation functions supported by the pivot API.

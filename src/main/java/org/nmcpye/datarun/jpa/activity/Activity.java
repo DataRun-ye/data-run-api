@@ -69,7 +69,7 @@ public class Activity extends JpaBaseIdentifiableObject {
     public String toString() {
         return "Activity{" +
             "id=" + getId() +
-            ", uid='" + getUid() + "'" +
+            ", id='" + getUid() + "'" +
             ", code='" + getCode() + "'" +
             ", name='" + getName() + "'" +
             ", startDate='" + getStartDate() + "'" +

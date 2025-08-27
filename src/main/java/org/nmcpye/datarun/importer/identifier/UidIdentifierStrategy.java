@@ -10,6 +10,6 @@ import java.util.Map;
 @Component("uid")
 public class UidIdentifierStrategy implements IdentifierStrategy {
     public String extractIdentifier(Map<String, Object> data) {
-        return data.get("uid").toString();
+        return data.get("id").toString();
     }
 }

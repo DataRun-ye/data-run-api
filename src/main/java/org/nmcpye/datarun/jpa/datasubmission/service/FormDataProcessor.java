@@ -72,7 +72,7 @@ public class FormDataProcessor {
      * Process an object node: iterate its fields and handle arrays/nested objects.
      *
      * @param node               object node to mutate
-     * @param submissionUid      submission uid to set in items
+     * @param submissionUid      submission id to set in items
      * @param currentParentId    immediate parent repeat id (null when top-level)
      * @param generateMissingIds generate missing _id when true; otherwise throw on missing id
      */

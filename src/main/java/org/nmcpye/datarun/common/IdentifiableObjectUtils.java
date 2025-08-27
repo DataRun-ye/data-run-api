@@ -175,11 +175,11 @@ public class IdentifiableObjectUtils {
 //    }
 
     /**
-     * Returns a mapping between the uid and the display name of the given
+     * Returns a mapping between the id and the display name of the given
      * identifiable objects.
      *
      * @param objects the identifiable objects.
-     * @return mapping between the uid and the display name of the given
+     * @return mapping between the id and the display name of the given
      * objects.
      */
     public static Map<String, String> getUidNameMap(Collection<? extends JpaBaseIdentifiableObject> objects) {
@@ -187,12 +187,12 @@ public class IdentifiableObjectUtils {
     }
 
     /**
-     * Returns a mapping between the uid and the property defined by the given
+     * Returns a mapping between the id and the property defined by the given
      * identifiable property for the given identifiable objects.
      *
      * @param objects  the identifiable objects.
      * @param property the identifiable property.
-     * @return a mapping between uid and property.
+     * @return a mapping between id and property.
      */
     public static Map<String, String> getUidPropertyMap(Collection<? extends JpaBaseIdentifiableObject> objects, IdentifiableProperty property) {
         Map<String, String> map = Maps.newHashMap();
@@ -204,11 +204,11 @@ public class IdentifiableObjectUtils {
     }
 
     /**
-     * Returns a mapping between the uid and the name of the given identifiable
+     * Returns a mapping between the id and the name of the given identifiable
      * objects.
      *
      * @param objects the identifiable objects.
-     * @return mapping between the uid and the name of the given objects.
+     * @return mapping between the id and the name of the given objects.
      */
     public static <T extends JpaBaseIdentifiableObject> Map<String, T> getUidObjectMap(Collection<T> objects) {
         return objects != null ? Maps.uniqueIndex(objects, T::getUid) : Maps.newHashMap();

@@ -33,7 +33,7 @@ public abstract class OrgUnitSpecification {
 
             /// isAncestor
             // Match current OrgUnit's UID against the collected ancestor UIDs
-            return root.get("uid").in(subquery);
+            return root.get("id").in(subquery);
         };
     }
 
@@ -73,7 +73,7 @@ public abstract class OrgUnitSpecification {
     }
 
     public static Specification<OrgUnit> selectedUnitsByUids(List<String> uids) {
-        return (root, query, cb) -> root.get("uid").in(uids);
+        return (root, query, cb) -> root.get("id").in(uids);
     }
 
     public static Specification<OrgUnit> canRead() {
@@ -234,12 +234,12 @@ public abstract class OrgUnitSpecification {
 //            Join<OrgUnit, Assignment> subAssignmentsJoin = subRoot.join("assignments", JoinType.INNER);
 //            Join<Assignment, Team> subTeamJoin = subAssignmentsJoin.join("team", JoinType.INNER);
 //            Join<Team, User> subUserJoin = subTeamJoin.join("users", JoinType.INNER);
-//            subquery.select(subRoot.get("uid")).where(criteriaBuilder.equal(subUserJoin.get("login"), login));
+//            subquery.select(subRoot.get("id")).where(criteriaBuilder.equal(subUserJoin.get("login"), login));
 //
 //            // Main query to include ancestors of the OrgUnits found in the subquery
 //            return criteriaBuilder.or(
-//                root.get("uid").in(subquery),  // OrgUnits directly assigned to the user
-//                criteriaBuilder.like(root.get("path"), criteriaBuilder.concat("%,", criteriaBuilder.concat(criteriaBuilder.literal(","), root.get("uid"))))  // Ancestors
+//                root.get("id").in(subquery),  // OrgUnits directly assigned to the user
+//                criteriaBuilder.like(root.get("path"), criteriaBuilder.concat("%,", criteriaBuilder.concat(criteriaBuilder.literal(","), root.get("id"))))  // Ancestors
 //            );
 //        };
 //    }

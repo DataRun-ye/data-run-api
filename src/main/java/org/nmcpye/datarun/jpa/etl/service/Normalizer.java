@@ -29,35 +29,87 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/// Normalizes a [DataSubmission] into a [NormalizedSubmission] (repeat instances + element rows).
-///
-/// @author Hamza Assada 19/08/2025 (7amza.it@gmail.com)
-/// @see TemplateElementMap
-/// @see CategoryResolver
-/// @see EtlCoordinatorService
+/**
+ * Normalizer — converts a raw DataSubmission into a self-contained NormalizedSubmission.
+ *
+ * <p>Responsibilities:
+ * <ul>
+ *   <li>Traverse form JSON (including nested and repeat sections)</li>
+ *   <li>Produce RepeatInstance DTOs for repeat sections</li>
+ *   <li>Produce ElementDataValue rows for primitive and multi-select fields</li>
+ *   <li>Delegate lookups and conversions to injected resolvers/services</li>
+ * </ul>
+ *
+ * <p>Design notes:
+ * <ul>
+ *   <li>Purely procedural: recursion is used to walk the JSON tree.</li>
+ *   <li>Repeat instance IDs are either read-from-client or generated (ULID).</li>
+ *   <li>Category resolution is delegated and failures are treated as hard errors.</li>
+ * </ul>
+ *
+ * @author Hamza Assada (7amza.it@gmail.com)
+ * @see TemplateElementMap
+ * @see CategoryResolver
+ * @see EtlCoordinatorService
+ * @since 19/08/2025
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class Normalizer {
 
-    /// For mapping option codes and resolving categories
+    /* ----------------------------
+       Dependencies (injected)
+       ---------------------------- */
+
+    /**
+     * Maps category values and resolves category metadata for repeat items.
+     */
     private final CategoryResolver categoryResolver;
+
+    /**
+     * Resolves references (option code → option id, etc).
+     */
     private final ReferenceResolver referenceResolver;
+
+    /**
+     * Converts raw/JSON values into ElementDataValue builders based on field type.
+     */
     private final ElementValueResolver elementValueResolver;
-    /// fetch a Cached template elements maps
+
+    /**
+     * Provides cached TemplateElementMap (template metadata lookups).
+     */
     private final TemplateElementService templateElementService;
+
+    /**
+     * Jackson mapper used for converting form-data and serializing labels.
+     */
     private final ObjectMapper objectMapper;
 
-    /// A small, immutable helper class to pass context down the recursion.
-    ///
-    /// @param instanceId The ID of the immediate repeat instance container. Null for the root.
+    /**
+     * Context object passed down recursion to track the current repeat instance id.
+     *
+     * @param instanceId id of the immediate parent repeat instance, {@code null} for root
+     */
     private record RepeatContext(String instanceId) {
         public static final RepeatContext ROOT = new RepeatContext(null);
     }
 
-    /// Main entry point for normalization.
-    /// Translates a [DataSubmission]'s data into a complete,
-    /// self-contained [NormalizedSubmission]
+    /* ----------------------------
+       Public API
+       ---------------------------- */
+
+    /**
+     * Normalize a DataSubmission into a NormalizedSubmission.
+     *
+     * <p>This is the main entry point: it fetches the template map, converts the raw form-data to a
+     * Map, creates the NormalizedSubmission wrapper, and starts the recursive extraction.
+     *
+     * @param submission                the incoming submission payload
+     * @param generateMissingRepeatUids when true, generate ULIDs for repeat items missing client IDs
+     * @return a fully populated NormalizedSubmission containing repeat instances and value rows
+     */
     public NormalizedSubmission normalize(DataSubmission submission, boolean generateMissingRepeatUids) {
         final TemplateElementMap elementMap =
             templateElementService.getTemplateElementMap(submission.getForm(),
@@ -80,6 +132,29 @@ public class Normalizer {
         return ns;
     }
 
+    /* ----------------------------
+    Internal helpers (signatures only)
+    ---------------------------- */
+
+    /**
+     * Recursive traversal of a node within the form-data tree.
+     *
+     * <p>Behaviors:
+     * <ul>
+     *   <li>When encountering a repeatable section: create RepeatInstance(s), optionally mark deleted, and recurse into items.</li>
+     *   <li>When encountering a nested non-repeat section: recurse normally.</li>
+     *   <li>When encountering a multi-select: map codes → option ids and emit a row per selected option.</li>
+     *   <li>When encountering a primitive field: build a single ElementDataValue row.</li>
+     * </ul>
+     *
+     * @param node                      current node map (may be null)
+     * @param currentPath               dot-delimited path from root to this node
+     * @param ns                        accumulating NormalizedSubmission
+     * @param submission                original submission metadata
+     * @param elementMap                template metadata helper
+     * @param context                   current repeat context (parent repeat instance id)
+     * @param generateMissingRepeatUids whether to generate ULIDs for missing repeat ids
+     */
     @SuppressWarnings("unchecked")
     private void extractNode(
         final Map<String, Object> node,
@@ -195,7 +270,7 @@ public class Normalizer {
                                                    FormDataElementConf field,
                                                    RepeatContext context,
                                                    String optionId, Object rawValue, Long elementConfId) {
-        // --- try parse value based on valueType
+        // --- try parse value based on dataType
         ElementDataValue.ElementDataValueBuilder builder =
             elementValueResolver.resolveValue(rawValue, field);
 

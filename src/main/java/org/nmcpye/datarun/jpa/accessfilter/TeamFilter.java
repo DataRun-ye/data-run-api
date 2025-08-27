@@ -39,7 +39,7 @@ public class TeamFilter extends DefaultJpaFilter<Team> {
                 return cb.disjunction(); // user has no access
             }
 
-            return root.get("uid").in(user.getUserTeamsUIDs());
+            return root.get("id").in(user.getUserTeamsUIDs());
 //            Join<Team, User> userJoin = root.join("users", JoinType.INNER);
 //            return cb.equal(userJoin.get("login"), user.getUsername());
 

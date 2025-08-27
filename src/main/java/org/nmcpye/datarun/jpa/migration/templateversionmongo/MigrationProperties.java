@@ -22,10 +22,10 @@ public class MigrationProperties {
     /** If true, no writes are performed. Useful for dry-run. */
     private boolean dryRun = false;
 
-    /** If true, skip documents whose uid already exists in Postgres. */
+    /** If true, skip documents whose id already exists in Postgres. */
     private boolean skipExisting = true;
 
-    /** Start from this mongo uid (exclusive) - optional resume aid. */
+    /** Start from this mongo id (exclusive) - optional resume aid. */
     private String resumeAfterUid;
 
     /** Optional limit on total records to migrate (useful for testing). 0 = no limit */

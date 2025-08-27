@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.jpa.datatemplate.repository;
 
 import jakarta.validation.constraints.NotNull;
-import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.jpa.common.BaseJpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
 import org.springframework.data.jpa.repository.Query;
@@ -13,13 +12,13 @@ import java.util.Optional;
 
 /// Spring Data MongoDB repository for the DataFormTemplate entity.
 @Repository
-@JaversSpringDataAuditable
+//@JaversSpringDataAuditable
 public interface ElementTemplateConfigRepository
-        extends BaseJpaIdentifiableRepository<ElementTemplateConfig, Long> {
+    extends BaseJpaIdentifiableRepository<ElementTemplateConfig, Long> {
     void deleteAllByTemplateIdAndTemplateVersionId(String templateId, String templateVersionId);
 
     @Query("SELECT e.id FROM ElementTemplateConfig e " +
-            "WHERE e.templateId=:templateId AND e.templateVersionId=:templateVersionId")
+        "WHERE e.templateId=:templateId AND e.templateVersionId=:templateVersionId")
     List<Long> findIdsByTemplateIdAndTemplateVersionId(@Param("templateId") String templateId,
                                                        @Param("templateVersionId") String templateVersionId);
 

@@ -71,7 +71,7 @@ public class DefaultDataTemplateVersionService
 //    /**
 //     * pumping form template's version, and update/adding formTemplateVersion with the new details and persist into db
 //     *
-//     * @param formTemplateInstanceDto incoming merged template, can be new (uid = null), or update
+//     * @param formTemplateInstanceDto incoming merged template, can be new (id = null), or update
 //     * @return SaveFormTemplateDto with current updated details merged from both
 //     */
 //    @Transactional
@@ -117,7 +117,7 @@ public class DefaultDataTemplateVersionService
 //            templateLegacyRepository.save(template.versionNumber(formTemplateVersion)
 //                // temporary for migrating old DataFormTemplate
 //                .id(formTemplate.getId())
-//                .uid(templateUid)
+//                .id(templateUid)
 //                .formVersion(templateVersion.getUid()));
 //        }
 //    }

@@ -137,7 +137,7 @@ package org.nmcpye.datarun.analytics.domaintabletoolkit;//package org.nmcpye.dat
 //    }
 //
 //    private String mapValueTypeToColumn(PivotableElement element) {
-//        return switch (element.valueType()) {
+//        return switch (element.dataType()) {
 //            case Number, Integer, Percentage, UnitInterval, IntegerPositive,
 //                 IntegerNegative, IntegerZeroOrPositive -> "ev.value_num";
 //            case SelectMulti -> "ev.option_id";

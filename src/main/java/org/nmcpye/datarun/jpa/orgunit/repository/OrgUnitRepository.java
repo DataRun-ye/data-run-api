@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.jpa.orgunit.repository;
 
-import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.springframework.data.domain.Page;
@@ -19,7 +18,7 @@ import java.util.Optional;
  */
 @SuppressWarnings("unused")
 @Repository
-@JaversSpringDataAuditable
+//@JaversSpringDataAuditable
 public interface OrgUnitRepository
     extends OrgUnitRepositoryWithBagRelationships,
     JpaIdentifiableRepository<OrgUnit> {
@@ -100,7 +99,7 @@ public interface OrgUnitRepository
 //        value = "select distinct orgUnit from OrgUnit orgUnit " +
 //            "left join fetch orgUnit.parent " /*+
 //            "join Assignment assignment ON assignment.orgUnit = orgUnit " +
-//            "where orgUnit.uid =:uid and assignment.team.userInfo.login = ?#{authentication.name}"*/
+//            "where orgUnit.id =:id and assignment.team.userInfo.login = ?#{authentication.name}"*/
 //    )
-//    Optional<OrgUnit> findOneByUidEager(@Param("uid") String uid);
+//    Optional<OrgUnit> findOneByUidEager(@Param("id") String id);
 }

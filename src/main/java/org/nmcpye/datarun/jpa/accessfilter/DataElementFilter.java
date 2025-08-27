@@ -46,7 +46,7 @@ public class DataElementFilter extends DefaultJpaFilter<DataElement> {
             if (user.isSuper()) {
                 return cb.conjunction();
             } else {
-                return root.get("uid").in(userDataElements);
+                return root.get("id").in(userDataElements);
             }
         };
     }

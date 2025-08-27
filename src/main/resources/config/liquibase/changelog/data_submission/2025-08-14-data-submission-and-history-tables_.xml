@@ -24,7 +24,7 @@
             <!-- DB-generated serial number (default nextval from sequence) -->
             <column name="serial_number" type="bigint" defaultValueComputed="nextval('submission_serial_seq')"/>
 
-            <!-- domain uid (short external id) -->
+            <!-- domain id (short external id) -->
             <column name="uid" type="varchar(11)"/>
 
             <!-- form / version metadata -->

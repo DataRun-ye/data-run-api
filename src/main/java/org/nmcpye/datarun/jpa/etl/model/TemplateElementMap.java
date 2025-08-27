@@ -36,6 +36,10 @@ public class TemplateElementMap {
 
     private final Map<String, AbstractElement> elementByNamePathMap;
 
+    /**
+     * (NEW) source element_template_config, used in normalization for each
+     * value to reference the id of the element_template_conf that produced it.
+     */
     private final Map<String, ElementTemplateConfig> elementConfigByNamePathMap;
 
     /**
@@ -74,13 +78,5 @@ public class TemplateElementMap {
                 Map.Entry::getValue));
         this.elementConfigByNamePathMap = elementConfigByNamePathMap;
 
-    }
-
-    /**
-     * @param repeatPath repeat section path
-     * @return the path children
-     */
-    public Map<String, String> getChildrenFieldPathsUnderRepeat(String repeatPath) {
-        return repeatChildrenMap.getOrDefault(repeatPath, Map.of());
     }
 }

@@ -11,18 +11,6 @@ import java.sql.Types;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * Named-parameter JDBC DAO for element_data_value.
- * <p>
- * Important: this class expects the following partial unique indexes exist:
- * - ux_element_single_value  (option_id IS NULL)
- * - ux_element_multi_value   (option_id IS NOT NULL)
- * <p>
- * and the table element_data_value with columns including option_id, value_text, deleted_at etc.
- *
- * @author Hamza Assada
- * @since 13/08/2025
- */
 @Repository
 public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
 
@@ -32,7 +20,6 @@ public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
         this.jdbc = jdbc;
     }
 
-    // TODO(Hamza) add project for partitioning by domain
     // A single, unified UPSERT statement handles all cases.
     private static final String UPSERT_SQL = """
         INSERT INTO element_data_value (

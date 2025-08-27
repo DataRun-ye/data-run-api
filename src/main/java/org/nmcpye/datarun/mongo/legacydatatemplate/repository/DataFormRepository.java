@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.mongo.legacydatatemplate.repository;
 
-import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.mongo.common.repository.MongoIdentifiableRepository;
 import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.springframework.data.mongodb.repository.Query;
@@ -12,7 +11,7 @@ import java.util.List;
  * Spring Data MongoDB repository for the DataForm entity.
  */
 @Repository
-@JaversSpringDataAuditable
+//@JaversSpringDataAuditable
 public interface DataFormRepository
     extends MongoIdentifiableRepository<DataForm> {
 
@@ -21,7 +20,7 @@ public interface DataFormRepository
 
     //    @Query(value = "{ 'form': { $in: ?0 }, 'permissions': ?1 }", fields = "{ 'form': 1, '_id': 0 }")
 //    List<String> findByFormsAndPermission(List<String> form, String permission);
-//    @Query(value = "{ 'uid': { $in: ?0 }}")
+//    @Query(value = "{ 'id': { $in: ?0 }}")
 //    Page<DataForm> findAllByUidIn(List<String> uids, Pageable pageable);
 //
     List<DataForm> findAllByUidIn(List<String> uids);

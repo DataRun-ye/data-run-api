@@ -54,7 +54,7 @@ public class JpaQueryBuilder<T> implements QueryBuilder<Specification<T>> {
     }
 
     private Path<Object> resolvePath(Root<T> root, String field) {
-        // Handle nested properties, for example: parent.uid
+        // Handle nested properties, for example: parent.id
         if (field.contains(".")) {
             String[] parts = field.split("\\.");
             Path<Object> path = root.get(parts[0]);

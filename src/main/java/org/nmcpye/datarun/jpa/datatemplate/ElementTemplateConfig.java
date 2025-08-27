@@ -34,16 +34,16 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "element_template_config",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "ux_element_template_config_tpl_ver_idpath",
-                        columnNames = {"template_id", "template_version_id", "id_path"})
-        },
-        indexes = {
-                @Index(name = "idx_element_template_config_template_version", columnList = "template_id, template_version_id"),
-                @Index(name = "idx_element_template_config_template_version_no", columnList = "template_id, version_no"),
-                @Index(name = "idx_element_template_config_dataelement", columnList = "data_element_id"),
-                @Index(name = "idx_element_template_config_repeat_path", columnList = "template_id, repeat_path")
-        }
+    uniqueConstraints = {
+        @UniqueConstraint(name = "ux_element_template_config_tpl_ver_idpath",
+            columnNames = {"template_id", "template_version_id", "id_path"})
+    },
+    indexes = {
+        @Index(name = "idx_element_template_config_template_version", columnList = "template_id, template_version_id"),
+        @Index(name = "idx_element_template_config_template_version_no", columnList = "template_id, version_no"),
+        @Index(name = "idx_element_template_config_dataelement", columnList = "data_element_id"),
+        @Index(name = "idx_element_template_config_repeat_path", columnList = "template_id, repeat_path")
+    }
 )
 @NoArgsConstructor
 @AllArgsConstructor
@@ -121,7 +121,7 @@ public class ElementTemplateConfig {
 
     /**
      * Value type of this element.
-     * For sections, {@code valueType = null}.
+     * For sections, {@code dataType = null}.
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "value_type", updatable = false, nullable = false)
@@ -180,14 +180,14 @@ public class ElementTemplateConfig {
     private Boolean isMeasure = Boolean.FALSE;
 
     /**
-     * ID of the category element that in the same repeat,
+     * ID of the category element that in the same repeat this element is part of
      * if {@link FormSectionConf#getCategoryDataElementId()} is set.
      */
     @Column(name = "category_for_repeat", length = 26)
     private String categoryForRepeat;
 
     /**
-     * true if this element is a category of a repeat,
+     * true if this element is configured as a category of a repeat,
      * if {@link FormSectionConf#getCategoryDataElementId()} is set.
      */
     @Column(name = "is_category")
@@ -229,10 +229,10 @@ public class ElementTemplateConfig {
     public boolean equals(Object o) {
         if (!(o instanceof ElementTemplateConfig that)) return false;
         return Objects.equals(getTemplateId(), that.getTemplateId()) &&
-                Objects.equals(getTemplateVersionId(),
-                        that.getTemplateVersionId())
-                && Objects.equals(getDataElementId(),
-                that.getDataElementId());
+            Objects.equals(getTemplateVersionId(),
+                that.getTemplateVersionId())
+            && Objects.equals(getDataElementId(),
+            that.getDataElementId());
     }
 
     @Override

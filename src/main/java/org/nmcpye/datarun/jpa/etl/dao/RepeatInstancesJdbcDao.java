@@ -11,10 +11,6 @@ import java.sql.Types;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * @author Hamza Assada
- * @since 13/08/2025
- */
 @Repository
 public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
 

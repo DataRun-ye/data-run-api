@@ -29,7 +29,7 @@ import java.util.Objects;
 @Document(collection = "metadata_schema")
 @Getter
 @Setter
-@CompoundIndex(name = "schema_uid", def = "{'uid': 1}", unique = true)
+@CompoundIndex(name = "schema_uid", def = "{'id': 1}", unique = true)
 @CompoundIndex(name = "schema_name", def = "{'name': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class MetadataSchema
@@ -38,7 +38,7 @@ public class MetadataSchema
     private String id;
 
     @Size(max = 11)
-    @Field("uid")
+    @Field("id")
     private String uid;
 
     @NotNull
@@ -120,7 +120,7 @@ public class MetadataSchema
     public String toString() {
         return "DataForm{" +
             "id=" + getId() +
-            ", uid='" + getUid() + "'" +
+            ", id='" + getUid() + "'" +
             ", name='" + getName() + "'" +
             ", description='" + getDescription() + "'" +
             ", disabled='" + getDisabled() + "'" +

@@ -88,7 +88,7 @@ public final class MigrationRepeatIdGenerator {
      *
      * @param node          current JSON node (object)
      * @param currentPath   dotted path to current node
-     * @param submissionUid top-level submission uid (fallback parent)
+     * @param submissionUid top-level submission id (fallback parent)
      * @param seenIds       set to track generated & existing ids
      * @param generated     counter holder (mutated in place)
      */
@@ -105,7 +105,7 @@ public final class MigrationRepeatIdGenerator {
      * @param node            current JSON node (object)
      * @param currentPath     dotted path to current node
      * @param currentRepeatId the repeat id of the immediate parent repeat instance (or null if top-level)
-     * @param submissionUid   top-level submission uid (fallback parent)
+     * @param submissionUid   top-level submission id (fallback parent)
      * @param seenIds         set to track generated & existing ids
      * @param generated       counter holder (mutated in place)
      */
@@ -173,7 +173,7 @@ public final class MigrationRepeatIdGenerator {
                         itemObj.put(PARENT_FIELD, parentToSet);
                     }
 
-                    // set submission uid if missing
+                    // set submission id if missing
                     if (!itemObj.has(SUBMISSION_UID_FIELD) || itemObj.get(SUBMISSION_UID_FIELD).isNull()) {
                         itemObj.put(SUBMISSION_UID_FIELD, submissionUid);
                     }

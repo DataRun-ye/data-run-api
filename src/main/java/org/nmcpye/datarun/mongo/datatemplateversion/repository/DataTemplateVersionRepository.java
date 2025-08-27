@@ -2,7 +2,6 @@ package org.nmcpye.datarun.mongo.datatemplateversion.repository;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.mongo.common.repository.MongoIdentifiableRepository;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
@@ -21,7 +20,7 @@ import java.util.Set;
  * Spring Data MongoDB repository for the DataFormTemplate entity.
  */
 @Repository
-@JaversSpringDataAuditable
+//@JaversSpringDataAuditable
 public interface DataTemplateVersionRepository
     extends MongoIdentifiableRepository<DataTemplateVersion> {
     String TEMPLATE_UID_VERSION_NO_CACHE = "templateUidVersionNoCache";

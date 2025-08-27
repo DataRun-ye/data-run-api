@@ -87,9 +87,9 @@ management:
       repository:
         autotime:
           enabled: true
-mongock:
-  migration-scan-package:
-    - org.nmcpye.datarun.config.dbmigrations
+#mongock:
+#  migration-scan-package:
+#    - org.nmcpye.datarun.config.dbmigrations
 spring:
   application:
     name: dataRunApi
@@ -246,7 +246,7 @@ jhipster:
 #      measures:
 #        - apiName: value_num
 #          displayName: Numeric Value
-#          allowedAggregations: [SUM, AVG, MIN, MAX, COUNT]
+#          aggregationModes: [SUM, AVG, MIN, MAX, COUNT]
 #        - apiName: value_id # Can be used for counting rows
 #          displayName: Count
-#          allowedAggregations: [COUNT]
+#          aggregationModes: [COUNT]

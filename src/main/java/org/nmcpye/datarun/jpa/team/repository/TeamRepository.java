@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.jpa.team.repository;
 
-import org.javers.spring.annotation.JaversSpringDataAuditable;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.springframework.data.domain.Page;
@@ -20,7 +19,7 @@ import java.util.Optional;
  * @since 06/06/2023
  */
 @Repository
-@JaversSpringDataAuditable
+//@JaversSpringDataAuditable
 public interface TeamRepository
     extends TeamRepositoryWithBagRelationships,
     JpaIdentifiableRepository<Team> {

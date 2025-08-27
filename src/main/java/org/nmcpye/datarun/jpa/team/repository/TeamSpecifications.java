@@ -26,7 +26,7 @@ public abstract class TeamSpecifications {
                 return cb.disjunction(); // user has no access
             }
 
-            return root.get("uid").in(user.getUserTeamsUIDs());
+            return root.get("id").in(user.getUserTeamsUIDs());
         };
 
         if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
@@ -46,7 +46,7 @@ public abstract class TeamSpecifications {
                 return cb.disjunction(); // user has no access
             }
 
-            return root.get("uid").in(user.getManagedTeamsUIDs());
+            return root.get("id").in(user.getManagedTeamsUIDs());
 
         };
 

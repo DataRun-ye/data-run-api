@@ -51,7 +51,7 @@ public class OuLevel extends JpaBaseIdentifiableObject {
     public String toString() {
         return "OuLevel{" +
             "id=" + getId() +
-            ", uid='" + getUid() + "'" +
+            ", id='" + getUid() + "'" +
             ", name='" + getName() + "'" +
             ", level=" + getLevel() +
             "}";

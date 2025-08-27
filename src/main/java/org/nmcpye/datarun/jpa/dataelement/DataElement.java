@@ -36,7 +36,7 @@ public class DataElement extends BaseDataElement {
 
     /**
      * an option set groups a predefined JSONP List of options, used when
-     * the valueType is of type `Select` or =null otherwise.
+     * the dataType is of type `Select` or =null otherwise.
      */
     @ManyToOne
     @JsonIgnoreProperties(value = {"options"}, allowSetters = true)

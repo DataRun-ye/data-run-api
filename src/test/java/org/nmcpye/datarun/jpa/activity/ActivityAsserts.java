@@ -49,7 +49,7 @@ public class ActivityAsserts {
     public static void assertActivityUpdatableFieldsEquals(Activity expected, Activity actual) {
         assertThat(expected)
             .as("Verify Activity relevant properties")
-            .satisfies(e -> assertThat(e.getUid()).as("check uid").isEqualTo(actual.getUid()))
+            .satisfies(e -> assertThat(e.getUid()).as("check id").isEqualTo(actual.getUid()))
             .satisfies(e -> assertThat(e.getCode()).as("check code").isEqualTo(actual.getCode()))
             .satisfies(e -> assertThat(e.getName()).as("check name").isEqualTo(actual.getName()))
             .satisfies(e -> assertThat(e.getStartDate()).as("check startDate").isEqualTo(actual.getStartDate()))

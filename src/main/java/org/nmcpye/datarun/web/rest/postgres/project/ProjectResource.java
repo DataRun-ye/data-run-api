@@ -46,8 +46,8 @@ public class ProjectResource extends JpaBaseResource<Project> {
 
 //    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
 //    @Override
-//    public ResponseEntity<Project> updateEntity(String uid, Project entity) throws URISyntaxException {
-//        return super.updateEntity(uid, entity);
+//    public ResponseEntity<Project> updateEntity(String id, Project entity) throws URISyntaxException {
+//        return super.updateEntity(id, entity);
 //    }
 //
 //    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")

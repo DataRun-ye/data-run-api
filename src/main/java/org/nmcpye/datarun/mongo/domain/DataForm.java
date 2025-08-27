@@ -31,14 +31,14 @@ import java.util.*;
 @Document(collection = "data_form")
 @Getter
 @Setter
-@CompoundIndex(name = "form_uid", def = "{'uid': 1}", unique = true)
+@CompoundIndex(name = "form_uid", def = "{'id': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataForm extends MongoBaseIdentifiableObject {
     @Id
     private String id;
 
     @Size(max = 11)
-    @Field("uid")
+    @Field("id")
     private String uid;
 
     @Field("code")
@@ -81,7 +81,7 @@ public class DataForm extends MongoBaseIdentifiableObject {
     @Field("flattenedFields")
     private List<AbstractField> flattenedFields = new LinkedList<>();
 
-    // field.uid, fieldConfigs
+    // field.id, fieldConfigs
     @Field("fieldsConf")
     private List<FormDataElementConf> fieldsConf = new LinkedList<>();
 
@@ -157,7 +157,7 @@ public class DataForm extends MongoBaseIdentifiableObject {
     public String toString() {
         return "DataForm{" +
             "id=" + getId() +
-            ", uid='" + getUid() + "'" +
+            ", id='" + getUid() + "'" +
             ", code='" + getCode() + "'" +
             ", name='" + getName() + "'" +
             ", description='" + getDescription() + "'" +

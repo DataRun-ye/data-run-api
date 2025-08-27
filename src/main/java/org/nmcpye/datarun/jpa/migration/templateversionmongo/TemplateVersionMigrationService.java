@@ -69,7 +69,7 @@ public class TemplateVersionMigrationService {
                     .map(this::mapToEntityWithDefaults)
                     .collect(Collectors.toList());
 
-            // optionally skip already existing by uid (idempotency)
+            // optionally skip already existing by id (idempotency)
             if (props.isSkipExisting()) {
                 Set<String> uids = entities.stream().map(TemplateVersion::getUid).collect(Collectors.toSet());
                 List<String> present = pgRepo.findAllByUidIn(uids).stream()

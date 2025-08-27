@@ -9,5 +9,5 @@
 //public record PivotableElement(String elementId,
 //                               boolean isCategory,
 //                               String elementName,
-//                               ValueType valueType) {
+//                               ValueType dataType) {
 //}

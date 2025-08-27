@@ -141,7 +141,7 @@
 //        membersSection.setRepeatCategoryElement(memberRole.getId());
 //
 //        DataTemplateInstanceDto dto = new DataTemplateInstanceDto(
-//            /*uid*/ "tmpl1",
+//            /*id*/ "tmpl1",
 //            /*versionUid*/ "v1",
 //            /*versionNumber*/ 1,
 //            /*name*/ "household",

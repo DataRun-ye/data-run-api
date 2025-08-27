@@ -139,7 +139,7 @@ public class DataFormServiceImpl
 //                FormPermission.ADD_SUBMISSIONS).stream()).collect(Collectors.toSet());
 //
 //        Query query = new Query();
-//        query = query.addCriteria(Criteria.where("uid").in(userForms));
+//        query = query.addCriteria(Criteria.where("id").in(userForms));
 //
 //        if (!queryRequest.isIncludeDeleted()) {
 //            query.addCriteria(Criteria.where("deleted").is(false));

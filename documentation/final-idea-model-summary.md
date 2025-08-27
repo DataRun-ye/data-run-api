@@ -632,9 +632,9 @@ erDiagram
     SCOPE_ELEMENT {
         String id PK
         String key
-    %% valueType.ORG_UNIT, valueType.TEAM, valueType.ACTIVITY, valueType.ENTITY, valueType.DATE, ...
+    %% dataType.ORG_UNIT, dataType.TEAM, dataType.ACTIVITY, dataType.ENTITY, dataType.DATE, ...
         enum valueType
-    %% when valueType.ENTITY, provide the id of its type, e.g. "Household", "Patient"
+    %% when dataType.ENTITY, provide the id of its type, e.g. "Household", "Patient"
         String entityTypeId
         Timestamp created_at
     }
