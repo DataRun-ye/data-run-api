@@ -125,7 +125,7 @@ public interface AssignmentRepository
 //        SELECT assi.*
 //        FROM assignment assi
 //        Join team t on t.id = assi.team_id
-//        WHERE t.id IN :teamIds
+//        WHERE t.uid IN :teamIds
 //        """, nativeQuery = true)
 //    Page<AssignmentSummary> findSummariesTeam(@Param("teamIds") Collection<String> teamIds, Pageable pageable);
 //
@@ -133,7 +133,7 @@ public interface AssignmentRepository
 //        SELECT assi.*
 //        FROM assignment assi
 //        Join team t on t.id = assi.team_id
-//        WHERE t.id IN :teamId
+//        WHERE t.uid IN :teamId
 //        """, nativeQuery = true)
 //    Page<AssignmentSummary> findSummariesTeam(@Param("teamId") String teamId, Pageable pageable);
 
@@ -181,7 +181,7 @@ public interface AssignmentRepository
 //            "left join assignment.orgUnit " +
 //            "left join assignment.team " +
 //            "join assignment.team.users user " +
-//            "where assignment.id =:id and user.login = ?#{authentication.name}"
+//            "where assignment.uid =:uid and user.login = ?#{authentication.name}"
 //    )
-//    Optional<Assignment> findOneWithToOneRelationshipsByUser(@Param("id") String id);
+//    Optional<Assignment> findOneWithToOneRelationshipsByUser(@Param("uid") String uid);
 }

@@ -37,7 +37,7 @@ public class OptionSetFilter extends DefaultJpaFilter<OptionSet> {
             if (user.isSuper()) {
                 return cb.conjunction();
             } else {
-                return root.get("id").in(userOptionSets);
+                return root.get("uid").in(userOptionSets);
             }
         };
     }

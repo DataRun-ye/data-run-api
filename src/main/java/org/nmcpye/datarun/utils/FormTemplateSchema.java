@@ -30,7 +30,7 @@ public class FormTemplateSchema {
         MongoJsonSchema.MongoJsonSchemaBuilder schemaBuilder = MongoJsonSchema.builder();
 
         // Add required top-level fields
-        schemaBuilder.required("id", "version", "form");
+        schemaBuilder.required("uid", "version", "form");
 
         // Add properties for top-level fields
         schemaBuilder.properties(parseFields(formTemplate.getFields()));

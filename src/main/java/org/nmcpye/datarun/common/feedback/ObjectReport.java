@@ -175,7 +175,7 @@ public class ObjectReport implements ErrorReportContainer {
         return MoreObjects.toStringHelper(this)
             .add("klass", klass)
             .add("index", index)
-            .add("id", uid)
+            .add("uid", uid)
             .add("errorReports", getErrorReports())
             .toString();
     }

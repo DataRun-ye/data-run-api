@@ -10,7 +10,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-/// Service Custom Interface for managing [DataTemplate].
+/**
+ * Service Custom Interface for managing {@link DataTemplate}.
+ */
 public interface DataTemplateInstanceService {
 
     boolean existsByUid(String uid);
@@ -25,21 +27,27 @@ public interface DataTemplateInstanceService {
 
     Page<DataTemplateInstanceDto> findAllByUser(QueryRequest queryRequest, String jsonQueryBody);
 
-    /// Save an object.
-    ///
-    /// @param object the entity to save.
-    /// @return the persisted entity.
+    /**
+     * Save an object.
+     *
+     * @param object the entity to save.
+     * @return the persisted entity.
+     */
     DataTemplateInstanceDto save(DataTemplateInstanceDto object);
 
-    /// Updates a object.
-    ///
-    /// @param object the entity to update.
-    /// @return the persisted entity.
+    /**
+     * Updates a object.
+     *
+     * @param object the entity to update.
+     * @return the persisted entity.
+     */
     DataTemplateInstanceDto update(DataTemplateInstanceDto object);
 
-    /// Delete an object.
-    ///
-    /// @param object the entity to delete.
+    /**
+     * Delete an object.
+     *
+     * @param object the entity to delete.
+     */
     void delete(DataTemplateInstanceDto object);
 
     DataTemplateInstanceDto saveNewVersion(DataTemplateInstanceDto dataTemplateInstanceDto);

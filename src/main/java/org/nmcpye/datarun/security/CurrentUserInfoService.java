@@ -2,8 +2,8 @@ package org.nmcpye.datarun.security;
 
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.team.Team;
-import org.nmcpye.datarun.jpa.team.repository.TeamSpecifications;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
+import org.nmcpye.datarun.jpa.team.repository.TeamSpecifications;
 import org.nmcpye.datarun.jpa.usegroup.UserGroup;
 import org.nmcpye.datarun.jpa.usegroup.repository.UserGroupRepository;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
@@ -93,7 +93,7 @@ public class CurrentUserInfoService {
         final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
             new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
         final var teams = new HashSet<>(teamRepository.findAll(TeamSpecifications.isEnabled()
-            .and((root, query, cb) -> root.get("id").in(teamUIDs))));
+            .and((root, query, cb) -> root.get("uid").in(teamUIDs))));
 
         List<UserFormAccess> formAccesses = new ArrayList<>();
         for (final Team team : teams) {

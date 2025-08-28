@@ -1,5 +1,7 @@
 //package org.nmcpye.datarun.web.rest.v1.submission;
 //
+//import lombok.RequiredArgsConstructor;
+//import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 //import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 //import org.nmcpye.datarun.jpa.etl.exception.MissingRepeatUidException;
 //import org.nmcpye.datarun.jpa.etl.service.SubmissionService;
@@ -16,13 +18,9 @@
 // */
 //@RestController
 //@RequestMapping("/api/v1/submissions")
+//@RequiredArgsConstructor
 //public class SubmissionIngestionController {
-//
-//    private final SubmissionService submissionService;
-//
-//    public SubmissionIngestionController(SubmissionService submissionService) {
-//        this.submissionService = submissionService;
-//    }
+//    private final DataSubmissionService submissionService;
 //
 //    @PostMapping
 //    public ResponseEntity<?> ingest(@RequestBody DataFormSubmission dto) {

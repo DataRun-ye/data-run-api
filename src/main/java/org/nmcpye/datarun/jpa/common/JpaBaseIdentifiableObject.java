@@ -153,7 +153,7 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
                 key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
     }
 
-    @JsonProperty
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     public Map<String, String> getLabel() {
         if (translations == null || translations.isEmpty()) {
             return null;

@@ -99,7 +99,7 @@ public interface OrgUnitRepository
 //        value = "select distinct orgUnit from OrgUnit orgUnit " +
 //            "left join fetch orgUnit.parent " /*+
 //            "join Assignment assignment ON assignment.orgUnit = orgUnit " +
-//            "where orgUnit.id =:id and assignment.team.userInfo.login = ?#{authentication.name}"*/
+//            "where orgUnit.uid =:uid and assignment.team.userInfo.login = ?#{authentication.name}"*/
 //    )
-//    Optional<OrgUnit> findOneByUidEager(@Param("id") String id);
+//    Optional<OrgUnit> findOneByUidEager(@Param("uid") String uid);
 }

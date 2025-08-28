@@ -35,7 +35,7 @@ public class QueryRequest {
         "lt (less than or equal to)")
     private Map<String, Object> filters = new HashMap<>();
 
-    @Schema(description = "Comma-separated list of fields to include, e.g., id,id,status")
+    @Schema(description = "Comma-separated list of fields to include, e.g., id,uid,status")
     private String fields;
 
     @Schema(description = "Flag to enable fetching paged or not paged content")

@@ -44,6 +44,7 @@ public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObj
 //        return save(object);
 //    }
 
+    @Transactional(readOnly = true)
     @Override
     public boolean existsByUid(String uid) {
         return repository.existsByUid(uid);

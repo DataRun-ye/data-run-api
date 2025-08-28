@@ -6,6 +6,7 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.datasubmission.service.DefaultDataSubmissionService;
 import org.nmcpye.datarun.jpa.etl.dao.IRepeatInstancesDao;
 import org.nmcpye.datarun.jpa.etl.dao.ISubmissionValuesDao;
 import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
@@ -50,6 +51,7 @@ public class DefaultDataFormSubmissionService
     private final FormAccessService formAccessService;
     private final ISubmissionValuesDao submissionValuesDao;
     private final IRepeatInstancesDao repeatInstancesDao;
+    private final DefaultDataSubmissionService submissionService;
 
     public DefaultDataFormSubmissionService(
         DataFormSubmissionRepository repository,
@@ -59,7 +61,7 @@ public class DefaultDataFormSubmissionService
         SequenceGeneratorService sequenceGeneratorService,
         SubmissionMaintenanceService maintenanceService,
         DataTemplateVersionRepository versionRepository,
-        FormAccessService formAccessService, ISubmissionValuesDao submissionValuesDao, IRepeatInstancesDao repeatInstancesDao) {
+        FormAccessService formAccessService, ISubmissionValuesDao submissionValuesDao, IRepeatInstancesDao repeatInstancesDao, DefaultDataSubmissionService submissionService) {
         super(repository, cacheManager);
         this.repository = repository;
         this.submissionHistoryService = submissionHistoryService;
@@ -70,11 +72,11 @@ public class DefaultDataFormSubmissionService
         this.formAccessService = formAccessService;
         this.submissionValuesDao = submissionValuesDao;
         this.repeatInstancesDao = repeatInstancesDao;
+        this.submissionService = submissionService;
     }
 
-    @Transactional
     @Override
-    public DataFormSubmission save(DataFormSubmission submission) {
+    public DataFormSubmission update(DataFormSubmission submission) {
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
         if (user.getUsername().startsWith("test")) {
             log.info("Pass a Test user save request `{}` save", user.getUsername());
@@ -82,11 +84,33 @@ public class DefaultDataFormSubmissionService
             return submission;
         }
 
+        // update logic
+        log.debug("Request service to update {}:`{}`", getClazz().getSimpleName(), submission.getId());
+        DataFormSubmission updatedSubmission = super.update(submission);
+        // preSaveHook(submission); // called from super update
+
+
+//        submissionService.saveLegacyMongoSubmission(updatedSubmission);
+        return updatedSubmission;
+    }
+
+    @Override
+    public void preSaveHook(DataFormSubmission submission) {
+        final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        if (user.getUsername().startsWith("test")) {
+            log.info("Pass a Test user save request `{}` save", user.getUsername());
+            // pass
+            return;
+        }
+
         preSave(submission);
 
         // archive existing submission
         repository.findByUid(submission.getUid())
             .ifPresentOrElse(existingSubmission -> {
+                if(existingSubmission.getFormVersion() == null) {
+                    existingSubmission.setFormVersion(submission.getFormVersion());
+                }
                 submissionHistoryService.saveToHistory(existingSubmission);
                 // Increment version number and update the current document
                 submission.setSubmissionVersion(existingSubmission.getSubmissionVersion() + 1);
@@ -99,13 +123,21 @@ public class DefaultDataFormSubmissionService
                     submission.setSerialNumber(serialNumber);
                 }
             });
+    }
 
-        final var savedSubmission = super.save(submission);
-
-        if (submission.getAssignment() != null) {
-            addEntryToHistory(submission);
+    @Transactional
+    @Override
+    public DataFormSubmission save(DataFormSubmission submission) {
+        final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        if (user.getUsername().startsWith("test")) {
+            log.info("Pass a Test user save request `{}` save", user.getUsername());
+            // pass
+            return submission;
         }
 
+        preSaveHook(submission);
+        final var savedSubmission = repository.save(submission);
+//        submissionService.saveLegacyMongoSubmission(savedSubmission);
         return savedSubmission;
     }
 
@@ -177,6 +209,9 @@ public class DefaultDataFormSubmissionService
 
     @Override
     public void applySecurityConstraints(Query query) {
+        if (SecurityUtils.isSuper()) {
+            return;
+        }
         final CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
         final var viewForms = user.getFormAccess().stream()
             .filter(UserFormAccess::canViewSubmission)

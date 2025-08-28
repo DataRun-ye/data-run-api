@@ -1,13 +1,12 @@
-package org.nmcpye.datarun.jpa.datasubmissionbatching.service;
+package org.nmcpye.datarun.jpa.migration.templateversionmongo;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
@@ -25,11 +24,10 @@ import java.time.Instant;
  *
  * @author Hamza Assada 16/08/2025 (7amza.it@gmail.com)
  */
-@Component
-public class MigrationJobLauncher implements CommandLineRunner {
-
-    private static final Logger log = LoggerFactory.getLogger(MigrationJobLauncher.class);
-
+//@Component
+@Slf4j
+@RequiredArgsConstructor
+public class MigrationMongoSubmissionJobLauncher implements CommandLineRunner {
     private final JobLauncher jobLauncher;
     private final Job mongoToPostgresJob;
     private final Environment environment;
@@ -43,14 +41,6 @@ public class MigrationJobLauncher implements CommandLineRunner {
 
     @Value("${migration.auto-start:false}")
     private boolean migrationAutoStart;
-
-    public MigrationJobLauncher(JobLauncher jobLauncher,
-                                Job mongoToPostgresJob,
-                                Environment environment) {
-        this.jobLauncher = jobLauncher;
-        this.mongoToPostgresJob = mongoToPostgresJob;
-        this.environment = environment;
-    }
 
     @Override
     public void run(String... args) throws Exception {

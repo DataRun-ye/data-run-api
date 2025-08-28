@@ -25,14 +25,14 @@ import static java.util.Map.entry;
 @Document(collection = "data_form_submission_final")
 @Getter
 @Setter
-@CompoundIndex(name = "data_submission_final_uid", def = "{'id': 1}", unique = true)
+@CompoundIndex(name = "data_submission_final_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormSubmissionFinal extends MongoBaseIdentifiableObject {
     @Id
     private String id;
 
     @Size(max = 11)
-    @Field("id")
+    @Field("uid")
     private String uid;
 
     @Field("deleted")
@@ -185,7 +185,7 @@ public class DataFormSubmissionFinal extends MongoBaseIdentifiableObject {
     public String toString() {
         return "DataFormSubmission{" +
             "id=" + getId() +
-            ", id='" + getUid() + "'" +
+            ", uid='" + getUid() + "'" +
             ", deleted='" + getDeleted() + "'" +
             ", startEntryTime='" + getStartEntryTime() + "'" +
             ", finishedEntryTime='" + getFinishedEntryTime() + "'" +

@@ -94,7 +94,7 @@
 //
 //    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
 //    @Override
-//    public ResponseEntity<DataForm> updateEntity(String id, DataForm entity) throws URISyntaxException {
-//        return super.updateEntity(id, entity);
+//    public ResponseEntity<DataForm> updateEntity(String uid, DataForm entity) throws URISyntaxException {
+//        return super.updateEntity(uid, entity);
 //    }
 //}

@@ -42,7 +42,7 @@ public class SubmissionDataProcessor {
      * <p>
      * - set canonical JSON back to submission
      *
-     * @param submission   incoming submission
+     * @param submission incoming submission
      */
     public void processIncomingSubmission(DataSubmission submission, CurrentUserDetails user) {
         submissionAccessValidator.validateAccess(submission, user);

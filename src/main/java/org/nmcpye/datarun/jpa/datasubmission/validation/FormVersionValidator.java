@@ -43,7 +43,7 @@ public class FormVersionValidator implements SubmissionValidator {
                 .orElseThrow(() -> new DomainValidationException(
                     "Form/version not found: " + form + ":" + (formVersionUid != null ? formVersionUid : versionNum))));
 
-        // optionally set canonical form template id if different
+        // optionally set canonical form template uid if different
         submission.setForm(resolved.getUid());
         // ensure canonical formVersion is set to resolved UID (enrichment)
         submission.setFormVersion(resolved.getVersionUid());

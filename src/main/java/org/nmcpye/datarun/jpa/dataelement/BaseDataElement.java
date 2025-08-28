@@ -24,7 +24,7 @@ import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class BaseDataElement extends JpaBaseIdentifiableObject {
     @Size(max = 11)
-    @Column(name = "id", length = 11, updatable = false, unique = true)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
     /**
      * The code for this Element.

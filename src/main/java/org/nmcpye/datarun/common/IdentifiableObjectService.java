@@ -15,7 +15,6 @@ public interface IdentifiableObjectService<T extends IdentifiableObject<ID>, ID>
 
     boolean existsByUid(String uid);
 
-
     Optional<T> findByUid(String uid);
 
     void deleteByUid(String uid);

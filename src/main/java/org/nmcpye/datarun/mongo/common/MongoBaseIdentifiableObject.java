@@ -213,7 +213,7 @@ abstract public class MongoBaseIdentifiableObject
 
     @Override
     public String toString() {
-        return "{" + "\"class\":\"" + getClass() + "\", " + "\"id\":\"" + getUid() + "\", " + "\"code\":\"" + getCode() + "\", " + "\"name\":\"" + getName() + "\", " + "\"createdDate\":\"" + getCreatedDate() + "\", " + "\"lastModifiedDate\":\"" + getLastModifiedDate() + "\" " + "}";
+        return "{" + "\"class\":\"" + getClass() + "\", " + "\"uid\":\"" + getUid() + "\", " + "\"code\":\"" + getCode() + "\", " + "\"name\":\"" + getName() + "\", " + "\"createdDate\":\"" + getCreatedDate() + "\", " + "\"lastModifiedDate\":\"" + getLastModifiedDate() + "\" " + "}";
     }
 
     /**

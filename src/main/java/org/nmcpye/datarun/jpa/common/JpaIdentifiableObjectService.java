@@ -2,10 +2,7 @@ package org.nmcpye.datarun.jpa.common;
 
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
-import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.IdentifiableObjectService;
-import org.nmcpye.datarun.common.JpaIdentifiableOperationVm;
-import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -19,10 +16,10 @@ import java.util.List;
 public interface JpaIdentifiableObjectService<T extends JpaIdentifiableObject>
     extends IdentifiableObjectService<T, String> {
 
-//    static <T extends JpaIdentifiableObject> Specification<T> hasUid(String id) {
-//        return (root, query, criteriaBuilder) -> id == null ?
+//    static <T extends JpaIdentifiableObject> Specification<T> hasUid(String uid) {
+//        return (root, query, criteriaBuilder) -> uid == null ?
 //            criteriaBuilder.disjunction()
-//            : criteriaBuilder.equal(root.get("id"), id);
+//            : criteriaBuilder.equal(root.get("uid"), uid);
 //    }
 
     static <T extends JpaIdentifiableObject> Specification<T> hasId(String id) {
@@ -54,9 +51,4 @@ public interface JpaIdentifiableObjectService<T extends JpaIdentifiableObject>
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
-
-
-    EntitySaveSummaryVM processBatch(JpaIdentifiableOperationVm<T> operationVm, CurrentUserDetails user);
-
-    T trySaveOrUpdate(T payLoadEntity, CurrentUserDetails user);
 }

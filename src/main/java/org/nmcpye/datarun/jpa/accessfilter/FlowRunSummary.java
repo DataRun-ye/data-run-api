@@ -9,7 +9,7 @@ import java.util.Set;
  * @since 24/04/2025
  */
 public interface FlowRunSummary {
-    @JsonProperty(value = "id")
+    @JsonProperty(value = "uid")
     String getUid();
 
     Set<String> getForms();
@@ -21,7 +21,7 @@ public interface FlowRunSummary {
     RelSummary getActivity();
 
     interface RelSummary {
-        @JsonProperty(value = "id")
+        @JsonProperty(value = "uid")
         String getUid();
     }
 }

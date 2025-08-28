@@ -85,7 +85,7 @@ public class TeamResource extends JpaBaseResource<Team> {
     ) throws URISyntaxException {
         log.debug("REST request to partial update Team partially : {}, {}", uid, team);
         if (team.getUid() == null) {
-            throw new BadRequestAlertException("Invalid id", getName(), "idnull");
+            throw new BadRequestAlertException("Invalid uid", getName(), "idnull");
         }
 
         if (!Objects.equals(uid, team.getUid())) {

@@ -3,17 +3,10 @@ package org.nmcpye.datarun.mongo.common;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.IdentifiableObjectRepository;
 import org.nmcpye.datarun.common.SoftDeleteService;
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.query.UnifiedQueryParser;
-import org.nmcpye.datarun.query.filter.*;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.CacheManager;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author Hamza Assada 20/03/2025 (7amza.it@gmail.com)
@@ -59,33 +52,33 @@ public abstract class DefaultMongoSoftDeleteService<T extends MongoSoftDeleteObj
         save(object);
     }
 
-    @Override
-    protected FilterExpression buildCombinedFilter(QueryRequest queryRequest, String jsonQueryBody) {
-        List<FilterExpression> allFilters = new ArrayList<>();
-
-        // Implicit soft-delete filter
-        if (queryRequest == null || !queryRequest.isIncludeDeleted()) {
-            allFilters.add(new SimpleFilter("deleted", FilterOperator.EQ, false));
-        }
-
-        // v2 JSON expression support
-        if (jsonQueryBody != null && !jsonQueryBody.isEmpty()) {
-            try {
-                FilterExpression parsed = UnifiedQueryParser.parse(jsonQueryBody);
-                allFilters.add(parsed);
-            } catch (Exception e) {
-                throw new IllegalQueryException(ErrorCode.E2050, jsonQueryBody);
-            }
-        }
-
-        // legacy v1 QueryRequest support
-        if (queryRequest != null && queryRequest.getParsedFilter() != null) {
-            allFilters.add(legacyQueryConverter.convert(queryRequest));
-        }
-
-        if (allFilters.isEmpty()) return null;
-        if (allFilters.size() == 1) return allFilters.get(0);
-
-        return new CompoundFilter(LogicalOperator.AND, allFilters);
-    }
+//    @Override
+//    protected FilterExpression buildCombinedFilter(QueryRequest queryRequest, String jsonQueryBody) {
+//        List<FilterExpression> allFilters = new ArrayList<>();
+//
+//        // Implicit soft-delete filter
+//        if (queryRequest == null || !queryRequest.isIncludeDeleted()) {
+//            allFilters.add(new SimpleFilter("deleted", FilterOperator.EQ, false));
+//        }
+//
+//        // v2 JSON expression support
+//        if (jsonQueryBody != null && !jsonQueryBody.isEmpty()) {
+//            try {
+//                FilterExpression parsed = UnifiedQueryParser.parse(jsonQueryBody);
+//                allFilters.add(parsed);
+//            } catch (Exception e) {
+//                throw new IllegalQueryException(ErrorCode.E2050, jsonQueryBody);
+//            }
+//        }
+//
+//        // legacy v1 QueryRequest support
+//        if (queryRequest != null && queryRequest.getParsedFilter() != null) {
+//            allFilters.add(legacyQueryConverter.convert(queryRequest));
+//        }
+//
+//        if (allFilters.isEmpty()) return null;
+//        if (allFilters.size() == 1) return allFilters.get(0);
+//
+//        return new CompoundFilter(LogicalOperator.AND, allFilters);
+//    }
 }

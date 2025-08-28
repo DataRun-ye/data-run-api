@@ -118,7 +118,7 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
         hasMinimalRightsOrThrow(user);
         log.debug("REST request to delete from {}: {}", getName(), uid);
         if (entity.getUid() == null) {
-            throw new BadRequestAlertException("Invalid id", getName(), "id is null");
+            throw new BadRequestAlertException("Invalid uid", getName(), "uid is null");
         }
 
         if (!Objects.equals(uid, entity.getUid())) {

@@ -42,7 +42,7 @@ public class AssignmentFilter extends DefaultJpaFilter<Assignment> {
             }
 
             Join<Assignment, Team> assignmentJoin = root.join("team", JoinType.INNER);
-            return assignmentJoin.get("id").in(user.getUserTeamsUIDs());
+            return assignmentJoin.get("uid").in(user.getUserTeamsUIDs());
 
         };
 

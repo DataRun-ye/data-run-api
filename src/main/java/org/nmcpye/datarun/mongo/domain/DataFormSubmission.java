@@ -25,7 +25,7 @@ import java.util.*;
 @Document(collection = "data_form_submission")
 @Getter
 @Setter
-@CompoundIndex(name = "data_submission_uid", def = "{'id': 1}", unique = true)
+@CompoundIndex(name = "data_submission_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataFormSubmission extends MongoSoftDeleteObject {
     @JsonIgnore
@@ -34,7 +34,7 @@ public class DataFormSubmission extends MongoSoftDeleteObject {
     @Indexed(unique = true)
     Long serialNumber;
     @Size(max = 11)
-    @Field("id")
+    @Field("uid")
     private String uid;
     @Field("deleted")
     @Indexed(name = "submission_deleted_idx")
@@ -60,7 +60,7 @@ public class DataFormSubmission extends MongoSoftDeleteObject {
     private Integer submissionVersion = 1;
 
     /**
-     * Assigned Team id
+     * Assigned Team uid
      */
     @Indexed(name = "submission_team_idx")
     private String team;
@@ -178,7 +178,7 @@ public class DataFormSubmission extends MongoSoftDeleteObject {
     public String toString() {
         return "DataFormSubmission{" +
             "id=" + getId() +
-            ", id='" + getUid() + "'" +
+            ", uid='" + getUid() + "'" +
             ", deleted='" + getDeleted() + "'" +
             ", startEntryTime='" + getStartEntryTime() + "'" +
             ", finishedEntryTime='" + getFinishedEntryTime() + "'" +

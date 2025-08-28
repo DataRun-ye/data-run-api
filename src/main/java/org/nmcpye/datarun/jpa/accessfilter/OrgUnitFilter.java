@@ -44,7 +44,7 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
             if (user.isSuper()) {
                 return cb.conjunction();
             } else {
-                return root.get("id").in(allUids);
+                return root.get("uid").in(allUids);
 //                if (Long.class != query.getResultType()) {
 //                    root.fetch("parent", JoinType.LEFT);
 //                }

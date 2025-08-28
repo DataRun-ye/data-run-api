@@ -55,6 +55,7 @@ public class DefaultAssignmentService
         this.submissionRepository = submissionRepository;
     }
 
+    @Transactional
     @Override
     public void preSaveHook(Assignment object) {
 

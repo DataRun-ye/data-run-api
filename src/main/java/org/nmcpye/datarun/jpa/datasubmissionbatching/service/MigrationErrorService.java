@@ -64,7 +64,7 @@ public class MigrationErrorService {
         if (raw == null) return null;
         try {
             var clazz = raw.getClass();
-            var f = clazz.getDeclaredField("id");
+            var f = clazz.getDeclaredField("uid");
             f.setAccessible(true);
             Object val = f.get(raw);
             return val == null ? null : val.toString();

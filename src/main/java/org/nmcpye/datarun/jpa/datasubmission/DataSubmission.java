@@ -128,7 +128,7 @@ public class DataSubmission extends JpaSoftDeleteObject {
 
     @Override
     public String toString() {
-        return "DataSubmission{id=" + id + ", id=" + uid + ", form=" + form + ", serialNumber=" + serialNumber + "}";
+        return "DataSubmission{id=" + id + ", uid=" + uid + ", form=" + form + ", serialNumber=" + serialNumber + "}";
     }
 
     @JsonIgnore

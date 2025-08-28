@@ -35,7 +35,7 @@ public class FormTemplateFilter extends DefaultJpaFilter<DataTemplate> {
                 return cb.disjunction(); // user has no access
             }
 
-            return root.get("id").in(user.getUserFormsUIDs());
+            return root.get("uid").in(user.getUserFormsUIDs());
 
         };
 

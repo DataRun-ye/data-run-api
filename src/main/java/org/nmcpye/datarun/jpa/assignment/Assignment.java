@@ -159,7 +159,7 @@ public class Assignment
     }
 
     /**
-     * Returns a mapping between the id and the id parent graph of the given
+     * Returns a mapping between the uid and the uid parent graph of the given
      * activities.
      */
     public static Map<String, String> getParentGraphMap(List<Assignment> activities, Collection<Assignment> roots) {
@@ -336,7 +336,7 @@ public class Assignment
     public String toString() {
         return "Assignment{" +
             "id=" + getId() +
-            ", id='" + getUid() + "'" +
+            ", uid='" + getUid() + "'" +
             ", createdBy='" + getCreatedBy() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
             ", lastModifiedBy='" + getLastModifiedBy() + "'" +

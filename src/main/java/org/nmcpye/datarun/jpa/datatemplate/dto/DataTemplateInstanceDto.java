@@ -33,13 +33,13 @@ import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
 @AllArgsConstructor
 public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVersionInterface {
     /**
-     * output the master {@link DataTemplate} id
+     * output the master {@link DataTemplate} uid
      */
     @Size(max = 11)
     private String uid;
 
     /**
-     * {@link DataTemplateVersion} id,
+     * {@link DataTemplateVersion} uid,
      * formVersion is treated as output-only (i.e. set in backend and ignored on inbound JSON)
      */
     @JsonProperty(access = READ_ONLY)
@@ -81,7 +81,7 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
 
 
     /**
-     * @return mapping of repeatPath -> (relativeChildPath -> elementId). elementId is the last segment of a path, its either a id for FormFields,
+     * @return mapping of repeatPath -> (relativeChildPath -> elementId). elementId is the last segment of a path, its either a uid for FormFields,
      * or a name for Sections fields, and they are unique across the form
      */
     @JsonIgnore
@@ -90,9 +90,9 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
             return Map.of();
         }
         return sections.stream()
-                .filter(FormSectionConf::getRepeatable)
-                .collect(Collectors.toMap(AbstractElement::getPath, (s) ->
-                        getChildrenRelativePathMap(s.getPath())));
+            .filter(FormSectionConf::getRepeatable)
+            .collect(Collectors.toMap(AbstractElement::getPath, (s) ->
+                getChildrenRelativePathMap(s.getPath())));
     }
 
     /**
@@ -105,8 +105,8 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
             return List.of();
         }
         return fields.stream()
-                .filter(f -> f.getPath().startsWith(path))
-                .collect(Collectors.toList());
+            .filter(f -> f.getPath().startsWith(path))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -117,7 +117,7 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
         List<AbstractElement> fieldElements = fields != null ? new java.util.ArrayList<>(fields) : List.of();
         List<AbstractElement> sectionElements = sections != null ? new java.util.ArrayList<>(sections) : List.of();
         return Stream.concat(fieldElements.stream(), sectionElements.stream())
-                .collect(Collectors.toMap(AbstractElement::getPath, e -> e));
+            .collect(Collectors.toMap(AbstractElement::getPath, e -> e));
     }
 
     /**
@@ -128,10 +128,10 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
      */
     public Map<String, String> getFieldElementReversePathMap() {
         return getAllElementPathMap().entrySet()
-                .stream()
-                .filter(FormDataElementConf.class::isInstance)
-                .collect(Collectors.toMap(entry ->
-                        entry.getValue().getId(), Map.Entry::getKey));
+            .stream()
+            .filter(FormDataElementConf.class::isInstance)
+            .collect(Collectors.toMap(entry ->
+                entry.getValue().getId(), Map.Entry::getKey));
     }
 
     /**
@@ -146,12 +146,12 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
 
         // map child fields: find fields whose path startWith(repeatPath + ".")
         return getFields().stream()
-                .filter(f -> f.getPath() != null && f.getPath().startsWith(path + "."))
-                .collect(Collectors.toMap(
+            .filter(f -> f.getPath() != null && f.getPath().startsWith(path + "."))
+            .collect(Collectors.toMap(
 //                f -> f.getPath().substring((path + ".").length()), // relative path
-                        f -> f.getPath().substring((path + ".").length()), // relative path
-                        FormDataElementConf::getId
-                ));
+                f -> f.getPath().substring((path + ".").length()), // relative path
+                FormDataElementConf::getId
+            ));
     }
 
     /**
@@ -163,10 +163,10 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
             return Map.of();
         }
         return sections.stream()
-                .filter(FormSectionConf::getRepeatable)
-                .filter(r -> r.getCategoryDataElementId() != null)
-                .collect(Collectors.toMap(AbstractElement::getPath,
-                        FormSectionConf::getCategoryDataElementId));
+            .filter(FormSectionConf::getRepeatable)
+            .filter(r -> r.getCategoryDataElementId() != null)
+            .collect(Collectors.toMap(AbstractElement::getPath,
+                FormSectionConf::getCategoryDataElementId));
     }
 
 
@@ -177,9 +177,9 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
     public List<String> getRepeatSectionsPaths() {
         if (sections == null) return List.of();
         return sections.stream()
-                .filter(s -> Boolean.TRUE.equals(s.getRepeatable()))
-                .map(FormSectionConf::getPath)
-                .collect(Collectors.toList());
+            .filter(s -> Boolean.TRUE.equals(s.getRepeatable()))
+            .map(FormSectionConf::getPath)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -190,10 +190,10 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
         if (fields == null) return Map.of();
         List<FormSectionConf> sectionList = sections == null ? List.of() : sections;
         return getFields().stream()
-                .filter(f -> {
-                    String p = f.getPath();
-                    return p != null && sectionList.stream().noneMatch(s -> p.startsWith(s.getPath() + "."));
-                })
-                .collect(Collectors.toMap(FormDataElementConf::getPath, FormDataElementConf::getId));
+            .filter(f -> {
+                String p = f.getPath();
+                return p != null && sectionList.stream().noneMatch(s -> p.startsWith(s.getPath() + "."));
+            })
+            .collect(Collectors.toMap(FormDataElementConf::getPath, FormDataElementConf::getId));
     }
 }

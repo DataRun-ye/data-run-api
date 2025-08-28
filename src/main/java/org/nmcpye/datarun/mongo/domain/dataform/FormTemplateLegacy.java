@@ -29,7 +29,7 @@ public class FormTemplateLegacy extends MongoBaseIdentifiableObject {
     private String id;
 
     @Size(max = 11)
-    @Field("id")
+    @Field("uid")
     @Indexed(unique = true, name = "form_template_uid_idx")
     private String uid;
 

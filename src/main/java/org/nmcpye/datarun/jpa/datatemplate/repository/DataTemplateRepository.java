@@ -20,7 +20,7 @@ public interface DataTemplateRepository
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT f FROM DataTemplate f WHERE f.uid = :uid")
-    Optional<DataTemplate> findByUidForWrite(@Param("id") String uid);
+    Optional<DataTemplate> findByUidForWrite(@Param("uid") String uid);
 
     @Cacheable(cacheNames = TEMPLATE_BY_UID_CACHE)
     @Override

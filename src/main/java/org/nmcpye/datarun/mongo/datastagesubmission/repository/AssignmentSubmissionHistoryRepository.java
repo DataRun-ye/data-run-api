@@ -13,19 +13,19 @@
 //@JaversSpringDataAuditable
 //public interface AssignmentSubmissionHistoryRepository extends MongoAuditableRepository<AssignmentSubmissionHistory>/*, AssignmentSubmissionHistoryRepositoryCustom*/ {
 //
-//    @Query("{'id': ?0, 'entries.submissionTeam': ?1}")
-//    List<AssignmentSubmissionHistory> findByUidAndTeam(String id, String team);
+//    @Query("{'uid': ?0, 'entries.submissionTeam': ?1}")
+//    List<AssignmentSubmissionHistory> findByUidAndTeam(String uid, String team);
 //
-//    @Query(value = "{'id': ?0}", sort = "{'entries.entryDate': -1}")
-//    Optional<AssignmentSubmissionHistory> findLastEntryByUid(String id);
+//    @Query(value = "{'uid': ?0}", sort = "{'entries.entryDate': -1}")
+//    Optional<AssignmentSubmissionHistory> findLastEntryByUid(String uid);
 //
-//    @Query(value = "{'id': ?0, 'entries.assignedTeam': ?1}", sort = "{'entries.entryDate': -1}")
-//    Optional<AssignmentSubmissionHistory> findLastEntryByUidAndAssignedTeam(String id, String assignedTeam);
+//    @Query(value = "{'uid': ?0, 'entries.assignedTeam': ?1}", sort = "{'entries.entryDate': -1}")
+//    Optional<AssignmentSubmissionHistory> findLastEntryByUidAndAssignedTeam(String uid, String assignedTeam);
 //
 //    //submissionUser
-//    @Query(value = "{'id': ?0, 'entries.submissionTeam': ?1}", sort = "{'entries.entryDate': -1}")
-//    Optional<AssignmentSubmissionHistory> findLastEntryByUidAndTeam(String id, String team);
+//    @Query(value = "{'uid': ?0, 'entries.submissionTeam': ?1}", sort = "{'entries.entryDate': -1}")
+//    Optional<AssignmentSubmissionHistory> findLastEntryByUidAndTeam(String uid, String team);
 //
-//    @Query(value = "{'id': ?0, 'entries.submissionUser': ?1}", sort = "{'entries.entryDate': -1}")
-//    Optional<AssignmentSubmissionHistory> findLastEntryByUidAndUser(String id, String login);
+//    @Query(value = "{'uid': ?0, 'entries.submissionUser': ?1}", sort = "{'entries.entryDate': -1}")
+//    Optional<AssignmentSubmissionHistory> findLastEntryByUidAndUser(String uid, String login);
 //}

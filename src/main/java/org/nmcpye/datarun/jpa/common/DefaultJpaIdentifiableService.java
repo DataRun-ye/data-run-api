@@ -2,13 +2,9 @@ package org.nmcpye.datarun.jpa.common;
 
 import org.nmcpye.datarun.acl.AclService;
 import org.nmcpye.datarun.common.DefaultIdentifiableObjectService;
-import org.nmcpye.datarun.common.EntitySaveSummaryVM;
-import org.nmcpye.datarun.common.JpaIdentifiableOperationVm;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.common.repository.CreateAccessDeniedException;
-import org.nmcpye.datarun.common.repository.UpdateAccessDeniedException;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.query.JpaQueryBuilder;
 import org.nmcpye.datarun.query.LegacyQueryConverter;
@@ -59,62 +55,62 @@ public abstract class DefaultJpaIdentifiableService
         this.jpaIdentifiableRepository = jpaIdentifiableRepository;
     }
 
-    @Transactional
-    @Override
-    public EntitySaveSummaryVM processBatch(JpaIdentifiableOperationVm<T> operationVm, CurrentUserDetails user) {
-        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
+//    @Transactional
+//    @Override
+//    public EntitySaveSummaryVM processBatch(JpaIdentifiableOperationVm<T> operationVm, CurrentUserDetails user) {
+//        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
+//
+//        // Step 1 & 2: Segregate new and updated entities
+//        // (logic from above)
+//        // Step 3: Batch persist new entities
+//        if (!operationVm.getForCreatEntities().isEmpty()) {
+//            // TODO acl which can creat
+//            final List<T> createdList = jpaIdentifiableRepository.persistAll(operationVm.getForCreatEntities());
+//            summary.getCreated().addAll(createdList.stream().map(T::getUid).toList());
+//        }
+//
+//        // Step 4: Batch merge updated entities
+//        if (!operationVm.getForUpdateEntities().isEmpty()) {
+//            // TODO acl which can update
+//            final List<T> updatedList = jpaIdentifiableRepository.mergeAll(operationVm.getForUpdateEntities());
+//            summary.getUpdated().addAll(updatedList.stream().map(T::getUid).toList());
+//
+//        }
+//        return summary;
+//    }
 
-        // Step 1 & 2: Segregate new and updated entities
-        // (logic from above)
-        // Step 3: Batch persist new entities
-        if (!operationVm.getForCreatEntities().isEmpty()) {
-            // TODO acl which can creat
-            final List<T> createdList = jpaIdentifiableRepository.persistAll(operationVm.getForCreatEntities());
-            summary.getCreated().addAll(createdList.stream().map(T::getUid).toList());
-        }
-
-        // Step 4: Batch merge updated entities
-        if (!operationVm.getForUpdateEntities().isEmpty()) {
-            // TODO acl which can update
-            final List<T> updatedList = jpaIdentifiableRepository.mergeAll(operationVm.getForUpdateEntities());
-            summary.getUpdated().addAll(updatedList.stream().map(T::getUid).toList());
-
-        }
-        return summary;
-    }
-
-    @Override
-    public T trySaveOrUpdate(T payLoadEntity, CurrentUserDetails user) {
-        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        Optional<T> existingSubmission = findByIdOrUid(payLoadEntity);
-        if (existingSubmission.isPresent()) {
-            if (aclService.canUpdate(payLoadEntity, user)) {
-                // Now, merge the changes from the DTO to update the entity
-                // The merge method is designed specifically to solve this problem.
-                // It takes the state of your detached entity (dto), finds the
-                // corresponding entity in the database (or loads it into the
-                // persistence context), and applies the changes from your detached object.
-                // The returned entity from a merge operation is always a managed entity.
-                return jpaIdentifiableRepository.merge(payLoadEntity);
-            } else {
-                throw new CreateAccessDeniedException("You have no right to send things here");
-            }
-        } else {
-            if (aclService.canAddNew(payLoadEntity, user)) {
-                // It's a create operation
-                // when you call persist(dto), JPA is smart enough to handle this.
-                // It will recognize that the relating objects are references to
-                // existing records and will only insert the foreign key values into the
-                // new Assignment record. The persist method does not attempt to manage or
-                // update the referenced detached entities.  Therefore, a DetachedEntityException
-                // will not be thrown in this case, as long as the relationships are configured
-                // correctly (e.g., no cascades on persist for the ManyToOne relationships).
-                return jpaIdentifiableRepository.persist(payLoadEntity);
-            } else {
-                throw new UpdateAccessDeniedException("You have no right to send things here");
-            }
-        }
-    }
+//    @Override
+//    public T trySaveOrUpdate(T payLoadEntity, CurrentUserDetails user) {
+//        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
+//        Optional<T> existingSubmission = findByIdOrUid(payLoadEntity);
+//        if (existingSubmission.isPresent()) {
+//            if (aclService.canUpdate(payLoadEntity, user)) {
+//                // Now, merge the changes from the DTO to update the entity
+//                // The merge method is designed specifically to solve this problem.
+//                // It takes the state of your detached entity (dto), finds the
+//                // corresponding entity in the database (or loads it into the
+//                // persistence context), and applies the changes from your detached object.
+//                // The returned entity from a merge operation is always a managed entity.
+//                return jpaIdentifiableRepository.merge(payLoadEntity);
+//            } else {
+//                throw new CreateAccessDeniedException("You have no right to send things here");
+//            }
+//        } else {
+//            if (aclService.canAddNew(payLoadEntity, user)) {
+//                // It's a create operation
+//                // when you call persist(dto), JPA is smart enough to handle this.
+//                // It will recognize that the relating objects are references to
+//                // existing records and will only insert the foreign key values into the
+//                // new Assignment record. The persist method does not attempt to manage or
+//                // update the referenced detached entities.  Therefore, a DetachedEntityException
+//                // will not be thrown in this case, as long as the relationships are configured
+//                // correctly (e.g., no cascades on persist for the ManyToOne relationships).
+//                return jpaIdentifiableRepository.persist(payLoadEntity);
+//            } else {
+//                throw new UpdateAccessDeniedException("You have no right to send things here");
+//            }
+//        }
+//    }
 
     @Override
     @Transactional
@@ -129,10 +125,10 @@ public abstract class DefaultJpaIdentifiableService
 
         object.setId(existingEntity.getId());
 
-        object.setIsPersisted();
         preSaveHook(object);
+        object.setIsPersisted();
         /// update object, overwrite with updates
-        return repository.save(object);
+        return jpaIdentifiableRepository.save(object);
     }
 
     public void preSaveHook(T object) {
@@ -221,6 +217,14 @@ public abstract class DefaultJpaIdentifiableService
             .flatMap(repository::findById)
             .or(() -> Optional.ofNullable(entity)
                 .flatMap(repository::findByUid));
+    }
+
+    @Override
+    @Transactional
+    public T save(T object) {
+        log.debug("Request service to save {}:`{}`", getClazz().getSimpleName(), object.getId());
+        preSaveHook(object);
+        return jpaIdentifiableRepository.save(object);
     }
 }
 

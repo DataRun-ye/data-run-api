@@ -140,7 +140,7 @@ public class DataTemplateInstanceServiceImpl
             savedTemplate = dataTemplateService.save(template);
             // At this point, we’ve done **two** modifications to Postgres in the same @Transactional:
             //   • either an UPDATE that bumped versionNumber on an existing row (and now sets formVersionUid),
-            //   • or an INSERT of a brand‐new row with (id, versionNumber=1, formVersionUid=<new Mongo UID>).
+            //   • or an INSERT of a brand‐new row with (uid, versionNumber=1, formVersionUid=<new Mongo UID>).
             //
             // If this save(…) throws (e.g. a unique‐constraint violation, database schema error, etc.), we must delete the Mongo doc.
             // Catch that exception, delete the Mongo version, and rethrow, so that Postgres rolls back its UPDATE/INSERT.
@@ -258,13 +258,13 @@ public class DataTemplateInstanceServiceImpl
 //
 //            dataTemplateService.save(template.versionNumber(formTemplateVersion)
 //                // temporary for migrating old DataFormTemplate
-//                .id(templateUid)
+//                .uid(templateUid)
 //                .versionNumber(formTemplateVersion)
 //                .versionUid(newVersionUid));
 //
 //            templateVersionRepository.save(versionMapper
 //                .fromInstanceDto(dataTemplateInstanceDto)
-//                .id(newVersionUid)
+//                .uid(newVersionUid)
 //                .version(formTemplateVersion)
 //                .templateUid(templateUid));
 //        }

@@ -39,7 +39,7 @@
 //
 //    @Enumerated(EnumType.STRING)
 //    @Column(name = "valuetype")
-//    private ValueType dataType;
+//    private ValueType valueType;
 //
 //    @Column(name = "mandatory")
 //    private boolean mandatory;
@@ -59,18 +59,18 @@
 //
 //    }
 //
-//    public Attribute(String id) {
-//        this.id = id;
+//    public Attribute(String uid) {
+//        this.uid = uid;
 //    }
 //
-//    public Attribute(String name, ValueType dataType) {
+//    public Attribute(String name, ValueType valueType) {
 //        this.name = name;
-//        this.dataType = dataType;
+//        this.valueType = valueType;
 //    }
 //
 //    @Override
 //    public int hashCode() {
-//        return 31 * super.hashCode() + Objects.hash(dataType, objectTypes,
+//        return 31 * super.hashCode() + Objects.hash(valueType, objectTypes,
 //            mandatory, unique, optionSet);
 //    }
 //
@@ -80,7 +80,7 @@
 //    }
 //
 //    private boolean objectEquals(Attribute other) {
-//        return Objects.equals(this.dataType, other.dataType)
+//        return Objects.equals(this.valueType, other.valueType)
 //            && Objects.equals(this.objectTypes, other.objectTypes)
 //            && Objects.equals(this.mandatory, other.mandatory)
 //            && Objects.equals(this.unique, other.unique)
@@ -502,7 +502,7 @@
 //    public String toString() {
 //        return MoreObjects.toStringHelper(this)
 //            .add("sortOrder", sortOrder)
-//            .add("dataType", dataType)
+//            .add("valueType", valueType)
 //            .add("objectTypes", objectTypes)
 //            .add("mandatory", mandatory)
 //            .toString();

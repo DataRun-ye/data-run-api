@@ -25,14 +25,14 @@ import static java.util.Map.entry;
 @Document(collection = "metadata_submission")
 @Getter
 @Setter
-@CompoundIndex(name = "metadata_submission_uid", def = "{'id': 1}", unique = true)
+@CompoundIndex(name = "metadata_submission_uid", def = "{'uid': 1}", unique = true)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class MetadataSubmission extends MongoBaseIdentifiableObject {
     @Id
     private String id;
 
     @Size(max = 11)
-    @Field("id")
+    @Field("uid")
     private String uid;
 
     @NotNull

@@ -33,7 +33,7 @@ public abstract class OrgUnitSpecification {
 
             /// isAncestor
             // Match current OrgUnit's UID against the collected ancestor UIDs
-            return root.get("id").in(subquery);
+            return root.get("uid").in(subquery);
         };
     }
 
@@ -73,7 +73,7 @@ public abstract class OrgUnitSpecification {
     }
 
     public static Specification<OrgUnit> selectedUnitsByUids(List<String> uids) {
-        return (root, query, cb) -> root.get("id").in(uids);
+        return (root, query, cb) -> root.get("uid").in(uids);
     }
 
     public static Specification<OrgUnit> canRead() {

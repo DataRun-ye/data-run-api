@@ -76,7 +76,9 @@ public class OptionSetResource
                 OptionSet existing = existingMap.get(incomingEntity.getUid());
                 processOptions(incomingEntity, existing);
                 // Copy relevant data from incomingEntity to existing
-                BeanUtils.copyProperties(incomingEntity, existing, "id", "id", "version"); // Use a utility to copy properties, skipping the ID
+                incomingEntity.setUid(existing.getUid());
+                incomingEntity.setId(existing.getId());
+                BeanUtils.copyProperties(incomingEntity, existing, "id", "uid", "version"); // Use a utility to copy properties, skipping the ID
                 builder.forUpdateEntity(existing);
             } else {
                 // It's a creation

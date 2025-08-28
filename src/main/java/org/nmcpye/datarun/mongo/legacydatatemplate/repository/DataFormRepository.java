@@ -20,7 +20,7 @@ public interface DataFormRepository
 
     //    @Query(value = "{ 'form': { $in: ?0 }, 'permissions': ?1 }", fields = "{ 'form': 1, '_id': 0 }")
 //    List<String> findByFormsAndPermission(List<String> form, String permission);
-//    @Query(value = "{ 'id': { $in: ?0 }}")
+//    @Query(value = "{ 'uid': { $in: ?0 }}")
 //    Page<DataForm> findAllByUidIn(List<String> uids, Pageable pageable);
 //
     List<DataForm> findAllByUidIn(List<String> uids);

@@ -20,7 +20,7 @@ import java.util.Map;
  * A DataFormSubmissionHistory.
  */
 @Document(collection = "data_form_submission_history")
-@CompoundIndex(name = "submission_history_uid_time_idx", def = "{'id': 1, 'timestamp': -1}")
+@CompoundIndex(name = "submission_history_uid_time_idx", def = "{'uid': 1, 'timestamp': -1}")
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
@@ -29,15 +29,15 @@ public class DataFormSubmissionHistory
     @Id
     private String id;
     /**
-     * Submission id, not unique
+     * Submission uid, not unique
      */
     @Size(max = 11)
-    @Field("id")
+    @Field("uid")
     private String uid;
     @NotNull
     private String form;
     /**
-     * form version id
+     * form version uid
      */
     @NotNull
     @Field("formVersion")
@@ -79,7 +79,7 @@ public class DataFormSubmissionHistory
     public String toString() {
         return "DataFormSubmissionHistory {" +
             "id=" + getId() +
-            ", id='" + getUid() + "'" +
+            ", uid='" + getUid() + "'" +
             ", deleted='" + getDeleted() + "'" +
             ", startEntryTime='" + getStartEntryTime() + "'" +
             ", finishedEntryTime='" + getFinishedEntryTime() + "'" +

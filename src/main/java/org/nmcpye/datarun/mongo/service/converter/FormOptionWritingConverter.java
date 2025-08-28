@@ -21,7 +21,7 @@
 //
 //        // Custom ID generation logic
 //        String customId = generateCustomId(source);
-//        dbObject.put("id", customId);
+//        dbObject.put("uid", customId);
 //
 //        // Add other fields as necessary
 //        return dbObject;

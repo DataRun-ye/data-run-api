@@ -16,7 +16,8 @@ import java.util.*;
 public class LegacyQueryConverter {
     public FilterExpression convert(QueryRequest queryRequest) {
         if (queryRequest.getParsedFilter() == null || queryRequest.getParsedFilter().isEmpty()) {
-            return new CompoundFilter(LogicalOperator.AND, List.of());
+//            return new CompoundFilter(LogicalOperator.AND, List.of());
+            return null;
         }
 
         List<FilterExpression> expressions = queryRequest.getParsedFilter().entrySet().stream()

@@ -16,7 +16,7 @@
 //
 //            queryRequest.getFilters().forEach((key, value) -> {
 //                if (key.contains(".")) {
-//                    // Handle nested properties, for example: parent.id
+//                    // Handle nested properties, for example: parent.uid
 //                    String[] parts = key.split("\\.");
 //                    Path<Object> path = root.get(parts[0]);
 //                    for (int i = 1; i < parts.length; i++) {

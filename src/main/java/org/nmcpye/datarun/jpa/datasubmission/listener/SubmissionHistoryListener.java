@@ -1,90 +1,36 @@
 package org.nmcpye.datarun.jpa.datasubmission.listener;
 
-import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
-import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.DataSubmissionHistory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.jpa.datasubmission.events.SubmissionSavedEvent;
-import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionHistoryRepository;
-import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
-
-import java.time.Instant;
+import org.nmcpye.datarun.jpa.datasubmission.service.SubmissionSnapshotAndPrunerService;
 
 /**
  * @author Hamza Assada 14/08/2025 (7amza.it@gmail.com)
  */
-
-@Component
+//@Component
+@Slf4j
+@RequiredArgsConstructor
 public class SubmissionHistoryListener {
+    private final SubmissionSnapshotAndPrunerService snapshotService;
 
-    private final Logger log = LoggerFactory.getLogger(SubmissionHistoryListener.class);
-
-    private final DataSubmissionHistoryRepository historyRepo;
-    private final DataSubmissionRepository submissionRepo;
-    private final AssignmentService assignmentService;
-
-    public SubmissionHistoryListener(DataSubmissionHistoryRepository historyRepo,
-                                     DataSubmissionRepository submissionRepo,
-                                     AssignmentService assignmentService) {
-        this.historyRepo = historyRepo;
-        this.submissionRepo = submissionRepo;
-        this.assignmentService = assignmentService;
-    }
-
-    /**
-     * Runs AFTER the submission transaction commits so the DB state is stable.
-     */
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    //    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleSubmissionSaved(SubmissionSavedEvent event) {
         try {
-            String submissionId = event.getSubmissionId();
-            // Re-load committed entity from DB (ensures we snapshot committed state)
-            DataSubmission committed = submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new IllegalStateException("Committed DataSubmission not found: " + submissionId));
+            // Skip CREATE (only an update does a snapshot)
+            if (event.getChangeType() != null && event
+                .getChangeType().name().equalsIgnoreCase("CREATE")) {
+                return;
+            }
 
-            DataSubmissionHistory h = new DataSubmissionHistory();
-            h.setSubmissionId(committed.getId());
-            h.setVersionNo(committed.getLockVersion());
-            // createdAt: prefer lastModifiedDate if set, otherwise now
-            Instant ts = committed.getLastModifiedDate() != null ? committed.getLastModifiedDate() : Instant.now();
-            h.setCreatedAt(ts);
-            h.setCreatedBy(committed.getLastModifiedBy());
-            h.setChangeType(event.getChangeType());
-            h.setFormData(committed.getFormData()); // JsonNode copy (no mutation assumed)
-            h.setSerialNumber(committed.getSerialNumber());
+            // createSnapshot starts and commits its own tx
+            snapshotService.createSnapshot(event.getSubmissionId(), event.getChangeType());
 
-            historyRepo.persistAndFlush(h);
-            log.debug("Saved submission history for submissionId={} version={}",
-                committed.getId(), committed.getLockVersion());
+            // prune runs in REQUIRES_NEW and sees the committed snapshot
+            snapshotService.pruneOldVersions(event.getSubmissionId());
         } catch (Exception e) {
-            // Very important: do not throw checked exceptions that could bubble up to transaction management here.
-            // Log and surface asynchronously if needed. You can also collect failed snapshots for reprocessing.
-            log.error("Failed to create SubmissionHistory for event {} : {}",
-                event, e.getMessage(), e);
-        }
-    }
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onSubmissionSaved(SubmissionSavedEvent event) {
-        try {
-            String submissionId = event.getSubmissionId();
-            // Re-load committed entity from DB (ensures we snapshot committed state)
-            DataSubmission committed = submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new IllegalStateException("Committed DataSubmission not found: " + submissionId));
-
-            assignmentService.updateStatusForSubmission(event.getSubmissionId());
-
-            log.debug("Updated assignment status for submissionId={} version={}",
-                committed.getId(), committed.getLockVersion());
-        } catch (Exception e) {
-            // Very important: do not throw checked exceptions that could bubble up to transaction management here.
-            // Log and surface asynchronously if needed. You can also collect failed snapshots for reprocessing.
-            log.error("Failed to create SubmissionHistory for event {} : {}",
-                event, e.getMessage(), e);
+            // do not throw — log and recover/monitor: we don't want to affect the main transaction or app flow
+            log.error("Failed to create SubmissionHistory for event {} : {}", event, e.getMessage(), e);
         }
     }
 }
