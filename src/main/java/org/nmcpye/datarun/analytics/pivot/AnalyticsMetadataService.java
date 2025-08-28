@@ -1,4 +1,4 @@
-//package org.nmcpye.datarun.analytics.pivot.service;
+//package org.nmcpye.datarun.analytics.pivot;
 //
 //import org.nmcpye.datarun.analytics.pivot.dto.PivotFieldDTO;
 //import org.nmcpye.datarun.analytics.pivot.repository.AnalyticsMetadataRepository;
