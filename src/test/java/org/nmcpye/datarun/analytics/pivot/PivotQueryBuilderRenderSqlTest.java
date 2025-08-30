@@ -73,7 +73,7 @@ public class PivotQueryBuilderRenderSqlTest {
             .alias("sum_val")
             .targetField(Tables.PIVOT_GRID_FACTS.VALUE_NUM)
             .aggregation(ValidatedMeasure.MeasureAggregation.SUM)
-//            .elementPredicate(Tables.PIVOT_GRID_FACTS.ELEMENT_CONFIG_ID.eq(123L))
+//            .elementPredicate(Tables.PIVOT_GRID_FACTS.element_template_config_id.eq(123L))
             .distinct(false).build();
 
         Select<?> s = builder.buildSelect(

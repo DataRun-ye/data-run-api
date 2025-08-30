@@ -11,6 +11,7 @@ import org.nmcpye.datarun.jpa.etl.model.ReferenceResolutionResult;
 import org.nmcpye.datarun.jpa.option.Option;
 import org.nmcpye.datarun.jpa.option.repository.OptionRepository;
 import org.nmcpye.datarun.jpa.option.service.OptionService;
+import org.nmcpye.datarun.jpa.option.service.OptionSetService;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class ReferenceResolver {
     private final OptionService optionService;
+    private final OptionSetService optionSetService;
     private final OptionRepository optionRepository;
     private final TeamRepository teamRepository;
     private final OrgUnitRepository orgUnitRepository;
@@ -49,12 +51,12 @@ public class ReferenceResolver {
             // We have getOptionByCode - may use search heuristics
             Optional<Option> optional = resolveOptionByOptionSetAndCode(sval, reference.getOptionSet());
             final var option = optional
-                    .orElseThrow(() ->
-                            new InvalidCategoryValueException("Unknown option '" + sval + "'"));
+                .orElseThrow(() ->
+                    new InvalidCategoryValueException("Unknown option '" + sval + "'"));
             return ReferenceResolutionResult
-                    .builder().id(option.getId())
-                    .kind("option").name(option.getName())
-                    .label(option.getLabel()).build();
+                .builder().uid(option.getUid())
+                .kind("option_value").name(option.getName())
+                .label(option.getLabel()).build();
         } else if (vt == ValueType.Team) {
             // try id -> code
             return resolveDomainCandidate(sval, teamRepository::findByUid, teamRepository::findById, "team");
@@ -67,37 +69,6 @@ public class ReferenceResolver {
         }
     }
 
-    public static <T extends JpaBaseIdentifiableObject>
-    ReferenceResolutionResult resolveDomainCandidate(String candidate,
-                                                     Function<String, Optional<T>> findByUid,
-                                                     Function<String, Optional<T>> findById,
-                                                     String kind) {
-        // try by (id)
-        Optional<T> byUid = findByUid.apply(candidate);
-        if (byUid.isPresent()) {
-            var referenceObject = byUid.get();
-            return ReferenceResolutionResult
-                    .builder()
-                    .id(referenceObject.getId())
-                    .name(referenceObject.getName())
-                    .kind(referenceObject.getName())
-                    .label(referenceObject.getLabel()).build();
-        }
-
-        // try by id
-        Optional<T> byId = findById.apply(candidate);
-        if (byId.isPresent()) {
-            var referenceObject = byId.get();
-            return ReferenceResolutionResult.builder()
-                    .id(referenceObject.getId())
-                    .kind(kind)
-                    .name(referenceObject.getName())
-                    .label(referenceObject.getLabel()).build();
-        }
-
-        throw new InvalidReferenceValueException("Could not resolve " + kind + " candidate '" + candidate + "'");
-    }
-
     // try to resolve option either by assuming input is id (findById) or code (getOptionByCode)
     public Optional<Option> resolveOptionByOptionSetAndCode(String input, String optionSetId) {
         try {
@@ -107,22 +78,42 @@ public class ReferenceResolver {
         }
     }
 
-    // try to resolve option either by assuming input is id (findById) or code (getOptionByCode)
-    public Option resolveOptionByOptionSetAndCodeOrThrow(String input, String optionSetId) {
-        try {
-            return optionRepository.findByCodeAndOptionSetUid(input, optionSetId)
-                    .orElseThrow(() -> new InvalidReferenceValueException("option '" + input + "is not found in the system"));
-        } catch (Exception e) {
-            throw new InvalidCategoryValueException("Failed to resolve option '" + input + "': " + e.getMessage(), e);
-        }
-    }
-
     /**
      * Map option codes (multi-select) to option ids for the given optionSet.
      * Should throw InvalidCategoryValueException if any code is unknown.
      */
-    public Map<String, String> mapOptionCodesToIds(List<String> codes, String optionSetId) {
+    public Map<String, String> mapOptionCodesToUids(List<String> codes, String optionSetUid) {
         if (codes == null || codes.isEmpty()) return Collections.emptyMap();
-        return optionService.validateAndMapOptionCodes(codes, optionSetId);
+        return optionService.validateAndMapOptionCodes(codes, optionSetUid);
+    }
+
+    private static <T extends JpaBaseIdentifiableObject> ReferenceResolutionResult resolveDomainCandidate(String candidate,
+                                                                                                          Function<String, Optional<T>> findByUid,
+                                                                                                          Function<String, Optional<T>> findById,
+                                                                                                          String kind) {
+        // try by (id)
+        Optional<T> byUid = findByUid.apply(candidate);
+        if (byUid.isPresent()) {
+            var referenceObject = byUid.get();
+            return ReferenceResolutionResult
+                .builder()
+                .uid(referenceObject.getUid())
+                .name(referenceObject.getName())
+                .kind(referenceObject.getName())
+                .label(referenceObject.getLabel()).build();
+        }
+
+        // try by id
+        Optional<T> byId = findById.apply(candidate);
+        if (byId.isPresent()) {
+            var referenceObject = byId.get();
+            return ReferenceResolutionResult.builder()
+                .uid(referenceObject.getId())
+                .kind(kind)
+                .name(referenceObject.getName())
+                .label(referenceObject.getLabel()).build();
+        }
+
+        throw new InvalidReferenceValueException("Could not resolve " + kind + " candidate '" + candidate + "'");
     }
 }

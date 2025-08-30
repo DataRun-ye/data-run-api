@@ -29,14 +29,19 @@
     <include file="/config/liquibase/changelog/app-user-constraints/app-user-add-omitted-constraints.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/option-groups/01-01-option-group-and-group-set-changelog.xml" relativeToChangelogFile="false"/>
     <!-- element template config and template version   -->
-    <include file="/config/liquibase/changelog/template_field/2025-01-23-element-template-config.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/template_field/2025-01-15-element-template-config.xml" relativeToChangelogFile="false"/>
     <!-- element template config and template version   -->
-    <include file="/config/liquibase/changelog/data-template-version/2025-08-25-template-version-table-and-constraints.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/data-template-version/2025-08-15-template-version-table-and-constraints.xml" relativeToChangelogFile="false"/>
+
     <!-- submission and history table   -->
-    <include file="/config/liquibase/changelog/data_submission/2025-08-14-data-submission-and-history-tables_.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/data_submission/2025-08-15-data-submission-and-history-tables_.xml" relativeToChangelogFile="false"/>
+
     <!-- etl   -->
     <include file="/config/liquibase/changelog/etl/2025-08-17-normalization-repeat-and-values-tables.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/etl/2025-08-17-outbox-table.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/etl/2025-08-17-batch-submission-migration-errors-table.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/outbox-and-batch/2025-08-17-outbox-table.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/outbox-and-batch/2025-08-17-batch-submission-migration-errors-table.xml" relativeToChangelogFile="false"/>
+    <!-- uid for options  -->
+    <include file="/config/liquibase/changelog/options/2025-08-29-option-add-uid.xml" relativeToChangelogFile="false"/>
+
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

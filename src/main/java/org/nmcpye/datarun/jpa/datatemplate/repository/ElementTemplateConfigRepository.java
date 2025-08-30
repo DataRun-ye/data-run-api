@@ -15,16 +15,16 @@ import java.util.Optional;
 //@JaversSpringDataAuditable
 public interface ElementTemplateConfigRepository
     extends BaseJpaIdentifiableRepository<ElementTemplateConfig, Long> {
-    void deleteAllByTemplateIdAndTemplateVersionId(String templateId, String templateVersionId);
+    void deleteAllByTemplateUidAndTemplateVersionUid(String templateUid, String templateVersionUid);
 
     @Query("SELECT e.id FROM ElementTemplateConfig e " +
-        "WHERE e.templateId=:templateId AND e.templateVersionId=:templateVersionId")
-    List<Long> findIdsByTemplateIdAndTemplateVersionId(@Param("templateId") String templateId,
-                                                       @Param("templateVersionId") String templateVersionId);
+        "WHERE e.templateUid=:templateUid AND e.templateVersionUid=:templateVersionUid")
+    List<Long> findIdsByTemplateUidAndTemplateVersionUid(@Param("templateUid") String templateUid,
+                                                         @Param("templateVersionUid") String templateVersionUid);
 
-    List<ElementTemplateConfig> findAllByTemplateIdAndTemplateVersionId(String templateId, String templateVersionId);
+    List<ElementTemplateConfig> findAllByTemplateUidAndTemplateVersionUid(String templateUid, String templateVersionUid);
 
-    List<ElementTemplateConfig> findAllByTemplateIdAndVersionNo(String templateId, Integer versionNo);
+    List<ElementTemplateConfig> findAllByTemplateUidAndVersionNo(String templateUid, Integer templateVersionNo);
 
-    Optional<ElementTemplateConfig> findTopByTemplateIdOrderByVersionNoDesc(@NotNull String templateId);
+    Optional<ElementTemplateConfig> findTopByTemplateUidOrderByVersionNoDesc(@NotNull String templateId);
 }

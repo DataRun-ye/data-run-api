@@ -38,10 +38,16 @@ public class DataTemplate extends JpaSoftDeleteObject {
     @Column(name = "name", nullable = false, unique = true)
     protected String name;
 
+    /**
+     * latest template version uid
+     */
     @NotNull
     @Column(name = "version_uid", nullable = false, unique = true)
     private String versionUid;
 
+    /**
+     * latest version number
+     */
     @NotNull
     @Column(name = "version_number", nullable = false)
     private Integer versionNumber = 0;
@@ -95,15 +101,15 @@ public class DataTemplate extends JpaSoftDeleteObject {
     @JsonIgnore
     public Set<String> getVersionUidsAsSet() {
         return templateVersions.stream()
-                .filter(Objects::nonNull)
-                .map(TemplateVersion::getUid)
-                .collect(Collectors.toSet());
+            .filter(Objects::nonNull)
+            .map(TemplateVersion::getUid)
+            .collect(Collectors.toSet());
     }
 
     public TemplateVersion getLatestVersion() {
         return templateVersions.stream()
-                .max(Comparator.comparing(TemplateVersion::getVersionNumber))
-                .orElseThrow();
+            .max(Comparator.comparing(TemplateVersion::getVersionNumber))
+            .orElseThrow();
     }
 
     public Map<String, String> getByUidVersionPropertyMap(IdScheme idScheme) {

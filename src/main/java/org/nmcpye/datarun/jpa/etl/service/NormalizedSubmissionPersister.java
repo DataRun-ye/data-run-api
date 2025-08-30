@@ -62,7 +62,7 @@ public class NormalizedSubmissionPersister {
      */
     @Transactional
     public void persist(NormalizedSubmission ns) {
-        final String submissionId = ns.getSubmissionId();
+        final String submissionId = ns.getSubmissionUid();
 
         // Acquire per-submission advisory lock
         acquireAdvisoryLock(submissionId);

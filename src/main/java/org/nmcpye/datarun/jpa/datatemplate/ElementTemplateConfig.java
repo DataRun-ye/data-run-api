@@ -3,16 +3,17 @@ package org.nmcpye.datarun.jpa.datatemplate;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.datatemplateelement.AggregationType;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
-import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 
 import java.time.Instant;
 import java.util.Map;
@@ -36,13 +37,13 @@ import java.util.Objects;
 @Table(name = "element_template_config",
     uniqueConstraints = {
         @UniqueConstraint(name = "ux_element_template_config_tpl_ver_idpath",
-            columnNames = {"template_id", "template_version_id", "id_path"})
+            columnNames = {"template_uid", "template_version_uid", "id_path"})
     },
     indexes = {
-        @Index(name = "idx_element_template_config_template_version", columnList = "template_id, template_version_id"),
-        @Index(name = "idx_element_template_config_template_version_no", columnList = "template_id, version_no"),
-        @Index(name = "idx_element_template_config_dataelement", columnList = "data_element_id"),
-        @Index(name = "idx_element_template_config_repeat_path", columnList = "template_id, repeat_path")
+        @Index(name = "idx_element_template_config_template_version", columnList = "template_uid, template_version_uid"),
+        @Index(name = "idx_element_template_config_template_version_no", columnList = "template_uid, version_no"),
+        @Index(name = "idx_element_template_config_dataelement", columnList = "data_element_uid"),
+        @Index(name = "idx_element_template_config_repeat_path", columnList = "template_uid, repeat_path")
     }
 )
 @NoArgsConstructor
@@ -60,35 +61,39 @@ public class ElementTemplateConfig {
     @SequenceGenerator(name = "element_template_config_seq", sequenceName = "element_template_config_seq", allocationSize = 1)
     private Long id;
 
-    /**
-     * ID of the {@link DataTemplate} containing this configuration.
-     */
-    @NotNull
-    @Column(name = "template_id", length = 26, nullable = false)
-    @ToString.Include
-    private String templateId;
+    @Size(max = 11)
+    @Column(name = "uid", length = 11, updatable = false, unique = true, nullable = false)
+    protected String uid;
 
     /**
-     * ID of the {@link org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion}.
+     * uid of the {@link DataTemplate} containing this configuration.
      */
     @NotNull
-    @Column(name = "template_version_id", length = 26, nullable = false)
+    @Column(name = "template_uid", length = 11, nullable = false)
     @ToString.Include
-    private String templateVersionId;
+    private String templateUid;
+
+    /**
+     * uid of the {@link org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion}.
+     */
+    @NotNull
+    @Column(name = "template_version_uid", length = 11, nullable = false)
+    @ToString.Include
+    private String templateVersionUid;
 
     /**
      * Version number of the {@link org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion}.
      */
     @NotNull
-    @Column(name = "version_no", nullable = false)
+    @Column(name = "template_version_no", nullable = false)
     private Integer versionNo;
 
     /**
-     * ID of the {@link DataElement} being configured.
+     * uid of the {@link DataElement} being configured.
      */
     @NotNull
-    @Column(name = "data_element_id", length = 26, nullable = false)
-    private String dataElementId;
+    @Column(name = "data_element_uid", length = 11, nullable = false)
+    private String dataElementUid;
 
     /**
      * Path built with element IDs (e.g. "household.children.<elementId>").
@@ -105,27 +110,27 @@ public class ElementTemplateConfig {
     /**
      * Path built with element names (ends with name). Used during normalization.
      * <p>Used in normalization.
-     * For {@link org.nmcpye.datarun.datatemplateelement.FormSectionConf}, the ID is its name.
-     * For {@link FormDataElementConf}, the ID is the linked {@link DataElement} ID.</p>
+     * For {@link org.nmcpye.datarun.datatemplateelement.FormSectionConf}, the id is its name.
+     * For {@link FormDataElementConf}, the id is linked to {@link DataElement} uid.</p>
      */
     @Column(name = "name_path", columnDefinition = "text")
     private String namePath;
 
-    /**
-     * Immutable element name, copied from {@link DataElement}.
-     * Used as a key in {@link DataSubmission#getFormData()}.
-     */
-    @NotNull
-    @Column(name = "name", columnDefinition = "text", nullable = false)
-    private String name;
+//    /**
+//     * Immutable element name, copied from {@link DataElement}.
+//     * Used as a key in {@link DataSubmission#getFormData()}.
+//     */
+//    @NotNull
+//    @Column(name = "name", columnDefinition = "text", nullable = false)
+//    private String name;
 
-    /**
-     * Value type of this element.
-     * For sections, {@code dataType = null}.
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "value_type", updatable = false, nullable = false)
-    protected ValueType valueType;
+//    /**
+//     * Value type of this element.
+//     * For sections, {@code dataType = null}.
+//     */
+//    @Enumerated(EnumType.STRING)
+//    @Column(name = "value_type", updatable = false, nullable = false)
+//    protected ValueType valueType;
 
     /**
      * Aggregation strategy when used as a measure in analytics (pivot tables, charts, etc).
@@ -148,11 +153,11 @@ public class ElementTemplateConfig {
     private String referenceTable;
 
     /**
-     * Option set ID if this element configures a {@link ValueType#SelectOne} or
+     * Option set uid if this element configures a {@link ValueType#SelectOne} or
      * {@link ValueType#SelectMulti} field.
      */
-    @Column(name = "option_set_id", length = 100)
-    private String optionSetId;
+    @Column(name = "option_set_uid", length = 11)
+    private String optionSetUid;
 
     /**
      * True if this element is inside a repeatable section.
@@ -180,7 +185,18 @@ public class ElementTemplateConfig {
     private Boolean isMeasure = Boolean.FALSE;
 
     /**
-     * ID of the category element that in the same repeat this element is part of
+     * True if this element is considered a measure for analytics.
+     */
+    @Column(name = "is_dimension", nullable = false)
+    private Boolean isDimension;
+
+    /**
+     * True if this element is considered a measure for analytics.
+     */
+    @Column(name = "show_in_summary", nullable = false)
+    private Boolean showInSummary = Boolean.FALSE;
+    /**
+     * uid of the category element that in the same repeat this element is part of
      * if {@link FormSectionConf#getCategoryDataElementId()} is set.
      */
     @Column(name = "category_for_repeat", length = 26)
@@ -222,21 +238,22 @@ public class ElementTemplateConfig {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) createdAt = Instant.now();
-        if (aggregationType == null) aggregationType = org.nmcpye.datarun.datatemplateelement.AggregationType.DEFAULT;
+        if (getUid() == null || getUid().isEmpty()) setUid(CodeGenerator.generateUid());
+        if (aggregationType == null) aggregationType = AggregationType.DEFAULT;
     }
 
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof ElementTemplateConfig that)) return false;
-        return Objects.equals(getTemplateId(), that.getTemplateId()) &&
-            Objects.equals(getTemplateVersionId(),
-                that.getTemplateVersionId())
-            && Objects.equals(getDataElementId(),
-            that.getDataElementId());
+        return Objects.equals(getTemplateUid(), that.getTemplateUid()) &&
+            Objects.equals(getTemplateVersionUid(),
+                that.getTemplateVersionUid())
+            && Objects.equals(getDataElementUid(),
+            that.getDataElementUid());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getTemplateId(), getTemplateVersionId(), getDataElementId());
+        return Objects.hash(getTemplateUid(), getTemplateVersionUid(), getDataElementUid());
     }
 }

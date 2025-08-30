@@ -45,7 +45,7 @@ public class ElementValueResolver {
             final var resolved = referenceResolver
                     .resolveReference(rawValue, elementConf);
             // store id of referenced entity
-            return vBuilder.valueRef(resolved.getId())
+            return vBuilder.valueRefUid(resolved.getUid())
                     // store the original value
                     .valueText(rawValue.toString());
         }

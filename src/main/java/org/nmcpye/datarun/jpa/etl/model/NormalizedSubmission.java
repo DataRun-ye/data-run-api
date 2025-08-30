@@ -31,17 +31,17 @@ import java.util.List;
 @Getter
 @Accessors(chain = true)
 public class NormalizedSubmission {
-    private final String submissionId;
-    private final String templateId; // Still useful for context, but not persisted on value rows
-    private final String assignmentId;
+    private final String submissionUid;
+    private final String templateUid; // Still useful for context, but not persisted on value rows
+    private final String assignmentUid;
 
     private final List<RepeatInstance> repeatInstances = new ArrayList<>();
     private final List<ElementDataValue> values = new ArrayList<>();
 
-    public NormalizedSubmission(String submissionId, String templateId, String assignmentId) {
-        this.submissionId = submissionId;
-        this.templateId = templateId;
-        this.assignmentId = assignmentId;
+    public NormalizedSubmission(String submissionUid, String templateUid, String assignmentUid) {
+        this.submissionUid = submissionUid;
+        this.templateUid = templateUid;
+        this.assignmentUid = assignmentUid;
     }
 
     public void addRepeatInstance(RepeatInstance instance) {

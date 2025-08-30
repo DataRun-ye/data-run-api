@@ -37,22 +37,22 @@ class PivotMetadataServiceImplTest {
         // prepare a numeric element template config
         ElementTemplateConfig etcNum = new ElementTemplateConfig();
         etcNum.setId(100L);
-        etcNum.setTemplateId("tmpl-1");
-        etcNum.setTemplateVersionId("v1");
-        etcNum.setDataElementId("de-num-1");
+        etcNum.setTemplateUid("tmpl-1");
+        etcNum.setTemplateVersionUid("v1");
+        etcNum.setDataElementUid("de-num-1");
         etcNum.setDisplayLabel(Map.of("en", "Weight"));
         etcNum.setIsMulti(false);
         etcNum.setIsReference(false);
 
         ElementTemplateConfig etcOpt = new ElementTemplateConfig();
         etcOpt.setId(101L);
-        etcOpt.setTemplateId("tmpl-1");
-        etcOpt.setTemplateVersionId("v1");
-        etcOpt.setDataElementId("de-opt-1");
+        etcOpt.setTemplateUid("tmpl-1");
+        etcOpt.setTemplateVersionUid("v1");
+        etcOpt.setDataElementUid("de-opt-1");
         etcOpt.setDisplayLabel(Map.of("en", "Hobbies"));
         etcOpt.setIsMulti(true); // multi-select
 
-        when(etcRepo.findAllByTemplateIdAndTemplateVersionId("tmpl-1", "v1"))
+        when(etcRepo.findAllByTemplateUidAndTemplateVersionUid("tmpl-1", "v1"))
             .thenReturn(List.of(etcNum, etcOpt));
 
         // data element definitions

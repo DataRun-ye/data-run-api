@@ -49,6 +49,8 @@ public class AllowedAggregationsResolver {
     );
 
     public Set<String> allowedFor(ValueType vt) {
+        if (vt == null) return DEFAULT_AGGREGATIONS.stream()
+            .map(Enum::name).collect(Collectors.toSet());
         return switch (vt) {
             case Number, Integer, IntegerPositive,
                  IntegerNegative, IntegerZeroOrPositive,

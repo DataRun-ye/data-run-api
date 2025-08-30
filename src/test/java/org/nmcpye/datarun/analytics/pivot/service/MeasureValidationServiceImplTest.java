@@ -68,8 +68,8 @@ class MeasureValidationServiceImplTest {
         assertEquals("sum_weight", vm.alias());
         // targetField is PG.VALUE_NUM
         assertEquals(Tables.PIVOT_GRID_FACTS.VALUE_NUM.getName(), ((Field<?>) vm.targetField()).getName());
-        // elementPredicate should be equality against element_template_config_id
-        assertTrue(vm.elementPredicate().toString().contains("element_config_id"));
+        // elementPredicate should be equality against element_template_config_uid
+        assertTrue(vm.elementPredicate().toString().contains("element_template_config_id"));
     }
 
     @Test

@@ -50,11 +50,12 @@ public interface OptionService {
      * If any code is missing, this method throws InvalidOptionCodesException containing the missing codes.
      *
      * @param optionCodes set of option codes (client-submitted). Null/empty -> empty map.
-     * @param optionSetId optional option set id to restrict lookup; may be null to search globally.
-     * @return map code -> optionId for all codes provided (guaranteed to contain every code in optionCodes)
+     * @param optionSetUid optional option set id to restrict lookup; may be null to search globally.
+     * @return map code -> optionUid for all codes provided (guaranteed to contain every code in optionCodes)
      * @throws InvalidOptionCodesException if any code is not found
      */
-    Map<String, String> validateAndMapOptionCodes(Collection<String> optionCodes, @NotNull String optionSetId)
+    Map<String, String> validateAndMapOptionCodes(Collection<String> optionCodes,
+                                                  @NotNull String optionSetUid)
         throws InvalidOptionCodesException;
 
     Optional<Option> getOptionByCode(String code);

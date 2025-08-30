@@ -10,5 +10,5 @@ import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
  * @author Hamza Assada 18/08/2025 (7amza.it@gmail.com)
  */
 @Builder
-public record DataElementMeta(String elementId, ValueType valueType, boolean isReference, String referenceTable) {
+public record DataElementMeta(String elementUid, ValueType valueType, boolean isReference, String referenceTable) {
 }

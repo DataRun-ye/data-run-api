@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.jpa.option;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,6 +26,10 @@ import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Option extends JpaBaseIdentifiableObject {
+    @Size(max = 11)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
+    protected String uid;
+
     /**
      * The unique code for this object.
      */
@@ -57,16 +61,5 @@ public class Option extends JpaBaseIdentifiableObject {
     @JsonSerialize(as = JpaBaseIdentifiableObject.class)
     public OptionSet getOptionSet() {
         return optionSet;
-    }
-
-    @Override
-    protected void setUid(String uid) {
-
-    }
-
-    @JsonIgnore
-    @Override
-    public String getUid() {
-        return null;
     }
 }

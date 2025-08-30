@@ -4,12 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.analytics.pivot.PivotMetadataService;
 import org.nmcpye.datarun.analytics.pivot.PivotQueryService;
+import org.nmcpye.datarun.analytics.pivot.dto.PivotOutputFormat;
 import org.nmcpye.datarun.analytics.pivot.dto.PivotQueryRequest;
 import org.nmcpye.datarun.analytics.pivot.dto.PivotQueryResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -37,20 +37,14 @@ public class PivotQueryController {
      * Execute a pivot query
      */
     @PostMapping("/query")
-    public ResponseEntity<PivotQueryResponse> query(@RequestBody PivotQueryRequest request) {
+    public ResponseEntity<PivotQueryResponse> query(@RequestBody PivotQueryRequest request,
+                                                    @RequestParam(name = "format", defaultValue = "TABLE_ROWS") PivotOutputFormat format) {
         // You may resolve allowedTeamIds from security context. For now pass null (service will accept null).
         Set<String> allowedTeams = null;
+
+//        PivotQueryResponse resp = pivotQueryService.query(request, format, allowedTeams);
         PivotQueryResponse resp = pivotQueryService.execute(request, allowedTeams);
         return ResponseEntity.ok(resp);
-    }
-
-    /**
-     * Render SQL (preview)
-     */
-    @PostMapping("/render-sql")
-    public ResponseEntity<?> renderSql(@RequestBody PivotQueryRequest request) {
-        String sql = pivotQueryService.renderSql(request, null);
-        return ResponseEntity.ok(Map.of("sql", sql));
     }
 
     /**
@@ -59,5 +53,14 @@ public class PivotQueryController {
     @GetMapping("/field")
     public ResponseEntity<?> resolveField(@RequestParam String id, @RequestParam String templateId, @RequestParam String templateVersionId) {
         return ResponseEntity.of(pivotMetadataService.resolveFieldByUidOrId(id, templateId, templateVersionId));
+    }
+
+    /**
+     * Optional: count endpoint to get total rows for pagination without heavy result payload.
+     */
+    @PostMapping("/count")
+    public ResponseEntity<Long> count(@RequestBody PivotQueryRequest request) {
+        long total = pivotQueryService.count(request);
+        return ResponseEntity.ok(total);
     }
 }

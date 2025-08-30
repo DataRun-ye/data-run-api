@@ -4,12 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceService;
 import org.nmcpye.datarun.jpa.datatemplate.service.ElementTemplateGenerator;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
 
 /**
  * @author Hamza Assada
  * @since 14/05/2025
  */
-//@Component
+@Component
 @RequiredArgsConstructor
 public class FormTemplateElementGeneration implements CommandLineRunner {
     private final DataTemplateInstanceService dataTemplateInstanceService;

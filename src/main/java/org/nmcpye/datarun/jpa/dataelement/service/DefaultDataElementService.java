@@ -26,7 +26,7 @@ public class DefaultDataElementService extends DefaultJpaIdentifiableService<Dat
     }
 
     @Override
-    public void preSaveHook(DataElement element) {
+    public DataElement saveWithRelations(DataElement element) {
         if (element.getType().isOptionsType() && element.getOptionSet() != null) {
             final var optionSet = optionSetRepository.findByUid(element.getOptionSet().getUid())
                 .or(() -> optionSetRepository
@@ -35,5 +35,6 @@ public class DefaultDataElementService extends DefaultJpaIdentifiableService<Dat
                 .orElseThrow(() -> new IllegalStateException(element.getName() + "'s Option Set not found"));
             element.setOptionSet(optionSet);
         }
+        return save(element);
     }
 }

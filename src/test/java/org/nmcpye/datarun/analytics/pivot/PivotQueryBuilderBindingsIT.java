@@ -3,6 +3,7 @@ package org.nmcpye.datarun.analytics.pivot;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.jooq.SQLDialect;
 import org.jooq.Select;
 import org.jooq.impl.DSL;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.nmcpye.datarun.analytics.pivot.dto.PivotQueryRequest;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import javax.sql.DataSource;
@@ -397,5 +399,69 @@ public class PivotQueryBuilderBindingsIT {
         assertThat(sql0).contains("ELEMENT_ID");
         assertThat(sql0).contains("MIN(");        // ensure MIN(value_id) appears for grouped queries
         assertThat(sql0).contains("VALUE_ID");
+    }
+
+    @Test
+    public void orderBy_field_pagination_is_deterministic_using_rowCol_dims() {
+        // prepare data as before, insert el-A/B/C...
+        dsl.execute("DELETE FROM pivot_grid_facts WHERE element_id IN ('el-A','el-B','el-C')");
+        dsl.insertInto(DSL.table("pivot_grid_facts"))
+            .columns(DSL.field("element_id"), DSL.field("value_num"), DSL.field("value_text"),
+                DSL.field("value_bool"), DSL.field("option_id"), DSL.field("submission_completed_at"))
+            .values("el-A", DSL.val(1), DSL.val("aa"), DSL.val(false), DSL.val((String) null), DSL.val(LocalDateTime.now()))
+            .execute();
+        dsl.insertInto(DSL.table("pivot_grid_facts"))
+            .columns(DSL.field("element_id"), DSL.field("value_num"), DSL.field("value_text"),
+                DSL.field("value_bool"), DSL.field("option_id"), DSL.field("submission_completed_at"))
+            .values("el-B", DSL.val(2), DSL.val("bb"), DSL.val(false), DSL.val((String) null), DSL.val(LocalDateTime.now()))
+            .execute();
+        dsl.insertInto(DSL.table("pivot_grid_facts"))
+            .columns(DSL.field("element_id"), DSL.field("value_num"), DSL.field("value_text"),
+                DSL.field("value_bool"), DSL.field("option_id"), DSL.field("submission_completed_at"))
+            .values("el-C", DSL.val(3), DSL.val("cc"), DSL.val(false), DSL.val((String) null), DSL.val(LocalDateTime.now()))
+            .execute();
+
+        // Build request with explicit rowDimensions
+        PivotQueryRequest req = PivotQueryRequest.builder()
+            .rowDimensions(List.of("element_id"))
+            .columnDimensions(List.of("option_id")) // although option_id will be null for these rows; just demonstrates usage
+            .limit(1)
+            .offset(0)
+            .templateId("")
+            .templateVersionId("")
+            .build();
+
+        // Build validated measure list: none needed for this test (we only assert grouping/pagination)
+        Select<Record> s0 = builder.buildSelect(
+            // grouping dims passed to builder: rowDims + colDims
+            List.of("element_id"),
+            null,
+            List.of(new PivotQueryBuilder.Filter("element_id", "IN", List.of("el-A","el-B","el-C"))),
+            null, null,
+            List.of(new PivotQueryBuilder.Sort("element_id", false)), // asc
+            1, 0,
+            null
+        );
+
+        var rowsPage0 = dsl.fetch(s0);
+        assertEquals(1, rowsPage0.size());
+        String first = (String) rowsPage0.get(0).get("element_id");
+
+        var s1 = builder.buildSelect(
+            List.of("element_id"),
+            null,
+            List.of(new PivotQueryBuilder.Filter("element_id", "IN", List.of("el-A","el-B","el-C"))),
+            null, null,
+            List.of(new PivotQueryBuilder.Sort("element_id", false)), // asc
+            1, 1,
+            null
+        );
+        var rowsPage1 = dsl.fetch(s1);
+        assertEquals(1, rowsPage1.size());
+        String second = (String) rowsPage1.get(0).get("element_id");
+
+        assertNotEquals(first, second, "Two consecutive pages must return different groups");
+        assertEquals("el-A", first);
+        assertEquals("el-B", second);
     }
 }

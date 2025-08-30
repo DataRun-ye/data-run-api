@@ -33,40 +33,40 @@ public class PivotMetadataServiceImpl implements PivotMetadataService {
     private static final String CACHE_PREFIX = "pivot.metadata:template:";
 
     @Override
-    @Cacheable(cacheNames = "pivot.metadata", key = "T(java.lang.String).valueOf('" + CACHE_PREFIX + "').concat(#templateId).concat(':').concat(#templateVersionId)")
+    @Cacheable(cacheNames = PIVOT_CACHE_NAME, key = "T(java.lang.String).valueOf('" + CACHE_PREFIX + "').concat(#templateId).concat(':').concat(#templateVersionId)")
     public PivotMetadataResponse getMetadataForTemplate(String templateId, String templateVersionId) {
         Objects.requireNonNull(templateId, "templateId is required");
         Objects.requireNonNull(templateVersionId, "templateVersionId is required");
 
         // 1. load element_template_config rows for this template+version
-        List<ElementTemplateConfig> etcRows = etcRepository.findAllByTemplateIdAndTemplateVersionId(templateId, templateVersionId);
+        List<ElementTemplateConfig> etcRows = etcRepository.findAllByTemplateUidAndTemplateVersionUid(templateId, templateVersionId);
 
         // 2. gather DataElement ids and batch load them
-        Set<String> dataElementIds = etcRows.stream().map(ElementTemplateConfig::getDataElementId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<String> dataElementIds = etcRows.stream().map(ElementTemplateConfig::getDataElementUid).filter(Objects::nonNull).collect(Collectors.toSet());
         Map<String, DataElement> dataElementMap;
         if (!dataElementIds.isEmpty()) {
             dataElementMap = dataElementRepository.findAllById(dataElementIds).stream()
-                .collect(Collectors.toMap(DataElement::getId, de -> de));
+                .collect(Collectors.toMap(DataElement::getUid, de -> de));
         } else {
             dataElementMap = Collections.emptyMap();
         }
 
         // 3. map each ElementTemplateConfig -> PivotFieldDto
         List<PivotFieldDto> measures = etcRows.stream().map(etc -> {
-            DataElement de = dataElementMap.get(etc.getDataElementId());
+            DataElement de = dataElementMap.get(etc.getDataElementUid());
             ValueType vt = de != null ? de.getType() : null;
 
             Map<String, Object> extras = new HashMap<>();
             extras.put("isMulti", Boolean.TRUE.equals(etc.getIsMulti()));
             extras.put("isReference", Boolean.TRUE.equals(etc.getIsReference()));
             extras.put("referenceTable", etc.getReferenceTable());
-            extras.put("optionSetId", etc.getOptionSetId());
+            extras.put("optionSetId", etc.getOptionSetUid());
             extras.put("isCategory", etc.getIsCategory());
             extras.put("repeatPath", etc.getRepeatPath());
             extras.put("categoryForRepeat", etc.getCategoryForRepeat());
 
             PivotFieldDto dto = PivotFieldDto.builder()
-                .id("etc:" + etc.getId()) // template-scoped id for client (could be improved to expose uid)
+                .id("etc:" + etc.getDataElementUid()) // template-scoped id for client (could be improved to expose uid)
                 .label(Objects.toString(etc.getDisplayLabel(), etc.getName()))
                 .category("FORM_MEASURE")
                 .dataType(resolveDataType(etc, de))
@@ -100,23 +100,24 @@ public class PivotMetadataServiceImpl implements PivotMetadataService {
     }
 
     @Override
-    public Optional<PivotFieldDto> resolveFieldByUidOrId(String uidOrId, String templateId, String templateVersionId) {
+    public Optional<PivotFieldDto> resolveFieldByUidOrId(String uidOrId,
+                                                         String templateId, String templateVersionId) {
         // Prefer template-level lookup first
-        List<ElementTemplateConfig> etcRows = etcRepository.findAllByTemplateIdAndTemplateVersionId(templateId, templateVersionId);
+        List<ElementTemplateConfig> etcRows = etcRepository.findAllByTemplateUidAndTemplateVersionUid(templateId, templateVersionId);
         for (ElementTemplateConfig etc : etcRows) {
             String etcClientId = "etc:" + etc.getId(); // same id as in DTO generation
             if (etcClientId.equals(uidOrId) || Objects.equals(etc.getId(), uidOrId)) {
                 // build DTO for this single etc
                 DataElement de = null;
-                if (etc.getDataElementId() != null) {
-                    de = dataElementRepository.findById(etc.getDataElementId()).orElse(null);
+                if (etc.getDataElementUid() != null) {
+                    de = dataElementRepository.findByUid(etc.getDataElementUid()).orElse(null);
                 }
                 ValueType vt = de != null ? de.getType() : null;
                 Map<String, Object> extras = new HashMap<>();
                 extras.put("isMulti", Boolean.TRUE.equals(etc.getIsMulti()));
                 extras.put("isReference", Boolean.TRUE.equals(etc.getIsReference()));
                 extras.put("referenceTable", etc.getReferenceTable());
-                extras.put("optionSetId", etc.getOptionSetId());
+                extras.put("optionSetId", etc.getOptionSetUid());
                 extras.put("isCategory", etc.getCategoryForRepeat() != null);
                 extras.put("repeatPath", etc.getRepeatPath());
                 extras.put("categoryForRepeat", etc.getCategoryForRepeat());
@@ -154,7 +155,9 @@ public class PivotMetadataServiceImpl implements PivotMetadataService {
         // fallback to DataElement's ValueType
         if (de == null || de.getType() == null) return "value_text";
         switch (de.getType()) {
-            case Number, Integer, IntegerPositive, IntegerNegative, IntegerZeroOrPositive, Percentage, UnitInterval:
+            case Number, Integer, IntegerPositive,
+                 IntegerNegative, IntegerZeroOrPositive,
+                 Percentage, UnitInterval:
                 return "value_num";
             case Boolean:
                 return "value_bool";

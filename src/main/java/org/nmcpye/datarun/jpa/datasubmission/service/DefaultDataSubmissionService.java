@@ -166,7 +166,7 @@ public class DefaultDataSubmissionService
 
             updatedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
                 SubmissionChangeType.UPDATE, s.getLockVersion()))); // Apply post-update hook for each
-            summary.getUpdated().addAll(persistedResults.stream().map(DataSubmission::getUid).toList());
+            summary.getUpdated().addAll(updatedResults.stream().map(DataSubmission::getUid).toList());
         }
 
         List<DataSubmission> combinedResults = new ArrayList<>(persistedResults);

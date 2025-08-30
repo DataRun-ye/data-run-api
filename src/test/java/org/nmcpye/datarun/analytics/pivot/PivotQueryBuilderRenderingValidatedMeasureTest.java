@@ -1,16 +1,15 @@
 package org.nmcpye.datarun.analytics.pivot;
 
 import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
 import org.jooq.Select;
 import org.jooq.impl.DSL;
-import org.jooq.SQLDialect;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.analytics.pivot.PivotQueryBuilder;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Rendering-only tests using the real ValidatedMeasure record.

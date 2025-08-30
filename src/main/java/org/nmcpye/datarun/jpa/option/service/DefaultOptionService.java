@@ -151,7 +151,8 @@ public class DefaultOptionService implements OptionService {
 
     @Override
     @Transactional(readOnly = true)
-    public Map<String, String> validateAndMapOptionCodes(Collection<String> optionCodes, String optionSetId) throws InvalidOptionCodesException {
+    public Map<String, String> validateAndMapOptionCodes(Collection<String> optionCodes,
+                                                         String optionSetUid) throws InvalidOptionCodesException {
         if (optionCodes == null || optionCodes.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -164,16 +165,16 @@ public class DefaultOptionService implements OptionService {
 
         Set<String> uniqueCodes = new LinkedHashSet<>(codesNormalized);
 
-        List<Option> found = optionRepository.findAllByOptionSetUid(optionSetId);
+        List<Option> found = optionRepository.findAllByOptionSetUid(optionSetUid);
 
 
         @SuppressWarnings("DataFlowIssue") // Option::getId from db, can't be null
-        Map<String, String> codeToId = found.stream()
+        Map<String, String> codeToOptionUid = found.stream()
                 .filter(Objects::nonNull)
-                .collect(Collectors.toMap(Option::getCode, Option::getId));
+                .collect(Collectors.toMap(Option::getCode, Option::getUid));
 
         List<String> missing = uniqueCodes.stream()
-                .filter(code -> !codeToId.containsKey(code))
+                .filter(code -> !codeToOptionUid.containsKey(code))
                 .collect(Collectors.toList());
 
         if (!missing.isEmpty()) {
@@ -181,7 +182,7 @@ public class DefaultOptionService implements OptionService {
         }
 
         // Return mapping for requested codes (preserve original duplicates is caller responsibility)
-        return codeToId;
+        return codeToOptionUid;
     }
 
     @Override

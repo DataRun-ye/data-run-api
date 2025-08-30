@@ -5,6 +5,7 @@ import org.ehcache.config.builders.ExpiryPolicyBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.jsr107.Eh107Configuration;
 import org.hibernate.cache.jcache.ConfigSettings;
+import org.nmcpye.datarun.analytics.pivot.PivotMetadataService;
 import org.nmcpye.datarun.caching.UserKeyGenerator;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
@@ -93,6 +94,7 @@ public class CacheConfiguration {
             createCache(cm, DataTemplateVersionRepository.TEMPLATE_UID_VERSION_UID_CACHE);
             createCache(cm, DataTemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_CACHE);
             createCache(cm, DataTemplateRepository.TEMPLATE_BY_UID_CACHE);
+            createCache(cm, PivotMetadataService.PIVOT_CACHE_NAME);
             createCache(cm, User.class.getName());
             createCache(cm, User.class.getName());
             createCache(cm, Authority.class.getName());

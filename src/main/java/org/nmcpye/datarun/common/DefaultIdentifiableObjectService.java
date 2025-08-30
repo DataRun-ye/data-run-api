@@ -39,10 +39,10 @@ public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObj
         return klass;
     }
 
-//    @Override
-//    public T saveWithRelations(T object) {
-//        return save(object);
-//    }
+    @Override
+    public T saveWithRelations(T object) {
+        return save(object);
+    }
 
     @Transactional(readOnly = true)
     @Override
@@ -64,7 +64,6 @@ public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObj
     @Override
     public T save(T object) {
         log.debug("Request service to save {}:`{}`", getClazz().getSimpleName(), object.getId());
-        preSaveHook(object);
         return repository.save(object);
     }
 
@@ -81,10 +80,9 @@ public abstract class DefaultIdentifiableObjectService<T extends IdentifiableObj
         object.setId(existingEntity.getId());
         object.setCreatedBy(existingEntity.getCreatedBy());
 
-        preSaveHook(object);
         /// update object, overwrite with updates
-//        return saveWithRelations(object);
-        return repository.save(object);
+        return saveWithRelations(object);
+//        return repository.save(object);
     }
 
     @Override

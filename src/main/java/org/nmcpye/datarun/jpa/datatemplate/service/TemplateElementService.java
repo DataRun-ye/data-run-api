@@ -31,7 +31,7 @@ public class TemplateElementService {
     @Cacheable(cacheNames = TEMPLATE_MAP_CACHE)
     public TemplateElementMap getTemplateElementMap(String id, String versionUid) {
         final var elementsConfMap =
-            templateConfigRepository.findAllByTemplateIdAndTemplateVersionId(id, versionUid).stream().collect(Collectors.toMap(
+            templateConfigRepository.findAllByTemplateUidAndTemplateVersionUid(id, versionUid).stream().collect(Collectors.toMap(
                 ElementTemplateConfig::getNamePath, Function.identity()));
         return new TemplateElementMap(templateInstanceService.findByTemplateAndVersionUid(id, versionUid)
             .orElseThrow(), elementsConfMap);
@@ -39,7 +39,7 @@ public class TemplateElementService {
 
     public TemplateElementMap getTemplateElementMap(String id, Integer version) {
         final var elementsConfMap =
-            templateConfigRepository.findAllByTemplateIdAndVersionNo(id, version).stream().collect(Collectors.toMap(
+            templateConfigRepository.findAllByTemplateUidAndVersionNo(id, version).stream().collect(Collectors.toMap(
                 ElementTemplateConfig::getNamePath, Function.identity()));
         return new TemplateElementMap(templateInstanceService.findByTemplateAndVersionNo(id, version)
             .orElseThrow(), elementsConfMap);

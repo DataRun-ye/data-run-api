@@ -17,11 +17,11 @@ import java.time.Instant;
  * <p>Context levels
  * <ol>
  *   <li><b>Level-1 (submission-level) context</b> — submission-level tags (team_id, org_unit_id, activity_id)
- *       are propagated into each repeat row via {@link #submissionId} and resolved server-side when loading
+ *       are propagated into each repeat row via {@link #submissionUid} and resolved server-side when loading
  *       submissions (assignment → context resolution).</li>
  *   <li><b>Level-2 (repeat-level) category</b> — optional subject tags inside the repeat (e.g. a selected
  *       team, entity, option). When a repeat defines a category element, that element's canonical id becomes
- *       {@link #categoryId} and {@link #categoryKind} for all sibling rows of the repeat. This enables subject-level
+ *       {@link #categoryUid} and {@link #categoryKind} for all sibling rows of the repeat. This enables subject-level
  *       aggregations in analytics (context → subject).</li>
  * </ol>
  *
@@ -57,14 +57,14 @@ public class RepeatInstance {
      * <p>
      * db: {@code submission_id, not null}
      */
-    private String submissionId;
+    private String submissionUid;
 
     /**
-     * The specific subject canonical id for the category element.
+     * The specific subject canonical uid for the category element.
      * <p>
      * db: {@code category_id, nullable (repeat sections may not define a category)}
      */
-    private String categoryId;
+    private String categoryUid;
 
     /**
      * system table name indicating the category subject kind e.g

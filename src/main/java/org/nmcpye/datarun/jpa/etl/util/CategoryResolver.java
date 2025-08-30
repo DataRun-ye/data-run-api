@@ -22,9 +22,10 @@ public class CategoryResolver {
      */
     public CategoryResolutionResult resolveCategory(Object rawValue, FormDataElementConf categoryElement) {
         if (rawValue == null) return null;
-        final var resolveResult = referenceResolver.resolveReference(rawValue, categoryElement);
+        final var resolveResult = referenceResolver
+            .resolveReference(rawValue, categoryElement);
         return CategoryResolutionResult.builder()
-                .id(resolveResult.getId())
+                .uid(resolveResult.getUid())
                 .name(resolveResult.getName())
                 .label(resolveResult.getLabel())
                 .kind(resolveResult.getKind())

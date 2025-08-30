@@ -135,11 +135,6 @@ public abstract class DefaultMongoIdentifiableObjectService<T extends MongoIdent
                 .flatMap(repository::findById));
     }
 
-    @Override
-    public void preSaveHook(T object) {
-
-    }
-
     //    protected Criteria buildFiltersCriteria(QueryRequest queryRequest, String jsonQueryBody) {
 //        Criteria criteria = new Criteria();
 //

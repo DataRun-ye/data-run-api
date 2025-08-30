@@ -3,6 +3,7 @@ package org.nmcpye.datarun.jpa.datasubmissionbatching.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.SubmissionDataProcessor;
@@ -15,8 +16,6 @@ import org.nmcpye.datarun.jpa.datasubmissionoutbox.OutboxEventStatus;
 import org.nmcpye.datarun.jpa.datasubmissionoutbox.repository.OutboxEventRepository;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -27,7 +26,6 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -40,10 +38,10 @@ import java.util.List;
  *
  * @author Hamza Assada 16/08/2025 (7amza.it@gmail.com)
  */
-@Configuration
+//@Configuration
+@Slf4j
 public class MigrationJobConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(MigrationJobConfig.class);
     @Value("${migration.mongo.collection:dataFormSubmission}")
     private String mongoCollection;
 

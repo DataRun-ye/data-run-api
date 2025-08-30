@@ -7,7 +7,6 @@ import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceService;
-import org.nmcpye.datarun.mongo.domain.DataForm;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -33,9 +32,6 @@ import static org.nmcpye.datarun.web.rest.v1.formtemplate.FormTemplateMergeResou
 import static org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator.createNextPageLink;
 import static org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator.initPageResponse;
 
-/**
- * REST controller for managing {@link DataForm}.
- */
 @RestController
 @RequestMapping(value = {V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
@@ -105,7 +101,7 @@ public class FormTemplateMergeResource {
         log.debug("REST request to saveOne {}", getName());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         final var processedTemplate = formTemplateProcessor.processMetadata(
-                formTemplateProcessor.validate(formTemplate));
+            formTemplateProcessor.validate(formTemplate));
         this.saveEntity((DataTemplateInstanceDto) processedTemplate, summary);
 
         return ResponseEntity.ok(summary);
@@ -145,9 +141,9 @@ public class FormTemplateMergeResource {
         log.debug("REST request to delete from {}: {}", getName(), id);
         templateService.deleteByUid(id);
         return ResponseEntity
-                .noContent()
-                .headers(HeaderUtil
-                        .createEntityDeletionAlert(applicationName, true, getName(), id)).build();
+            .noContent()
+            .headers(HeaderUtil
+                .createEntityDeletionAlert(applicationName, true, getName(), id)).build();
     }
 
     @GetMapping("/{id}")
@@ -174,6 +170,6 @@ public class FormTemplateMergeResource {
 
     protected DataTemplateInstanceDto preProcess(DataTemplateInstanceDto entity) {
         return (DataTemplateInstanceDto) formTemplateProcessor
-                .processMetadata(formTemplateProcessor.validate(entity));
+            .processMetadata(formTemplateProcessor.validate(entity));
     }
 }

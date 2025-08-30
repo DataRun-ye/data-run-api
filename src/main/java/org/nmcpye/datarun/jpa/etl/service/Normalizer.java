@@ -196,8 +196,8 @@ public class Normalizer {
                     // Create the RepeatInstance DTO, linking it to its parent via the context.
                     final var ri = RepeatInstance.builder()
                         .id(repeatId)
-                        .submissionId(ns.getSubmissionId())
-                        .categoryId(category != null ? category.getId() : null)
+                        .submissionUid(ns.getSubmissionUid())
+                        .categoryUid(category != null ? category.getUid() : null)
                         .categoryKind(category != null ? category.getKind() : null)
                         .categoryName(category != null ? category.getName() : null)
                         .categoryLabel(toStringLabel(category != null ? category.getLabel() : null))
@@ -251,16 +251,17 @@ public class Normalizer {
                 if (list.isEmpty()) continue; // With Purge/Replace, we simply do nothing for empty lists.
 
                 List<String> codes = list.stream().filter(Objects::nonNull).map(Object::toString).map(String::trim).toList();
-                Map<String, String> codeToOptionId = referenceResolver.mapOptionCodesToIds(codes, field.getOptionSet());
+                Map<String, String> codeToOptionUid = referenceResolver.mapOptionCodesToUids(codes, field.getOptionSet());
 
                 for (String code : codes) {
                     ns.addValueRow(buildElementDataValue(submission, field, context,
-                        codeToOptionId.get(code), code, elementConf.getId()));
+                        codeToOptionUid.get(code), code, elementConf.getUid()));
                 }
             }
             // --- PRIMITIVE SINGLE-VALUE ELEMENT ---
             else if (element instanceof FormDataElementConf field) {
-                ns.addValueRow(buildElementDataValue(submission, field, context, null, rawValue, elementConf.getId()));
+                ns.addValueRow(buildElementDataValue(submission, field, context, null,
+                    rawValue, elementConf.getUid()));
             }
         }
     }
@@ -269,7 +270,8 @@ public class Normalizer {
     private ElementDataValue buildElementDataValue(DataSubmission submission,
                                                    FormDataElementConf field,
                                                    RepeatContext context,
-                                                   String optionId, Object rawValue, Long elementConfId) {
+                                                   String optionUid, Object rawValue,
+                                                   String etcUid) {
         // --- try parse value based on dataType
         ElementDataValue.ElementDataValueBuilder builder =
             elementValueResolver.resolveValue(rawValue, field);
@@ -277,20 +279,19 @@ public class Normalizer {
         // if single select validate option
 
         // --- CORE IDENTIFIERS & DIMENSIONS ---
-        builder.submissionId(submission.getUid())
-            .elementId(field.getId())
+        builder.submissionUid(submission.getUid())
+            .elementUid(field.getId())
             // --- EXPANDED ASSIGNMENT DIMENSIONS ---
-            .assignmentId(submission.getAssignment())
-            .teamId(submission.getTeam())
-            .orgUnitId(submission.getOrgUnit())
-            .activityId(submission.getActivity())
-            .elementConfigId(elementConfId)
+            .assignmentUid(submission.getAssignment())
+            .teamUid(submission.getTeam())
+            .orgUnitUid(submission.getOrgUnit())
+            .activityUid(submission.getActivity())
+            .elementTemplateConfigUid(etcUid)
             // --- CONTEXT FROM REPEAT ---
             .repeatInstanceId(context.instanceId())
             // --- VALUE ---
-            .optionId(optionId) // Set for multi-select, null otherwise
+            .optionUid(optionUid) // Set for multi-select, null otherwise
             // --- METADATA ---
-            .elementLabel(toStringLabel(field.getLabel()))
             .lastModifiedDate(Instant.now())
             .createdDate(Instant.now());
 

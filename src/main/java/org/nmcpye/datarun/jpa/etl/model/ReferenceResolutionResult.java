@@ -16,7 +16,7 @@ public class ReferenceResolutionResult {
     /**
      * canonical id (ULID)
      */
-    String id;
+    String uid;
     String name;
     /**
      * e.g. "team", "org_unit", "activity", "domain_entity", "option"

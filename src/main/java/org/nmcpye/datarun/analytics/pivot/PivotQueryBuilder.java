@@ -6,6 +6,7 @@ import org.jooq.Record;
 import org.jooq.*;
 import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
+import org.nmcpye.datarun.analytics.pivot.exception.InvalidRequestException;
 import org.nmcpye.datarun.jooq.Tables;
 import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
 import org.springframework.stereotype.Component;
@@ -36,6 +37,8 @@ import java.util.stream.Collectors;
 public class PivotQueryBuilder {
 
     private final DSLContext dsl;
+    // add a field or config flag for strictness (could be injected). Default true.
+    private final boolean strictOrderValidation = true; // or inject from config
 
     private static final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
 
@@ -130,76 +133,69 @@ public class PivotQueryBuilder {
             query.addGroupBy(groupBy.toArray(new Field<?>[0]));
         }
 
-//        // Sorting
-//        if (sorts != null && !sorts.isEmpty()) {
-//            List<SortField<?>> sortFields = new ArrayList<>();
-//            for (Sort s : sorts) {
-//                String nameOrAlias = s.fieldOrAlias();
-//                Field<?> candidate = aliasToSelectField.get(nameOrAlias);
-//                if (candidate == null) {
-//                    candidate = resolveFactField(nameOrAlias);
-//                }
-//                // Now candidate is a Field<?> — call asc()/desc() and collect the SortField
-//                SortField<?> sf = s.desc() ? candidate.desc() : candidate.asc();
-//                sortFields.add(sf);
-//            }
-//            query.addOrderBy(sortFields.toArray(new SortField<?>[0]));
-//        }
-// Sorting (deterministic tie-breaker)
-// Build list of SortField<?> and keep track of seen keys (aliases or field names)
-        if (sorts != null && !sorts.isEmpty()) {
-            List<SortField<?>> sortFields = new ArrayList<>();
-            Set<String> seenSortKeys = new HashSet<>();
+        // --- inside buildSelect, after groupBy handling and after cond etc ---
+        // determine grouped
+        boolean grouped = !groupBy.isEmpty();
 
+        // collect sort fields
+        List<SortField<?>> sortFields = new ArrayList<>();
+        if (sorts != null && !sorts.isEmpty()) {
             for (Sort s : sorts) {
                 String nameOrAlias = s.fieldOrAlias();
                 Field<?> candidate = aliasToSelectField.get(nameOrAlias);
-                if (candidate == null) {
-                    candidate = resolveFactField(nameOrAlias);
-                }
-                String seenKey = nameOrAlias != null ? nameOrAlias : candidate.getName();
-                seenSortKeys.add(seenKey);
 
+                if (candidate == null) {
+                    // Not an alias; try resolve fact column
+                    candidate = resolveFactField(nameOrAlias);
+
+                    if (candidate == null || DSL.noField().equals(candidate)) {
+                        String msg = "Unknown sort field or alias: " + nameOrAlias;
+                        if (strictOrderValidation) {
+                            throw new InvalidRequestException(msg);
+                        } else {
+                            log.warn(msg + " — ignoring sort clause");
+                            continue;
+                        }
+                    }
+
+                    // If no GROUP BY, sorting by raw fact columns is invalid (unless it's an aggregate alias)
+                    if (!grouped) {
+                        String msg = "Cannot ORDER BY raw field '" + nameOrAlias + "' when no GROUP BY present";
+                        if (strictOrderValidation) {
+                            throw new InvalidRequestException(msg);
+                        } else {
+                            log.warn(msg + " — ignoring sort clause");
+                            continue;
+                        }
+                    }
+                } else {
+                    // candidate is an alias SelectField (aggregate) — allowed even when not grouped
+                }
+
+                // now candidate is safe: convert to a SortField
                 SortField<?> sf = s.desc() ? candidate.desc() : candidate.asc();
                 sortFields.add(sf);
             }
+        }
 
-            // append group-by fields not already present as tie-breakers
-            for (Field<?> gb : groupBy) {
-                String gbName = gb.getName();
-                if (!seenSortKeys.contains(gbName)) {
-                    sortFields.add(gb.asc());
-                    seenSortKeys.add(gbName);
-                }
-            }
+        // If grouped and client provided sorts, append aggregate tie-breaker (MIN(value_id)) to make pagination deterministic
+        if (grouped) {
+            // order by the requested sorts first, then tie-breaker:
+            // but ensure tie-breaker is added only once
+            SortField<?> tie = DSL.min(PG.VALUE_ID).asc();
+            boolean addTie = sortFields.stream().noneMatch(sf -> Objects.equals(sf.toString(), tie.toString()));
+            if (addTie) sortFields.add(tie);
+        }
 
-            // final stable tie-breaker:
-            // - If grouped (groupBy not empty): use MIN(value_id) or MAX(value_id) to produce a deterministic single value per group
-            // - If not grouped: use the raw VALUE_ID
-            if (!seenSortKeys.contains("value_id")) {
-                if (!groupBy.isEmpty()) {
-                    // MIN(value_id) ASC
-                    sortFields.add(DSL.min(PG.VALUE_ID).asc());
-                } else {
-                    sortFields.add(PG.VALUE_ID.asc());
-                }
-            }
+        // If not grouped and client provided no sorts, for deterministic pagination we can add ordering by aggregate alias if one exists.
+        // If there are no measures/aliases to order by, do nothing.
+        if (!grouped && (sortFields.isEmpty())) {
+            // no-op: aggregated single-row result doesn't need ordering (or we can order by alias if present)
+        }
 
+        // finally apply OrderBy if we have fields
+        if (!sortFields.isEmpty()) {
             query.addOrderBy(sortFields.toArray(new SortField<?>[0]));
-
-        } else {
-            // No sorts requested: deterministic default = groupBy fields (asc) then tie-breaker
-            List<SortField<?>> defaultSorts = new ArrayList<>();
-            for (Field<?> gb : groupBy) {
-                defaultSorts.add(gb.asc());
-            }
-            if (!groupBy.isEmpty()) {
-                // grouped => use MIN(value_id) as final tie-breaker
-                defaultSorts.add(DSL.min(PG.VALUE_ID).asc());
-            } else {
-                defaultSorts.add(PG.VALUE_ID.asc());
-            }
-            query.addOrderBy(defaultSorts.toArray(new SortField<?>[0]));
         }
         // Pagination
         query.addLimit(limit == null ? 100 : limit);
@@ -311,7 +307,7 @@ public class PivotQueryBuilder {
             case "submission_completed_at" -> PG.SUBMISSION_COMPLETED_AT;
             case "repeat_instance_id" -> PG.REPEAT_INSTANCE_ID;
             case "category_id" -> PG.CHILD_CATEGORY_ID;
-            case "element_template_config_id", "element_config_id" -> PG.ELEMENT_CONFIG_ID;
+            case "element_template_config_id" -> PG.ELEMENT_TEMPLATE_CONFIG_ID;
             case "value_id", "id" -> PG.VALUE_ID;               // <--- add mapping for the stable PK
             default -> {
                 // Best-effort typed field fallback

@@ -23,7 +23,7 @@ import java.util.Optional;
  * Template-mode-first MeasureValidationService.
  * <p>
  * Notes:
- * - Prefers template-scoped filter using element_template_config_id if the metadata DTO corresponds to that template.
+ * - Prefers template-scoped filter using element_template_config_uid if the metadata DTO corresponds to that template.
  * - Falls back to global element_id matching if needed.
  */
 @Service
@@ -99,13 +99,13 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
             String numeric = dtoId.substring("etc:".length());
             try {
                 etcId = Long.parseLong(numeric);
-                elementPredicate = PG.ELEMENT_CONFIG_ID.eq(etcId);
+                elementPredicate = PG.ELEMENT_TEMPLATE_CONFIG_ID.eq(etcId);
             } catch (NumberFormatException nfe) {
                 // ignore
             }
         } else {
             // maybe dto came from data element fallback or uses dataElement id
-            // pivot metadata in template mode might still have element_template_config_id unknown; we do best-effort by element_id
+            // pivot metadata in template mode might still have element_template_config_uid unknown; we do best-effort by element_id
             // If dto.extras contains elementTemplateConfig id (not guaranteed), attempt to use it — otherwise fallback to element_id eq
             // Check extras for etc id (caller previously put categoryForRepeat etc); not reliable — fallback to element_id
             if (dto.id() != null && dto.id().startsWith("de:")) {

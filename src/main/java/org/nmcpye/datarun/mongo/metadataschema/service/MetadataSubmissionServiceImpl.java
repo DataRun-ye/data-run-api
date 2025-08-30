@@ -62,9 +62,8 @@ public class MetadataSubmissionServiceImpl
         this.sequenceGeneratorService = sequenceGeneratorService;
     }
 
-
     @Override
-    public void preSaveHook(MetadataSubmission newSubmission) {
+    public MetadataSubmission saveWithRelations(MetadataSubmission newSubmission) {
         switch (newSubmission.getResourceType()) {
             case Team -> teamRepository.findByUid(newSubmission.getResourceId())
                 .ifPresentOrElse((a) -> newSubmission.setResourceId(a.getUid()),
@@ -100,6 +99,8 @@ public class MetadataSubmissionServiceImpl
         newSubmission
             .createSubmission()
             .populateFormDataAttributes();
+
+        return save(newSubmission);
     }
 
     @Override

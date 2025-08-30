@@ -2,6 +2,7 @@ package org.nmcpye.datarun.datatemplateelement;
 
 public enum AggregationType {
     SUM("sum", true),
+    SUM_TRUE("sum_true", true),
     AVG("avg", true),
     LAST("last", true), // Sum org unit
     FIRST("first", true),

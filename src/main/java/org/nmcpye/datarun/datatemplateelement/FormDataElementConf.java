@@ -57,7 +57,8 @@ public class FormDataElementConf extends AbstractElement implements Serializable
     private String resourceMetadataSchema;
     private ValueTypeRendering valueTypeRendering = ValueTypeRendering.DEFAULT;
     private AggregationType aggregationType = AggregationType.DEFAULT;
-    private Boolean isMeasure;
+    private Boolean isMeasure = Boolean.TRUE;
+    private Boolean isDimension = Boolean.FALSE;
 
     public Boolean isMultiSelect() {
         return this.type != null && this.type.isOptionsType() ? this.type == ValueType.SelectMulti : null;

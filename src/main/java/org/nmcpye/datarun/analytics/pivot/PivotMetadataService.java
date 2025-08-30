@@ -10,6 +10,8 @@ import java.util.Optional;
  * @since 27/08/2025
  */
 public interface PivotMetadataService {
+    final String PIVOT_CACHE_NAME = "pivot.metadata";
+
     /**
      * Return metadata for a given template (template-mode).
      * The implementation should be cached by templateId + templateVersionId.

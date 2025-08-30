@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.analytics.domaintabletoolkit.model;
+package org.nmcpye.datarun.jpa.etl.model;
 
 /**
  * @author Hamza Assada - 7amza.it@gmail.com
@@ -10,6 +10,6 @@ public enum AnalyticValueType {
     BOOLEAN,
     TIMESTAMP,
     CATEGORY,
-    REFERENCE,
+    REFERENCE, // e.g Team, OrgUnit, Activity, Entity, Option, etc.
     OPTION,
 }

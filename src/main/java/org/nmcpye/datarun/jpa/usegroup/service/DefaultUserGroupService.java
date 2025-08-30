@@ -43,7 +43,7 @@ public class DefaultUserGroupService extends DefaultJpaIdentifiableService<UserG
     }
 
     @Override
-    public void preSaveHook(UserGroup userGroup) {
+    public UserGroup saveWithRelations(UserGroup userGroup) {
         Set<UserGroup> managedGroups = userGroup.getManagedGroups();
         if (!managedGroups.isEmpty()) {
             Set<UserGroup> teamsManaged = managedGroups.stream().map(this::findUserGroup).collect(Collectors.toSet());
@@ -54,6 +54,7 @@ public class DefaultUserGroupService extends DefaultJpaIdentifiableService<UserG
         userGroup.setUsers(users);
 
         this.clearGroupCaches(userGroup);
+        return save(userGroup);
     }
 
     private UserGroup findUserGroup(UserGroup userGroup) {

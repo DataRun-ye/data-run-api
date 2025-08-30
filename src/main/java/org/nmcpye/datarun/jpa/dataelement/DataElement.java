@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.jpa.dataelement;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -32,6 +33,7 @@ public class DataElement extends BaseDataElement {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "type", updatable = false, nullable = false)
+    @JsonProperty(value = "type")
     protected ValueType type;
 
     /**

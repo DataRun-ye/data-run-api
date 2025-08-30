@@ -47,7 +47,7 @@ public class InMemoryOptionServiceStub implements OptionService {
     }
 
     @Override
-    public Map<String, String> validateAndMapOptionCodes(Collection<String> optionCodes, String optionSetId) throws InvalidOptionCodesException {
+    public Map<String, String> validateAndMapOptionCodes(Collection<String> optionCodes, String optionSetUid) throws InvalidOptionCodesException {
         if (optionCodes == null || optionCodes.isEmpty()) return Collections.emptyMap();
         // normalize codes (trim)
         List<String> normalized = optionCodes.stream().filter(Objects::nonNull).map(String::trim).collect(Collectors.toList());

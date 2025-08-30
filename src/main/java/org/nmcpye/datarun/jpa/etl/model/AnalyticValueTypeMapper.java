@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.analytics.domaintabletoolkit.model;
+package org.nmcpye.datarun.jpa.etl.model;
 
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 
@@ -11,7 +11,7 @@ public class AnalyticValueTypeMapper {
         return switch (valueType) {
             case Number, Integer, Percentage, UnitInterval, IntegerPositive,
                  IntegerNegative, IntegerZeroOrPositive -> AnalyticValueType.NUMBER;
-            case Date, DateTime, Time -> AnalyticValueType.TIMESTAMP;
+            case Date, DateTime, Time, Age -> AnalyticValueType.TIMESTAMP;
             case SelectOne, SelectMulti -> AnalyticValueType.OPTION;
             case OrganisationUnit, Team, Activity, Entity -> AnalyticValueType.REFERENCE;
             default -> AnalyticValueType.TEXT;

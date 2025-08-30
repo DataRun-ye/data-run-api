@@ -16,14 +16,19 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 public class PivotQueryRequest {
-    // Template context (template-mode first)
+    // Template context for template-mode-first
     @NonNull
     private String templateId;
     @NonNull
     private String templateVersionId;
 
+    // Backwards-compatible generic list of dimensions (old behavior)
     // list of dimension ids (e.g. "team_id", "element_id", "etc:123")
     private List<String> dimensions;
+
+    // New: explicit row and column dims (preferred for PIVOT_MATRIX)
+    private List<String> rowDimensions;
+    private List<String> columnDimensions;
 
     // list of measure requests
     private List<MeasureRequest> measures;
@@ -50,8 +55,14 @@ public class PivotQueryRequest {
     private Set<String> allowedTeamUids;
 
     /**
-     *  behaviour flags
+     * behaviour flags
      */
     @Builder.Default
     private Boolean autoRenameAliases = false; // default: error on duplicate aliases
+
+    /**
+     * PivotQueryService can pass tolerantOrdering = true to
+     * PivotQueryBuilder to override strictOrderValidation.
+     */
+    Boolean tolerantOrdering = false; // default false
 }

@@ -2,6 +2,8 @@ package org.nmcpye.datarun.jpa.assignment.service;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
+import org.nmcpye.datarun.jpa.activity.Activity;
+import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentWithAccessDto;
 import org.nmcpye.datarun.jpa.assignment.mapper.AssignmentWithAccessMapper;
@@ -35,6 +37,7 @@ public class DefaultAssignmentService
     private final AssignmentRepository repository;
     private final DataSubmissionRepository submissionRepository;
     private final TeamRepository teamRepository;
+    private final ActivityRepository activityRepository;
     private final OrgUnitRepository orgUnitRepository;
     private final AssignmentMaintenanceService maintenanceService;
     private final AssignmentWithAccessMapper assignmentMapper;
@@ -45,7 +48,7 @@ public class DefaultAssignmentService
                                     UserAccessService userAccessService,
                                     CacheManager cacheManager,
                                     AssignmentMaintenanceService maintenanceService,
-                                    AssignmentWithAccessMapper assignmentMapper, AssignmentRepository assignmentRepository, DataSubmissionRepository submissionRepository) {
+                                    AssignmentWithAccessMapper assignmentMapper, AssignmentRepository assignmentRepository, DataSubmissionRepository submissionRepository, ActivityRepository activityRepository) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.teamRepository = teamRepository;
@@ -53,17 +56,22 @@ public class DefaultAssignmentService
         this.maintenanceService = maintenanceService;
         this.assignmentMapper = assignmentMapper;
         this.submissionRepository = submissionRepository;
+        this.activityRepository = activityRepository;
     }
 
-    @Transactional
     @Override
-    public void preSaveHook(Assignment object) {
+    public Assignment saveWithRelations(Assignment object) {
 
         Team team = null;
+        Activity activity = null;
         OrgUnit orgUnit = null;
 
         if (object.getTeam() != null) {
             team = findTeam(object.getTeam());
+        }
+
+        if (object.getActivity() != null) {
+            activity = findActivity(object.getActivity());
         }
 
         if (object.getOrgUnit() != null) {
@@ -76,8 +84,11 @@ public class DefaultAssignmentService
             object.setParent(parent);
         }
 
+        object.setActivity(activity);
         object.setTeam(team);
         object.setOrgUnit(orgUnit);
+
+        return save(object);
     }
 
     private Assignment findParent(Assignment parent) {
@@ -92,6 +103,13 @@ public class DefaultAssignmentService
                 .flatMap((code) -> teamRepository.findByCodeAndActivityUid(code, team.getActivity().getUid()))).orElseThrow(() -> new PropertyNotFoundException("Team not found: " + team));
     }
 
+    private Activity findActivity(Activity activity) {
+        return Optional.ofNullable(activity.getId())
+            .flatMap(activityRepository::findById)
+            .or(() -> Optional
+                .ofNullable(activity.getUid()).flatMap(activityRepository::findByUid))
+            .orElseThrow(() -> new PropertyNotFoundException("Activity not found: " + activity));
+    }
     private OrgUnit findOrgUnit(OrgUnit orgUnit) {
         return Optional.ofNullable(orgUnit.getId()).flatMap(orgUnitRepository::findById).or(() -> Optional.ofNullable(orgUnit.getUid()).flatMap(orgUnitRepository::findByUid)).or(() -> Optional.ofNullable(orgUnit.getCode()).flatMap(orgUnitRepository::findByCode)).orElseThrow(() -> new PropertyNotFoundException("OrgUniy not found: " + orgUnit));
     }

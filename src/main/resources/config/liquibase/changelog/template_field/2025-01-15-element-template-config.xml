@@ -20,20 +20,24 @@
                              primaryKey="true"
                              primaryKeyName="pk_element_template_config"/>
             </column>
-            <column name="template_id"
-                    type="VARCHAR(26)">
+            <column name="uid"
+                    type="VARCHAR(11)">
                 <constraints nullable="false"/>
             </column>
-            <column name="template_version_id"
-                    type="VARCHAR(26)">
+            <column name="template_uid"
+                    type="VARCHAR(11)">
                 <constraints nullable="false"/>
             </column>
-            <column name="version_no"
+            <column name="template_version_uid"
+                    type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="template_version_no"
                     type="INT">
                 <constraints nullable="false"/>
             </column>
-            <column name="data_element_id"
-                    type="VARCHAR(26)">
+            <column name="data_element_uid"
+                    type="VARCHAR(11)">
                 <constraints nullable="false"/>
             </column>
             <column name="template_order"
@@ -62,8 +66,8 @@
             </column>
             <column name="reference_table"
                     type="VARCHAR(100)"/>
-            <column name="option_set_id"
-                    type="VARCHAR(100)"/>
+            <column name="option_set_uid"
+                    type="VARCHAR(11)"/>
             <column name="is_repeatable"
                     type="BOOLEAN">
                 <constraints nullable="false"/>
@@ -77,6 +81,14 @@
             <column name="is_category"
                     type="BOOLEAN"/>
             <column name="is_measure"
+                    type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_dimension"
+                    type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="show_in_summary"
                     type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
@@ -98,7 +110,9 @@
     </changeSet>
     <changeSet id="1755970544218-12"
                author="Hamza">
-        <addUniqueConstraint columnNames="template_id, template_version_id, id_path"
+        <addUniqueConstraint tableName="element_template_config" columnNames="uid"
+                             constraintName="uk_element_template_config_uid"/>
+        <addUniqueConstraint columnNames="template_uid, template_version_uid, id_path"
                              constraintName="ux_element_template_config_tpl_ver_idpath"
                              tableName="element_template_config"/>
     </changeSet>
@@ -106,14 +120,14 @@
                author="Hamza">
         <createIndex indexName="idx_element_template_config_dataelement"
                      tableName="element_template_config">
-            <column name="data_element_id"/>
+            <column name="data_element_uid"/>
         </createIndex>
     </changeSet>
     <changeSet id="1755970544218-17"
                author="Hamza">
         <createIndex indexName="idx_element_template_config_repeat_path"
                      tableName="element_template_config">
-            <column name="template_id"/>
+            <column name="template_uid"/>
             <column name="repeat_path"/>
         </createIndex>
     </changeSet>
@@ -121,16 +135,16 @@
                author="Hamza">
         <createIndex indexName="idx_element_template_config_template_version"
                      tableName="element_template_config">
-            <column name="template_id"/>
-            <column name="template_version_id"/>
+            <column name="template_uid"/>
+            <column name="template_version_uid"/>
         </createIndex>
     </changeSet>
     <changeSet id="1755970544218-19"
                author="Hamza">
         <createIndex indexName="idx_element_template_config_template_version_no"
                      tableName="element_template_config">
-            <column name="template_id"/>
-            <column name="version_no"/>
+            <column name="template_uid"/>
+            <column name="template_version_no"/>
         </createIndex>
     </changeSet>
 

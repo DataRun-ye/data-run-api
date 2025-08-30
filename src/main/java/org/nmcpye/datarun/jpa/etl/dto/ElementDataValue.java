@@ -3,6 +3,7 @@ package org.nmcpye.datarun.jpa.etl.dto;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -34,9 +35,9 @@ public class ElementDataValue {
 
     /**
      * Reference to the element configuration that produced this value.
-     * db: {@code element_config_id, not null}
+     * db: {@code element_template_config_uid, not null}
      */
-    private Long elementConfigId;
+    private String elementTemplateConfigUid;
 
     // ------------------------
     // Submission & Context
@@ -44,9 +45,9 @@ public class ElementDataValue {
 
     /**
      * Submission unique identifier.
-     * db: {@code submission_id, not null}
+     * db: {@code submission.uid, not null}
      */
-    private String submissionId;
+    private String submissionUid;
 
     // ------------------------
     // Assignment Dimensions (level 1)
@@ -54,27 +55,27 @@ public class ElementDataValue {
 
     /**
      * Assignment identifier (context of this submission).
-     * db: {@code assignment_id, not null}
+     * db: {@code assignment.uid, not null}
      */
-    private String assignmentId;
+    private String assignmentUid;
 
     /**
      * Team identifier related to this submission.
-     * db: {@code team_id, not null}
+     * db: {@code team.uid, not null}
      */
-    private String teamId;
+    private String teamUid;
 
     /**
      * Organizational unit identifier related to this submission.
      * db: {@code org_unit_id, not null}
      */
-    private String orgUnitId;
+    private String orgUnitUid;
 
     /**
      * Activity identifier related to this submission.
      * db: {@code activity_id, not null}
      */
-    private String activityId;
+    private String activityUid;
 
     // ------------------------
     // Data Element & Value
@@ -84,20 +85,20 @@ public class ElementDataValue {
      * Global data element id (canonical DataElement.id).
      * db: {@code element_id, not null}
      */
-    private String elementId;
+    private String elementUid;
 
     /**
-     * Human-readable/JSON label for the element.
-     * db: {@code element_label, (JSONB)}
+     * element value type i.e Text, Number, DateTime, Team, OrgUnit, ...etc
+     * {@link DataElement#getType()}
      */
-    private String elementLabel;
+    private String valueType;
 
     // ------------------------
     // Template/Form parameters
     // ------------------------
 
     /**
-     * Repeat instance id for repeated groups (indexed path or token).
+     * Repeat instance id for repeated groups (global unique string 26).
      * Use when the element belongs to a repeated section.
      * db: {@code repeat_instance_id, nullable}
      */
@@ -111,11 +112,11 @@ public class ElementDataValue {
      * {@code Option.id} for multi-select elements (part of uniquely identifying each option selected in a multi select values)
      * When non-null, each selected {@code Option} is a separate row.
      * (Important Note: single select "{@code Option.id}" is not stored in this property,
-     * it's rather stored in {@link #valueRef} like other reference entities)
+     * it's rather stored in {@link #valueRefUid} like other reference entities)
      * <p>
-     * db: {@code option_id, nullable}
+     * db: {@code option.id, nullable}
      */
-    private String optionId;
+    private String optionUid;
 
     // ------------------------
     // Measures / Stored value variants
@@ -164,7 +165,7 @@ public class ElementDataValue {
      * or the specific entity if per specific {@code DataTemplate} result
      * db: {@code value_ref, nullable}
      */
-    private String valueRef;
+    private String valueRefUid;
 
     // ------------------------
     // Auditing & lifecycle

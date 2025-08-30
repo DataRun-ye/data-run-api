@@ -2,6 +2,7 @@ package org.nmcpye.datarun.analytics.domaintabletoolkit.model;
 
 import lombok.Builder;
 import org.nmcpye.datarun.datatemplateelement.AggregationType;
+import org.nmcpye.datarun.jpa.etl.model.AnalyticValueType;
 
 
 /**

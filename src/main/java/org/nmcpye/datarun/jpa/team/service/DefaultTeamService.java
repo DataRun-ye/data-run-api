@@ -53,7 +53,7 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
     }
 
     @Override
-    public void preSaveHook(Team team) {
+    public Team saveWithRelations(Team team) {
         Activity activity = null;
 
         if (team.getActivity() != null) {
@@ -73,6 +73,7 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
         team.setUsers(users);
 
         this.clearTeamCaches(team);
+        return save(team);
     }
 
     private Activity findActivity(Activity activity) {

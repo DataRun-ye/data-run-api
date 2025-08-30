@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -34,76 +35,62 @@ public class ElementTemplateGenerator {
     private final DataElementRepository dataElementRepository; // to resolve canonical element metadata
     private final TemplateFieldMapper templateFieldMapper;
 
-    /**
-     * Main entry point when you have JSON blobs (elementsJson and sectionsJson are JSON arrays).
-     */
-    @Transactional
-    public List<ElementTemplateConfig> generateAndSaveFromJson(
-            String templateId,
-            String versionId,
-            int versionNo,
-            List<FormDataElementConf> elements,
-            List<FormSectionConf> sections) throws Exception {
-
-        return generateAndSaveFromParsed(templateId, versionId, versionNo, elements, sections);
-    }
-
     /// Primary generator taking parsed lists (test-friendly).
     @Transactional
     public List<ElementTemplateConfig> generateAndSaveFromParsed(
-            String templateId,
-            String versionId,
-            int versionNo,
-            List<FormDataElementConf> elements,
-            List<FormSectionConf> sections) {
+        String templateUid,
+        String templateVersionUid,
+        int templateVersionNo,
+        List<FormDataElementConf> elements,
+        List<FormSectionConf> sections) {
 
-        Objects.requireNonNull(templateId);
-        Objects.requireNonNull(versionId);
+        Objects.requireNonNull(templateUid);
+        Objects.requireNonNull(templateVersionUid);
         if (elements == null) elements = List.of();
         if (sections == null) sections = List.of();
 
         // Map element path/name -> FormDataElementConf for lookup by
         // section.category element id
-        Map<String, FormDataElementConf> byId = elements.stream()
-                .collect(Collectors.toMap(
-                        e -> e.getId() != null ? e.getId() : e.getName(),
-                        e -> e,
-                        (a, b) -> a  // keep first if collision
-                ));
+        Map<String, FormDataElementConf> byUid = elements.stream()
+            .collect(Collectors.toMap(
+                ec -> ec.getId() != null ? ec.getId() : ec.getName(),
+                Function.identity(),
+                (a, b) -> a  // keep first if collision
+            ));
 
         // Validate category elements referenced by sections
         List<String> validationErrors = new ArrayList<>();
 
 
-        Map<String, String> sectionToCategoryElementId = new HashMap<>();
+        Map<String, String> sectionToCategoryElementUid = new HashMap<>();
         // repeatPath -> categoryElementId
 
         for (FormSectionConf s : sections) {
-            String catElemId = s.getCategoryDataElementId(); // or getRepeatCategoryElement depending on field name
-            if (catElemId == null) continue;
+            String catElemUid = s.getCategoryDataElementId(); // or getRepeatCategoryElement depending on field name
+            if (catElemUid == null) continue;
             // find the form element conf for that id or name
-            FormDataElementConf catConf = byId.get(catElemId);
+            FormDataElementConf catConf = byUid.get(catElemUid);
             if (catConf == null) {
-                validationErrors.add("Section '" + s.getPath() + "' declares category element '" + catElemId + "' which does not exist in template elements.");
+                validationErrors.add("Section '" + s.getPath() + "' declares category element '" + catElemUid + "' which does not exist in template elements.");
                 continue;
             }
 
             // resolve canonical DataElement meta
             Optional<DataElement> deOpt = dataElementRepository.findByUid(catConf.getId());
             if (deOpt.isEmpty()) {
-                validationErrors.add("Category element '" + catElemId + "' references unknown DataElement id '" + catConf.getId() + "'.");
+                validationErrors.add("Category element '" + catElemUid + "' references unknown DataElement id '" + catConf.getId() + "'.");
                 continue;
             }
             DataElement de = deOpt.get();
             ValueType vt = de.getType();
 
             if (!vt.isSystemReferenceType()) {
-                validationErrors.add("Category element '" + catElemId + "' has dataType '" + vt + "' which is not allowed as a repeat category (must be reference or select-one).");
+                validationErrors.add("Category element '" + catElemUid + "' has dataType '" + vt + "' which is not allowed as a repeat category (must be reference or select-one).");
                 continue;
             }
 
-            // OK — register mapping from repeat path to this category element id
-            sectionToCategoryElementId.put(s.getPath(), catConf.getId());
+            // OK — register mapping from repeat path to this category element uid
+            sectionToCategoryElementUid.put(s.getPath(), catConf.getId());
         }
 
         if (!validationErrors.isEmpty()) {
@@ -120,8 +107,9 @@ public class ElementTemplateGenerator {
                 if (s.getPath() != null && e.getPath() != null && e.getPath().startsWith(s.getPath())) {
                     if (Boolean.TRUE.equals(s.getRepeatable())) {
                         repeatPath = s.getPath();
-                        if (sectionToCategoryElementId.containsKey(s.getPath())) {
-                            categoryForRepeat = sectionToCategoryElementId.get(s.getPath());
+                        // parent section repeat has category, that would categorize this element
+                        if (sectionToCategoryElementUid.containsKey(s.getPath())) {
+                            categoryForRepeat = sectionToCategoryElementUid.get(s.getPath());
                         }
                         break;
                     }
@@ -131,13 +119,15 @@ public class ElementTemplateGenerator {
             // Resolve canonical data element metadata
             DataElementMeta meta;
             DataElement de = dataElementRepository.findByUid(e.getId())
-                    .orElseThrow(() -> new TemplateFieldValidationException("DataElement not found: " + e.getId()));
+                .orElseThrow(() -> new TemplateFieldValidationException("DataElement not found: " + e.getId()));
             boolean isRef = de.getType().isSystemReferenceType();
             String refTable = referenceTableFor(de.getType());
             meta = new DataElementMeta(de.getUid(), de.getType(), isRef, refTable);
 
-            ElementTemplateConfig tf = templateFieldMapper.from(templateId, versionId, versionNo, e,
-                    meta, repeatPath, categoryForRepeat, sectionToCategoryElementId.containsValue(meta.elementId()));
+            ElementTemplateConfig tf = templateFieldMapper.from(templateUid, templateVersionUid,
+                templateVersionNo, e,
+                meta, repeatPath, categoryForRepeat, sectionToCategoryElementUid
+                    .containsValue(meta.elementUid()));
             tf.setDisplayLabel(e.getLabel());
 
             tf.setDefinitionJson(e);
@@ -145,12 +135,12 @@ public class ElementTemplateGenerator {
         }
 
         // Persist (delete existing, bulk insert)
-        final var ids = elementTemplateConfigRepository.findIdsByTemplateIdAndTemplateVersionId(templateId, versionId);
+        final var ids = elementTemplateConfigRepository.findIdsByTemplateUidAndTemplateVersionUid(templateUid, templateVersionUid);
         elementTemplateConfigRepository.deleteAllByIdInBatch(ids);
         elementTemplateConfigRepository.persistAll(rows);
 
 //        // Cache
-//        cache.put(templateId, versionId, rows);
+//        cache.put(templateUid, templateVersionUid, rows);
 
         return rows;
     }
@@ -158,11 +148,11 @@ public class ElementTemplateGenerator {
     private String referenceTableFor(ValueType vt) {
         if (vt == null) return null;
         return switch (vt) {
+            case Activity -> "activity";
             case Team -> "team";
             case OrganisationUnit -> "org_unit";
-            case Activity -> "activity";
             case Entity -> "entity_instance";
-            case SelectOne -> "option";
+            case SelectOne, SelectMulti -> "option_value";
             default -> null;
         };
     }

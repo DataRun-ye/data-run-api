@@ -103,8 +103,8 @@ datarun:
         token-validity-in-seconds-for-remember-me: 2592000
 outbox:
   relay:
-    poll-interval-ms: 86400   # polling delay between polls (ms)
-    batch-size: 50           # how many to claim per poll
+    poll-interval-ms: 10000   # polling delay between polls (ms)
+    batch-size: 70           # how many to claim per poll
     worker-threads: 6        # number of concurrent worker threads
     max-attempts: 10
 migration:

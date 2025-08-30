@@ -22,15 +22,14 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
 
     // The UPSERT SQL handles "undeleting" via the ON CONFLICT clause (deleted_at = NULL in both places).
     private static final String UPSERT_SQL = """
-        INSERT INTO repeat_instance (
-            id, submission_id, repeat_path, parent_repeat_instance_id, repeat_index,
+        INSERT INTO repeat_instance ( id, submission_uid, repeat_path, parent_repeat_instance_id, repeat_index,
             client_updated_at, created_date, last_modified_date, created_by, last_modified_by,
-            category_kind, category_id, category_name, category_Label, repeat_section_label,
+            category_kind, category_uid, category_name, category_Label, repeat_section_label,
                                      submission_completed_at, deleted_at
         ) VALUES (
-            :id, :submissionId, :repeatPath, :parentRepeatInstanceId, :repeatIndex,
+            :id, :submissionUid, :repeatPath, :parentRepeatInstanceId, :repeatIndex,
             :clientUpdatedAt, :createdDate, :lastModifiedDate, :createdBy, :lastModifiedBy,
-            :categoryKind, :categoryId, :categoryName, :categoryLabel, :repeatSectionLabel, :submissionCompletedAt, NULL
+            :categoryKind, :categoryUid, :categoryName, :categoryLabel, :repeatSectionLabel, :submissionCompletedAt, NULL
         )
         ON CONFLICT (id) DO UPDATE SET
             repeat_path = EXCLUDED.repeat_path,
@@ -39,7 +38,7 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
             client_updated_at = EXCLUDED.client_updated_at,
             repeat_section_label = EXCLUDED.repeat_section_label,
             category_kind = EXCLUDED.category_kind,
-            category_id = EXCLUDED.category_id,
+            category_uid = EXCLUDED.category_uid,
             category_name = EXCLUDED.category_name,
             category_label = EXCLUDED.category_label,
             submission_completed_at = EXCLUDED.submission_completed_at,
@@ -60,10 +59,10 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
     }
 
     @Override
-    public void markAllAsDeletedForSubmission(String submissionId) {
+    public void markAllAsDeletedForSubmission(String submissionUid) {
         String sql = "UPDATE repeat_instance SET deleted_at = now(), last_modified_date = now() " +
-            "WHERE submission_id = :submissionId AND deleted_at IS NULL";
-        jdbc.update(sql, new MapSqlParameterSource("submissionId", submissionId));
+            "WHERE submission_uid = :submissionUid AND deleted_at IS NULL";
+        jdbc.update(sql, new MapSqlParameterSource("submissionUid", submissionUid));
     }
 
     private MapSqlParameterSource toParamSource(RepeatInstance ri) {
@@ -73,7 +72,7 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
 
         return new MapSqlParameterSource()
             .addValue("id", ri.getId())
-            .addValue("submissionId", ri.getSubmissionId())
+            .addValue("submissionUid", ri.getSubmissionUid())
             .addValue("repeatPath", ri.getRepeatPath())
             .addValue("parentRepeatInstanceId", ri.getParentRepeatInstanceId()) // New field
             .addValue("repeatIndex", ri.getRepeatIndex())
@@ -85,7 +84,7 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
                 Timestamp.from(ri.getSubmissionCompletedAt()) : null)
 
             .addValue("categoryKind", ri.getCategoryKind())
-            .addValue("categoryId", ri.getCategoryId())
+            .addValue("categoryUid", ri.getCategoryUid())
             .addValue("categoryName", ri.getCategoryName())
             .addValue("categoryLabel", toJsonbObject(ri.getCategoryLabel()), Types.OTHER)
 

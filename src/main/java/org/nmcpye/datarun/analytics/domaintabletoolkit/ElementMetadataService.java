@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.analytics;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.analytics.domaintabletoolkit.model.AnalyticValueType;
-import org.nmcpye.datarun.analytics.domaintabletoolkit.model.AnalyticValueTypeMapper;
 import org.nmcpye.datarun.analytics.domaintabletoolkit.model.ElementColumnDefinition;
 import org.nmcpye.datarun.analytics.domaintabletoolkit.model.ProjectAnalyticsMetadata;
 import org.nmcpye.datarun.jpa.datatemplate.repository.ElementTemplateConfigRepository;
+import org.nmcpye.datarun.jpa.etl.model.AnalyticValueType;
+import org.nmcpye.datarun.jpa.etl.model.AnalyticValueTypeMapper;
 import org.nmcpye.datarun.jpa.project.service.ProjectService;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -40,13 +40,13 @@ public class ElementMetadataService {
         // TODO(Hamza) add project to element_template_config
         return metadata.elements(elementConfigRepo.findAll().stream()
                 .map(config -> ElementColumnDefinition.builder()
-                        .elementId(config.getDataElementId())
+                        .elementId(config.getDataElementUid())
                         .isMeasure(config.getIsMeasure())
                         .isCategory(config.getIsCategory())
-                        .optionSetId(config.getOptionSetId())
+                        .optionSetId(config.getOptionSetUid())
                         .valueType(Boolean.TRUE.equals(config.getIsCategory()) ? AnalyticValueType.CATEGORY :
                                 AnalyticValueTypeMapper.map(config.getValueType()))
-                        .columnAlias(config.getDataElementId()).build())
+                        .columnAlias(config.getDataElementUid()).build())
                 .collect(Collectors.toList())).build();
     }
 

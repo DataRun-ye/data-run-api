@@ -7,7 +7,6 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
-import java.sql.Types;
 import java.time.Instant;
 import java.util.List;
 
@@ -23,27 +22,27 @@ public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
     // A single, unified UPSERT statement handles all cases.
     private static final String UPSERT_SQL = """
         INSERT INTO element_data_value (
-            submission_id, assignment_id, team_id, org_unit_id, activity_id,
-            element_id, element_config_id, element_label, repeat_instance_id, option_id,
-            value_text, value_num, value_bool, value_ts, value_ref, row_type, created_date, last_modified_date, deleted_at
+            submission_uid, assignment_uid, team_uid, org_unit_uid, activity_uid,
+            element_uid, element_template_config_uid, value_type, repeat_instance_id, option_uid,
+            value_text, value_num, value_bool, value_ts, value_ref_uid, row_type, created_date, last_modified_date, deleted_at
         ) VALUES (
-            :submissionId, :assignmentId, :teamId, :orgUnitId, :activityId,
-            :elementId, :elementConfigId, :elementLabel, :repeatInstanceId, :optionId,
-            :valueText, :valueNum, :valueBool, :valueTs, :valueRef,:rowType, :createdDate, :lastModifiedDate, NULL
+            :submissionUid, :assignmentUid, :teamUid, :orgUnitUid, :activityUid,
+            :elementUid, :elementTemplateConfigUid, :valueType, :repeatInstanceId, :optionUid,
+            :valueText, :valueNum, :valueBool, :valueTs, :valueRefUid,:rowType, :createdDate, :lastModifiedDate, NULL
         )
-        ON CONFLICT (submission_id, element_id, repeat_instance_key, row_type, selection_key)
+        ON CONFLICT (submission_uid, element_uid, repeat_instance_key, row_type, selection_key)
         DO UPDATE SET
-            assignment_id = EXCLUDED.assignment_id,
-            team_id = EXCLUDED.team_id,
-            org_unit_id = EXCLUDED.org_unit_id,
-            activity_id = EXCLUDED.activity_id,
-            element_label = EXCLUDED.element_label,
+            assignment_uid = EXCLUDED.assignment_uid,
+            team_uid = EXCLUDED.team_uid,
+            org_unit_uid = EXCLUDED.org_unit_uid,
+            activity_uid = EXCLUDED.activity_uid,
+            value_type = EXCLUDED.value_type,
             value_text = EXCLUDED.value_text,
             value_num = EXCLUDED.value_num,
             value_bool = EXCLUDED.value_bool,
             value_ts = EXCLUDED.value_ts,
-            value_ref = EXCLUDED.value_ref,
-            element_config_id = EXCLUDED.element_config_id,
+            value_ref_uid = EXCLUDED.value_ref_uid,
+            element_template_config_uid = EXCLUDED.element_template_config_uid,
             last_modified_date = now(),
             deleted_at = NULL;
         """;
@@ -60,10 +59,10 @@ public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
     }
 
     @Override
-    public void markAllAsDeletedForSubmission(String submissionId) {
+    public void markAllAsDeletedForSubmission(String submissionUid) {
         String sql = "UPDATE element_data_value SET deleted_at = now(), last_modified_date = now() " +
-            "WHERE submission_id = :submissionId AND deleted_at IS NULL";
-        jdbc.update(sql, new MapSqlParameterSource("submissionId", submissionId));
+            "WHERE submission_uid = :submissionUid AND deleted_at IS NULL";
+        jdbc.update(sql, new MapSqlParameterSource("submissionUid", submissionUid));
     }
 
     private MapSqlParameterSource toParamSource(ElementDataValue r) {
@@ -72,35 +71,23 @@ public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
         if (r.getLastModifiedDate() == null) r.setLastModifiedDate(Instant.now());
 
         return new MapSqlParameterSource()
-            .addValue("submissionId", r.getSubmissionId())
-            .addValue("assignmentId", r.getAssignmentId())
-            .addValue("teamId", r.getTeamId())
-            .addValue("orgUnitId", r.getOrgUnitId())
-            .addValue("activityId", r.getActivityId())
-            .addValue("elementId", r.getElementId())
-            .addValue("elementConfigId", r.getElementConfigId())
-            .addValue("elementLabel", toJsonbObject(r.getElementLabel()), Types.OTHER)
+            .addValue("submissionUid", r.getSubmissionUid())
+            .addValue("assignmentUid", r.getAssignmentUid())
+            .addValue("teamUid", r.getTeamUid())
+            .addValue("orgUnitUid", r.getOrgUnitUid())
+            .addValue("activityUid", r.getActivityUid())
+            .addValue("elementUid", r.getElementUid())
+            .addValue("elementTemplateConfigUid", r.getElementTemplateConfigUid())
+            .addValue("valueType", r.getValueType())
             .addValue("repeatInstanceId", r.getRepeatInstanceId())
-            .addValue("optionId", r.getOptionId())
+            .addValue("optionUid", r.getOptionUid())
             .addValue("valueText", r.getValueText())
             .addValue("valueNum", r.getValueNum())
             .addValue("valueBool", r.getValueBool())
-            .addValue("valueRef", r.getValueRef())
+            .addValue("valueRefUid", r.getValueRefUid())
             .addValue("valueTs", r.getValueTs() != null ? Timestamp.from(r.getValueTs()) : null)
-            .addValue("rowType", r.getOptionId() != null ? "M" : "S") // Set row_type dynamically
+            .addValue("rowType", r.getOptionUid() != null ? "M" : "S") // Set row_type dynamically
             .addValue("createdDate", Timestamp.from(r.getCreatedDate()))
             .addValue("lastModifiedDate", Timestamp.from(r.getLastModifiedDate()));
-    }
-
-    private Object toJsonbObject(String json) {
-        if (json == null) return null;
-        try {
-            org.postgresql.util.PGobject pg = new org.postgresql.util.PGobject();
-            pg.setType("jsonb");
-            pg.setValue(json);
-            return pg;
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to convert label to jsonb", e);
-        }
     }
 }

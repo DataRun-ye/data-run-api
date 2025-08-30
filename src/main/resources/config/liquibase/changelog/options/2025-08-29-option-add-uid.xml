@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <!-- 1) Add nullable column -->
+    <changeSet id="add-uid-col" author="Hamza">
+        <addColumn tableName="option_value">
+            <column name="uid" type="VARCHAR(11)"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- 2) Populate existing rows with generateUid() -->
+    <changeSet id="populate-uid" author="Hamza">
+        <sql>
+            UPDATE option_value
+            SET uid = generate_uid()
+            WHERE uid IS NULL;
+        </sql>
+    </changeSet>
+
+<!--    &lt;!&ndash; 3) Optional check: fail if duplicates exist (defensive) &ndash;&gt;-->
+<!--    <changeSet id="check-duplicate-uid" author="Hamza" failOnError="true">-->
+<!--        <preConditions onFail="HALT">-->
+<!--            &lt;!&ndash; ensure no duplicates before adding constraints &ndash;&gt;-->
+<!--            <sqlCheck expectedResult="0">-->
+<!--                SELECT count(*) FROM (-->
+<!--                SELECT uid FROM option_value GROUP BY uid HAVING count(*) > 1) t;-->
+<!--            </sqlCheck>-->
+<!--        </preConditions>-->
+<!--        &lt;!&ndash; no-op SQL so preCondition runs &ndash;&gt;-->
+<!--        <sql>SELECT 1</sql>-->
+<!--    </changeSet>-->
+
+    <!-- 4) Make NOT NULL -->
+    <changeSet id="make-uid-not-null" author="Hamza">
+        <addNotNullConstraint tableName="option_value" columnName="uid" columnDataType="VARCHAR(11)"/>
+    </changeSet>
+
+    <!-- 5) Add unique constraint -->
+    <changeSet id="uc-option-value-uid" author="Hamza">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_option_value_uid" tableName="option_value"/>
+    </changeSet>
+
+</databaseChangeLog>
