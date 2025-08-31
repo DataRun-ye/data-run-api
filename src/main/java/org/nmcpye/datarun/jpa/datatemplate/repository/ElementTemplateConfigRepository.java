@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.jpa.datatemplate.repository;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.nmcpye.datarun.jpa.common.BaseJpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
 import org.springframework.data.jpa.repository.Query;
@@ -22,6 +23,7 @@ public interface ElementTemplateConfigRepository
     List<Long> findIdsByTemplateUidAndTemplateVersionUid(@Param("templateUid") String templateUid,
                                                          @Param("templateVersionUid") String templateVersionUid);
 
+    Optional<ElementTemplateConfig> findByUid(@Size(max = 11) String uid);
     List<ElementTemplateConfig> findAllByTemplateUidAndTemplateVersionUid(String templateUid, String templateVersionUid);
 
     List<ElementTemplateConfig> findAllByTemplateUidAndVersionNo(String templateUid, Integer templateVersionNo);

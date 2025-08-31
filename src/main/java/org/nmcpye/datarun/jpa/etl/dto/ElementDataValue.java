@@ -89,7 +89,7 @@ public class ElementDataValue {
 
     /**
      * element value type i.e Text, Number, DateTime, Team, OrgUnit, ...etc
-     * {@link DataElement#getType()}
+     * {@link DataElement#getValueType()}
      */
     private String valueType;
 

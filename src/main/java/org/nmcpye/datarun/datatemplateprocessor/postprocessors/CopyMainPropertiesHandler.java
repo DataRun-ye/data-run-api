@@ -20,7 +20,7 @@ public class CopyMainPropertiesHandler
     protected FormDataElementConf handle(FormDataElementConf element) {
         element.setId(source.getUid());
         element.setCode(source.getCode());
-        element.setType(source.getType());
+        element.setType(source.getValueType());
         element.setName(Optional.ofNullable(element.getName()).orElse(source.getName()));
         element.setDescription(Optional.ofNullable(element.getDescription()).orElse(source.getDescription()));
         element.setLabel(Optional.ofNullable(element.getLabel()).orElse(source.getLabel()));

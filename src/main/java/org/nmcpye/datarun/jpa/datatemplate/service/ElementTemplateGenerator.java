@@ -82,7 +82,7 @@ public class ElementTemplateGenerator {
                 continue;
             }
             DataElement de = deOpt.get();
-            ValueType vt = de.getType();
+            ValueType vt = de.getValueType();
 
             if (!vt.isSystemReferenceType()) {
                 validationErrors.add("Category element '" + catElemUid + "' has dataType '" + vt + "' which is not allowed as a repeat category (must be reference or select-one).");
@@ -120,9 +120,9 @@ public class ElementTemplateGenerator {
             DataElementMeta meta;
             DataElement de = dataElementRepository.findByUid(e.getId())
                 .orElseThrow(() -> new TemplateFieldValidationException("DataElement not found: " + e.getId()));
-            boolean isRef = de.getType().isSystemReferenceType();
-            String refTable = referenceTableFor(de.getType());
-            meta = new DataElementMeta(de.getUid(), de.getType(), isRef, refTable);
+            boolean isRef = de.getValueType().isSystemReferenceType();
+            String refTable = referenceTableFor(de.getValueType());
+            meta = new DataElementMeta(de.getUid(), de.getValueType(), isRef, refTable);
 
             ElementTemplateConfig tf = templateFieldMapper.from(templateUid, templateVersionUid,
                 templateVersionNo, e,

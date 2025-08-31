@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.nmcpye.datarun.datatemplateelement.AggregationType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
@@ -34,7 +35,7 @@ public class DataElement extends BaseDataElement {
     @Enumerated(EnumType.STRING)
     @Column(name = "type", updatable = false, nullable = false)
     @JsonProperty(value = "type")
-    protected ValueType type;
+    protected ValueType valueType;
 
     /**
      * an option set groups a predefined JSONP List of options, used when
@@ -60,4 +61,12 @@ public class DataElement extends BaseDataElement {
 
     @Column(name = "is_measure")
     private Boolean isMeasure = false;
+
+    @Column(name = "is_dimension")
+    private Boolean isDimension = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "aggregation_type")
+    private AggregationType aggregationType = AggregationType.DEFAULT;
+
 }

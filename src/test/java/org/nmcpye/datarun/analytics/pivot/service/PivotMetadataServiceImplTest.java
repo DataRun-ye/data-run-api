@@ -59,12 +59,12 @@ class PivotMetadataServiceImplTest {
         DataElement deNum = new DataElement();
         //
         deNum.setId("de-num-1");
-        deNum.setType(ValueType.Number);
+        deNum.setValueType(ValueType.Number);
 
         DataElement deOpt = new DataElement();
         //
         deOpt.setId("de-opt-1");
-        deOpt.setType(ValueType.SelectMulti);
+        deOpt.setValueType(ValueType.SelectMulti);
 
         when(deRepo.findAllById(anyCollection()))
             .thenReturn(List.of(deNum, deOpt));

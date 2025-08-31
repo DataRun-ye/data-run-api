@@ -42,6 +42,7 @@
     <include file="/config/liquibase/changelog/outbox-and-batch/2025-08-17-batch-submission-migration-errors-table.xml" relativeToChangelogFile="false"/>
     <!-- uid for options  -->
     <include file="/config/liquibase/changelog/options/2025-08-29-option-add-uid.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/data_element/2025-08-30-data-element-add-aggregation-type.xml" relativeToChangelogFile="false"/>
 
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

@@ -9,23 +9,17 @@ import org.jooq.impl.DSL;
 import org.nmcpye.datarun.analytics.pivot.dto.MeasureRequest;
 import org.nmcpye.datarun.analytics.pivot.dto.PivotFieldDto;
 import org.nmcpye.datarun.analytics.pivot.exception.InvalidMeasureException;
-import org.nmcpye.datarun.analytics.pivot.util.AliasSanitizer;
+import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jooq.Tables;
 import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
-import org.nmcpye.datarun.jpa.dataelement.service.DataElementService;
-import org.nmcpye.datarun.jpa.datatemplate.repository.ElementTemplateConfigRepository;
+import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
+import org.nmcpye.datarun.utils.UidValidator;
 import org.springframework.stereotype.Service;
 
 import java.util.Locale;
 import java.util.Optional;
 
-/**
- * Template-mode-first MeasureValidationService.
- * <p>
- * Notes:
- * - Prefers template-scoped filter using element_template_config_uid if the metadata DTO corresponds to that template.
- * - Falls back to global element_id matching if needed.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -33,101 +27,106 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
 
     private final PivotMetadataService pivotMetadataService;
     private final PivotFieldJooqMapper fieldMapper;
-    private final ElementTemplateConfigRepository etcRepository;
-    private final DataElementService dataElementService;
     private final DSLContext dsl;
+    private final DataElementRepository dataElementRepository;
 
     private static final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
 
     @Override
-    public ValidatedMeasure validate(MeasureRequest req, String templateId, String templateVersionId) throws InvalidMeasureException {
+    public ValidatedMeasure validate(MeasureRequest req, String templateUid, String templateVersionUid) throws InvalidMeasureException {
         if (req == null) throw new InvalidMeasureException("MeasureRequest is required");
         if (req.getElementIdOrUid() == null) throw new InvalidMeasureException("elementIdOrUid is required");
 
-        // 1) Lookup metadata in template context
-        Optional<PivotFieldDto> maybe = pivotMetadataService.resolveFieldByUidOrId(req.getElementIdOrUid(), templateId, templateVersionId);
+        String elementSpecifier = req.getElementIdOrUid();
 
-        PivotFieldDto dto = null;
+        // Resolve metadata (prefer template lookup)
+        Optional<PivotFieldDto> maybe = pivotMetadataService.resolveFieldByUidOrId(elementSpecifier, templateUid, templateVersionUid);
+        PivotFieldDto dto = maybe.orElse(null);
+
         String effectiveMode = "TEMPLATE";
-        if (maybe.isPresent()) {
-            dto = maybe.get();
-        } else {
-            // Fallback: maybe the client passed a data element id/uid referencing global data_element.
-            // Try to resolve via DataElementRepository
-            var deOpt = dataElementService.findByIdOrUid(req.getElementIdOrUid());
-            if (deOpt.isPresent()) {
-                // Build a simple PivotFieldDto from global DE info
-                var de = deOpt.get();
-                dto = PivotFieldDto.builder()
-                    .id("de:" + de.getId())
-                    .label(de.getName())
-                    .category("FORM_MEASURE")
-                    .dataType(mapValueTypeToDataType(de.getType()))
-                    .aggregationModes(null) // metadata service not used here; we can compute allowed aggr outside
-                    .templateModeOnly(false)
-                    .source("data_element")
-                    .extras(null)
-                    .build();
-                effectiveMode = "GLOBAL";
+        if (dto == null) {
+            // Fallback: maybe the client sent a global data element, try data element repo by UID
+            if (elementSpecifier.startsWith("de:")) {
+                String deUid = elementSpecifier.substring("de:".length());
+                Optional<DataElement> deOpt = dataElementRepository.findByUid(deUid);
+                if (deOpt.isPresent()) {
+                    DataElement de = deOpt.get();
+                    dto = PivotFieldDto.builder()
+                        .id("de:" + de.getUid())
+                        .label(de.getName())
+                        .category("FORM_MEASURE")
+                        .dataType(mapValueTypeToDataType(de.getValueType()))
+                        .factColumn("de_uid")
+                        .aggregationModes(null)
+                        .templateModeOnly(false)
+                        .source("data_element")
+                        .extras(null)
+                        .build();
+                    effectiveMode = "GLOBAL";
+                } else {
+                    throw new InvalidMeasureException("Element not found: " + elementSpecifier);
+                }
             } else {
-                throw new InvalidMeasureException("Element not found in template or global catalog: " + req.getElementIdOrUid());
+                throw new InvalidMeasureException("Element not found in template or global: " + elementSpecifier);
             }
         }
 
-        // 2) Validate aggregation
+        // Validate aggregation
         String requestedAgg = req.getAggregation();
-        if (requestedAgg == null) {
-            // default (Maybe throw?)
-            requestedAgg = "COUNT";
-        }
+        if (requestedAgg == null) requestedAgg = "COUNT";
         requestedAgg = requestedAgg.toUpperCase(Locale.ROOT);
-        // check allowed aggregation list if present
+
         if (dto.aggregationModes() != null && !dto.aggregationModes().isEmpty()) {
             if (!dto.aggregationModes().contains(requestedAgg)) {
-                throw new InvalidMeasureException("Aggregation " + requestedAgg + " not allowed for field " + req.getElementIdOrUid());
+                throw new InvalidMeasureException("Aggregation " + requestedAgg + " not allowed for field " + elementSpecifier);
             }
         }
 
-        // 3) Build element predicate — prefer template id if dto indicates etc:...
+        // Build element predicate using MV UID columns
         Condition elementPredicate = DSL.noCondition();
-        Long etcId = null;
-        String elementId = null;
+        String etcUid = null;
+        String deUid = null;
 
-        // If DTO id uses the "etc:" prefix or matches etc numeric id, prefer template filter
-        String dtoId = dto.id();
-        if (dtoId != null && dtoId.startsWith("etc:")) {
-            String numeric = dtoId.substring("etc:".length());
-            try {
-                etcId = Long.parseLong(numeric);
-                elementPredicate = PG.ELEMENT_TEMPLATE_CONFIG_ID.eq(etcId);
-            } catch (NumberFormatException nfe) {
-                // ignore
-            }
+        if (dto.id() != null && dto.id().startsWith("etc:")) {
+            etcUid = dto.id().substring("etc:".length());
+            UidValidator.requireValid(etcUid, "etc_uid");
+            elementPredicate = PG.ETC_UID.eq(etcUid);
+        } else if (dto.id() != null && dto.id().startsWith("de:")) {
+            deUid = dto.id().substring("de:".length());
+            UidValidator.requireValid(deUid, "de_uid");
+            elementPredicate = PG.DE_UID.eq(deUid);
         } else {
-            // maybe dto came from data element fallback or uses dataElement id
-            // pivot metadata in template mode might still have element_template_config_uid unknown; we do best-effort by element_id
-            // If dto.extras contains elementTemplateConfig id (not guaranteed), attempt to use it — otherwise fallback to element_id eq
-            // Check extras for etc id (caller previously put categoryForRepeat etc); not reliable — fallback to element_id
-            if (dto.id() != null && dto.id().startsWith("de:")) {
-                elementId = dto.id().substring("de:".length());
-            } else if (req.getElementIdOrUid().startsWith("de:")) {
-                elementId = req.getElementIdOrUid().substring("de:".length());
+            // If the DTO didn't follow prefixes but dto.factColumn tells us how to scope, use it
+            if ("etc_uid".equals(dto.factColumn())) {
+                // attempt to treat given spec as etc uid (best-effort)
+                etcUid = elementSpecifier.startsWith("etc:") ? elementSpecifier.substring("etc:".length()) : elementSpecifier;
+                UidValidator.requireValid(etcUid, "etc_uid");
+                elementPredicate = PG.ETC_UID.eq(etcUid);
+            } else if ("de_uid".equals(dto.factColumn())) {
+                deUid = elementSpecifier.startsWith("de:") ? elementSpecifier.substring("de:".length()) : elementSpecifier;
+                UidValidator.requireValid(deUid, "de_uid");
+                elementPredicate = PG.DE_UID.eq(deUid);
             } else {
-                // last-resort: treat incoming as element id (ULID)
-                elementId = req.getElementIdOrUid();
+                // Fallback to scoping by element_template_config_uid if ambiguous
+                etcUid = elementSpecifier;
+                if (UidValidator.isValid(etcUid)) {
+                    elementPredicate = PG.ETC_UID.eq(etcUid);
+                } else {
+                    throw new InvalidMeasureException("Unable to resolve element predicate for: " + elementSpecifier);
+                }
             }
-            elementPredicate = PG.ELEMENT_ID.eq(elementId);
         }
 
-        // If the request also specified an optionId (for multi-select) include it in predicate
-        String optionId = req.getOptionId();
-        if (optionId != null) {
-            elementPredicate = elementPredicate.and(PG.OPTION_ID.eq(optionId));
+        // Option-scoping (multi-select)
+        String optionUid = req.getOptionId();
+        if (optionUid != null) {
+            elementPredicate = elementPredicate.and(PG.OPTION_UID.eq(optionUid));
         }
 
-        // 4) Determine targetField with correct typing using fieldMapper
-        Field<?> baseField = fieldMapper.toJooqField(dto.dataType());
-        Field<?> targetField;
+        // Determine targetField
+        Field<?> targetField = fieldMapper.toJooqFieldForPivotField(dto);
+
+        // Validate aggregation-specific constraints and produce final targetField (typed)
         ValidatedMeasure.MeasureAggregation aggEnum;
         try {
             aggEnum = ValidatedMeasure.MeasureAggregation.valueOf(requestedAgg);
@@ -140,75 +139,58 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
                 if (!"value_num".equals(dto.dataType())) {
                     throw new InvalidMeasureException("Aggregation " + requestedAgg + " requires numeric target (value_num)");
                 }
-                // typed cast — safe because mapper returned PG.VALUE_NUM (Field<BigDecimal>)
                 targetField = PG.VALUE_NUM;
             }
             case MIN, MAX -> {
-                // allow MIN/MAX on numeric or timestamp or text (lexicographic)
                 if ("value_num".equals(dto.dataType())) {
                     targetField = PG.VALUE_NUM;
                 } else if ("value_ts".equals(dto.dataType()) || "submission_completed_at".equals(dto.dataType())) {
                     targetField = PG.VALUE_TS;
                 } else {
-                    // fallback to text
                     targetField = PG.VALUE_TEXT;
                 }
             }
             case SUM_TRUE -> {
-                // build CASE WHEN value_bool THEN 1 ELSE 0 END as integer; jOOQ: DSL.when(...).otherwise(...)
-                Field<Integer> caseInt = DSL.when(PG.VALUE_BOOL.eq(true), DSL.inline(1)).otherwise(0).cast(Integer.class);
-                targetField = caseInt;
+                // SUM(CASE WHEN value_bool THEN 1 ELSE 0 END)
+                targetField = DSL.when(PG.VALUE_BOOL.eq(true), DSL.inline(1)).otherwise(0).cast(Integer.class);
             }
-            case COUNT -> {
-                // For count, the "targetField" is usually the row (count(*)), but for COUNT_DISTINCT we need the field to distinct on.
-                // We'll set targetField to option_id or value_text depending on dataType
-                if ("option_id".equals(dto.dataType())) targetField = PG.OPTION_ID;
-                else if ("value_num".equals(dto.dataType())) targetField = PG.VALUE_NUM;
-                else if ("value_ts".equals(dto.dataType())) targetField = PG.VALUE_TS;
-                else targetField = PG.VALUE_TEXT;
+            case COUNT, COUNT_DISTINCT -> {
+                // targetField remains as mapped (option_uid/value_ref_uid/value_text/value_num/...),
+                // but if COUNT without distinct we might count rows instead of field
+                // leave targetField as-is: PivotQueryBuilder will choose count() vs countDistinct
             }
-            case COUNT_DISTINCT -> {
-                if ("option_id".equals(dto.dataType())) targetField = PG.OPTION_ID;
-                else if ("value_num".equals(dto.dataType())) targetField = PG.VALUE_NUM;
-                else if ("value_ts".equals(dto.dataType())) targetField = PG.VALUE_TS;
-                else targetField = PG.VALUE_TEXT;
-            }
-            default -> {
-                targetField = PG.VALUE_TEXT;
-            }
+            default -> { /* leave as-is */ }
         }
 
-        // 5) alias fallback
+        // Alias fallback
         String alias = req.getAlias();
         if (alias == null || alias.isBlank()) {
             alias = (dto.id() != null ? dto.id().replaceAll("[:]", "_") : "measure");
             alias = alias + "_" + requestedAgg.toLowerCase(Locale.ROOT);
         }
 
-        // SANITIZE alias to produce safe SQL column name / jOOQ alias
-        alias = AliasSanitizer.sanitize(alias);
-
         return new ValidatedMeasure(
-            elementId,
-            etcId,
+            deUid,
+            etcUid,
             aggEnum,
             targetField,
             elementPredicate,
             alias,
             Boolean.TRUE.equals(req.getDistinct()),
-            optionId,
+            optionUid,
             effectiveMode
         );
     }
 
-    private static String mapValueTypeToDataType(org.nmcpye.datarun.datatemplateelement.enumeration.ValueType vt) {
+    private static String mapValueTypeToDataType(ValueType vt) {
         if (vt == null) return "value_text";
         return switch (vt) {
-            case Number, Integer, IntegerPositive, IntegerNegative, IntegerZeroOrPositive, Percentage, UnitInterval ->
-                "value_num";
-            case Boolean -> "value_bool";
-            case SelectOne, SelectMulti -> "option_id";
-            case Date, DateTime -> "value_ts";
+            case Number, Integer, IntegerPositive,
+                 IntegerNegative, IntegerZeroOrPositive, Percentage, UnitInterval -> "value_num";
+            case Boolean, TrueOnly -> "value_bool";
+            case SelectMulti -> "option_uid";
+            case SelectOne, Activity, OrganisationUnit, Team -> "value_ref_uid";
+            case Date, DateTime, Time -> "value_ts";
             default -> "value_text";
         };
     }

@@ -19,7 +19,7 @@ public class ValidateReferenceTypeHandler
 
     @Override
     protected FormDataElementConf handle(FormDataElementConf element) {
-        if (source.getType().isReference() && element.getResourceMetadataSchema() == null) {
+        if (source.getValueType().isReference() && element.getResourceMetadataSchema() == null) {
             throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1103, element.getParent(), element.getName()));
         }
         return element;

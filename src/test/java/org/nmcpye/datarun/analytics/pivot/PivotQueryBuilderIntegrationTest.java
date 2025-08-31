@@ -8,6 +8,7 @@ import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.*;
+import org.nmcpye.datarun.analytics.pivot.dto.SortDto;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import javax.sql.DataSource;
@@ -104,7 +105,7 @@ public class PivotQueryBuilderIntegrationTest {
             List.of(vm),
             null,
             null, null,
-            List.of(new PivotQueryBuilder.Sort("SUM_VAL", true)),
+            List.of(new SortDto("SUM_VAL", true)),
             10, 0,
             null
         );

@@ -6,8 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Client-side measure request (template-mode).
- * elementIdOrUid: either etc:<id> (e.g. etc:123) or dataElement ULID (string)
+ * Client-side measure request (template-mode-first).
  *
  * @author Hamza Assada
  * @since 27/08/2025
@@ -18,21 +17,33 @@ import lombok.NoArgsConstructor;
 @Builder
 public class MeasureRequest {
     /**
-     * element_id from element_template_config
+     * elementIdOrUid: client identifier for the element. Accepts:
+     * <p>
+     * - "etc:<uid>"   => template-scoped element (prefer etc_uid)
+     * <p>
+     * - "de:<uid>" or "<de_uid>" => global DataElement referenced by de_uid
+     * <p>
+     * - plain etc uid or de uid (resolver must handle)
      */
     private String elementIdOrUid;
 
     /**
-     * SUM, AVG, COUNT, COUNT_DISTINCT, MIN, MAX, SUM_TRUE
+     * aggregation: "SUM", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM_TRUE".
      */
     private String aggregation;
+
     /**
-     * optional alias for result column
+     * alias: optional column alias. If null, MeasureValidationService produces stable alias.
      */
     private String alias;
+
     /**
-     * Optional for COUNT, if true COUNT(DISTINCT ...)
+     * distinct: optional (for COUNT): whether to use DISTINCT.
      */
     private Boolean distinct;
+
+    /**
+     * optionId: optional (uid) used when measure targets a specific option (applies to scope predicate).
+     */
     private String optionId;    // optional when counting per option (option ULID)
 }

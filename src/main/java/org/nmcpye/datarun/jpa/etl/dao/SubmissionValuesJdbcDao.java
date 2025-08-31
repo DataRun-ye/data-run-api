@@ -23,11 +23,11 @@ public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
     private static final String UPSERT_SQL = """
         INSERT INTO element_data_value (
             submission_uid, assignment_uid, team_uid, org_unit_uid, activity_uid,
-            element_uid, element_template_config_uid, value_type, repeat_instance_id, option_uid,
+            element_uid, element_template_config_uid, repeat_instance_id, option_uid,
             value_text, value_num, value_bool, value_ts, value_ref_uid, row_type, created_date, last_modified_date, deleted_at
         ) VALUES (
             :submissionUid, :assignmentUid, :teamUid, :orgUnitUid, :activityUid,
-            :elementUid, :elementTemplateConfigUid, :valueType, :repeatInstanceId, :optionUid,
+            :elementUid, :elementTemplateConfigUid, :repeatInstanceId, :optionUid,
             :valueText, :valueNum, :valueBool, :valueTs, :valueRefUid,:rowType, :createdDate, :lastModifiedDate, NULL
         )
         ON CONFLICT (submission_uid, element_uid, repeat_instance_key, row_type, selection_key)
@@ -36,7 +36,6 @@ public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
             team_uid = EXCLUDED.team_uid,
             org_unit_uid = EXCLUDED.org_unit_uid,
             activity_uid = EXCLUDED.activity_uid,
-            value_type = EXCLUDED.value_type,
             value_text = EXCLUDED.value_text,
             value_num = EXCLUDED.value_num,
             value_bool = EXCLUDED.value_bool,

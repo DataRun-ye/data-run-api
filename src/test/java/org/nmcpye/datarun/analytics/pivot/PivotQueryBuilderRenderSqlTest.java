@@ -8,6 +8,8 @@ import org.jooq.conf.SettingsTools;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.nmcpye.datarun.analytics.pivot.dto.FilterDto;
+import org.nmcpye.datarun.analytics.pivot.dto.SortDto;
 import org.nmcpye.datarun.jooq.Tables;
 
 import java.time.LocalDateTime;
@@ -36,7 +38,7 @@ public class PivotQueryBuilderRenderSqlTest {
         Select<?> s = builder.buildSelect(
             List.of("element_id"),
             null,
-            List.of(new PivotQueryBuilder.Filter("value_num", "=", "123")),
+            List.of(new FilterDto("value_num", "=", "123")),
             null, null,
             null, 10, 0,
             null
@@ -52,7 +54,7 @@ public class PivotQueryBuilderRenderSqlTest {
         var s = builder.buildSelect(
             List.of("element_id"),
             null,
-            List.of(new PivotQueryBuilder.Filter("option_id", "IN", List.of("id-OPT1", "id-OPT2"))),
+            List.of(new FilterDto("option_id", "IN", List.of("id-OPT1", "id-OPT2"))),
             null, null,
             null, 10, 0,
             null
@@ -81,7 +83,7 @@ public class PivotQueryBuilderRenderSqlTest {
             List.of(vm),
             null,
             null, null,
-            List.of(new PivotQueryBuilder.Sort("sum_val", true), new PivotQueryBuilder.Sort("element_id", false)),
+            List.of(new SortDto("sum_val", true), new SortDto("element_id", false)),
             50, 0,
             null
         );
@@ -101,8 +103,8 @@ public class PivotQueryBuilderRenderSqlTest {
             List.of("element_id"),
             null,
             List.of(
-                new PivotQueryBuilder.Filter("value_text", "LIKE", "%test%"),
-                new PivotQueryBuilder.Filter("value_bool", "=", true)
+                new FilterDto("value_text", "LIKE", "%test%"),
+                new FilterDto("value_bool", "=", true)
             ),
             null, null,
             null, 100, 0,

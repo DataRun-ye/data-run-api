@@ -14,6 +14,7 @@ import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 
 import java.time.Instant;
 import java.util.Map;
@@ -24,8 +25,7 @@ import java.util.Objects;
  *
  * <p>This entity represents the configuration of a
  * {@link DataElement} within a
- * {@link DataTemplate}. It is derived from a {@link FormDataElementConf} or a
- * {@code repeatable=true} {@link FormSectionConf}, and captures all metadata
+ * {@link DataTemplate}. It is derived from a {@link FormDataElementConf}, and captures all template's related metadata
  * required to describe fields and repeatable sections of a DataTemplate.</p>
  *
  * <p>Acts as the single source of truth for element configuration at runtime.</p>
@@ -40,8 +40,10 @@ import java.util.Objects;
             columnNames = {"template_uid", "template_version_uid", "id_path"})
     },
     indexes = {
-        @Index(name = "idx_element_template_config_template_version", columnList = "template_uid, template_version_uid"),
-        @Index(name = "idx_element_template_config_template_version_no", columnList = "template_uid, version_no"),
+        @Index(name = "idx_element_template_config_template_version",
+            columnList = "template_uid, template_version_uid"),
+        @Index(name = "idx_element_template_config_template_version_no",
+            columnList = "template_uid, template_version_no"),
         @Index(name = "idx_element_template_config_dataelement", columnList = "data_element_uid"),
         @Index(name = "idx_element_template_config_repeat_path", columnList = "template_uid, repeat_path")
     }
@@ -96,7 +98,7 @@ public class ElementTemplateConfig {
     private String dataElementUid;
 
     /**
-     * Path built with element IDs (e.g. "household.children.<elementId>").
+     * Path built with element IDs (e.g. "household.children.<elementUid>").
      */
     @NotNull
     @Column(name = "id_path", columnDefinition = "text", nullable = false)
@@ -116,21 +118,21 @@ public class ElementTemplateConfig {
     @Column(name = "name_path", columnDefinition = "text")
     private String namePath;
 
-//    /**
-//     * Immutable element name, copied from {@link DataElement}.
-//     * Used as a key in {@link DataSubmission#getFormData()}.
-//     */
-//    @NotNull
-//    @Column(name = "name", columnDefinition = "text", nullable = false)
-//    private String name;
+    /**
+     * Immutable element name, copied from {@link DataElement}.
+     * Used as a key in {@link DataSubmission#getFormData()}.
+     */
+    @NotNull
+    @Column(name = "name", columnDefinition = "text", nullable = false)
+    private String name;
 
-//    /**
-//     * Value type of this element.
-//     * For sections, {@code dataType = null}.
-//     */
-//    @Enumerated(EnumType.STRING)
-//    @Column(name = "value_type", updatable = false, nullable = false)
-//    protected ValueType valueType;
+    /**
+     * Value type of this element.
+     * For sections, {@code dataType = null}.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "value_type", updatable = false, nullable = false)
+    protected ValueType valueType;
 
     /**
      * Aggregation strategy when used as a measure in analytics (pivot tables, charts, etc).

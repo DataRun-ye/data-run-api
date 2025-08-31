@@ -11,7 +11,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.nmcpye.datarun.analytics.pivot.dto.FilterDto;
 import org.nmcpye.datarun.analytics.pivot.dto.PivotQueryRequest;
+import org.nmcpye.datarun.analytics.pivot.dto.SortDto;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import javax.sql.DataSource;
@@ -112,7 +114,7 @@ public class PivotQueryBuilderBindingsIT {
     @Test
     public void numericFilter_gte_returns_only_matching_rows() {
         // value_num >= 10 => only row2 (value_num=15)
-        PivotQueryBuilder.Filter numericFilter = new PivotQueryBuilder.Filter("value_num", ">=", 10);
+        FilterDto numericFilter = new FilterDto("value_num", ">=", 10);
 
         Select<?> sel = builder.buildSelect(
             List.of("element_id"),
@@ -131,8 +133,8 @@ public class PivotQueryBuilderBindingsIT {
     @Test
     public void inFilter_strings_returns_expected_rows() {
         // option_id IN ('id-OPT1','id-OPT2') => row1 and row2
-        PivotQueryBuilder.Filter inFilter =
-            new PivotQueryBuilder.Filter("option_id", "IN", List.of("id-OPT1", "id-OPT2"));
+        FilterDto inFilter =
+            new FilterDto("option_id", "IN", List.of("id-OPT1", "id-OPT2"));
 
         Select<?> sel = builder.buildSelect(
             List.of("element_id"),
@@ -151,7 +153,7 @@ public class PivotQueryBuilderBindingsIT {
 
     @Test
     public void booleanFilter_true_returns_matching_row() {
-        PivotQueryBuilder.Filter boolFilter = new PivotQueryBuilder.Filter("value_bool", "=", true);
+        FilterDto boolFilter = new FilterDto("value_bool", "=", true);
 
         Select<?> sel = builder.buildSelect(
             List.of("element_id"),
@@ -189,7 +191,7 @@ public class PivotQueryBuilderBindingsIT {
 
     @Test
     public void nullFilter_selects_null_text_rows() {
-        PivotQueryBuilder.Filter nullFilter = new PivotQueryBuilder.Filter("value_text", "=", null);
+        FilterDto nullFilter = new FilterDto("value_text", "=", null);
 
         Select<?> sel = builder.buildSelect(
             List.of("element_id"),
@@ -212,7 +214,7 @@ public class PivotQueryBuilderBindingsIT {
      */
     @Test
     public void emptyInList_returns_no_rows() {
-        PivotQueryBuilder.Filter emptyIn = new PivotQueryBuilder.Filter("option_id", "IN", List.of());
+        FilterDto emptyIn = new FilterDto("option_id", "IN", List.of());
 
         Select<?> s = builder.buildSelect(
             List.of("element_id"),
@@ -233,7 +235,7 @@ public class PivotQueryBuilderBindingsIT {
      */
     @Test
     public void invalidType_throwsIllegalArgumentException() {
-        PivotQueryBuilder.Filter badNumeric = new PivotQueryBuilder.Filter("value_num", "=", "abc");
+        FilterDto badNumeric = new FilterDto("value_num", "=", "abc");
 
         // Either builder.buildSelect throws (preferred) or build + fetch throws.
         assertThrows(IllegalArgumentException.class, () -> {
@@ -257,8 +259,8 @@ public class PivotQueryBuilderBindingsIT {
      */
     @Test
     public void like_and_ilike_render_correctly() {
-        PivotQueryBuilder.Filter like = new PivotQueryBuilder.Filter("value_text", "LIKE", "%foo%");
-        PivotQueryBuilder.Filter ilike = new PivotQueryBuilder.Filter("value_text", "ILIKE", "%bar%");
+        FilterDto like = new FilterDto("value_text", "LIKE", "%foo%");
+        FilterDto ilike = new FilterDto("value_text", "ILIKE", "%bar%");
 
         Select<?> sLike = builder.buildSelect(
             List.of("element_id"),
@@ -290,8 +292,8 @@ public class PivotQueryBuilderBindingsIT {
 
     @Test
     public void null_eq_and_ne_render_isNull_isNotNull() {
-        PivotQueryBuilder.Filter eqNull = new PivotQueryBuilder.Filter("value_text", "=", null);
-        PivotQueryBuilder.Filter neNull = new PivotQueryBuilder.Filter("value_text", "!=", null);
+        FilterDto eqNull = new FilterDto("value_text", "=", null);
+        FilterDto neNull = new FilterDto("value_text", "!=", null);
 
         Select<?> sEq = builder.buildSelect(
             List.of("element_id"),
@@ -318,7 +320,7 @@ public class PivotQueryBuilderBindingsIT {
 
     @Test
     public void numeric_in_coerces_and_renders_in_clause() {
-        PivotQueryBuilder.Filter inNum = new PivotQueryBuilder.Filter("value_num", "IN", List.of("1", "2", "3"));
+        FilterDto inNum = new FilterDto("value_num", "IN", List.of("1", "2", "3"));
 
         Select<?> s = builder.buildSelect(
             List.of("element_id"),
@@ -362,14 +364,14 @@ public class PivotQueryBuilderBindingsIT {
             .execute();
 
         // Add a filter to restrict the query to only these element_ids.
-        PivotQueryBuilder.Filter filter = new PivotQueryBuilder.Filter("element_id", "IN", List.of("el-A", "el-B", "el-C"));
+        FilterDto filter = new FilterDto("element_id", "IN", List.of("el-A", "el-B", "el-C"));
 
         var s0 = builder.buildSelect(
             List.of("element_id"),
             null,
             List.of(filter),
             null, null,
-            List.of(new PivotQueryBuilder.Sort("element_id", false)), // asc
+            List.of(new SortDto("element_id", false)), // asc
             1, 0,
             null
         );
@@ -382,7 +384,7 @@ public class PivotQueryBuilderBindingsIT {
             null,
             List.of(filter),
             null, null,
-            List.of(new PivotQueryBuilder.Sort("element_id", false)), // asc
+            List.of(new SortDto("element_id", false)), // asc
             1, 1,
             null
         );
@@ -436,9 +438,9 @@ public class PivotQueryBuilderBindingsIT {
             // grouping dims passed to builder: rowDims + colDims
             List.of("element_id"),
             null,
-            List.of(new PivotQueryBuilder.Filter("element_id", "IN", List.of("el-A","el-B","el-C"))),
+            List.of(new FilterDto("element_id", "IN", List.of("el-A","el-B","el-C"))),
             null, null,
-            List.of(new PivotQueryBuilder.Sort("element_id", false)), // asc
+            List.of(new SortDto("element_id", false)), // asc
             1, 0,
             null
         );
@@ -450,9 +452,9 @@ public class PivotQueryBuilderBindingsIT {
         var s1 = builder.buildSelect(
             List.of("element_id"),
             null,
-            List.of(new PivotQueryBuilder.Filter("element_id", "IN", List.of("el-A","el-B","el-C"))),
+            List.of(new FilterDto("element_id", "IN", List.of("el-A","el-B","el-C"))),
             null, null,
-            List.of(new PivotQueryBuilder.Sort("element_id", false)), // asc
+            List.of(new SortDto("element_id", false)), // asc
             1, 1,
             null
         );

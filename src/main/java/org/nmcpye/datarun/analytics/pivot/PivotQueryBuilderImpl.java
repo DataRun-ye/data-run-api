@@ -22,23 +22,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * PivotQueryBuilder builds jOOQ Select queries against the UID-native
- * materialized view `pivot_grid_facts`.
+ * PivotQueryBuilder builds a grouped pivot query against the materialized view / facts (pivot_grid_facts).
  * <p>
- * Responsibilities:
- * - Build typed SELECT statements (without executing) for pivot requests.
- * - Provide a counting method to compute number of result groups.
- * - Ensure deterministic ordering by applying a group-aware tie-breaker
- * (e.g., MIN(value_id) or another stable expression) when ordering is ambiguous.
- * - Translate client supplied filter DTOs into typed jOOQ Conditions using field types
- * from the generated Tables.PIVOT_GRID_FACTS.
- * - Expose helper methods to build aggregate expressions that apply per-measure scoping
- * via `filterWhere(scopeCondition)` when appropriate.
- * <p>
- * Implementation notes:
- * - All predicates and grouping should default to only consider rows where deleted_at IS NULL.
- * - Template-mode measures must scope to etc_uid, while global measures use de_uid.
- * - Methods should avoid fluent-type generics fights by using SelectQuery/Select<Record> where helpful.
+ * Key ideas:
+ * - Accepts validated measures (ValidatedMeasure) produced by MeasureValidationService.
+ * - Uses SelectQuery to avoid compile-time fluent-type fights with jOOQ.
+ * - Coerces filter values to the Field's Java type at runtime (via field.getDataType().getType()).
  *
  * @author Hamza Assada
  * @since 27/08/2025
@@ -46,30 +35,15 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class PivotQueryBuilder {
+public class PivotQueryBuilderImpl {
 
     private final DSLContext dsl;
-    // add a field or config flag for strictness (could be injected). Default true.
-    private final boolean strictOrderValidation = true; // or inject from config
 
     private static final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
 
-
     /**
      * Build the jOOQ Select query (without fetching).
-     * Ensures deterministic ordering by adding a group-aware tie-breaker (e.g. MIN(value_id))
-     * when grouping is present and the requested sorts would otherwise be non-deterministic.
-     *
-     * @param dimensions     list of MV column names to group by (e.g. "team_uid", "child_category_uid").
-     * @param measures       validated and typed measures (ValidatedMeasure) to project/aggregate.
-     * @param filters        list of filter DTOs (field/op/value); fields may be aliases or MV columns.
-     * @param from           optional inclusive lower bound for submission_completed_at.
-     * @param to             optional inclusive upper bound for submission_completed_at.
-     * @param sorts          list of sort DTOs (can reference measure aliases or MV columns).
-     * @param limit          page size (if null use default).
-     * @param offset         page offset (if null default 0).
-     * @param allowedTeamIds optional ACL filter applied to team_uid.
-     * @return a jOOQ {@link Select<Record>} representing the query (not executed).
+     * Ensures deterministic ordering by adding a group-aware tie-breaker (MIN(value_id)).
      */
     public Select<Record> buildSelect(
         List<String> dimensions,
@@ -115,7 +89,7 @@ public class PivotQueryBuilder {
         // build base condition (reuse your translateFilter & coerce logic)
         Condition cond = PG.DELETED_AT.isNull();
         if (from != null) cond = cond.and(PG.SUBMISSION_COMPLETED_AT.ge(from));
-        if (to != null) cond = cond.and(PG.SUBMISSION_COMPLETED_AT.le(to));
+        if (to   != null) cond = cond.and(PG.SUBMISSION_COMPLETED_AT.le(to));
         if (allowedTeamIds != null && !allowedTeamIds.isEmpty()) cond = cond.and(PG.TEAM_UID.in(allowedTeamIds));
 
         if (filters != null) {
@@ -171,16 +145,7 @@ public class PivotQueryBuilder {
 
     /**
      * Count number of groups for the requested grouping/filter set.
-     * <p>
-     * Semantics:
-     * - If dimensions is empty or null, this should return 1 when there are matching rows
-     * (after filters and deleted_at IS NULL), otherwise 0.
-     * - If dimensions present, returns count of distinct groups (matching group-by projection).
-     * <p>
-     * Implementation hint:
-     * - Prefer generating a COUNT(*) over a derived GROUP BY to avoid huge memory usage.
-     *
-     * @return number of groups
+     * If groupBy dims are empty, return 1 when there are matching rows, otherwise 0.
      */
     public long countGroups(
         List<String> dimensions,
@@ -193,7 +158,7 @@ public class PivotQueryBuilder {
         // Build the same base condition
         Condition cond = PG.DELETED_AT.isNull();
         if (from != null) cond = cond.and(PG.SUBMISSION_COMPLETED_AT.ge(from));
-        if (to != null) cond = cond.and(PG.SUBMISSION_COMPLETED_AT.le(to));
+        if (to != null)   cond = cond.and(PG.SUBMISSION_COMPLETED_AT.le(to));
         if (allowedTeamIds != null && !allowedTeamIds.isEmpty()) cond = cond.and(PG.TEAM_UID.in(allowedTeamIds));
 
         // translate filters (no alias map necessary here)
@@ -225,12 +190,18 @@ public class PivotQueryBuilder {
 
 
     /**
-     * Execute the built query and fetch results.
-     * <p>
-     * Convenience wrapper: typically delegates to {@link #buildSelect(...)} and executes fetch().
+     * Execute a pivot query (template-mode oriented).
      *
-     * @return jOOQ {@link Result<Record>} the fetched rows
-     * @see #buildSelect(List, List, List, LocalDateTime, LocalDateTime, List, Integer, Integer, Set)
+     * @param dimensions     list of column names to group by (must match pivot_grid_facts column names, e.g. "team_id", "element_id")
+     * @param measures       already validated and typed measures (ValidatedMeasure)
+     * @param filters        additional filters on facts (field/op/value). Field may be dimension/measure column or alias.
+     * @param from           inclusive lower bound for submission_completed_at
+     * @param to             inclusive upper bound for submission_completed_at
+     * @param sorts          sort ordering (by alias or by dimension name)
+     * @param limit          page limit
+     * @param offset         page offset
+     * @param allowedTeamIds optional ACL filter for team_id
+     * @return Result<Record> rows
      */
     public Result<Record> execute(
         List<String> dimensions,
@@ -248,15 +219,7 @@ public class PivotQueryBuilder {
     }
 
     /**
-     * Build a typed aggregate field for the given validated measure.
-     * <p>
-     * Responsibilities:
-     * - Use vm.targetField() and vm.aggregation() to produce a correct jOOQ aggregate (SUM, AVG, MIN, MAX, COUNT, COUNT_DISTINCT, SUM_TRUE).
-     * - Apply vm.elementPredicate() as a per-aggregate filter using {@code .filterWhere(scope)} semantics, so each measure is scoped to the requested element/template/option.
-     * - Assign alias using vm.alias().
-     *
-     * @param vm validated measure descriptor (typed)
-     * @return SelectField<?> representing the aggregate expression aliased.
+     * Build aggregate select field for a given validated measure (safe casts).
      */
     @SuppressWarnings("unchecked")
     private Field<?> buildAggregateField(ValidatedMeasure vm) {
@@ -307,13 +270,8 @@ public class PivotQueryBuilder {
     }
 
     /**
-     * Resolve a known pivot_grid_facts field by name.
-     * <p>
-     * Returns typed generated fields (Tables.PIVOT_GRID_FACTS.*) when possible,
-     * or a typed DSL.field(DSL.name(column), Class) fallback when unknown.
-     *
-     * @param column MV column name (e.g., "value_num", "team_uid")
-     * @return typed Field<?> suitable for grouping / filtering
+     * Resolve known pivot_grid_facts field by name. Use typed generated fields
+     * when possible. If unknown, produce a typed DSL.field using Object.class as fallback.
      */
     private Field<?> resolveFactField(String column) {
         if (column == null) return DSL.noField();
@@ -342,11 +300,10 @@ public class PivotQueryBuilder {
     }
 
     /**
-     * Resolve either an alias (already built select field) or a fact field.
-     *
-     * @param nameOrAlias the name to resolve (alias or column)
-     * @param aliasMap    map alias->Field produced earlier in the SELECT (may be null)
-     * @return Field<?> referencing the alias expression or MV column
+     * Resolve either an alias (an already built SelectField) or a fact field.
+     * <p>
+     * IMPORTANT: The aliasMap parameter should accept SelectField<?> values. Use
+     * Map<String, ? extends Field<?>> when passing such a map to avoid generics mismatch.
      */
     private Field<?> resolveFactFieldOrAlias(String nameOrAlias, Map<String, Field<?>> aliasMap) {
         if (nameOrAlias == null) return DSL.noField();
@@ -359,19 +316,8 @@ public class PivotQueryBuilder {
     }
 
     /**
-     * Translate a filter into a typed jOOQ Condition using the supplied field's data type.
-     * <p>
-     * Rules & features:
-     * - Support operators: =, !=, IN, >, <, >=, <=, LIKE, ILIKE
-     * - IN with empty collection => policy: match nothing (falseCondition) or throw; implementation must be consistent.
-     * - NULL values must map to IS NULL / IS NOT NULL for appropriate operators.
-     * - Use DSL.val(coercedValue, dataType) when binding to ensure proper JDBC typing.
-     *
-     * @param f     typed Field<?> that will be used on the left-hand side of the predicate
-     * @param op    operator string (case-insensitive)
-     * @param value RHS value (or collection for IN)
-     * @return typed Condition suitable to be added to where-clause
-     * @throws IllegalArgumentException for unsupported ops or failed coercions
+     * Translate a filter into a typed jOOQ Condition.
+     * Uses DSL.val(value, dataType) to ensure correct binding type.
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     private Condition translateFilter(Field<?> f, String op, Object value) {
@@ -460,17 +406,8 @@ public class PivotQueryBuilder {
     }
 
     /**
-     * Coerce a raw value into the target Java type (based on Field#getDataType().getType()).
-     * <p>
-     * Conservative conversion rules:
-     * - For numeric targets return BigDecimal or narrower primitive wrapper where necessary.
-     * - For LocalDateTime/Timestamp accept epoch millis or ISO strings.
-     * - For boolean accept "1"/"0", "true"/"false", "yes"/"no".
-     * - For unsupported conversions throw IllegalArgumentException.
-     *
-     * @param raw    input value from client
-     * @param target target Java class
-     * @return coerced value of type target (or compatible)
+     * Coerce a value to the given target Java type.
+     * Conservative: throws IllegalArgumentException for unsupported conversions.
      */
     private Object coerceToType(Object raw, Class<?> target) {
         if (raw == null) return null;
