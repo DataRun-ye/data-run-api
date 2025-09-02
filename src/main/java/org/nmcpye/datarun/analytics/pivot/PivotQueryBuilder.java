@@ -8,6 +8,7 @@ import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
 import org.nmcpye.datarun.analytics.pivot.dto.FilterDto;
 import org.nmcpye.datarun.analytics.pivot.dto.SortDto;
+import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
 import org.nmcpye.datarun.jooq.Tables;
 import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
 import org.springframework.stereotype.Component;
@@ -53,7 +54,6 @@ public class PivotQueryBuilder {
     private final boolean strictOrderValidation = true; // or inject from config
 
     private static final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
-
 
     /**
      * Build the jOOQ Select query (without fetching).
@@ -212,7 +212,10 @@ public class PivotQueryBuilder {
 
         if (groupBy.isEmpty()) {
             // Global aggregate => 1 group if any matching row, else 0
-            Integer exists = dsl.select(DSL.one()).from(PG).where(cond).limit(1).fetchOne(0, Integer.class);
+            Integer exists = dsl.select(DSL.one())
+                .from(PG)
+                .where(cond).limit(1)
+                .fetchOne(0, Integer.class);
             return (exists != null) ? 1L : 0L;
         } else {
             // Build a grouped subselect and COUNT(*) over it
@@ -227,10 +230,14 @@ public class PivotQueryBuilder {
     /**
      * Execute the built query and fetch results.
      * <p>
-     * Convenience wrapper: typically delegates to {@link #buildSelect(...)} and executes fetch().
+     * Convenience wrapper: typically delegates to
+     * {@link #buildSelect(List, List, List, LocalDateTime, LocalDateTime,
+     * List, Integer, Integer, Set) buildSelect(...)}
+     * and executes fetch().
      *
      * @return jOOQ {@link Result<Record>} the fetched rows
-     * @see #buildSelect(List, List, List, LocalDateTime, LocalDateTime, List, Integer, Integer, Set)
+     * @see #buildSelect(List, List, List,
+     * LocalDateTime, LocalDateTime, List, Integer, Integer, Set) buildSelect(...)
      */
     public Result<Record> execute(
         List<String> dimensions,
@@ -317,28 +324,28 @@ public class PivotQueryBuilder {
      */
     private Field<?> resolveFactField(String column) {
         if (column == null) return DSL.noField();
-
-        return switch (column) {
-            case "team_uid" -> PG.TEAM_UID;
-            case "org_unit_uid" -> PG.ORG_UNIT_UID;
-            case "activity_uid" -> PG.ACTIVITY_UID;
-            case "de_uid" -> PG.DE_UID;
-            case "option_uid" -> PG.OPTION_UID;
-            case "value_num" -> PG.VALUE_NUM;
-            case "value_text" -> PG.VALUE_TEXT;
-            case "value_bool" -> PG.VALUE_BOOL;
-            case "value_ts" -> PG.VALUE_TS;
-            case "submission_uid" -> PG.SUBMISSION_UID;
-            case "submission_completed_at" -> PG.SUBMISSION_COMPLETED_AT;
-            case "repeat_instance_id" -> PG.REPEAT_INSTANCE_ID;
-            case "category_uid" -> PG.CHILD_CATEGORY_UID;
-            case "etc_uid" -> PG.ETC_UID;
-            case "value_id", "id" -> PG.VALUE_ID;               // <--- add mapping for the stable PK
-            default -> {
-                // Best-effort typed field fallback
-                yield DSL.field(DSL.name(column), Object.class);
-            }
-        };
+        return PivotFieldJooqMapper.toJooqField(column);
+//        return switch (column) {
+//            case "team_uid" -> PG.TEAM_UID;
+//            case "org_unit_uid" -> PG.ORG_UNIT_UID;
+//            case "activity_uid" -> PG.ACTIVITY_UID;
+//            case "de_uid" -> PG.DE_UID;
+//            case "option_uid" -> PG.OPTION_UID;
+//            case "value_num" -> PG.VALUE_NUM;
+//            case "value_text" -> PG.VALUE_TEXT;
+//            case "value_bool" -> PG.VALUE_BOOL;
+//            case "value_ts" -> PG.VALUE_TS;
+//            case "submission_uid" -> PG.SUBMISSION_UID;
+//            case "submission_completed_at" -> PG.SUBMISSION_COMPLETED_AT;
+//            case "repeat_instance_id" -> PG.REPEAT_INSTANCE_ID;
+//            case "category_uid" -> PG.CHILD_CATEGORY_UID;
+//            case "etc_uid" -> PG.ETC_UID;
+//            case "value_id", "id" -> PG.VALUE_ID;               // <--- add mapping for the stable PK
+//            default -> {
+//                // Best-effort typed field fallback
+//                yield DSL.field(DSL.name(column), Object.class);
+//            }
+//        };
     }
 
     /**
@@ -393,70 +400,67 @@ public class PivotQueryBuilder {
             }
 
             List<Object> coerced = rawColl.stream()
-                .map(v -> coerceToType(v, targetClass))
+                .map(v -> {
+                    try {
+                        return coerceToType(v, targetClass);
+                    } catch (IllegalArgumentException ex) {
+                        throw new IllegalArgumentException("Cannot coerce IN value to " + targetClass.getSimpleName() + ": " + v, ex);
+                    }
+                })
                 .collect(Collectors.toList());
 
             if (dataType != null) {
-                // create Field<T>[] using the target DataType so jOOQ binds properly
-                @SuppressWarnings("unchecked")
-                Field<Object>[] fieldVals = coerced.stream()
-                    .map(v -> (Field<Object>) DSL.val(v, (DataType) dataType))
-                    .toArray(Field[]::new);
-                // use varargs in(...) overload
-                return ((Field) f).in(fieldVals);
+                List<Field> vals = coerced.stream()
+                    .map(v -> DSL.val(v, (DataType) dataType))
+                    .collect(Collectors.toList());
+                return ((Field) f).in(vals);
             } else {
-                // fallback: pass raw coerced values
                 return ((Field) f).in(coerced);
             }
         }
 
-        // NULL handling for single-value operators
+        // NULL handling (no coercion)
         if (value == null) {
-            switch (op) {
-                case "=":
-                case "==":
-                    return ((Field) f).isNull();
-                case "!=":
-                case "<>":
-                    return ((Field) f).isNotNull();
-                default:
-                    throw new IllegalArgumentException("Operator " + op + " not supported for NULL value");
+            return switch (op.toLowerCase(Locale.ROOT)) {
+                case "=", "==", "eq" -> ((Field) f).isNull();
+                case "!=", "<>", "neq" -> ((Field) f).isNotNull();
+                default -> throw new IllegalArgumentException("Operator " + op + " not supported for NULL value");
+            };
+        }
+
+        // Operator-specific validation BEFORE coercion for LIKE/ILIKE
+        if ("LIKE".equalsIgnoreCase(op) || "ILIKE".equalsIgnoreCase(op)) {
+            if (!String.class.equals(targetClass) && !CharSequence.class.isAssignableFrom(targetClass)) {
+                throw new IllegalArgumentException(op + " is only valid on string fields");
+            }
+            // Do not attempt numeric coercion of wildcard patterns — keep as String
+            String pattern = value.toString();
+            if ("LIKE".equalsIgnoreCase(op)) {
+                return ((Field<String>) f).like(pattern);
+            } else {
+                return ((Field<String>) f).likeIgnoreCase(pattern);
             }
         }
 
-        // Coerce single value
-        Object coerced = coerceToType(value, targetClass);
+        // Now coerce single value for other operators (safe to attempt)
+        final Object coerced;
+        try {
+            coerced = coerceToType(value, targetClass);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Cannot coerce value to " + (targetClass == null ? "unknown" : targetClass.getSimpleName()) + ": " + value, ex);
+        }
+
         Field<?> right = dataType != null ? DSL.val(coerced, (DataType) dataType) : DSL.val(coerced);
 
-        switch (op) {
-            case "=":
-            case "==":
-                return ((Field) f).eq(right);
-            case "!=":
-            case "<>":
-                return ((Field) f).ne(right);
-            case ">":
-                return ((Field) f).gt(right);
-            case "<":
-                return ((Field) f).lt(right);
-            case ">=":
-                return ((Field) f).ge(right);
-            case "<=":
-                return ((Field) f).le(right);
-            case "LIKE":
-                if (!String.class.equals(targetClass) && !CharSequence.class.isAssignableFrom(targetClass)) {
-                    throw new IllegalArgumentException("LIKE is only valid on string fields");
-                }
-                return ((Field<String>) f).like(coerced.toString());
-            case "ILIKE":
-                if (!String.class.equals(targetClass) && !CharSequence.class.isAssignableFrom(targetClass)) {
-                    throw new IllegalArgumentException("ILIKE is only valid on string fields");
-                }
-                // Use SQL ILIKE where supported (Postgres). jOOQ will render appropriately.
-                return ((Field<String>) f).likeIgnoreCase(coerced.toString());
-            default:
-                throw new IllegalArgumentException("Unsupported operator: " + op);
-        }
+        return switch (op.toLowerCase(Locale.ROOT)) {
+            case "=", "==", "eq" -> ((Field) f).eq(right);
+            case "!=", "<>", "neq" -> ((Field) f).ne(right);
+            case ">", "gt" -> ((Field) f).gt(right);
+            case "<", "lt" -> ((Field) f).lt(right);
+            case ">=", "gte" -> ((Field) f).ge(right);
+            case "<=", "lte" -> ((Field) f).le(right);
+            default -> throw new IllegalArgumentException("Unsupported operator: " + op);
+        };
     }
 
     /**

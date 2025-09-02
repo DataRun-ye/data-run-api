@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.analytics.pivot.util;
 
-import java.util.Locale;
+import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
+
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -45,5 +47,51 @@ public final class AliasSanitizer {
         }
 
         return s;
+    }
+
+    /**
+     * handles alias duplicates
+     * when autoRenameAliases=true, rename,
+     * when false throw {@link IllegalArgumentException} if alias duplicate exist.
+     *
+     * @param measures   measures to check
+     * @param autoRename true to auto-rename, or throw
+     * @return validated measures with duplicates auto-renamed
+     */
+    public static List<ValidatedMeasure> ensureUniqueAliasesWithRename(List<ValidatedMeasure> measures,
+                                                                       boolean autoRename) throws IllegalArgumentException {
+        if (measures == null || measures.isEmpty()) return measures;
+        Map<String, Integer> counts = new HashMap<>();
+        List<ValidatedMeasure> out = new ArrayList<>(measures.size());
+
+        for (ValidatedMeasure vm : measures) {
+            String alias = Objects.requireNonNull(vm.alias()).trim();
+            String key = alias.toLowerCase(Locale.ROOT);
+            int seen = counts.getOrDefault(key, 0);
+            if (seen == 0) {
+                counts.put(key, 1);
+                out.add(vm);
+            } else {
+                if (!autoRename) {
+                    throw new IllegalArgumentException("Duplicate measure alias: '" + alias + "'");
+                }
+                String newAlias = alias + "_" + seen;
+                counts.put(key, seen + 1);
+                // create a new ValidatedMeasure with new alias
+                ValidatedMeasure renamed = new ValidatedMeasure(
+                    vm.deUid(),
+                    vm.etcUid(),
+                    vm.aggregation(),
+                    vm.targetField(),
+                    vm.elementPredicate(),
+                    newAlias,
+                    vm.distinct(),
+                    vm.optionUid(),
+                    vm.effectiveMode()
+                );
+                out.add(renamed);
+            }
+        }
+        return out;
     }
 }

@@ -1,57 +1,58 @@
-package org.nmcpye.datarun.analytics.pivot;
+package org.nmcpye.datarun.analytics.pivot.fieldresolver;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
-import org.nmcpye.datarun.analytics.pivot.dto.PivotFieldDto;
 import org.nmcpye.datarun.jooq.Tables;
 import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
 import org.springframework.stereotype.Component;
 
 /**
- * Maps pivot field dataType or factColumn names to typed jOOQ Fields from the generated
- * {@code PIVOT_GRID_FACTS} table. This mapper is UID-native and understands the new
- * *_uid columns exposed by the pivot materialized view.
- * <p>
- * The mapper returns the generated typed Field when possible (preferred).
- * When an unknown column name is provided, it falls back to {@code DSL.field(name, Object.class)}.
+ * @author Hamza Assada
+ * @since 02/09/2025
  */
 @Component
+@RequiredArgsConstructor
 @Slf4j
-public class PivotFieldJooqMapper {
+public class AnalyticsFieldResolver {
+
     private static final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
 
     /**
-     * Map a dataType/factColumn name to the appropriate jOOQ Field.
-     * <p>
-     * dataType examples handled:
-     * - "value_num"             -> PIVOT_GRID_FACTS.VALUE_NUM (BigDecimal)
-     * - "value_text"            -> PIVOT_GRID_FACTS.VALUE_TEXT (String)
-     * - "value_bool"            -> PIVOT_GRID_FACTS.VALUE_BOOL (Boolean)
-     * - "value_ts"              -> PIVOT_GRID_FACTS.VALUE_TS (LocalDateTime)
-     * - "value_ref_uid"         -> PIVOT_GRID_FACTS.VALUE_REF_UID (String - UID)
-     * - "option_uid"            -> PIVOT_GRID_FACTS.OPTION_UID (String - UID for multi-select rows)
-     * - "option_value_uid"      -> PIVOT_GRID_FACTS.OPTION_VALUE_UID (String)
-     * - "de_uid"                -> PIVOT_GRID_FACTS.DE_UID (String)
-     * - "etc_uid" -> PIVOT_GRID_FACTS.ETC_UID (String)
-     * - "team_uid","org_unit_uid","activity_uid","assignment_uid","submission_uid"
-     * - "child_category_uid","parent_category_uid"
-     * - "submission_completed_at"
-     * <p>
-     * Unknown names: fallback to DSL.field(name, Object.class).
+     * Resolves a standardized field ID (e.g., "core:team_uid", "etc:uid_value")
+     * into a strongly-typed jOOQ Field.
      *
-     * @param dataTypeOrFactColumn a pivot dataType or fact column name
-     * @return jOOQ Field<?> typed where possible
+     * @param standardizedId The public-facing ID from the API contract.
+     * @return The corresponding jOOQ Field from the pivot_grid_facts view.
+     * @throws InvalidRequestException if the field ID cannot be resolved.
      */
-    @SuppressWarnings("unchecked")
-    public static Field<?> toJooqField(String dataTypeOrFactColumn) {
-        if (dataTypeOrFactColumn == null) {
-            return PG.VALUE_TEXT;
-        }
+    public Field<?> resolve(String standardizedId) {
+        AnalyticsField field = AnalyticsField.from(standardizedId);
 
-        String key = dataTypeOrFactColumn.trim();
+        return switch (field.namespace()) {
+            case "core" -> resolveCoreField(field.value());
+            // For 'etc' and 'de', the goal is not to get a value field,
+            // but the ID field used for predicates. The validation service handles this.
+            // This resolver focuses on dimension/grouping fields.
+            case "etc" -> PG.ETC_UID;
+            case "de" -> PG.DE_UID;
+            default -> {
+                // For forward compatibility, try a direct lookup on the value
+                log.warn("Unknown namespace '{}' in field ID '{}'. Falling back to direct lookup.", field.namespace(), standardizedId);
+                yield resolveCoreField(field.value());
+            }
+        };
+    }
 
-        return switch (key) {
+    /**
+     * Maps a core field name to its jOOQ representation.
+     * This reuses the logic from your original PivotFieldJooqMapper.
+     */
+    private Field<?> resolveCoreField(String fieldName) {
+        // This switch is now an internal implementation detail of the resolver.
+        // It's the exact same logic as previous PivotFieldJooqMapper.
+        return switch (fieldName) {
             // Measures / values
             case "value_num" -> PG.VALUE_NUM;
             case "value_text" -> PG.VALUE_TEXT;
@@ -112,23 +113,9 @@ public class PivotFieldJooqMapper {
 
             // Default fallback: create a typed field with Object.class
             default -> {
-                log.debug("Unknown pivot field '{}', falling back to untyped DSL.field(...)", key);
-                yield DSL.field(DSL.name(key), Object.class);
+                log.debug("Unknown pivot field '{}', falling back to untyped DSL.field(...)", fieldName);
+                yield DSL.field(DSL.name(fieldName), Object.class);
             }
         };
-    }
-
-    /**
-     * Convenient helper when caller has a PivotFieldDto (metadata) and wants the proper jOOQ field.
-     * The DTO may expose a dedicated factColumn (preferred) or its dataType; prefer factColumn if present.
-     *
-     * @param dto pivot metadata describing the field
-     * @return the jOOQ Field<?> for use in queries
-     */
-    public static Field<?> toJooqFieldForPivotField(PivotFieldDto dto) {
-        if (dto == null) return PG.VALUE_TEXT;
-        // prefer explicit factColumn (if provided by metadata), otherwise dataType
-        String fact = dto.factColumn() != null && !dto.factColumn().isBlank() ? dto.factColumn() : dto.dataType();
-        return toJooqField(fact);
     }
 }

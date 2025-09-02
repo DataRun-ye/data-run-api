@@ -1,9 +1,8 @@
 package org.nmcpye.datarun.analytics.pivot.dto;
 
-import lombok.AllArgsConstructor;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,12 +36,12 @@ import java.util.Set;
  * @since 27/08/2025
  */
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class PivotQueryRequest {
     // Template context for template-mode-first
+    @NotNull
     private String templateId;
+    @NotNull
     private String templateVersionId;
 
     // Backwards-compatible generic list of dimensions (old behavior)
@@ -50,8 +49,8 @@ public class PivotQueryRequest {
     private List<String> dimensions;
 
     // New: explicit row and column dims (preferred for PIVOT_MATRIX)
-    private List<String> rowDimensions;
-    private List<String> columnDimensions;
+    private List<String> rowDimensions; // required for matrix
+    private List<String> columnDimensions; // usually 1, can be composite
 
     // list of measure requests
     private List<MeasureRequest> measures;
@@ -68,14 +67,10 @@ public class PivotQueryRequest {
 
     // pagination
     @Builder.Default
-    private Integer limit = 100;
+    private Integer limit = 100; // rows limit (for TABLE_ROWS or for matrix rows)
     @Builder.Default
     private Integer offset = 0;
 
-    /**
-     * optional ACL override (server should validate)
-     */
-    private Set<String> allowedTeamUids;
 
     /**
      * behaviour flags
@@ -87,5 +82,11 @@ public class PivotQueryRequest {
      * PivotQueryService can pass tolerantOrdering = true to
      * PivotQueryBuilder to override strictOrderValidation.
      */
+    @Builder.Default
     Boolean tolerantOrdering = false; // default false
+
+    /**
+     * optional ACL override (server should validate)
+     */
+    private Set<String> allowedTeamUids;
 }

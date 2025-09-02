@@ -2,6 +2,7 @@ package org.nmcpye.datarun.web.rest.errors;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
+import org.nmcpye.datarun.analytics.pivot.exception.InvalidMeasureException;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.TemplateValidationException;
@@ -60,6 +61,17 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
     public ExceptionTranslator(Environment env) {
         this.env = env;
+    }
+    @ExceptionHandler({ IllegalArgumentException.class, InvalidMeasureException.class })
+    public ResponseEntity<Map<String, Object>> handleBadRequest(Exception ex) {
+        log.debug("Bad request: {}", ex.getMessage(), ex);
+        Map<String, Object> body = Map.of(
+            "type", "https://example.org/problem/invalid-request",
+            "title", "Bad Request",
+            "status", 400,
+            "detail", ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
     @ExceptionHandler(ErrorCodeException.class)

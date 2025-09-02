@@ -8,8 +8,10 @@ import org.jooq.conf.SettingsTools;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
 import org.nmcpye.datarun.analytics.pivot.dto.FilterDto;
 import org.nmcpye.datarun.analytics.pivot.dto.SortDto;
+import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
 import org.nmcpye.datarun.jooq.Tables;
 
 import java.time.LocalDateTime;
@@ -74,7 +76,7 @@ public class PivotQueryBuilderRenderSqlTest {
         ValidatedMeasure vm = ValidatedMeasure.builder()
             .alias("sum_val")
             .targetField(Tables.PIVOT_GRID_FACTS.VALUE_NUM)
-            .aggregation(ValidatedMeasure.MeasureAggregation.SUM)
+            .aggregation(Aggregation.SUM)
 //            .elementPredicate(Tables.PIVOT_GRID_FACTS.element_template_config_id.eq(123L))
             .distinct(false).build();
 

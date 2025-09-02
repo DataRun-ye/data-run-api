@@ -23,7 +23,8 @@ import java.time.Instant;
  */
 @Data
 @Builder
-@EqualsAndHashCode(of = {"submissionId", "repeatInstanceId", "elementId", "optionId"},
+@EqualsAndHashCode(of = {"submissionUid", "repeatInstanceId",
+    "elementUid", "optionUid"},
     cacheStrategy = EqualsAndHashCode.CacheStrategy.LAZY)
 public class ElementDataValue {
 

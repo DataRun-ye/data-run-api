@@ -18,13 +18,7 @@ import java.util.Set;
  * @param factColumn        column in pivot_grid_facts to use for template-mode predicates (e.g. "etc_uid")
  * @param factColumnGlobal  column in pivot_grid_facts to use for global-mode predicates (e.g. "de_uid")
  * @param deUid
- * @param deValueType
- * @param deAggregationType
- * @param deIsMeasure
- * @param deIsDimension
  * @param aggregationModes  List of aggregations allowed for this field. E.g., ["SUM", "AVG"]
- * @param templateModeOnly  True if this field is only relevant in the context of a specific form template.
- * @param source            Source of metadata: "element_template_config" or "data_element"
  * @param extras            Extras for UI: optionSetId, referenceTable, repeatPath, isMulti, isCategory, categoryForRepeat
  * @author Hamza Assada
  * @since 26/08/2025
@@ -34,18 +28,12 @@ import java.util.Set;
 public record PivotFieldDto(
     String id,
     String label,
-    String category,
+    FieldCategory category,
     String dataType,
     String factColumn,
     String factColumnGlobal,
-    String deUid,
-    String deValueType,
-    String deAggregationType,
-    Boolean deIsMeasure,
-    Boolean deIsDimension,
-    Set<String> aggregationModes,
-    boolean templateModeOnly,
-    String source,
+    String deUid, // dataElementUid
+    Set<Aggregation> aggregationModes,
     Map<String, Object> extras
 ) {
 }

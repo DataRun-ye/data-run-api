@@ -2,6 +2,8 @@ package org.nmcpye.datarun.analytics.pivot;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
+import org.nmcpye.datarun.analytics.pivot.dto.FieldCategory;
 import org.nmcpye.datarun.analytics.pivot.dto.PivotFieldDto;
 import org.nmcpye.datarun.analytics.pivot.dto.PivotMetadataResponse;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
@@ -11,6 +13,7 @@ import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
 import org.nmcpye.datarun.jpa.datatemplate.repository.ElementTemplateConfigRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -63,7 +66,8 @@ public class PivotMetadataServiceImpl implements PivotMetadataService {
 
         Map<String, DataElement> dataElementMap = dataElementUids.isEmpty()
             ? Collections.emptyMap()
-            : dataElementRepository.findAllByUidIn(dataElementUids).stream().collect(Collectors.toMap(DataElement::getUid, de -> de));
+            : dataElementRepository.findAllByUidIn(dataElementUids)
+            .stream().collect(Collectors.toMap(DataElement::getUid, de -> de));
 
         // Build measure DTOs from template config (template-mode)
         List<PivotFieldDto> measures = etcRows.stream().map(etc -> {
@@ -105,12 +109,12 @@ public class PivotMetadataServiceImpl implements PivotMetadataService {
             // Explicit factColumn removes heuristics in validation and
             String factColumn = "etc_uid"; // template-mode fields map to this
 
-            Set<String> aggModes = aggrResolver.allowedFor(vt);
+            Set<Aggregation> aggModes = aggrResolver.allowedFor(vt);
 
             return PivotFieldDto.builder()
                 .id("etc:" + etc.getUid())
                 .label(Objects.toString(etc.getDisplayLabel(), etc.getName()))
-                .category("FORM_MEASURE")
+                .category(FieldCategory.DYNAMIC_MEASURE)
                 .dataType(dataType)
                 .factColumn(factColumn)
                 .aggregationModes(aggModes)
@@ -120,32 +124,69 @@ public class PivotMetadataServiceImpl implements PivotMetadataService {
                 .build();
         }).collect(Collectors.toList());
 
-        // Core dimensions (uid-native)
-        List<PivotFieldDto> coreDimensions = List.of(
-            PivotFieldDto.builder().id("team_uid").label("Team").category("CORE_DIMENSION")
-                .dataType("team_uid").factColumn("team_uid").aggregationModes(Set.of("COUNT")).templateModeOnly(false).source("system").build(),
-
-            PivotFieldDto.builder().id("org_unit_uid").label("Org Unit").category("CORE_DIMENSION")
-                .dataType("org_unit_uid").factColumn("org_unit_uid").aggregationModes(Set.of("COUNT")).templateModeOnly(false).source("system").build(),
-
-            PivotFieldDto.builder().id("activity_uid").label("Activity").category("CORE_DIMENSION")
-                .dataType("activity_uid").factColumn("activity_uid").aggregationModes(Set.of("COUNT")).templateModeOnly(false).source("system").build(),
-
-            PivotFieldDto.builder().id("submission_completed_at").label("Submission completed at").category("CORE_DIMENSION")
-                .dataType("submission_completed_at").factColumn("submission_completed_at").aggregationModes(Set.of("MIN", "MAX")).templateModeOnly(false).source("system").build()
-        );
-
         return PivotMetadataResponse.builder()
-            .coreDimensions(coreDimensions)
+            .coreDimensions(getCoreDimensions())
             .formDimensions(List.of())
             .measures(measures)
-            .hints(Map.of("mode", "template", "templateUid", templateUid, "templateVersionUid", templateVersionUid))
+            .hints(Map.of(
+                "mode", "template",
+                "templateUid", templateUid,
+                "templateVersionUid", templateVersionUid))
             .build();
+    }
+
+    // Core dimensions (uid-native)
+    private List<PivotFieldDto> getCoreDimensions() {
+        return List.of(
+            PivotFieldDto.builder()
+                .id("team_uid")
+                .label("Team")
+                .category(FieldCategory.CORE_DIMENSION)
+                .dataType("team_uid")
+                .factColumn("team_uid")
+                .aggregationModes(aggrResolver.allowedFor(ValueType.Team))
+                .templateModeOnly(false).source("system")
+                .build(),
+
+            PivotFieldDto.builder()
+                .id("org_unit_uid")
+                .label("Org Unit")
+                .category(FieldCategory.CORE_DIMENSION)
+                .dataType("org_unit_uid")
+                .factColumn("org_unit_uid")
+                .aggregationModes(aggrResolver.allowedFor(ValueType.OrganisationUnit))
+                .templateModeOnly(false)
+                .source("system")
+                .build(),
+
+            PivotFieldDto.builder()
+                .id("activity_uid")
+                .label("Activity")
+                .category(FieldCategory.CORE_DIMENSION)
+                .dataType("activity_uid")
+                .factColumn("activity_uid")
+                .aggregationModes(aggrResolver.allowedFor(ValueType.Activity))
+                .templateModeOnly(false)
+                .source("system")
+                .build(),
+
+            PivotFieldDto.builder()
+                .id("submission_completed_at")
+                .label("Submission completed at")
+                .category(FieldCategory.CORE_DIMENSION)
+                .dataType("submission_completed_at")
+                .factColumn("submission_completed_at")
+                .aggregationModes(Set.of(Aggregation.MIN, Aggregation.MAX))
+                .templateModeOnly(false)
+                .source("system")
+                .build()
+        );
     }
 
     /**
      * {@inheritDoc}
      */
+    @Transactional(readOnly = true)
     @Override
     public Optional<PivotFieldDto> resolveFieldByUidOrId(String uidOrId, String templateUid, String templateVersionUid) {
         if (uidOrId == null) return Optional.empty();
@@ -172,10 +213,11 @@ public class PivotMetadataServiceImpl implements PivotMetadataService {
                 PivotFieldDto dto = PivotFieldDto.builder()
                     .id(etcClientId)
                     .label(Objects.toString(etc.getDisplayLabel(), etc.getName()))
-                    .category("FORM_MEASURE")
+                    .category(FieldCategory.DYNAMIC_MEASURE)
                     .dataType(dataType)
                     .factColumn("etc_uid")
-                    .aggregationModes(aggrResolver.allowedFor(de != null ? de.getValueType() : null))
+                    .aggregationModes(aggrResolver
+                        .allowedFor(de != null ? de.getValueType() : null))
                     .templateModeOnly(true)
                     .source("etc")
                     .extras(extras)
@@ -189,16 +231,21 @@ public class PivotMetadataServiceImpl implements PivotMetadataService {
             String deUid = uidOrId.substring("de:".length());
             DataElement de = dataElementRepository.findByUid(deUid).orElse(null);
             if (de != null) {
+                Map<String, Object> extras = new HashMap<>();
+                extras.put("isMulti", de.getValueType() == ValueType.SelectMulti);
+                extras.put("isReference", de.getValueType().isSystemReferenceType());
+                extras.put("optionSetUid", de.getOptionSet().getUid());
+
                 PivotFieldDto dto = PivotFieldDto.builder()
                     .id("de:" + de.getUid())
                     .label(de.getName())
-                    .category("FORM_MEASURE")
+                    .category(FieldCategory.DYNAMIC_MEASURE)
                     .dataType(mapValueTypeToDataType(de.getValueType()))
                     .factColumn("de_uid")
                     .aggregationModes(aggrResolver.allowedFor(de.getValueType()))
                     .templateModeOnly(false)
                     .source("data_element")
-                    .extras(Map.of())
+                    .extras(extras)
                     .build();
                 return Optional.of(dto);
             }

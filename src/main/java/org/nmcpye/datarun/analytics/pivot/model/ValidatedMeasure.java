@@ -1,8 +1,9 @@
-package org.nmcpye.datarun.analytics.pivot;
+package org.nmcpye.datarun.analytics.pivot.model;
 
 import lombok.Builder;
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
 
 /**
  * Result of validating a MeasureRequest and the canonical form used by the query builder.
@@ -35,7 +36,7 @@ import org.jooq.Field;
 public record ValidatedMeasure(
     String deUid,
     String etcUid,
-    MeasureAggregation aggregation,
+    Aggregation aggregation,
     Field<?> targetField,
     Condition elementPredicate,
     String alias,
@@ -43,7 +44,7 @@ public record ValidatedMeasure(
     String optionUid,
     String effectiveMode
 ) {
-    public enum MeasureAggregation {
-        SUM, AVG, MIN, MAX, COUNT, COUNT_DISTINCT, SUM_TRUE
-    }
+//    public enum MeasureAggregation {
+//        SUM, AVG, MIN, MAX, COUNT, COUNT_DISTINCT, SUM_TRUE
+//    }
 }

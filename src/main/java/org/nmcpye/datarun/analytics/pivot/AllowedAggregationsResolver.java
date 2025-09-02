@@ -4,8 +4,8 @@ import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Resolves allowed aggregations for a ValueType.
@@ -48,24 +48,17 @@ public class AllowedAggregationsResolver {
         Aggregation.COUNT_DISTINCT
     );
 
-    public Set<String> allowedFor(ValueType vt) {
-        if (vt == null) return DEFAULT_AGGREGATIONS.stream()
-            .map(Enum::name).collect(Collectors.toSet());
+    public Set<Aggregation> allowedFor(ValueType vt) {
+        if (vt == null) return new HashSet<>(DEFAULT_AGGREGATIONS);
         return switch (vt) {
             case Number, Integer, IntegerPositive,
                  IntegerNegative, IntegerZeroOrPositive,
-                 Percentage, UnitInterval -> NUMERIC_AGGREGATIONS.stream()
-                .map(Enum::name).collect(Collectors.toSet());
-            case Boolean, TrueOnly -> BOOLEAN_AGGREGATIONS.stream()
-                .map(Enum::name).collect(Collectors.toSet());
-            case SelectOne, SelectMulti -> OPTION_AGGREGATIONS.stream()
-                .map(Enum::name).collect(Collectors.toSet());
-            case Text -> TEXT_AGGREGATIONS.stream()
-                .map(Enum::name).collect(Collectors.toSet());
-            case Date, DateTime, Time -> DATE_AGGREGATIONS.stream()
-                .map(Enum::name).collect(Collectors.toSet());
-            default -> DEFAULT_AGGREGATIONS.stream()
-                .map(Enum::name).collect(Collectors.toSet());
+                 Percentage, UnitInterval -> new HashSet<>(NUMERIC_AGGREGATIONS);
+            case Boolean, TrueOnly -> new HashSet<>(BOOLEAN_AGGREGATIONS);
+            case SelectOne, SelectMulti -> new HashSet<>(OPTION_AGGREGATIONS);
+            case Text -> new HashSet<>(TEXT_AGGREGATIONS);
+            case Date, DateTime, Time -> new HashSet<>(DATE_AGGREGATIONS);
+            default -> new HashSet<>(DEFAULT_AGGREGATIONS);
         };
     }
 }

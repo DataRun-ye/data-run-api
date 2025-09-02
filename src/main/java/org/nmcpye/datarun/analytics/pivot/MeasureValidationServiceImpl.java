@@ -6,9 +6,12 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
+import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
+import org.nmcpye.datarun.analytics.pivot.dto.FieldCategory;
 import org.nmcpye.datarun.analytics.pivot.dto.MeasureRequest;
 import org.nmcpye.datarun.analytics.pivot.dto.PivotFieldDto;
 import org.nmcpye.datarun.analytics.pivot.exception.InvalidMeasureException;
+import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jooq.Tables;
 import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
@@ -26,7 +29,6 @@ import java.util.Optional;
 public class MeasureValidationServiceImpl implements MeasureValidationService {
 
     private final PivotMetadataService pivotMetadataService;
-    private final PivotFieldJooqMapper fieldMapper;
     private final DSLContext dsl;
     private final DataElementRepository dataElementRepository;
 
@@ -54,12 +56,10 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
                     dto = PivotFieldDto.builder()
                         .id("de:" + de.getUid())
                         .label(de.getName())
-                        .category("FORM_MEASURE")
+                        .category(FieldCategory.DYNAMIC_MEASURE)
                         .dataType(mapValueTypeToDataType(de.getValueType()))
                         .factColumn("de_uid")
                         .aggregationModes(null)
-                        .templateModeOnly(false)
-                        .source("data_element")
                         .extras(null)
                         .build();
                     effectiveMode = "GLOBAL";
@@ -77,7 +77,7 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
         requestedAgg = requestedAgg.toUpperCase(Locale.ROOT);
 
         if (dto.aggregationModes() != null && !dto.aggregationModes().isEmpty()) {
-            if (!dto.aggregationModes().contains(requestedAgg)) {
+            if (!dto.aggregationModes().contains(Aggregation.valueOf(requestedAgg))) {
                 throw new InvalidMeasureException("Aggregation " + requestedAgg + " not allowed for field " + elementSpecifier);
             }
         }
@@ -124,12 +124,12 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
         }
 
         // Determine targetField
-        Field<?> targetField = fieldMapper.toJooqFieldForPivotField(dto);
+        Field<?> targetField = PivotFieldJooqMapper.toJooqFieldForPivotField(dto);
 
         // Validate aggregation-specific constraints and produce final targetField (typed)
-        ValidatedMeasure.MeasureAggregation aggEnum;
+        Aggregation aggEnum;
         try {
-            aggEnum = ValidatedMeasure.MeasureAggregation.valueOf(requestedAgg);
+            aggEnum = Aggregation.valueOf(requestedAgg);
         } catch (IllegalArgumentException iae) {
             throw new InvalidMeasureException("Unsupported aggregation: " + requestedAgg);
         }
@@ -169,17 +169,16 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
             alias = alias + "_" + requestedAgg.toLowerCase(Locale.ROOT);
         }
 
-        return new ValidatedMeasure(
-            deUid,
-            etcUid,
-            aggEnum,
-            targetField,
-            elementPredicate,
-            alias,
-            Boolean.TRUE.equals(req.getDistinct()),
-            optionUid,
-            effectiveMode
-        );
+        return ValidatedMeasure.builder()
+            .deUid(deUid)
+            .etcUid(etcUid)
+            .aggregation(aggEnum)
+            .targetField(targetField)
+            .elementPredicate(elementPredicate)
+            .alias(alias)
+            .distinct(Boolean.TRUE.equals(req.getDistinct()))
+            .optionUid(optionUid)
+            .effectiveMode(effectiveMode).build();
     }
 
     private static String mapValueTypeToDataType(ValueType vt) {

@@ -8,7 +8,7 @@
 //import org.nmcpye.datarun.analytics.pivot.MeasureValidationServiceImpl;
 //import org.nmcpye.datarun.analytics.pivot.PivotFieldJooqMapper;
 //import org.nmcpye.datarun.analytics.pivot.PivotMetadataService;
-//import org.nmcpye.datarun.analytics.pivot.ValidatedMeasure;
+//import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
 //import org.nmcpye.datarun.analytics.pivot.dto.MeasureRequest;
 //import org.nmcpye.datarun.analytics.pivot.dto.PivotFieldDto;
 //import org.nmcpye.datarun.jooq.Tables;

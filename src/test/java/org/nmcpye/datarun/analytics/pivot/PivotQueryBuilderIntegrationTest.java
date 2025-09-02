@@ -8,7 +8,9 @@ import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.*;
+import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
 import org.nmcpye.datarun.analytics.pivot.dto.SortDto;
+import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import javax.sql.DataSource;
@@ -91,7 +93,7 @@ public class PivotQueryBuilderIntegrationTest {
 
         // Build validated measure that aggregates value_num
         var vm = ValidatedMeasure.builder()
-            .aggregation(ValidatedMeasure.MeasureAggregation.SUM)
+            .aggregation(Aggregation.SUM)
             .targetField(org.nmcpye.datarun.jooq.Tables.PIVOT_GRID_FACTS.VALUE_NUM) // jOOQ generated field works fine
             .elementPredicate(DSL.trueCondition())
             .alias("SUM_VAL")

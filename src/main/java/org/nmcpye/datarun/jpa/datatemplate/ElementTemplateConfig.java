@@ -165,6 +165,7 @@ public class ElementTemplateConfig {
      * True if this element is inside a repeatable section.
      */
     @Column(name = "is_repeatable", nullable = false)
+    @Builder.Default
     private Boolean isRepeatable = Boolean.FALSE;
 
 
@@ -178,12 +179,14 @@ public class ElementTemplateConfig {
      * True if this element is a multi-select (values reference multiple Option codes).
      */
     @Column(name = "is_multi", nullable = false)
+    @Builder.Default
     private Boolean isMulti = Boolean.FALSE;
 
     /**
      * True if this element is considered a measure for analytics.
      */
     @Column(name = "is_measure", nullable = false)
+    @Builder.Default
     private Boolean isMeasure = Boolean.FALSE;
 
     /**
@@ -196,6 +199,7 @@ public class ElementTemplateConfig {
      * True if this element is considered a measure for analytics.
      */
     @Column(name = "show_in_summary", nullable = false)
+    @Builder.Default
     private Boolean showInSummary = Boolean.FALSE;
     /**
      * uid of the category element that in the same repeat this element is part of
@@ -209,6 +213,7 @@ public class ElementTemplateConfig {
      * if {@link FormSectionConf#getCategoryDataElementId()} is set.
      */
     @Column(name = "is_category")
+    @Builder.Default
     private Boolean isCategory = Boolean.FALSE;
 
     /**
@@ -228,6 +233,7 @@ public class ElementTemplateConfig {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "element_kind", length = 16, nullable = false)
+    @Builder.Default
     private ElementKind elementKind = ElementKind.FIELD;
 
     /**

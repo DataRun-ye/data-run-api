@@ -3,6 +3,7 @@ package org.nmcpye.datarun.analytics.pivot;
 
 import org.nmcpye.datarun.analytics.pivot.dto.MeasureRequest;
 import org.nmcpye.datarun.analytics.pivot.exception.InvalidMeasureException;
+import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
 
 /**
  * MeasureValidationService validates a client MeasureRequest and converts it into a

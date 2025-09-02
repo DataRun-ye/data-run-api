@@ -7,6 +7,8 @@ import org.jooq.Field;
 import org.jooq.Result;
 import org.jooq.Select;
 import org.nmcpye.datarun.analytics.pivot.dto.*;
+import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
+import org.nmcpye.datarun.analytics.pivot.util.AliasSanitizer;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -39,7 +41,9 @@ public class PivotQueryServiceImpl implements PivotQueryService {
      * {@inheritDoc}
      */
     @Override
-    public PivotQueryResponse query(PivotQueryRequest request, PivotOutputFormat format, Set<String> allowedTeamUids) {
+    public PivotQueryResponse query(PivotQueryRequest request,
+                                    PivotOutputFormat format,
+                                    Set<String> allowedTeamUids) {
         try {
             // 1) Validate request basic sanity
             Objects.requireNonNull(request, "PivotQueryRequest is required");
@@ -48,11 +52,13 @@ public class PivotQueryServiceImpl implements PivotQueryService {
             if (format == null) format = PivotOutputFormat.TABLE_ROWS;
 
             // 2) Validate and convert measures
-            List<ValidatedMeasure> validatedMeasures = Optional.ofNullable(request.getMeasures())
-                .orElse(Collections.emptyList())
-                .stream()
-                .map(mr -> measureValidationService.validate(mr, request.getTemplateId(), request.getTemplateVersionId()))
-                .collect(Collectors.toList());
+            List<ValidatedMeasure> validatedMeasures = AliasSanitizer
+                .ensureUniqueAliasesWithRename(Optional.ofNullable(request.getMeasures())
+                        .orElse(Collections.emptyList())
+                        .stream()
+                        .map(mr -> measureValidationService.validate(mr, request.getTemplateId(), request.getTemplateVersionId()))
+                        .collect(Collectors.toList()),
+                    Boolean.TRUE.equals(request.getAutoRenameAliases()));
 
             // 3) Determine grouping dimensions
             List<String> rowDims = Optional.ofNullable(request.getRowDimensions()).orElse(Collections.emptyList());
