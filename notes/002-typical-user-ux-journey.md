@@ -85,7 +85,7 @@ Use the metadata to populate and constrain the UI:
 
     * `templateId`, `templateVersionId`
     * `dimensions` or `rowDimensions`/`columnDimensions`
-    * `measures` (each with `elementIdOrUid` like `etc:<uid>` or `de:<uid>`, aggregation, alias, distinct, optional `optionId`)
+    * `measures` (each with `fieldId` like `etc:<uid>` or `de:<uid>`, aggregation, alias, distinct, optional `optionId`)
     * `filters` (each `{ field: <fact or alias>, op: <op>, value: <value> }`)
     * `from` / `to`, `sorts`, `limit`, `offset`, other flags (e.g., `autoRenameAliases`)
 * `format` query param (TABLE\_ROWS or PIVOT\_MATRIX).

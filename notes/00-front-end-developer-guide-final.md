@@ -1,157 +1,170 @@
 # Analytics API: A Front-end Developer's Guide
 
-## 0. Appendix: Data Types and Operators
-
-* The `dataType` from the metadata endpoint determines which operators are available in the filter builder. The
-  following table provides the expected mappings.
-
-| dataType      | Supported Operators              | UI Control Suggestion    |
-|:--------------|:---------------------------------|:-------------------------|
-| **NUMERIC**   | `=`, `!=`, `>`, `<`, `>=`, `<=`  | Number Input             |
-| **TEXT**      | `=`, `!=`, `LIKE`, `ILIKE`, `IN` | Text Input               |
-| **BOOLEAN**   | `=`, `!=`                        | Toggle Switch / Dropdown |
-| **TIMESTAMP** | `BETWEEN`, `>=`, `<=`            | Date/Time Range Picker   |
-| **DATE**      | `BETWEEN`, `>=`, `<=`            | Date Range Picker        |
-| **UID**       | `=`, `!=`, `IN`                  | Searchable Dropdown      |
-| **OPTION**    | `=`, `!=`, `IN`                  | Multi-select Dropdown    |
-
-**Supported Operator Formats**: (`=` | `eq`), (`!=` | `<>` | `neq`), (`>` | `gt`), (`<` | `lt`), (`>=` | `gte`), (`<=` |
-`lte`).
-
-### Abbreviations used throughout the system
-
-* `act`: Activity.
-* `asi`: Assignment (relation between team, activity, orgUnit + other dynamic attributes).
-* `de`: Data Element.
-* `di`: Data Instance.
-* `dt`: Data Template (the form template).
-* `dtv`: Data Template Version.
-* `dv`: etc/de Data Value.
-* `etc`: Element Template Configuration (the mapping between the system-wide Canonical Data Element and a particular
-  Data Template Version).
-* `exp`: expression.
-* `ops`: option set.
-* `ou`: Org Unit.
-* `ov`: option value.
-* `prj`: Project.
-* `tm`: Team.
-* `vref`: reference value.
-
----
-
 ## 1. Introduction & Getting Started
 
 This guide provides all the necessary information to build a rich, interactive pivot table and analytics UI using the
 Datarun API. The API is designed to be consumed by modern web frameworks like Angular, using component libraries such as
-ag-Grid or Ignite UI for Angular.
+ag-Grid.
+
+### Core Concepts
+
+Before you begin, understand these key terms:
+
+* **Field:** The central concept in the API. A Field is any piece of data you can query, group by, or filter on. It can
+  be a system-level attribute like "Team" or a question from a form like "Age of Household Head".
+* **Dimension:** A Field used to group or categorize your data (e.g., grouping by `Team` or `Org Unit`). Dimensions are
+  the "by" in your analysis (e.g., "show me results *by* Team").
+* **Measure:** A calculation performed on a Field (e.g., the `SUM` of "Quantity Issued" or the `COUNT` of submissions).
+* **Standardized ID:** The unique identifier for every Field. You will get this from the metadata and use it in all your
+  query requests.
+    * **Format:** `namespace:value`
+    * **Examples:** `core:team_uid`, `etc:CiEZemZ7mlg`
+
+### API Fundamentals
+
+* **Base URL**: All API paths in this guide are relative to your deployed instance's base URL (e.g.,
+  `https://your-datarun-instance.com`).
+* **Authentication** All requests to `/api/v1/analytics/` endpoints must include an `Authorization: Bearer <TOKEN>`
+  header. The JWT token is obtained by posting user credentials to the `POST /api/v1/auth/login` endpoint. The token is
+  short-lived and should be refreshed using the refresh token provided in the login response. For full details, see the
+  separate Authentication API Guide.
+* **Identifiers**: The API uses a standardized, namespaced identifier for all queryable fields. This is the ID you will
+  receive in the metadata and send back in all query requests.
+    * **Format:** `namespace:value`
+    * **Examples:** `core:team_uid`, `etc:CiEZemZ7mlg`
+
+---
+
+## The 3-Step Workflow
 
 The core principle is a simple, stateful flow: **Discover** available data fields, **Query** for aggregated results, and
 **Render & Interact** with the data.
 
-### API Fundamentals
+1. **Discover:** The user selects a form. You fetch its metadata to see what Fields are available.
+2. **Query:** You build a request to fetch data for specific Dimensions and Measures.
+3. **Render:** You display the returned data in a grid.
 
-* **Base URL**: All API paths in this guide are relative to the deployed instance's base URL (e.g.,
-  `https://drun.org`).
-* **Authentication**: All requests to `/api/v1/analytics/` endpoints must be authenticated. Include an `Authorization`
-  header with a valid JWT token.
-  ```http
-  Authorization: Bearer <jwt_token>
-  ```
-* **Identifiers**: The API exclusively uses the 11-character `uid` for all entities in requests and responses.
-* **Common Attributes**: `{uid, name}` are common attributes for All standard entities e.g. `DataElement`, `Activity`,
-  `OrgUnit`, `Team`, `Option`, `OptionSet`, `DataTemplate`.
+### Step 1: Discover Available Fields
 
----
+When a user selects a form template and version, call the metadata endpoint:
+**Endpoint:** `GET /api/v1/analytics/pivot/metadata`
 
-## 2. The Core Workflow
-
-Building any report follows three main steps:
-
-1. **Discover**: The user selects a form template. You fetch its metadata to learn what fields, dimensions, and
-   operations are available. This populates your UI controls (dropdowns, pickers, etc.).
-2. **Query**: The user configures their report (selects measures, dimensions, filters). You construct a
-   `PivotQueryRequest` object from the UI state and send it to the API.
-3. **Render & Interact**: The API returns a structured data set. You render it in a grid or chart and handle user
-   interactions like sorting, pagination, or drill-downs by re-submitting modified queries.
-
----
-
-## 3. API Endpoints & Usage
-
-### Step 1: Metadata Discovery
-
-This is the starting point. Call this endpoint whenever the user selects a form template and version.
-Before a client can build a query, it needs to know what **fields/dimensions/measures** are available. This is exposed
-via metadata endpoints.
-
-**Endpoint Get template metadata:**
-
-```
-GET /api/v1/analytics/pivot/metadata?templateId={uid}&templateVersionId={uid}
+```http
+GET /api/v1/analytics/pivot/metadata?templateId=Tcf3Ks9ZRpB&templateVersionId=fb2GC7FInSu
 ```
 
-The response contains two primary lists: `fields` (data collected in the form) and `coreDimensions` (system-level data
-like team, org unit, etc.).
+**Response (`PivotMetadataResponse`)**
+The API returns a single, unified `availableFields` list. Each object in this list is a self-describing field that
+provides all the information needed to drive the UI.
 
 ```json-lines
 {
-  "templateUid": "dt123abc456",
-  "templateVersionUid": "dtv987zyx321",
-  "fields": [
+  "templateId": "Tcf3Ks9ZRpB",
+  "templateVersionId": "fb2GC7FInSu",
+  "availableFields": [
     {
-      "uid": "etcAbc12345", 
-      "dataElementUid": "deXYZ67890",
-      "factColumn": "etc_uid", 
-      "name": "Age of Household Head",
-      "dataType": "NUMERIC",
-      "aggregationModes": ["SUM","AVG","MIN","MAX","COUNT"],
-      "isDimension": true,
-      "isMeasure": true,
+      "id": "etc:etcAbc12345",
+      "label": "Household Category",
+      "dataType": "UID",
+      "isDimension": false,
+      "isSortable": true,
+      "aggregationModes": ["COUNT", "COUNT_DISTINCT"],
+      "displayGroup": "Household Demographics",
       "extras": {
-        "optionSetUid": null,
-        "isMulti": false,
-        "referenceTable": null
+           "optionSetId": "opsQWERTY11",
+           "resolution": {
+            "type": "API_ENDPOINT",
+            "endpoint": "/api/v1/optionSets/{optionSetId}/options"
+          }
+      }
+    },
+    "id": "core:parent_category_uid",
+    "label": "Parent Category",
+    "dataType": "UID",
+    "isDimension": true,
+    "isSortable": false,
+    "displayGroup": "System Fields",
+    "extras": {
+    "resolution": {
+      "type": "HIERARCHICAL",
+      "childDimensionId": "core:child_category_uid" // This new field links the hierarchy
       }
     },
     {
-      "uid": "etcDef98765",
-      "dataElementUid": "deLMN22222",
-      "factColumn": "etc_uid", 
-      "name": "Household Category",
-      "dataType": "OPTION",
-      "aggregationModes": ["COUNT","COUNT_DISTINCT"],
+      "id": "core:org_unit_uid",
+      "label": "Organization Unit",
+      "dataType": "UID",
       "isDimension": true,
-      "isMeasure": false,
+      "isSortable": true,
+      "aggregationModes": [],
+      "displayGroup": "System Fields",
       "extras": {
-        "optionSetUid": "opsQWERTY11",
-        "isMulti": false
+           "resolution": {
+            "type": "API_ENDPOINT",
+            "endpoint": "/api/v1/orgUnits"
+          }
+      }
+    },
+    {
+      "id": "core:team_uid",
+      "label": "Team",
+      "dataType": "UID",
+      "isDimension": true,
+      "isSortable": true,
+      "aggregationModes": [],
+      "displayGroup": "System Fields",
+      "extras": {
+           "resolution": {
+            "type": "API_ENDPOINT",
+            "endpoint": "/api/v1/teams"
+          }
+      }
+    },
+    {
+      "id": "core:submission_completed_at",
+      "label": "Submission Date",
+      "dataType": "TIMESTAMP",
+      "isDimension": true,
+      "isSortable": true,
+      "aggregationModes": ["MIN", "MAX", "COUNT"],
+      "displayGroup": "System Fields",
+      "extras": {
+        "formatHint": "SHORT_DATE"
+      }
+    },
+    {
+      "id": "etc:income_main_earner",
+      "label": "Household Income",
+      "dataType": "NUMERIC",
+      "isDimension": false,
+      "isSortable": true,
+      "aggregationModes": ["SUM", "AVG", "MIN", "MAX"],
+      "displayGroup": "Household Financials",
+      "extras": {
+        "formatHint": "CURRENCY_USD"
+      }
+    },
+    {
+      "id": "de:completion_rate",
+      "label": "Completion Rate",
+      "dataType": "NUMERIC",
+      "isDimension": false,
+      "isSortable": true,
+      "aggregationModes": ["AVG"],
+      "displayGroup": "Submission Metrics",
+      "extras": {
+        "formatHint": "PERCENT"
       }
     }
-  ],
-  "coreDimensions": [
-    { "factColumn": "team_uid", "name": "Team", "dataType": "UID" },
-    { "factColumn": "org_unit_uid", "name": "Org Unit", "dataType": "UID" },
-    { "factColumn": "activity_uid", "name": "Activity", "dataType": "UID" },
-    { "factColumn": "submission_completed_at", "name": "Submission Date", "dataType": "TIMESTAMP" }
   ]
 }
 ```
 
-**Frontend Usage:**
+**1. Frontend Usage:**
 
-* **`fields` Array**: Use this to populate the "Measures" and template-specific "Dimensions" pickers.
-    * `name`: The display label for the field in the UI.
-    * `dataType`: Drives which filter operators (`=`, `>`, `IN`) and input controls (date picker, number input,
-      dropdown) to show.
-    * `aggregationModes`: The list of allowed aggregations for a measure. Disable or hide any unsupported options.
-    * `uid`: The identifier for this template field. When creating a `MeasureRequest`, prefix this with `etc:` (e.g.,
-      `"elementIdOrUid": "etc:etcAbc12345"`).
-    * `extras.optionSetUid`: If present, use the `/api/v1/optionSets/{uid}/values` endpoint to fetch the available
-      options for dropdowns.
-* **`coreDimensions` Array**: Use this to populate the "Dimensions" picker for system-level groupings.
-    * `factColumn`: The identifier to be used in the `dimensions`, `rowDimensions`, `columnDimensions`, and `filters`
-      arrays of your query.
-    * `name`: The display label for the dimension.
+* **Populating Pickers:**
+* Iterate over the single `availableFields` list to populate all of your UI pickers for both dimensions and measures.
+  Use the `label` for display and the `id` for API requests.
 
 ### Step 2: Query Execution
 
@@ -163,48 +176,172 @@ The `format` query parameter determines the shape of the response.
 
 #### Format 1: `TABLE_ROWS` (For Standard Grids)
 
-**Request (`?format=TABLE_ROWS`)**
+**Request Body (`PivotQueryRequest`)**
+All field references in `dimensions`, `filters`, `sorts`, and `measures` **must** use the standardized `id` received
+from the metadata endpoint.
 
 ```json-lines
 {
   "templateId": "Tcf3Ks9ZRpB",
   "templateVersionId": "fb2GC7FInSu",
-  "dimensions": ["team_uid", "org_unit_name"],
+  "dimensions": ["core:team_uid", "core:org_unit_name"],
   "measures": [
-    { "elementIdOrUid": "etc:etcAbc12345", "aggregation": "SUM", "alias": "population_reached" }
+    { "fieldId": "etc:age_of_head_uid", "aggregation": "AVG", "alias": "avg_age"}
   ],
   "filters": [
-    { "field": "submission_completed_at", "op": ">=", "value": "2025-01-01T00:00:00Z" },
-    { "field": "team_uid", "op": "IN", "value": ["tm12345abc", "tm67890xyz"] }
+    { "field": "core:team_uid", "op": "IN", "value": ["tm12345abc", "tm67890xyz"] },
+    { "field": "etc:age_of_head_uid", "op": ">=", "value": 18 }
   ],
-  "sorts": [ { "fieldOrAlias": "population_reached", "desc": true } ],
+  "sorts": [
+    { "fieldOrAlias": "avg_age", "desc": true }
+  ],
   "limit": 50,
   "offset": 0
 }
 ```
 
-**Response (`TABLE_ROWS`)**
+**Response (`TABLE_ROWS` format)**
 
 ```json-lines
 {
   "columns": [
-    { "id": "team_uid", "label": "Team", "dataType": "UID" },
-    { "id": "org_unit_name", "label": "Org Unit Name", "dataType": "TEXT" },
-    { "id": "population_reached", "label": "Total Age", "dataType": "NUMERIC" }
+    { "id": "core:team_uid", "label": "Team", "dataType": "UID" },
+    { "id": "core:org_unit_name", "label": "Org Unit Name", "dataType": "TEXT" },
+    { "id": "avg_age", "label": "Avg Age", "dataType": "NUMERIC" }
   ],
   "rows": [
-    { "team_uid": "tm12345abc", "org_unit_name": "Org Unit X1", "population_reached": 2450 },
-    { "team_uid": "tm67890xyz", "org_unit_name": "Org Unit X2", "population_reached": 3123 }
+    { "core:team_uid": "tm12345abc", "core:org_unit_name": "Org Unit X1", "avg_age": 35.4 },
+    { "core:team_uid": "tm67890xyz", "core:org_unit_name": "Org Unit X2", "avg_age": 41.2 }
   ],
-  "total": 24 
+  "total": 24
 }
 ```
 
 **Frontend Usage:**
 
-* Map the `columns` array to your grid's column definitions (e.g., `ag-Grid`'s `columnDefs`).
-* Use the `rows` array as the data source (e.g., `rowData`).
+* Map the `columns` array to your grid's column definitions. The `id` property corresponds to the key in each `rows`
+  object.
+* Use the `rows` array as the data source for the grid.
 * Use `total`, `limit`, and `offset` to configure pagination controls.
+
+---
+
+## 3. Making the Table Interactive
+
+Now let's add filtering, sorting, and other user interactions.
+
+### Filtering Your Data
+
+The API makes filtering dynamic and data-driven. You don't need to hardcode any logic.
+
+**How it Works:** The `resolution` object in a field's metadata tells you how to build its filter control.
+
+**Example `PivotFieldDto` for "Team":**
+
+```json-lines
+{
+  "id": "core:team_uid",
+  "label": "Team",
+  // ...
+  "extras": {
+    "resolution": {
+      "type": "API_ENDPOINT",
+      "endpoint": "/api/v1/teams"
+    }
+  }
+}
+```
+
+**Frontend Action:**
+
+1. `dataType`: Drives which filter operators (`=`, `>`, `IN`) and input controls (date picker, number input,
+   dropdown) to show.
+2. When a user wants to filter by "Team," check its `extras.resolution` object.
+3. The `endpoint` property gives you the exact URL to call (`/api/v1/teams`) to get the list of available teams.
+4. Populate a dropdown or multi-select with the results.
+5. Once the user makes a selection, add a `filter` to your query request:
+
+**Request with Filter:**
+
+```json-lines
+{
+  // ...
+  "filters": [
+    {
+      "field": "core:team_uid",
+      "op": "IN",
+      "value": ["resolved1.uid", "resolved2.uid"] 
+    }
+  ]
+}
+```
+
+### Sorting & Pagination
+
+These are straightforward modifications to the query request.
+
+* **Sorting:** To sort by a column, add a `SortDto` object to the `sorts` array.
+  ```json-lines
+  "sorts": [ { "fieldOrAlias": "total_age", "desc": true } ]
+  ```
+    * **Explicit Sortability (`isSortable`)**
+        * **Purpose:** To explicitly declare whether a field can be used in the `sorts` array of a query request.
+        * **Implementation:** If `isSortable` is `true`, your grid UI should show sorting controls (e.g., clickable
+          column headers) for that field. If `false`, those controls should be disabled to prevent the user from making
+          an invalid request.
+
+* **Pagination:** To navigate to the next page, simply update the `offset`.
+  ```json-lines
+  "limit": 50,
+  "offset": 50 // Now requesting page 2
+  ```
+
+### aggregation rules:
+
+* `aggregationModes` to know which functions to offer for a given field.
+* A field's role is flexible. The `isDimension` property suggests its common use.
+* Any field with a non-empty aggregationModes array can be used as a measure.
+* UI should allow users to drag fields into either the 'Dimensions' or 'Measures' area based on these rules.
+* **. Field Grouping & Organization (`displayGroup`):** To prevent overwhelming users with a long, flat list of fields,
+  the metadata provides a `displayGroup` property.
+    * **Purpose:** This property allows you to group related fields together in your UI's field pickers.
+    * **Implementation:** Use this string to build a sectioned list, an accordion, or a tree view for selecting
+      dimensions and measures. This dramatically improves usability, especially for forms with many questions.
+
+      For example, you can group all fields with `"displayGroup": "System Fields"` under one heading and fields with
+      `"displayGroup": "Household Demographics"` under another.
+
+### Data Presentation & Formatting (`formatHint`)
+
+The `dataType` tells you the type of data, while the optional `formatHint` in the `extras` object tells you how to
+display it. This allows the UI to apply context-aware formatting without hardcoding rules.
+
+* **Purpose:** To ensure values like currencies, percentages, and dates are displayed in a human-readable and consistent
+  format.
+* **Implementation:** Your rendering logic should check for this hint and apply the appropriate formatting mask.
+
+| `formatHint` Value | Example Raw Value   | Suggested Rendering |
+|:-------------------|:--------------------|:--------------------|
+| `CURRENCY_USD`     | `1500.75`           | `$1,500.75`         |
+| `PERCENT`          | `0.854`             | `85.4%`             |
+| `SHORT_DATE`       | `2024-09-21T10:00Z` | `09/21/2024`        |
+| *`(not provided)`* | `12345`             | `12,345` (default)  |
+
+### Enabling Hierarchical Drill-Down (`childDimensionId`)
+
+For the "Actionable Hierarchical Context" recipe to work, the front-end needs to know the relationship between parent
+and child entities.
+
+* **Purpose:** The `childDimensionId` property, found inside the `resolution` object for a `HIERARCHICAL_ENTITY`,
+  provides the direct link to the next level down in a hierarchy.
+* **Implementation:** When a user triggers a "Drill Down" action on a row, your application should:
+    1. Identify the field the user clicked (e.g., `core:org_unit_uid`).
+    2. Check its metadata for `extras.resolution.childDimensionId`.
+    3. Construct a new query where the original dimension (`core:org_unit_uid`) is replaced by the child dimension (
+       `core:sub_org_unit_uid`) in the `dimensions` array.
+    4. Add a filter to the new query to only show results for the parent the user clicked on.
+
+---
 
 #### Format 2: `PIVOT_MATRIX` (For True Pivot Tables)
 
@@ -215,11 +352,11 @@ The `format` query parameter determines the shape of the response.
   "templateId": "dt123abc456",
   "templateVersionId": "dtv987zyx321",
   "autoRenameAliases": false, 
-  "rowDimensions": ["team_uid", "team_code"],
-  "columnDimensions": ["activity_name"],
+  "rowDimensions": ["core:team_uid", "core:team_code"],
+  "columnDimensions": ["core:activity_name"],
   "measures": [
-    { "elementIdOrUid": "etc:etcZyx12346", "aggregation": "SUM", "alias": "total_sum" },
-    { "elementIdOrUid": "etc:etcZemZ7mlg", "aggregation": "COUNT", "alias": "household_count" }
+    { "fieldId": "etc:etcZyx12346", "aggregation": "SUM", "alias": "total_sum" },
+    { "fieldId": "etc:etcZemZ7mlg", "aggregation": "COUNT", "alias": "household_count" }
   ]
 }
 ```
@@ -230,8 +367,8 @@ The `format` query parameter determines the shape of the response.
 {
     "meta": { "format": "PIVOT_MATRIX", "templateId": "dt123abc456", "templateVersionId": "dtv987zyx321" },
     "matrix": {
-        "rowDimensionNames": ["team_uid", "team_code"],
-        "columnDimensionNames": ["activity_name"],
+        "rowDimensionNames": ["core:team_uid", "core:team_code"],
+        "columnDimensionNames": ["core:activity_name"],
         "measureAliases": ["total_sum", "household_count"],
         "rowHeaders": [ [ "tm12345abc", "TMA" ], [ "tm67890xyz", "TMB" ] ],
         "columnHeaders": [ [ "Activity A" ], [ "Activity B" ] ],
@@ -262,7 +399,8 @@ These endpoints help build a polished and user-friendly interface.
 
 ### UID-to-Name Resolution
 
-To display human-readable names instead of raw UIDs in your grid.
+For columns with `dataType: "UID""`, you will receive UIDs in the response. To display friendly names, use this batch
+endpoint.
 
 **Endpoint:** `POST /api/v1/resolveUids`
 
@@ -284,57 +422,6 @@ To display human-readable names instead of raw UIDs in your grid.
 **Usage:** After a query returns, collect all unique UIDs from the result set, make a single batch request to this
 endpoint, and use the returned map to format the display values in your grid.
 
-### **Building a Hierarchy Filter (e.g., for Org Units)**
-
-To let users select from a tree of organizational units:
-
-1. Fetch the hierarchy using `GET /api/v1/orgUnits/tree`.
-2. Render this data using a tree component in your UI.
-3. When the user selects one or more org units, collect their UIDs.
-4. Construct a filter in your `PivotQueryRequest`:
-   ```json-lines
-   { "field": "org_unit_uid", "op": "IN", "value": ["ouChild123", "ouChild456"] }
-   ```
-
-### standard REST endpoints to Populate Filter Pickers for Core Dimensions
-
-When a user wants to filter by a dimension (e.g. A user filtering by `team_uid` needs a dropdown of all available
-teams), fetch the possible values from their respective REST endpoints.
-
-* **Teams**: `GET /api/v1/teams?filter=...` -> returns `[{uid, name, label}, ...]`
-* **Activities**: `GET /api/v1/activities?filter=...` -> returns `[{uid, name, label}, ...]`
-* **Org Units (Hierarchy)**: `GET /api/v1/orgUnits?filter=...` -> returns `[{uid, name}, ...]`, &
-  `GET /api/v1/orgUnits/tree` -> returns a tree structure. also available with `?root={uid}`.
-* **Option values lookup**: `GET /api/v1/optionSets/{uid}/values` → returns list of `{uid, code, name, sortOrder}`.
-* **DataElements lookup (for global)**: `GET /api/v1/dataElements?filter=...` -> returns `[{uid, name}, ...]`
-* **DataTemplates**: `GET /api/v1/dataTemplates?filter=...`  -> returns `[{uid, name}, ...]`
-
-### Saving & Loading Views
-
-To allow users to save and share their query configurations.
-
-* **Save View:** `POST /api/v1/analytics/views`
-    * **Body:** `{ "name": "Monthly Household Report by Team", "queryRequest": { ... } }` (`queryRequest`: The full
-      `PivotQueryRequest` object).
-* **List Views:** `GET /api/v1/analytics/views`
-
-```json-lines
-[
-    {
-        "id": 123,
-        "name": "Monthly Household Report by Team",
-        "description": "...",
-        "createdAt": "...",
-        "owner": "user_a"
-    }
-]
-```
-
-* **Load View:** `GET /api/v1/analytics/views/{id}`
-    * **Response:** The full view object, including the `queryRequest`. Use this to restore the UI state.
-
----
-
 ## 5. Advanced Recipes & Patterns
 
 ### Recipe: Implementing Drill-Down
@@ -354,18 +441,18 @@ investigate.
       ```json-lines
       {
         "templateId": "dt123abc456",
-        "dimensions": ["team_uid"],
-        "measures": [{"elementIdOrUid": "etc:etcAbc12345", "aggregation": "SUM", "alias": "population_reached"}]
+        "dimensions": ["core:team_uid"],
+        "measures": [{"fieldId": "etc:etcAbc12345", "aggregation": "SUM", "alias": "population_reached"}]
       }
       ```
     * **New Drill-Down Request:** (Notice the added filter and new dimension)
       ```json-lines
       {
         "templateId": "dt123abc456",
-        "dimensions": ["team_uid", "submission_uid"], // Show individual submissions
-        "measures": [{"elementIdOrUid": "etc:etcAbc12345", "aggregation": "SUM", "alias": "population_reached"}],
+        "dimensions": ["core:team_uid", "core:submission_uid"], // Show individual submissions
+        "measures": [{"fieldId": "etc:etcAbc12345", "aggregation": "SUM", "alias": "population_reached"}],
         "filters": [
-          { "field": "team_uid", "op": "=", "value": "tm12345abc" } // The new drill-down filter
+          { "field": "core:team_uid", "op": "=", "value": "tm12345abc" } // The new drill-down filter
         ]
       }
       ```
@@ -388,14 +475,6 @@ To filter on a calculated result (e.g., show teams with more than 10 households)
 }
 ```
 
-### Recipe: Global (Cross-Template) Queries
-
-To query a single data element across all forms, your UI can provide a "global" mode.
-
-* **Metadata:** Use `GET /api/v1/analytics/pivot/metadata/global` to discover available global data elements.
-* **Querying:** Construct the `PivotQueryRequest` **without** `templateId` and `templateVersionId`. Measures must be
-  prefixed with `de:` (e.g., `"elementIdOrUid": "de:deXYZ67890"`).
-
 ---
 
 ## 6. Error Handling
@@ -412,7 +491,7 @@ The API returns errors in a standardized format. A `400 Bad Request` indicates a
     {
       "field": "measures[0].aggregation",
       "value": "SUM",
-      "issue": "Aggregation 'SUM' is not allowed for data type 'OPTION'."
+      "issue": "Aggregation 'SUM' is not allowed for data type 'UID'."
     }
   ]
 }
@@ -425,10 +504,17 @@ The API returns errors in a standardized format. A `400 Bad Request` indicates a
 
 ---
 
+## 7. Appendix: Data Types and Operators
 
-## **Future Enhancements:**
+The `dataType` from the metadata endpoint determines which operators are available in the filter builder. The following
+table provides the expected mappings.
 
-## Enhancements
-
-1. make the front-end "dumber" It shouldn't need to know the difference between a "core dimension" and a "template field", to the ui they both just a querable id.
-2. Standardize the Query Request (`POST /query`), same thing, + rename `elementIdOrUid` to just `id`
+| dataType      | Supported Operators              | UI Control Suggestion    |
+|:--------------|:---------------------------------|:-------------------------|
+| **NUMERIC**   | `=`, `!=`, `>`, `<`, `>=`, `<=`  | Number Input             |
+| **TEXT**      | `=`, `!=`, `LIKE`, `ILIKE`, `IN` | Text Input               |
+| **BOOLEAN**   | `=`, `!=`                        | Toggle Switch / Dropdown |
+| **TIMESTAMP** | `BETWEEN`, `>=`, `<=`            | Date/Time Range Picker   |
+| **DATE**      | `BETWEEN`, `=>`, `<=`            | Date Range Picker        |
+| **UID**       | `=`, `!=`, `IN`                  | Searchable Dropdown      |
+| **OPTION**    | `=`, `!=`, `IN`                  | Multi-select Dropdown    |

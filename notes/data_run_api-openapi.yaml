@@ -87,10 +87,10 @@ components:
     MeasureRequest:
       type: "object"
       required:
-        - elementIdOrUid
+        - fieldId
         - aggregation
       properties:
-        elementIdOrUid:
+        fieldId:
           type: "string"
           description: "Either 'etc:<uid>' for template scoped field or 'de:<uid>' for global data element or plain uid."
           example: "etc:KiHwmLKUo9j"

@@ -75,7 +75,7 @@ The response contains two primary lists: `fields` (data collected in the form) a
     *   `name`: The display label for the field in the UI.
     *   `dataType`: Drives which filter operators (`=`, `>`, `IN`) and input controls (date picker, number input, dropdown) to show.
     *   `aggregationModes`: The list of allowed aggregations for a measure. Disable or hide any unsupported options.
-    *   `uid`: The identifier for this template field. When creating a `MeasureRequest`, prefix this with `etc:` (e.g., `"elementIdOrUid": "etc:etcAbc12345"`).
+    *   `uid`: The identifier for this template field. When creating a `MeasureRequest`, prefix this with `etc:` (e.g., `"fieldId": "etc:etcAbc12345"`).
     *   `extras.optionSetUid`: If present, use the `/api/v1/optionSets/{uid}/values` endpoint to fetch the available options for dropdowns.
 *   **`coreDimensions` Array**: Use this to populate the "Dimensions" picker for system-level groupings.
     *   `factColumn`: The identifier to be used in the `dimensions`, `rowDimensions`, `columnDimensions`, and `filters` arrays of your query.
@@ -102,7 +102,7 @@ This is the main object you will build from the UI state.
   "templateVersionId": "dtv987zyx321",
   "dimensions": ["team_uid"],
   "measures": [
-    { "elementIdOrUid": "etc:etcAbc12345", "aggregation": "SUM", "alias": "total_age" }
+    { "fieldId": "etc:etcAbc12345", "aggregation": "SUM", "alias": "total_age" }
   ],
   "filters": [
     { "field": "submission_completed_at", "op": ">=", "value": "2025-01-01T00:00:00Z" }
@@ -152,8 +152,8 @@ POST /api/v1/analytics/pivot/query?format=PIVOT_MATRIX
   "rowDimensions": ["team_uid", "team_code"],
   "columnDimensions": ["activity_name"],
   "measures": [
-    { "elementIdOrUid": "etc:etcZyx12346", "aggregation": "SUM", "alias": "total_sum" },
-    { "elementIdOrUid": "etc:etcZemZ7mlg", "aggregation": "COUNT", "alias": "household_count" }
+    { "fieldId": "etc:etcZyx12346", "aggregation": "SUM", "alias": "total_sum" },
+    { "fieldId": "etc:etcZemZ7mlg", "aggregation": "COUNT", "alias": "household_count" }
   ]
 }
 ```
@@ -211,7 +211,7 @@ When a user clicks a cell or row, they often want to see the underlying data tha
         {
           "templateId": "dt123abc456",
           "dimensions": ["team_uid"],
-          "measures": [{"elementIdOrUid": "etc:etcAbc12345", "aggregation": "SUM", "alias": "total_age"}]
+          "measures": [{"fieldId": "etc:etcAbc12345", "aggregation": "SUM", "alias": "total_age"}]
         }
         ```
     *   **New Drill-Down Request:** (Notice the added filter and new dimension)
@@ -219,7 +219,7 @@ When a user clicks a cell or row, they often want to see the underlying data tha
         {
           "templateId": "dt123abc456",
           "dimensions": ["team_uid", "submission_uid"], // Show individual submissions
-          "measures": [{"elementIdOrUid": "etc:etcAbc12345", "aggregation": "SUM", "alias": "total_age"}],
+          "measures": [{"fieldId": "etc:etcAbc12345", "aggregation": "SUM", "alias": "total_age"}],
           "filters": [
             { "field": "team_uid", "op": "=", "value": "tm12345abc" } // The new drill-down filter
           ]
@@ -323,7 +323,7 @@ A user might want to find all teams where the total number of households is grea
 {
   "dimensions": ["team_uid"],
   "measures": [
-    { "elementIdOrUid": "etc:etcDef98765", "aggregation": "COUNT", "alias": "household_count" }
+    { "fieldId": "etc:etcDef98765", "aggregation": "COUNT", "alias": "household_count" }
   ],
   "filters": [
     { "field": "household_count", "op": ">", "value": 10 }

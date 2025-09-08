@@ -112,7 +112,7 @@ A user might want to find all teams where the total number of households is grea
 {
   "dimensions": ["team_uid"],
   "measures": [
-    { "elementIdOrUid": "etc:etcDef98765", "aggregation": "COUNT", "alias": "household_count" }
+    { "fieldId": "etc:etcDef98765", "aggregation": "COUNT", "alias": "household_count" }
   ],
   "filters": [
     { "field": "household_count", "op": ">", "value": 10 }
@@ -205,10 +205,10 @@ The original documentation mentions `de:<uid>` for global queries. This is a pow
 
 "The platform supports two query modes:
 
-1.  **Template-Scoped (Standard):** This is the primary flow where you first select a template. All measures are prefixed with `etc:` (e.g., `"elementIdOrUid": "etc:KiHwmLKUo9j"`).
+1.  **Template-Scoped (Standard):** This is the primary flow where you first select a template. All measures are prefixed with `etc:` (e.g., `"fieldId": "etc:KiHwmLKUo9j"`).
 2.  **Global (Advanced):** This mode allows you to query a specific data element across *all* templates where it is used. To enable this, your UI would need a separate entry point or a toggle that does not require a template selection.
 
 *   **Metadata:** To discover available global elements, call a global metadata endpoint: `GET /api/v1/analytics/pivot/metadata/global`. This would return a list of all unique data elements (`de:<uid>`) available for querying.
-*   **Querying:** When building the `PivotQueryRequest`, you will **omit** the `templateId` and `templateVersionId` fields. Measures will use the `de:` prefix (e.g., `"elementIdOrUid": "de:deXYZ67890"`)."
+*   **Querying:** When building the `PivotQueryRequest`, you will **omit** the `templateId` and `templateVersionId` fields. Measures will use the `de:` prefix (e.g., `"fieldId": "de:deXYZ67890"`)."
 
 By adding these four sections, your developer guide will be exceptionally thorough, covering not just the happy path but also the advanced features and potential complexities an engineer will encounter. This will significantly speed up development and reduce back-and-forth communication.
