@@ -4,6 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
+import org.nmcpye.datarun.analytics.pivot.dto.DataType;
 import org.nmcpye.datarun.analytics.pivot.dto.PivotFieldDto;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jooq.tables.records.DataElementRecord;
@@ -42,8 +43,7 @@ public interface PivotFieldMapper {
     @Mapping(target = "dataType", source = "type", qualifiedByName = "mapValueType")
     @Mapping(target = "factColumn", source = "type", qualifiedByName = "mapFactColumn")
     @Mapping(target = "aggregationModes", source = "type", qualifiedByName = "mapAllowedAggregations")
-    @Mapping(target = "deAggregationType", source = "type", qualifiedByName = "defaultAggregationType")
-    @Mapping(target = "templateModeOnly", constant = "false")
+    @Mapping(target = "extras", source = "type", qualifiedByName = "mapExtras")
     PivotFieldDto toPivotFieldDTO(DataElementRecord de);
 
     List<PivotFieldDto> toPivotFieldDTOs(List<DataElementRecord> dataElements);
@@ -57,28 +57,27 @@ public interface PivotFieldMapper {
     @Mapping(target = "dataType", source = "valueType", qualifiedByName = "mapValueType")
     @Mapping(target = "factColumn", source = "valueType", qualifiedByName = "mapFactColumn")
     @Mapping(target = "aggregationModes", source = "valueType", qualifiedByName = "mapAllowedAggregations")
-    @Mapping(target = "deAggregationType", source = "valueType", qualifiedByName = "defaultAggregationType")
-    @Mapping(target = "templateModeOnly", constant = "true")
+    @Mapping(target = "extras", source = "valueType", qualifiedByName = "mapExtras")
     PivotFieldDto toPivotFieldDTOsFromConfigs(ElementTemplateConfigRecord config);
 
     List<PivotFieldDto> toPivotFieldDTOsFromConfigs(List<ElementTemplateConfigRecord> configs);
 
 
     // --- Custom Mapping Logic ---
+    // the type, no category here, category and Multi is a different metas provided through extra
     @Named("mapValueType")
-    default FieldValueType mapFieldValueType(String elementType) {
+    default DataType mapFieldValueType(String elementType) {
         var type = ValueType.valueOf(elementType);
         return switch (type) {
             case Number, Integer, Percentage,
                  UnitInterval, IntegerPositive,
-                 IntegerNegative, IntegerZeroOrPositive -> FieldValueType.NUMERIC;
-            case Date, DateTime, Time -> FieldValueType.TIMESTAMP;
-            case Boolean, TrueOnly -> FieldValueType.BOOLEAN;
-            case SelectMulti -> FieldValueType.MULTI_SELECT_OPTION;
+                 IntegerNegative, IntegerZeroOrPositive -> DataType.NUMERIC;
+            case Date, DateTime, Time -> DataType.TIMESTAMP;
+            case Boolean, TrueOnly -> DataType.BOOLEAN;
+            case SelectMulti, SelectOne -> DataType.OPTION;
             case OrganisationUnit,
-                 Team, Activity, Entity,
-                 SelectOne -> FieldValueType.REFERENCE;
-            default -> FieldValueType.TEXT;
+                 Team, Activity, Entity -> DataType.UID;
+            default -> DataType.TEXT;
 
         };
     }
@@ -91,27 +90,27 @@ public interface PivotFieldMapper {
 
     @Named("mapFactColumn")
     default String mapFactColumn(String elementType) {
-        final FieldValueType ft = mapFieldValueType(elementType);
-        return switch (ft) {
-            case NUMERIC -> "value_num";
-            case BOOLEAN -> "value_bool";
-            case MULTI_SELECT_OPTION -> "option_id";
-            case REFERENCE -> "value_ref";
-            case TIMESTAMP -> "value_ts";
+        var type = ValueType.valueOf(elementType);
+        return switch (type) {
+            case Number, Integer, Percentage,
+                 UnitInterval, IntegerPositive,
+                 IntegerNegative, IntegerZeroOrPositive -> "value_num";
+            case Boolean, TrueOnly -> "value_bool";
+            case SelectMulti -> "option_id";
+            case OrganisationUnit,
+                 Team, Activity, Entity, SelectOne -> "value_ref_uid";
+            case Date, DateTime, Time -> "value_ts";
             default -> "value_text";
         };
     }
 
-    @Named("defaultAggregationType")
-    default Aggregation mapAggregationType(String elementType) {
-        final FieldValueType ft = mapFieldValueType(elementType);
-        return switch (ft) {
-            case NUMERIC -> Aggregation.SUM;
-            case BOOLEAN -> Aggregation.SUM_TRUE;
-            case MULTI_SELECT_OPTION -> Aggregation.COUNT_DISTINCT;
-            case REFERENCE -> Aggregation.COUNT_DISTINCT;
-            case TIMESTAMP -> Aggregation.MAX;
-            default -> Aggregation.COUNT;
-        };
+    @Named("mapExtras")
+    default Map<String, Object> mapExtras(String elementType) {
+        var type = ValueType.valueOf(elementType);
+
+        Map<String, Object> extras = new HashMap<>();
+        extras.put("isMulti", type == ValueType.SelectMulti);
+        extras.put("isReference", Boolean.TRUE.equals(type.isReference()));
+        return extras;
     }
 }

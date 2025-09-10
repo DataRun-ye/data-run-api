@@ -48,16 +48,16 @@ public final class TemplateFieldMapper {
             .versionNo(templateVersionNo)
             .dataElementUid(meta.elementUid())
             .idPath(conf.getPath())
-            .templateOrder(conf.getOrder())
+            .sortOrder(conf.getOrder())
             .name(conf.getName())
-            .repeatPath(repeatPath)
-            .isCategory(Boolean.TRUE.equals(isCategory))
-            .categoryForRepeat(categoryForRepeatElementUid)
+            .ancestorRepeatPath(repeatPath)
+//            .isCategory(Boolean.TRUE.equals(isCategory))
+//            .categoryForRepeat(categoryForRepeatElementUid)
             .isReference(meta.isReference())
-            .referenceTable(meta.referenceTable())
+//            .ref(meta.referenceTable())
             .optionSetUid(conf instanceof FormDataElementConf f ? f.getOptionSet() : null)
-            .isRepeatable(conf instanceof FormSectionConf s ? Boolean.TRUE.equals(s.getRepeatable()) : Boolean.FALSE)
-            .elementKind(conf instanceof FormDataElementConf ? ElementTemplateConfig.ElementKind.FIELD : ElementTemplateConfig.ElementKind.SECTION);
+            .hasRepeatAncestor(conf instanceof FormSectionConf s ? Boolean.TRUE.equals(s.getRepeatable()) : Boolean.FALSE)
+            .elementKind(conf instanceof FormDataElementConf ? ElementTemplateConfig.ElementKind.FIELD : ElementTemplateConfig.ElementKind.REPEAT);
 
         if (conf instanceof FormDataElementConf field) {
             builder.elementKind(ElementTemplateConfig.ElementKind.FIELD);
@@ -66,11 +66,10 @@ public final class TemplateFieldMapper {
             builder.isMulti(Boolean.TRUE.equals(field.isMultiSelect()));
             builder.isMeasure(Boolean.TRUE.equals(field.getIsMeasure()));
             builder.isDimension(Boolean.TRUE.equals(field.getIsDimension()));
-            builder.showInSummary(Boolean.TRUE.equals(field.getShowInSummary()));
             builder.aggregationType(/*field.getAggregationType() == null ? */getDefaultAggregationType(field.getType())/* : field.getAggregationType()*/);
         } else {
             // section defaults
-            builder.elementKind(ElementTemplateConfig.ElementKind.SECTION);
+            builder.elementKind(ElementTemplateConfig.ElementKind.REPEAT);
             builder.isMulti(Boolean.FALSE);
             builder.isMeasure(Boolean.FALSE);
             builder.aggregationType(AggregationType.DEFAULT);

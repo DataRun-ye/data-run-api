@@ -14,25 +14,23 @@ import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
-import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Lightweight DTO for persisting and querying {@code element_template_config}.
- *
- * <p>This entity represents the configuration of a
- * {@link DataElement} within a
- * {@link DataTemplate}. It is derived from a {@link FormDataElementConf}, and captures all template's related metadata
- * required to describe fields and repeatable sections of a DataTemplate.</p>
- *
- * <p>Acts as the single source of truth for element configuration at runtime.</p>
- *
- * @author Hamza
- * @since 18/08/2025
- */
+/// Lightweight DTO for persisting and querying `element_template_config`.
+///
+/// This entity represents the configuration of a
+/// [DataElement] within a [DataTemplate]. It is derived from a [FormDataElementConf],
+/// and captures all template's related metadata
+/// required to describe fields and repeatable sections of a DataTemplate.
+///
+/// Acts as the single source of truth for element configuration at runtime.
+///
+/// @author Hamza
+/// @since 18/08/2025
 @Entity
 @Table(name = "element_template_config",
     uniqueConstraints = {
@@ -45,7 +43,7 @@ import java.util.Objects;
         @Index(name = "idx_element_template_config_template_version_no",
             columnList = "template_uid, template_version_no"),
         @Index(name = "idx_element_template_config_dataelement", columnList = "data_element_uid"),
-        @Index(name = "idx_element_template_config_repeat_path", columnList = "template_uid, repeat_path")
+        @Index(name = "idx_element_template_config_repeat_path", columnList = "template_uid, ancestor_repeat_path")
     }
 )
 @NoArgsConstructor
@@ -56,7 +54,7 @@ import java.util.Objects;
 @ToString(onlyExplicitlyIncluded = true)
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class ElementTemplateConfig {
-    public enum ElementKind {FIELD, SECTION}
+    public enum ElementKind {FIELD, REPEAT}
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "element_template_config_seq")
@@ -67,178 +65,170 @@ public class ElementTemplateConfig {
     @Column(name = "uid", length = 11, updatable = false, unique = true, nullable = false)
     protected String uid;
 
-    /**
-     * uid of the {@link DataTemplate} containing this configuration.
-     */
-    @NotNull
-    @Column(name = "template_uid", length = 11, nullable = false)
-    @ToString.Include
-    private String templateUid;
-
-    /**
-     * uid of the {@link org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion}.
-     */
-    @NotNull
-    @Column(name = "template_version_uid", length = 11, nullable = false)
-    @ToString.Include
-    private String templateVersionUid;
-
-    /**
-     * Version number of the {@link org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion}.
-     */
-    @NotNull
-    @Column(name = "template_version_no", nullable = false)
-    private Integer versionNo;
-
-    /**
-     * uid of the {@link DataElement} being configured.
-     */
-    @NotNull
-    @Column(name = "data_element_uid", length = 11, nullable = false)
-    private String dataElementUid;
-
-    /**
-     * Path built with element IDs (e.g. "household.children.<elementUid>").
-     */
-    @NotNull
-    @Column(name = "id_path", columnDefinition = "text", nullable = false)
-    @ToString.Include
-    @EqualsAndHashCode.Include
-    private String idPath;
-
-    @Column(name = "template_order")
-    private Integer templateOrder;
-
-    /**
-     * Path built with element names (ends with name). Used during normalization.
-     * <p>Used in normalization.
-     * For {@link org.nmcpye.datarun.datatemplateelement.FormSectionConf}, the id is its name.
-     * For {@link FormDataElementConf}, the id is linked to {@link DataElement} uid.</p>
-     */
-    @Column(name = "name_path", columnDefinition = "text")
-    private String namePath;
-
-    /**
-     * Immutable element name, copied from {@link DataElement}.
-     * Used as a key in {@link DataSubmission#getFormData()}.
-     */
-    @NotNull
-    @Column(name = "name", columnDefinition = "text", nullable = false)
-    private String name;
-
-    /**
-     * Value type of this element.
-     * For sections, {@code dataType = null}.
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "value_type", updatable = false, nullable = false)
-    protected ValueType valueType;
-
-    /**
-     * Aggregation strategy when used as a measure in analytics (pivot tables, charts, etc).
-     * Examples: {@code SUM}, {@code AVG}, {@code COUNT}, {@code FIRST}, {@code LAST}, etc.
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "aggregation_type", length = 32, nullable = false)
-    private AggregationType aggregationType;
-
-    /**
-     * True if this element is a reference type (e.g. Team, OrgUnit, Activity, Option).
-     */
-    @Column(name = "is_reference", nullable = false)
-    private Boolean isReference;
-
-    /**
-     * Name of the database table containing the referenced values (e.g. {@code team}, {@code org_unit}).
-     */
-    @Column(name = "reference_table", length = 100)
-    private String referenceTable;
-
-    /**
-     * Option set uid if this element configures a {@link ValueType#SelectOne} or
-     * {@link ValueType#SelectMulti} field.
-     */
-    @Column(name = "option_set_uid", length = 11)
-    private String optionSetUid;
-
-    /**
-     * True if this element is inside a repeatable section.
-     */
-    @Column(name = "is_repeatable", nullable = false)
-    @Builder.Default
-    private Boolean isRepeatable = Boolean.FALSE;
-
-
-    /**
-     * Path of the ancestor repeatable section, if applicable.
-     */
-    @Column(name = "repeat_path", columnDefinition = "text")
-    private String repeatPath;
-
-    /**
-     * True if this element is a multi-select (values reference multiple Option codes).
-     */
-    @Column(name = "is_multi", nullable = false)
-    @Builder.Default
-    private Boolean isMulti = Boolean.FALSE;
-
-    /**
-     * True if this element is considered a measure for analytics.
-     */
-    @Column(name = "is_measure", nullable = false)
-    @Builder.Default
-    private Boolean isMeasure = Boolean.FALSE;
-
-    /**
-     * True if this element is considered a measure for analytics.
-     */
-    @Column(name = "is_dimension", nullable = false)
-    private Boolean isDimension;
-
-    /**
-     * True if this element is considered a measure for analytics.
-     */
-    @Column(name = "show_in_summary", nullable = false)
-    @Builder.Default
-    private Boolean showInSummary = Boolean.FALSE;
-    /**
-     * uid of the category element that in the same repeat this element is part of
-     * if {@link FormSectionConf#getCategoryDataElementId()} is set.
-     */
-    @Column(name = "category_for_repeat", length = 26)
-    private String categoryForRepeat;
-
-    /**
-     * true if this element is configured as a category of a repeat,
-     * if {@link FormSectionConf#getCategoryDataElementId()} is set.
-     */
-    @Column(name = "is_category")
-    @Builder.Default
-    private Boolean isCategory = Boolean.FALSE;
-
-    /**
-     * Localized display labels, e.g. {@code {"en": "Child Name", "ar": "..."}}.
-     */
-    @Type(JsonType.class)
-    @Column(name = "display_label", columnDefinition = "jsonb")
-    private Map<String, String> displayLabel;
-
-    /**
-     * Snapshot of the element definition, stored as JSON and deserialized to
-     * AbstractElement (actual runtime type decided by the elementType property).
-     */
-    @Type(JsonType.class)
-    @Column(name = "definition_json", columnDefinition = "jsonb")
-    private Object definitionJson;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "element_kind", length = 16, nullable = false)
     @Builder.Default
     private ElementKind elementKind = ElementKind.FIELD;
 
+    /// uid of the [DataTemplate] containing this configuration.
+    @NotNull
+    @Column(name = "template_uid", length = 11, nullable = false)
+    @ToString.Include
+    private String templateUid;
+
+    /// uid of the [DataTemplateVersion].
+    @NotNull
+    @Column(name = "template_version_uid", length = 11, nullable = false)
+    @ToString.Include
+    private String templateVersionUid;
+
+    /// Version number of the [DataTemplateVersion].
+    @NotNull
+    @Column(name = "template_version_no", nullable = false)
+    private Integer versionNo;
+
+    /// globally immutable unique uid of the [DataElement] being configured.
+    @NotNull
+    @Column(name = "data_element_uid", length = 100, nullable = false)
+    private String dataElementUid;
+
+    /// Used as a key in [#getFormData()].
+    /// Immutable and copied from [DataElement] for fast access only, single source of truth is still [DataElement]
+    @NotNull
+    @Column(name = "name", columnDefinition = "text", nullable = false)
+    private String name;
+
+    /// Value type of this element.
+    /// For sections = null.
+    /// Immutable and copied from [DataElement] for fast access only, single source of truth is still [DataElement]
+    @Enumerated(EnumType.STRING)
+    @Column(name = "value_type", updatable = false)
+    protected ValueType valueType;
+
+    /// Aggregation strategy when used as a measure in analytics (pivot tables, charts, etc).
+    /// Examples: `SUM`, `AVG`, `COUNT`, `FIRST`, `LAST`, etc.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "aggregation_type", length = 32)
+    private AggregationType aggregationType;
+
+    /// True if this element valueType is a reference type (e.g. Team, OrgUnit, Activity, Option).
+    @Column(name = "is_reference", nullable = false)
+    @Builder.Default
+    private Boolean isReference = Boolean.FALSE;
+
+//    /// Name of the database table containing the referenced values (e.g. `team`, `org_unit`).
+//    @Column(name = "reference_table", length = 100)
+//    private String referenceTable;
+
     /**
-     * Timestamp of creation.
+     * uid of the category element that in the same repeat this element is part of
+     * if {@link FormSectionConf#getCategoryId()} is set.
      */
+    @Column(name = "category_id", length = 26)
+    private String categoryId;
+
+    /**
+     * true if this element itself, is configured as a category for a repeat,
+     * if {@link FormSectionConf#getCategoryId()} is set.
+     */
+    @Column(name = "is_category")
+    @Builder.Default
+    private Boolean isCategory = Boolean.FALSE;
+
+    /// Option set uid
+    /// [#SelectMulti] field.
+    /// Immutable and copied from [DataElement] for fast access, single source of truth is still [DataElement]
+    @Column(name = "option_set_uid", length = 11)
+    private String optionSetUid;
+    /// True if this element is a multi-select.
+    @Column(name = "is_multi", nullable = false)
+    @Builder.Default
+    private Boolean isMulti = Boolean.FALSE;
+
+    /// True if this element is considered a measure for analytics.
+    @Column(name = "is_measure", nullable = false)
+    @Builder.Default
+    private Boolean isMeasure = Boolean.FALSE;
+
+    /// True if this element is considered a measure for analytics.
+    @Column(name = "is_dimension", nullable = false)
+    @Builder.Default
+    private Boolean isDimension = Boolean.FALSE;;
+
+    @Column(name = "sort_order")
+    private Integer sortOrder;
+
+
+    /// semantic_grain — `submission` or `repeat:<repeat_ancestor_path>`.
+    ///
+    /// ETL to find `ElementTemplateConfig` (by `template_version_uid`) and use this to produce facts.
+    /// ```
+    /// If semantic_grain == submission produce a submission-level fact.
+    /// If semantic_grain == repeat:... iterate repeat array using repeat_id_field/_index and produce one fact per instance.
+    ///```
+    private String semanticGrain;
+
+    /// Path built with element IDs (e.g. "household.children.<elementUid>").
+    @NotNull
+    @Column(name = "id_path", length = 3000, nullable = false)
+    @ToString.Include
+    @EqualsAndHashCode.Include
+    private String idPath;
+    @Column(name = "path_hash")
+    private Long pathHash;
+    /// Path built with element names (ends with name). Used during normalization.
+    ///
+    /// Used in normalization.
+    /// For [FormSectionConf], the id is its name.
+    /// For [FormDataElementConf], the id is linked to [DataElement] uid.
+    @Column(name = "name_path", length = 3000)
+    private String namePath;
+
+    /// The path that semantically represent a grain of data
+    /// null if submission-level
+    /// the full `repeat_path` (e.g., `root.householdinfo.children`) mixes two different concepts:
+    /// 1.  **Structural Grouping:** The `householdinfo` part is just a visual grouping on the form. An admin could rename it to `household_details` tomorrow, and it would mean the exact same thing to the user.
+    /// 2.  **Data Grain:** The `children` part, because it is `repeatable: true`, defines a fundamental change in the data's structure. It means "one or more children related to one parent submission." This is the true semantic grain.
+    @Column(name = "semantic_path", length = 3000)
+    private String semanticPath;
+
+    //------------------------------
+    // Repeat related attributes
+    //------------------------------
+    /// Is this field part of a repeatable section?
+    @Column(name = "has_repeat_ancestor", nullable = false)
+    @Builder.Default
+    private Boolean hasRepeatAncestor = Boolean.FALSE;
+
+    /**
+     * repeat-only path to nearest repeatable ancestor
+     */
+    @Column(name = "ancestor_repeat_semantic_path", length = 3000)
+    private String ancestorRepeatSemanticPath;
+
+    /// full idPath to nearest repeatable ancestor (or null)
+    @Column(name = "ancestor_repeat_path", length = 3000)
+    private String ancestorRepeatPath;
+
+    /// Localized display labels, e.g. `{"en": "Child Name", "ar": "..."}`.
+    @Type(JsonType.class)
+    @Column(name = "display_label", columnDefinition = "jsonb")
+    private Map<String, String> displayLabel;
+
+//    @Column(name = "visibility_expression", columnDefinition = "jsonb")
+//    private String visibilityExpression;
+//
+//    @Type(JsonType.class)
+//    @Column(name = "visibility_dependency_keys", columnDefinition = "jsonb")
+//    private Map<String, String> visibilityDependencyKeys;
+
+    /// Snapshot of the element definition, stored as JSON and deserialized to
+    /// AbstractElement (actual runtime type decided by the elementType property).
+    @Type(JsonType.class)
+    @Column(name = "definition_json", columnDefinition = "jsonb")
+    private Object definitionJson;
+
+    /// Timestamp of creation.
     @NotNull
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

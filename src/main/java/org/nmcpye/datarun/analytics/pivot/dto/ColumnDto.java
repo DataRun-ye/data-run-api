@@ -14,6 +14,6 @@ import java.util.Map;
 public class ColumnDto {
     String id;     // e.g., "element_id" or measure alias "SUM_VAL"
     String label;  // user friendly label
-    String dataType; // optional, e.g., "value_num"
+    DataType dataType; // optional, e.g., "value_num"
     Map<String,Object> extras;
 }

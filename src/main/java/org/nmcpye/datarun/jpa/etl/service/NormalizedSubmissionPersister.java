@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.jpa.etl.service;
 
 import lombok.RequiredArgsConstructor;
+import org.nmcpye.datarun.jpa.etl.dao.IElementDataValueDao;
 import org.nmcpye.datarun.jpa.etl.dao.IRepeatInstancesDao;
-import org.nmcpye.datarun.jpa.etl.dao.ISubmissionValuesDao;
 import org.nmcpye.datarun.jpa.etl.model.NormalizedSubmission;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -39,7 +39,7 @@ import java.security.NoSuchAlgorithmException;
 public class NormalizedSubmissionPersister {
 
     private final IRepeatInstancesDao repeatInstancesDao;
-    private final ISubmissionValuesDao submissionValuesDao;
+    private final IElementDataValueDao submissionValuesDao;
 
     /**
      * For the advisory lock

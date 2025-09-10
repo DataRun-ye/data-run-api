@@ -128,7 +128,7 @@ public class PivotFieldJooqMapper {
     public static Field<?> toJooqFieldForPivotField(PivotFieldDto dto) {
         if (dto == null) return PG.VALUE_TEXT;
         // prefer explicit factColumn (if provided by metadata), otherwise dataType
-        String fact = dto.factColumn() != null && !dto.factColumn().isBlank() ? dto.factColumn() : dto.dataType();
+        String fact = dto.factColumn();
         return toJooqField(fact);
     }
 }

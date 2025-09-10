@@ -107,5 +107,20 @@
             DROP TABLE IF EXISTS element_data_value;
         </rollback>
     </changeSet>
-
+    <changeSet id="2025-09-07-001-create value_as_text column" author="hamza">
+        <comment>ETL. Create value_as_text generated column to element_data_value table</comment>
+        <sql splitStatements="true" stripComments="true">
+    <![CDATA[
+            ALTER TABLE element_data_value
+                ADD COLUMN value_as_text TEXT GENERATED ALWAYS AS (
+                    COALESCE(
+                        (EXTRACT(epoch FROM value_ts)) :: BIGINT :: TEXT,
+                        value_ref_uid,
+                        option_uid,
+                        value_text,
+                        value_num :: TEXT,
+                        value_bool :: TEXT)) STORED;
+            ]]>
+  </sql>
+    </changeSet>
 </databaseChangeLog>

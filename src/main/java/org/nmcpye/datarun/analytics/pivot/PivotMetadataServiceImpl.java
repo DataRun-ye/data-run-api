@@ -2,7 +2,7 @@ package org.nmcpye.datarun.analytics.pivot;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
+import org.nmcpye.datarun.analytics.pivot.dto.DataType;
 import org.nmcpye.datarun.analytics.pivot.dto.FieldCategory;
 import org.nmcpye.datarun.analytics.pivot.dto.PivotFieldDto;
 import org.nmcpye.datarun.analytics.pivot.dto.PivotMetadataResponse;
@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Implementation notes for PivotMetadataServiceImpl:
@@ -58,7 +59,6 @@ public class PivotMetadataServiceImpl implements PivotMetadataService {
 
         List<ElementTemplateConfig> etcRows = etcRepository.findAllByTemplateUidAndTemplateVersionUid(templateUid, templateVersionUid);
 
-        // Batch load data elements (immutable metadata)
         Set<String> dataElementUids = etcRows.stream()
             .map(ElementTemplateConfig::getDataElementUid)
             .filter(Objects::nonNull)
@@ -69,189 +69,138 @@ public class PivotMetadataServiceImpl implements PivotMetadataService {
             : dataElementRepository.findAllByUidIn(dataElementUids)
             .stream().collect(Collectors.toMap(DataElement::getUid, de -> de));
 
-        // Build measure DTOs from template config (template-mode)
-        List<PivotFieldDto> measures = etcRows.stream().map(etc -> {
+        // STEP 1: Build DTOs for template-specific fields.
+        List<PivotFieldDto> templateFields = etcRows.stream().map(etc -> {
             DataElement de = dataElementMap.get(etc.getDataElementUid());
-            ValueType vt = de != null ? de.getValueType() : null;
+            Map<String, Object> extras = buildExtras(etc, de); // Pass DE for richer extras
 
-            Map<String, Object> extras = new HashMap<>();
-            extras.put("isMulti", Boolean.TRUE.equals(etc.getIsMulti()));
-            extras.put("isReference", Boolean.TRUE.equals(etc.getIsReference()));
-            extras.put("referenceTable", etc.getReferenceTable());
-            extras.put("optionSetUid", etc.getOptionSetUid());
-            extras.put("isCategory", Boolean.TRUE.equals(etc.getIsCategory()));
-            extras.put("repeatPath", etc.getRepeatPath());
-            extras.put("categoryForRepeat", etc.getCategoryForRepeat());
-
-            // **dataType:** where to read the value for aggregation
-            String dataType = resolveDataType(etc, de); // returns "value_num", "value_ts", "option_uid", etc.
-
-            // **We separate two concepts:**
-            //  - identity / predicate column — the MV column used to identify rows belonging to
-            //  a logical element (e.g. etc_uid) or
-            //  dimension (e.g. team_uid, etc.). This is the factColumn value in PivotFieldDto.
-            //  - measure target / dataType — which MV value column stores
-            //  the actual measurement value (value_num, value_text, value_bool,
-            //  value_ts, option_uid, value_ref_uid). This remains dataType in PivotFieldDto.
-            //
-            //  ---
-            //
-            // FACT COLUMN: the MV column to use to identify & predicate rows for this configured field
-            // For template-mode fields we always use the etc_uid MV column to filter/group.
-            //
-            // **Notes:**
-            // pivotFieldDto.factColumn is always set for template-mode
-            // fields to "etc_uid".
-            //  - For core dimensions we set factColumn to their UID column (e.g. team_uid).
-            //  - If we later add fields that are best looked up by de_uid instead
-            //  of etc_uid, set factColumn accordingly at DTO time.
-            //
-            // Explicit factColumn removes heuristics in validation and
-            String factColumn = "etc_uid"; // template-mode fields map to this
-
-            Set<Aggregation> aggModes = aggrResolver.allowedFor(vt);
+            // Add resolution metadata for the UI
+            if (de != null && de.getOptionSet() != null) {
+                extras.put("resolution", Map.of(
+                    "type", "API_ENDPOINT",
+                    "endpoint", String.format("/api/v1/optionSets/%s/values", de.getOptionSet().getUid())
+                ));
+            }
 
             return PivotFieldDto.builder()
-                .id("etc:" + etc.getUid())
+                .id("etc:" + etc.getUid()) // NEW: Standardized ID
                 .label(Objects.toString(etc.getDisplayLabel(), etc.getName()))
                 .category(FieldCategory.DYNAMIC_MEASURE)
-                .dataType(dataType)
-                .factColumn(factColumn)
-                .aggregationModes(aggModes)
-                .templateModeOnly(true)
-                .source("etc")
+                .dataType(resolveDataType(etc, de))
+                .factColumn("etc_uid") // The column used for predicates and grouping
+                .deUid(etc.getDataElementUid())
+                .aggregationModes(aggrResolver.allowedFor(de != null ? de.getValueType() : null))
                 .extras(extras)
                 .build();
-        }).collect(Collectors.toList());
+        }).toList();
 
+        // STEP 2: Combine with core dimensions into a single list.
+        List<PivotFieldDto> allFields = Stream.concat(getCoreDimensions()
+                .stream(), templateFields.stream())
+            .collect(Collectors.toList());
+
+        // STEP 3: Return the new, unified response object.
         return PivotMetadataResponse.builder()
-            .coreDimensions(getCoreDimensions())
-            .formDimensions(List.of())
-            .measures(measures)
+            .availableFields(allFields)
             .hints(Map.of(
-                "mode", "template",
                 "templateUid", templateUid,
                 "templateVersionUid", templateVersionUid))
             .build();
     }
 
-    // Core dimensions (uid-native)
+    /**
+     * REFACTORED: This method is now much simpler. It leverages the main, cached
+     * getMetadataForTemplate method and filters the result. This eliminates
+     * code duplication and ensures consistency.
+     */
+    @Transactional(readOnly = true)
+    @Override
+    public Optional<PivotFieldDto> resolveFieldById(String standardizedId, String templateUid, String templateVersionUid) {
+        if (standardizedId == null) return Optional.empty();
+
+        // Call the main method (which will hit the cache) and find the field.
+        return getMetadataForTemplate(templateUid, templateVersionUid)
+            .getAvailableFields().stream()
+            .filter(field -> standardizedId.equals(field.id()))
+            .findFirst();
+    }
+
+    /**
+     * NEW: Helper to build the core dimensions list with standardized IDs and resolution metadata.
+     */
     private List<PivotFieldDto> getCoreDimensions() {
         return List.of(
-            PivotFieldDto.builder()
-                .id("team_uid")
-                .label("Team")
-                .category(FieldCategory.CORE_DIMENSION)
-                .dataType("team_uid")
-                .factColumn("team_uid")
-                .aggregationModes(aggrResolver.allowedFor(ValueType.Team))
-                .templateModeOnly(false).source("system")
-                .build(),
-
-            PivotFieldDto.builder()
-                .id("org_unit_uid")
-                .label("Org Unit")
-                .category(FieldCategory.CORE_DIMENSION)
-                .dataType("org_unit_uid")
-                .factColumn("org_unit_uid")
-                .aggregationModes(aggrResolver.allowedFor(ValueType.OrganisationUnit))
-                .templateModeOnly(false)
-                .source("system")
-                .build(),
-
-            PivotFieldDto.builder()
-                .id("activity_uid")
-                .label("Activity")
-                .category(FieldCategory.CORE_DIMENSION)
-                .dataType("activity_uid")
-                .factColumn("activity_uid")
-                .aggregationModes(aggrResolver.allowedFor(ValueType.Activity))
-                .templateModeOnly(false)
-                .source("system")
-                .build(),
-
-            PivotFieldDto.builder()
-                .id("submission_completed_at")
-                .label("Submission completed at")
-                .category(FieldCategory.CORE_DIMENSION)
-                .dataType("submission_completed_at")
-                .factColumn("submission_completed_at")
-                .aggregationModes(Set.of(Aggregation.MIN, Aggregation.MAX))
-                .templateModeOnly(false)
-                .source("system")
-                .build()
+            createCoreDimension("team_uid", "Team",
+                ValueType.Team, "/api/v1/teams"),
+            createCoreDimension("org_unit_uid", "Org Unit",
+                ValueType.OrganisationUnit, "/api/v1/orgUnits"),
+            createCoreDimension("activity_uid", "Activity",
+                ValueType.Activity, "/api/v1/activities"),
+            createCoreDimension("submission_completed_at", "Submission Date",
+                ValueType.DateTime, null),
+            // NEW: Add Hierarchical Dimensions
+            createCoreDimension("child_category_name", "Child Category Name",
+                ValueType.Text, null),
+            createCoreDimension("parent_category_name", "Parent Category Name",
+                ValueType.Text, null)
         );
     }
 
     /**
-     * {@inheritDoc}
+     * NEW: A factory method to consistently create Core Dimension DTOs.
      */
-    @Transactional(readOnly = true)
-    @Override
-    public Optional<PivotFieldDto> resolveFieldByUidOrId(String uidOrId, String templateUid, String templateVersionUid) {
-        if (uidOrId == null) return Optional.empty();
-
-        // template-level lookup
-        List<ElementTemplateConfig> etcRows = etcRepository.findAllByTemplateUidAndTemplateVersionUid(templateUid, templateVersionUid);
-        for (ElementTemplateConfig etc : etcRows) {
-            String etcClientId = "etc:" + etc.getUid();
-            if (etcClientId.equals(uidOrId) || Objects.equals(etc.getUid(), uidOrId)) {
-                DataElement de = null;
-                if (etc.getDataElementUid() != null) {
-                    de = dataElementRepository.findByUid(etc.getDataElementUid()).orElse(null);
-                }
-                String dataType = resolveDataType(etc, de);
-
-                Map<String, Object> extras = new HashMap<>();
-                extras.put("isMulti", Boolean.TRUE.equals(etc.getIsMulti()));
-                extras.put("isReference", Boolean.TRUE.equals(etc.getIsReference()));
-                extras.put("optionSetUid", etc.getOptionSetUid());
-                extras.put("isCategory", etc.getCategoryForRepeat() != null);
-                extras.put("repeatPath", etc.getRepeatPath());
-                extras.put("categoryForRepeat", etc.getCategoryForRepeat());
-
-                PivotFieldDto dto = PivotFieldDto.builder()
-                    .id(etcClientId)
-                    .label(Objects.toString(etc.getDisplayLabel(), etc.getName()))
-                    .category(FieldCategory.DYNAMIC_MEASURE)
-                    .dataType(dataType)
-                    .factColumn("etc_uid")
-                    .aggregationModes(aggrResolver
-                        .allowedFor(de != null ? de.getValueType() : null))
-                    .templateModeOnly(true)
-                    .source("etc")
-                    .extras(extras)
-                    .build();
-                return Optional.of(dto);
-            }
+    private PivotFieldDto createCoreDimension(String factColumn, String label,
+                                              ValueType valueType, String resolutionEndpoint) {
+        Map<String, Object> extras = new HashMap<>();
+        // This 'resolution' map is key to making the UI "dumber" and more data-driven.
+        if (resolutionEndpoint != null) {
+            extras.put("resolution", Map.of(
+                "type", "API_ENDPOINT",
+                "endpoint", resolutionEndpoint
+            ));
         }
 
-        // Not a template field. Optionally fall back to global DataElement
-        if (uidOrId.startsWith("de:")) {
-            String deUid = uidOrId.substring("de:".length());
-            DataElement de = dataElementRepository.findByUid(deUid).orElse(null);
-            if (de != null) {
-                Map<String, Object> extras = new HashMap<>();
-                extras.put("isMulti", de.getValueType() == ValueType.SelectMulti);
-                extras.put("isReference", de.getValueType().isSystemReferenceType());
-                extras.put("optionSetUid", de.getOptionSet().getUid());
+        return PivotFieldDto.builder()
+            .id("core:" + factColumn) // NEW: Standardized ID
+            .label(label)
+            .category(FieldCategory.CORE_DIMENSION)
+            .dataType(mapValueTypeToDataType(valueType)) // Use consistent mapping
+            .factColumn(factColumn) // For core dimensions, the factColumn is the ID itself
+            .aggregationModes(aggrResolver.allowedFor(valueType))
+            .extras(extras)
+            .build();
+    }
 
-                PivotFieldDto dto = PivotFieldDto.builder()
-                    .id("de:" + de.getUid())
-                    .label(de.getName())
-                    .category(FieldCategory.DYNAMIC_MEASURE)
-                    .dataType(mapValueTypeToDataType(de.getValueType()))
-                    .factColumn("de_uid")
-                    .aggregationModes(aggrResolver.allowedFor(de.getValueType()))
-                    .templateModeOnly(false)
-                    .source("data_element")
-                    .extras(extras)
-                    .build();
-                return Optional.of(dto);
-            }
+    /**
+     * NEW: Helper to build the extras map, now including resolution info for options.
+     */
+    private Map<String, Object> buildExtras(ElementTemplateConfig etc, DataElement de) {
+        Map<String, Object> extras = new HashMap<>();
+        extras.put("isMulti", Boolean.TRUE.equals(etc.getIsMulti()));
+        extras.put("isReference", Boolean.TRUE.equals(etc.getIsReference()));
+//        extras.put("referenceTable", etc.getReferenceTable());
+        extras.put("repeatPath", etc.getAncestorRepeatPath());
+
+        // Add resolution metadata for Option Sets to drive the UI
+        if (de != null && de.getOptionSet() != null) {
+            extras.put("optionSetUid", de.getOptionSet().getUid());
+            extras.put("resolution", Map.of(
+                "type", "API_ENDPOINT",
+                "endpoint", String.format("/api/v1/optionSets/%s/values", de.getOptionSet().getUid())
+            ));
         }
 
-        return Optional.empty();
+        // --- NEW LOGIC FOR RECOMMENDATIONS ---
+        // Check if the field is in a repeatable section AND that section has a category defined.
+        if (Boolean.TRUE.equals(etc.getHasRepeatAncestor()) && etc.getCategoryId() != null && !etc.getCategoryId().isBlank()) {
+
+            // If so, add the "recommendedDimensions" hint to the extras.
+            // We recommend grouping by "child_category_name" because the ETL process
+            // denormalizes the category's friendly name into this column in the materialized view.
+            // We use the standardized ID as this is what the client will use in its query.
+            extras.put("recommendedDimensions", List.of("core:child_category_name"));
+        }
+        return extras;
     }
 
     /**
@@ -260,38 +209,53 @@ public class PivotMetadataServiceImpl implements PivotMetadataService {
      * This method returns one of the pivot dataType strings used across the analytics stack:
      * - "value_num", "value_bool", "option_uid", "value_ts", "value_text", "team_uid", ...
      */
-    private String resolveDataType(ElementTemplateConfig etc, DataElement de) {
+    private DataType resolveDataType(ElementTemplateConfig etc, DataElement de) {
         // prefer DataElement (immutable) for type inference
         if (de != null) {
             return switch (de.getValueType()) {
                 case Number, Integer, IntegerPositive, IntegerNegative,
                      IntegerZeroOrPositive, Percentage,
-                     UnitInterval -> "value_num";
-                case Boolean, TrueOnly -> "value_bool";
-                case SelectOne, SelectMulti ->
-                    // multi-select rows will populate option_uid; single select/reference will populate value_ref_uid
-                    Boolean.TRUE.equals(etc.getIsMulti()) ? "option_uid" : "value_ref_uid";
-                case Date, DateTime, Time -> "value_ts";
-                default -> "value_text";
+                     UnitInterval -> DataType.NUMERIC;
+                case Boolean, TrueOnly -> DataType.BOOLEAN;
+                case SelectMulti -> DataType.OPTION;
+                // multi-select rows will populate option_uid; single select/reference will populate value_ref_uid
+//                    Boolean.TRUE.equals(etc.getIsMulti()) ? "option_uid" : "value_ref_uid";
+                case Date, DateTime, Time -> DataType.TIMESTAMP;
+                case OrganisationUnit, SelectOne, Activity, Team -> DataType.UID;
+                default -> DataType.TEXT;
             };
         }
 
         // fallback to template hints if DataElement absent
-        if (Boolean.TRUE.equals(etc.getIsMulti())) return "option_uid";
-        if (Boolean.TRUE.equals(etc.getIsReference())) return "value_ref_uid";
-        return "value_text";
+        if (Boolean.TRUE.equals(etc.getIsMulti())) return DataType.OPTION;
+        if (Boolean.TRUE.equals(etc.getIsReference())) return DataType.UID;
+        return DataType.TEXT;
     }
 
-    private static String mapValueTypeToDataType(ValueType vt) {
-        if (vt == null) return "value_text";
+    private static DataType mapValueTypeToDataType(ValueType vt) {
+        if (vt == null) return DataType.TEXT;
         return switch (vt) {
             case Number, Integer, IntegerPositive, IntegerNegative,
-                 IntegerZeroOrPositive, Percentage, UnitInterval -> "value_num";
-            case Boolean -> "value_bool";
-            case SelectMulti -> "option_uid";
-            case Date, DateTime -> "value_ts";
-            case Team, OrganisationUnit, Activity, SelectOne -> "value_ref_uid";
-            default -> "value_text";
+                 IntegerZeroOrPositive, Percentage,
+                 UnitInterval -> DataType.NUMERIC;
+            case Boolean -> DataType.BOOLEAN;
+            case SelectMulti -> DataType.OPTION;
+            case Date, DateTime -> DataType.TIMESTAMP;
+            case Team, OrganisationUnit,
+                 Activity, SelectOne -> DataType.UID;
+            default -> DataType.TEXT;
         };
     }
+//    private static String mapValueTypeToDataType(ValueType vt) {
+//        if (vt == null) return "value_text";
+//        return switch (vt) {
+//            case Number, Integer, IntegerPositive, IntegerNegative,
+//                 IntegerZeroOrPositive, Percentage, UnitInterval -> "value_num";
+//            case Boolean -> "value_bool";
+//            case SelectMulti -> "option_uid";
+//            case Date, DateTime -> "value_ts";
+//            case Team, OrganisationUnit, Activity, SelectOne -> "value_ref_uid";
+//            default -> "value_text";
+//        };
+//    }
 }

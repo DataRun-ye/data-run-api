@@ -164,9 +164,9 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
         }
         return sections.stream()
             .filter(FormSectionConf::getRepeatable)
-            .filter(r -> r.getCategoryDataElementId() != null)
+            .filter(r -> r.getCategoryId() != null)
             .collect(Collectors.toMap(AbstractElement::getPath,
-                FormSectionConf::getCategoryDataElementId));
+                FormSectionConf::getCategoryId));
     }
 
 

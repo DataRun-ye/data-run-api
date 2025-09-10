@@ -18,7 +18,7 @@ import java.util.List;
  * @author Hamza Assada
  * @since 13/08/2025
  */
-public interface ISubmissionValuesDao {
+public interface IElementDataValueDao {
     void upsertSubmissionValuesBatch(List<ElementDataValue> rows);
 
     void markAllAsDeletedForSubmission(String submissionId);

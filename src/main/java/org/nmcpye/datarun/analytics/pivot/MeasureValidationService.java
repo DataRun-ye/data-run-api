@@ -10,11 +10,10 @@ import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
  * {@link ValidatedMeasure} that the PivotQueryBuilder can consume.
  * <p>
  * Responsibilities:
- * - Resolve element identifiers provided by the client (template-level etc:<uid> or global de:<uid>)
- * using PivotMetadataService and DataElementRepository.
+ * - Resolve element identifiers provided by the client.
  * - Validate requested aggregation against allowed aggregationModes for the element.
  * - Determine the correct MV target field for aggregation (value_num, option_uid, value_ts, value_bool etc).
- * - Build element predicate (Condition) that scopes the aggregate (prefer etc_uid for etc:..., fall back to de_uid).
+ * - Build element predicate (Condition) that scopes the aggregate
  * - Normalize alias (uniqueness / auto-rename policy or throw).
  *
  * @author Hamza Assada
@@ -22,13 +21,7 @@ import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
  */
 public interface MeasureValidationService {
     /**
-     * Validate and convert a MeasureRequest into a ValidatedMeasure inside a template context.
-     *
-     * @param req                 client measure request (elementIdOrUid, aggregation, alias, distinct, optionId)
-     * @param templateUid         template uid for template-mode resolution
-     * @param templateVersionUid  template version uid for version-scoped resolution
-     * @return ValidatedMeasure ready for query builder
-     * @throws InvalidMeasureException on validation or resolution failure
+     * Validate and convert a MeasureRequest into a ValidatedMeasure.
      */
     ValidatedMeasure validate(MeasureRequest req, String templateUid, String templateVersionUid) throws InvalidMeasureException;
 }

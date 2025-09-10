@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class MeasureRequest {
     /**
-     * elementIdOrUid: client identifier for the element. Accepts:
+     * fieldId: client identifier for the element. Accepts:
      * <p>
      * - "etc:<uid>"   => template-scoped element (prefer etc_uid)
      * <p>
@@ -25,7 +25,7 @@ public class MeasureRequest {
      * <p>
      * - plain etc uid or de uid (resolver must handle)
      */
-    private String elementIdOrUid;
+    private String fieldId;
 
     /**
      * aggregation: "SUM", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM_TRUE".

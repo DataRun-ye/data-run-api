@@ -168,6 +168,12 @@ public class ElementDataValue {
      */
     private String valueRefUid;
 
+    /**
+     * Value stored as text (for string values or normalized text representation).
+     * <p>
+     * db: {@code value_as_text}
+     */
+    private String valueAsText;
     // ------------------------
     // Auditing & lifecycle
     // ------------------------

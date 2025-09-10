@@ -7,19 +7,19 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Represents a single field (dimension or measure) available for analytics.
- * Metadata describing a field that can be used in pivot rows/cols/values/filters.
+ * A self-describing representation of any field available for analytics. This DTO is the core of our metadata contract.
  *
- * @param id                "etc:<uid>" for template-scoped element configs, "de:<uid>" for canonical data elements,
- *                          or system ids like "team_uid", "org_unit_uid".
- * @param label             Human-readable label for the UI. E.g., "Organization Unit", "MUAC Score"
- * @param category          The category of the field, for UI grouping.
- * @param dataType          The underlying data type. Informs the front-end on how to format values.
- * @param factColumn        column in pivot_grid_facts to use for template-mode predicates (e.g. "etc_uid")
- * @param factColumnGlobal  column in pivot_grid_facts to use for global-mode predicates (e.g. "de_uid")
+ * @param id               * The standardized, unique identifier for this field. This is the ID the
+ *                         client will send back in query requests. Format: "namespace:value"
+ *                         (e.g., "core:team_uid", "etc:abc123xyz"). or system ids like "team_uid", "org_unit_uid".
+ * @param label            Human-readable label for the UI. E.g., "Organization Unit", "MUAC Score"
+ * @param category         The category of the field, for UI grouping.
+ * @param dataType         The data type of the field's *value* (e.g., "value_num", "value_ts", "option_uid").
+ *                         This informs the UI how to build filter controls and informs the backend which value column in the materialized view to aggregate.
+ * @param factColumn       The column in the materialized view used for *identifying* rows belonging to this field. This is used in WHERE/GROUP BY clauses. (e.g., "etc_uid", "team_uid").
  * @param deUid
- * @param aggregationModes  List of aggregations allowed for this field. E.g., ["SUM", "AVG"]
- * @param extras            Extras for UI: optionSetId, referenceTable, repeatPath, isMulti, isCategory, categoryForRepeat
+ * @param aggregationModes List of aggregations allowed for this field. E.g., ["SUM", "AVG"]
+ * @param extras           Extras for UI: optionSetId, referenceTable, repeatPath, isMulti, isCategory, categoryForRepeat
  * @author Hamza Assada
  * @since 26/08/2025
  */
@@ -29,10 +29,9 @@ public record PivotFieldDto(
     String id,
     String label,
     FieldCategory category,
-    String dataType,
+    DataType dataType,
     String factColumn,
-    String factColumnGlobal,
-    String deUid, // dataElementUid
+    String deUid, // The canonical DataElement UID, if applicable.
     Set<Aggregation> aggregationModes,
     Map<String, Object> extras
 ) {

@@ -8,6 +8,7 @@ import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
 import org.nmcpye.datarun.analytics.pivot.dto.FilterDto;
 import org.nmcpye.datarun.analytics.pivot.dto.SortDto;
+import org.nmcpye.datarun.analytics.pivot.fieldresolver.AnalyticsFieldResolver;
 import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
 import org.nmcpye.datarun.jooq.Tables;
 import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
@@ -54,6 +55,7 @@ public class PivotQueryBuilder {
     private final boolean strictOrderValidation = true; // or inject from config
 
     private static final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
+    private final AnalyticsFieldResolver fieldResolver; // NEW: Inject the resolver
 
     /**
      * Build the jOOQ Select query (without fetching).
@@ -88,8 +90,8 @@ public class PivotQueryBuilder {
 
         // dimensions -> groupBy/select
         if (dimensions != null) {
-            for (String dim : dimensions) {
-                Field<?> f = resolveFactField(dim);
+            for (String dimId : dimensions) {
+                Field<?> f = fieldResolver.resolveDimensionField(dimId);
                 select.add(f);
                 groupBy.add(f);
             }
@@ -120,7 +122,10 @@ public class PivotQueryBuilder {
 
         if (filters != null) {
             for (var fil : filters) {
-                Field<?> f = resolveFactFieldOrAlias(fil.field(), aliasToSelectField);
+                // Resolve the field. If it's a measure alias, use the existing field.
+                // Otherwise, resolve it as a dimension field.
+                Field<?> f = aliasToSelectField.getOrDefault(fil.field(),
+                    fieldResolver.resolveDimensionField(fil.field()));
                 cond = cond.and(translateFilter(f, fil.op(), fil.value()));
             }
         }
@@ -136,7 +141,8 @@ public class PivotQueryBuilder {
         List<SortField<?>> sortFields = new ArrayList<>();
         if (sorts != null && !sorts.isEmpty()) {
             for (var s : sorts) {
-                Field<?> candidate = aliasToSelectField.getOrDefault(s.fieldOrAlias(), resolveFactField(s.fieldOrAlias()));
+                Field<?> candidate = aliasToSelectField.getOrDefault(s.fieldOrAlias(),
+                    fieldResolver.resolveDimensionField(s.fieldOrAlias()));
                 // candidate might be a Field<?> or aggregate alias; calling asc()/desc() is valid on Field<?>
                 sortFields.add(s.desc() ? candidate.desc() : candidate.asc());
             }
@@ -199,7 +205,8 @@ public class PivotQueryBuilder {
         // translate filters (no alias map necessary here)
         if (filters != null) {
             for (var fil : filters) {
-                Field<?> f = resolveFactField(fil.field());
+                // Note: Filters in countGroups cannot be on measure aliases.
+                Field<?> f = fieldResolver.resolveDimensionField(fil.field());
                 cond = cond.and(translateFilter(f, fil.op(), fil.value()));
             }
         }
@@ -207,7 +214,9 @@ public class PivotQueryBuilder {
         // group fields
         List<Field<?>> groupBy = new ArrayList<>();
         if (dimensions != null) {
-            for (String dim : dimensions) groupBy.add(resolveFactField(dim));
+            for (String dimId : dimensions) {
+                groupBy.add(fieldResolver.resolveDimensionField(dimId));
+            }
         }
 
         if (groupBy.isEmpty()) {
@@ -218,8 +227,12 @@ public class PivotQueryBuilder {
                 .fetchOne(0, Integer.class);
             return (exists != null) ? 1L : 0L;
         } else {
-            // Build a grouped subselect and COUNT(*) over it
-            Select<Record> grouped = dsl.select(groupBy.toArray(new Field<?>[0])).from(PG).where(cond).groupBy(groupBy.toArray(new Field<?>[0]));
+            // Build a grouped subSelect and COUNT(*) over it
+            Select<Record> grouped = dsl.select(groupBy.toArray(new Field<?>[0]))
+                .from(PG)
+                .where(cond)
+                .groupBy(groupBy.toArray(new Field<?>[0]));
+
             Table<?> sub = grouped.asTable("g");
             Long cnt = dsl.selectCount().from(sub).fetchOne(0, Long.class);
             return cnt == null ? 0L : cnt;
@@ -311,58 +324,6 @@ public class PivotQueryBuilder {
                 return DSL.count().as(alias);
             }
         }
-    }
-
-    /**
-     * Resolve a known pivot_grid_facts field by name.
-     * <p>
-     * Returns typed generated fields (Tables.PIVOT_GRID_FACTS.*) when possible,
-     * or a typed DSL.field(DSL.name(column), Class) fallback when unknown.
-     *
-     * @param column MV column name (e.g., "value_num", "team_uid")
-     * @return typed Field<?> suitable for grouping / filtering
-     */
-    private Field<?> resolveFactField(String column) {
-        if (column == null) return DSL.noField();
-        return PivotFieldJooqMapper.toJooqField(column);
-//        return switch (column) {
-//            case "team_uid" -> PG.TEAM_UID;
-//            case "org_unit_uid" -> PG.ORG_UNIT_UID;
-//            case "activity_uid" -> PG.ACTIVITY_UID;
-//            case "de_uid" -> PG.DE_UID;
-//            case "option_uid" -> PG.OPTION_UID;
-//            case "value_num" -> PG.VALUE_NUM;
-//            case "value_text" -> PG.VALUE_TEXT;
-//            case "value_bool" -> PG.VALUE_BOOL;
-//            case "value_ts" -> PG.VALUE_TS;
-//            case "submission_uid" -> PG.SUBMISSION_UID;
-//            case "submission_completed_at" -> PG.SUBMISSION_COMPLETED_AT;
-//            case "repeat_instance_id" -> PG.REPEAT_INSTANCE_ID;
-//            case "category_uid" -> PG.CHILD_CATEGORY_UID;
-//            case "etc_uid" -> PG.ETC_UID;
-//            case "value_id", "id" -> PG.VALUE_ID;               // <--- add mapping for the stable PK
-//            default -> {
-//                // Best-effort typed field fallback
-//                yield DSL.field(DSL.name(column), Object.class);
-//            }
-//        };
-    }
-
-    /**
-     * Resolve either an alias (already built select field) or a fact field.
-     *
-     * @param nameOrAlias the name to resolve (alias or column)
-     * @param aliasMap    map alias->Field produced earlier in the SELECT (may be null)
-     * @return Field<?> referencing the alias expression or MV column
-     */
-    private Field<?> resolveFactFieldOrAlias(String nameOrAlias, Map<String, Field<?>> aliasMap) {
-        if (nameOrAlias == null) return DSL.noField();
-
-        if (aliasMap != null) {
-            Field<?> f = aliasMap.get(nameOrAlias);
-            if (f != null) return f; // SelectField<?> is a Field<?>, safe
-        }
-        return resolveFactField(nameOrAlias);
     }
 
     /**

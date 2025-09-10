@@ -173,7 +173,8 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
     @Override
     @Transactional(readOnly = true)
     public <T extends JpaIdentifiableObject> T get(@Nonnull Collection<Class<? extends T>> types, @Nonnull String uid) {
-        return types.stream().map(type -> get(type, uid)).filter(Objects::nonNull).findFirst().orElse(null);
+        return types.stream().map(type -> get(type, uid))
+            .filter(Objects::nonNull).findFirst().orElse(null);
     }
 
     @CheckForNull

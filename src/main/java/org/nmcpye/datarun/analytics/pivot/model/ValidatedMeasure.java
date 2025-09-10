@@ -44,7 +44,4 @@ public record ValidatedMeasure(
     String optionUid,
     String effectiveMode
 ) {
-//    public enum MeasureAggregation {
-//        SUM, AVG, MIN, MAX, COUNT, COUNT_DISTINCT, SUM_TRUE
-//    }
 }

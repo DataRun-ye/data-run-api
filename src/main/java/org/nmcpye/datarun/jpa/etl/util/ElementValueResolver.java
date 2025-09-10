@@ -43,27 +43,21 @@ public class ElementValueResolver {
 
         if (elementConf.getType().isSystemReferenceType()) {
             final var resolved = referenceResolver
-                    .resolveReference(rawValue, elementConf);
+                .resolveReference(rawValue, elementConf);
             // store id of referenced entity
-            return vBuilder.valueRefUid(resolved.getUid())
-                    // store the original value
-                    .valueText(rawValue.toString());
+            return vBuilder.valueRefUid(resolved.getUid());
         }
 
         if (elementConf.getType().isNumeric()) {
             return vBuilder.valueNum(new BigDecimal(rawValue.toString()));
         } else if (elementConf.getType().isBoolean()) {
             final var aBoolean = Boolean.parseBoolean(rawValue.toString());
-            return vBuilder.valueBool(aBoolean)
-                    // set for default "numeric" aggregation
-                    .valueNum(aBoolean ? BigDecimal.ONE : BigDecimal.ZERO);
+            return vBuilder.valueBool(aBoolean);
         } else if (elementConf.getType().isDateTimeType() && rawValue instanceof String) {
             final var dateTimeValue = LocalDateTime.parse(rawValue.toString())
-                    .toInstant(ZoneOffset.UTC);
+                .toInstant(ZoneOffset.UTC);
             return vBuilder
-                    .valueTs(dateTimeValue)
-                    // set for default "numeric" calculation
-                    .valueNum(BigDecimal.valueOf(dateTimeValue.getEpochSecond()));
+                .valueTs(dateTimeValue);
         } else {
             return vBuilder.valueText(rawValue.toString());
         }

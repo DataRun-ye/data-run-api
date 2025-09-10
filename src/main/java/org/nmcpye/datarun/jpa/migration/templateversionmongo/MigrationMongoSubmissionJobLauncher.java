@@ -25,6 +25,7 @@ import java.time.Instant;
  * @author Hamza Assada 16/08/2025 (7amza.it@gmail.com)
  */
 //@Component
+//@Order(1500)
 @Slf4j
 @RequiredArgsConstructor
 public class MigrationMongoSubmissionJobLauncher implements CommandLineRunner {

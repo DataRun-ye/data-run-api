@@ -28,23 +28,23 @@
             <column name="uid" type="varchar(11)"/>
 
             <!-- form / version metadata -->
-            <column name="form" type="varchar(255)"/>
-            <column name="form_version" type="varchar(255)"/>
-            <column name="version_number" type="integer"/>
+            <column name="template_uid" type="varchar(255)"/>
+            <column name="template_version_uid" type="varchar(255)"/>
+            <column name="template_version_no" type="integer"/>
             <column name="submission_version" type="integer" defaultValueNumeric="1"/>
 
             <!-- assignment/team/org unit -->
-            <column name="assignment" type="varchar(64)">
+            <column name="assignment_uid" type="varchar(64)">
                 <constraints nullable="false"/>
             </column>
-            <column name="activity" type="varchar(64)">
+            <column name="activity_uid" type="varchar(64)">
                 <constraints nullable="false"/>
             </column>
-            <column name="team" type="varchar(64)">
+            <column name="team_uid" type="varchar(64)">
                 <constraints nullable="false"/>
             </column>
             <column name="team_code" type="varchar(64)"/>
-            <column name="org_unit" type="varchar(64)">
+            <column name="org_unit_uid" type="varchar(64)">
                 <constraints nullable="false"/>
             </column>
             <column name="org_unit_code" type="varchar(64)"/>
@@ -86,12 +86,12 @@
 
         <!-- Standard indexes -->
         <createIndex indexName="idx_ds_form_assignment" tableName="data_submission">
-            <column name="form"/>
-            <column name="assignment"/>
+            <column name="template_version_uid"/>
+            <column name="assignment_uid"/>
         </createIndex>
 
         <createIndex indexName="idx_ds_orgunit" tableName="data_submission">
-            <column name="org_unit"/>
+            <column name="org_unit_uid"/>
         </createIndex>
 
         <createIndex indexName="idx_ds_serial_number" tableName="data_submission">
@@ -101,7 +101,7 @@
         <!-- Partial index for active rows (deleted = false) for common queries -->
         <sql>
             CREATE INDEX IF NOT EXISTS idx_ds_active_form_assignment
-                ON data_submission (form, assignment)
+                ON data_submission (template_uid, assignment_uid)
                 WHERE (deleted = false);
         </sql>
 

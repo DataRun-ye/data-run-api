@@ -11,11 +11,11 @@ import java.time.Instant;
 import java.util.List;
 
 @Repository
-public class SubmissionValuesJdbcDao implements ISubmissionValuesDao {
+public class ElementDataValueJdbcDao implements IElementDataValueDao {
 
     private final NamedParameterJdbcTemplate jdbc;
 
-    public SubmissionValuesJdbcDao(NamedParameterJdbcTemplate jdbc) {
+    public ElementDataValueJdbcDao(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
 

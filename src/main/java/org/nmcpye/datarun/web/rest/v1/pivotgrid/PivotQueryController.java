@@ -76,7 +76,7 @@ public class PivotQueryController {
      */
     @GetMapping("/field")
     public ResponseEntity<?> resolveField(@RequestParam String id, @RequestParam String templateId, @RequestParam String templateVersionId) {
-        return ResponseEntity.of(pivotMetadataService.resolveFieldByUidOrId(id, templateId, templateVersionId));
+        return ResponseEntity.of(pivotMetadataService.resolveFieldById(id, templateId, templateVersionId));
     }
 
 //    @PostMapping("/count")

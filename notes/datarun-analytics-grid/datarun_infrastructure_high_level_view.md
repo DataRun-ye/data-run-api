@@ -106,39 +106,47 @@ feeds submissions and is ETL-processed into analytics-ready facts.
 ```mermaid
 flowchart TB
     subgraph L1 [Layer 1: Canonical Dimension Tables]
-        DataElement[DataElement]
+        DataElement[Data Element]
         OptionSet[OptionSet]
+        OptionValue[OptionValue]
         Team[Team]
-        OrgUnit[OrgUnit]
+        OrgUnit[Org Unit]
         Activity[Activity]
     end
 
     subgraph L2 [Layer 2: Configuration & Staging]
         DataTemplate[DataTemplate]
         DataTemplateVersion[DataTemplateVersion]
-        ElementTemplateConfig[ElementTemplateConfig]
+        DataTemplateVersion[DataTemplateVersion]
+        FormElementConf[FormElementConf]
         DataTemplate --> DataTemplateVersion
-        DataTemplateVersion --> ElementTemplateConfig
+        DataTemplateVersion --> FormElementConf
     end
 
-    subgraph L3 [Layer 3: Operational Data]
+    subgraph L3 [Layer 4: Template Metadata & Config]
+        ElementTemplateConfig[ElementTemplateConfig]
+        ElementTemplateMap[ElementTemplateMap]
+    end
+    
+    subgraph L4 [Layer 3: Operational Data]
         DataSubmission[DataSubmission]
     end
 
-    subgraph L4 [Layer 4: ETL & Analytics]
-        RepeatInstance[repeat_instance]
-        ElementDataValue[element_data_value]
-        PivotGridFacts[PivotGridFacts MV]
+    subgraph L5 [Layer 4: ETL & Analytics]
+        RepeatInstance[Repeat Facts]
+        ElementDataValue[Cell Value Facts]
         RepeatInstance --> ElementDataValue
-        ElementDataValue --> PivotGridFacts
     end
-
+    
 %% Layer References
     DataElement -- referenced by --> DataTemplateVersion
-    OptionSet -- referenced by --> DataTemplateVersion
+%%    OptionSet -- referenced by --> DataTemplateVersion
+    OptionValue -- referenced by --> DataSubmission
     Team -- referenced by --> DataSubmission
     OrgUnit -- referenced by --> DataSubmission
     Activity -- referenced by --> DataSubmission
+    FormElementConf -- configures --> L3
+    DataElement -- configures --> L3
     DataTemplateVersion -- used by --> DataSubmission
     DataSubmission -- ETL --> RepeatInstance
 ```

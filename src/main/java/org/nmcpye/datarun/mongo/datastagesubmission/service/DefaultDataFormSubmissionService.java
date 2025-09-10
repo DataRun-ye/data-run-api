@@ -6,8 +6,8 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.etl.dao.IElementDataValueDao;
 import org.nmcpye.datarun.jpa.etl.dao.IRepeatInstancesDao;
-import org.nmcpye.datarun.jpa.etl.dao.ISubmissionValuesDao;
 import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
 import org.nmcpye.datarun.mongo.common.DefaultMongoSoftDeleteService;
 import org.nmcpye.datarun.mongo.datastagesubmission.repository.DataFormSubmissionRepository;
@@ -48,18 +48,18 @@ public class DefaultDataFormSubmissionService
     private final SubmissionMaintenanceService maintenanceService;
     private final DataTemplateVersionRepository versionRepository;
     private final FormAccessService formAccessService;
-    private final ISubmissionValuesDao submissionValuesDao;
+    private final IElementDataValueDao submissionValuesDao;
     private final IRepeatInstancesDao repeatInstancesDao;
 
     public DefaultDataFormSubmissionService(
-        DataFormSubmissionRepository repository,
-        CacheManager cacheManager,
-        DataFormSubmissionHistoryService submissionHistoryService,
-        AssignmentRepository assignmentRepository,
-        SequenceGeneratorService sequenceGeneratorService,
-        SubmissionMaintenanceService maintenanceService,
-        DataTemplateVersionRepository versionRepository,
-        FormAccessService formAccessService, ISubmissionValuesDao submissionValuesDao, IRepeatInstancesDao repeatInstancesDao) {
+            DataFormSubmissionRepository repository,
+            CacheManager cacheManager,
+            DataFormSubmissionHistoryService submissionHistoryService,
+            AssignmentRepository assignmentRepository,
+            SequenceGeneratorService sequenceGeneratorService,
+            SubmissionMaintenanceService maintenanceService,
+            DataTemplateVersionRepository versionRepository,
+            FormAccessService formAccessService, IElementDataValueDao submissionValuesDao, IRepeatInstancesDao repeatInstancesDao) {
         super(repository, cacheManager);
         this.repository = repository;
         this.submissionHistoryService = submissionHistoryService;

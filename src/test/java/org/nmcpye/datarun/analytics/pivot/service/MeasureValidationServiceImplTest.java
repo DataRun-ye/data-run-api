@@ -58,7 +58,7 @@
 //            .thenReturn(Optional.of(dto));
 //
 //        MeasureRequest req = MeasureRequest.builder()
-//            .elementIdOrUid("etc:500")
+//            .fieldId("etc:500")
 //            .aggregation("SUM")
 //            .alias("sum_weight")
 //            .build();
@@ -91,7 +91,7 @@
 //            .thenReturn(Optional.of(dto));
 //
 //        MeasureRequest req = MeasureRequest.builder()
-//            .elementIdOrUid("etc:600")
+//            .fieldId("etc:600")
 //            .aggregation("COUNT")
 //            .optionId("opt-123")
 //            .alias("count_hobby_opt123")

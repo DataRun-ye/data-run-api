@@ -7,6 +7,8 @@ import org.jooq.Field;
 import org.jooq.Result;
 import org.jooq.Select;
 import org.nmcpye.datarun.analytics.pivot.dto.*;
+import org.nmcpye.datarun.analytics.pivot.exception.PivotQueryException;
+import org.nmcpye.datarun.analytics.pivot.fieldresolver.AnalyticsField;
 import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
 import org.nmcpye.datarun.analytics.pivot.util.AliasSanitizer;
 import org.springframework.stereotype.Service;
@@ -16,16 +18,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-
-/**
- * PivotQueryService implementation that:
- * - validates measures in template-context
- * - delegates SQL building to PivotQueryBuilder
- * - transforms jOOQ Result<org.jooq.Record> into TABLE_ROWS or PIVOT_MATRIX formats
- * <p>
- * Assumes: PivotQueryRequest, FilterDto, SortDto, PivotQueryBuilder, MeasureValidationService,
- * PivotMetadataService, PivotFieldJooqMapper, ValidatedMeasure exist per our design.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -51,14 +43,25 @@ public class PivotQueryServiceImpl implements PivotQueryService {
             Objects.requireNonNull(request.getTemplateVersionId(), "templateVersionId is required");
             if (format == null) format = PivotOutputFormat.TABLE_ROWS;
 
-            // 2) Validate and convert measures
+            // STEP 1: Fetch metadata ONCE and create a lookup map for efficient O(1) access.
+            // This is a huge improvement over the previous implementation.
+            Map<String, PivotFieldDto> fieldMap = metadataService
+                .getMetadataForTemplate(request.getTemplateId(), request.getTemplateVersionId())
+                .getAvailableFields().stream()
+                .collect(Collectors.toMap(PivotFieldDto::id, f -> f));
+
+            // STEP 2: Validate measures. This service is now simpler and relies on the new metadata contract.
             List<ValidatedMeasure> validatedMeasures = AliasSanitizer
-                .ensureUniqueAliasesWithRename(Optional.ofNullable(request.getMeasures())
+                .ensureUniqueAliasesWithRename(
+                    Optional.ofNullable(request.getMeasures())
                         .orElse(Collections.emptyList())
                         .stream()
-                        .map(mr -> measureValidationService.validate(mr, request.getTemplateId(), request.getTemplateVersionId()))
+                        .map(mr -> measureValidationService
+                            .validate(mr, request.getTemplateId(),
+                                request.getTemplateVersionId()))
                         .collect(Collectors.toList()),
-                    Boolean.TRUE.equals(request.getAutoRenameAliases()));
+                    Boolean.TRUE.equals(request.getAutoRenameAliases())
+                );
 
             // 3) Determine grouping dimensions
             List<String> rowDims = Optional.ofNullable(request.getRowDimensions()).orElse(Collections.emptyList());
@@ -71,7 +74,8 @@ public class PivotQueryServiceImpl implements PivotQueryService {
             }
 
             // combined group-by dims (row + column)
-            List<String> groupByDims = Stream.concat(rowDims.stream(), colDims.stream()).collect(Collectors.toList());
+            List<String> groupByDims = Stream.concat(rowDims.stream(), colDims.stream())
+                .collect(Collectors.toList());
 
             long totalGroups = -1;
             try {
@@ -116,7 +120,8 @@ public class PivotQueryServiceImpl implements PivotQueryService {
 
             if (format == PivotOutputFormat.TABLE_ROWS) {
                 // Columns: groupBy dims then measures (aliases)
-                List<ColumnDto> columns = buildColumnsForTable(groupByDims, validatedMeasures, request.getTemplateId(), request.getTemplateVersionId());
+                // STEP 3: Build response columns using the efficient lookup map.
+                List<ColumnDto> columns = buildColumnsForTable(groupByDims, validatedMeasures, fieldMap);
                 List<Map<String, Object>> rows = mapResultToRows(result, columns);
                 respB.columns(columns).rows(rows);
                 // total optional: not calculated now (could be separate count query)
@@ -140,71 +145,73 @@ public class PivotQueryServiceImpl implements PivotQueryService {
 
     private List<FilterDto> convertFilters(List<FilterDto> dtos) {
         if (dtos == null || dtos.isEmpty()) return Collections.emptyList();
-        return dtos.stream().map(fdto -> new FilterDto(fdto.field(), fdto.op(), fdto.value())).collect(Collectors.toList());
+        return dtos.stream().map(fdto ->
+            new FilterDto(fdto.field(), fdto.op(), fdto.value()))
+            .collect(Collectors.toList());
     }
 
     private List<SortDto> convertSorts(List<SortDto> dtos) {
         if (dtos == null || dtos.isEmpty()) return Collections.emptyList();
-        return dtos.stream().map(sdto -> new SortDto(sdto.fieldOrAlias(), Boolean.TRUE.equals(sdto.desc()))).collect(Collectors.toList());
+        return dtos.stream().map(sdto ->
+            new SortDto(sdto.fieldOrAlias(), Boolean.TRUE.equals(sdto.desc())))
+            .collect(Collectors.toList());
     }
+
 
     /**
      * Build columns list for TABLE_ROWS response.
-     * Prefer friendly labels from metadataService when available.
+     * It uses the pre-fetched fieldMap for instant lookups instead of re-scanning metadata.
      */
-    private List<ColumnDto> buildColumnsForTable(List<String> groupByDims, List<ValidatedMeasure> measures, String templateId, String templateVersionId) {
+    private List<ColumnDto> buildColumnsForTable(List<String> groupByDims,
+                                                 List<ValidatedMeasure> measures,
+                                                 Map<String, PivotFieldDto> fieldMap) {
         List<ColumnDto> cols = new ArrayList<>();
 
-        // Attempt to fetch metadata for template to get labels
-        PivotMetadataResponse meta = null;
-        try {
-            meta = metadataService.getMetadataForTemplate(templateId, templateVersionId);
-        } catch (Exception ex) {
-            log.debug("Unable to load metadata for template {}:{} - falling back to IDs", templateId, templateVersionId);
+        // Add columns for dimensions
+        for (String dimId : groupByDims) {
+            PivotFieldDto dto = fieldMap.get(dimId);
+            String label = (dto != null) ? dto.label() : dimId; // Fallback to ID
+            DataType dataType = (dto != null) ? dto.dataType() : DataType.TEXT; // Fallback
+            cols.add(ColumnDto.builder()
+                .id(dimId)
+                .label(label)
+                .dataType(dataType)
+                .build());
         }
 
-        for (String dim : groupByDims) {
-            String label = dim;
-            if (meta != null) {
-                label = findLabelFromMetadata(dim, meta).orElse(dim);
-            }
-            cols.add(ColumnDto.builder().id(dim).label(label).dataType(dim).build());
-        }
-
+        // Add columns for measures
         for (ValidatedMeasure vm : measures) {
-            String id = vm.alias();
+            // Reconstruct the measure's ID to look it up in the map for a proper label.
+            String measureId = vm.effectiveMode().equals("TEMPLATE") ? "etc:" + vm.etcUid() : "de:" + vm.deUid();
+            PivotFieldDto dto = fieldMap.get(measureId);
+
             String label = vm.alias();
-            // try to get friendly name: validated measure may carry element id etc as metadata in extras — we try pivot metadata lookup
-            if (meta != null && vm.etcUid() != null) {
-                // etc: construct etc:<id> to match DTO id convention
-                String etcClientId = "etc:" + vm.etcUid();
-                Optional<PivotFieldDto> pf = meta.getMeasures().stream().filter(m -> etcClientId.equals(m.id())).findFirst();
-                if (pf.isPresent()) label = pf.get().label();
+            if (dto != null && vm.alias()
+                .startsWith(AnalyticsField.from(dto.id()).value())) {
+                // If using a default alias, construct a nicer label e.g., "Age of Head (Sum)"
+                label = String.format("%s (%s)", dto.label(), vm.aggregation().name());
             }
-            cols.add(ColumnDto.builder().id(id).label(label).dataType(determineMeasureDataType(vm)).build());
+
+            cols.add(ColumnDto.builder()
+                .id(vm.alias())
+                .label(label)
+                .dataType(determineMeasureDataType(vm))
+                .build());
         }
 
         return cols;
     }
 
-    private Optional<String> findLabelFromMetadata(String id, PivotMetadataResponse meta) {
-        if (meta == null) return Optional.empty();
-        Stream<PivotFieldDto> all = Stream.concat(
-            meta.getCoreDimensions() == null ? Stream.empty() : meta.getCoreDimensions().stream(),
-            meta.getMeasures() == null ? Stream.empty() : meta.getMeasures().stream()
-        );
-        return all.filter(f -> id.equals(f.id())).map(PivotFieldDto::label).findFirst();
-    }
 
-    private String determineMeasureDataType(ValidatedMeasure vm) {
+    private DataType determineMeasureDataType(ValidatedMeasure vm) {
         // pick reasonable default data type name used by fieldMapper
         Field<?> tf = vm.targetField();
-        if (tf == null) return "value_text";
+        if (tf == null) return DataType.TEXT;
         Class<?> javaType = tf.getDataType() != null ? tf.getDataType().getType() : tf.getType();
-        if (Number.class.isAssignableFrom(javaType) || BigDecimal.class.isAssignableFrom(javaType)) return "value_num";
-        if (Boolean.class.isAssignableFrom(javaType)) return "value_bool";
-        if (java.time.LocalDateTime.class.isAssignableFrom(javaType)) return "value_ts";
-        return "value_text";
+        if (Number.class.isAssignableFrom(javaType) || BigDecimal.class.isAssignableFrom(javaType)) return DataType.NUMERIC;
+        if (Boolean.class.isAssignableFrom(javaType)) return DataType.BOOLEAN;
+        if (java.time.LocalDateTime.class.isAssignableFrom(javaType)) return DataType.TIMESTAMP;
+        return DataType.TEXT;
     }
 
     /**
@@ -253,8 +260,8 @@ public class PivotQueryServiceImpl implements PivotQueryService {
         Map<String, Map<String, Map<String, Object>>> grid = new HashMap<>();
 
         for (org.jooq.Record r : result) {
-            List<String> rowValues = rowDims.stream().map(d -> stringify(r.get(d))).collect(Collectors.toList());
-            List<String> colValues = colDims.stream().map(d -> stringify(r.get(d))).collect(Collectors.toList());
+            List<String> rowValues = rowDims.stream().map(AnalyticsField::from).map(AnalyticsField::value).map(d -> stringify(r.get(d))).collect(Collectors.toList());
+            List<String> colValues = colDims.stream().map(AnalyticsField::from).map(AnalyticsField::value).map(d -> stringify(r.get(d))).collect(Collectors.toList());
 
             String rowKey = makeCompoundKey(rowValues);
             String colKey = makeCompoundKey(colValues);
@@ -305,18 +312,6 @@ public class PivotQueryServiceImpl implements PivotQueryService {
 
     private String stringify(Object v) {
         return v == null ? "" : v.toString();
-    }
-
-    /* --------------------- Exception --------------------- */
-
-    public static class PivotQueryException extends RuntimeException {
-        public PivotQueryException(String msg) {
-            super(msg);
-        }
-
-        public PivotQueryException(String msg, Throwable cause) {
-            super(msg, cause);
-        }
     }
 }
 

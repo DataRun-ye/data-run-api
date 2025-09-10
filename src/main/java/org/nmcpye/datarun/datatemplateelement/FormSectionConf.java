@@ -12,7 +12,7 @@ import java.io.Serializable;
 public class FormSectionConf extends AbstractElement implements Serializable {
 
     private Boolean repeatable = false;
-    private String categoryDataElementId;
+    private String categoryId;
 
     @JsonProperty
     @JsonIgnore
@@ -23,15 +23,15 @@ public class FormSectionConf extends AbstractElement implements Serializable {
     /**
      * only a repeatable section can set a category
      *
-     * @param categoryDataElementId the repeat's child element id to be used as a category for the repeat
+     * @param categoryId the repeat's child element id to be used as a category for the repeat
      */
-    public void setCategoryDataElementId(String categoryDataElementId) {
-        if (getRepeatable() == null || !getRepeatable() && categoryDataElementId == null) {
+    public void setCategoryId(String categoryId) {
+        if (getRepeatable() == null || !getRepeatable() && categoryId == null) {
             // no-op, only in repeatable sections
             return;
         }
 
-        this.categoryDataElementId = categoryDataElementId;
+        this.categoryId = categoryId;
     }
 
     @Override

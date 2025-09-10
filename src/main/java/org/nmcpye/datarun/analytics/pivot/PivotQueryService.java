@@ -28,9 +28,9 @@ public interface PivotQueryService {
      *
      * @param request         pivot request describing template, dims, measures, filters and pagination
      * @param format          desired output format (TABLE_ROWS | PIVOT_MATRIX)
-     * @param allowedTeamUids server-side ACL allowing only these teams (may be null to allow all)
+     * @param allowedTeamUids server-side ACL allowing only these teams (maybe null to allow all)
      * @return PivotQueryResponse containing result payload and metadata
-     * @throws InvalidQueryException if request validation fails
      */
-    PivotQueryResponse query(PivotQueryRequest request, PivotOutputFormat format, Set<String> allowedTeamUids);
+    PivotQueryResponse query(PivotQueryRequest request,
+                             PivotOutputFormat format, Set<String> allowedTeamUids);
 }

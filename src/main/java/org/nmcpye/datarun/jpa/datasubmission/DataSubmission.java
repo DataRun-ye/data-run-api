@@ -27,9 +27,9 @@ import java.util.Objects;
 @Table(
     name = "data_submission",
     indexes = {
-        @Index(name = "idx_ds_form_assignment", columnList = "form, assignment"),
+        @Index(name = "idx_ds_form_assignment", columnList = "template_uid, assignment_uid"),
         @Index(name = "idx_ds_serial_number", columnList = "serial_number"),
-        @Index(name = "idx_ds_orgunit", columnList = "org_unit"),
+        @Index(name = "idx_ds_orgunit", columnList = "org_unit_uid"),
         // partial index implemented in Liquibase (deleted = false)
     }
 )
@@ -64,22 +64,22 @@ public class DataSubmission extends JpaSoftDeleteObject {
     private FlowStatus status;
 
     @NotNull
-    @Column(name = "form", nullable = false, updatable = false)
+    @Column(name = "template_uid", nullable = false, updatable = false)
     private String form;
 
-    @Column(name = "form_version", updatable = false)
+    @Column(name = "template_version_uid", updatable = false)
     private String formVersion;
 
-    @Column(name = "version_number", updatable = false)
+    @Column(name = "template_version_no", updatable = false)
     private Integer version;
 
-    @Column(name = "team")
+    @Column(name = "team_uid")
     private String team;
 
     @Column(name = "team_code")
     private String teamCode;
 
-    @Column(name = "org_unit")
+    @Column(name = "org_unit_uid")
     private String orgUnit;
 
     @Column(name = "org_unit_code")
@@ -88,10 +88,10 @@ public class DataSubmission extends JpaSoftDeleteObject {
     @Column(name = "org_unit_name")
     private String orgUnitName;
 
-    @Column(name = "activity")
+    @Column(name = "activity_uid")
     private String activity;
 
-    @Column(name = "assignment")
+    @Column(name = "assignment_uid")
     private String assignment;
 
 //    @ManyToOne(fetch = FetchType.LAZY, optional = false)
