@@ -9,8 +9,10 @@ import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
 import org.springframework.stereotype.Component;
 
 /**
- * @author Hamza Assada
- * @since 02/09/2025
+ * The single source of truth for mapping a public, standardized field identifier
+ * from the API contract to a physical, strongly-typed jOOQ database field.
+ * This service completely decouples the query construction logic from the
+ * underlying database schema.
  */
 @Component
 @RequiredArgsConstructor
@@ -20,16 +22,16 @@ public class AnalyticsFieldResolver {
     private static final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
 
     /**
-     * Resolves a standardized field ID (e.g., "core:team_uid", "etc:uid_value")
-     * into a strongly-typed jOOQ Field.
+     * Resolves a standardized field ID into a jOOQ Field for use in dimensions,
+     * grouping, and filtering.
      *
-     * @param standardizedId The public-facing ID from the API contract.
+     * @param standardizedId The public-facing ID from the API contract (e.g., "core:team_uid").
      * @return The corresponding jOOQ Field from the pivot_grid_facts view.
      * @throws InvalidRequestException if the field ID cannot be resolved.
      */
-    public Field<?> resolve(String standardizedId) {
+    public Field<?> resolveDimensionField(String standardizedId) {
         AnalyticsField field = AnalyticsField.from(standardizedId);
-
+        // The namespace determines the context for resolution.
         return switch (field.namespace()) {
             case "core" -> resolveCoreField(field.value());
             // For 'etc' and 'de', the goal is not to get a value field,
@@ -87,6 +89,7 @@ public class AnalyticsFieldResolver {
             case "team_code" -> PG.TEAM_CODE;
             case "org_unit_uid" -> PG.ORG_UNIT_UID;
             case "org_unit_name" -> PG.ORG_UNIT_NAME;
+            case "org_unit_cod" -> PG.ORG_UNIT_CODE;
             case "activity_uid" -> PG.ACTIVITY_UID;
             case "activity_name" -> PG.ACTIVITY_NAME;
             case "assignment_uid" -> PG.ASSIGNMENT_UID;

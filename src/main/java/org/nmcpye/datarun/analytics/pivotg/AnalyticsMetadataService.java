@@ -3,6 +3,7 @@ package org.nmcpye.datarun.analytics.pivotg;
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.analytics.pivot.AllowedAggregationsResolver;
 import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
+import org.nmcpye.datarun.analytics.pivot.dto.DataType;
 import org.nmcpye.datarun.analytics.pivot.dto.FieldCategory;
 import org.nmcpye.datarun.analytics.pivot.dto.PivotFieldDto;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
@@ -59,46 +60,46 @@ public class AnalyticsMetadataService {
                 .id("team_uid")
                 .label("Team")
                 .category(FieldCategory.CORE_DIMENSION)
-                .dataType("UID")
+                .dataType(DataType.UID)
                 .factColumn("team_uid")
                 .aggregationModes(aggrResolver.allowedFor(ValueType.Team))
-                .templateModeOnly(false).source("system")
+//                .templateModeOnly(false).source("system")
                 .build(),
 
             PivotFieldDto.builder()
                 .id("org_unit_uid")
                 .label("Org Unit")
                 .category(FieldCategory.CORE_DIMENSION)
-                .dataType("UID")
+                .dataType(DataType.UID)
                 .factColumn("org_unit_uid")
                 .aggregationModes(aggrResolver
                     .allowedFor(ValueType.OrganisationUnit))
-                .templateModeOnly(false)
-                .source("system")
+//                .templateModeOnly(false)
+//                .source("system")
                 .build(),
 
             PivotFieldDto.builder()
                 .id("activity_uid")
                 .label("Activity")
                 .category(FieldCategory.CORE_DIMENSION)
-                .dataType("UID")
+                .dataType(DataType.UID)
                 .factColumn("activity_uid")
                 .aggregationModes(aggrResolver
                     .allowedFor(ValueType.Activity))
-                .templateModeOnly(false)
-                .source("system")
+//                .templateModeOnly(false)
+//                .source("system")
                 .build(),
 
             PivotFieldDto.builder()
                 .id("submission_completed_at")
                 .label("Submission completed at")
                 .category(FieldCategory.CORE_DIMENSION)
-                .dataType("DATETIME")
+                .dataType(DataType.TIMESTAMP)
                 .factColumn("submission_completed_at")
                 .aggregationModes(Set.of(Aggregation.MIN,
                     Aggregation.MAX))
-                .templateModeOnly(false)
-                .source("system")
+//                .templateModeOnly(false)
+//                .source("system")
                 .build()
         );
     }
@@ -110,35 +111,35 @@ public class AnalyticsMetadataService {
             .id("category:child")
             .category(FieldCategory.HIERARCHICAL_CONTEXT)
             .label("Category (Level 1)")
-            .dataType("child_category_uid")
+            .dataType(DataType.UID)
             .factColumn("child_category_uid")
             .aggregationModes(Set.
                 of(Aggregation.COUNT, Aggregation.COUNT_DISTINCT))
-            .templateModeOnly(false)
-            .source("system")
+//            .templateModeOnly(false)
+//            .source("system")
             .build());
         fields.add(PivotFieldDto.builder()
             .id("category:parent")
             .category(FieldCategory.HIERARCHICAL_CONTEXT)
             .label("Category (Level 2)")
-            .dataType("parent_category_uid")
+            .dataType(DataType.UID)
             .factColumn("parent_category_uid")
             .aggregationModes(Set.
                 of(Aggregation.COUNT, Aggregation.COUNT_DISTINCT))
-            .templateModeOnly(false)
-            .source("system")
+//            .templateModeOnly(false)
+//            .source("system")
             .build());
 
         fields.add(PivotFieldDto.builder()
             .id("repeat_path")
             .category(FieldCategory.HIERARCHICAL_CONTEXT)
             .label("Category (Level 2)")
-            .dataType("repeat_path")
+            .dataType(DataType.TEXT)
             .factColumn("repeat_path")
             .aggregationModes(Set.
                 of(Aggregation.COUNT, Aggregation.COUNT_DISTINCT))
-            .templateModeOnly(true)
-            .source("system")
+//            .templateModeOnly(true)
+//            .source("system")
             .build());// Template mode only
         return fields;
     }
