@@ -48,6 +48,8 @@ public class RepeatInstance {
      */
     protected String id;
 
+    private String semanticPath;
+    
     // ------------------------
     // LEVEL 2: Repeat Dimensions
     // ------------------------

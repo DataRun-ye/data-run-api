@@ -45,6 +45,6 @@
     <include file="/config/liquibase/changelog/outbox-and-batch/2025-09-01-outbox-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/outbox-and-batch/2025-09-01-batch-submission-migration-errors-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/2025-09-01-normalization-repeat-and-values-tables.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/analytics-metadata/2025-09-08-analytics-metadata-tables.xml" relativeToChangelogFile="false"/>
+<!--    <include file="/config/liquibase/changelog/analytics-metadata/2025-09-08-analytics-metadata-tables.xml" relativeToChangelogFile="false"/>-->
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

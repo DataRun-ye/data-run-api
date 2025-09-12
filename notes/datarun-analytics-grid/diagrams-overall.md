@@ -9,7 +9,7 @@
 | **Performance**     | Layered storage with materialized views | Scalable analytics        |
 | **Maintainability** | Clear separation of concerns            | Easier evolution          |
 
-## 1. Complete System Architecture with Analytics Layer
+## 1. System Architecture System Overview (Concept)
 
 ```mermaid
 flowchart TB
@@ -111,6 +111,8 @@ flowchart TB
     PivotGridFacts -- source --> WideModels
 ```
 
+**Note:** Layer 8 API & Query Layer (metadata based, generation), is not fully implemented yet. 
+
 ## Enhanced Template Publishing Flow
 
 ```mermaid
@@ -145,7 +147,7 @@ sequenceDiagram
     end
 ```
 
-## Enhanced ETL Process Flow
+## ETL Process Flow
 
 ```mermaid
 flowchart TB

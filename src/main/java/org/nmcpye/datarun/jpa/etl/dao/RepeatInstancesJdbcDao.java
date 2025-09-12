@@ -22,12 +22,12 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
 
     // The UPSERT SQL handles "undeleting" via the ON CONFLICT clause (deleted_at = NULL in both places).
     private static final String UPSERT_SQL = """
-        INSERT INTO repeat_instance ( id, submission_uid, repeat_path, parent_repeat_instance_id, repeat_index,
+        INSERT INTO repeat_instance ( id, semantic_path, submission_uid, repeat_path, parent_repeat_instance_id, repeat_index,
             client_updated_at, created_date, last_modified_date, created_by, last_modified_by,
             category_kind, category_uid, category_name, category_Label, repeat_section_label,
                                      submission_completed_at, deleted_at
         ) VALUES (
-            :id, :submissionUid, :repeatPath, :parentRepeatInstanceId, :repeatIndex,
+            :id, :semanticPath, :submissionUid, :repeatPath, :parentRepeatInstanceId, :repeatIndex,
             :clientUpdatedAt, :createdDate, :lastModifiedDate, :createdBy, :lastModifiedBy,
             :categoryKind, :categoryUid, :categoryName, :categoryLabel, :repeatSectionLabel, :submissionCompletedAt, NULL
         )
@@ -72,6 +72,7 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
 
         return new MapSqlParameterSource()
             .addValue("id", ri.getId())
+            .addValue("semanticPath", ri.getSemanticPath())
             .addValue("submissionUid", ri.getSubmissionUid())
             .addValue("repeatPath", ri.getRepeatPath())
             .addValue("parentRepeatInstanceId", ri.getParentRepeatInstanceId()) // New field

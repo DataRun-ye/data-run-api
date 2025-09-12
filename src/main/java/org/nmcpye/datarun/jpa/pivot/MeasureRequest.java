@@ -4,7 +4,7 @@
 //import lombok.Builder;
 //import lombok.Data;
 //import lombok.NoArgsConstructor;
-//import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
+//import org.nmcpye.datarun.analytics.dto.Aggregation;
 //
 ///**
 // * Request describing a measure (element + aggregation).

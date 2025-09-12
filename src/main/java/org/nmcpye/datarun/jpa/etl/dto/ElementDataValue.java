@@ -34,6 +34,8 @@ public class ElementDataValue {
      */
     private Long id;
 
+    private String semanticPath;
+
     /**
      * Reference to the element configuration that produced this value.
      * db: {@code element_template_config_uid, not null}

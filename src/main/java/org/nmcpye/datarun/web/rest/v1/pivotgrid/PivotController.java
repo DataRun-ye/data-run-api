@@ -1,7 +1,7 @@
 //package org.nmcpye.datarun.web.rest.v1.pivotgrid;
 //
 //import lombok.RequiredArgsConstructor;
-//import org.nmcpye.datarun.analytics.pivot.dto.PivotMetadataResponse;
+//import org.nmcpye.datarun.analytics.dto.PivotMetadataResponse;
 //import org.springframework.http.ResponseEntity;
 //import org.springframework.web.bind.annotation.GetMapping;
 //import org.springframework.web.bind.annotation.RequestMapping;

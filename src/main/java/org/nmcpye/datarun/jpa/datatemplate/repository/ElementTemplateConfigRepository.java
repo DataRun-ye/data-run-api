@@ -29,4 +29,6 @@ public interface ElementTemplateConfigRepository
     List<ElementTemplateConfig> findAllByTemplateUidAndVersionNo(String templateUid, Integer templateVersionNo);
 
     Optional<ElementTemplateConfig> findTopByTemplateUidOrderByVersionNoDesc(@NotNull String templateId);
+
+    List<ElementTemplateConfig> findByTemplateVersionUid(String templateVersionUid);
 }

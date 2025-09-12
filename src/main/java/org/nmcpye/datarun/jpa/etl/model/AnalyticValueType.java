@@ -8,7 +8,7 @@ public enum AnalyticValueType {
     NUMBER,
     TEXT,
     BOOLEAN,
-    TIMESTAMP,
+    DATE,
     CATEGORY,
     REFERENCE, // e.g Team, OrgUnit, Activity, Entity, Option, etc.
     OPTION,

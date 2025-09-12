@@ -293,6 +293,7 @@ sequenceDiagram
       `repeat_section_label`.
 - `element_data_value` rows link to the corresponding `repeat_instance_id` so the hierarchy is preserved for analytics
   joins.
+- semantic_path: 1:1 to the submission or parent repeat's semantic_path.
 
 ---
 
@@ -442,7 +443,29 @@ erDiagram
         jsonb display_label "Localized labels (JSON)"
     }
 
-    REPEAT_INSTANCE {
+    ORG_UNIT_HIERARCHY {
+        VARCHAR(11) ancestor_uid PK, FK
+        VARCHAR(11) descendant_uid PK, FK
+        INTEGER depth
+    }
+
+    DATA_TEMPLATE ||--o{ DATA_TEMPLATE_VERSION: has
+    DATA_TEMPLATE_VERSION }o--o{ DATA_ELEMENT: references
+    DATA_TEMPLATE_VERSION }|--|{ DATA_SUBMISSION: used_by
+    DATA_ELEMENT }o--|| OPTION_SET: has
+    OPTION_SET ||--o{ OPTION_VALUE: contains
+    DATA_SUBMISSION ||--o{ DATA_SUBMISSION_HISTORY: has_history
+    DATA_SUBMISSION }o--|| ORG_UNIT: belongs_to
+    DATA_SUBMISSION }o--|| TEAM: belongs_to
+    DATA_SUBMISSION }o--|| ACTIVITY: belongs_to
+    DATA_TEMPLATE_VERSION ||--o{ ELEMENT_TEMPLATE_CONFIG: generates
+    DATA_ELEMENT }o--o{ ELEMENT_TEMPLATE_CONFIG: "configures per template"
+```
+
+### 2. Analytics CATCH ALL FACTS:
+```mermaid
+erDiagram
+REPEAT_INSTANCE {
         VARCHAR(26) id PK
         VARCHAR(26) parent_repeat_instance_id FK
         JSONB repeat_section_label
@@ -459,18 +482,14 @@ erDiagram
     ELEMENT_DATA_VALUE {
         BIGINT id PK
         VARCHAR(26) repeat_instance_id FK
-        VARCHAR(11) submission_uid FK
-        VARCHAR(11) assignment_uid
-        VARCHAR(11) team_uid FK
-        VARCHAR(11) org_unit_uid FK
-        VARCHAR(11) activity_uid FK
-        VARCHAR(11) element_uid FK
-        VARCHAR(11) element_template_config_uid FK
-        VARCHAR(11) option_uid FK
+        VARCHAR(3000) semantic_path
+        VARCHAR(11) element_uid FK "global canonical DataElement.uid"
+        VARCHAR(11) element_template_config_uid FK "DataElement's template's field"
+        VARCHAR(11) option_uid FK "multi-select option or null"
         TEXT value_text
         NUMERIC value_num
         BOOLEAN value_bool
-        VARCHAR(11) value_ref_uid
+        VARCHAR(11) value_ref_uid "ref element value, references Team, Ou"
         TIMESTAMP value_ts
         TIMESTAMP deleted_at
         TIMESTAMP created_date
@@ -479,90 +498,22 @@ erDiagram
         CHAR(1) row_type
     }
 
-    ORG_UNIT_HIERARCHY {
-        VARCHAR(11) ancestor_uid PK, FK
-        VARCHAR(11) descendant_uid PK, FK
-        INTEGER depth
-    }
-
-    OU_LEVEL {
-        INTEGER level PK
-        VARCHAR(255) name UK
-        TEXT description
-    }
-
-    DATA_TEMPLATE ||--o{ DATA_TEMPLATE_VERSION: has
-    DATA_TEMPLATE_VERSION }o--o{ DATA_ELEMENT: references
-    DATA_TEMPLATE_VERSION }|--|{ DATA_SUBMISSION: used_by
-    DATA_ELEMENT }o--|| OPTION_SET: has
-    OPTION_SET ||--o{ OPTION_VALUE: contains
-    DATA_SUBMISSION ||--o{ DATA_SUBMISSION_HISTORY: has_history
-    DATA_SUBMISSION }o--|| ORG_UNIT: belongs_to
-    DATA_SUBMISSION }o--|| TEAM: belongs_to
-    DATA_SUBMISSION }o--|| ACTIVITY: belongs_to
-    DATA_TEMPLATE_VERSION ||--o{ ELEMENT_TEMPLATE_CONFIG: generates
-    DATA_ELEMENT ||--o{ ELEMENT_TEMPLATE_CONFIG: configures
-    DATA_SUBMISSION ||--o{ REPEAT_INSTANCE: contains
+    DATA_SUBMISSION }o--|| ORG_UNIT: "domain dim"
+    DATA_SUBMISSION }o--|| TEAM: "domain dim"
+    DATA_SUBMISSION }o--|| ACTIVITY: "domain dim"
+    DATA_SUBMISSION ||--o{ REPEAT_INSTANCE: "contains (uid-native)"
     REPEAT_INSTANCE }o--o{ REPEAT_INSTANCE: parent_child
-    DATA_SUBMISSION ||--o{ ELEMENT_DATA_VALUE: contains_data
-    REPEAT_INSTANCE ||--o{ ELEMENT_DATA_VALUE: contextualizes
-    ELEMENT_TEMPLATE_CONFIG ||--o{ ELEMENT_DATA_VALUE: defines
-    ORG_UNIT ||--o{ ORG_UNIT_HIERARCHY: hierarchy
-```
-
-### 2. ANALYTICS CATCH ALL `PIVOT_GRID_FACTS` MV ERD
-
-```mermaid
-erDiagram
-    PIVOT_GRID_FACTS {
-        BIGINT value_id PK
-        VARCHAR(11) submission_uid
-        VARCHAR(11) template_uid
-        VARCHAR(11) template_version_uid
-        VARCHAR(11) etc_uid
-        VARCHAR(26) repeat_instance_id
-        VARCHAR(26) parent_repeat_instance_id
-        VARCHAR(3000) repeat_path
-        VARCHAR(3000) semantic_path
-        JSONB repeat_section_label
-        JSONB parent_repeat_section_label
-        VARCHAR(11) assignment_uid
-        VARCHAR(11) team_uid
-        VARCHAR(100) team_code
-        VARCHAR(11) org_unit_uid
-        VARCHAR(255) org_unit_name
-        VARCHAR(11) activity_uid
-        VARCHAR(255) activity_name
-        TIMESTAMP submission_completed_at
-        JSONB display_label
-        VARCHAR(11) de_uid
-        VARCHAR(255) de_name
-        VARCHAR(50) de_value_type
-        VARCHAR(11) de_option_set_uid
-        VARCHAR(11) option_uid
-        VARCHAR(11) option_value_uid
-        VARCHAR(255) option_name
-        VARCHAR(100) option_code
-        NUMERIC value_num
-        TEXT value_text
-        BOOLEAN value_bool
-        TIMESTAMP value_ts
-        VARCHAR(11) value_ref_uid
-        TIMESTAMP deleted_at
-    }
-
-    ELEMENT_DATA_VALUE ||--|| PIVOT_GRID_FACTS: materializes
-    DATA_SUBMISSION ||--o{ PIVOT_GRID_FACTS: contributes_to
     REPEAT_INSTANCE ||--o{ PIVOT_GRID_FACTS: contextualizes
-    DATA_ELEMENT ||--o{ PIVOT_GRID_FACTS: defines
-    ELEMENT_TEMPLATE_CONFIG ||--o{ PIVOT_GRID_FACTS: configures
-    TEAM ||--o{ PIVOT_GRID_FACTS: describes
-    ORG_UNIT ||--o{ PIVOT_GRID_FACTS: describes
-    ACTIVITY ||--o{ PIVOT_GRID_FACTS: describes
-    OPTION_VALUE ||--o{ PIVOT_GRID_FACTS: options
+    REPEAT_INSTANCE ||--o{ ELEMENT_DATA_VALUE: contextualizes
+    ELEMENT_TEMPLATE_CONFIG ||--o{ ELEMENT_DATA_VALUE: configures
+    ELEMENT_TEMPLATE_CONFIG ||--o{ REPEAT_INSTANCE: configures
+    TEAM ||--o{ ELEMENT_DATA_VALUE: "describes valueRef (uid-native)"
+    ORG_UNIT ||--o{ ELEMENT_DATA_VALUE: "describes valueRef (uid-native)"
+    ACTIVITY ||--o{ ELEMENT_DATA_VALUE: "describes valueRef (uid-native)"
+    OPTION_VALUE ||--o{ ELEMENT_DATA_VALUE: "describes valueRef (uid-native)"
+    OPTION_VALUE ||--o{ ELEMENT_DATA_VALUE: "describes multi-select option_uid"
+    
 ```
-
----
 
 ### Common Abbreviations Used Throughout The System
 

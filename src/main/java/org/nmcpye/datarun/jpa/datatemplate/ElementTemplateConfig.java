@@ -153,7 +153,7 @@ public class ElementTemplateConfig {
     /// True if this element is considered a measure for analytics.
     @Column(name = "is_dimension", nullable = false)
     @Builder.Default
-    private Boolean isDimension = Boolean.FALSE;;
+    private Boolean isDimension = Boolean.FALSE;
 
     @Column(name = "sort_order")
     private Integer sortOrder;

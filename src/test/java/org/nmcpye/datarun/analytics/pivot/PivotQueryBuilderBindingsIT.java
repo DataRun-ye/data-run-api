@@ -11,9 +11,9 @@
 //import org.junit.jupiter.api.BeforeAll;
 //import org.junit.jupiter.api.Test;
 //import org.junit.jupiter.api.TestInstance;
-//import org.nmcpye.datarun.analytics.pivot.dto.FilterDto;
-//import org.nmcpye.datarun.analytics.pivot.dto.PivotQueryRequest;
-//import org.nmcpye.datarun.analytics.pivot.dto.SortDto;
+//import org.nmcpye.datarun.analytics.dto.FilterDto;
+//import org.nmcpye.datarun.analytics.dto.PivotQueryRequest;
+//import org.nmcpye.datarun.analytics.dto.SortDto;
 //import org.testcontainers.containers.PostgreSQLContainer;
 //
 //import javax.sql.DataSource;

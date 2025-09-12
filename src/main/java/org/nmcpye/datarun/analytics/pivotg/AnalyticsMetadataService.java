@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.analytics.pivotg;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.analytics.pivot.AllowedAggregationsResolver;
-import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
-import org.nmcpye.datarun.analytics.pivot.dto.DataType;
-import org.nmcpye.datarun.analytics.pivot.dto.FieldCategory;
-import org.nmcpye.datarun.analytics.pivot.dto.PivotFieldDto;
+import org.nmcpye.datarun.analytics.AllowedAggregationsResolver;
+import org.nmcpye.datarun.analytics.dto.Aggregation;
+import org.nmcpye.datarun.analytics.dto.DataType;
+import org.nmcpye.datarun.analytics.dto.FieldCategory;
+import org.nmcpye.datarun.analytics.dto.QueryableElement;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -29,7 +29,7 @@ public class AnalyticsMetadataService {
     public static final String METADATA_CACHE = "analyticsMetadataCache";
 
     private final AnalyticsMetadataRepository analyticsMetadataRepository;
-    private final PivotFieldMapper pivotFieldMapper;
+    private final QueryableElementMapper queryableElementMapper;
     private final AllowedAggregationsResolver aggrResolver;
 
     /**
@@ -38,10 +38,10 @@ public class AnalyticsMetadataService {
      */
     @Cacheable(value = METADATA_CACHE, key = "#dataTemplateUid.orElse('global')" +
         " + (#dataTemplateUid.present ? '::' + #templateVersionUid.orElse('latest') : '')")
-    public List<PivotFieldDto> generateMetadata(Optional<String> dataTemplateUid, Optional<String> templateVersionUid) {
-        List<PivotFieldDto> coreDimensions = generateCoreDimensionMetadata();
-        List<PivotFieldDto> hierarchicalContext = generateHierarchicalContextMetadata();
-        List<PivotFieldDto> dynamicMeasures = dataTemplateUid
+    public List<QueryableElement> generateMetadata(Optional<String> dataTemplateUid, Optional<String> templateVersionUid) {
+        List<QueryableElement> coreDimensions = generateCoreDimensionMetadata();
+        List<QueryableElement> hierarchicalContext = generateHierarchicalContextMetadata();
+        List<QueryableElement> dynamicMeasures = dataTemplateUid
             .map(dt -> generateTemplateModeMeasures(dataTemplateUid.get(),
                 templateVersionUid.orElse(null)))      // If UID is present, call this
             .orElseGet(this::generateGlobalModeMeasures); // If UID is absent, call this
@@ -52,13 +52,13 @@ public class AnalyticsMetadataService {
             .toList();
     }
 
-    private List<PivotFieldDto> generateCoreDimensionMetadata() {
+    private List<QueryableElement> generateCoreDimensionMetadata() {
         // This can be a static or semi-static list, as core dimensions rarely change.
         // For simplicity, creating them here. In a real app, this might come from a config.
         return List.of(
-            PivotFieldDto.builder()
+            QueryableElement.builder()
                 .id("team_uid")
-                .label("Team")
+                .name("Team")
                 .category(FieldCategory.CORE_DIMENSION)
                 .dataType(DataType.UID)
                 .factColumn("team_uid")
@@ -66,9 +66,9 @@ public class AnalyticsMetadataService {
 //                .templateModeOnly(false).source("system")
                 .build(),
 
-            PivotFieldDto.builder()
+            QueryableElement.builder()
                 .id("org_unit_uid")
-                .label("Org Unit")
+                .name("Org Unit")
                 .category(FieldCategory.CORE_DIMENSION)
                 .dataType(DataType.UID)
                 .factColumn("org_unit_uid")
@@ -78,9 +78,9 @@ public class AnalyticsMetadataService {
 //                .source("system")
                 .build(),
 
-            PivotFieldDto.builder()
+            QueryableElement.builder()
                 .id("activity_uid")
-                .label("Activity")
+                .name("Activity")
                 .category(FieldCategory.CORE_DIMENSION)
                 .dataType(DataType.UID)
                 .factColumn("activity_uid")
@@ -90,9 +90,9 @@ public class AnalyticsMetadataService {
 //                .source("system")
                 .build(),
 
-            PivotFieldDto.builder()
+            QueryableElement.builder()
                 .id("submission_completed_at")
-                .label("Submission completed at")
+                .name("Submission completed at")
                 .category(FieldCategory.CORE_DIMENSION)
                 .dataType(DataType.TIMESTAMP)
                 .factColumn("submission_completed_at")
@@ -104,13 +104,13 @@ public class AnalyticsMetadataService {
         );
     }
 
-    private List<PivotFieldDto> generateHierarchicalContextMetadata() {
-        List<PivotFieldDto> fields = new ArrayList<>();
+    private List<QueryableElement> generateHierarchicalContextMetadata() {
+        List<QueryableElement> fields = new ArrayList<>();
 
-        fields.add(PivotFieldDto.builder()
+        fields.add(QueryableElement.builder()
             .id("category:child")
             .category(FieldCategory.HIERARCHICAL_CONTEXT)
-            .label("Category (Level 1)")
+            .name("Category (Level 1)")
             .dataType(DataType.UID)
             .factColumn("child_category_uid")
             .aggregationModes(Set.
@@ -118,10 +118,10 @@ public class AnalyticsMetadataService {
 //            .templateModeOnly(false)
 //            .source("system")
             .build());
-        fields.add(PivotFieldDto.builder()
+        fields.add(QueryableElement.builder()
             .id("category:parent")
             .category(FieldCategory.HIERARCHICAL_CONTEXT)
-            .label("Category (Level 2)")
+            .name("Category (Level 2)")
             .dataType(DataType.UID)
             .factColumn("parent_category_uid")
             .aggregationModes(Set.
@@ -130,10 +130,10 @@ public class AnalyticsMetadataService {
 //            .source("system")
             .build());
 
-        fields.add(PivotFieldDto.builder()
+        fields.add(QueryableElement.builder()
             .id("repeat_path")
             .category(FieldCategory.HIERARCHICAL_CONTEXT)
-            .label("Category (Level 2)")
+            .name("Category (Level 2)")
             .dataType(DataType.TEXT)
             .factColumn("repeat_path")
             .aggregationModes(Set.
@@ -144,19 +144,19 @@ public class AnalyticsMetadataService {
         return fields;
     }
 
-    private List<PivotFieldDto> generateGlobalModeMeasures() {
+    private List<QueryableElement> generateGlobalModeMeasures() {
         // Fetch all distinct data_elements that have been used.
         var dataElements = analyticsMetadataRepository.findUsedDataElements();
         // Use MapStruct to convert the list of entities/records to DTOs
-        return pivotFieldMapper.toPivotFieldDTOs(dataElements);
+        return queryableElementMapper.toQueryableElement(dataElements);
     }
 
-    private List<PivotFieldDto> generateTemplateModeMeasures(String templateUid, String templateVersionUid) {
+    private List<QueryableElement> generateTemplateModeMeasures(String templateUid, String templateVersionUid) {
         // Fetch all element_template_configs for the given form.
         var configs =
             analyticsMetadataRepository
                 .findElementConfigsByTemplate(templateUid, templateVersionUid);
         // MapStruct conversion
-        return pivotFieldMapper.toPivotFieldDTOsFromConfigs(configs);
+        return queryableElementMapper.toQueryableElementsFromConfigs(configs);
     }
 }

@@ -3,10 +3,10 @@
 //import org.junit.jupiter.api.BeforeEach;
 //import org.junit.jupiter.api.Test;
 //import org.mockito.Mockito;
-//import org.nmcpye.datarun.analytics.pivot.AllowedAggregationsResolver;
-//import org.nmcpye.datarun.analytics.pivot.PivotMetadataServiceImpl;
-//import org.nmcpye.datarun.analytics.pivot.dto.PivotFieldDto;
-//import org.nmcpye.datarun.analytics.pivot.dto.PivotMetadataResponse;
+//import org.nmcpye.datarun.analytics.AllowedAggregationsResolver;
+//import org.nmcpye.datarun.analytics.PivotMetadataServiceImpl;
+//import org.nmcpye.datarun.analytics.dto.QueryableElement;
+//import org.nmcpye.datarun.analytics.dto.PivotMetadataResponse;
 //import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 //import org.nmcpye.datarun.jpa.dataelement.DataElement;
 //import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
@@ -75,7 +75,7 @@
 //        assertNotNull(resp);
 //        assertEquals(2, resp.getMeasures().size());
 //
-//        PivotFieldDto numDto = resp.getMeasures()
+//        QueryableElement numDto = resp.getMeasures()
 //            .stream().filter(d ->
 //                d.id().equals("etc:100")).findFirst().orElse(null);
 //        assertNotNull(numDto);
@@ -83,7 +83,7 @@
 //        assertTrue(numDto.aggregationModes().contains("SUM"));
 //        assertEquals("element_template_config", numDto.source());
 //
-//        PivotFieldDto optDto = resp.getMeasures().stream().filter(d -> d.id().equals("etc:101")).findFirst().orElse(null);
+//        QueryableElement optDto = resp.getMeasures().stream().filter(d -> d.id().equals("etc:101")).findFirst().orElse(null);
 //        assertNotNull(optDto);
 //        assertEquals("option_id", optDto.dataType());
 //        assertTrue(optDto.aggregationModes().contains("COUNT"));

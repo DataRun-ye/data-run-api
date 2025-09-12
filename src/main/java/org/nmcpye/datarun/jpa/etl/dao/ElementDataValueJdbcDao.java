@@ -22,11 +22,11 @@ public class ElementDataValueJdbcDao implements IElementDataValueDao {
     // A single, unified UPSERT statement handles all cases.
     private static final String UPSERT_SQL = """
         INSERT INTO element_data_value (
-            submission_uid, assignment_uid, team_uid, org_unit_uid, activity_uid,
+            semantic_path, submission_uid, assignment_uid, team_uid, org_unit_uid, activity_uid,
             element_uid, element_template_config_uid, repeat_instance_id, option_uid,
             value_text, value_num, value_bool, value_ts, value_ref_uid, row_type, created_date, last_modified_date, deleted_at
         ) VALUES (
-            :submissionUid, :assignmentUid, :teamUid, :orgUnitUid, :activityUid,
+            :semanticPath, :submissionUid, :assignmentUid, :teamUid, :orgUnitUid, :activityUid,
             :elementUid, :elementTemplateConfigUid, :repeatInstanceId, :optionUid,
             :valueText, :valueNum, :valueBool, :valueTs, :valueRefUid,:rowType, :createdDate, :lastModifiedDate, NULL
         )
@@ -70,6 +70,7 @@ public class ElementDataValueJdbcDao implements IElementDataValueDao {
         if (r.getLastModifiedDate() == null) r.setLastModifiedDate(Instant.now());
 
         return new MapSqlParameterSource()
+            .addValue("semanticPath", r.getSemanticPath())
             .addValue("submissionUid", r.getSubmissionUid())
             .addValue("assignmentUid", r.getAssignmentUid())
             .addValue("teamUid", r.getTeamUid())

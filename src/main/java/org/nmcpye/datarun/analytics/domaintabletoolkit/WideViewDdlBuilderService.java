@@ -130,7 +130,7 @@ public class WideViewDdlBuilderService {
         return switch (element.valueType()) {
             case NUMBER -> "ev.value_num";
             case OPTION -> "ev.option_id";
-            case TIMESTAMP -> "ev.value_ts";
+            case DATE -> "ev.value_ts";
             case BOOLEAN -> "ev.value_bool";
             case CATEGORY -> "ev.category_id";
             case REFERENCE, TEXT -> "ev.value_text";

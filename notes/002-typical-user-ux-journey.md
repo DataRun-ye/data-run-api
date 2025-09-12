@@ -21,7 +21,7 @@ Use the metadata to populate and constrain the UI:
 
 * **Field / Measure picker**
 
-    * Show available *measures* (template fields) and *core dimensions* from `PivotFieldDto`.
+    * Show available *measures* (template fields) and *core dimensions* from `QueryableElement`.
     * For each field show: label, dataType, `aggregationModes` (allowed), `factColumn`.
     * Measure builder UI:
 
@@ -174,6 +174,6 @@ Use the metadata to populate and constrain the UI:
 
 ## Final notes (functional scope)
 
-* The metadata DTO (`PivotFieldDto`) is the single source for building UI controls: `dataType`, `factColumn`, `aggregationModes`, and `extras` drive the available operators, inputs, and option pickers.
+* The metadata DTO (`QueryableElement`) is the single source for building UI controls: `dataType`, `factColumn`, `aggregationModes`, and `extras` drive the available operators, inputs, and option pickers.
 * The front end needs only to validate input (UID shape, types, non-empty INs, alias uniqueness) and then submit the `PivotQueryRequest`. All enforcement (exact SQL mapping, per-measure `filterWhere`, typed binding) is server-side.
 * Keep the UI controls conservative: disable unsupported ops, show allowed aggregations, and avoid exposing internal column names (use `factColumn` only internally).

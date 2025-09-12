@@ -2,11 +2,11 @@ package org.nmcpye.datarun.web.rest.v1.pivotgrid;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.analytics.pivot.PivotMetadataService;
-import org.nmcpye.datarun.analytics.pivot.PivotQueryService;
-import org.nmcpye.datarun.analytics.pivot.dto.PivotOutputFormat;
-import org.nmcpye.datarun.analytics.pivot.dto.PivotQueryRequest;
-import org.nmcpye.datarun.analytics.pivot.dto.PivotQueryResponse;
+import org.nmcpye.datarun.analytics.MetadataService;
+import org.nmcpye.datarun.analytics.QueryService;
+import org.nmcpye.datarun.analytics.dto.GridResponseFormat;
+import org.nmcpye.datarun.analytics.dto.QueryRequest;
+import org.nmcpye.datarun.analytics.dto.QueryResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -40,15 +40,15 @@ import java.util.Set;
 @Slf4j
 public class PivotQueryController {
 
-    private final PivotMetadataService pivotMetadataService;
-    private final PivotQueryService pivotQueryService;
+    private final MetadataService metadataService;
+    private final QueryService queryService;
 
     /**
      * Return metadata required to render the pivot UI for a template version.
      */
     @GetMapping("/metadata")
     public ResponseEntity<?> metadata(@RequestParam String templateId, @RequestParam String templateVersionId) {
-        return ResponseEntity.ok(pivotMetadataService
+        return ResponseEntity.ok(metadataService
             .getMetadataForTemplate(templateId, templateVersionId));
     }
 
@@ -61,13 +61,13 @@ public class PivotQueryController {
      */
     @PostMapping(value = "/query", consumes = MediaType.APPLICATION_JSON_VALUE,
         produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<PivotQueryResponse> query(
-        @RequestBody PivotQueryRequest request,
-        @RequestParam(name = "format", defaultValue = "TABLE_ROWS") PivotOutputFormat format
+    public ResponseEntity<QueryResponse> query(
+        @RequestBody QueryRequest request,
+        @RequestParam(name = "format", defaultValue = "TABLE_ROWS") GridResponseFormat format
     ) {
         // Resolve allowed teams from auth normally; for now pass null.
         Set<String> allowedTeams = null;
-        PivotQueryResponse resp = pivotQueryService.query(request, format, allowedTeams);
+        QueryResponse resp = queryService.query(request, format, allowedTeams);
         return ResponseEntity.ok(resp);
     }
 
@@ -76,7 +76,7 @@ public class PivotQueryController {
      */
     @GetMapping("/field")
     public ResponseEntity<?> resolveField(@RequestParam String id, @RequestParam String templateId, @RequestParam String templateVersionId) {
-        return ResponseEntity.of(pivotMetadataService.resolveFieldById(id, templateId, templateVersionId));
+        return ResponseEntity.of(metadataService.resolveFieldById(id, templateId, templateVersionId));
     }
 
 //    @PostMapping("/count")

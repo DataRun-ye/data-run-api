@@ -172,7 +172,7 @@ public class Normalizer {
             final Object rawValue = entry.getValue();
             final String childPath = currentPath.isEmpty() ? key : currentPath + "." + key;
             final AbstractElement element = elementMap.getElementByNamePathMap().get(childPath);
-            final ElementTemplateConfig elementConf = elementMap.getElementConfigByNamePathMap().get(childPath);
+            final ElementTemplateConfig etc = elementMap.getElementConfigByNamePathMap().get(childPath);
 
             if (element == null) continue; // Skip data not defined in the template
 
@@ -202,6 +202,7 @@ public class Normalizer {
                         .categoryName(category != null ? category.getName() : null)
                         .categoryLabel(toStringLabel(category != null ? category.getLabel() : null))
                         .repeatPath(childPath)
+                        .semanticPath(etc.getSemanticPath())
                         .parentRepeatInstanceId(context.instanceId()) // NESTED HIERARCHY LINK
                         .repeatIndex(idx)
                         .repeatSectionLabel(toStringLabel(section.getLabel()))
@@ -255,13 +256,13 @@ public class Normalizer {
 
                 for (String code : codes) {
                     ns.addValueRow(buildElementDataValue(submission, field, context,
-                        codeToOptionUid.get(code), code, elementConf.getUid()));
+                        codeToOptionUid.get(code), code, etc));
                 }
             }
             // --- PRIMITIVE SINGLE-VALUE ELEMENT ---
             else if (element instanceof FormDataElementConf field) {
                 ns.addValueRow(buildElementDataValue(submission, field, context, null,
-                    rawValue, elementConf.getUid()));
+                    rawValue, etc));
             }
         }
     }
@@ -271,7 +272,7 @@ public class Normalizer {
                                                    FormDataElementConf field,
                                                    RepeatContext context,
                                                    String optionUid, Object rawValue,
-                                                   String etcUid) {
+                                                   ElementTemplateConfig etc) {
         // --- try parse value based on dataType
         ElementDataValue.ElementDataValueBuilder builder =
             elementValueResolver.resolveValue(rawValue, field);
@@ -286,7 +287,8 @@ public class Normalizer {
             .teamUid(submission.getTeam())
             .orgUnitUid(submission.getOrgUnit())
             .activityUid(submission.getActivity())
-            .elementTemplateConfigUid(etcUid)
+            .elementTemplateConfigUid(etc.getUid())
+            .semanticPath(etc.getSemanticPath())
             // --- CONTEXT FROM REPEAT ---
             .repeatInstanceId(context.instanceId())
             // --- VALUE ---

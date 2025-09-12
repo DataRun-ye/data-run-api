@@ -5,12 +5,12 @@
 //import org.junit.jupiter.api.BeforeEach;
 //import org.junit.jupiter.api.Test;
 //import org.mockito.Mockito;
-//import org.nmcpye.datarun.analytics.pivot.MeasureValidationServiceImpl;
-//import org.nmcpye.datarun.analytics.pivot.PivotFieldJooqMapper;
-//import org.nmcpye.datarun.analytics.pivot.PivotMetadataService;
-//import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
-//import org.nmcpye.datarun.analytics.pivot.dto.MeasureRequest;
-//import org.nmcpye.datarun.analytics.pivot.dto.PivotFieldDto;
+//import org.nmcpye.datarun.analytics.MeasureValidationServiceImpl;
+//import org.nmcpye.datarun.analytics.PivotFieldJooqMapper;
+//import org.nmcpye.datarun.analytics.PivotMetadataService;
+//import org.nmcpye.datarun.analytics.model.ValidatedMeasure;
+//import org.nmcpye.datarun.analytics.dto.MeasureRequest;
+//import org.nmcpye.datarun.analytics.dto.QueryableElement;
 //import org.nmcpye.datarun.jooq.Tables;
 //import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 //import org.nmcpye.datarun.jpa.dataelement.service.DataElementService;
@@ -43,7 +43,7 @@
 //
 //    @Test
 //    void testValidateNumericSum_templateEtc() {
-//        PivotFieldDto dto = PivotFieldDto.builder()
+//        QueryableElement dto = QueryableElement.builder()
 //            .id("etc:500")
 //            .label("Weight")
 //            .dataType("value_num")
@@ -76,7 +76,7 @@
 //
 //    @Test
 //    void testValidateOptionCount_withOption() {
-//        PivotFieldDto dto = PivotFieldDto.builder()
+//        QueryableElement dto = QueryableElement.builder()
 //            .id("etc:600")
 //            .label("Hobby")
 //            .dataType("option_id")

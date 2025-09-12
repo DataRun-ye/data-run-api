@@ -156,7 +156,7 @@ The API makes filtering dynamic and data-driven. You don't need to hardcode any 
 
 **How it Works:** The `resolution` object in a field's metadata tells you how to build its filter control.
 
-**Example `PivotFieldDto` for "Team":**
+**Example `QueryableElement` for "Team":**
 
 ```json-lines
 {
@@ -349,7 +349,7 @@ Some measures only make sense when grouped by a specific dimension. The API prov
 When you see this hint in a field's metadata, it means the measure is more meaningful when grouped by the recommended
 dimension.
 
-**Example `PivotFieldDto` for "Quantity Issued":**
+**Example `QueryableElement` for "Quantity Issued":**
 
 ```json-lines
 {

@@ -13,7 +13,8 @@ import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
  * @since 09/09/2025
  */
 public interface ElementConfigBuilder {
-    ElementTemplateConfig buildFieldConfigFromFormConf(FormDataElementConf field, PathMetadata meta,
+    ElementTemplateConfig buildFieldConfigFromFormConf(FormDataElementConf field,
+                                                       PathMetadata meta,
                                                        TemplateVersion templateVersion);
 
     ElementTemplateConfig buildRepeatConfigFromSection(FormSectionConf section, PathMetadata meta,

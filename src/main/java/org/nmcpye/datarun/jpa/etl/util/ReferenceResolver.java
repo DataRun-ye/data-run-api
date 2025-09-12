@@ -5,7 +5,6 @@ import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
 import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
-import org.nmcpye.datarun.jpa.etl.exception.InvalidCategoryValueException;
 import org.nmcpye.datarun.jpa.etl.exception.InvalidReferenceValueException;
 import org.nmcpye.datarun.jpa.etl.model.ReferenceResolutionResult;
 import org.nmcpye.datarun.jpa.option.Option;
@@ -52,7 +51,7 @@ public class ReferenceResolver {
             Optional<Option> optional = resolveOptionByOptionSetAndCode(sval, reference.getOptionSet());
             final var option = optional
                 .orElseThrow(() ->
-                    new InvalidCategoryValueException("Unknown option '" + sval + "'"));
+                    new InvalidReferenceValueException("Unknown option '" + sval + "'"));
             return ReferenceResolutionResult
                 .builder().uid(option.getUid())
                 .kind("option_value").name(option.getName())
@@ -65,7 +64,7 @@ public class ReferenceResolver {
         } else if (vt == ValueType.Activity) {
             return resolveDomainCandidate(sval, activityRepository::findByUid, activityRepository::findById, "activity");
         } else {
-            throw new InvalidCategoryValueException("Element type " + vt + " cannot be used as repeat category");
+            throw new InvalidReferenceValueException("Element type " + vt + " cannot be used as repeat category");
         }
     }
 
@@ -74,7 +73,7 @@ public class ReferenceResolver {
         try {
             return optionRepository.findByCodeAndOptionSetUid(input, optionSetId);
         } catch (Exception e) {
-            throw new InvalidCategoryValueException("Failed to resolve option '" + input + "': " + e.getMessage(), e);
+            throw new InvalidReferenceValueException("Failed to resolve option '" + input + "': " + e.getMessage(), e);
         }
     }
 

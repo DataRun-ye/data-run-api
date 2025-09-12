@@ -8,10 +8,10 @@
 //import org.jooq.impl.DSL;
 //import org.junit.jupiter.api.BeforeEach;
 //import org.junit.jupiter.api.Test;
-//import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
-//import org.nmcpye.datarun.analytics.pivot.dto.FilterDto;
-//import org.nmcpye.datarun.analytics.pivot.dto.SortDto;
-//import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
+//import org.nmcpye.datarun.analytics.dto.Aggregation;
+//import org.nmcpye.datarun.analytics.dto.FilterDto;
+//import org.nmcpye.datarun.analytics.dto.SortDto;
+//import org.nmcpye.datarun.analytics.model.ValidatedMeasure;
 //import org.nmcpye.datarun.jooq.Tables;
 //
 //import java.time.LocalDateTime;

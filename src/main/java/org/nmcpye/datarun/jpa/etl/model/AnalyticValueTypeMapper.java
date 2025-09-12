@@ -11,7 +11,7 @@ public class AnalyticValueTypeMapper {
         return switch (valueType) {
             case Number, Integer, Percentage, UnitInterval, IntegerPositive,
                  IntegerNegative, IntegerZeroOrPositive -> AnalyticValueType.NUMBER;
-            case Date, DateTime, Time, Age -> AnalyticValueType.TIMESTAMP;
+            case Date, DateTime, Time, Age -> AnalyticValueType.DATE;
             case SelectOne, SelectMulti -> AnalyticValueType.OPTION;
             case OrganisationUnit, Team, Activity, Entity -> AnalyticValueType.REFERENCE;
             default -> AnalyticValueType.TEXT;

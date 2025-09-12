@@ -236,7 +236,7 @@ The API makes filtering dynamic and data-driven. You don't need to hardcode any 
 
 **How it Works:** The `resolution` object in a field's metadata tells you how to build its filter control.
 
-**Example `PivotFieldDto` for "Team":**
+**Example `QueryableElement` for "Team":**
 
 ```json-lines
 {

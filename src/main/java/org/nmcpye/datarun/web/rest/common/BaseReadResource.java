@@ -42,6 +42,7 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
 
     protected final Logger log = LoggerFactory.getLogger(BaseReadResource.class);
 
+    @SuppressWarnings("unused")
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
 
@@ -155,6 +156,7 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
 
     private Class<T> entityClass;
 
+    @SuppressWarnings("unchecked")
     protected final Class<T> getEntityClass() {
         if (entityClass == null) {
             Type[] actualTypeArguments = ((ParameterizedType) getClass().getGenericSuperclass())

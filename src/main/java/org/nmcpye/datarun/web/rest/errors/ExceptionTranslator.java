@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.rest.errors;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
-import org.nmcpye.datarun.analytics.pivot.exception.InvalidMeasureException;
+import org.nmcpye.datarun.analytics.exception.InvalidMeasureException;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.TemplateValidationException;

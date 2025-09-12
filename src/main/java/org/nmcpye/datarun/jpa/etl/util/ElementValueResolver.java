@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.jpa.etl.dto.ElementDataValue;
+import org.nmcpye.datarun.jpa.etl.exception.InvalidReferenceValueException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -42,10 +43,16 @@ public class ElementValueResolver {
         }
 
         if (elementConf.getType().isSystemReferenceType()) {
-            final var resolved = referenceResolver
-                .resolveReference(rawValue, elementConf);
-            // store id of referenced entity
-            return vBuilder.valueRefUid(resolved.getUid());
+            try {
+                final var resolved = referenceResolver
+                    .resolveReference(rawValue, elementConf);
+                // store id of referenced entity
+                return vBuilder.valueRefUid(resolved.getUid());
+            } catch (InvalidReferenceValueException e) {
+                log.error(e.getMessage());
+                return vBuilder.valueAsText("Unresolved reference:" + rawValue);
+            }
+
         }
 
         if (elementConf.getType().isNumeric()) {

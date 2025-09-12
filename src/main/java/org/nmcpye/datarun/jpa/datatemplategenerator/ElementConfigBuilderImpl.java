@@ -34,9 +34,7 @@ public class ElementConfigBuilderImpl implements ElementConfigBuilder {
     }
 
     @Override
-    public ElementTemplateConfig buildFieldConfigFromFormConf(FormDataElementConf f,
-                                                              PathMetadata meta,
-                                                              TemplateVersion templateVersion) {
+    public ElementTemplateConfig buildFieldConfigFromFormConf(FormDataElementConf f, PathMetadata meta, TemplateVersion templateVersion) {
         Objects.requireNonNull(f);
         Objects.requireNonNull(meta);
         Objects.requireNonNull(templateVersion);
@@ -70,9 +68,7 @@ public class ElementConfigBuilderImpl implements ElementConfigBuilder {
             .definitionJson(getDefinitionSnapshot(f))
             // compute deterministic uid for config row and path_hash
             .pathHash(HashUtil.hashToLong(templateVersion.getUid() + ":" + meta.getIdPath()))
-//            .uid(generateElementConfigUid(templateVersion.getUid(), meta.getIdPath()))
             .isReference(determineIsReference(f));
-
         // default audit fields left to publisher or DB triggers
         return cfg.build();
     }

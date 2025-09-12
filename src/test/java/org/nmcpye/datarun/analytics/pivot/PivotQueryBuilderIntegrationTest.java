@@ -8,9 +8,9 @@
 //import org.jooq.SQLDialect;
 //import org.jooq.impl.DSL;
 //import org.junit.jupiter.api.*;
-//import org.nmcpye.datarun.analytics.pivot.dto.Aggregation;
-//import org.nmcpye.datarun.analytics.pivot.dto.SortDto;
-//import org.nmcpye.datarun.analytics.pivot.model.ValidatedMeasure;
+//import org.nmcpye.datarun.analytics.dto.Aggregation;
+//import org.nmcpye.datarun.analytics.dto.SortDto;
+//import org.nmcpye.datarun.analytics.model.ValidatedMeasure;
 //import org.testcontainers.containers.PostgreSQLContainer;
 //
 //import javax.sql.DataSource;

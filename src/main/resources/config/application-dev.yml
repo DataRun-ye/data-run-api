@@ -106,16 +106,18 @@ outbox:
     poll-interval-ms: 10000   # polling delay between polls (ms)
     batch-size: 70           # how many to claim per poll
     worker-threads: 6        # number of concurrent worker threads
-    max-attempts: 10
-migration:
-  mongo:
-    collection: data_form_submission
-  chunk:
-    size: 200
-  page:
-    size: 200
-  run: true
-  generate-missing-ids: true
+    max-attempts: 2
+
+# from mongo, do we run or not, comment all if not
+#migration:
+#  mongo:
+#    collection: data_form_submission
+#  chunk:
+#    size: 200
+#  page:
+#    size: 200
+#  run: true
+#  generate-missing-ids: true
 
 jhipster:
   client-app:
