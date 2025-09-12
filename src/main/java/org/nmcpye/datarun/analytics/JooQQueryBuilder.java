@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class QueryBuilder {
+public class JooQQueryBuilder {
 
     private final DSLContext dsl;
     // add a field or config flag for strictness (could be injected). Default true.

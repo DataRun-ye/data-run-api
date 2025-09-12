@@ -25,7 +25,7 @@ public class QueryServiceImpl implements QueryService {
 
     private final MetadataService metadataService;
     private final MeasureValidationService measureValidationService;
-    private final QueryBuilder queryBuilder;
+    private final JooQQueryBuilder jooQQueryBuilder;
     private final DSLContext dsl;
     private final QueryJooqMapper fieldMapper;
 
@@ -79,7 +79,7 @@ public class QueryServiceImpl implements QueryService {
 
             long totalGroups = -1;
             try {
-                totalGroups = queryBuilder.countGroups(
+                totalGroups = jooQQueryBuilder.countGroups(
                     groupByDims,
                     validatedMeasures,
                     convertFilters(request.getFilters()),
@@ -93,7 +93,7 @@ public class QueryServiceImpl implements QueryService {
             }
 
             // 4) Build the jOOQ Select using PivotQueryBuilder
-            Select<org.jooq.Record> select = queryBuilder.buildSelect(
+            Select<org.jooq.Record> select = jooQQueryBuilder.buildSelect(
                 groupByDims,
                 validatedMeasures,
                 convertFilters(request.getFilters()),
