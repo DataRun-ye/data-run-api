@@ -1,9 +1,8 @@
-package org.nmcpye.datarun.analytics.model;
+package org.nmcpye.datarun.analytics.dto;
 
 import lombok.Builder;
 import org.jooq.Condition;
 import org.jooq.Field;
-import org.nmcpye.datarun.analytics.dto.Aggregation;
 
 /**
  * Result of validating a MeasureRequest and the canonical form used by the query builder.
@@ -20,8 +19,8 @@ import org.nmcpye.datarun.analytics.dto.Aggregation;
  *   <li>{@code targetField} must be correctly typed (e.g. Field<BigDecimal> for value_num) — this prevents jOOQ binding/type errors at runtime.</li>
  * </ul>
  *
- * @param deUid            — the DataElement UID (de.uid) when the measure is global, or null when template-scoped.
- * @param etcUid           the ElementTemplateConfig UID (etc.uid) when the measure is template-scoped; null for global measures.
+ * @param deUid            — The public API identifier for the DataElement UID (de:uid) when the measure is global, or null when template-scoped.
+ * @param etcUid           The public API identifier for the ElementTemplateConfig UID (etc:uid) when the measure is template-scoped; null for global measures.
  * @param aggregation      aggregation kind (SUM, AVG, COUNT, COUNT_DISTINCT, MIN, MAX, SUM_TRUE).
  * @param targetField      the jOOQ Field<?> instance that will be aggregated (e.g. PIVOT_GRID_FACTS.VALUE_NUM, PIVOT_GRID_FACTS.VALUE_TS, a CASE expr for SUM_TRUE, or OPTION_UID field).
  * @param elementPredicate jOOQ Condition scoping rows for this measure (e.g. PIVOT_GRID_FACTS.ETC_UID.eq('etc:...') or PIVOT_GRID_FACTS.DE_UID.eq('de:...')). This predicate is applied via {@code .filterWhere(elementPredicate)} on the aggregate.
@@ -32,7 +31,7 @@ import org.nmcpye.datarun.analytics.dto.Aggregation;
  * @since 27/08/2025
  */
 @Builder
-public record ValidatedMeasure(
+public record QueryableElementMapping(
     String deUid,
     String etcUid,
     Aggregation aggregation,

@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.analytics;
+package org.nmcpye.datarun.analytics.metadata;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

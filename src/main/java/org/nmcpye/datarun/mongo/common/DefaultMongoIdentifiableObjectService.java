@@ -1,14 +1,14 @@
 package org.nmcpye.datarun.mongo.common;
 
+import org.nmcpye.datarun.apiquery.LegacyQueryConverter;
+import org.nmcpye.datarun.apiquery.MongoQueryBuilder;
+import org.nmcpye.datarun.apiquery.UnifiedQueryParser;
+import org.nmcpye.datarun.apiquery.filter.*;
 import org.nmcpye.datarun.common.DefaultIdentifiableObjectService;
 import org.nmcpye.datarun.common.IdentifiableObjectRepository;
 import org.nmcpye.datarun.common.IdentifiableObjectService;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.query.LegacyQueryConverter;
-import org.nmcpye.datarun.query.MongoQueryBuilder;
-import org.nmcpye.datarun.query.UnifiedQueryParser;
-import org.nmcpye.datarun.query.filter.*;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;

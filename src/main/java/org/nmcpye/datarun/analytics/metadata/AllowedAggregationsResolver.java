@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.analytics;
+package org.nmcpye.datarun.analytics.metadata;
 
 import org.nmcpye.datarun.analytics.dto.Aggregation;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;

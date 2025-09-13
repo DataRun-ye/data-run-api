@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.analytics.util;
 
-import org.nmcpye.datarun.analytics.model.ValidatedMeasure;
+import org.nmcpye.datarun.analytics.dto.QueryableElementMapping;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -58,13 +58,13 @@ public final class AliasSanitizer {
      * @param autoRename true to auto-rename, or throw
      * @return validated measures with duplicates auto-renamed
      */
-    public static List<ValidatedMeasure> ensureUniqueAliasesWithRename(List<ValidatedMeasure> measures,
-                                                                       boolean autoRename) throws IllegalArgumentException {
+    public static List<QueryableElementMapping> ensureUniqueAliasesWithRename(List<QueryableElementMapping> measures,
+                                                                              boolean autoRename) throws IllegalArgumentException {
         if (measures == null || measures.isEmpty()) return measures;
         Map<String, Integer> counts = new HashMap<>();
-        List<ValidatedMeasure> out = new ArrayList<>(measures.size());
+        List<QueryableElementMapping> out = new ArrayList<>(measures.size());
 
-        for (ValidatedMeasure vm : measures) {
+        for (QueryableElementMapping vm : measures) {
             String alias = Objects.requireNonNull(vm.alias()).trim();
             String key = alias.toLowerCase(Locale.ROOT);
             int seen = counts.getOrDefault(key, 0);
@@ -78,7 +78,7 @@ public final class AliasSanitizer {
                 String newAlias = alias + "_" + seen;
                 counts.put(key, seen + 1);
                 // create a new ValidatedMeasure with new alias
-                ValidatedMeasure renamed = new ValidatedMeasure(
+                QueryableElementMapping renamed = new QueryableElementMapping(
                     vm.deUid(),
                     vm.etcUid(),
                     vm.aggregation(),

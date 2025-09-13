@@ -1,6 +1,6 @@
-package org.nmcpye.datarun.query;
+package org.nmcpye.datarun.apiquery;
 
-import org.nmcpye.datarun.query.filter.FilterExpression;
+import org.nmcpye.datarun.apiquery.filter.FilterExpression;
 
 import java.util.List;
 

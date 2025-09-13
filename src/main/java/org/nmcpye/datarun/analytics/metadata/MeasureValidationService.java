@@ -1,13 +1,13 @@
-package org.nmcpye.datarun.analytics;
+package org.nmcpye.datarun.analytics.metadata;
 
 
 import org.nmcpye.datarun.analytics.dto.MeasureRequest;
+import org.nmcpye.datarun.analytics.dto.QueryableElementMapping;
 import org.nmcpye.datarun.analytics.exception.InvalidMeasureException;
-import org.nmcpye.datarun.analytics.model.ValidatedMeasure;
 
 /**
  * MeasureValidationService validates a client MeasureRequest and converts it into a
- * {@link ValidatedMeasure} that the JooqQueryBuilder can consume.
+ * {@link QueryableElementMapping} that the JooqQueryBuilder can consume.
  * <p>
  * Responsibilities:
  * - Resolve element identifiers provided by the client.
@@ -23,5 +23,5 @@ public interface MeasureValidationService {
     /**
      * Validate and convert a MeasureRequest into a ValidatedMeasure.
      */
-    ValidatedMeasure validate(MeasureRequest req, String templateUid, String templateVersionUid) throws InvalidMeasureException;
+    QueryableElementMapping validate(MeasureRequest req, String templateUid, String templateVersionUid) throws InvalidMeasureException;
 }

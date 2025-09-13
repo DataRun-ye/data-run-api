@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.query.filter;
+package org.nmcpye.datarun.apiquery.filter;
 
 /**
  * @author Hamza Assada 23/03/2025 (7amza.it@gmail.com)

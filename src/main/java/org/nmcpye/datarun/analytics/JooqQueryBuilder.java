@@ -8,8 +8,8 @@ import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
 import org.nmcpye.datarun.analytics.dto.QueryFilter;
 import org.nmcpye.datarun.analytics.dto.QuerySort;
+import org.nmcpye.datarun.analytics.dto.QueryableElementMapping;
 import org.nmcpye.datarun.analytics.fieldresolver.AnalyticsFieldResolver;
-import org.nmcpye.datarun.analytics.model.ValidatedMeasure;
 import org.nmcpye.datarun.jooq.Tables;
 import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
 import org.springframework.stereotype.Component;
@@ -70,9 +70,9 @@ public class JooqQueryBuilder {
      * @param allowedTeamIds optional ACL filter applied to team_uid.
      * @return a jOOQ {@link Select<Record>} representing the query (not executed).
      */
-    public Select<Record> buildSelect(
+    public SelectQuery<Record> buildSelect(
             List<String> dimensions,
-            List<ValidatedMeasure> measures,
+            List<QueryableElementMapping> measures,
             List<QueryFilter> filters,
             LocalDateTime from,
             LocalDateTime to,
@@ -96,7 +96,7 @@ public class JooqQueryBuilder {
 
         // measures -> aggregates
         if (measures != null) {
-            for (ValidatedMeasure vm : measures) {
+            for (QueryableElementMapping vm : measures) {
                 Field<?> agg = buildAggregateField(vm);
                 select.add(agg);
                 aliasToSelectField.put(vm.alias(), agg);
@@ -187,7 +187,7 @@ public class JooqQueryBuilder {
      */
     public long countGroups(
             List<String> dimensions,
-            List<ValidatedMeasure> measures,
+            List<QueryableElementMapping> measures,
             List<QueryFilter> filters,
             LocalDateTime from,
             LocalDateTime to,
@@ -251,7 +251,7 @@ public class JooqQueryBuilder {
      */
     public Result<Record> execute(
             List<String> dimensions,
-            List<ValidatedMeasure> measures,
+            List<QueryableElementMapping> measures,
             List<QueryFilter> filters,
             LocalDateTime from,
             LocalDateTime to,
@@ -276,7 +276,7 @@ public class JooqQueryBuilder {
      * @return SelectField<?> representing the aggregate expression aliased.
      */
     @SuppressWarnings("unchecked")
-    private Field<?> buildAggregateField(ValidatedMeasure vm) {
+    private Field<?> buildAggregateField(QueryableElementMapping vm) {
         // alias
         String alias = vm.alias();
 
@@ -502,7 +502,7 @@ public class JooqQueryBuilder {
      * Helper to render SQL for a hypothetical query — useful in unit tests.
      */
     public String renderSql(List<String> dimensions,
-                            List<ValidatedMeasure> measures,
+                            List<QueryableElementMapping> measures,
                             List<QueryFilter> filters,
                             LocalDateTime from,
                             LocalDateTime to,

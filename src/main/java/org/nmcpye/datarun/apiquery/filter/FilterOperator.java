@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.query.filter;
+package org.nmcpye.datarun.apiquery.filter;
 
 import java.util.Optional;
 

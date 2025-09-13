@@ -1,18 +1,28 @@
 package org.nmcpye.datarun.analytics;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jooq.DSLContext;
-import org.jooq.Field;
-import org.jooq.Result;
-import org.jooq.Select;
+import org.jooq.*;
+import org.jooq.Record;
 import org.nmcpye.datarun.analytics.dto.*;
+import org.nmcpye.datarun.analytics.dto.DataType;
 import org.nmcpye.datarun.analytics.exception.AnalyticsQueryException;
 import org.nmcpye.datarun.analytics.fieldresolver.MappedQueryableElement;
-import org.nmcpye.datarun.analytics.model.ValidatedMeasure;
+import org.nmcpye.datarun.analytics.metadata.MeasureValidationService;
+import org.nmcpye.datarun.analytics.metadata.MetadataService;
 import org.nmcpye.datarun.analytics.util.AliasSanitizer;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,6 +36,12 @@ public class QueryServiceImpl implements QueryService {
     private final MeasureValidationService measureValidationService;
     private final JooqQueryBuilder jooQQueryBuilder;
     private final DSLContext dsl;
+
+    // st
+    private final PlatformTransactionManager txManager;
+    private final ObjectMapper mapper;
+
+    private final JsonFactory jsonFactory = new JsonFactory();
 
     /**
      * {@inheritDoc}
@@ -44,23 +60,23 @@ public class QueryServiceImpl implements QueryService {
             // STEP 1: Fetch metadata ONCE and create a lookup map for efficient O(1) access.
             // This is a huge improvement over the previous implementation.
             Map<String, QueryableElement> fieldMap = metadataService
-                    .getMetadataForTemplate(request.getTemplateId(), request.getTemplateVersionId())
-                    .getAvailableFields().stream()
-                    .collect(Collectors.toMap(QueryableElement::id, f -> f));
+                .getMetadataForTemplate(request.getTemplateId(), request.getTemplateVersionId())
+                .getAvailableFields().stream()
+                .collect(Collectors.toMap(QueryableElement::id, f -> f));
 
             // STEP 2: Validate measures.
             // This service is now simpler and relies on the new metadata contract.
-            List<ValidatedMeasure> validatedMeasures = AliasSanitizer
-                    .ensureUniqueAliasesWithRename(
-                            Optional.ofNullable(request.getMeasures())
-                                    .orElse(Collections.emptyList())
-                                    .stream()
-                                    .map(mr -> measureValidationService
-                                            .validate(mr, request.getTemplateId(),
-                                                    request.getTemplateVersionId()))
-                                    .collect(Collectors.toList()),
-                            Boolean.TRUE.equals(request.getAutoRenameAliases())
-                    );
+            List<QueryableElementMapping> queryableElementMappings = AliasSanitizer
+                .ensureUniqueAliasesWithRename(
+                    Optional.ofNullable(request.getMeasures())
+                        .orElse(Collections.emptyList())
+                        .stream()
+                        .map(mr -> measureValidationService
+                            .validate(mr, request.getTemplateId(),
+                                request.getTemplateVersionId()))
+                        .collect(Collectors.toList()),
+                    Boolean.TRUE.equals(request.getAutoRenameAliases())
+                );
 
             // 3) Determine grouping dimensions
             List<String> rowDims = Optional.ofNullable(request.getRowDimensions()).orElse(Collections.emptyList());
@@ -74,33 +90,33 @@ public class QueryServiceImpl implements QueryService {
 
             // combined group-by dims (row + column)
             List<String> groupByDims = Stream.concat(rowDims.stream(), colDims.stream())
-                    .collect(Collectors.toList());
+                .collect(Collectors.toList());
 
             long totalGroups = -1;
             try {
                 totalGroups = jooQQueryBuilder.countGroups(
-                        groupByDims,
-                        validatedMeasures,
-                        convertFilters(request.getFilters()),
-                        request.getFrom(),
-                        request.getTo(),
-                        allowedTeamUids
+                    groupByDims,
+                    queryableElementMappings,
+                    convertFilters(request.getFilters()),
+                    request.getFrom(),
+                    request.getTo(),
+                    allowedTeamUids
                 );
             } catch (Exception ex) {
                 log.warn("Failed to compute totalGroups: {}", ex.getMessage());
             }
 
             // 4) Build the jOOQ Select using JooqQueryBuilder
-            Select<org.jooq.Record> select = jooQQueryBuilder.buildSelect(
-                    groupByDims,
-                    validatedMeasures,
-                    convertFilters(request.getFilters()),
-                    request.getFrom(),
-                    request.getTo(),
-                    convertSorts(request.getSorts()),
-                    request.getLimit(),
-                    request.getOffset(),
-                    allowedTeamUids
+            var select = jooQQueryBuilder.buildSelect(
+                groupByDims,
+                queryableElementMappings,
+                convertFilters(request.getFilters()),
+                request.getFrom(),
+                request.getTo(),
+                convertSorts(request.getSorts()),
+                request.getLimit(),
+                request.getOffset(),
+                allowedTeamUids
             );
 
             log.debug("Executing pivot select: \n{}", dsl.renderInlined(select));
@@ -110,22 +126,22 @@ public class QueryServiceImpl implements QueryService {
 
             // 6) Convert Result -> requested format
             QueryResponse.QueryResponseBuilder respB = QueryResponse.builder()
-                    .meta(Map.of(
-                            "format", format.name(),
-                            "templateId", request.getTemplateId(),
-                            "templateVersionId", request.getTemplateVersionId()))
-                    .total(totalGroups);
+                .meta(Map.of(
+                    "format", format.name(),
+                    "templateId", request.getTemplateId(),
+                    "templateVersionId", request.getTemplateVersionId()))
+                .total(totalGroups);
 
             if (format == GridResponseFormat.TABLE_ROWS) {
                 // Columns: groupBy dims then measures (aliases)
                 // STEP 3: Build response columns using the efficient lookup map.
-                List<ColumnDescriptor> columns = buildColumnsForTable(groupByDims, validatedMeasures, fieldMap);
+                List<ColumnDescriptor> columns = buildColumnsForTable(groupByDims, queryableElementMappings, fieldMap);
                 List<Map<String, Object>> rows = mapResultToRows(result, columns);
                 respB.columns(columns).rows(rows);
                 // total optional: not calculated now (could be separate count query)
             } else {
                 // PIVOT_MATRIX
-                MatrixResponse matrix = buildMatrixFromResult(result, rowDims, colDims, validatedMeasures);
+                MatrixResponse matrix = buildMatrixFromResult(result, rowDims, colDims, queryableElementMappings);
                 respB.matrix(matrix);
             }
 
@@ -139,20 +155,80 @@ public class QueryServiceImpl implements QueryService {
         }
     }
 
+    private void streamSelectToResponse(SelectQuery<Record> select, HttpServletResponse resp) {
+        // Render SQL (keeps jOOQ typed builder but we need a ResultQuery to call fetchStream)
+        String sql = dsl.renderInlined(select);
+
+//        ResultQuery<org.jooq.Record> q = dsl.resultQuery(sql);
+
+        // Important: tune fetchSize for your data (row size). 2000 is a starting point.
+        select.fetchSize(2000);
+
+        // Ensure transactional connection (autoCommit = false) so driver uses a cursor instead of materializing all rows.
+        TransactionTemplate tx = new TransactionTemplate(txManager);
+
+        tx.execute(status -> {
+            // Set response headers early (so client sees content streaming)
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+
+            try (Stream<org.jooq.Record> stream = select.fetchStream();
+                 ServletOutputStream out = resp.getOutputStream();
+                 JsonGenerator gen = jsonFactory.createGenerator(out)) {
+
+                gen.writeStartArray();
+
+                stream.forEach(record -> {
+                    try {
+                        // Produce a compact JSON object for the record.
+                        // We iterate fields of the record and convert values via Jackson.
+                        ObjectNode node = mapper.createObjectNode();
+                        for (org.jooq.Field<?> f : record.fields()) {
+                            Object v = record.get(f);
+                            if (v == null) {
+                                node.putNull(f.getName());
+                            } else {
+                                // valueToTree handles conversion of common types (strings, numbers, dates, nested maps/lists...)
+                                node.set(f.getName(), mapper.valueToTree(v));
+                            }
+                        }
+                        // write raw JSON text for this object (avoid extra object nesting)
+                        gen.writeRawValue(mapper.writeValueAsString(node));
+                        // ensure a chunk flush so clients start receiving data progressively
+                        gen.flush();
+                    } catch (IOException e) {
+                        // convert to unchecked so it propagates and transaction will roll back
+                        throw new UncheckedIOException(e);
+                    }
+                });
+
+                gen.writeEndArray();
+                gen.flush();
+            } catch (UncheckedIOException uio) {
+                // unwrap to preserve the underlying IO cause if needed
+                throw uio;
+            } catch (Exception e) {
+                // If desired, rethrow as runtime so the transaction rolls back and caller handles it.
+                throw new RuntimeException("Streaming query failed", e);
+            }
+            return null; // required by TransactionTemplate.execute
+        });
+    }
+
     /* --------------------- helpers --------------------- */
 
     private List<QueryFilter> convertFilters(List<QueryFilter> filters) {
         if (filters == null || filters.isEmpty()) return Collections.emptyList();
         return filters.stream().map(filter ->
-                        new QueryFilter(filter.field(), filter.op(), filter.value()))
-                .collect(Collectors.toList());
+                new QueryFilter(filter.field(), filter.op(), filter.value()))
+            .collect(Collectors.toList());
     }
 
     private List<QuerySort> convertSorts(List<QuerySort> querySorts) {
         if (querySorts == null || querySorts.isEmpty()) return Collections.emptyList();
         return querySorts.stream().map(sort ->
-                        new QuerySort(sort.fieldOrAlias(), sort.desc()))
-                .collect(Collectors.toList());
+                new QuerySort(sort.fieldOrAlias(), sort.desc()))
+            .collect(Collectors.toList());
     }
 
 
@@ -161,7 +237,7 @@ public class QueryServiceImpl implements QueryService {
      * It uses the pre-fetched fieldMap for instant lookups instead of re-scanning metadata.
      */
     private List<ColumnDescriptor> buildColumnsForTable(List<String> groupByDims,
-                                                        List<ValidatedMeasure> measures,
+                                                        List<QueryableElementMapping> measures,
                                                         Map<String, QueryableElement> fieldMap) {
         List<ColumnDescriptor> cols = new ArrayList<>();
 
@@ -177,16 +253,16 @@ public class QueryServiceImpl implements QueryService {
             MappedQueryableElement field = MappedQueryableElement.from(dimId);
 
             cols.add(ColumnDescriptor.builder()
-                    .id(dimId)            // logical id (stable for clients)
-                    .key(field.value())  // SQL alias used to read from Record, internal use only
-                    .displayLabel(name)  // default human friendly label
-                    .label(label)        // human friendly label localizations map
-                    .dataType(dataType)
-                    .build());
+                .id(dimId)            // logical id (stable for clients)
+                .key(field.value())  // SQL alias used to read from Record, internal use only
+                .displayLabel(name)  // default human friendly label
+                .label(label)        // human friendly label localizations map
+                .dataType(dataType)
+                .build());
         }
 
         // Add columns for measures
-        for (ValidatedMeasure vm : measures) {
+        for (QueryableElementMapping vm : measures) {
             String rawAlias = vm.alias(); // logical alias, used by clients
             String sqlAlias = AliasSanitizer.sanitize(rawAlias); // sql-safe key
 
@@ -208,18 +284,18 @@ public class QueryServiceImpl implements QueryService {
             }
 
             cols.add(ColumnDescriptor.builder()
-                    .id(rawAlias)            // keep logical alias as id for client stability
-                    .key(sqlAlias)           // sanitized SQL alias
-                    .displayLabel(name)
-                    .label(displayLabels)
-                    .dataType(determineMeasureDataType(vm))
-                    .build());
+                .id(rawAlias)            // keep logical alias as id for client stability
+                .key(sqlAlias)           // sanitized SQL alias
+                .displayLabel(name)
+                .label(displayLabels)
+                .dataType(determineMeasureDataType(vm))
+                .build());
         }
 
         return cols;
     }
 
-    private DataType determineMeasureDataType(ValidatedMeasure vm) {
+    private DataType determineMeasureDataType(QueryableElementMapping vm) {
         // pick reasonable default data type name used by fieldMapper
         Field<?> tf = vm.targetField();
         if (tf == null) return DataType.TEXT;
@@ -297,7 +373,7 @@ public class QueryServiceImpl implements QueryService {
     private MatrixResponse buildMatrixFromResult(Result<org.jooq.Record> result,
                                                  List<String> rowDims,
                                                  List<String> colDims,
-                                                 List<ValidatedMeasure> measures) {
+                                                 List<QueryableElementMapping> measures) {
 
         // ordered maps keep insertion order
         LinkedHashMap<String, List<String>> rowKeyToValues = new LinkedHashMap<>();
@@ -317,7 +393,7 @@ public class QueryServiceImpl implements QueryService {
             Map<String, Map<String, Object>> rowMap = grid.computeIfAbsent(rowKey, k -> new HashMap<>());
             Map<String, Object> cell = rowMap.computeIfAbsent(colKey, k -> new HashMap<>());
 
-            for (ValidatedMeasure vm : measures) {
+            for (QueryableElementMapping vm : measures) {
                 Object v = r.get(vm.alias());
                 cell.put(vm.alias(), v);
             }
@@ -340,13 +416,13 @@ public class QueryServiceImpl implements QueryService {
         }
 
         return MatrixResponse.builder()
-                .rowDimensionNames(rowDims)
-                .columnDimensionNames(colDims)
-                .measureAliases(measures.stream().map(ValidatedMeasure::alias).collect(Collectors.toList()))
-                .rowHeaders(rowHeaders)
-                .columnHeaders(columnHeaders)
-                .cells(cells)
-                .build();
+            .rowDimensionNames(rowDims)
+            .columnDimensionNames(colDims)
+            .measureAliases(measures.stream().map(QueryableElementMapping::alias).collect(Collectors.toList()))
+            .rowHeaders(rowHeaders)
+            .columnHeaders(columnHeaders)
+            .cells(cells)
+            .build();
     }
 
     private String makeCompoundKey(List<String> values) {

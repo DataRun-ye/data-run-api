@@ -1,8 +1,8 @@
-package org.nmcpye.datarun.query;
+package org.nmcpye.datarun.apiquery;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.nmcpye.datarun.query.filter.*;
+import org.nmcpye.datarun.apiquery.filter.*;
 
 import java.util.ArrayList;
 import java.util.List;

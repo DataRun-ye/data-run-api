@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.query.querybuilder;
+package org.nmcpye.datarun.apiquery.querybuilder;
 
 public class QueryParserException extends RuntimeException {
     public QueryParserException(String message) {

@@ -1,17 +1,14 @@
-package org.nmcpye.datarun.analytics;
+package org.nmcpye.datarun.analytics.metadata;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
-import org.nmcpye.datarun.analytics.dto.Aggregation;
-import org.nmcpye.datarun.analytics.dto.DataType;
-import org.nmcpye.datarun.analytics.dto.MeasureRequest;
-import org.nmcpye.datarun.analytics.dto.QueryableElement;
+import org.nmcpye.datarun.analytics.QueryJooqMapper;
+import org.nmcpye.datarun.analytics.dto.*;
 import org.nmcpye.datarun.analytics.exception.InvalidMeasureException;
 import org.nmcpye.datarun.analytics.fieldresolver.MappedQueryableElement;
-import org.nmcpye.datarun.analytics.model.ValidatedMeasure;
 import org.nmcpye.datarun.jooq.Tables;
 import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
 import org.springframework.stereotype.Service;
@@ -31,8 +28,8 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
     private static final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
 
     @Override
-    public ValidatedMeasure validate(MeasureRequest req, String templateUid,
-                                     String templateVersionUid) throws InvalidMeasureException {
+    public QueryableElementMapping validate(MeasureRequest req, String templateUid,
+                                            String templateVersionUid) throws InvalidMeasureException {
         if (req == null) throw new InvalidMeasureException("MeasureRequest is required");
         if (req.getFieldId() == null) throw new InvalidMeasureException("fieldId is required");
 
@@ -53,11 +50,11 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
         // STEP 3: Build the element predicate. This is now simple and declarative,
         // using the authoritative `sourceColumn` from our metadata contract.
         MappedQueryableElement parsedId = MappedQueryableElement.from(fieldDto.id());
-        Condition elementPredicate = DSL.field(DSL.name(fieldDto.sourceColumn()), String.class).eq(parsedId.value());
+        Condition condition = DSL.field(DSL.name(fieldDto.sourceColumn()), String.class).eq(parsedId.value());
 
         // Handle option-scoping for multi-selects
         if (req.getOptionId() != null) {
-            elementPredicate = elementPredicate.and(PG.OPTION_UID.eq(req.getOptionId()));
+            condition = condition.and(PG.OPTION_UID.eq(req.getOptionId()));
         }
 
         //Determine the correct target value field (e.g., value_num) for the aggregate function.
@@ -65,12 +62,12 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
 
         String alias = getAliasOrFallback(req, fieldDto, aggEnum);
 
-        return ValidatedMeasure.builder()
+        return QueryableElementMapping.builder()
                 .deUid(fieldDto.deUid())
                 .etcUid("etc".equals(parsedId.namespace()) ? parsedId.value() : null)
                 .aggregation(aggEnum)
                 .targetField(targetField)
-                .elementPredicate(elementPredicate)
+                .elementPredicate(condition)
                 .alias(alias)
                 .distinct(Boolean.TRUE.equals(req.getDistinct()))
                 .optionUid(req.getOptionId())

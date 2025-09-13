@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.analytics.pivotg;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.analytics.AllowedAggregationsResolver;
 import org.nmcpye.datarun.analytics.dto.Aggregation;
 import org.nmcpye.datarun.analytics.dto.DataType;
 import org.nmcpye.datarun.analytics.dto.QueryableElement;
+import org.nmcpye.datarun.analytics.metadata.AllowedAggregationsResolver;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;

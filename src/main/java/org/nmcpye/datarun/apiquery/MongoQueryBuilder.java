@@ -1,9 +1,9 @@
-package org.nmcpye.datarun.query;
+package org.nmcpye.datarun.apiquery;
 
-import org.nmcpye.datarun.query.filter.CompoundFilter;
-import org.nmcpye.datarun.query.filter.FilterExpression;
-import org.nmcpye.datarun.query.filter.LogicalOperator;
-import org.nmcpye.datarun.query.filter.SimpleFilter;
+import org.nmcpye.datarun.apiquery.filter.CompoundFilter;
+import org.nmcpye.datarun.apiquery.filter.FilterExpression;
+import org.nmcpye.datarun.apiquery.filter.LogicalOperator;
+import org.nmcpye.datarun.apiquery.filter.SimpleFilter;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;

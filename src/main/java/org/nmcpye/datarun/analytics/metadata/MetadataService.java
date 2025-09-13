@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.analytics;
+package org.nmcpye.datarun.analytics.metadata;
 
 import org.nmcpye.datarun.analytics.dto.MetadataResponse;
 import org.nmcpye.datarun.analytics.dto.QueryableElement;

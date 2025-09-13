@@ -27,15 +27,15 @@ public class QueryRequest {
     /// treated as row dims
     private List<String> dimensions;
 
+    /// list of measure requests (client-specified).
+    private List<MeasureRequest> measures;
+
     /// `rowDimensions`: preferred for matrix mode (explicit row dimensions).
     private List<String> rowDimensions;
 
     /// `columnDimensions`: explicit column dimensions preferred for matrix mode.
     /// usually 1, and can be composite
     private List<String> columnDimensions;
-
-    /// list of measure requests (client-specified).
-    private List<MeasureRequest> measures;
 
     /// global filters applied
     ///
@@ -58,7 +58,7 @@ public class QueryRequest {
     /// pagination offset.
     @Builder.Default
     private Integer offset = 0;
-    
+
     /// behaviour flags: whether duplicate alias auto-rename is permitted.
     ///
     /// default: error on duplicate aliases

@@ -5,7 +5,7 @@ import org.ehcache.config.builders.ExpiryPolicyBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.jsr107.Eh107Configuration;
 import org.hibernate.cache.jcache.ConfigSettings;
-import org.nmcpye.datarun.analytics.MetadataServiceImpl;
+import org.nmcpye.datarun.analytics.metadata.MetadataServiceImpl;
 import org.nmcpye.datarun.analytics.pivotg.AnalyticsMetadataService;
 import org.nmcpye.datarun.caching.UserKeyGenerator;
 import org.nmcpye.datarun.jpa.activity.Activity;

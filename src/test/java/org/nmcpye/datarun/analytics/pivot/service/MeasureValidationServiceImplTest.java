@@ -5,7 +5,7 @@
 //import org.junit.jupiter.api.BeforeEach;
 //import org.junit.jupiter.api.Test;
 //import org.mockito.Mockito;
-//import org.nmcpye.datarun.analytics.MeasureValidationServiceImpl;
+//import org.nmcpye.datarun.analytics.metadata.MeasureValidationServiceImpl;
 //import org.nmcpye.datarun.analytics.PivotFieldJooqMapper;
 //import org.nmcpye.datarun.analytics.PivotMetadataService;
 //import org.nmcpye.datarun.analytics.model.ValidatedMeasure;

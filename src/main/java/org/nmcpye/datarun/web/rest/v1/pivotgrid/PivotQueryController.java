@@ -2,11 +2,11 @@ package org.nmcpye.datarun.web.rest.v1.pivotgrid;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.analytics.MetadataService;
 import org.nmcpye.datarun.analytics.QueryService;
 import org.nmcpye.datarun.analytics.dto.GridResponseFormat;
 import org.nmcpye.datarun.analytics.dto.QueryRequest;
 import org.nmcpye.datarun.analytics.dto.QueryResponse;
+import org.nmcpye.datarun.analytics.metadata.MetadataService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

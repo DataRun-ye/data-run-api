@@ -3,7 +3,7 @@
 //import org.junit.jupiter.api.BeforeEach;
 //import org.junit.jupiter.api.Test;
 //import org.mockito.Mockito;
-//import org.nmcpye.datarun.analytics.AllowedAggregationsResolver;
+//import org.nmcpye.datarun.analytics.metadata.AllowedAggregationsResolver;
 //import org.nmcpye.datarun.analytics.PivotMetadataServiceImpl;
 //import org.nmcpye.datarun.analytics.dto.QueryableElement;
 //import org.nmcpye.datarun.analytics.dto.PivotMetadataResponse;
