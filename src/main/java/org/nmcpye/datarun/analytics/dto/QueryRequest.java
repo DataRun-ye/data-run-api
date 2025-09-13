@@ -8,85 +8,63 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Request payload for a pivot query (template-mode-first).
- * <pre>
- *
- * Fields:
- * - templateId (String, required): template UID (form) — used by metadata resolution & validation.
- * - templateVersionId (String, required): template version UID — used by metadata resolution.
- *
- * - dimensions (List<String>): backwards-compatible list of dimension ids (e.g. "team_uid", "etc_uid", "etc:<uid>").
- * - rowDimensions (List<String>): preferred for matrix mode (explicit row dimensions).
- * - columnDimensions (List<String>): preferred for matrix mode (explicit column dimensions).
- *
- * - measures (List<MeasureRequest>): requested measures (client-specified).
- * - filters (List<FilterDto>): global filters applied to the facts (see FilterDto for details).
- *
- * - from / to (LocalDateTime): time window for submission_completed_at (applied to WHERE).
- * - sorts (List<SortDto>): order specifiers that reference a dimension, fact column or a measure alias.
- * - limit / offset: pagination for table_rows.
- *
- * - allowedTeamUids (Set<String>): server-side ACL (applied to WHERE team_uid IN (...)).
- * - autoRenameAliases (boolean): whether duplicate alias auto-rename is permitted, default false.
- * - tolerantOrdering (boolean): hints the builder to be tolerant about ordering when alias/field conflicts happen.
- * </pre>
- *
- * @author Hamza Assada
- * @since 27/08/2025
- */
+/// Query Request payload
+///
+/// @author Hamza Assada
+/// @since 27/08/2025
 @Data
 @Builder
 public class QueryRequest {
-    // Template context for template-mode-first
+    /// `templateId` (String, required): template UID (form) — used by metadata resolution & validation.
     @NotNull
     private String templateId;
+
+    /// `templateVersionId` (String, required): template version UID — used by metadata resolution.
     @NotNull
     private String templateVersionId;
 
-    // Backwards-compatible generic list of dimensions (old behavior)
-    // list of dimension ids (e.g. "team_id", "element_id", "etc:123")
+    /// list of dimension ids (e.g. "team_id", "element_id", "etc:123")
+    /// treated as row dims
     private List<String> dimensions;
 
-    // New: explicit row and column dims (preferred for PIVOT_MATRIX)
-    private List<String> rowDimensions; // required for matrix
-    private List<String> columnDimensions; // usually 1, can be composite
+    /// `rowDimensions`: preferred for matrix mode (explicit row dimensions).
+    private List<String> rowDimensions;
 
-    // list of measure requests
+    /// `columnDimensions`: explicit column dimensions preferred for matrix mode.
+    /// usually 1, and can be composite
+    private List<String> columnDimensions;
+
+    /// list of measure requests (client-specified).
     private List<MeasureRequest> measures;
 
-    // simple filters
-    private List<FilterDto> filters;
+    /// global filters applied
+    ///
+    /// @see QueryFilter for details).
+    private List<QueryFilter> filters;
 
-    // optional explicit time window (submission_completed_at)
+    /// `from` date: an optional explicit time window (`submission_completed_at`)
     private LocalDateTime from;
+
+    /// `to` date: an optional explicit time window (`submission_completed_at`)
     private LocalDateTime to;
 
-    // sort
-    private List<SortDto> sorts;
+    /// order specifiers that reference a dimension, fact column or a measure alias.
+    private List<QuerySort> sorts;
 
-    // pagination
+    /// pagination rows limit.
     @Builder.Default
-    private Integer limit = 100; // rows limit (for TABLE_ROWS or for matrix rows)
+    private Integer limit = 100;
+
+    /// pagination offset.
     @Builder.Default
     private Integer offset = 0;
-
-
-    /**
-     * behaviour flags
-     */
+    
+    /// behaviour flags: whether duplicate alias auto-rename is permitted.
+    ///
+    /// default: error on duplicate aliases
     @Builder.Default
-    private Boolean autoRenameAliases = false; // default: error on duplicate aliases
+    private Boolean autoRenameAliases = false;
 
-    /**
-     * PivotQueryService can pass tolerantOrdering = true to
-     * PivotQueryBuilder to override strictOrderValidation.
-     */
-    @Builder.Default
-    Boolean tolerantOrdering = false; // default false
-
-    /**
-     * optional ACL override (server should validate)
-     */
+    /// optional server-side ACL (applied to WHERE team_uid IN (...))
     private Set<String> allowedTeamUids;
 }

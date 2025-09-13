@@ -27,15 +27,15 @@
 //import static org.junit.jupiter.api.Assertions.*;
 //
 ///**
-// * Integration tests exercising PivotQueryBuilder + translateFilter logic end-to-end
+// * Integration tests exercising JooqQueryBuilder + translateFilter logic end-to-end
 // * against a real PostgreSQL instance (Testcontainers).
 // * <p>
-// * Adapt the call to PivotQueryBuilder constructor / buildSelect if your API differs.
+// * Adapt the call to JooqQueryBuilder constructor / buildSelect if your API differs.
 // *
 // * @author Hamza Assada
 // */
 //@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-//public class PivotQueryBuilderBindingsIT {
+//public class JooqQueryBuilderBindingsIT {
 //
 //    static final PostgreSQLContainer<?> PG = new
 //        PostgreSQLContainer<>("postgres:16.2")
@@ -45,7 +45,7 @@
 //
 //    private DataSource ds;
 //    private DSLContext dsl;
-//    private PivotQueryBuilder builder;
+//    private JooqQueryBuilder builder;
 //
 //    @BeforeAll
 //    public void setUpAll() throws Exception {
@@ -100,9 +100,9 @@
 //            .values("el-2", DSL.val((Integer) null), DSL.val((String) null), DSL.val((Boolean) null), DSL.val((String) null), DSL.val(now))
 //            .execute();
 //
-//        // Instantiate your PivotQueryBuilder with the DSLContext.
+//        // Instantiate your JooqQueryBuilder with the DSLContext.
 //        // Adjust constructor if your implementation requires more args (e.g., table constant).
-//        this.builder = new PivotQueryBuilder(dsl);
+//        this.builder = new JooqQueryBuilder(dsl);
 //    }
 //
 //    @AfterAll

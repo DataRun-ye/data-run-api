@@ -106,7 +106,7 @@
 //        // build element filter: facts rows with the element_id
 //        Condition elementFilter = PG.ELEMENT_ID.eq(elementId);
 //
-//        // For select-one/multi, if optionId is provided, add that filter on top of elementFilter in the PivotQueryBuilder
+//        // For select-one/multi, if optionId is provided, add that filter on top of elementFilter in the JooqQueryBuilder
 //        boolean distinct = Boolean.TRUE.equals(req.getDistinct());
 //
 //        String alias = req.getAlias();

@@ -17,17 +17,17 @@
 //import static org.junit.jupiter.api.Assertions.*;
 //
 ///**
-// * Tests for the private conversion/filter helpers in PivotQueryBuilder.
+// * Tests for the private conversion/filter helpers in JooqQueryBuilder.
 // * These use reflection to keep the helpers private in production code.
 // *
 // * @author Hamza Assada - 7amza.it@gmail.com
 // * @since 24/08/2025
 // */
 //@SpringBootTest
-//class PivotQueryBuilderPrivateMethodsTest {
+//class JooqQueryBuilderPrivateMethodsTest {
 //
 //    @Autowired
-//    private PivotQueryBuilder builder;
+//    private JooqQueryBuilder builder;
 //
 //    private final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
 //
@@ -36,9 +36,9 @@
 //
 //    @BeforeEach
 //    void setUp() throws NoSuchMethodException {
-//        convertMethod = PivotQueryBuilder.class.getDeclaredMethod("convertSingleValue", Object.class, Class.class);
+//        convertMethod = JooqQueryBuilder.class.getDeclaredMethod("convertSingleValue", Object.class, Class.class);
 //        convertMethod.setAccessible(true);
-//        filterMethod = PivotQueryBuilder.class.getDeclaredMethod("translateFilterTyped", org.jooq.Field.class, String.class, Object.class);
+//        filterMethod = JooqQueryBuilder.class.getDeclaredMethod("translateFilterTyped", org.jooq.Field.class, String.class, Object.class);
 //        filterMethod.setAccessible(true);
 //    }
 //

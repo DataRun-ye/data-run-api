@@ -7,7 +7,7 @@ import org.nmcpye.datarun.analytics.model.ValidatedMeasure;
 
 /**
  * MeasureValidationService validates a client MeasureRequest and converts it into a
- * {@link ValidatedMeasure} that the PivotQueryBuilder can consume.
+ * {@link ValidatedMeasure} that the JooqQueryBuilder can consume.
  * <p>
  * Responsibilities:
  * - Resolve element identifiers provided by the client.

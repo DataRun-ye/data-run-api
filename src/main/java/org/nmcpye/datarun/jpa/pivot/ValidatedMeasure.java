@@ -8,7 +8,7 @@
 //import org.jooq.Field;
 //
 ///**
-// * Validated measure produced by MeasureValidationService and consumed by PivotQueryBuilder.
+// * Validated measure produced by MeasureValidationService and consumed by JooqQueryBuilder.
 // *
 // * @author Hamza Assada
 // * @since 26/08/2025

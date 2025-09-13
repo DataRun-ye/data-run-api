@@ -20,10 +20,10 @@
 //
 //import static org.assertj.core.api.Assertions.assertThat;
 //
-//public class PivotQueryBuilderRenderSqlTest {
+//public class JooqQueryBuilderRenderSqlTest {
 //
 //    private DSLContext dsl;
-//    private PivotQueryBuilder builder;
+//    private JooqQueryBuilder builder;
 //
 //    @BeforeEach
 //    public void setUp() {
@@ -32,7 +32,7 @@
 ////        settings.setRenderQuotedNames(RenderQuotedNames.EXPLICIT_DEFAULT_UNQUOTED);
 //        // Use the Postgres dialect for SQL rendering
 //        this.dsl = DSL.using(SQLDialect.POSTGRES, settings);
-//        this.builder = new PivotQueryBuilder(dsl);
+//        this.builder = new JooqQueryBuilder(dsl);
 //    }
 //
 //    @Test

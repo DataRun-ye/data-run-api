@@ -4,6 +4,7 @@ import lombok.Builder;
 
 /**
  * A simple record to hold the parsed components of a standardized ID
+ * the namespace:value parts
  *
  * @author Hamza Assada
  * @since 02/09/2025

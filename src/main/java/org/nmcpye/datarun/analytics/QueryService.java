@@ -12,7 +12,7 @@ import java.util.Set;
  * Responsibilities:
  * - Validate and orchestrate incoming PivotQueryRequest (translate measures via MeasureValidationService).
  * - Use PivotMetadataService to resolve fields and to validate requested dimensions/measures.
- * - Call PivotQueryBuilder to build and execute queries.
+ * - Call JooqQueryBuilder to build and execute queries.
  * - Format results in requested output format: TABLE_ROWS (list of rows) or PIVOT_MATRIX (row/col matrix).
  * - Apply ACL (allowedTeamUids) and other server-side constraints regardless of client input.
  * <p>

@@ -9,7 +9,7 @@ import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
 import org.springframework.stereotype.Component;
 
 /**
- * Maps pivot field dataType or factColumn names to typed jOOQ Fields from the generated
+ * Maps pivot field dataType or sourceColumn names to typed jOOQ Fields from the generated
  * {@code PIVOT_GRID_FACTS} table. This mapper is UID-native and understands the new
  * *_uid columns exposed by the pivot materialized view.
  * <p>
@@ -22,7 +22,7 @@ public class QueryJooqMapper {
     private static final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
 
     /**
-     * Map a dataType/factColumn name to the appropriate jOOQ Field.
+     * Map a dataType/sourceColumn name to the appropriate jOOQ Field.
      * <p>
      * Unknown names: fallback to DSL.field(name, Object.class).
      *
@@ -106,15 +106,15 @@ public class QueryJooqMapper {
 
     /**
      * Convenient helper when caller has a QueryableElement (metadata) and wants the proper jOOQ field.
-     * The DTO may expose a dedicated factColumn (preferred) or its dataType; prefer factColumn if present.
+     * The DTO may expose a dedicated sourceColumn (preferred) or its dataType; prefer sourceColumn if present.
      *
      * @param dto pivot metadata describing the field
      * @return the jOOQ Field<?> for use in queries
      */
     public static Field<?> toJooqFieldForPivotField(QueryableElement dto) {
         if (dto == null) return PG.VALUE_TEXT;
-        // prefer explicit factColumn (if provided by metadata), otherwise dataType
-        String fact = dto.factColumn();
+        // prefer explicit sourceColumn (if provided by metadata), otherwise dataType
+        String fact = dto.sourceColumn();
         return toJooqField(fact);
     }
 }

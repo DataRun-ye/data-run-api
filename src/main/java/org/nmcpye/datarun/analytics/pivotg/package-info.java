@@ -27,7 +27,7 @@
 ///
 /// **TABLE_ROWS**
 ///
-/// * SQL: one-pass, single GROUP BY. Exactly what `PivotQueryBuilder.buildSelect(...)` already does.
+/// * SQL: one-pass, single GROUP BY. Exactly what `JooqQueryBuilder.buildSelect(...)` already does.
 /// * Pagination and ordering are straightforward and deterministic (tie-breaker `MIN(value_id)` applied when grouping).
 ///
 /// **PIVOT_MATRIX**
@@ -175,7 +175,7 @@
 /// * **Missing cells** → return `null` or `0` depending on measure semantics. Recommend `null` (no data), let front-end decide to display `0` if desired.
 /// * **Multiple measures** → each cell could be object with multiple measure values. For simplicity, when measures>1 produce cells as maps: `{"measureAlias1": 10, "measureAlias2": 2}` or provide parallel matrices per measure.
 /// * **High cardinality columnDimension** → server-side pivot is dangerous (explosion). Enforce a configurable cap (e.g., 200 unique column keys), or require client to supply explicit `columnValues` and refuse otherwise.
-/// * **Security / resource safety** → always validate requested dims and measures against `PivotMetadataService` to ensure they map to valid `factColumn` and allowed aggregations.
+/// * **Security / resource safety** → always validate requested dims and measures against `PivotMetadataService` to ensure they map to valid `sourceColumn` and allowed aggregations.
 ///
 /// ---
 ///
@@ -267,7 +267,7 @@
 /// * Update `PivotQueryService` to:
 ///
 ///   * detect requested `format`,
-///   * call `PivotQueryBuilder` to get flat rows for matrix (group by rowDims+columnDim),
+///   * call `JooqQueryBuilder` to get flat rows for matrix (group by rowDims+columnDim),
 ///   * pivot in Java and produce the `PivotQueryResponse` matrix structure.
 /// @author Hamza Assada
 /// @since 01/09/2025

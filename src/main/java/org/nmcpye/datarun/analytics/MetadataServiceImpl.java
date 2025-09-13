@@ -3,7 +3,6 @@ package org.nmcpye.datarun.analytics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.analytics.dto.DataType;
-import org.nmcpye.datarun.analytics.dto.FieldCategory;
 import org.nmcpye.datarun.analytics.dto.MetadataResponse;
 import org.nmcpye.datarun.analytics.dto.QueryableElement;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
@@ -25,7 +24,7 @@ import java.util.stream.Stream;
  * - Should load all ElementTemplateConfig rows for templateUid+templateVersionUid, batch-load their DataElement metadata,
  * and produce a list of QueryableElement objects:
  * <pre>
- * - QueryableElement.factColumn must map to the materialized view column (e.g., "etc_uid", "value_num", "option_uid", "value_ts", "team_uid").
+ * - QueryableElement.sourceColumn must map to the materialized view column (e.g., "etc_uid", "value_num", "option_uid", "value_ts", "team_uid").
  * - QueryableElement.dataType uses the "value_num"/"option_uid"/"value_ts"/"value_bool"/"value_text" nomenclature.
  * - aggregationModes should be computed via AllowedAggregationsResolver based on DataElement.valueType.
  * </pre>
@@ -91,6 +90,11 @@ public class MetadataServiceImpl implements MetadataService {
             .build();
     }
 
+    @Override
+    public Map<String, QueryableElement> getMetadataMapForTemplate(String templateUid, String templateVersionUid) {
+        return Map.of();
+    }
+
     private QueryableElement buildForRepeat(ElementTemplateConfig etc) {
         Map<String, Object> extras = buildExtras(etc, null); // Pass DE for richer extras
 
@@ -98,9 +102,8 @@ public class MetadataServiceImpl implements MetadataService {
             .id("etc:" + etc.getSemanticPath()) // NEW: Standardized ID
             .name(etc.getName())
             .label(etc.getDisplayLabel())
-            .category(FieldCategory.HIERARCHICAL_CONTEXT)
 //            .dataType(resolveDataType(etc, de))
-            .factColumn("semantic_path") // The column used for predicates and grouping
+            .sourceColumn("semantic_path") // The column used for predicates and grouping
             .displayGroup(etc.getAncestorRepeatSemanticPath() != null ?
                 etc.getAncestorRepeatSemanticPath() : "Template")
             .isSortable(false)
@@ -127,9 +130,8 @@ public class MetadataServiceImpl implements MetadataService {
             .id("etc:" + etc.getUid()) // NEW: Standardized ID
             .name(etc.getName())
             .label(etc.getDisplayLabel())
-            .category(FieldCategory.DYNAMIC_MEASURE)
             .dataType(resolveDataType(etc, de))
-            .factColumn("etc_uid") // The column used for predicates and grouping
+            .sourceColumn("etc_uid") // The column used for predicates and grouping
             .deUid(etc.getDataElementUid())
             .displayGroup(etc.getAncestorRepeatSemanticPath() != null ?
                 etc.getAncestorRepeatSemanticPath() : "Template")
@@ -196,9 +198,8 @@ public class MetadataServiceImpl implements MetadataService {
             .id("core:" + factColumn) // NEW: Standardized ID
             .name(name)
             .label(Map.of("en", name))
-            .category(FieldCategory.CORE_DIMENSION)
             .dataType(mapValueTypeToDataType(valueType)) // Use consistent mapping
-            .factColumn(factColumn) // For core dimensions, the factColumn is the ID itself
+            .sourceColumn(factColumn) // For core dimensions, the sourceColumn is the ID itself
             .aggregationModes(aggrResolver.allowedFor(valueType))
             .isDimension(true)
             .isSortable(true)

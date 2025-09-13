@@ -17,7 +17,10 @@ import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
 import org.springframework.stereotype.Service;
 
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,39 +36,45 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
         if (req == null) throw new InvalidMeasureException("MeasureRequest is required");
         if (req.getFieldId() == null) throw new InvalidMeasureException("fieldId is required");
 
+        Map<String, QueryableElement> fieldMap = new ConcurrentHashMap<>(metadataService
+                .getMetadataForTemplate(templateUid, templateVersionUid)
+                .getAvailableFields().stream()
+                .collect(Collectors.toMap(QueryableElement::id, f -> f)));
+
+
         // Resolve metadata (prefer template lookup)
         // STEP 1: Resolve the complete, authoritative metadata for the field.
-        QueryableElement fieldDto = metadataService.resolveFieldById(req.getFieldId(), templateUid, templateVersionUid)
-            .orElseThrow(() -> new InvalidMeasureException("Field not found: " + req.getFieldId()));
+        QueryableElement fieldDto = Optional.ofNullable(fieldMap.get(req.getFieldId()))
+                .orElseThrow(() -> new InvalidMeasureException("Field not found: " + req.getFieldId()));
 
         // STEP 2: Validate the requested aggregation against the field's allowed modes.
         Aggregation aggEnum = validateAggregation(req, fieldDto);
 
         // STEP 3: Build the element predicate. This is now simple and declarative,
-        // using the authoritative `factColumn` from our metadata contract.
+        // using the authoritative `sourceColumn` from our metadata contract.
         MappedQueryableElement parsedId = MappedQueryableElement.from(fieldDto.id());
-        Condition elementPredicate = DSL.field(DSL.name(fieldDto.factColumn()), String.class).eq(parsedId.value());
+        Condition elementPredicate = DSL.field(DSL.name(fieldDto.sourceColumn()), String.class).eq(parsedId.value());
 
         // Handle option-scoping for multi-selects
         if (req.getOptionId() != null) {
             elementPredicate = elementPredicate.and(PG.OPTION_UID.eq(req.getOptionId()));
         }
 
-        // STEP 4: Determine the correct target value field (e.g., value_num) for the aggregate function.
-        Field<?> targetField = validateAggregation(aggEnum, fieldDto);
+        //Determine the correct target value field (e.g., value_num) for the aggregate function.
+        Field<?> targetField = determineAggregationColumn(aggEnum, fieldDto);
 
         String alias = getAliasOrFallback(req, fieldDto, aggEnum);
 
         return ValidatedMeasure.builder()
-            .deUid(fieldDto.deUid())
-            .etcUid("etc".equals(parsedId.namespace()) ? parsedId.value() : null)
-            .aggregation(aggEnum)
-            .targetField(targetField)
-            .elementPredicate(elementPredicate)
-            .alias(alias)
-            .distinct(Boolean.TRUE.equals(req.getDistinct()))
-            .optionUid(req.getOptionId())
-            .build();
+                .deUid(fieldDto.deUid())
+                .etcUid("etc".equals(parsedId.namespace()) ? parsedId.value() : null)
+                .aggregation(aggEnum)
+                .targetField(targetField)
+                .elementPredicate(elementPredicate)
+                .alias(alias)
+                .distinct(Boolean.TRUE.equals(req.getDistinct()))
+                .optionUid(req.getOptionId())
+                .build();
     }
 
     private Aggregation validateAggregation(MeasureRequest req, QueryableElement dto) {
@@ -79,22 +88,30 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
 
         if (dto.aggregationModes() == null || !dto.aggregationModes().contains(aggEnum)) {
             throw new InvalidMeasureException(String.format(
-                "Aggregation %s not allowed for field %s. Allowed: %s",
-                requestedAgg, dto.id(), dto.aggregationModes()
+                    "Aggregation %s not allowed for field %s. Allowed: %s",
+                    requestedAgg, dto.id(), dto.aggregationModes()
             ));
         }
         return aggEnum;
     }
 
-    // The logic to determine the VALUE column remains, as it's a core responsibility of this service.
-    private Field<?> validateAggregation(Aggregation agg, QueryableElement dto) {
+    /**
+     * Determine the correct target value field (e.g., value_num) for the aggregate function
+     *
+     * @param agg aggregation type
+     * @param dto queryable metadata element
+     * @return target db field
+     */
+    private Field<?> determineAggregationColumn(Aggregation agg, QueryableElement dto) {
         return switch (agg) {
             case SUM, AVG -> {
-                if (!dto.dataType().equals(DataType.NUMERIC)) throw new InvalidMeasureException("SUM/AVG requires a NUMERIC field.");
+                if (!dto.dataType().equals(DataType.NUMERIC))
+                    throw new InvalidMeasureException("SUM/AVG requires a NUMERIC field.");
                 yield PG.VALUE_NUM;
             }
             case SUM_TRUE -> {
-                if (!dto.dataType().equals(DataType.BOOLEAN)) throw new InvalidMeasureException("SUM_TRUE requires a BOOLEAN field.");
+                if (!dto.dataType().equals(DataType.BOOLEAN))
+                    throw new InvalidMeasureException("SUM_TRUE requires a BOOLEAN field.");
                 yield DSL.when(PG.VALUE_BOOL.isTrue(), 1).otherwise(0);
             }
             // For MIN/MAX, the target depends on the dataType
@@ -104,7 +121,7 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
                 default -> PG.VALUE_TEXT; // Default for text, refs, etc.
             };
             // For COUNT, we count the specific value column to correctly handle NULLs.
-            case COUNT, COUNT_DISTINCT -> QueryJooqMapper.toJooqField(dto.factColumn());
+            case COUNT, COUNT_DISTINCT -> QueryJooqMapper.toJooqField(dto.sourceColumn());
         };
     }
 
@@ -115,7 +132,7 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
 
         // Fallback to a generated alias
         return String.format("%s_%s",
-            MappedQueryableElement.from(dto.id()).value(),
-            agg.name().toLowerCase(Locale.ROOT));
+                MappedQueryableElement.from(dto.id()).value(),
+                agg.name().toLowerCase(Locale.ROOT));
     }
 }

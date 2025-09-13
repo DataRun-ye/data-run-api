@@ -3,6 +3,7 @@ package org.nmcpye.datarun.analytics;
 import org.nmcpye.datarun.analytics.dto.MetadataResponse;
 import org.nmcpye.datarun.analytics.dto.QueryableElement;
 
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -18,9 +19,19 @@ public interface MetadataService {
      *
      * @param templateUid        template uid
      * @param templateVersionUid template version uid
-     * @return PivotMetadataResponse available fields and hints
+     * @return PivotMetadataResponse available fields
      */
     MetadataResponse getMetadataForTemplate(String templateUid, String templateVersionUid);
+
+
+    /**
+     * Return cached metadata map for the requested template and version, keyed by id.
+     *
+     * @param templateUid        template uid
+     * @param templateVersionUid template version uid
+     * @return map of id -> queryableMetadata available
+     */
+    Map<String, QueryableElement> getMetadataMapForTemplate(String templateUid, String templateVersionUid);
 
     /**
      * Resolve an individual field by UID.

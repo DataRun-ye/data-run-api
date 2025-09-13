@@ -19,6 +19,6 @@ import lombok.Builder;
  * @since 27/08/2025
  */
 @Builder
-public record SortDto(String fieldOrAlias,
-                      boolean desc) {
+public record QuerySort(String fieldOrAlias,
+                        boolean desc) {
 }

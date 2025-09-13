@@ -22,12 +22,10 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @Slf4j
 public class QueryServiceImpl implements QueryService {
-
     private final MetadataService metadataService;
     private final MeasureValidationService measureValidationService;
-    private final JooQQueryBuilder jooQQueryBuilder;
+    private final JooqQueryBuilder jooQQueryBuilder;
     private final DSLContext dsl;
-    private final QueryJooqMapper fieldMapper;
 
     /**
      * {@inheritDoc}
@@ -46,22 +44,23 @@ public class QueryServiceImpl implements QueryService {
             // STEP 1: Fetch metadata ONCE and create a lookup map for efficient O(1) access.
             // This is a huge improvement over the previous implementation.
             Map<String, QueryableElement> fieldMap = metadataService
-                .getMetadataForTemplate(request.getTemplateId(), request.getTemplateVersionId())
-                .getAvailableFields().stream()
-                .collect(Collectors.toMap(QueryableElement::id, f -> f));
+                    .getMetadataForTemplate(request.getTemplateId(), request.getTemplateVersionId())
+                    .getAvailableFields().stream()
+                    .collect(Collectors.toMap(QueryableElement::id, f -> f));
 
-            // STEP 2: Validate measures. This service is now simpler and relies on the new metadata contract.
+            // STEP 2: Validate measures.
+            // This service is now simpler and relies on the new metadata contract.
             List<ValidatedMeasure> validatedMeasures = AliasSanitizer
-                .ensureUniqueAliasesWithRename(
-                    Optional.ofNullable(request.getMeasures())
-                        .orElse(Collections.emptyList())
-                        .stream()
-                        .map(mr -> measureValidationService
-                            .validate(mr, request.getTemplateId(),
-                                request.getTemplateVersionId()))
-                        .collect(Collectors.toList()),
-                    Boolean.TRUE.equals(request.getAutoRenameAliases())
-                );
+                    .ensureUniqueAliasesWithRename(
+                            Optional.ofNullable(request.getMeasures())
+                                    .orElse(Collections.emptyList())
+                                    .stream()
+                                    .map(mr -> measureValidationService
+                                            .validate(mr, request.getTemplateId(),
+                                                    request.getTemplateVersionId()))
+                                    .collect(Collectors.toList()),
+                            Boolean.TRUE.equals(request.getAutoRenameAliases())
+                    );
 
             // 3) Determine grouping dimensions
             List<String> rowDims = Optional.ofNullable(request.getRowDimensions()).orElse(Collections.emptyList());
@@ -69,40 +68,39 @@ public class QueryServiceImpl implements QueryService {
             List<String> legacyDims = Optional.ofNullable(request.getDimensions()).orElse(Collections.emptyList());
 
             if (rowDims.isEmpty() && colDims.isEmpty() && !legacyDims.isEmpty()) {
-                // Backwards compat: treat legacy dims as row dims
+                // treat legacy dims as row dims
                 rowDims = legacyDims;
             }
 
             // combined group-by dims (row + column)
             List<String> groupByDims = Stream.concat(rowDims.stream(), colDims.stream())
-                .collect(Collectors.toList());
+                    .collect(Collectors.toList());
 
             long totalGroups = -1;
             try {
                 totalGroups = jooQQueryBuilder.countGroups(
+                        groupByDims,
+                        validatedMeasures,
+                        convertFilters(request.getFilters()),
+                        request.getFrom(),
+                        request.getTo(),
+                        allowedTeamUids
+                );
+            } catch (Exception ex) {
+                log.warn("Failed to compute totalGroups: {}", ex.getMessage());
+            }
+
+            // 4) Build the jOOQ Select using JooqQueryBuilder
+            Select<org.jooq.Record> select = jooQQueryBuilder.buildSelect(
                     groupByDims,
                     validatedMeasures,
                     convertFilters(request.getFilters()),
                     request.getFrom(),
                     request.getTo(),
+                    convertSorts(request.getSorts()),
+                    request.getLimit(),
+                    request.getOffset(),
                     allowedTeamUids
-                );
-            } catch (Exception ex) {
-                log.warn("Failed to compute totalGroups: {}", ex.getMessage());
-                totalGroups = -1;
-            }
-
-            // 4) Build the jOOQ Select using PivotQueryBuilder
-            Select<org.jooq.Record> select = jooQQueryBuilder.buildSelect(
-                groupByDims,
-                validatedMeasures,
-                convertFilters(request.getFilters()),
-                request.getFrom(),
-                request.getTo(),
-                convertSorts(request.getSorts()),
-                request.getLimit(),
-                request.getOffset(),
-                allowedTeamUids
             );
 
             log.debug("Executing pivot select: \n{}", dsl.renderInlined(select));
@@ -112,22 +110,22 @@ public class QueryServiceImpl implements QueryService {
 
             // 6) Convert Result -> requested format
             QueryResponse.QueryResponseBuilder respB = QueryResponse.builder()
-                .meta(Map.of(
-                    "format", format.name(),
-                    "templateId", request.getTemplateId(),
-                    "templateVersionId", request.getTemplateVersionId()))
-                .total(totalGroups);
+                    .meta(Map.of(
+                            "format", format.name(),
+                            "templateId", request.getTemplateId(),
+                            "templateVersionId", request.getTemplateVersionId()))
+                    .total(totalGroups);
 
             if (format == GridResponseFormat.TABLE_ROWS) {
                 // Columns: groupBy dims then measures (aliases)
                 // STEP 3: Build response columns using the efficient lookup map.
-                List<ColumnDto> columns = buildColumnsForTable(groupByDims, validatedMeasures, fieldMap);
+                List<ColumnDescriptor> columns = buildColumnsForTable(groupByDims, validatedMeasures, fieldMap);
                 List<Map<String, Object>> rows = mapResultToRows(result, columns);
                 respB.columns(columns).rows(rows);
                 // total optional: not calculated now (could be separate count query)
             } else {
                 // PIVOT_MATRIX
-                PivotMatrixDto matrix = buildMatrixFromResult(result, rowDims, colDims, validatedMeasures);
+                MatrixResponse matrix = buildMatrixFromResult(result, rowDims, colDims, validatedMeasures);
                 respB.matrix(matrix);
             }
 
@@ -143,18 +141,18 @@ public class QueryServiceImpl implements QueryService {
 
     /* --------------------- helpers --------------------- */
 
-    private List<FilterDto> convertFilters(List<FilterDto> dtos) {
-        if (dtos == null || dtos.isEmpty()) return Collections.emptyList();
-        return dtos.stream().map(fdto ->
-                new FilterDto(fdto.field(), fdto.op(), fdto.value()))
-            .collect(Collectors.toList());
+    private List<QueryFilter> convertFilters(List<QueryFilter> filters) {
+        if (filters == null || filters.isEmpty()) return Collections.emptyList();
+        return filters.stream().map(filter ->
+                        new QueryFilter(filter.field(), filter.op(), filter.value()))
+                .collect(Collectors.toList());
     }
 
-    private List<SortDto> convertSorts(List<SortDto> dtos) {
-        if (dtos == null || dtos.isEmpty()) return Collections.emptyList();
-        return dtos.stream().map(sdto ->
-                new SortDto(sdto.fieldOrAlias(), Boolean.TRUE.equals(sdto.desc())))
-            .collect(Collectors.toList());
+    private List<QuerySort> convertSorts(List<QuerySort> querySorts) {
+        if (querySorts == null || querySorts.isEmpty()) return Collections.emptyList();
+        return querySorts.stream().map(sort ->
+                        new QuerySort(sort.fieldOrAlias(), sort.desc()))
+                .collect(Collectors.toList());
     }
 
 
@@ -162,68 +160,29 @@ public class QueryServiceImpl implements QueryService {
      * Build columns list for TABLE_ROWS response.
      * It uses the pre-fetched fieldMap for instant lookups instead of re-scanning metadata.
      */
-//    private List<ColumnDto> buildColumnsForTable(List<String> groupByDims,
-//                                                 List<ValidatedMeasure> measures,
-//                                                 Map<String, QueryableElement> fieldMap) {
-//        List<ColumnDto> cols = new ArrayList<>();
-//
-//        // Add columns for dimensions
-//        for (String dimId : groupByDims) {
-//            QueryableElement dto = fieldMap.get(dimId);
-//            String name = (dto != null) ? dto.name() : dimId; // Fallback to ID
-//            DataType dataType = (dto != null) ? dto.dataType() : DataType.TEXT; // Fallback
-//            cols.add(ColumnDto.builder()
-//                .id(dimId)
-//                .label(name)
-//                .dataType(dataType)
-//                .build());
-//        }
-//
-//        // Add columns for measures
-//        for (ValidatedMeasure vm : measures) {
-//            // Reconstruct the measure's ID to look it up in the map for a proper label.
-//            String measureId = vm.effectiveMode().equals("TEMPLATE") ? "etc:" + vm.etcUid() : "de:" + vm.deUid();
-//            QueryableElement dto = fieldMap.get(measureId);
-//
-//            String label = vm.alias();
-//            if (dto != null && vm.alias()
-//                .startsWith(AnalyticsField.from(dto.id()).value())) {
-//                // If using a default alias, construct a nicer label e.g., "Age of Head (Sum)"
-//                label = String.format("%s (%s)", dto.label(), vm.aggregation().name());
-//            }
-//
-//            cols.add(ColumnDto.builder()
-//                .id(vm.alias())
-//                .label(label)
-//                .dataType(determineMeasureDataType(vm))
-//                .build());
-//        }
-//
-//        return cols;
-//    }
-    private List<ColumnDto> buildColumnsForTable(List<String> groupByDims,
-                                                 List<ValidatedMeasure> measures,
-                                                 Map<String, QueryableElement> fieldMap) {
-        List<ColumnDto> cols = new ArrayList<>();
+    private List<ColumnDescriptor> buildColumnsForTable(List<String> groupByDims,
+                                                        List<ValidatedMeasure> measures,
+                                                        Map<String, QueryableElement> fieldMap) {
+        List<ColumnDescriptor> cols = new ArrayList<>();
 
         // Add columns for dimensions
         for (String dimId : groupByDims) {
-            QueryableElement dto = fieldMap.get(dimId);
-            String name = (dto != null) ? dto.name() : dimId; // Fallback to ID for label
-            var label = (dto != null) ? dto.label() : null; // Fallback to ID for label
-            DataType dataType = (dto != null) ? dto.dataType() : DataType.TEXT; // Fallback
+            QueryableElement qe = fieldMap.get(dimId);
+            String name = (qe != null) ? qe.name() : dimId; // Fallback to ID for label
+            var label = (qe != null) ? qe.label() : null; // Fallback to ID for label
+            DataType dataType = (qe != null) ? qe.dataType() : DataType.TEXT; // Fallback
 
             // compute SQL-safe alias for this dimension so it matches jOOQ Record keys
-//            String sqlAlias = AliasSanitizer.sanitize(dimId);
+            // the namespace:value parts qe
             MappedQueryableElement field = MappedQueryableElement.from(dimId);
 
-            cols.add(ColumnDto.builder()
-                .id(dimId)            // logical id (stable for clients)
-                .key(field.value())        // SQL alias used to read from Record
-                .name(name)
-                .label(label)          // human friendly label
-                .dataType(dataType)
-                .build());
+            cols.add(ColumnDescriptor.builder()
+                    .id(dimId)            // logical id (stable for clients)
+                    .key(field.value())  // SQL alias used to read from Record, internal use only
+                    .displayLabel(name)  // default human friendly label
+                    .label(label)        // human friendly label localizations map
+                    .dataType(dataType)
+                    .build());
         }
 
         // Add columns for measures
@@ -231,28 +190,30 @@ public class QueryServiceImpl implements QueryService {
             String rawAlias = vm.alias(); // logical alias, used by clients
             String sqlAlias = AliasSanitizer.sanitize(rawAlias); // sql-safe key
 
-            QueryableElement dto = null;
+            // Reconstruct the measure's ID to look it up in the map for a proper label.
+            QueryableElement qe = null;
             String measureFieldLookup = "etc:" + vm.etcUid();
-            dto = fieldMap.get(measureFieldLookup);
+            qe = fieldMap.get(measureFieldLookup);
 
             String name = rawAlias;
-            Map<String, String> label = null;
-            if (dto != null) {
-                label = dto.label();
-                if (rawAlias.startsWith(MappedQueryableElement.from(dto.id()).value())) {
-                    name = String.format("%s (%s)", dto.name(), vm.aggregation().name());
+            Map<String, String> displayLabels = null;
+            if (qe != null) {
+                displayLabels = qe.label();
+                if (rawAlias.startsWith(MappedQueryableElement.from(qe.id()).value())) {
+                    // If using a default alias, construct a nicer label e.g., "Age of Head (Sum)"
+                    name = String.format("%s (%s)", qe.name(), vm.aggregation().name());
                 } else {
-                    name = dto.name();
+                    name = qe.name();
                 }
             }
 
-            cols.add(ColumnDto.builder()
-                .id(rawAlias)            // keep logical alias as id for client stability
-                .key(sqlAlias)           // sanitized SQL alias
-                .name(name)
-                .label(label)
-                .dataType(determineMeasureDataType(vm))
-                .build());
+            cols.add(ColumnDescriptor.builder()
+                    .id(rawAlias)            // keep logical alias as id for client stability
+                    .key(sqlAlias)           // sanitized SQL alias
+                    .displayLabel(name)
+                    .label(displayLabels)
+                    .dataType(determineMeasureDataType(vm))
+                    .build());
         }
 
         return cols;
@@ -275,11 +236,11 @@ public class QueryServiceImpl implements QueryService {
      * from the org.jooq.Record (alias or column name).
      */
     private List<Map<String, Object>> mapResultToRows(Result<org.jooq.Record> result,
-                                                      List<ColumnDto> columns) {
+                                                      List<ColumnDescriptor> columns) {
         List<Map<String, Object>> rows = new ArrayList<>();
         for (org.jooq.Record r : result) {
             Map<String, Object> row = new LinkedHashMap<>();
-            for (ColumnDto c : columns) {
+            for (ColumnDescriptor c : columns) {
                 Object val = null;
                 String lookupKey = c.getKey(); // preferred SQL alias
                 String logicalId = c.getId();
@@ -289,7 +250,6 @@ public class QueryServiceImpl implements QueryService {
                     try {
                         val = r.get(lookupKey);
                     } catch (Exception ignored) {
-                        val = null;
                     }
                 }
 
@@ -297,7 +257,6 @@ public class QueryServiceImpl implements QueryService {
                     try {
                         val = r.get(logicalId);
                     } catch (Exception ignored) {
-                        val = null;
                     }
                 }
 
@@ -309,7 +268,6 @@ public class QueryServiceImpl implements QueryService {
                             val = r.get(sanitizedFromId);
                         }
                     } catch (Exception ignored) {
-                        val = null;
                     }
                 }
 
@@ -318,7 +276,6 @@ public class QueryServiceImpl implements QueryService {
                         // last resort - getValue keyed by column name; may throw if name invalid
                         val = r.getValue(lookupKey != null ? lookupKey : logicalId);
                     } catch (Exception ignored) {
-                        val = null;
                     }
                 }
 
@@ -329,30 +286,6 @@ public class QueryServiceImpl implements QueryService {
         }
         return rows;
     }
-//    private List<Map<String, Object>> mapResultToRows(Result<org.jooq.Record> result,
-//                                                      List<ColumnDto> columns) {
-//        List<Map<String, Object>> rows = new ArrayList<>();
-//        for (org.jooq.Record r : result) {
-//            Map<String, Object> row = new LinkedHashMap<>();
-//            for (ColumnDto c : columns) {
-//                Object val;
-//                try {
-//                    // Prefer typed get by alias/name
-//                    val = r.get(c.getId());
-//                } catch (Exception e) {
-//                    // fallback to safe retrieval
-//                    try {
-//                        val = r.getValue(c.getId());
-//                    } catch (Exception ex) {
-//                        val = null;
-//                    }
-//                }
-//                row.put(c.getId(), val);
-//            }
-//            rows.add(row);
-//        }
-//        return rows;
-//    }
 
     /**
      * Convert grouped result set into a pivot matrix.
@@ -361,7 +294,7 @@ public class QueryServiceImpl implements QueryService {
      * - build mapping rowKey -> colKey -> map(alias->value)
      * - materialize rowHeaders/colHeaders and cell matrix
      */
-    private PivotMatrixDto buildMatrixFromResult(Result<org.jooq.Record> result,
+    private MatrixResponse buildMatrixFromResult(Result<org.jooq.Record> result,
                                                  List<String> rowDims,
                                                  List<String> colDims,
                                                  List<ValidatedMeasure> measures) {
@@ -406,20 +339,20 @@ public class QueryServiceImpl implements QueryService {
             cells.add(rowCells);
         }
 
-        return PivotMatrixDto.builder()
-            .rowDimensionNames(rowDims)
-            .columnDimensionNames(colDims)
-            .measureAliases(measures.stream().map(ValidatedMeasure::alias).collect(Collectors.toList()))
-            .rowHeaders(rowHeaders)
-            .columnHeaders(columnHeaders)
-            .cells(cells)
-            .build();
+        return MatrixResponse.builder()
+                .rowDimensionNames(rowDims)
+                .columnDimensionNames(colDims)
+                .measureAliases(measures.stream().map(ValidatedMeasure::alias).collect(Collectors.toList()))
+                .rowHeaders(rowHeaders)
+                .columnHeaders(columnHeaders)
+                .cells(cells)
+                .build();
     }
 
     private String makeCompoundKey(List<String> values) {
         // simple safe encoding: JSON-style join using | char escaped
         if (values == null || values.isEmpty()) return "";
-        return String.join("||", values.stream().map(v -> v == null ? "" : v).collect(Collectors.toList()));
+        return values.stream().map(v -> v == null ? "" : v).collect(Collectors.joining("||"));
     }
 
     private String stringify(Object v) {

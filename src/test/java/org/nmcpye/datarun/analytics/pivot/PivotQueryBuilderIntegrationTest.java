@@ -28,7 +28,7 @@
 // * @author Hamza Assada
 // */
 //@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-//public class PivotQueryBuilderIntegrationTest {
+//public class JooqQueryBuilderIntegrationTest {
 //
 //    static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16.2")
 //        .withDatabaseName("testdb")
@@ -37,7 +37,7 @@
 //
 //    private DataSource ds;
 //    private DSLContext dsl;
-//    private PivotQueryBuilder builder;
+//    private JooqQueryBuilder builder;
 //
 //    @BeforeAll
 //    public void startContainerAndPrepare() throws Exception {
@@ -51,7 +51,7 @@
 //        ds = new HikariDataSource(cfg);
 //
 //        dsl = DSL.using(ds, SQLDialect.POSTGRES);
-//        builder = new PivotQueryBuilder(dsl);
+//        builder = new JooqQueryBuilder(dsl);
 //
 //        // Create minimal pivot table used for the test.
 //        try (Connection c = ds.getConnection(); Statement st = c.createStatement()) {

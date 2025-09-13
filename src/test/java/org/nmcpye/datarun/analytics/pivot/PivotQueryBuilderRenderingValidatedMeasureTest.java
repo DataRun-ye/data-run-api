@@ -16,15 +16,15 @@
 // * Rendering-only tests using the real ValidatedMeasure record.
 // * No Spring, no DB — uses jOOQ rendering (POSTGRES dialect).
 // */
-//public class PivotQueryBuilderRenderingValidatedMeasureTest {
+//public class JooqQueryBuilderRenderingValidatedMeasureTest {
 //
 //    private DSLContext dsl;
-//    private PivotQueryBuilder builder;
+//    private JooqQueryBuilder builder;
 //
 //    @BeforeEach
 //    public void setUp() {
 //        dsl = DSL.using(SQLDialect.POSTGRES);
-//        builder = new PivotQueryBuilder(dsl);
+//        builder = new JooqQueryBuilder(dsl);
 //    }
 //
 //    @Test

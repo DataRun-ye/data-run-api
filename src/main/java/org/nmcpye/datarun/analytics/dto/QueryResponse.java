@@ -19,7 +19,7 @@ import java.util.Map;
  * - total (long): total groups count (for pagination).
  * - limit / offset: echo of pagination.
  * <p>
- * - ColumnDescriptor should describe alias, original factColumn (e.g., "value_num"/"team_uid") and dataType.
+ * -
  * <pre>
  * SQL mapping:
  * - columns — derived from SELECT list: group dimensions (fact columns), aggregated aliases.
@@ -35,11 +35,19 @@ import java.util.Map;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class QueryResponse {
-    Long total; // optional total rows/groups count when available
-    Map<String, Object> meta; // e.g. { format: "PIVOT_MATRIX", templateId: "..."}
-    List<ColumnDto> columns;  // used for TABLE_ROWS
-    List<Map<String, Object>> rows; // used for TABLE_ROWS (each row keyed by column id / alias)
+    /// optional total rows/groups count when available (for pagination).
+    Long total;
+
+    /// extra metadata details, e.g. { format: "PIVOT_MATRIX", templateId: "..."}
+    Map<String, Object> meta;
+
+    /// ColumnDescriptor used for TABLE_ROWS., metadata for returned columns (name, alias, type).
+    List<ColumnDescriptor> columns;
+
+    /// (List<Map<String, Object>>): used for TABLE_ROWS (each row keyed by column id / alias).
+    List<Map<String, Object>> rows;
 
     // matrix variant (only one of rows/columns vs matrix is filled)
-    PivotMatrixDto matrix;
+    /// server-side transform of rows into `matrix[rowKey][columnKey] = cellValue`.
+    MatrixResponse matrix;
 }

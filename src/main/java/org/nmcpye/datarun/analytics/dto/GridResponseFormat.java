@@ -8,12 +8,12 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * <p>
  * <pre>
  * Values:
- * - TABLE_ROWS: return a list of rows where each row contains the selected dimensions and measure columns.
- * - PIVOT_MATRIX: return a classic pivot matrix with rowDimension keys, columnDimension keys, and cell values (may be sparse).
+ * - `TABLE_ROWS`: return a list of rows where each row contains the selected dimensions and measure columns.
+ * - `PIVOT_MATRIX`: return a classic pivot matrix with rowDimension keys, columnDimension keys, and cell values (may be sparse).
  *
  * Note:
- * - TABLE_ROWS is the simpler representation (SELECT result), return raw Result<Record> mapped to JSON rows.
- * - PIVOT_MATRIX still fetch aggregated rows grouped by row & column dims, requires additional post-processing (server-side pivoting into a 2D matrix), grouping logic and possibly more memory.
+ * - `TABLE_ROWS` is the simpler representation (SELECT result), return raw Result<Record> mapped to JSON rows.
+ * - `PIVOT_MATRIX` still fetch aggregated rows grouped by row & column dims, requires additional post-processing (server-side pivoting into a 2D matrix), grouping logic and possibly more memory.
  * </pre>
  *
  * @author Hamza Assada

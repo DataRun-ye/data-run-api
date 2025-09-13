@@ -40,9 +40,8 @@ public interface QueryableElementMapper {
     @Mapping(target = "id", expression = "java(\"de:\" + de.getUid())") // Prefix with "de:" to namespace
     @Mapping(target = "name", source = "name")
 //    @Mapping(target = "label", source = "label")
-    @Mapping(target = "category", constant = "DYNAMIC_MEASURE")
     @Mapping(target = "dataType", source = "type", qualifiedByName = "mapValueType")
-    @Mapping(target = "factColumn", source = "type", qualifiedByName = "mapFactColumn")
+    @Mapping(target = "sourceColumn", source = "type", qualifiedByName = "mapFactColumn")
     @Mapping(target = "aggregationModes", source = "type", qualifiedByName = "mapAllowedAggregations")
     @Mapping(target = "extras", source = "type", qualifiedByName = "mapExtras")
     QueryableElement toQueryableElement(DataElementRecord de);
@@ -54,10 +53,8 @@ public interface QueryableElementMapper {
     // to join with data_element to get the UID and type information.
     @Mapping(target = "id", expression = "java(\"etc:\" + config.getUid())") // Prefix with "etc:" to namespace
     @Mapping(target = "name", source = "name")
-//    @Mapping(target = "label", source = "displayLabel")
-    @Mapping(target = "category", constant = "DYNAMIC_MEASURE")
     @Mapping(target = "dataType", source = "valueType", qualifiedByName = "mapValueType")
-    @Mapping(target = "factColumn", source = "valueType", qualifiedByName = "mapFactColumn")
+    @Mapping(target = "sourceColumn", source = "valueType", qualifiedByName = "mapFactColumn")
     @Mapping(target = "aggregationModes", source = "valueType", qualifiedByName = "mapAllowedAggregations")
     @Mapping(target = "extras", source = "valueType", qualifiedByName = "mapExtras")
     QueryableElement toQueryableElementsFromConfigs(ElementTemplateConfigRecord config);

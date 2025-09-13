@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.analytics.AllowedAggregationsResolver;
 import org.nmcpye.datarun.analytics.dto.Aggregation;
 import org.nmcpye.datarun.analytics.dto.DataType;
-import org.nmcpye.datarun.analytics.dto.FieldCategory;
 import org.nmcpye.datarun.analytics.dto.QueryableElement;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.springframework.cache.annotation.Cacheable;
@@ -59,9 +58,8 @@ public class AnalyticsMetadataService {
             QueryableElement.builder()
                 .id("team_uid")
                 .name("Team")
-                .category(FieldCategory.CORE_DIMENSION)
                 .dataType(DataType.UID)
-                .factColumn("team_uid")
+                .sourceColumn("team_uid")
                 .aggregationModes(aggrResolver.allowedFor(ValueType.Team))
 //                .templateModeOnly(false).source("system")
                 .build(),
@@ -69,9 +67,8 @@ public class AnalyticsMetadataService {
             QueryableElement.builder()
                 .id("org_unit_uid")
                 .name("Org Unit")
-                .category(FieldCategory.CORE_DIMENSION)
                 .dataType(DataType.UID)
-                .factColumn("org_unit_uid")
+                .sourceColumn("org_unit_uid")
                 .aggregationModes(aggrResolver
                     .allowedFor(ValueType.OrganisationUnit))
 //                .templateModeOnly(false)
@@ -81,9 +78,8 @@ public class AnalyticsMetadataService {
             QueryableElement.builder()
                 .id("activity_uid")
                 .name("Activity")
-                .category(FieldCategory.CORE_DIMENSION)
                 .dataType(DataType.UID)
-                .factColumn("activity_uid")
+                .sourceColumn("activity_uid")
                 .aggregationModes(aggrResolver
                     .allowedFor(ValueType.Activity))
 //                .templateModeOnly(false)
@@ -93,9 +89,8 @@ public class AnalyticsMetadataService {
             QueryableElement.builder()
                 .id("submission_completed_at")
                 .name("Submission completed at")
-                .category(FieldCategory.CORE_DIMENSION)
                 .dataType(DataType.TIMESTAMP)
-                .factColumn("submission_completed_at")
+                .sourceColumn("submission_completed_at")
                 .aggregationModes(Set.of(Aggregation.MIN,
                     Aggregation.MAX))
 //                .templateModeOnly(false)
@@ -109,10 +104,9 @@ public class AnalyticsMetadataService {
 
         fields.add(QueryableElement.builder()
             .id("category:child")
-            .category(FieldCategory.HIERARCHICAL_CONTEXT)
             .name("Category (Level 1)")
             .dataType(DataType.UID)
-            .factColumn("child_category_uid")
+            .sourceColumn("child_category_uid")
             .aggregationModes(Set.
                 of(Aggregation.COUNT, Aggregation.COUNT_DISTINCT))
 //            .templateModeOnly(false)
@@ -120,10 +114,9 @@ public class AnalyticsMetadataService {
             .build());
         fields.add(QueryableElement.builder()
             .id("category:parent")
-            .category(FieldCategory.HIERARCHICAL_CONTEXT)
             .name("Category (Level 2)")
             .dataType(DataType.UID)
-            .factColumn("parent_category_uid")
+            .sourceColumn("parent_category_uid")
             .aggregationModes(Set.
                 of(Aggregation.COUNT, Aggregation.COUNT_DISTINCT))
 //            .templateModeOnly(false)
@@ -132,10 +125,9 @@ public class AnalyticsMetadataService {
 
         fields.add(QueryableElement.builder()
             .id("repeat_path")
-            .category(FieldCategory.HIERARCHICAL_CONTEXT)
             .name("Category (Level 2)")
             .dataType(DataType.TEXT)
-            .factColumn("repeat_path")
+            .sourceColumn("repeat_path")
             .aggregationModes(Set.
                 of(Aggregation.COUNT, Aggregation.COUNT_DISTINCT))
 //            .templateModeOnly(true)

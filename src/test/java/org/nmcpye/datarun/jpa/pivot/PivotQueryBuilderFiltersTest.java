@@ -16,17 +16,17 @@
 //import static org.junit.jupiter.api.Assertions.assertNotNull;
 //
 ///**
-// * Tests for enriched filter operators in PivotQueryBuilder.
+// * Tests for enriched filter operators in JooqQueryBuilder.
 // *
 // * @author Hamza Assada - 7amza.it@gmail.com
 // * @since 24/08/2025
 // */
 //@SpringBootTest
 //class
-//PivotQueryBuilderFiltersTest {
+//JooqQueryBuilderFiltersTest {
 //
 //    @Autowired
-//    private PivotQueryBuilder builder;
+//    private JooqQueryBuilder builder;
 //
 //    private final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
 //
@@ -34,7 +34,7 @@
 //
 //    @BeforeEach
 //    void setUp() throws NoSuchMethodException {
-//        translateFilterMethod = PivotQueryBuilder.class.getDeclaredMethod("translateFilterTyped", org.jooq.Field.class, String.class, Object.class);
+//        translateFilterMethod = JooqQueryBuilder.class.getDeclaredMethod("translateFilterTyped", org.jooq.Field.class, String.class, Object.class);
 //        translateFilterMethod.setAccessible(true);
 //    }
 //
