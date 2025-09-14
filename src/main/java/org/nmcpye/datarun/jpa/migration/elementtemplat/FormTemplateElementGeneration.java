@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.migration.templateversionmongo;
+package org.nmcpye.datarun.jpa.migration.elementtemplat;
 
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceService;

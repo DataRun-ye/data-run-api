@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.migration.templateversionmongo;
+package org.nmcpye.datarun.jpa.migration.mongosubmissions;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

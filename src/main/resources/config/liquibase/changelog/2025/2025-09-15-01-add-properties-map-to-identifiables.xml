@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1757883978883-37-activity" author="Hamza">
+        <addColumn tableName="activity">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-38-app-user" author="Hamza">
+        <addColumn tableName="app_user">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-39-assignment" author="Hamza">
+        <addColumn tableName="assignment">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-40-de" author="Hamza">
+        <addColumn tableName="data_element">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-41-de-group" author="Hamza">
+        <addColumn tableName="data_element_group">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-42-de-group-set" author="Hamza">
+        <addColumn tableName="data_element_groupset">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-43-di" author="Hamza">
+        <addColumn tableName="data_submission">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-44-dt" author="Hamza">
+        <addColumn tableName="data_template">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-45-og" author="Hamza">
+        <addColumn tableName="option_group">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-46-og-set" author="Hamza">
+        <addColumn tableName="option_group_set">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-47-ops" author="Hamza">
+        <addColumn tableName="option_set">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-48-ov" author="Hamza">
+        <addColumn tableName="option_value">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-49-ou" author="Hamza">
+        <addColumn tableName="org_unit">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-50-ou-group" author="Hamza">
+        <addColumn tableName="org_unit_group">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-51-oug-set" author="Hamza">
+        <addColumn tableName="org_unit_groupset">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-52-ou-level" author="Hamza">
+        <addColumn tableName="ou_level">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-53-project" author="Hamza">
+        <addColumn tableName="project">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-54-role" author="Hamza">
+        <addColumn tableName="role">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-55-role-privilege" author="Hamza">
+        <addColumn tableName="role_privilege">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-56-team" author="Hamza">
+        <addColumn tableName="team">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="1757883978883-57-user-group" author="Hamza">
+        <addColumn tableName="user_group">
+            <column name="properties_map" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

@@ -6,6 +6,7 @@ import org.nmcpye.datarun.analytics.QueryService;
 import org.nmcpye.datarun.analytics.dto.GridResponseFormat;
 import org.nmcpye.datarun.analytics.dto.QueryRequest;
 import org.nmcpye.datarun.analytics.dto.QueryResponse;
+import org.nmcpye.datarun.analytics.metadata.MetadataResolver;
 import org.nmcpye.datarun.analytics.metadata.MetadataService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -42,6 +43,7 @@ public class PivotQueryController {
 
     private final MetadataService metadataService;
     private final QueryService queryService;
+    private final MetadataResolver metadataResolver;
 
     /**
      * Return metadata required to render the pivot UI for a template version.
@@ -76,7 +78,7 @@ public class PivotQueryController {
      */
     @GetMapping("/field")
     public ResponseEntity<?> resolveField(@RequestParam String id, @RequestParam String templateId, @RequestParam String templateVersionId) {
-        return ResponseEntity.of(metadataService.resolveFieldById(id, templateId, templateVersionId));
+        return ResponseEntity.of(metadataResolver.resolveFieldById(id, templateId, templateVersionId));
     }
 
 //    @PostMapping("/count")

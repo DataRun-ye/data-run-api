@@ -12,7 +12,6 @@ import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
 import org.nmcpye.datarun.jpa.datatemplate.repository.ElementTemplateConfigRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -90,10 +89,7 @@ public class MetadataServiceImpl implements MetadataService {
             .build();
     }
 
-    @Override
-    public Map<String, QueryableElement> getMetadataMapForTemplate(String templateUid, String templateVersionUid) {
-        return Map.of();
-    }
+
 
     private QueryableElement buildForRepeat(ElementTemplateConfig etc) {
         Map<String, Object> extras = buildExtras(etc, null); // Pass DE for richer extras
@@ -142,22 +138,6 @@ public class MetadataServiceImpl implements MetadataService {
             .build();
     }
 
-    /**
-     * REFACTORED: This method is now much simpler. It leverages the main, cached
-     * getMetadataForTemplate method and filters the result. This eliminates
-     * code duplication and ensures consistency.
-     */
-    @Transactional(readOnly = true)
-    @Override
-    public Optional<QueryableElement> resolveFieldById(String standardizedId, String templateUid, String templateVersionUid) {
-        if (standardizedId == null) return Optional.empty();
-
-        // Call the main method (which will hit the cache) and find the field.
-        return getMetadataForTemplate(templateUid, templateVersionUid)
-            .getAvailableFields().stream()
-            .filter(field -> standardizedId.equals(field.id()))
-            .findFirst();
-    }
 
     /**
      * NEW: Helper to build the core dimensions list with standardized IDs and resolution metadata.

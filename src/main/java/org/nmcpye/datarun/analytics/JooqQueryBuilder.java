@@ -10,7 +10,6 @@ import org.nmcpye.datarun.analytics.dto.QueryFilter;
 import org.nmcpye.datarun.analytics.dto.QuerySort;
 import org.nmcpye.datarun.analytics.dto.QueryableElementMapping;
 import org.nmcpye.datarun.analytics.fieldresolver.AnalyticsFieldResolver;
-import org.nmcpye.datarun.jooq.Tables;
 import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +21,8 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.nmcpye.datarun.jooq.Tables.PIVOT_GRID_FACTS;
 
 /**
  * JooqQueryBuilder builds jOOQ Select queries against the UID-native
@@ -51,8 +52,19 @@ import java.util.stream.Collectors;
 public class JooqQueryBuilder {
 
     private final DSLContext dsl;
-    private static final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
+    private static final PivotGridFacts PG = PIVOT_GRID_FACTS;
     private final AnalyticsFieldResolver fieldResolver;
+
+//    private final QueryTarget target;
+//    private final QueryableElementMappingFactory mappingFactory;
+
+//    public JooqQueryBuilder(DSLContext dsl, AnalyticsFieldResolver fieldResolver) {
+//        this.dsl = dsl;
+//        this.fieldResolver = fieldResolver;
+//        this.target = new CodegenQueryTarget(PIVOT_GRID_FACTS, "PIVOT_GRID_FACTS");
+//        this.mappingFactory = new PivotGridFactsMappingFactory(new CodegenQueryTarget(PIVOT_GRID_FACTS, "PIVOT_GRID_FACTS"));
+//    }
+
 
     /**
      * Build the jOOQ Select query (without fetching).
@@ -71,15 +83,15 @@ public class JooqQueryBuilder {
      * @return a jOOQ {@link Select<Record>} representing the query (not executed).
      */
     public SelectQuery<Record> buildSelect(
-            List<String> dimensions,
-            List<QueryableElementMapping> measures,
-            List<QueryFilter> filters,
-            LocalDateTime from,
-            LocalDateTime to,
-            List<QuerySort> sorts,
-            Integer limit,
-            Integer offset,
-            Set<String> allowedTeamIds
+        List<String> dimensions,
+        List<QueryableElementMapping> measures,
+        List<QueryFilter> filters,
+        LocalDateTime from,
+        LocalDateTime to,
+        List<QuerySort> sorts,
+        Integer limit,
+        Integer offset,
+        Set<String> allowedTeamIds
     ) {
         List<Field<?>> select = new ArrayList<>();
         List<Field<?>> groupBy = new ArrayList<>();
@@ -122,7 +134,7 @@ public class JooqQueryBuilder {
                 // Resolve the field. If it's a measure alias, use the existing field.
                 // Otherwise, resolve it as a dimension field.
                 Field<?> f = aliasToSelectField.getOrDefault(fil.field(),
-                        fieldResolver.resolveDimensionField(fil.field()));
+                    fieldResolver.resolveDimensionField(fil.field()));
                 cond = cond.and(translateFilter(f, fil.op(), fil.value()));
             }
         }
@@ -139,7 +151,7 @@ public class JooqQueryBuilder {
         if (sorts != null && !sorts.isEmpty()) {
             for (var s : sorts) {
                 Field<?> candidate = aliasToSelectField.getOrDefault(s.fieldOrAlias(),
-                        fieldResolver.resolveDimensionField(s.fieldOrAlias()));
+                    fieldResolver.resolveDimensionField(s.fieldOrAlias()));
                 // candidate might be a Field<?> or aggregate alias; calling asc()/desc() is valid on Field<?>
                 sortFields.add(s.desc() ? candidate.desc() : candidate.asc());
             }
@@ -186,12 +198,12 @@ public class JooqQueryBuilder {
      * @return number of groups
      */
     public long countGroups(
-            List<String> dimensions,
-            List<QueryableElementMapping> measures,
-            List<QueryFilter> filters,
-            LocalDateTime from,
-            LocalDateTime to,
-            Set<String> allowedTeamIds
+        List<String> dimensions,
+        List<QueryableElementMapping> measures,
+        List<QueryFilter> filters,
+        LocalDateTime from,
+        LocalDateTime to,
+        Set<String> allowedTeamIds
     ) {
         // Build the same base condition
         Condition cond = PG.DELETED_AT.isNull();
@@ -219,16 +231,16 @@ public class JooqQueryBuilder {
         if (groupBy.isEmpty()) {
             // Global aggregate => 1 group if any matching row, else 0
             Integer exists = dsl.select(DSL.one())
-                    .from(PG)
-                    .where(cond).limit(1)
-                    .fetchOne(0, Integer.class);
+                .from(PG)
+                .where(cond).limit(1)
+                .fetchOne(0, Integer.class);
             return (exists != null) ? 1L : 0L;
         } else {
             // Build a grouped subSelect and COUNT(*) over it
             Select<Record> grouped = dsl.select(groupBy.toArray(new Field<?>[0]))
-                    .from(PG)
-                    .where(cond)
-                    .groupBy(groupBy.toArray(new Field<?>[0]));
+                .from(PG)
+                .where(cond)
+                .groupBy(groupBy.toArray(new Field<?>[0]));
 
             Table<?> sub = grouped.asTable("g");
             Long cnt = dsl.selectCount().from(sub).fetchOne(0, Long.class);
@@ -250,15 +262,15 @@ public class JooqQueryBuilder {
      * LocalDateTime, LocalDateTime, List, Integer, Integer, Set) buildSelect(...)
      */
     public Result<Record> execute(
-            List<String> dimensions,
-            List<QueryableElementMapping> measures,
-            List<QueryFilter> filters,
-            LocalDateTime from,
-            LocalDateTime to,
-            List<QuerySort> sorts,
-            Integer limit,
-            Integer offset,
-            Set<String> allowedTeamIds
+        List<String> dimensions,
+        List<QueryableElementMapping> measures,
+        List<QueryFilter> filters,
+        LocalDateTime from,
+        LocalDateTime to,
+        List<QuerySort> sorts,
+        Integer limit,
+        Integer offset,
+        Set<String> allowedTeamIds
     ) {
         var query = buildSelect(dimensions, measures, filters, from, to, sorts, limit, offset, allowedTeamIds);
         return query.fetch();
@@ -358,19 +370,19 @@ public class JooqQueryBuilder {
             }
 
             List<Object> coerced = rawColl.stream()
-                    .map(v -> {
-                        try {
-                            return coerceToType(v, targetClass);
-                        } catch (IllegalArgumentException ex) {
-                            throw new IllegalArgumentException("Cannot coerce IN value to " + targetClass.getSimpleName() + ": " + v, ex);
-                        }
-                    })
-                    .collect(Collectors.toList());
+                .map(v -> {
+                    try {
+                        return coerceToType(v, targetClass);
+                    } catch (IllegalArgumentException ex) {
+                        throw new IllegalArgumentException("Cannot coerce IN value to " + targetClass.getSimpleName() + ": " + v, ex);
+                    }
+                })
+                .collect(Collectors.toList());
 
             if (dataType != null) {
                 List<Field> vals = coerced.stream()
-                        .map(v -> DSL.val(v, (DataType) dataType))
-                        .collect(Collectors.toList());
+                    .map(v -> DSL.val(v, (DataType) dataType))
+                    .collect(Collectors.toList());
                 return ((Field) f).in(vals);
             } else {
                 return ((Field) f).in(coerced);

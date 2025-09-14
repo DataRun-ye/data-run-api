@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
 import org.nmcpye.datarun.jpa.datasubmission.events.SubmissionSavedEvent;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -12,7 +11,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * @author Hamza Assada 14/08/2025 (7amza.it@gmail.com)
  */
 
-@Component
+//@Component
 @Slf4j
 @RequiredArgsConstructor
 public class AssignmentSubmissionListener {

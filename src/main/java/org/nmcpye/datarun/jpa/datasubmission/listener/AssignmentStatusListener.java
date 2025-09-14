@@ -6,14 +6,13 @@ import org.nmcpye.datarun.jpa.datasubmission.events.SubmissionSavedEvent;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * @author Hamza Assada 14/08/2025 (7amza.it@gmail.com)
  */
-@Component
+//@Component
 public class AssignmentStatusListener {
 
     private final Logger log = LoggerFactory.getLogger(AssignmentStatusListener.class);
