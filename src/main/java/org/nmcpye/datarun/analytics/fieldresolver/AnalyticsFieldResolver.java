@@ -4,9 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
-import org.nmcpye.datarun.jooq.Tables;
 import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
 import org.springframework.stereotype.Component;
+
+import static org.nmcpye.datarun.jooq.Tables.PIVOT_GRID_FACTS;
 
 /**
  * The single source of truth for mapping a public, standardized field identifier
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class AnalyticsFieldResolver {
 
-    private static final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
+    private static final PivotGridFacts PG = PIVOT_GRID_FACTS;
 
     /**
      * Resolves a standardized field ID into a jOOQ Field for use in dimensions,

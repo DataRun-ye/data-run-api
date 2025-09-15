@@ -28,8 +28,7 @@
     <include file="/config/liquibase/changelog/v7-2025-merge/24-01-changelog-last-merge.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/app-user-constraints/app-user-add-omitted-constraints.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/option-groups/01-01-option-group-and-group-set-changelog.xml" relativeToChangelogFile="false"/>
-    <!-- uid for options  -->
-    <include file="/config/liquibase/changelog/2025/2025-09-15-01-add-properties-map-to-identifiable.xml" relativeToChangelogFile="false"/>
+
     <!-- uid for options  -->
     <include file="/config/liquibase/changelog/options/2025-08-29-option-add-uid.xml" relativeToChangelogFile="false"/>
 
@@ -37,16 +36,16 @@
     <!-- element template config and template version   -->
     <include file="/config/liquibase/changelog/data-template-version/2025-09-01-template-version-table-and-constraints.xml" relativeToChangelogFile="false"/>
 
-    <!-- element template config and template version   -->
-    <include file="/config/liquibase/changelog/template_field/2025-09-01-element-template-config.xml" relativeToChangelogFile="false"/>
-
     <!-- submission and history table   -->
     <include file="/config/liquibase/changelog/data_submission/2025-09-01-data-submission-and-history-tables_.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/2025/2025-09-15-01-add-properties-map-to-identifiable.xml" relativeToChangelogFile="false"/>
+
 
     <!-- etl   -->
     <include file="/config/liquibase/changelog/outbox-and-batch/2025-09-01-outbox-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/outbox-and-batch/2025-09-01-batch-submission-migration-errors-table.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/etl/2025-09-01-normalization-repeat-and-values-tables.xml" relativeToChangelogFile="false"/>
+<!--    <include file="/config/liquibase/changelog/etl/2025-09-01-normalization-repeat-and-values-tables.xml" relativeToChangelogFile="false"/>-->
+<!--    <include file="/config/liquibase/changelog/template_field/2025-09-01-element-template-config.xml" relativeToChangelogFile="false"/>-->
 <!--    <include file="/config/liquibase/changelog/analytics-metadata/2025-09-08-analytics-metadata-tables.xml" relativeToChangelogFile="false"/>-->
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

@@ -4,9 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
 import org.nmcpye.datarun.analytics.dto.QueryableElement;
-import org.nmcpye.datarun.jooq.Tables;
 import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
 import org.springframework.stereotype.Component;
+
+import static org.nmcpye.datarun.jooq.Tables.PIVOT_GRID_FACTS;
 
 /**
  * Maps pivot field dataType or sourceColumn names to typed jOOQ Fields from the generated
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class QueryJooqMapper {
-    private static final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
+    private static final PivotGridFacts PG = PIVOT_GRID_FACTS;
 
     /**
      * Map a dataType/sourceColumn name to the appropriate jOOQ Field.

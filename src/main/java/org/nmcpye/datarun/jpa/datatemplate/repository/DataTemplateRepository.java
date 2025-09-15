@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /// Spring Data jpa repository for the DataTemplate entity.
@@ -25,4 +26,7 @@ public interface DataTemplateRepository
     @Cacheable(cacheNames = TEMPLATE_BY_UID_CACHE)
     @Override
     Optional<DataTemplate> findByUid(String uid);
+
+    @Query("SELECT d.uid FROM DataTemplate d")
+    List<String> findAllUids();
 }

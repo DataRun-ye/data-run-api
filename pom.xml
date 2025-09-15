@@ -73,6 +73,7 @@
         <springdoc-openapi-starter-webmvc-api.version>2.7.0</springdoc-openapi-starter-webmvc-api.version>
 
         <!--  NMC      -->
+        <jooq.version>3.19.18</jooq.version>
         <!--  Override driver due to conflict with debezium -->
 <!--        <javers-spring-boot-starter-mongo.version>7.7.0</javers-spring-boot-starter-mongo.version>-->
 <!--        <javers-spring-boot-starter-sql.version>7.7.0</javers-spring-boot-starter-sql.version>-->
@@ -975,13 +976,14 @@
                             <version>${spring-boot.version}</version>
                         </dependency>
                     </dependencies>
-                    <version>${jooq.version}</version>
+<!--                    <version>${jooq.version}</version>-->
                     <executions>
                         <execution>
                             <id>generate-jooq</id>
                             <phase>generate-sources</phase>
                             <goals><goal>generate</goal></goals>
                             <configuration>
+                                <skip>true</skip>
                                 <jdbc>
                                     <driver>org.postgresql.Driver</driver>
                                     <url>${liquibase-url}</url>
@@ -990,10 +992,13 @@
                                     <password>${liquibase-password}</password>
                                 </jdbc>
                                 <generator>
+                                    <!-- Prevent generation of implicit join "Path" nested types -->
                                     <generate>
-
+                                        <!-- disable convenience Path types for to-one joins -->
+                                        <implicitJoinPathsToOne>false</implicitJoinPathsToOne>
+                                        <!-- disable convenience Path types for to-many joins -->
                                         <implicitJoinPathsToMany>false</implicitJoinPathsToMany>
-
+                                        <!-- disable convenience Path types for many-to-many joins -->
 <!--                                        <implicitJoinPathsManyToMany>false</implicitJoinPathsManyToMany>-->
                                     </generate>
                                     <database>
@@ -1003,7 +1008,7 @@
                                     </database>
                                     <target>
                                         <packageName>org.nmcpye.datarun.jooq</packageName>
-                                        <directory>target/generated-sources/jooq</directory>
+                                        <directory>src/main/java/</directory>
                                     </target>
                                 </generator>
                             </configuration>

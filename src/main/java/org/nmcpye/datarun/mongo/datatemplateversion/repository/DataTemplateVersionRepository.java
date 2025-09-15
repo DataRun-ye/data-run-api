@@ -8,6 +8,7 @@ import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -50,4 +51,6 @@ public interface DataTemplateVersionRepository
 
     @Query(value = "{ 'fields.type': { $in: ?0 }}")
     List<DataTemplateVersion> findByFieldType(List<ValueType> types);
+
+    List<DataTemplateVersion> findAllByUidIn(Collection<String> uids, Sort sort);
 }

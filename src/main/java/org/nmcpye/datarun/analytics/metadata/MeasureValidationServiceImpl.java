@@ -9,7 +9,6 @@ import org.nmcpye.datarun.analytics.QueryJooqMapper;
 import org.nmcpye.datarun.analytics.dto.*;
 import org.nmcpye.datarun.analytics.exception.InvalidMeasureException;
 import org.nmcpye.datarun.analytics.fieldresolver.MappedQueryableElement;
-import org.nmcpye.datarun.jooq.Tables;
 import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
 import org.springframework.stereotype.Service;
 
@@ -19,13 +18,15 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static org.nmcpye.datarun.jooq.Tables.PIVOT_GRID_FACTS;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class MeasureValidationServiceImpl implements MeasureValidationService {
     private final MetadataService metadataService;
 
-    private static final PivotGridFacts PG = Tables.PIVOT_GRID_FACTS;
+    private static final PivotGridFacts PG = PIVOT_GRID_FACTS;
 
     @Override
     public QueryableElementMapping validate(MeasureRequest req, String templateUid,
