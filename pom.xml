@@ -563,9 +563,6 @@
                                 </platform>
                             </platforms>
                         </from>
-                        <!--                        <to>-->
-                        <!--                            <image>kaswarah/datarunapi:latest</image>-->
-                        <!--                        </to>-->
                         <to>
                             <image>kaswarah/datarunapi</image>
                             <tags>

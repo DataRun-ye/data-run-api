@@ -113,41 +113,6 @@
     </changeSet>
 
     <!-- ===================================================================
-         3) Create data_submission_history table
-         =================================================================== -->
-    <changeSet id="20250815-03-create-submission-history" author="hamza">
-        <createTable tableName="data_submission_history">
-            <column name="id" type="bigserial">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-
-            <column name="submission_id" type="varchar(26)">
-                <constraints nullable="false"/>
-            </column>
-
-            <column name="version_no" type="integer"/>
-            <column name="created_at" type="DATETIME">
-                <constraints nullable="false"/>
-            </column>
-            <column name="created_by" type="varchar(100)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="change_type" type="varchar(32)"/>
-            <column name="form_data" type="jsonb"/>
-            <column name="serial_number" type="bigint"/>
-        </createTable>
-
-        <!-- index for fast lookup by submission -->
-        <createIndex tableName="data_submission_history" indexName="idx_sh_submission_id">
-            <column name="submission_id"/>
-        </createIndex>
-
-        <!-- unique constraint so version numbers are unique per submission -->
-        <addUniqueConstraint tableName="data_submission_history" columnNames="submission_id, version_no"
-                             constraintName="uk_data_submission_history_submission_version"/>
-    </changeSet>
-
-    <!-- ===================================================================
          5) Optional housekeeping: set sequence value to max(serial_number) after import
          (used after bulk migration; you can run this manually or as a separate changeset)
          =================================================================== -->
