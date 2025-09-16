@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.datasubmissionbatching.util;
+package org.nmcpye.datarun.jpa.datasubmissionbatching.job;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,6 +24,8 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.support.CompositeItemWriter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +34,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -55,27 +58,30 @@ public class MigrationJobConfig {
     @Value("${migration.generate-missing-ids:true}")
     private boolean generateMissingIds;
 
-    // Beans required from your app: mongoTemplate, submissionProcessor, migrationGen, repos, mapper
+    // =================================================================
+    // == MONGO to POSTGRES MIGRATION JOB
+    // =================================================================
+
     @Bean
-    public Job mongoToPostgresJob(JobRepository jobRepository, Step migrationStep) {
+    public Job mongoToPostgresJob(JobRepository jobRepository,
+                                  @Qualifier("mongoToPgStep") Step migrationStep) {
         return new JobBuilder("mongoToPostgresJob", jobRepository)
             .start(migrationStep)
             .build();
     }
 
     @Bean
-    public Step migrationStep(JobRepository jobRepository,
+    public Step mongoToPgStep(JobRepository jobRepository,
                               PlatformTransactionManager transactionManager,
-                              ItemReader<DataFormSubmission> reader,
-                              ItemProcessor<DataFormSubmission, DataSubmission> processor,
-                              ItemWriter<DataSubmission> writer,
+                              ItemReader<DataFormSubmission> mongoItemReader,
+                              ItemProcessor<DataFormSubmission, DataSubmission> migrationProcessor,
+                              @Qualifier("migrationCompositeWriter") ItemWriter<DataSubmission> writer,
                               MigrationSkipListener migrationSkipListener) {
 
-        // create builder with jobRepository, then use chunk with explicit tx manager
         return new StepBuilder("mongoToPgStep", jobRepository)
             .<DataFormSubmission, DataSubmission>chunk(chunkSize, transactionManager)
-            .reader(reader)
-            .processor(processor)
+            .reader(mongoItemReader)
+            .processor(migrationProcessor)
             .writer(writer)
             .faultTolerant()
             .skipLimit(1000)
@@ -86,7 +92,6 @@ public class MigrationJobConfig {
             .build();
     }
 
-    // Reader: wraps the MongoRangeItemReader into an ItemReader that returns single items sequentially
     @Bean
     public ItemReader<DataFormSubmission> mongoItemReader(MongoTemplate mongoTemplate) {
         var rangeReader = new MongoRangeItemReader<>(mongoTemplate, DataFormSubmission.class, mongoCollection, pageSize);
@@ -104,7 +109,6 @@ public class MigrationJobConfig {
         };
     }
 
-    // Processor: map Mongo entity -> DataSubmission JPA entity, validate/enrich, generate missing repeat ids (migration)
     @Bean
     public ItemProcessor<DataFormSubmission, DataSubmission> migrationProcessor(
         SubmissionDataProcessor submissionDataProcessor,
@@ -114,36 +118,29 @@ public class MigrationJobConfig {
         ObjectMapper objectMapper
     ) {
         return mongoDoc -> {
-            // map fields: adapt to your mongo entity fields
             DataSubmission ds = mapMongoToJpa(mongoDoc, objectMapper);
-
             formDataProcessor.enrichFormData(ds, true);
-            // Run validators that are safe for migration (you may skip strict client checks)
             compositeValidator.validateAndEnrich(ds);
 
-            // Generate missing repeat ids for migration
             ObjectNode root = (ObjectNode) (ds.getFormData() == null ? objectMapper.createObjectNode() : ds.getFormData().deepCopy());
             final var migrationRepeatIdGenerator = new MigrationRepeatIdGenerator(objectMapper, templateElementService.getTemplateElementMap(ds.getForm(), ds.getVersion()));
             int generated = migrationRepeatIdGenerator.generateMissingIdsForMigration(root, ds.getUid());
             if (generated > 0) {
                 ds.setFormData(root);
             }
-
             return ds;
         };
     }
 
-    // Writer: persist submissions + outbox rows in same transaction (chunk transaction)
     @Bean
-    public ItemWriter<DataSubmission> migrationWriter(DataSubmissionRepository submissionRepository,
-                                                      OutboxEventRepository outboxEventRepository,
-                                                      ObjectMapper objectMapper) {
-        return items -> {
-            if (items == null || items.isEmpty()) return;
-            // Persist all submissions (BaseJpaRepository.persistAllAndFlush or similar)
-            submissionRepository.persistAllAndFlush(items);
+    public ItemWriter<DataSubmission> submissionWriter(DataSubmissionRepository submissionRepository) {
+        return submissionRepository::persistAllAndFlush;
+    }
 
-            // Create outbox rows for each saved submission
+    @Bean
+    public ItemWriter<DataSubmission> outboxEventWriter(OutboxEventRepository outboxEventRepository, ObjectMapper objectMapper) {
+        return items -> {
+            if (items.isEmpty()) return;
             List<OutboxEvent> outboxEvents = new ArrayList<>(items.size());
             for (DataSubmission ds : items) {
                 OutboxEvent ev = new OutboxEvent();
@@ -152,7 +149,7 @@ public class MigrationJobConfig {
                 ev.setEventType("submission.saved");
                 ObjectNode p = objectMapper.createObjectNode();
                 p.put("submissionId", ds.getId());
-                p.put("submissionVersion", ds.getLockVersion()); // or ds.getSubmissionVersion()
+                p.put("submissionVersion", ds.getLockVersion());
                 ev.setPayload(p);
                 ev.setStatus(OutboxEventStatus.PENDING);
                 ev.setAttempts(0);
@@ -160,20 +157,27 @@ public class MigrationJobConfig {
                 ev.setAvailableAt(Instant.now());
                 outboxEvents.add(ev);
             }
-            // Persist outbox events in same tx
             outboxEventRepository.persistAllAndFlush(outboxEvents);
         };
     }
 
-    // Helper: map Mongo doc -> DataSubmission. Adjust field mappings to your mongo entity.
+    @Bean
+    public ItemWriter<DataSubmission> migrationCompositeWriter(
+        @Qualifier("submissionWriter") ItemWriter<DataSubmission> submissionWriter,
+        @Qualifier("outboxEventWriter") ItemWriter<DataSubmission> outboxEventWriter
+    ) {
+        CompositeItemWriter<DataSubmission> compositeWriter = new CompositeItemWriter<>();
+        compositeWriter.setDelegates(Arrays.asList(submissionWriter, outboxEventWriter));
+        return compositeWriter;
+    }
+
     private DataSubmission mapMongoToJpa(DataFormSubmission mongo, ObjectMapper objectMapper) {
         DataSubmission ds = new DataSubmission();
-
-        ds.setId(CodeGenerator.nextUlid()); // adapt getter name
+        ds.setId(CodeGenerator.nextUlid());
         ds.setUid(mongo.getUid());
         ds.setForm(mongo.getForm());
         ds.setFormVersion(mongo.getFormVersion());
-        ds.setVersion(mongo.getVersion()); // adapt
+        ds.setVersion(mongo.getVersion());
         ds.setTeam(mongo.getTeam());
         ds.setTeamCode(mongo.getTeamCode());
         ds.setOrgUnit(mongo.getOrgUnit());
@@ -184,12 +188,55 @@ public class MigrationJobConfig {
         ds.setStatus(mongo.getStatus());
         ds.setStartEntryTime(mongo.getStartEntryTime());
         ds.setFinishedEntryTime(mongo.getFinishedEntryTime());
-        // convert formData map -> JsonNode
-        ds.setFormData(objectMapper.convertValue(mongo.getFormData(), objectMapper.getTypeFactory().constructType(JsonNode.class)));
-
-        // if mongo had serialNumber and you want to preserve:
+        ds.setFormData(objectMapper.convertValue(mongo.getFormData(), JsonNode.class));
         if (mongo.getSerialNumber() != null) ds.setSerialNumber(mongo.getSerialNumber());
-
         return ds;
     }
+
+    // =================================================================
+    // == POSTGRES to OUTBOX JOB
+    // =================================================================
+
+//    @Bean
+//    public Job postgresToOutboxJob(JobRepository jobRepository,
+//                                   @Qualifier("postgresToOutboxStep") Step postgresToOutboxStep) {
+//        return new JobBuilder("postgresToOutboxJob", jobRepository)
+//            .start(postgresToOutboxStep)
+//            .build();
+//    }
+//
+//    @Bean
+//    public Step postgresToOutboxStep(JobRepository jobRepository,
+//                                     PlatformTransactionManager transactionManager,
+//                                     @Qualifier("postgresReader") ItemReader<DataSubmission> postgresReader,
+//                                     @Qualifier("outboxEventWriter") ItemWriter<DataSubmission> outboxWriter) {
+//        return new StepBuilder("postgresToOutboxStep", jobRepository)
+//            .<DataSubmission, DataSubmission>chunk(chunkSize, transactionManager)
+//            .reader(postgresReader)
+//            .writer(outboxWriter)
+//            .build();
+//    }
+
+//    @Bean
+//    @StepScope
+//    public JpaPagingItemReader<DataSubmission> postgresReader(
+//        EntityManagerFactory entityManagerFactory,
+//        @Value("#{jobParameters['submissionIds']}") String submissionIdsCsv) {
+//
+//        JpaPagingItemReaderBuilder<DataSubmission> builder = new JpaPagingItemReaderBuilder<DataSubmission>()
+//            .name("postgresReader")
+//            .entityManagerFactory(entityManagerFactory)
+//            .pageSize(pageSize);
+//
+//        if (submissionIdsCsv != null && !submissionIdsCsv.isEmpty()) {
+//            Map<String, Object> params = new HashMap<>();
+//            params.put("submissionIds", Arrays.asList(submissionIdsCsv.split(",")));
+//            builder.queryString("SELECT d FROM DataSubmission d WHERE d.id IN :submissionIds")
+//                .parameterValues(params);
+//        } else {
+//            builder.queryString("SELECT d FROM DataSubmission d ORDER BY d.id");
+//        }
+//
+//        return builder.build();
+//    }
 }
