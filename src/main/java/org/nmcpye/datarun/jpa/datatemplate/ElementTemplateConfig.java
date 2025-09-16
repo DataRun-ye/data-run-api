@@ -14,7 +14,6 @@ import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
-import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 
 import java.time.Instant;
 import java.util.Map;
@@ -76,13 +75,13 @@ public class ElementTemplateConfig {
     @ToString.Include
     private String templateUid;
 
-    /// uid of the [DataTemplateVersion].
+    /// uid of the [TemplateVersion].
     @NotNull
     @Column(name = "template_version_uid", length = 11, nullable = false)
     @ToString.Include
     private String templateVersionUid;
 
-    /// Version number of the [DataTemplateVersion].
+    /// Version number of the [TemplateVersion].
     @NotNull
     @Column(name = "template_version_no", nullable = false)
     private Integer versionNo;
@@ -159,15 +158,6 @@ public class ElementTemplateConfig {
     private Integer sortOrder;
 
 
-    /// semantic_grain — `submission` or `repeat:<repeat_ancestor_path>`.
-    ///
-    /// ETL to find `ElementTemplateConfig` (by `template_version_uid`) and use this to produce facts.
-    /// ```
-    /// If semantic_grain == submission produce a submission-level fact.
-    /// If semantic_grain == repeat:... iterate repeat array using repeat_id_field/_index and produce one fact per instance.
-    ///```
-    private String semanticGrain;
-
     /// Path built with element IDs (e.g. "household.children.<elementUid>").
     @NotNull
     @Column(name = "id_path", length = 3000, nullable = false)
@@ -184,6 +174,15 @@ public class ElementTemplateConfig {
     @Column(name = "name_path", length = 3000)
     private String namePath;
 
+    /// semantic_grain — `submission` or `repeat:<repeat_ancestor_path>`.
+    ///
+    /// ETL to find `ElementTemplateConfig` (by `template_version_uid`) and use this to produce facts.
+    /// ```
+    /// If semantic_grain == submission produce a submission-level fact.
+    /// If semantic_grain == repeat:... iterate repeat array using repeat_id_field/_index and produce one fact per instance.
+    ///```
+    private String semanticGrain;
+
     /// The path that semantically represent a grain of data
     /// null if submission-level
     /// the full `repeat_path` (e.g., `root.householdinfo.children`) mixes two different concepts:
@@ -191,6 +190,12 @@ public class ElementTemplateConfig {
     /// 2.  **Data Grain:** The `children` part, because it is `repeatable: true`, defines a fundamental change in the data's structure. It means "one or more children related to one parent submission." This is the true semantic grain.
     @Column(name = "semantic_path", length = 3000)
     private String semanticPath;
+
+    /**
+     * repeat-only path to nearest repeatable ancestor
+     */
+    @Column(name = "ancestor_repeat_semantic_path", length = 3000)
+    private String ancestorRepeatSemanticPath;
 
     //------------------------------
     // Repeat related attributes
@@ -200,11 +205,6 @@ public class ElementTemplateConfig {
     @Builder.Default
     private Boolean hasRepeatAncestor = Boolean.FALSE;
 
-    /**
-     * repeat-only path to nearest repeatable ancestor
-     */
-    @Column(name = "ancestor_repeat_semantic_path", length = 3000)
-    private String ancestorRepeatSemanticPath;
 
     /// full idPath to nearest repeatable ancestor (or null)
     @Column(name = "ancestor_repeat_path", length = 3000)

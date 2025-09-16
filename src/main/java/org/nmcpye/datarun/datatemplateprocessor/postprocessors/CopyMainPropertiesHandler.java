@@ -21,7 +21,10 @@ public class CopyMainPropertiesHandler
         element.setId(source.getUid());
         element.setCode(source.getCode());
         element.setType(source.getValueType());
-        element.setName(Optional.ofNullable(element.getName()).orElse(source.getName()));
+        element.setName(source.getName());
+        element.setIsDimension(source.getIsDimension());
+        element.setIsMeasure(source.getIsMeasure());
+        element.setAggregationType(source.getAggregationType());
         element.setDescription(Optional.ofNullable(element.getDescription()).orElse(source.getDescription()));
         element.setLabel(Optional.ofNullable(element.getLabel()).orElse(source.getLabel()));
         return element;

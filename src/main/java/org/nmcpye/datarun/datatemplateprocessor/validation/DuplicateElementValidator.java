@@ -22,6 +22,36 @@ import java.util.stream.Collectors;
 @Component
 public class DuplicateElementValidator implements TemplateValidator {
 
+    public TemplateValidationResult validate(DataTemplateVersionInterface template) {
+        final var sectionsErrors = validateNoDuplicates(
+            template.getSections(),
+            AbstractElement::getName,
+            template.getUid(),
+            "section"
+        );
+
+        // Validate fields by ID
+        final var fieldErrors = validateNoDuplicates(
+            template.getFields(),
+            FormDataElementConf::getId,
+            template.getUid(),
+            "field"
+        );
+        final List<FormValidationError> errors = new ArrayList<>();
+
+        if (!sectionsErrors.isEmpty()) {
+            errors.addAll(sectionsErrors);
+        }
+        if (!fieldErrors.isEmpty()) {
+            errors.addAll(fieldErrors);
+        }
+
+        if (!errors.isEmpty()) {
+            return TemplateValidationResult.invalid(errors);
+        }
+        return TemplateValidationResult.valid();
+    }
+
     private static <T extends AbstractElement> List<FormValidationError> validateNoDuplicates(
         Collection<? extends T> elements,
         Function<T, String> propertyExtractor,
@@ -53,35 +83,4 @@ public class DuplicateElementValidator implements TemplateValidator {
         });
         return errors;
     }
-
-    public TemplateValidationResult validate(DataTemplateVersionInterface template) {
-        final var sectionsErrors = validateNoDuplicates(
-            template.getSections(),
-            AbstractElement::getName,
-            template.getUid(),
-            "section"
-        );
-
-        // Validate fields by ID
-        final var fieldErrors = validateNoDuplicates(
-            template.getFields(),
-            FormDataElementConf::getId,
-            template.getUid(),
-            "field"
-        );
-        final List<FormValidationError> errors = new ArrayList<>();
-
-        if (!sectionsErrors.isEmpty()) {
-            errors.addAll(sectionsErrors);
-        }
-        if (!fieldErrors.isEmpty()) {
-            errors.addAll(fieldErrors);
-        }
-
-        if (!errors.isEmpty()) {
-            return TemplateValidationResult.invalid(errors);
-        }
-        return TemplateValidationResult.valid();
-    }
-
 }

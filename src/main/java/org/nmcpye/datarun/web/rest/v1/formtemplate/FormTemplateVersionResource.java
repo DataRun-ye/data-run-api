@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.web.rest.v1.formtemplate;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
 import org.nmcpye.datarun.mongo.datatemplateversion.service.DateTemplateVersionService;
@@ -34,6 +35,12 @@ public class FormTemplateVersionResource extends MongoBaseResource<DataTemplateV
         super(service, repository);
         this.templateService = service;
         this.formTemplateProcessor = formTemplateProcessor;
+    }
+
+
+    @Override
+    protected void saveEntity(DataTemplateVersion payLoadEntity, EntitySaveSummaryVM summary) {
+//        super.saveEntity(payLoadEntity, summary);
     }
 
     @Override

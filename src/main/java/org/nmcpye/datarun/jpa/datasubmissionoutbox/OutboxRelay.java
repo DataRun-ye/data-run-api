@@ -32,7 +32,8 @@ import java.util.concurrent.TimeUnit;
  * or {@link OutboxEventRepository#markFailed(long, String) markFailed(long, String)}
  * when {@link OutboxProperties#maxAttempts} exceeded.
  *
- * @author Hamza Assada 15/08/2025 (7amza.it@gmail.com)
+ * @author Hamza Assada
+ * @since 15/08/2025 (7amza.it@gmail.com)
  */
 @Component
 @Slf4j

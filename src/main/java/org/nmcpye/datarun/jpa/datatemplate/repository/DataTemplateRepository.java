@@ -14,7 +14,6 @@ import java.util.Optional;
 
 /// Spring Data jpa repository for the DataTemplate entity.
 @Repository
-//@JaversSpringDataAuditable
 public interface DataTemplateRepository
     extends JpaIdentifiableRepository<DataTemplate> {
     String TEMPLATE_BY_UID_CACHE = "templateByUidCache";

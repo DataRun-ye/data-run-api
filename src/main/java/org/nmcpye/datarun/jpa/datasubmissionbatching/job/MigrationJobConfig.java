@@ -28,7 +28,6 @@ import org.springframework.batch.item.support.CompositeItemWriter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -42,7 +41,7 @@ import java.util.List;
  *
  * @author Hamza Assada 16/08/2025 (7amza.it@gmail.com)
  */
-@Configuration
+//@Configuration
 @Slf4j
 public class MigrationJobConfig {
 
@@ -77,16 +76,18 @@ public class MigrationJobConfig {
                               ItemProcessor<DataFormSubmission, DataSubmission> migrationProcessor,
                               @Qualifier("migrationCompositeWriter") ItemWriter<DataSubmission> writer,
                               MigrationSkipListener migrationSkipListener) {
-
         return new StepBuilder("mongoToPgStep", jobRepository)
             .<DataFormSubmission, DataSubmission>chunk(chunkSize, transactionManager)
             .reader(mongoItemReader)
             .processor(migrationProcessor)
             .writer(writer)
             .faultTolerant()
-            .skipLimit(1000)
+            .skipLimit(Integer.MAX_VALUE)        // ensure the job doesn't fail on many skips
+//            .skipPolicy(migrationSkipPolicy())   // or use .skip(...) lines below
             .skip(Exception.class)
-            .retryLimit(3)
+            // .skip(DataIntegrityViolationException.class)
+//            .skip(Exception.class)
+            .retryLimit(2)
             .retry(Exception.class)
             .listener(migrationSkipListener)
             .build();
@@ -122,12 +123,12 @@ public class MigrationJobConfig {
             formDataProcessor.enrichFormData(ds, true);
             compositeValidator.validateAndEnrich(ds);
 
-            ObjectNode root = (ObjectNode) (ds.getFormData() == null ? objectMapper.createObjectNode() : ds.getFormData().deepCopy());
-            final var migrationRepeatIdGenerator = new MigrationRepeatIdGenerator(objectMapper, templateElementService.getTemplateElementMap(ds.getForm(), ds.getVersion()));
-            int generated = migrationRepeatIdGenerator.generateMissingIdsForMigration(root, ds.getUid());
-            if (generated > 0) {
-                ds.setFormData(root);
-            }
+//            ObjectNode root = (ObjectNode) (ds.getFormData() == null ? objectMapper.createObjectNode() : ds.getFormData().deepCopy());
+//            final var migrationRepeatIdGenerator = new MigrationRepeatIdGenerator(objectMapper, templateElementService.getTemplateElementMap(ds.getForm(), ds.getVersion()));
+//            int generated = migrationRepeatIdGenerator.generateMissingIdsForMigration(root, ds.getUid());
+//            if (generated > 0) {
+//                ds.setFormData(root);
+//            }
             return ds;
         };
     }
@@ -193,50 +194,16 @@ public class MigrationJobConfig {
         return ds;
     }
 
-    // =================================================================
-    // == POSTGRES to OUTBOX JOB
-    // =================================================================
-
 //    @Bean
-//    public Job postgresToOutboxJob(JobRepository jobRepository,
-//                                   @Qualifier("postgresToOutboxStep") Step postgresToOutboxStep) {
-//        return new JobBuilder("postgresToOutboxJob", jobRepository)
-//            .start(postgresToOutboxStep)
-//            .build();
-//    }
-//
-//    @Bean
-//    public Step postgresToOutboxStep(JobRepository jobRepository,
-//                                     PlatformTransactionManager transactionManager,
-//                                     @Qualifier("postgresReader") ItemReader<DataSubmission> postgresReader,
-//                                     @Qualifier("outboxEventWriter") ItemWriter<DataSubmission> outboxWriter) {
-//        return new StepBuilder("postgresToOutboxStep", jobRepository)
-//            .<DataSubmission, DataSubmission>chunk(chunkSize, transactionManager)
-//            .reader(postgresReader)
-//            .writer(outboxWriter)
-//            .build();
-//    }
-
-//    @Bean
-//    @StepScope
-//    public JpaPagingItemReader<DataSubmission> postgresReader(
-//        EntityManagerFactory entityManagerFactory,
-//        @Value("#{jobParameters['submissionIds']}") String submissionIdsCsv) {
-//
-//        JpaPagingItemReaderBuilder<DataSubmission> builder = new JpaPagingItemReaderBuilder<DataSubmission>()
-//            .name("postgresReader")
-//            .entityManagerFactory(entityManagerFactory)
-//            .pageSize(pageSize);
-//
-//        if (submissionIdsCsv != null && !submissionIdsCsv.isEmpty()) {
-//            Map<String, Object> params = new HashMap<>();
-//            params.put("submissionIds", Arrays.asList(submissionIdsCsv.split(",")));
-//            builder.queryString("SELECT d FROM DataSubmission d WHERE d.id IN :submissionIds")
-//                .parameterValues(params);
-//        } else {
-//            builder.queryString("SELECT d FROM DataSubmission d ORDER BY d.id");
-//        }
-//
-//        return builder.build();
+//    public SkipPolicy migrationSkipPolicy() {
+//        return (throwable, skipCount) -> {
+//            // skip validation-type exceptions always
+//            return throwable instanceof DomainValidationException;
+////            // maybe skip DB constraint exceptions up to a threshold:
+////            if (throwable instanceof DataIntegrityViolationException && skipCount < 10000) {
+////                return true;
+////            }
+//            // otherwise don't skip
+//        };
 //    }
 }

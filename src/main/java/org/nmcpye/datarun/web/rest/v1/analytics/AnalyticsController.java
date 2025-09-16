@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.v1.analytics;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.jpa.etl.analytics.dto.AnalyticsAttributeDto;
-import org.nmcpye.datarun.jpa.etl.analytics.service.AnalyticsMetadataServiceNew;
+import org.nmcpye.datarun.jpa.analytics.dto.AnalyticsAttributeDto;
+import org.nmcpye.datarun.jpa.analytics.service.AnalyticsMetadataServiceNew;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

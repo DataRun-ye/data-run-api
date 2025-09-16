@@ -46,21 +46,24 @@ public class TemplateExpressionValidator
                 }
             }
             // Validate constraint expressions if present.
-            if (field.getConstraint() != null) {
-                String expression = field.getConstraint();
+
+            String expression = field.getConstraint() != null && !field.getConstraint().isEmpty() ?
+                field.getConstraint() : field.getValidationRule() != null ?
+                field.getValidationRule().getExpression() : null;
+            if (expression != null) {
                 for (ExpressionValidator validator : validators) {
-                    ElementValidationResult result = validator.validate(expression, template);
+                    ElementValidationResult result = validator.validate(expression.trim(), template);
                     if (!result.isValid()) {
                         errors.addAll(result.getErrors().stream()
                             .map(err -> new FormValidationError(field.getName(), "constraint error", err))
                             .toList());
-                        // "Field '" + field.getName() + "' constraint error: " + err
                     }
                 }
             }
+
         }
 
-        // Similarly, validate rules in sections if needed.
+        // Similarly, validate rules in sections
         for (FormSectionConf section : template.getSections()) {
             if (section.getRules() != null) {
                 for (DataFieldRule rule : section.getRules()) {

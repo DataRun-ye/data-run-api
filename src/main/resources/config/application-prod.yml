@@ -110,15 +110,16 @@ outbox:
     max-attempts: 10
 
 # from mongo, do we run or not, comment all if not
-#migration:
-#  mongo:
-#    collection: data_form_submission
-#  chunk:
-#    size: 200
-#  page:
-#    size: 200
-#  run: true
-#  generate-missing-ids: true
+migration:
+  mongo:
+    collection: data_form_submission
+  chunk:
+    size: 200
+  page:
+    size: 200
+  run: true
+  auto-start: true
+  generate-missing-ids: false
 
 jhipster:
   client-app:

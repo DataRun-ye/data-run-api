@@ -67,6 +67,12 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
     private List<FormDataElementConf> fields;
     private List<FormSectionConf> sections;
 
+    @JsonIgnore
+    @Override
+    public String getId() {
+        return super.getId();
+    }
+
     @Override
     public DataTemplateInstanceDto sections(List<FormSectionConf> sections) {
         this.setSections(sections);

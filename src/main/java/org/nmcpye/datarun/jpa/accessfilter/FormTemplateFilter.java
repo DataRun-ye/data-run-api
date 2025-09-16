@@ -31,7 +31,7 @@ public class FormTemplateFilter extends DefaultJpaFilter<DataTemplate> {
                 return cb.conjunction();
             }
 
-            if (user.getUserFormsUIDs() == null || user.getUserFormsUIDs().isEmpty()) {
+            if (user.getUserFormsUIDs() == null || user.getUserTeamsUIDs().isEmpty()) {
                 return cb.disjunction(); // user has no access
             }
 

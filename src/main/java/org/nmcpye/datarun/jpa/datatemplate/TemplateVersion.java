@@ -23,14 +23,12 @@ import java.util.List;
  */
 @Entity
 @Table(name = "data_template_version", uniqueConstraints = {
-//        @UniqueConstraint(name = "ux_template_uid_version_number", columnNames = {"template_uid", "version_number"}),
-        @UniqueConstraint(name = "ux_tv_id_data_template_id", columnNames = {"id", "data_template_id"}),
-        @UniqueConstraint(name = "ux_tv_no_data_template_id", columnNames = {"version_number", "data_template_id"})
+    @UniqueConstraint(name = "ux_tv_id_data_template_id", columnNames = {"id", "data_template_id"}),
+    @UniqueConstraint(name = "ux_tv_no_data_template_id", columnNames = {"version_number", "data_template_id"})
 }, indexes = {
-        @Index(name = "idx_tv_template_uid", columnList = "template_uid"),
-        @Index(name = "idx_tv_version_no", columnList = "version_number"),
-        @Index(name = "idx_tv_template_uid_version_desc", columnList = "template_uid, version_number"),
-//        @Index(name = "idx_tv_data_template_id_version_desc", columnList = "version_number, data_template_id"),
+    @Index(name = "idx_tv_template_uid", columnList = "template_uid"),
+    @Index(name = "idx_tv_version_no", columnList = "version_number"),
+    @Index(name = "idx_tv_template_uid_version_desc", columnList = "template_uid, version_number"),
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
@@ -43,11 +41,6 @@ public class TemplateVersion extends JpaIdentifiableObject {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true, nullable = false)
     protected String uid;
-
-    @Deprecated
-    @Size(max = 11)
-    @Column(name = "template_uid", length = 11, updatable = false)
-    private String templateUid;
 
     @NotNull
     @Column(name = "version_number", nullable = false, updatable = false)
@@ -64,9 +57,14 @@ public class TemplateVersion extends JpaIdentifiableObject {
     @Column(name = "sections", columnDefinition = "jsonb", nullable = false)
     private List<FormSectionConf> sections;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "data_template_id", nullable = false)
     private DataTemplate dataTemplate;
+
+    // legacy DataTemplate.uid
+    @Size(max = 11)
+    @Column(name = "template_uid", length = 11, updatable = false)
+    private String templateUid;
 
     @Override
     public String getId() {

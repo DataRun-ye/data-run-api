@@ -15,7 +15,6 @@ public interface DataTemplateMapper
         @Mapping(target = "versionUid", ignore = true),
         @Mapping(target = "versionNumber", ignore = true),
         @Mapping(target = "uid", source = "uid"),
-        @Mapping(target = "id", source = "id")
     })
     DataTemplate fromInstanceDto(DataTemplateInstanceDto dto);
 

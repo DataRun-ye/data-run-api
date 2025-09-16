@@ -16,6 +16,8 @@ import static org.nmcpye.datarun.jooq.Tables.PIVOT_GRID_FACTS;
  * <p>
  * The mapper returns the generated typed Field when possible (preferred).
  * When an unknown column name is provided, it falls back to {@code DSL.field(name, Object.class)}.
+ *
+ * @author Hamza Assada
  */
 @Component
 @Slf4j

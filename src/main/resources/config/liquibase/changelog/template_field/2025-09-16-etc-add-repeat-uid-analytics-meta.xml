@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <!-- add repeat_uid and analytics hints to element_template_config -->
+    <changeSet id="add-repeat-uid-analytics-meta" author="datarun">
+        <addColumn tableName="element_template_config">
+            <column name="repeat_uid" type="varchar(64)"/>
+            <column name="analytics_intent" type="varchar(32)"/>
+            <column name="is_entity_candidate" type="boolean" defaultValueBoolean="false"/>
+            <column name="natural_key_candidates" type="jsonb"/>
+            <column name="category_element_uid" type="varchar(64)"/>
+        </addColumn>
+        <createIndex indexName="idx_etconfig_repeat_uid" tableName="element_template_config">
+            <column name="repeat_uid"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -68,12 +68,6 @@ public abstract class JpaIdentifiableObject
         setAutoFields();
     }
 
-    @PostLoad
-    @PostPersist
-    protected void updateEntityState() {
-        this.setIsPersisted();
-    }
-
     /**
      * Lifecycle hook to generate a ULID ID before persisting.
      */
@@ -82,6 +76,22 @@ public abstract class JpaIdentifiableObject
         if (this.id == null) {
             setId(CodeGenerator.nextUlid());
         }
+    }
+
+    /**
+     * Set auto-generated fields on save or update
+     */
+    public void setAutoFields() {
+        if (getUid() == null || getUid().isEmpty()) {
+            setUid(CodeGenerator.generateUid());
+        }
+    }
+
+
+    @PostLoad
+    @PostPersist
+    protected void updateEntityState() {
+        this.setIsPersisted();
     }
 
     @JsonIgnore
@@ -106,15 +116,6 @@ public abstract class JpaIdentifiableObject
     }
 
     abstract protected void setUid(String uid);
-
-    /**
-     * Set auto-generated fields on save or update
-     */
-    public void setAutoFields() {
-        if (getUid() == null || getUid().isEmpty()) {
-            setUid(CodeGenerator.generateUid());
-        }
-    }
 
     @Override
     public boolean equals(Object o) {

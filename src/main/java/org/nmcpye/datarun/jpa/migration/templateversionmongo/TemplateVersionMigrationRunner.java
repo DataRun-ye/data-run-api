@@ -3,16 +3,14 @@ package org.nmcpye.datarun.jpa.migration.templateversionmongo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
 
 /**
  * @author Hamza Assada - 7amza.it@gmail.com
  * @since 24/08/2025
  */
+//@Component
+//@Order(1100)
 @Slf4j
-@Component
-@Order(1100)
 @RequiredArgsConstructor
 public class TemplateVersionMigrationRunner implements CommandLineRunner {
     private final TemplateVersionMigrationService migrationService;

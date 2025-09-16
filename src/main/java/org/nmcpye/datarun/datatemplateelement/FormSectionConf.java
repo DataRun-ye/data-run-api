@@ -39,4 +39,9 @@ public class FormSectionConf extends AbstractElement implements Serializable {
         this.setPath(path);
         return this;
     }
+
+    public FormSectionConf name(String name) {
+        this.setName(name);
+        return this;
+    }
 }
