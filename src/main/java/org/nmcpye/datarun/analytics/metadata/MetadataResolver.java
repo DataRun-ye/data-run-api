@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -23,7 +24,7 @@ public class MetadataResolver {
         Map<String, QueryableElement> fieldMap = new ConcurrentHashMap<>(metadataService
             .getMetadataForTemplate(templateUid, templateVersionUid)
             .getAvailableFields().stream()
-            .collect(Collectors.toMap(QueryableElement::id, f -> f)));
+            .collect(Collectors.toMap(QueryableElement::id, Function.identity())));
 
         return Map.of();
     }

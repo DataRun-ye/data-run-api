@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -132,7 +133,7 @@ public class DefaultDataTemplateVersionService
             .toList();
 
         Map<String, DataTemplateVersion> versions = templateVersionRepository.findAllByUidIn(ids).stream()
-            .collect(Collectors.toMap(DataTemplateVersion::getTemplateUid, s -> s));
+            .collect(Collectors.toMap(DataTemplateVersion::getTemplateUid, Function.identity()));
 
         return masters.map(m -> versions.get(m.getUid()));
     }

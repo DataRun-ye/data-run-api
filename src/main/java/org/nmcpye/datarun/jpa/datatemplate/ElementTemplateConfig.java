@@ -16,6 +16,7 @@ import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -197,6 +198,28 @@ public class ElementTemplateConfig {
     @Column(name = "ancestor_repeat_semantic_path", length = 3000)
     private String ancestorRepeatSemanticPath;
 
+    @Column(name = "repeat_uid", length = 64)
+    private String repeatUid;
+
+    /**
+     * if this is a repeat, is it an entity candidate
+     */
+    @Column(name = "is_entity_candidate", length = 64)
+    private Boolean isEntityCandidate;
+
+    /**
+     * EVENT, ENTITY, RELATION, LOOKUP
+     */
+    @Column(name = "analytics_intent", length = 32)
+    private String analyticsIntent;
+
+    /**
+     * if this is a repeat, what's element compose a natural key for its instances
+     */
+    @Type(JsonType.class)
+    @Column(name = "natural_key_candidates", columnDefinition = "jsonb")
+    private List<String> naturalKeyCandidates;
+
     //------------------------------
     // Repeat related attributes
     //------------------------------
@@ -232,6 +255,10 @@ public class ElementTemplateConfig {
     @NotNull
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    public boolean isRepeat() {
+        return this.elementKind == ElementKind.REPEAT;
+    }
 
     @PrePersist
     public void prePersist() {

@@ -21,7 +21,8 @@ public class TemplateElementProcessor {
     public TemplateElementProcessor(DataTemplateVersionInterface formTemplate) {
         this.formTemplate = formTemplate;
         this.sectionMap = formTemplate.getSections()
-            .stream().collect(Collectors.toMap(AbstractElement::getName, s -> s));
+            .stream().collect(Collectors
+                .toMap(AbstractElement::getName, Function.identity()));
     }
 
     /**
@@ -42,7 +43,8 @@ public class TemplateElementProcessor {
      * @return FormElementConfigService to run the next step of get the formTemplate
      */
     private TemplateElementProcessor configureAndValidateFields(Collection<DataElement> dataTemplateElements) {
-        final var dataElementMap = dataTemplateElements.stream().collect(Collectors.toMap(DataElement::getUid, s -> s));
+        final var dataElementMap = dataTemplateElements.stream()
+            .collect(Collectors.toMap(DataElement::getUid, Function.identity()));
         final var sectionMap = getSectionMap();
         final var fields = formTemplate.getFields().stream().distinct()
             .map((f) ->

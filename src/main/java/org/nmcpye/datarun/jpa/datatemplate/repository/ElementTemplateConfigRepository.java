@@ -31,4 +31,11 @@ public interface ElementTemplateConfigRepository
     Optional<ElementTemplateConfig> findTopByTemplateUidOrderByVersionNoDesc(@NotNull String templateId);
 
     List<ElementTemplateConfig> findByTemplateVersionUid(String templateVersionUid);
+
+    Optional<ElementTemplateConfig> findByRepeatUid(String repeatUid);
+
+    // load only repeat entries (cached in app)
+    @Query("SELECT e.repeatUid, e.semanticPath FROM ElementTemplateConfig e WHERE e.elementKind = 'REPEAT'")
+    List<Object[]> findAllRepeats(); // returns [repeatUid, semanticPath] rows
+
 }

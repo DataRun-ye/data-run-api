@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /// Service Implementation for managing [DataTemplate].
@@ -232,7 +233,7 @@ public class DataTemplateInstanceServiceImpl
 
         Map<String, FormTemplateVersionDto> versions = jpaTemplateVersionRepository.findAllByUidIn(ids).stream()
             .map(jpaVersionMapper::toDto)
-            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, s -> s));
+            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, Function.identity()));
 
         return masters.stream().map(m ->
             dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
@@ -251,7 +252,7 @@ public class DataTemplateInstanceServiceImpl
 
         Map<String, FormTemplateVersionDto> versions = jpaTemplateVersionRepository.findAllByUidIn(ids).stream()
             .map(jpaVersionMapper::toDto)
-            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, s -> s));
+            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, Function.identity()));
 
         return masters.stream().map(m ->
             dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
@@ -270,7 +271,7 @@ public class DataTemplateInstanceServiceImpl
 
         Map<String, FormTemplateVersionDto> versions = jpaTemplateVersionRepository.findAllByUidIn(ids).stream()
             .map(jpaVersionMapper::toDto)
-            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, s -> s));
+            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, Function.identity()));
 
         return masters.map(m -> dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
             Optional.ofNullable(versions.get(m.getUid())).orElseThrow(
@@ -289,7 +290,7 @@ public class DataTemplateInstanceServiceImpl
 
         Map<String, FormTemplateVersionDto> versions = jpaTemplateVersionRepository.findAllByUidIn(ids).stream()
             .map(jpaVersionMapper::toDto)
-            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, s -> s));
+            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, Function.identity()));
 
         return masters.map(m -> dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
             Optional.ofNullable(versions.get(m.getUid())).orElseThrow(

@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -65,7 +66,7 @@ public class QueryServiceImpl implements QueryService {
             Map<String, QueryableElement> fieldMap = metadataService
                 .getMetadataForTemplate(request.getTemplateId(), request.getTemplateVersionId())
                 .getAvailableFields().stream()
-                .collect(Collectors.toMap(QueryableElement::id, f -> f));
+                .collect(Collectors.toMap(QueryableElement::id, Function.identity()));
 
             // STEP 2: Validate measures.
             // This service is now simpler and relies on the new metadata contract.

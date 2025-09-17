@@ -14,6 +14,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -65,7 +66,7 @@ public class MetadataServiceImpl implements MetadataService {
         Map<String, DataElement> dataElementMap = dataElementUids.isEmpty()
             ? Collections.emptyMap()
             : dataElementRepository.findAllByUidIn(dataElementUids)
-            .stream().collect(Collectors.toMap(DataElement::getUid, de -> de));
+            .stream().collect(Collectors.toMap(DataElement::getUid, Function.identity()));
 
         // STEP 1: Build DTOs for template-specific fields.
         List<QueryableElement> templateFields = etcRows.stream().map(etc -> {

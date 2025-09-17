@@ -16,6 +16,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.nmcpye.datarun.jooq.Tables.PIVOT_GRID_FACTS;
@@ -37,7 +38,7 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
         Map<String, QueryableElement> fieldMap = new ConcurrentHashMap<>(metadataService
                 .getMetadataForTemplate(templateUid, templateVersionUid)
                 .getAvailableFields().stream()
-                .collect(Collectors.toMap(QueryableElement::id, f -> f)));
+                .collect(Collectors.toMap(QueryableElement::id, Function.identity())));
 
 
         // Resolve metadata (prefer template lookup)

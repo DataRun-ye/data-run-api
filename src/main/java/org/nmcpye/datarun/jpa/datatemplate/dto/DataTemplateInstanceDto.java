@@ -18,6 +18,7 @@ import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -123,7 +124,7 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
         List<AbstractElement> fieldElements = fields != null ? new java.util.ArrayList<>(fields) : List.of();
         List<AbstractElement> sectionElements = sections != null ? new java.util.ArrayList<>(sections) : List.of();
         return Stream.concat(fieldElements.stream(), sectionElements.stream())
-            .collect(Collectors.toMap(AbstractElement::getPath, e -> e));
+            .collect(Collectors.toMap(AbstractElement::getPath, Function.identity()));
     }
 
     /**

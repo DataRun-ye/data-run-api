@@ -9,6 +9,7 @@ import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -37,10 +38,16 @@ public class TemplateElementMap {
     private final Map<String, AbstractElement> elementByNamePathMap;
 
     /**
+     * namePath -> ElementTemplateConfig
      * (NEW) source element_template_config, used in normalization for each
      * value to reference the id of the element_template_conf that produced it.
      */
     private final Map<String, ElementTemplateConfig> elementConfigByNamePathMap;
+
+    /**
+     * repeat_uid -> semantic_path
+     */
+    private final Map<String, String> repeatSemanticPathMap;
 
     /**
      * elementId->path reverse map, for getting path by an elementId for retrieving categoryElement's path by its id
@@ -69,7 +76,7 @@ public class TemplateElementMap {
             .stream()
             .filter(FormDataElementConf.class::isInstance)
             .map(FormDataElementConf.class::cast)
-            .collect(Collectors.toMap(FormDataElementConf::getId, f -> f)));
+            .collect(Collectors.toMap(FormDataElementConf::getId, Function.identity())));
         this.elementByNamePathMap = this.elementByIdPathMap.entrySet().stream()
             .collect(Collectors.toMap(
                 entry -> entry.getKey()
@@ -77,6 +84,9 @@ public class TemplateElementMap {
                         .getId(), entry.getValue().getName()),
                 Map.Entry::getValue));
         this.elementConfigByNamePathMap = elementConfigByNamePathMap;
-
+        this.repeatSemanticPathMap = elementConfigByNamePathMap.values()
+            .stream()
+            .filter(ElementTemplateConfig::isRepeat).collect(Collectors
+                .toMap(ElementTemplateConfig::getRepeatUid, ElementTemplateConfig::getIdPath));
     }
 }
