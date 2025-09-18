@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <!-- Supply event table -->
+    <changeSet id="20250917-01-create-supply-event" author="datarun">
+        <createTable tableName="supply_event">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="natural_key" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="submission_uid" type="varchar(32)"/>
+            <column name="template_uid" type="varchar(32)"/>
+            <column name="template_version_uid" type="varchar(64)"/>
+            <column name="projection_run_id" type="uuid"/>
+            <column name="projection_config_uid" type="varchar(64)"/>
+            <column name="occurrence_index" type="integer"/>
+            <column name="payload_id" type="varchar(64)"/>
+            <column name="amd_uid" type="varchar(64)"/>
+            <column name="amd_label" type="jsonb"/>
+            <column name="month_name_uid" type="varchar(64)"/>
+            <column name="supply_date" type="date"/>
+            <column name="stockout_days" type="integer"/>
+            <column name="expired_quantity" type="integer"/>
+            <column name="consumed_quantity" type="integer"/>
+            <column name="received_quantity" type="integer"/>
+            <column name="available_quantity" type="integer"/>
+            <column name="redistributed_quantity" type="integer"/>
+            <column name="extra" type="jsonb"/>
+            <column name="created_at" type="timestamptz" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="timestamptz"/>
+        </createTable>
+
+        <createIndex tableName="supply_event" indexName="uq_supply_event_natural_key" unique="true">
+            <column name="natural_key"/>
+        </createIndex>
+
+        <createIndex indexName="idx_supply_amd_uid" tableName="supply_event">
+            <column name="amd_uid"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Breeding source event table (measurements) -->
+    <changeSet id="20250917-02-create-breeding-source-event" author="datarun">
+        <createTable tableName="breeding_source_event">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="natural_key" type="varchar(128)"/>
+            <column name="submission_uid" type="varchar(32)"/>
+            <column name="template_uid" type="varchar(32)"/>
+            <column name="template_version_uid" type="varchar(64)"/>
+            <column name="projection_run_id" type="uuid"/>
+            <column name="occurrence_index" type="integer"/>
+            <column name="household_name" type="text"/>
+            <column name="breeding_habitat_type_uid" type="varchar(64)"/>
+            <column name="breeding_habitat_type_label" type="jsonb"/>
+            <column name="larval_stage_presence" type="boolean"/>
+            <column name="growth_regulator_grams" type="integer"/>
+            <column name="breeding_habitat_description" type="text"/>
+            <column name="breeding_habitats_count" type="integer"/>
+            <column name="breeding_habitat_length_uid" type="varchar(64)"/>
+            <column name="breeding_habitat_width_uid" type="varchar(64)"/>
+            <column name="breeding_habitat_depth_uid" type="varchar(64)"/>
+            <column name="temphos_ml" type="numeric"/>
+            <column name="lsm_types" type="jsonb"/>
+            <column name="extra" type="jsonb"/>
+            <column name="payload_checksum" type="varchar(128)"/>
+            <column name="created_at" type="timestamptz" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <createIndex indexName="idx_bse_habitat_type" tableName="breeding_source_event">
+            <column name="breeding_habitat_type_uid"/>
+        </createIndex>
+
+        <createIndex indexName="idx_bse_payload_checksum" tableName="breeding_source_event">
+            <column name="payload_checksum"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Exploded select-multi helper for lsm_types -->
+    <changeSet id="20250917-03-create-breeding-lsm-type" author="datarun">
+        <createTable tableName="breeding_lsm_type">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="breeding_event_id" type="uuid"/>
+            <column name="lsm_type_uid" type="varchar(64)"/>
+            <column name="lsm_type_label" type="jsonb"/>
+            <column name="created_at" type="timestamptz" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <createIndex indexName="idx_blsm_breeding_event_id" tableName="breeding_lsm_type">
+            <column name="breeding_event_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

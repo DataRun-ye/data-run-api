@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1758134437247-34" author="Hamza">
+        <createTable tableName="projection_config">
+            <column name="id" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_projection_config"/>
+            </column>
+            <column name="uid" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="target_type" type="VARCHAR(32)"/>
+            <column name="payload" type="jsonb"/>
+            <column name="version" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(50)"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="1758134437247-35" author="Hamza">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_9e6355bd7da8575d8a6364558"
+                             tableName="projection_config"/>
+    </changeSet>
+
+</databaseChangeLog>

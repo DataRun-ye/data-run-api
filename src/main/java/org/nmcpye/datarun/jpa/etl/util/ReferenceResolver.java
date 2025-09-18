@@ -28,8 +28,8 @@ import java.util.function.Function;
 @Service
 @RequiredArgsConstructor
 public class ReferenceResolver {
-    private final OptionService optionService;
     private final OptionSetService optionSetService;
+    private final OptionService optionService;
     private final OptionRepository optionRepository;
     private final TeamRepository teamRepository;
     private final OrgUnitRepository orgUnitRepository;

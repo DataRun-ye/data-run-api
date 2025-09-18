@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1758135825953-35" author="Hamza">
+        <createTable tableName="raw_repeat_payload">
+            <column name="id" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_raw_repeat_payload"/>
+            </column>
+            <column name="template_version_uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="repeat_path" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="submission_uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="repeat_uid" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload_id" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="occurrence_index" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload" type="jsonb">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload_parent_id" type="VARCHAR(32)"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1758135825953-38" author="Hamza">
+        <createIndex indexName="idx_raw_repeat_by_created_at" tableName="raw_repeat_payload">
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1758135825953-39" author="Hamza">
+        <createIndex indexName="idx_raw_repeat_by_path" tableName="raw_repeat_payload">
+            <column name="repeat_path"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1758135825953-40" author="Hamza">
+        <createIndex indexName="idx_raw_repeat_by_repeat_uid" tableName="raw_repeat_payload">
+            <column name="repeat_uid"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1758135825953-41" author="Hamza">
+        <createIndex indexName="idx_raw_repeat_by_submission" tableName="raw_repeat_payload">
+            <column name="submission_uid"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1758135825953-44" author="Hamza">
+        <createIndex indexName="uq_raw_repeat_by_submission_occ" tableName="raw_repeat_payload">
+            <column name="submission_uid"/>
+            <column name="repeat_path"/>
+            <column name="occurrence_index"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1758135825953-45" author="Hamza">
+        <createIndex indexName="uq_raw_repeat_by_submission_payload_id" tableName="raw_repeat_payload">
+            <column name="submission_uid"/>
+            <column name="repeat_path"/>
+            <column name="payload_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,18 +1,23 @@
-package org.nmcpye.datarun.analytics.projection;
+package org.nmcpye.datarun.analytics.projection.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.ElementTemplateConfigRepository;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSourceUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 
 /**
  * RawRepeatExtractor
@@ -35,8 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Hamza Assada
  * @since 17/09/2025
  */
-
-
 @Service
 public class RawRepeatExtractor {
     private final NamedParameterJdbcTemplate jdbc;
@@ -60,43 +63,13 @@ public class RawRepeatExtractor {
         loadRepeatCacheFromRepo();
     }
 
-    private void loadRepeatCacheFromRepo() {
-        repeatCache.clear();
-        List<Object[]> rows = etcRepo.findAllRepeats();
-        for (Object[] r : rows) {
-            String uid = (String) r[0];
-            String path = (String) r[1];
-            if (uid != null && path != null) repeatCache.put(uid, path);
-        }
-    }
-    /**
-     * Resolve a dot-delimited semantic path inside a JsonNode (returns null if not present)
-     */
-    private JsonNode resolvePath(JsonNode root, String semanticPath) {
-        if (root == null || semanticPath == null || semanticPath.isBlank()) return null;
-        String[] parts = semanticPath.split("\\.");
-        JsonNode cur = root;
-        for (String p : parts) {
-            if (cur == null) return null;
-            cur = cur.get(p);
-        }
-        return cur;
-    }
-
-    private String extractPayloadId(JsonNode item) {
-        JsonNode idNode = item.get("_id");
-        if (idNode != null && !idNode.isNull()) return idNode.asText();
-        return null;
-    }
-
     /**
      * Extract repeats for a submission by reading form_data from data_submission table.
      * This method will delete any existing rows in raw_repeat_payload for this submission + repeat before inserting.
      */
     @Transactional
     public void extractForSubmission(String submissionUid) throws Exception {
-        final var d = submissionRepo.findFormDataJsonByUid(submissionUid);
-        final var version = submissionRepo.findTemplateVersionUidByUid(submissionUid);
+        final var templateVersionUidFromSubmission = submissionRepo.findTemplateVersionUidByUid(submissionUid);
         MapSqlParameterSource param = new MapSqlParameterSource().addValue("uid", submissionUid);
         String sql = "SELECT form_data, template_uid, template_version_uid FROM data_submission WHERE uid = :uid";
         List<Map<String, Object>> rows = jdbc.queryForList(sql, param);
@@ -123,20 +96,25 @@ public class RawRepeatExtractor {
                 new MapSqlParameterSource().addValue("s", submissionUid).addValue("r", repeatUid));
 
             // prepare batch
-            String insertSql = "INSERT INTO raw_repeat_payload (id, submission_uid, repeat_path, occurrence_index, payload, payload_id, repeat_uid, created_at) " +
-                "VALUES (:id, :submissionUid, :repeatPath, :occIndex, :payload::jsonb, :payloadId, :repeatUid, now())";
+            String insertSql = "INSERT INTO raw_repeat_payload (\n" +
+                "  id, submission_uid, repeat_path, occurrence_index, " +
+                "payload, payload_id, payload_parent_id, repeat_uid, template_version_uid, created_at) " +
+                "VALUES(:id, :submissionUid, :repeatPath, :occIndex, " +
+                ":payload::jsonb, :payloadId, :payloadParentId, :repeatUid, :templateVersionUid, now())";
 
             List<Map<String, Object>> batch = new ArrayList<>();
             int idx = 0;
             for (JsonNode item : arr) {
                 Map<String, Object> params = new HashMap<>();
-                params.put("id", UUID.randomUUID());
+                params.put("id", CodeGenerator.nextUlid());
                 params.put("submissionUid", submissionUid);
                 params.put("repeatPath", semanticPath);
                 params.put("occIndex", idx);
                 params.put("payload", item.toString());
                 params.put("payloadId", extractPayloadId(item));
                 params.put("repeatUid", repeatUid);
+                params.put("payloadParentId", item.has("_parentId") ? item.get("_parentId").asText() : null);
+                params.put("templateVersionUid", templateVersionUidFromSubmission);
                 batch.add(params);
                 idx++;
 
@@ -156,6 +134,8 @@ public class RawRepeatExtractor {
      */
     @Transactional
     public void extractForSubmission(String submissionUid, JsonNode formData) throws Exception {
+        final var templateVersionUidFromSubmission = submissionRepo.findTemplateVersionUidByUid(submissionUid);
+
         if (formData == null) return;
         for (Map.Entry<String, String> e : repeatCache.entrySet()) {
             String repeatUid = e.getKey();
@@ -166,54 +146,34 @@ public class RawRepeatExtractor {
             jdbc.update("DELETE FROM raw_repeat_payload WHERE submission_uid = :s AND repeat_uid = :r",
                 new MapSqlParameterSource().addValue("s", submissionUid).addValue("r", repeatUid));
 
-            String insertSql = "INSERT INTO raw_repeat_payload (id, submission_uid, repeat_path, occurrence_index, payload, payload_id, repeat_uid, created_at) " +
-                "VALUES (:id, :submissionUid, :repeatPath, :occIndex, :payload::jsonb, :payloadId, :repeatUid, now())";
+            // prepare batch
+            String insertSql = "INSERT INTO raw_repeat_payload (\n" +
+                "  id, submission_uid, repeat_path, occurrence_index, " +
+                "payload, payload_id, payload_parent_id, repeat_uid, template_version_uid, created_at) " +
+                "VALUES(:id, :submissionUid, :repeatPath, :occIndex, " +
+                ":payload::jsonb, :payloadId, :payloadParentId, :repeatUid, :templateVersionUid, now())";
 
-            List<Map<String, Object>> batch = new ArrayList<>();
+            List<MapSqlParameterSource> batch = new ArrayList<>();
+
             int idx = 0;
             for (JsonNode item : arr) {
-                Map<String, Object> params = new HashMap<>();
-                params.put("id", UUID.randomUUID());
-                params.put("submissionUid", submissionUid);
-                params.put("repeatPath", semanticPath);
-                params.put("occIndex", idx);
-                params.put("payload", item.toString());
-                params.put("payloadId", extractPayloadId(item));
-                params.put("repeatUid", repeatUid);
-                batch.add(params);
+                batch.add(new MapSqlParameterSource().addValue("id", CodeGenerator.nextUlid())
+                    .addValue("submissionUid", submissionUid)
+                    .addValue("repeatPath", semanticPath)
+                    .addValue("occIndex", idx)
+                    .addValue("payload", toJsonbObject(item.toString()), Types.OTHER)
+                    .addValue("payloadId", extractPayloadId(item))
+                    .addValue("repeatUid", repeatUid)
+                    .addValue("payloadParentId", item.has("_parentId") ? item.get("_parentId").asText() : null)
+                    .addValue("templateVersionUid", templateVersionUidFromSubmission));
                 idx++;
 
                 if (batch.size() >= batchSize) {
-                    jdbc.batchUpdate(insertSql, SqlParameterSourceUtils.createBatch(batch.toArray()));
+                    jdbc.batchUpdate(insertSql, batch.toArray(SqlParameterSource[]::new));
                     batch.clear();
                 }
             }
-            if (!batch.isEmpty()) jdbc.batchUpdate(insertSql, SqlParameterSourceUtils.createBatch(batch.toArray()));
-        }
-    }
-
-    /**
-     * Backfill submissions for a given repeatUid. This pages submission UIDs that contain the path and runs extractForSubmission for each.
-     * Simple OFFSET/LIMIT paging is used – acceptable for medium-sized datasets. For very large datasets, replace with cursor-based paging.
-     */
-    public void backfillRepeat(String repeatUid, int pageSize) throws Exception {
-        String semanticPath = repeatCache.get(repeatUid);
-        if (semanticPath == null) throw new IllegalArgumentException("unknown repeatUid: " + repeatUid);
-
-        String listSql = "SELECT uid FROM data_submission WHERE (form_data #> string_to_array(:path, '.')) IS NOT NULL ORDER BY uid LIMIT :limit OFFSET :offset";
-        int offset = 0;
-        while (true) {
-            MapSqlParameterSource p = new MapSqlParameterSource().addValue("path", semanticPath).addValue("limit", pageSize).addValue("offset", offset);
-            List<String> uids = jdbc.query(listSql, p, (rs, rowNum) -> rs.getString("uid"));
-            if (uids.isEmpty()) break;
-            for (String uid : uids) {
-                try {
-                    extractForSubmission(uid);
-                } catch (Exception ex) { /* log and continue */
-                    ex.printStackTrace();
-                }
-            }
-            offset += uids.size();
+            if (!batch.isEmpty()) jdbc.batchUpdate(insertSql, batch.toArray(SqlParameterSource[]::new));
         }
     }
 
@@ -222,6 +182,49 @@ public class RawRepeatExtractor {
      */
     public void reloadRepeatCache() {
         repeatCache.clear();
-        loadRepeatCache();
+        loadRepeatCacheFromRepo();
+    }
+
+
+    private void loadRepeatCacheFromRepo() {
+        repeatCache.clear();
+        List<Object[]> rows = etcRepo.findAllRepeats();
+        for (Object[] r : rows) {
+            String uid = (String) r[0];
+            String path = (String) r[1];
+            if (uid != null && path != null) repeatCache.put(uid, path);
+        }
+    }
+
+    /**
+     * Resolve a dot-delimited semantic path inside a JsonNode (returns null if not present)
+     */
+    private JsonNode resolvePath(JsonNode root, String semanticPath) {
+        if (root == null || semanticPath == null || semanticPath.isBlank()) return null;
+        String[] parts = semanticPath.split("\\.");
+        JsonNode cur = root;
+        for (String p : parts) {
+            if (cur == null) return null;
+            cur = cur.get(p);
+        }
+        return cur;
+    }
+
+    private String extractPayloadId(JsonNode item) {
+        JsonNode idNode = item.get("_id");
+        if (idNode != null && !idNode.isNull()) return idNode.asText();
+        return null;
+    }
+
+    private Object toJsonbObject(String json) {
+        if (json == null) return null;
+        try {
+            org.postgresql.util.PGobject pg = new org.postgresql.util.PGobject();
+            pg.setType("jsonb");
+            pg.setValue(json);
+            return pg;
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to convert label to jsonb", e);
+        }
     }
 }

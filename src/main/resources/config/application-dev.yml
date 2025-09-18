@@ -22,8 +22,8 @@ logging:
 #    org.nmcpye.datarun.jpa.datasubmission.migration: DEBUG
 #    org.nmcpye.datarun.jpa.outbox: DEBUG
     ROOT: DEBUG
-    tech.jhipster: DEBUG
-    org.hibernate.SQL: DEBUG
+#    tech.jhipster: DEBUG
+#    org.hibernate.SQL: DEBUG
 #    org.nmcpye.datarun: DEBUG
 
 spring:
@@ -107,6 +107,15 @@ outbox:
     batch-size: 70           # how many to claim per poll
     worker-threads: 6        # number of concurrent worker threads
     max-attempts: 2
+
+pilot:
+  repeat:
+    uids: RPT_aaf9a7ade8ad8535,RPT_0cb69bd7ed22c6d5
+  page:
+    size: 500
+  run:
+    backfill: true
+    projection: true
 
 # from mongo, do we run or not, comment all if not
 migration:
