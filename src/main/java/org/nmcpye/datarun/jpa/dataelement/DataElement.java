@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.jpa.dataelement;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
@@ -59,12 +60,15 @@ public class DataElement extends BaseDataElement {
     @JsonIgnoreProperties(value = {"dataElementGroupSets", "dataElements", "translations"}, allowSetters = true)
     protected Set<DataElementGroup> dataElementGroups = new HashSet<>();
 
+    @JsonIgnore
     @Column(name = "is_measure")
     private Boolean isMeasure = false;
 
+    @JsonIgnore
     @Column(name = "is_dimension")
     private Boolean isDimension = false;
 
+    @JsonIgnore
     @Enumerated(EnumType.STRING)
     @Column(name = "aggregation_type")
     private AggregationType aggregationType = AggregationType.DEFAULT;

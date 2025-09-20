@@ -13,6 +13,7 @@
         <sql>
             CREATE TABLE IF NOT EXISTS repeat_instance (
                 id varchar(26) PRIMARY KEY,
+                etc_uid varchar(11) NOT NULL,
                 semantic_path varchar(3000) NOT NULL,
                 parent_repeat_instance_id varchar(26),
                 repeat_section_label jsonb DEFAULT '{}'::jsonb,
@@ -59,6 +60,7 @@
                 id bigserial PRIMARY KEY,
                 repeat_instance_id varchar(26),
                 submission_uid varchar(11) NOT NULL,
+                etc_uid varchar(11) NOT NULL,
                 semantic_path varchar(3000) NOT NULL,
                 assignment_uid varchar(11),
                 team_uid varchar(11),

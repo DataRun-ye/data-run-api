@@ -9,6 +9,7 @@
         <addColumn tableName="data_element">
             <column name="aggregation_type" type="VARCHAR(255)"/>
             <column name="is_dimension" type="BOOLEAN"/>
+            <column name="is_measure" type="BOOLEAN"/>
         </addColumn>
     </changeSet>
 
