@@ -1,6 +1,6 @@
 //package org.nmcpye.datarun.jpa.datatemplate.elementmapping;
 //
-//import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
+//import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 //
 //import java.util.List;
 //import java.util.Objects;
@@ -14,20 +14,20 @@
 // * @author Hamza Assada 18/08/2025 (7amza.it@gmail.com)
 // */
 //public class TemplateFieldCache {
-//    private final ConcurrentMap<String, List<ElementTemplateConfig>> map = new ConcurrentHashMap<>();
+//    private final ConcurrentMap<String, List<TemplateElement>> map = new ConcurrentHashMap<>();
 //
 //    private String key(String templateId, String versionId) {
 //        return templateId + ":" + versionId;
 //    }
 //
-//    public void put(String templateId, String versionId, List<ElementTemplateConfig> fields) {
+//    public void put(String templateId, String versionId, List<TemplateElement> fields) {
 //        Objects.requireNonNull(templateId);
 //        Objects.requireNonNull(versionId);
 //        Objects.requireNonNull(fields);
 //        map.put(key(templateId, versionId), fields);
 //    }
 //
-//    public List<ElementTemplateConfig> get(String templateId, String versionId) {
+//    public List<TemplateElement> get(String templateId, String versionId) {
 //        return map.get(key(templateId, versionId));
 //    }
 //

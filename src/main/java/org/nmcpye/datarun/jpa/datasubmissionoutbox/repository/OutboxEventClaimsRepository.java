@@ -17,7 +17,11 @@ public interface OutboxEventClaimsRepository {
      */
     List<OutboxEvent> claimBatch(int limit);
 
-    /** Mark event DONE and set processedAt. */
+    List<OutboxEvent> claimBatch(int limit, String eventType, String owner);
+
+    /**
+     * Mark event DONE and set processedAt.
+     */
     void markDone(long id, Instant processedAt);
 
     /**
@@ -26,6 +30,12 @@ public interface OutboxEventClaimsRepository {
      */
     void reschedule(long id, String errorMessage, Instant nextAvailableAt);
 
-    /** Move to FAILED permanently (no further retries). */
-    void markFailed(long id, String errorMessage);
+//    void markFailed(long id, String errorMessage);
+
+    /**
+     * Move to FAILED permanently (no further retries).
+     */
+    void markDlq(long id, String lastMessage);
+
+    List<Long> reclaimStale(int visibilitySeconds);
 }

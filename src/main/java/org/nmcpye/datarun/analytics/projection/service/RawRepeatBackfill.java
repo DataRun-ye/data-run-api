@@ -12,7 +12,7 @@
 // * RawRepeatExtractor
 // * <p>
 // * Responsibilities:
-// * - Load cached repeat metadata (repeat_uid -> semantic_path) from element_template_config
+// * - Load cached repeat metadata (repeat_uid -> semantic_path) from template_element
 // * - Offer a backfill helper to iterate submissions for a single repeat
 // * <p>
 // *
@@ -71,7 +71,7 @@
 //    }
 //
 //    /**
-//     * Force reload of repeat cache (call after you update element_template_config meta)
+//     * Force reload of repeat cache (call after you update template_element meta)
 //     */
 //    public void reloadRepeatCache() {
 //        repeatCache.clear();

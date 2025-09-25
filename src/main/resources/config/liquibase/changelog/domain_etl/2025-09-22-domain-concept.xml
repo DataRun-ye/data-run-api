@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+       http://www.liquibase.org/xml/ns/dbchangelog
+       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- === Sprint 1: Domain & Mapping schema + idempotency keys === -->
+
+    <!-- 1) domain_concept -->
+    <changeSet id="s1-01-create-domain-concept" author="datarun">
+        <createTable tableName="domain_concept">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="concept_uid" type="varchar(64)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="canonical_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="text"/>
+            <column name="semantic_tags" type="text[]"/>
+            <column name="created_by" type="varchar(100)"/>
+            <column name="created_at" type="timestamptz" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="domain_concept"/>
+        </rollback>
+    </changeSet>
+
+    <!-- 2) dataelement_domain_mapping -->
+    <changeSet id="s1-02-create-dataelement-domain-mapping" author="datarun">
+        <createTable tableName="dataelement_domain_mapping">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="mapping_uid" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="template_version_uid" type="varchar(11)"/>
+            <column name="etc_uid" type="varchar(11)"/>
+            <column name="data_element_uid" type="varchar(11)"/>
+            <column name="domain_concept_id" type="uuid"/>
+            <column name="mapping_expr" type="jsonb"/>
+            <column name="confidence" type="numeric(3,2)" defaultValueNumeric="1.00"/>
+            <column name="status" type="varchar(20)" defaultValue="DRAFT"/>
+            <column name="created_by" type="varchar(100)"/>
+            <column name="created_at" type="timestamptz" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="dataelement_domain_mapping"
+                                 baseColumnNames="domain_concept_id"
+                                 referencedTableName="domain_concept"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_demapping_domainconcept"/>
+
+        <createIndex indexName="ux_demapping_mappinguid" tableName="dataelement_domain_mapping" unique="false">
+            <column name="mapping_uid"/>
+        </createIndex>
+
+        <createIndex indexName="ix_demapping_etc" tableName="dataelement_domain_mapping" unique="false">
+            <column name="etc_uid"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="dataelement_domain_mapping"/>
+        </rollback>
+    </changeSet>
+
+    <!-- 3) mapping_run -->
+    <changeSet id="s1-03-create-mapping-run" author="datarun">
+        <createTable tableName="mapping_run">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="etl_run_id" type="uuid"/>
+            <column name="mapping_uid" type="varchar(32)"/>
+            <column name="status" type="varchar(20)"/>
+            <column name="summary" type="jsonb"/>
+            <column name="started_at" type="timestamptz" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="finished_at" type="timestamptz"/>
+        </createTable>
+
+        <createIndex indexName="ix_mappingrun_etlrun" tableName="mapping_run">
+            <column name="etl_run_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="mapping_run"/>
+        </rollback>
+    </changeSet>
+
+    <!-- 4) mapping_execution_log -->
+    <changeSet id="s1-04-create-mapping-exec-log" author="datarun">
+        <createTable tableName="mapping_execution_log">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="mapping_run_id" type="uuid"/>
+            <column name="element_data_value_id" type="bigint"/>
+            <column name="etc_uid" type="varchar(11)"/>
+            <column name="target_domain_concept_id" type="uuid"/>
+            <column name="result" type="varchar(20)"/>
+            <column name="error" type="text"/>
+            <column name="payload" type="jsonb"/>
+            <column name="created_at" type="timestamptz" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <createIndex indexName="ix_mappingexeclog_maprun" tableName="mapping_execution_log">
+            <column name="mapping_run_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="mapping_execution_log"/>
+        </rollback>
+    </changeSet>
+
+    <!-- 5) mapping_dead_letter -->
+    <changeSet id="s1-05-create-mapping-dead-letter" author="datarun">
+        <createTable tableName="mapping_dead_letter">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="element_data_value_id" type="bigint"/>
+            <column name="mapping_uid" type="varchar(32)"/>
+            <column name="error_type" type="varchar(100)"/>
+            <column name="error_details" type="jsonb"/>
+            <column name="attempts" type="integer" defaultValueNumeric="0"/>
+            <column name="created_at" type="timestamptz" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="last_attempt_at" type="timestamptz"/>
+        </createTable>
+
+        <createIndex indexName="ix_mapping_dlq_etdvid" tableName="mapping_dead_letter">
+            <column name="element_data_value_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="mapping_dead_letter"/>
+        </rollback>
+    </changeSet>
+
+    <!-- 6) domain_value -->
+    <changeSet id="s1-06-create-domain-value" author="datarun">
+        <createTable tableName="domain_value">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="domain_concept_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="submission_uid" type="varchar(26)"/>
+            <column name="repeat_instance_id" type="varchar(26)"/>
+            <column name="value_text" type="text"/>
+            <column name="value_num" type="numeric"/>
+            <column name="value_bool" type="boolean"/>
+            <column name="value_ts" type="timestamptz"/>
+            <column name="value_array" type="jsonb"/>
+            <column name="source_element_data_value_id" type="bigint"/>
+            <column name="etl_run_id" type="uuid"/>
+            <column name="mapping_uid" type="varchar(32)"/>
+            <column name="mapping_version" type="varchar(32)"/>
+            <column name="idempotency_key" type="varchar(128)"/>
+            <column name="created_at" type="timestamptz" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="deleted_at" type="timestamptz"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="domain_value"
+                                 baseColumnNames="domain_concept_id"
+                                 referencedTableName="domain_concept"
+                                 referencedColumnNames="id"
+                                 constraintName="fk_domainvalue_domainconcept"/>
+
+        <createIndex indexName="ix_domainvalue_domain_concept" tableName="domain_value">
+            <column name="domain_concept_id"/>
+        </createIndex>
+
+        <createIndex indexName="ix_domainvalue_submission" tableName="domain_value">
+            <column name="submission_uid"/>
+        </createIndex>
+
+        <createIndex indexName="ix_domainvalue_sourceedv" tableName="domain_value">
+            <column name="source_element_data_value_id"/>
+        </createIndex>
+
+        <!-- idempotency unique index - you may want to make partial index to exclude nulls -->
+        <createIndex indexName="ux_domainvalue_idempotency_key" tableName="domain_value" unique="true">
+            <column name="idempotency_key"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="domain_value"/>
+        </rollback>
+    </changeSet>
+
+    <!-- 7) add idempotency_key to repeat_instance -->
+    <changeSet id="s1-07-add-idempotency-to-repeat" author="datarun">
+        <addColumn tableName="repeat_instance">
+            <column name="idempotency_key" type="varchar(128)"/>
+        </addColumn>
+
+        <!-- populate idempotency_key for existing rows using submission_uid and client repeat id if present.
+             NOTE: adjust JSON access expression according to how client_repeat_id is stored -->
+        <sql>
+            UPDATE repeat_instance
+            SET idempotency_key = encode(sha256(concat_ws('|', COALESCE(submission_uid,''), COALESCE((repeat_section_label->>'client_repeat_id')::text,''))), 'hex')
+            WHERE idempotency_key IS NULL;
+        </sql>
+
+        <createIndex indexName="ux_repeatinstance_idempotency" tableName="repeat_instance" unique="true">
+            <column name="idempotency_key"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex indexName="ux_repeatinstance_idempotency" tableName="repeat_instance"/>
+            <dropColumn tableName="repeat_instance" columnName="idempotency_key"/>
+        </rollback>
+    </changeSet>
+
+    <!-- 8) add idempotency_key to element_data_value -->
+    <changeSet id="s1-08-add-idempotency-to-element-data-value" author="datarun">
+        <addColumn tableName="element_data_value">
+            <column name="idempotency_key" type="varchar(128)"/>
+        </addColumn>
+
+        <!-- populate idempotency_key for existing rows. Adjust fields if your schema stores repeat instance client id separately -->
+        <sql>
+            UPDATE element_data_value edv
+            SET idempotency_key = encode(
+                sha256(
+                    concat_ws('|',
+                              COALESCE(edv.repeat_instance_id::text,''),
+                              COALESCE(edv.semantic_path,''),
+                              COALESCE(edv.element_uid,''),
+                              COALESCE(edv.created_date::text,'')
+                    )
+                ), 'hex')
+            WHERE idempotency_key IS NULL;
+        </sql>
+
+        <createIndex indexName="ux_elementdatavalue_idempotency" tableName="element_data_value" unique="true">
+            <column name="idempotency_key"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex indexName="ux_elementdatavalue_idempotency" tableName="element_data_value"/>
+            <dropColumn tableName="element_data_value" columnName="idempotency_key"/>
+        </rollback>
+    </changeSet>
+
+    <!-- 9) seed a few domain_concept sample rows (safe to run in dev). Adjust UIDs as needed -->
+    <changeSet id="s1-09-seed-domain-concepts" author="datarun" runOnChange="true">
+        <insert tableName="domain_concept">
+            <column name="id" valueComputed="gen_random_uuid()"/>
+            <column name="concept_uid" value="person.age"/>
+            <column name="canonical_name" value="Person Age"/>
+            <column name="description" value="Age of person (years) derived from household form"/>
+            <column name="semantic_tags" value="{'demography','age'}"/>
+            <column name="created_by" value="system"/>
+        </insert>
+        <insert tableName="domain_concept">
+            <column name="id" valueComputed="gen_random_uuid()"/>
+            <column name="concept_uid" value="person.is_adult"/>
+            <column name="canonical_name" value="Person Is Adult"/>
+            <column name="description" value="Derived boolean whether person is adult (>=18)"/>
+            <column name="semantic_tags" value="{'demography','derived'}"/>
+            <column name="created_by" value="system"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="domain_concept">
+                <where>concept_uid IN ('person.age','person.is_adult')</where>
+            </delete>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

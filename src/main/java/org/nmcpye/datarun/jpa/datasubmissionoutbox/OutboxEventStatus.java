@@ -8,5 +8,6 @@ public enum OutboxEventStatus {
     PENDING,
     PROCESSING,
     DONE,
-    FAILED
+    FAILED,
+    DLQ
 }

@@ -1,0 +1,302 @@
+{
+  "uid": "Tcf3Ks9ZRpB",
+  "versionUid": "fb2GC7FInSu",
+  "versionNumber": 28,
+  "name": "استمارة توزيع الناموسيات | منازل | فريق ميداني",
+  "deleted": false,
+  "fields": [
+    {
+      "parent": "mainSection",
+      "name": "workDay",
+      "code": "workday",
+      "order": 1,
+      "type": "SelectOne",
+      "optionSet": "LT0LMYKsxhO"
+    },
+    {
+      "parent": "mainSection",
+      "name": "status",
+      "code": "status",
+      "order": 2,
+      "type": "Progress"
+    },
+    {
+      "parent": "completion_details",
+      "name": "completionStatus",
+      "code": "completionstatus",
+      "order": 4,
+      "type": "SelectOne",
+      "optionSet": "Jqv9zYnY4vv"
+    },
+    {
+      "parent": "completion_details",
+      "name": "completionPercentage",
+      "code": "completionpercentage",
+      "label": {
+        "en": "Completion Percentage",
+        "ar": "% نسبة الاكتمال بالمئة"
+      },
+      "order": 5,
+      "type": "IntegerZeroOrPositive"
+    },
+    {
+      "parent": "households_information",
+      "name": "settlement",
+      "code": "settlement",
+      "label": {
+        "en": "Setllement Type",
+        "ar": "نوع التجمع"
+      },
+      "order": 17,
+      "type": "SelectOne",
+      "optionSet": "nkgnfzZXT6Y"
+    },
+    {
+      "parent": "householdnames",
+      "name": "householdHeadSerialNumber",
+      "code": "householdheadserialnumber",
+      "label": {
+        "en": "Household Number (Card Number)",
+        "ar": "رقم المنزل"
+      },
+      "order": 19,
+      "type": "IntegerPositive"
+    },
+    {
+      "parent": "householdnames",
+      "name": "inputmethod",
+      "code": "inputmethod",
+      "label": {
+        "en": "inputmethod",
+        "ar": "طريقة الادخال"
+      },
+      "order": 20,
+      "type": "SelectOne",
+      "optionSet": "O4LlcyabRNs"
+    },
+    {
+      "parent": "householdnames",
+      "name": "householdName",
+      "code": "householdname",
+      "label": {
+        "en": "Household Name",
+        "ar": "اسم صاحب المنزل رباعيا"
+      },
+      "order": 21,
+      "type": "FullName"
+    },
+    {
+      "parent": "householdnames",
+      "name": "householdReference",
+      "code": "householdreference",
+      "label": {
+        "en": "Household Reference",
+        "ar": "مرجع رب المنزل"
+      },
+      "order": 22,
+      "type": "Reference",
+      "resourceType": "OrgUnit",
+      "resourceMetadataSchema": "yHRk5tsCEK4"
+    },
+    {
+      "parent": "householdnames",
+      "name": "population",
+      "code": "population",
+      "label": {
+        "en": "Total Population",
+        "ar": "عدد السكان"
+      },
+      "order": 23,
+      "type": "IntegerPositive",
+      "validationRule": {
+        "expression": "#{population} != #{femalePopulation} + #{malePopulation}",
+        "validationMessage": {
+          "ar": "مجموع الذكور والإناث يجب أن يساوي عدد السكان الكلي.",
+          "en": "Males + Females must equal Total Population."
+        }
+      },
+      "constraint": "#{population} != #{femalePopulation} + #{malePopulation}",
+      "constraintMessage": {
+        "ar": "مجموع الذكور والإناث يجب أن يساوي عدد السكان الكلي.",
+        "en": "Males + Females must equal Total Population."
+      }
+    },
+    {
+      "parent": "householdnames",
+      "name": "malePopulation",
+      "code": "malepopulation",
+      "label": {
+        "en": "Male Population",
+        "ar": "سكان-ذكور"
+      },
+      "order": 24,
+      "type": "IntegerZeroOrPositive"
+    },
+    {
+      "parent": "householdnames",
+      "name": "femalePopulation",
+      "code": "femalepopulation",
+      "label": {
+        "en": "Female Population",
+        "ar": "سكان-إناث"
+      },
+      "order": 25,
+      "type": "IntegerZeroOrPositive"
+    },
+    {
+      "parent": "householdnames",
+      "name": "pregnantWomen",
+      "code": "pregnantwomen",
+      "label": {
+        "en": "Pregnant Women",
+        "ar": "حوامل"
+      },
+      "order": 26,
+      "type": "IntegerZeroOrPositive",
+      "validationRule": {
+        "expression": "#{pregnantWomen} > #{femalePopulation}",
+        "validationMessage": {
+          "ar": "عدد الحوامل لا يمكن أن يتجاوز عدد الإناث.",
+          "en": "Pregnant women cannot exceed total females."
+        }
+      },
+      "constraint": "#{pregnantWomen} > #{femalePopulation}",
+      "constraintMessage": {
+        "ar": "عدد الحوامل لا يمكن أن يتجاوز عدد الإناث.",
+        "en": "Pregnant women cannot exceed total females."
+      }
+    },
+    {
+      "parent": "householdnames",
+      "name": "childrenMaleCount",
+      "code": "childrenmalecount",
+      "label": {
+        "en": "Children (Male)",
+        "ar": "أطفال-ذكور"
+      },
+      "order": 27,
+      "type": "IntegerZeroOrPositive",
+      "validationRule": {
+        "expression": "#{childrenMaleCount} > #{malePopulation}",
+        "validationMessage": {
+          "ar": "عدد الأطفال الذكور لا يمكن أن يتجاوز عدد الذكور الكلي.",
+          "en": "Male children cannot exceed total males."
+        }
+      },
+      "constraint": "#{childrenMaleCount} > #{malePopulation}",
+      "constraintMessage": {
+        "ar": "عدد الأطفال الذكور لا يمكن أن يتجاوز عدد الذكور الكلي.",
+        "en": "Male children cannot exceed total males."
+      }
+    },
+    {
+      "parent": "householdnames",
+      "name": "childrenFemaleCount",
+      "code": "childrenfemalecount",
+      "label": {
+        "en": "Children (Female)",
+        "ar": "أطفال-إناث"
+      },
+      "order": 28,
+      "type": "IntegerZeroOrPositive",
+      "validationRule": {
+        "expression": "#{childrenFemaleCount} + #{pregnantWomen} > #{femalePopulation}",
+        "validationMessage": {
+          "ar": "عدد الأطفال الإناث والحوامل يجب أن يكون أصغر من أو يساوي عدد الإناث",
+          "en": "The number of female children and pregnant women must be less than or equal to the female population"
+        }
+      },
+      "constraint": "#{childrenFemaleCount} + #{pregnantWomen} > #{femalePopulation}",
+      "constraintMessage": {
+        "ar": "عدد الأطفال الإناث والحوامل يجب أن يكون أصغر من أو يساوي عدد الإناث",
+        "en": "The number of female children and pregnant women must be less than or equal to the female population"
+      }
+    },
+    {
+      "parent": "householdnames",
+      "name": "displacedResidentsCount",
+      "code": "displacedresidentscount",
+      "label": {
+        "en": "Number of Displaced Residents",
+        "ar": "النازحين"
+      },
+      "order": 29,
+      "type": "IntegerZeroOrPositive",
+      "validationRule": {
+        "expression": "#{displacedResidentsCount} > #{population}",
+        "validationMessage": {
+          "ar": "عدد النازحين لا يمكن أن يتجاوز عدد السكان الكلي.",
+          "en": "Displaced residents cannot exceed total population."
+        }
+      },
+      "constraint": "#{displacedResidentsCount} > #{population}",
+      "constraintMessage": {
+        "ar": "عدد النازحين لا يمكن أن يتجاوز عدد السكان الكلي.",
+        "en": "Displaced residents cannot exceed total population."
+      }
+    },
+    {
+      "parent": "householdnames",
+      "name": "itns",
+      "code": "itns",
+      "label": {
+        "en": "Received Nets",
+        "ar": "الناموسيات"
+      },
+      "order": 30,
+      "type": "IntegerPositive",
+      "validationRule": {
+        "expression": "#{itns} > #{population}",
+        "validationMessage": {
+          "ar": "لايمكن ان يكون عدد الناموسيات اكبر من اجمالي عدد السكان",
+          "en": "The number of mosquito nets received cannot exceed the total population"
+        }
+      },
+      "constraint": "#{itns} > #{population}",
+      "constraintMessage": {
+        "ar": "لايمكن ان يكون عدد الناموسيات اكبر من اجمالي عدد السكان",
+        "en": "The number of mosquito nets received cannot exceed the total population"
+      }
+    }
+  ],
+  "sections": [
+    {
+      "name": "mainSection",
+      "label": {
+        "en": "Work Date and Day",
+        "ar": "بيانات أساسية"
+      },
+      "order": 0,
+      "repeatable": false,
+    },
+    {
+      "name": "households_information",
+      "label": {
+        "en": "Households Information",
+        "ar": "معلومات المنازل"
+      },
+      "order": 16,
+      "repeatable": false,
+    },
+    {
+      "parent": "households_information",
+      "name": "householdnames",
+      "label": {
+        "en": "Household Data",
+        "ar": "بيانات المنازل"
+      },
+      "order": 18,
+      "repeatable": true,
+    },
+    {
+      "name": "completion_details",
+      "label": {
+        "en": "Completion Details",
+        "ar": "معلومات اكتمال التوزيع"
+      },
+      "order": 3,
+      "repeatable": false,
+    }
+  ],
+  "code": "LLINS_DISTRIBUTION_FORM"
+}

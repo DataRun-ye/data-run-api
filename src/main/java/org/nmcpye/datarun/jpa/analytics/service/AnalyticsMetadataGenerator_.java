@@ -7,7 +7,7 @@
 //import org.nmcpye.datarun.analytics.metadata.AllowedAggregationsResolver;
 //import org.nmcpye.datarun.analytics.dto.Aggregation;
 //import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
-//import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
+//import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 //import org.nmcpye.datarun.jpa.datatemplate.repository.ElementTemplateConfigRepository;
 //import org.nmcpye.datarun.jpa.etl.analytics.domain.AnalyticsAttribute;
 //import org.nmcpye.datarun.jpa.etl.analytics.domain.AnalyticsSource;
@@ -61,12 +61,12 @@
 //            log.warn("Deleted {} stale attributes for template version: {}", deletedCount, templateVersionUid);
 //        }
 //
-//        List<ElementTemplateConfig> configs = etcRepository.findByTemplateVersionUid(templateVersionUid);
+//        List<TemplateElement> configs = etcRepository.findByTemplateVersionUid(templateVersionUid);
 //        List<AnalyticsAttribute> attributesToSave = new ArrayList<>();
 //
-//        // 2. Generate attributes from each ElementTemplateConfig.
-//        for (ElementTemplateConfig etc : configs) {
-//            if (etc.getElementKind() == ElementTemplateConfig.ElementKind.REPEAT) {
+//        // 2. Generate attributes from each TemplateElement.
+//        for (TemplateElement etc : configs) {
+//            if (etc.getElementKind() == TemplateElement.ElementKind.REPEAT) {
 //                attributesToSave.add(createRepeatGroupAttribute(etc));
 //            }
 //            if (Boolean.TRUE.equals(etc.getIsDimension())) {
@@ -86,7 +86,7 @@
 //        log.info("Successfully generated and saved {} attributes for template version: {}", attributesToSave.size(), templateVersionUid);
 //    }
 //
-//    private AnalyticsAttribute createRepeatGroupAttribute(ElementTemplateConfig etc) {
+//    private AnalyticsAttribute createRepeatGroupAttribute(TemplateElement etc) {
 //        AnalyticsAttribute attr = new AnalyticsAttribute();
 //        String uid = "repeat_" + etc.getSemanticPath().replace('.', '_'); // e.g., repeat_household_members
 //
@@ -108,7 +108,7 @@
 //            .build();
 //    }
 //
-//    private AnalyticsAttribute createDimensionAttribute(ElementTemplateConfig etc, AnalyticsSource source) {
+//    private AnalyticsAttribute createDimensionAttribute(TemplateElement etc, AnalyticsSource source) {
 //        AnalyticsAttribute attr = new AnalyticsAttribute();
 //        attr.setUid("dim_de_" + etc.getUid()); // e.g., dim_de_fA8w3k2Yp1
 //        attr.setAttributeType(AttributeType.DIMENSION);
@@ -154,7 +154,7 @@
 //        return attr;
 //    }
 //
-//    private List<AnalyticsAttribute> createMeasureAttributes(ElementTemplateConfig etc, AnalyticsSource source) {
+//    private List<AnalyticsAttribute> createMeasureAttributes(TemplateElement etc, AnalyticsSource source) {
 //        if (!etc.getValueType().isNumeric()) {
 //            return List.of();
 //        }
@@ -165,7 +165,7 @@
 //    }
 //
 //
-//    private AnalyticsAttribute buildMeasure(ElementTemplateConfig etc, AnalyticsSource source, Aggregation aggType) {
+//    private AnalyticsAttribute buildMeasure(TemplateElement etc, AnalyticsSource source, Aggregation aggType) {
 //        AnalyticsAttribute attr = new AnalyticsAttribute();
 //        attr.setUid("meas_de_" + etc.getUid() + "_" + aggType.name().toLowerCase()); // e.g., meas_de_fA8w3k2Yp1_sum
 //        attr.setAggregationType(aggType);
@@ -249,7 +249,7 @@
 //
 //
 //    // --- Utility Methods ---
-//    private String findParentRepeatGroupUid(ElementTemplateConfig etc) {
+//    private String findParentRepeatGroupUid(TemplateElement etc) {
 //        // This method would traverse up the `etc` hierarchy until it finds the parent
 //        // that has `isRepeat() == true` and returns its generated UID.
 //        // For now, a placeholder:

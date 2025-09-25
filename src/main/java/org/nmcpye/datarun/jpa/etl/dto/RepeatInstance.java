@@ -48,8 +48,12 @@ public class RepeatInstance {
      */
     protected String id;
 
-    private String semanticPath;
-    
+    protected String etcUid;
+
+    private String canonicalPath;
+    private String manifestUid;
+    private String canonicalElementUid;
+
     // ------------------------
     // LEVEL 2: Repeat Dimensions
     // ------------------------

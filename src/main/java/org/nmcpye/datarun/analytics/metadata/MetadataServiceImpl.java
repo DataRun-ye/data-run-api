@@ -8,8 +8,8 @@ import org.nmcpye.datarun.analytics.dto.QueryableElement;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
-import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
-import org.nmcpye.datarun.jpa.datatemplate.repository.ElementTemplateConfigRepository;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
+import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateElementRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 /**
  * Implementation notes for PivotMetadataServiceImpl:
  * <p>
- * - Should load all ElementTemplateConfig rows for templateUid+templateVersionUid, batch-load their DataElement metadata,
+ * - Should load all TemplateElement rows for templateUid+templateVersionUid, batch-load their DataElement metadata,
  * and produce a list of QueryableElement objects:
  * <pre>
  * - QueryableElement.sourceColumn must map to the materialized view column (e.g., "etc_uid", "value_num", "option_uid", "value_ts", "team_uid").
@@ -40,7 +40,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class MetadataServiceImpl implements MetadataService {
 
-    private final ElementTemplateConfigRepository etcRepository;
+    private final TemplateElementRepository etcRepository;
     private final DataElementRepository dataElementRepository;
     private final AllowedAggregationsResolver aggrResolver;
 
@@ -56,10 +56,10 @@ public class MetadataServiceImpl implements MetadataService {
         Objects.requireNonNull(templateUid, "templateUid is required");
         Objects.requireNonNull(templateVersionUid, "templateVersionUid is required");
 
-        List<ElementTemplateConfig> etcRows = etcRepository.findAllByTemplateUidAndTemplateVersionUid(templateUid, templateVersionUid);
+        List<TemplateElement> etcRows = etcRepository.findAllByTemplateUidAndTemplateVersionUid(templateUid, templateVersionUid);
 
         Set<String> dataElementUids = etcRows.stream()
-            .map(ElementTemplateConfig::getDataElementUid)
+            .map(TemplateElement::getDataElementUid)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
 
@@ -70,7 +70,7 @@ public class MetadataServiceImpl implements MetadataService {
 
         // STEP 1: Build DTOs for template-specific fields.
         List<QueryableElement> templateFields = etcRows.stream().map(etc -> {
-            if (etc.getElementKind() == ElementTemplateConfig.ElementKind.REPEAT) {
+            if (etc.getElementKind() == TemplateElement.ElementKind.REPEAT) {
                 return buildForRepeat(etc);
             }
             return buildForField(etc, dataElementMap);
@@ -92,17 +92,17 @@ public class MetadataServiceImpl implements MetadataService {
 
 
 
-    private QueryableElement buildForRepeat(ElementTemplateConfig etc) {
+    private QueryableElement buildForRepeat(TemplateElement etc) {
         Map<String, Object> extras = buildExtras(etc, null); // Pass DE for richer extras
 
         return QueryableElement.builder()
-            .id("etc:" + etc.getSemanticPath()) // NEW: Standardized ID
+            .id("etc:" + etc.getCanonicalPath()) // NEW: Standardized ID
             .name(etc.getName())
             .label(etc.getDisplayLabel())
 //            .dataType(resolveDataType(etc, de))
             .sourceColumn("semantic_path") // The column used for predicates and grouping
-            .displayGroup(etc.getAncestorRepeatSemanticPath() != null ?
-                etc.getAncestorRepeatSemanticPath() : "Template")
+            .displayGroup(etc.getParentRepeatCanonicalPath() != null ?
+                etc.getParentRepeatCanonicalPath() : "Template")
             .isSortable(false)
             .isDimension(true)
             .aggregationModes(Collections.emptySet())
@@ -110,7 +110,7 @@ public class MetadataServiceImpl implements MetadataService {
             .build();
     }
 
-    private QueryableElement buildForField(ElementTemplateConfig etc, Map<String, DataElement> dataElementMap) {
+    private QueryableElement buildForField(TemplateElement etc, Map<String, DataElement> dataElementMap) {
         DataElement de = dataElementMap.get(etc.getDataElementUid());
 
         Map<String, Object> extras = buildExtras(etc, de); // Pass DE for richer extras
@@ -130,8 +130,8 @@ public class MetadataServiceImpl implements MetadataService {
             .dataType(resolveDataType(etc, de))
             .sourceColumn("etc_uid") // The column used for predicates and grouping
             .deUid(etc.getDataElementUid())
-            .displayGroup(etc.getAncestorRepeatSemanticPath() != null ?
-                etc.getAncestorRepeatSemanticPath() : "Template")
+            .displayGroup(etc.getParentRepeatCanonicalPath() != null ?
+                etc.getParentRepeatCanonicalPath() : "Template")
             .isSortable(etc.getValueType().isNumeric())
             .isDimension(etc.getIsDimension())
             .aggregationModes(aggrResolver.allowedFor(de != null ? de.getValueType() : null))
@@ -192,14 +192,14 @@ public class MetadataServiceImpl implements MetadataService {
     /**
      * NEW: Helper to build the extras map, now including resolution info for options.
      */
-    private Map<String, Object> buildExtras(ElementTemplateConfig etc, DataElement de) {
+    private Map<String, Object> buildExtras(TemplateElement etc, DataElement de) {
         Map<String, Object> extras = new HashMap<>();
         extras.put("isMulti", Boolean.TRUE.equals(etc.getIsMulti()));
         extras.put("isReference", Boolean.TRUE.equals(etc.getIsReference()));
-        extras.put("isRepeat", etc.getElementKind() == ElementTemplateConfig.ElementKind.REPEAT);
+        extras.put("isRepeat", etc.getElementKind() == TemplateElement.ElementKind.REPEAT);
         extras.put("repeatPath", etc.getAncestorRepeatPath());
-        extras.put("semanticRepeatPath", etc.getAncestorRepeatSemanticPath());
-        extras.put("semanticPath", etc.getSemanticPath());
+        extras.put("semanticRepeatPath", etc.getParentRepeatCanonicalPath());
+        extras.put("semanticPath", etc.getCanonicalPath());
 
         // Add resolution metadata for Option Sets to drive the UI
         if (de != null && de.getOptionSet() != null) {
@@ -228,7 +228,7 @@ public class MetadataServiceImpl implements MetadataService {
      * This method returns one of the pivot dataType strings used across the analytics stack:
      * - "value_num", "value_bool", "option_uid", "value_ts", "value_text", "team_uid", ...
      */
-    private DataType resolveDataType(ElementTemplateConfig etc, DataElement de) {
+    private DataType resolveDataType(TemplateElement etc, DataElement de) {
         // prefer DataElement (immutable) for type inference
         if (de != null) {
             return switch (de.getValueType()) {

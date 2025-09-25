@@ -266,6 +266,10 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.ehcache</groupId>
             <artifactId>ehcache</artifactId>
             <classifier>jakarta</classifier>
@@ -464,7 +468,7 @@
             <plugin>
                 <groupId>org.jooq</groupId>
                 <artifactId>jooq-codegen-maven</artifactId>
-<!--                <version>${jooq.version}</version>-->
+                <version>${jooq.version}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -976,7 +980,6 @@
                             <version>${spring-boot.version}</version>
                         </dependency>
                     </dependencies>
-<!--                    <version>${jooq.version}</version>-->
                     <executions>
                         <execution>
                             <id>generate-jooq</id>

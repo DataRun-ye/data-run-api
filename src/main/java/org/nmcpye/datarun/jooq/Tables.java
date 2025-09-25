@@ -4,61 +4,7 @@
 package org.nmcpye.datarun.jooq;
 
 
-import org.nmcpye.datarun.jooq.tables.AclClass;
-import org.nmcpye.datarun.jooq.tables.AclEntry;
-import org.nmcpye.datarun.jooq.tables.AclObjectIdentity;
-import org.nmcpye.datarun.jooq.tables.AclSid;
-import org.nmcpye.datarun.jooq.tables.Activity;
-import org.nmcpye.datarun.jooq.tables.AppAuthority;
-import org.nmcpye.datarun.jooq.tables.AppEntityAuditEvent;
-import org.nmcpye.datarun.jooq.tables.AppUser;
-import org.nmcpye.datarun.jooq.tables.AppUserAuthority;
-import org.nmcpye.datarun.jooq.tables.AppUserRoleMembers;
-import org.nmcpye.datarun.jooq.tables.Assignment;
-import org.nmcpye.datarun.jooq.tables.BatchJobExecution;
-import org.nmcpye.datarun.jooq.tables.BatchJobExecutionContext;
-import org.nmcpye.datarun.jooq.tables.BatchJobExecutionParams;
-import org.nmcpye.datarun.jooq.tables.BatchJobInstance;
-import org.nmcpye.datarun.jooq.tables.BatchStepExecution;
-import org.nmcpye.datarun.jooq.tables.BatchStepExecutionContext;
-import org.nmcpye.datarun.jooq.tables.DataElement;
-import org.nmcpye.datarun.jooq.tables.DataElementGroup;
-import org.nmcpye.datarun.jooq.tables.DataElementGroupMembers;
-import org.nmcpye.datarun.jooq.tables.DataElementGroupset;
-import org.nmcpye.datarun.jooq.tables.DataElementGroupsetGroups;
-import org.nmcpye.datarun.jooq.tables.DataSubmission;
-import org.nmcpye.datarun.jooq.tables.DataTemplate;
-import org.nmcpye.datarun.jooq.tables.DataTemplateVersion;
-import org.nmcpye.datarun.jooq.tables.ElementDataValue;
-import org.nmcpye.datarun.jooq.tables.ElementTemplateConfig;
-import org.nmcpye.datarun.jooq.tables.MigrationErrors;
-import org.nmcpye.datarun.jooq.tables.OptionGroup;
-import org.nmcpye.datarun.jooq.tables.OptionGroupSet;
-import org.nmcpye.datarun.jooq.tables.OptionGroup_Options;
-import org.nmcpye.datarun.jooq.tables.OptionGroupset_OptionGroup;
-import org.nmcpye.datarun.jooq.tables.OptionSet;
-import org.nmcpye.datarun.jooq.tables.OptionValue;
-import org.nmcpye.datarun.jooq.tables.OrgUnit;
-import org.nmcpye.datarun.jooq.tables.OrgUnitGroup;
-import org.nmcpye.datarun.jooq.tables.OrgUnitGroupMembers;
-import org.nmcpye.datarun.jooq.tables.OrgUnitGroupset;
-import org.nmcpye.datarun.jooq.tables.OrgUnitGroupsetOrgUnitGroup;
-import org.nmcpye.datarun.jooq.tables.OrgUnitHierarchy;
-import org.nmcpye.datarun.jooq.tables.OuLevel;
-import org.nmcpye.datarun.jooq.tables.OutboxEvent;
-import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
-import org.nmcpye.datarun.jooq.tables.Project;
-import org.nmcpye.datarun.jooq.tables.RefreshToken;
-import org.nmcpye.datarun.jooq.tables.RepeatInstance;
-import org.nmcpye.datarun.jooq.tables.Role;
-import org.nmcpye.datarun.jooq.tables.RolePrivilege;
-import org.nmcpye.datarun.jooq.tables.RolePrivilegeMembers;
-import org.nmcpye.datarun.jooq.tables.Team;
-import org.nmcpye.datarun.jooq.tables.TeamManagedTeams;
-import org.nmcpye.datarun.jooq.tables.TeamUser;
-import org.nmcpye.datarun.jooq.tables.UserGroup;
-import org.nmcpye.datarun.jooq.tables.UserGroupManagedGroups;
-import org.nmcpye.datarun.jooq.tables.UserGroupUsers;
+import org.nmcpye.datarun.jooq.tables.*;
 
 
 /**
@@ -198,7 +144,7 @@ public class Tables {
     public static final ElementDataValue ELEMENT_DATA_VALUE = ElementDataValue.ELEMENT_DATA_VALUE;
 
     /**
-     * The table <code>public.element_template_config</code>.
+     * The table <code>public.template_element</code>.
      */
     public static final ElementTemplateConfig ELEMENT_TEMPLATE_CONFIG = ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG;
 

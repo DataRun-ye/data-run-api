@@ -34,14 +34,15 @@ public class ElementDataValue {
      */
     private Long id;
 
-    private String semanticPath;
+    private String canonicalPath;
 
     /**
      * Reference to the element configuration that produced this value.
-     * db: {@code element_template_config_uid, not null}
+     * db: {@code template_element_config_uid, not null}
      */
-    private String elementTemplateConfigUid;
+    private String etcUid;
 
+    private String manifestUid;
     // ------------------------
     // Submission & Context
     // ------------------------
@@ -88,7 +89,7 @@ public class ElementDataValue {
      * Global data element id (canonical DataElement.id).
      * db: {@code element_id, not null}
      */
-    private String elementUid;
+    private String canonicalElementUid;
 
     /**
      * element value type i.e Text, Number, DateTime, Team, OrgUnit, ...etc
@@ -176,6 +177,8 @@ public class ElementDataValue {
      * db: {@code value_as_text}
      */
     private String valueAsText;
+
+    private String valueArray;
     // ------------------------
     // Auditing & lifecycle
     // ------------------------

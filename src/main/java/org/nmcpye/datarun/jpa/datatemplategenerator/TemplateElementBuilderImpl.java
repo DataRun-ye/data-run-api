@@ -8,7 +8,7 @@ import org.nmcpye.datarun.datatemplateelement.AggregationType;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
-import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Builds ElementTemplateConfig instances. Keeps responsibility small: mapping / normalization.
+ * Builds TemplateElement instances. Keeps responsibility small: mapping / normalization.
  * Persistence is delegated to Publisher.
  *
  * @author Hamza Assada
@@ -25,35 +25,38 @@ import java.util.Objects;
  */
 @Component
 @Slf4j
-public class ElementConfigBuilderImpl implements ElementConfigBuilder {
+public class TemplateElementBuilderImpl implements TemplateElementBuilder {
 
     private final ObjectMapper objectMapper;
 
-    public ElementConfigBuilderImpl(ObjectMapper objectMapper) {
+    public TemplateElementBuilderImpl(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
     @Override
-    public ElementTemplateConfig buildFieldConfigFromFormConf(FormDataElementConf f, PathMetadata meta, TemplateVersion templateVersion) {
+    public TemplateElement buildTemplateElementFromField(FormDataElementConf f,
+                                                         PathMetadata meta,
+                                                         TemplateVersion templateVersion) {
         Objects.requireNonNull(f);
         Objects.requireNonNull(meta);
         Objects.requireNonNull(templateVersion);
 
-        var cfg = ElementTemplateConfig.builder()
+        var cfg = TemplateElement.builder()
             .templateUid(templateVersion.getTemplateUid())
             .templateVersionUid(templateVersion.getUid())
             .versionNo(templateVersion.getVersionNumber())
-            .elementKind(ElementTemplateConfig.ElementKind.FIELD)
+            .elementKind(TemplateElement.ElementKind.FIELD)
             // canonical data element uid (FormElementConf.id == DataElement.uid)
             .dataElementUid(f.getId())
             .name(f.getName())
             // paths
             .idPath(meta.getIdPath())
             .namePath(meta.getNamePath())
-            .semanticPath(meta.getSemanticPath())
+            .canonicalPath(meta.getSemanticPath())
             .hasRepeatAncestor(meta.getHasAncestorRepeat())
+            .cardinality(meta.getHasAncestorRepeat() != null ? "N" : "1")
             .ancestorRepeatPath(meta.getRepeatAncestorIdPath())
-            .ancestorRepeatSemanticPath(meta.getSemanticRepeatAncestorPath())
+            .parentRepeatCanonicalPath(meta.getSemanticRepeatAncestorPath())
             // copy simple flags with precedence: template override (FormDataElementConf) -> canonical DE (assumed copied into conf)
             .isMulti(isSelectMulti(f))
             .isMeasure(resolveIsMeasure(f))
@@ -63,28 +66,29 @@ public class ElementConfigBuilderImpl implements ElementConfigBuilder {
             // copy immutable canonical metadata (available in FormDataElementConf snapshot)
             .valueType(f.getType())
             .optionSetUid(f.getOptionSet())
+            .isReference(f.getType().isSystemReferenceType())
             // labels & definition snapshot (store as whatever structure definition holds)
             .displayLabel(f.getLabel())
             .definitionJson(getDefinitionSnapshot(f))
             // compute deterministic uid for config row and path_hash
-            .pathHash(HashUtil.hashToLong(templateVersion.getUid() + ":" + meta.getIdPath()))
+//            .pathHash(HashUtil.hashToLong(templateVersion.getUid() + ":" + meta.getIdPath()))
             .isReference(determineIsReference(f));
         // default audit fields left to publisher or DB triggers
         return cfg.build();
     }
 
     @Override
-    public ElementTemplateConfig buildRepeatConfigFromSection(FormSectionConf section,
-                                                              PathMetadata meta,
-                                                              TemplateVersion templateVersion) {
+    public TemplateElement buildTemplateElementFromRepeat(FormSectionConf section,
+                                                          PathMetadata meta,
+                                                          TemplateVersion templateVersion) {
         Objects.requireNonNull(section);
         Objects.requireNonNull(meta);
         Objects.requireNonNull(templateVersion);
 
-        var cfg = ElementTemplateConfig.builder().templateUid(templateVersion.getTemplateUid()).templateVersionUid(templateVersion.getUid())
+        var cfg = TemplateElement.builder().templateUid(templateVersion.getTemplateUid()).templateVersionUid(templateVersion.getUid())
             .versionNo(templateVersion.getVersionNumber())
 
-            .elementKind(ElementTemplateConfig.ElementKind.REPEAT);
+            .elementKind(TemplateElement.ElementKind.REPEAT);
 
 
         // synthetic dataElementUid for repeat grain
@@ -93,14 +97,15 @@ public class ElementConfigBuilderImpl implements ElementConfigBuilder {
             .idPath(meta.getIdPath())
             .namePath(meta.getNamePath())
             .name(section.getName())
-            .semanticPath(meta.getSemanticPath())
+            .canonicalPath(meta.getSemanticPath())
+            .categoryId(section.getCategoryId())
             .hasRepeatAncestor(meta.getHasAncestorRepeat())
             .ancestorRepeatPath(meta.getRepeatAncestorIdPath())
-            .ancestorRepeatSemanticPath(meta.getSemanticRepeatAncestorPath())
+            .parentRepeatCanonicalPath(meta.getSemanticRepeatAncestorPath())
             .definitionJson(getDefinitionSnapshot(section))
             .displayLabel(section.getLabel())
-            .sortOrder(section.getOrder())
-            .pathHash(HashUtil.hashToLong(templateVersion.getUid() + ":" + meta.getIdPath()))
+            .sortOrder(section.getOrder());
+//            .pathHash(HashUtil.hashToLong(templateVersion.getUid() + ":" + meta.getIdPath()));
 //            .uid(generateElementConfigUid(templateVersion.getUid(), meta.getIdPath()))
             // repeat identity config: prefer explicit properties on section, fallback to defaults
 //                .repeatIdField(section.getRepeatIdField() != null ? section.getRepeatIdField() : "_id")
@@ -108,7 +113,7 @@ public class ElementConfigBuilderImpl implements ElementConfigBuilder {
 //                .repeatGenerateStrategy(section.getRepeatGenerateStrategy() != null ? section.getRepeatGenerateStrategy() : "SERVER_UUID")
 
             // semantic grain points to this repeat
-            .semanticGrain("repeat:" + meta.getIdPath());
+//            .semanticGrain("repeat:" + meta.getIdPath());
 
         return cfg.build();
     }

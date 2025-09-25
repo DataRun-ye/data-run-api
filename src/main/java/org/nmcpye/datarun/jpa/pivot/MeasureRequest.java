@@ -18,7 +18,7 @@
 //@Builder
 //public class MeasureRequest {
 //    /**
-//     * Element identifier (element_id in element_template_config).
+//     * Element identifier (element_id in template_element).
 //     */
 //    private String elementId;
 //

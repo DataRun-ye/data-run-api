@@ -2,6 +2,7 @@ package org.nmcpye.datarun.jpa.datasubmissionoutbox;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Usage in your relay:
@@ -11,28 +12,39 @@ import java.time.Instant;
  *  outboxRepo.reschedule(event.getId(), ex.getMessage(), next);
  * }
  * </pre>
+ *
  * @author Hamza Assada
  * @since 15/08/2025
  */
 public final class BackoffPolicy {
 
-    private final Duration base;      // e.g. 2s
-    private final Duration max;       // e.g. 1h
-    private final double multiplier;  // e.g. 2.0
+    private final int baseSeconds;
+    private final int jitterSeconds;
+    private final int maxSeconds;
 
-    public BackoffPolicy(Duration base, Duration max, double multiplier) {
-        this.base = base;
-        this.max = max;
-        this.multiplier = multiplier;
-    }
 
-    public Instant next(int attempts) {
-        double pow = Math.pow(multiplier, Math.max(0, attempts - 1));
-        long millis = (long) Math.min(base.toMillis() * pow, max.toMillis());
-        return Instant.now().plusMillis(millis);
+    public BackoffPolicy(int baseSeconds, int jitterSeconds, int maxSeconds) {
+        this.baseSeconds = baseSeconds;
+        this.jitterSeconds = jitterSeconds;
+        this.maxSeconds = maxSeconds;
     }
 
     public static BackoffPolicy defaultPolicy() {
-        return new BackoffPolicy(Duration.ofSeconds(2), Duration.ofHours(1), 2.0);
+        return new BackoffPolicy(30, 5, 3600); // base=30s, jitter up to 5s, max=1h
+    }
+
+    /**
+     * Compute next available time for a given attempt number.
+     * attempts: 1 => baseSeconds, 2 => base*2, etc (attempts is the current attempt count, incremented on claim)
+     */
+    public Instant next(int attempts) {
+        if (attempts < 1) attempts = 1;
+        // exponential backoff
+        long delay = (long) baseSeconds * (1L << (Math.max(0, attempts - 1)));
+        if (delay > maxSeconds) delay = maxSeconds;
+        // jitter
+        int jitter = ThreadLocalRandom.current().nextInt(0, jitterSeconds + 1);
+        long total = Math.min(delay + jitter, maxSeconds);
+        return Instant.now().plus(Duration.ofSeconds(total));
     }
 }

@@ -14,7 +14,7 @@ import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
 import org.nmcpye.datarun.jpa.dataelementgroupset.DataElementGroupSet;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
-import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.jpa.option.Option;
@@ -158,7 +158,7 @@ public class CacheConfiguration {
 
             createCache(cm, OptionGroupSet.class.getName());
             createCache(cm, OptionGroupSet.class.getName() + ".optionGroups");
-            createCache(cm, ElementTemplateConfig.class.getName());
+            createCache(cm, TemplateElement.class.getName());
         };
     }
 

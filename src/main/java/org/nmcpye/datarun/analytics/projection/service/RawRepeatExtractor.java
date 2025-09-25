@@ -5,6 +5,7 @@
 //import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 //import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 //import org.nmcpye.datarun.jpa.datatemplate.repository.ElementTemplateConfigRepository;
+//import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateElementRepository;
 //import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 //import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 //import org.springframework.jdbc.core.namedparam.SqlParameterSource;
@@ -23,7 +24,7 @@
 // * RawRepeatExtractor
 // * <p>
 // * Responsibilities:
-// * - Load cached repeat metadata (repeat_uid -> semantic_path) from element_template_config
+// * - Load cached repeat metadata (repeat_uid -> semantic_path) from template_element
 // * - For a given submission UID, extract all repeat arrays and insert rows into raw_repeat_payload
 // * - Be idempotent for a submission+repeat (deletes existing extraction rows before insert)
 // * - Offer a backfill helper to iterate submissions for a single repeat
@@ -47,14 +48,14 @@
 //
 //    // cache repeat metadata to avoid repeated DB hits. Key: repeat_uid -> semantic_path
 //    private final Map<String, String> repeatCache = new ConcurrentHashMap<>();
-//    private final ElementTemplateConfigRepository etcRepo;
+//    private final TemplateElementRepository etcRepo;
 //    private final DataSubmissionRepository submissionRepo;
 //
 //    // batch size for batch insert
 //    private final int batchSize = 500;
 //
 //    public RawRepeatExtractor(NamedParameterJdbcTemplate jdbc, ObjectMapper om,
-//                              ElementTemplateConfigRepository etcRepo,
+//                              TemplateElementRepository etcRepo,
 //                              DataSubmissionRepository submissionRepo) {
 //        this.jdbc = jdbc;
 //        this.om = om;
@@ -178,7 +179,7 @@
 //    }
 //
 //    /**
-//     * Force reload of repeat cache (call after you update element_template_config meta)
+//     * Force reload of repeat cache (call after you update template_element meta)
 //     */
 //    public void reloadRepeatCache() {
 //        repeatCache.clear();

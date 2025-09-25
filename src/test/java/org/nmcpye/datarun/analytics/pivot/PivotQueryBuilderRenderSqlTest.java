@@ -77,7 +77,7 @@
 //            .alias("sum_val")
 //            .targetField(Tables.PIVOT_GRID_FACTS.VALUE_NUM)
 //            .aggregation(Aggregation.SUM)
-////            .elementPredicate(Tables.PIVOT_GRID_FACTS.element_template_config_id.eq(123L))
+////            .elementPredicate(Tables.PIVOT_GRID_FACTS.template_element_config_id.eq(123L))
 //            .distinct(false).build();
 //
 //        Select<?> s = builder.buildSelect(

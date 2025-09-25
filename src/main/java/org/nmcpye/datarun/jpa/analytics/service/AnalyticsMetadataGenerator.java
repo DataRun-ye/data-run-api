@@ -32,8 +32,8 @@ public class AnalyticsMetadataGenerator {
         attributeRepository.deleteAllByTemplateVersionUid(templateVersionUid);
 
         // Step 2: Generate attributes from template's structure (TO BE IMPLEMENTED LATER)
-        // List<ElementTemplateConfig> configs = etcRepository.findByTemplateVersionUid(templateVersionUid);
-        // for (ElementTemplateConfig etc : configs) {
+        // List<TemplateElement> configs = etcRepository.findByTemplateVersionUid(templateVersionUid);
+        // for (TemplateElement etc : configs) {
         //     // Logic for dimensions, measures, and repeats will go here in the next steps.
         // }
 

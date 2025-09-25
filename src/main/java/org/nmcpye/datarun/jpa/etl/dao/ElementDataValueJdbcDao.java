@@ -23,14 +23,14 @@ public class ElementDataValueJdbcDao implements IElementDataValueDao {
     private static final String UPSERT_SQL = """
         INSERT INTO element_data_value (
             semantic_path, submission_uid, assignment_uid, team_uid, org_unit_uid, activity_uid,
-            element_uid, element_template_config_uid, repeat_instance_id, option_uid,
+            canonical_element_uid, manifest_uid, etc_uid, repeat_instance_id, option_uid,
             value_text, value_num, value_bool, value_ts, value_ref_uid, row_type, created_date, last_modified_date, deleted_at
         ) VALUES (
             :semanticPath, :submissionUid, :assignmentUid, :teamUid, :orgUnitUid, :activityUid,
-            :elementUid, :elementTemplateConfigUid, :repeatInstanceId, :optionUid,
+            :canonicalElementUid, :manifestUid, :etcUid, :repeatInstanceId, :optionUid,
             :valueText, :valueNum, :valueBool, :valueTs, :valueRefUid,:rowType, :createdDate, :lastModifiedDate, NULL
         )
-        ON CONFLICT (submission_uid, element_uid, repeat_instance_key, row_type, selection_key)
+        ON CONFLICT (submission_uid, canonical_path, repeat_instance_key, row_type, selection_key)
         DO UPDATE SET
             assignment_uid = EXCLUDED.assignment_uid,
             team_uid = EXCLUDED.team_uid,
@@ -41,7 +41,9 @@ public class ElementDataValueJdbcDao implements IElementDataValueDao {
             value_bool = EXCLUDED.value_bool,
             value_ts = EXCLUDED.value_ts,
             value_ref_uid = EXCLUDED.value_ref_uid,
-            element_template_config_uid = EXCLUDED.element_template_config_uid,
+            etc_uid = EXCLUDED.etc_uid,
+            canonical_element_uid = EXCLUDED.canonical_element_uid,
+           -- manifest_uid = EXCLUDED.manifest_uid,
             last_modified_date = now(),
             deleted_at = NULL;
         """;
@@ -70,14 +72,15 @@ public class ElementDataValueJdbcDao implements IElementDataValueDao {
         if (r.getLastModifiedDate() == null) r.setLastModifiedDate(Instant.now());
 
         return new MapSqlParameterSource()
-            .addValue("semanticPath", r.getSemanticPath())
+            .addValue("semanticPath", r.getCanonicalPath())
             .addValue("submissionUid", r.getSubmissionUid())
             .addValue("assignmentUid", r.getAssignmentUid())
             .addValue("teamUid", r.getTeamUid())
             .addValue("orgUnitUid", r.getOrgUnitUid())
             .addValue("activityUid", r.getActivityUid())
-            .addValue("elementUid", r.getElementUid())
-            .addValue("elementTemplateConfigUid", r.getElementTemplateConfigUid())
+            .addValue("canonicalElementUid", r.getCanonicalElementUid())
+            .addValue("etcUid", r.getEtcUid())
+            .addValue("manifestUid", r.getManifestUid())
             .addValue("valueType", r.getValueType())
             .addValue("repeatInstanceId", r.getRepeatInstanceId())
             .addValue("optionUid", r.getOptionUid())

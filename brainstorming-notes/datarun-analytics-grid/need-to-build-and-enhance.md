@@ -1,7 +1,7 @@
 1. **Repeat definition**
 
 * Your statement: *“repeat definition, it's clear minimal properties and set of rules.”*
-* Reality / clarification: ✅ Correct — you already created deterministic `repeat_uid`s and seeded `repeat_definition`-style data in `element_template_config.repeat_uid`.
+* Reality / clarification: ✅ Correct — you already created deterministic `repeat_uid`s and seeded `repeat_definition`-style data in `element_template.repeat_uid`.
 * Recommendation: formalize as a small table (`repeat_definition`) with the minimum canonical fields (see later). This becomes the canonical registry other services read.
 
 2. **Projections (pilot)**
@@ -133,7 +133,7 @@ Make each of these an item you can tick off.
 
 1. Finalize `projection_config` JSON schema (we need this to generalize pilot logic).
 2. Create `projection_run` DDL and wire runner to write runs.
-3. Create `repeat_definition` table and populate from your `element_template_config.repeat_uid` clusters.
+3. Create `repeat_definition` table and populate from your `element_template.repeat_uid` clusters.
 
 **Near-term (after immediate):**
 4\. Implement projection→metadata sync: when a `projection_config` is activated, create/update `analytics_entity` + `analytics_attribute`.

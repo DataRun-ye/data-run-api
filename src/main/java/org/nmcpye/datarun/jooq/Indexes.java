@@ -8,17 +8,7 @@ import org.jooq.Index;
 import org.jooq.OrderField;
 import org.jooq.impl.DSL;
 import org.jooq.impl.Internal;
-import org.nmcpye.datarun.jooq.tables.AppEntityAuditEvent;
-import org.nmcpye.datarun.jooq.tables.DataSubmission;
-import org.nmcpye.datarun.jooq.tables.DataTemplateVersion;
-import org.nmcpye.datarun.jooq.tables.ElementDataValue;
-import org.nmcpye.datarun.jooq.tables.ElementTemplateConfig;
-import org.nmcpye.datarun.jooq.tables.MigrationErrors;
-import org.nmcpye.datarun.jooq.tables.OrgUnitHierarchy;
-import org.nmcpye.datarun.jooq.tables.OutboxEvent;
-import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
-import org.nmcpye.datarun.jooq.tables.RefreshToken;
-import org.nmcpye.datarun.jooq.tables.RepeatInstance;
+import org.nmcpye.datarun.jooq.tables.*;
 
 
 /**
@@ -39,10 +29,10 @@ public class Indexes {
     public static final Index IDX_EDV_ELEMENT_ACTIVE = Internal.createIndex(DSL.name("idx_edv_element_active"), ElementDataValue.ELEMENT_DATA_VALUE, new OrderField[] { ElementDataValue.ELEMENT_DATA_VALUE.ELEMENT_UID }, false);
     public static final Index IDX_EDV_TEAM_ACTIVE = Internal.createIndex(DSL.name("idx_edv_team_active"), ElementDataValue.ELEMENT_DATA_VALUE, new OrderField[] { ElementDataValue.ELEMENT_DATA_VALUE.TEAM_UID }, false);
     public static final Index IDX_ELEMENT_DATA_VALUE_SUBMISSION_REPEAT = Internal.createIndex(DSL.name("idx_element_data_value_submission_repeat"), ElementDataValue.ELEMENT_DATA_VALUE, new OrderField[] { ElementDataValue.ELEMENT_DATA_VALUE.SUBMISSION_UID, ElementDataValue.ELEMENT_DATA_VALUE.REPEAT_INSTANCE_ID }, false);
-    public static final Index IDX_ELEMENT_TEMPLATE_CONFIG_DATAELEMENT = Internal.createIndex(DSL.name("idx_element_template_config_dataelement"), ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG, new OrderField[] { ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.DATA_ELEMENT_UID }, false);
-    public static final Index IDX_ELEMENT_TEMPLATE_CONFIG_REPEAT_PATH = Internal.createIndex(DSL.name("idx_element_template_config_repeat_path"), ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG, new OrderField[] { ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.TEMPLATE_UID, ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.ANCESTOR_REPEAT_PATH }, false);
-    public static final Index IDX_ELEMENT_TEMPLATE_CONFIG_TEMPLATE_VERSION = Internal.createIndex(DSL.name("idx_element_template_config_template_version"), ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG, new OrderField[] { ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.TEMPLATE_UID, ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.TEMPLATE_VERSION_UID }, false);
-    public static final Index IDX_ELEMENT_TEMPLATE_CONFIG_TEMPLATE_VERSION_NO = Internal.createIndex(DSL.name("idx_element_template_config_template_version_no"), ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG, new OrderField[] { ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.TEMPLATE_UID, ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.TEMPLATE_VERSION_NO }, false);
+    public static final Index IDX_ELEMENT_TEMPLATE_CONFIG_DATAELEMENT = Internal.createIndex(DSL.name("idx_template_element_dataelement"), ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG, new OrderField[] { ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.DATA_ELEMENT_UID }, false);
+    public static final Index IDX_ELEMENT_TEMPLATE_CONFIG_REPEAT_PATH = Internal.createIndex(DSL.name("idx_template_element_repeat_path"), ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG, new OrderField[] { ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.TEMPLATE_UID, ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.ANCESTOR_REPEAT_PATH }, false);
+    public static final Index IDX_ELEMENT_TEMPLATE_CONFIG_TEMPLATE_VERSION = Internal.createIndex(DSL.name("idx_template_element_template_version"), ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG, new OrderField[] { ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.TEMPLATE_UID, ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.TEMPLATE_VERSION_UID }, false);
+    public static final Index IDX_ELEMENT_TEMPLATE_CONFIG_TEMPLATE_VERSION_NO = Internal.createIndex(DSL.name("idx_template_element_template_version_no"), ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG, new OrderField[] { ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.TEMPLATE_UID, ElementTemplateConfig.ELEMENT_TEMPLATE_CONFIG.TEMPLATE_VERSION_NO }, false);
     public static final Index IDX_ENTITY_AUDIT_EVENT_ENTITY_TYPE = Internal.createIndex(DSL.name("idx_entity_audit_event_entity_type"), AppEntityAuditEvent.APP_ENTITY_AUDIT_EVENT, new OrderField[] { AppEntityAuditEvent.APP_ENTITY_AUDIT_EVENT.ENTITY_TYPE }, false);
     public static final Index IDX_MIGRATION_ERRORS_SOURCE = Internal.createIndex(DSL.name("idx_migration_errors_source"), MigrationErrors.MIGRATION_ERRORS, new OrderField[] { MigrationErrors.MIGRATION_ERRORS.SOURCE_ID }, false);
     public static final Index IDX_MIGRATION_ERRORS_STAGE = Internal.createIndex(DSL.name("idx_migration_errors_stage"), MigrationErrors.MIGRATION_ERRORS, new OrderField[] { MigrationErrors.MIGRATION_ERRORS.STAGE }, false);

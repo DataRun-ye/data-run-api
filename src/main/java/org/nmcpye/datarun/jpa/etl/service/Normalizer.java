@@ -9,7 +9,7 @@ import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.jpa.etl.dto.ElementDataValue;
 import org.nmcpye.datarun.jpa.etl.dto.RepeatInstance;
@@ -172,7 +172,7 @@ public class Normalizer {
             final Object rawValue = entry.getValue();
             final String childPath = currentPath.isEmpty() ? key : currentPath + "." + key;
             final AbstractElement element = elementMap.getElementByNamePathMap().get(childPath);
-            final ElementTemplateConfig etc = elementMap.getElementConfigByNamePathMap().get(childPath);
+            final TemplateElement etc = elementMap.getElementConfigByNamePathMap().get(childPath);
 
             if (element == null) continue; // Skip data not defined in the template
 
@@ -190,22 +190,23 @@ public class Normalizer {
                     String repeatId = getOrGenerateRepeatId(item, childPath,
                         idx, generateMissingRepeatUids);
 
-                    // Resolve category for this new repeat item.
-                    CategoryResolutionResult category = extractCategoryForItem(item, childPath, elementMap);
+//                    // Resolve category for this new repeat item.
+//                    CategoryResolutionResult category = extractCategoryForItem(item, childPath, elementMap);
 
                     // Create the RepeatInstance DTO, linking it to its parent via the context.
                     final var ri = RepeatInstance.builder()
                         .id(repeatId)
+                        .etcUid(etc.getUid())
                         .submissionUid(ns.getSubmissionUid())
-                        .categoryUid(category != null ? category.getUid() : null)
-                        .categoryKind(category != null ? category.getKind() : null)
-                        .categoryName(category != null ? category.getName() : null)
-                        .categoryLabel(toStringLabel(category != null ? category.getLabel() : null))
+//                        .categoryUid(category != null ? category.getUid() : null)
+//                        .categoryKind(category != null ? category.getKind() : null)
+//                        .categoryName(category != null ? category.getName() : null)
+//                        .categoryLabel(toStringLabel(category != null ? category.getLabel() : null))
                         .repeatPath(childPath)
-                        .semanticPath(etc.getSemanticPath())
+                        .canonicalPath(etc.getCanonicalPath())
                         .parentRepeatInstanceId(context.instanceId()) // NESTED HIERARCHY LINK
                         .repeatIndex(idx)
-                        .repeatSectionLabel(toStringLabel(section.getLabel()))
+//                        .repeatSectionLabel(toStringLabel(section.getLabel()))
                         .submissionCompletedAt(submission.getFinishedEntryTime())
                         .clientUpdatedAt(submission.getLastModifiedDate())
                         .createdDate(Instant.now())
@@ -272,7 +273,7 @@ public class Normalizer {
                                                    FormDataElementConf field,
                                                    RepeatContext context,
                                                    String optionUid, Object rawValue,
-                                                   ElementTemplateConfig etc) {
+                                                   TemplateElement etc) {
         // --- try parse value based on dataType
         ElementDataValue.ElementDataValueBuilder builder =
             elementValueResolver.resolveValue(rawValue, field);
@@ -281,14 +282,14 @@ public class Normalizer {
 
         // --- CORE IDENTIFIERS & DIMENSIONS ---
         builder.submissionUid(submission.getUid())
-            .elementUid(field.getId())
+            .canonicalElementUid(field.getId())
             // --- EXPANDED ASSIGNMENT DIMENSIONS ---
             .assignmentUid(submission.getAssignment())
             .teamUid(submission.getTeam())
             .orgUnitUid(submission.getOrgUnit())
             .activityUid(submission.getActivity())
-            .elementTemplateConfigUid(etc.getUid())
-            .semanticPath(etc.getSemanticPath())
+            .etcUid(etc.getUid())
+            .canonicalPath(etc.getCanonicalPath())
             // --- CONTEXT FROM REPEAT ---
             .repeatInstanceId(context.instanceId())
             // --- VALUE ---

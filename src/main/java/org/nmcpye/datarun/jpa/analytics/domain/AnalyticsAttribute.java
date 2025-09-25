@@ -97,7 +97,7 @@ public class AnalyticsAttribute {
 //    @GeneratedValue(strategy = GenerationType.IDENTITY)
 //    private Long id;
 //
-//    /// -- e.g., "aa_{element_template_config_uid}" or "aa_{entity_uid}_{de_uid}"
+//    /// -- e.g., "aa_{template_element_config_uid}" or "aa_{entity_uid}_{de_uid}"
 //    @Column(nullable = false, length = 50)
 //    private String uid;
 //
@@ -157,7 +157,7 @@ public class AnalyticsAttribute {
 //    @Column(name = "label", columnDefinition = "jsonb")
 //    private Map<String, String> label = new HashMap<>();
 //
-//    @Column(name = "element_template_config_uid", length = 64)
+//    @Column(name = "template_element_config_uid", length = 64)
 //    private String elementTemplateConfigUid;
 //
 //    @Column(name = "data_element_uid", length = 64)

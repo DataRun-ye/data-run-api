@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1758757717738-32" author="Hamza">
+        <createSequence incrementBy="1" sequenceName="template_element_seq" startValue="1"/>
+    </changeSet>
+    <changeSet id="1758757717738-34" author="Hamza">
+        <createTable tableName="canonical_element">
+            <column name="canonical_element_uid" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_canonical_element"/>
+            </column>
+            <column name="schema_fingerprint" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="preferred_name" type="VARCHAR(255)"/>
+            <column name="semantic_type" type="VARCHAR(64)"/>
+            <column defaultValueComputed="'[]'::jsonb" name="canonical_candidates" type="jsonb"/>
+            <column name="value_constraints" type="jsonb"/>
+            <column name="notes" type="text"/>
+            <column name="created_at" type="DATETIME"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1758757717738-49" author="Hamza">
+        <addUniqueConstraint columnNames="schema_fingerprint"
+                             constraintName="uc_canonical_element_schema_fingerprint"
+                             tableName="canonical_element"/>
+    </changeSet>
+    <changeSet id="1758757717738-54" author="Hamza">
+        <createIndex indexName="idx_canonical_element_fp" tableName="canonical_element">
+            <column name="schema_fingerprint"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ============================================================
+       Changeset 003: backfill TemplateElement.schema_fingerprint,
+       populate canonical_element and link TemplateElement -> canonical
+       (idempotent)
+       ============================================================ -->
+    <changeSet id="20250925-003-populate-canonical" author="datarun-arch" runOnChange="true" runAlways="false">
+        <preConditions onFail="MARK_RAN">
+            <dbms type="postgresql"/>
+        </preConditions>
+
+        <!-- Ensure pgcrypto exists (safe: will be skipped if already present) -->
+        <sql>CREATE EXTENSION IF NOT EXISTS pgcrypto;</sql>
+
+        <!-- Compute schema_fingerprint for existing TemplateElement rows.
+             The fingerprint uses stable canonicalized fields:
+             value_type (aka control_type), is_multi (cardinality), ancestor_repeat_path,
+             option_set_uid, and a normalized JSON of display constraints if present.
+             This SQL is idempotent; re-running will produce same fingerprints. -->
+        <sql><![CDATA[
+            WITH te AS (
+                SELECT
+                    uid AS te_uid,
+                    COALESCE(lower(trim(value_type::text)),'') AS control_type,
+                    CASE WHEN is_multi THEN 'MULTIPLE' ELSE 'SINGLE' END AS cardinality,
+                    COALESCE(ancestor_repeat_path,'') AS parent_repeat_path,
+                    COALESCE(option_set_uid,'') AS option_set_id,
+                    COALESCE(value_constraints::text,'') AS value_constraints_text
+                FROM template_element
+            ),
+                 computed AS (
+                     SELECT
+                         te_uid,
+                         encode(digest(
+                                    (
+                                        control_type || '|' ||
+                                        cardinality || '|' ||
+                                        canonical_path || '|' ||
+                                        option_set_id
+                                        ), 'sha256'), 'hex') AS fp
+                     FROM te
+                 )
+            UPDATE template_element te
+            SET schema_fingerprint = c.fp
+                FROM computed c
+            WHERE te.uid = c.te_uid
+              AND (te.schema_fingerprint IS NULL OR te.schema_fingerprint <> c.fp);
+            ]]>
+        </sql>
+
+        <!-- Insert unique canonical elements for fingerprints not yet present, using gen_random_uuid() for canonical_element_uid. Idempotent. -->
+        <sql><![CDATA[
+            INSERT INTO canonical_element (canonical_element_uid, schema_fingerprint, preferred_name, created_at)
+            SELECT DISTINCT gen_random_uuid(), schema_fingerprint, name_path AS preferred_name, now()
+            FROM template_element te
+            WHERE te.schema_fingerprint IS NOT NULL
+              AND NOT EXISTS (
+                SELECT 1 FROM canonical_element ce WHERE ce.schema_fingerprint = te.schema_fingerprint
+            );
+            ]]>
+        </sql>
+
+        <!-- Link TemplateElement rows to canonical_element by fingerprint (idempotent update) -->
+        <sql><![CDATA[
+            UPDATE template_element te
+            SET canonical_element_uid = ce.canonical_element_uid
+                FROM canonical_element ce
+            WHERE te.schema_fingerprint IS NOT NULL
+              AND ce.schema_fingerprint = te.schema_fingerprint
+              AND (te.canonical_element_uid IS NULL OR te.canonical_element_uid <> ce.canonical_element_uid);
+            ]]>
+        </sql>
+
+        <rollback>
+            <!-- rollback removes canonical links and canonical rows created by this changeset -->
+            <sql>
+                UPDATE template_element SET canonical_element_uid = NULL WHERE canonical_element_uid IN (
+                SELECT canonical_element_uid FROM canonical_element );
+            </sql>
+            <sql>DELETE FROM canonical_element;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

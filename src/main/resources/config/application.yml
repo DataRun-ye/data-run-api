@@ -42,6 +42,7 @@ management:
           - threaddump
           - caches
           - liquibase
+          - metrics
   endpoint:
     health:
       show-details: when_authorized
@@ -216,7 +217,9 @@ jhipster:
 # More documentation is available at:
 # https://www.jhipster.tech/common-application-properties/
 # ===================================================================
-
+feature:
+  mapping-worker:
+    enabled: false
 # application:
 #application:
 #  pivot:

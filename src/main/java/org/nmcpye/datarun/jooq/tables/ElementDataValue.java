@@ -4,27 +4,7 @@
 package org.nmcpye.datarun.jooq.tables;
 
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
-import org.jooq.Condition;
-import org.jooq.Field;
-import org.jooq.Identity;
-import org.jooq.Index;
-import org.jooq.Name;
-import org.jooq.PlainSQL;
-import org.jooq.QueryPart;
-import org.jooq.SQL;
-import org.jooq.Schema;
-import org.jooq.Select;
-import org.jooq.Stringly;
-import org.jooq.Table;
-import org.jooq.TableField;
-import org.jooq.TableOptions;
-import org.jooq.UniqueKey;
+import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
@@ -32,6 +12,12 @@ import org.nmcpye.datarun.jooq.Indexes;
 import org.nmcpye.datarun.jooq.Keys;
 import org.nmcpye.datarun.jooq.Public;
 import org.nmcpye.datarun.jooq.tables.records.ElementDataValueRecord;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 
 /**
@@ -102,9 +88,9 @@ public class ElementDataValue extends TableImpl<ElementDataValueRecord> {
 
     /**
      * The column
-     * <code>public.element_data_value.element_template_config_uid</code>.
+     * <code>public.element_data_value.template_element_config_uid</code>.
      */
-    public final TableField<ElementDataValueRecord, String> ELEMENT_TEMPLATE_CONFIG_UID = createField(DSL.name("element_template_config_uid"), SQLDataType.VARCHAR(11).nullable(false), this, "");
+    public final TableField<ElementDataValueRecord, String> ELEMENT_TEMPLATE_CONFIG_UID = createField(DSL.name("template_element_config_uid"), SQLDataType.VARCHAR(11).nullable(false), this, "");
 
     /**
      * The column <code>public.element_data_value.option_uid</code>.

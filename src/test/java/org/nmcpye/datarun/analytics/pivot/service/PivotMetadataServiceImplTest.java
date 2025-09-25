@@ -10,7 +10,7 @@
 //import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 //import org.nmcpye.datarun.jpa.dataelement.DataElement;
 //import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
-//import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
+//import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 //import org.nmcpye.datarun.jpa.datatemplate.repository.ElementTemplateConfigRepository;
 //
 //import java.util.List;
@@ -35,7 +35,7 @@
 //    @Test
 //    void testGetMetadataForTemplate_numericAndSelect() {
 //        // prepare a numeric element template config
-//        ElementTemplateConfig etcNum = new ElementTemplateConfig();
+//        TemplateElement etcNum = new TemplateElement();
 //        etcNum.setId(100L);
 //        etcNum.setTemplateUid("tmpl-1");
 //        etcNum.setTemplateVersionUid("v1");
@@ -44,7 +44,7 @@
 //        etcNum.setIsMulti(false);
 //        etcNum.setIsReference(false);
 //
-//        ElementTemplateConfig etcOpt = new ElementTemplateConfig();
+//        TemplateElement etcOpt = new TemplateElement();
 //        etcOpt.setId(101L);
 //        etcOpt.setTemplateUid("tmpl-1");
 //        etcOpt.setTemplateVersionUid("v1");
@@ -81,7 +81,7 @@
 //        assertNotNull(numDto);
 //        assertEquals("value_num", numDto.dataType());
 //        assertTrue(numDto.aggregationModes().contains("SUM"));
-//        assertEquals("element_template_config", numDto.source());
+//        assertEquals("template_element", numDto.source());
 //
 //        QueryableElement optDto = resp.getMeasures().stream().filter(d -> d.id().equals("etc:101")).findFirst().orElse(null);
 //        assertNotNull(optDto);

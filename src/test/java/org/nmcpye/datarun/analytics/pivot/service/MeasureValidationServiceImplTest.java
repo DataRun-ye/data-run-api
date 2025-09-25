@@ -48,7 +48,7 @@
 //            .label("Weight")
 //            .dataType("value_num")
 //            .aggregationModes(Set.of("SUM", "AVG", "COUNT"))
-//            .source("element_template_config")
+//            .source("template_element")
 //            .templateModeOnly(true)
 //            .category("FORM_MEASURE")
 //            .extras(Map.of())
@@ -70,7 +70,7 @@
 //        assertEquals("sum_weight", vm.alias());
 //        // targetField is PG.VALUE_NUM
 //        assertEquals(Tables.PIVOT_GRID_FACTS.VALUE_NUM.getName(), ((Field<?>) vm.targetField()).getName());
-//        // elementPredicate should be equality against element_template_config_uid
+//        // elementPredicate should be equality against template_element_config_uid
 //        assertTrue(vm.elementPredicate().toString().contains("element_template_config_id"));
 //    }
 //
@@ -81,7 +81,7 @@
 //            .label("Hobby")
 //            .dataType("option_id")
 //            .aggregationModes(Set.of("COUNT", "COUNT_DISTINCT"))
-//            .source("element_template_config")
+//            .source("element_template")
 //            .templateModeOnly(true)
 //            .category("FORM_MEASURE")
 //            .extras(Map.of())

@@ -8,7 +8,7 @@
 //import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
 //import org.nmcpye.datarun.jpa.dataelement.DataElement;
 //import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
-//import org.nmcpye.datarun.jpa.datatemplate.repository.ElementTemplateConfigRepository;
+//import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateElementRepository;
 //import org.springframework.stereotype.Service;
 //
 //import java.math.BigDecimal;
@@ -21,7 +21,7 @@
 ///**
 // * Validates requested measures and maps them to facts columns + element filters.
 // * <p>
-// * - ElementTemplateRepository provides findByDataElementId(String) -> Optional<ElementTemplateConfig>
+// * - ElementTemplateRepository provides findByDataElementId(String) -> Optional<TemplateElement>
 // * - PivotGridFacts fields include VALUE_NUM, VALUE_BOOL, OPTION_ID, VALUE_TEXT, VALUE_TS and ELEMENT_ID
 // *
 // * @author Hamza Assada - 7amza.it@gmail.com
@@ -84,7 +84,7 @@
 //            throw new IllegalArgumentException("aggregation is required");
 //        }
 //
-//        // Lookup element config (ElementTemplateConfig) by the canonical data element id
+//        // Lookup element config (TemplateElement) by the canonical data element id
 //        Optional<DataElement> tfOpt = elementRepository.findByUid(elementId);
 //        if (tfOpt.isEmpty()) {
 //            throw new IllegalArgumentException("Unknown element: " + elementId);

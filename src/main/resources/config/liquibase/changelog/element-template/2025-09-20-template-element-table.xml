@@ -5,10 +5,13 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-    <changeSet id="1757388734054-36" author="Hamza">
-        <createTable tableName="element_template_config">
+    <changeSet id="1758409632058-01-template_element_seq" author="Hamza">
+        <createSequence sequenceName="template_element_seq" startValue="1"/>
+    </changeSet>
+    <changeSet id="1758409632058-39" author="Hamza">
+        <createTable tableName="template_element">
             <column name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_element_template_config"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_template_element"/>
             </column>
             <column name="uid" type="VARCHAR(11)">
                 <constraints nullable="false"/>
@@ -33,69 +36,65 @@
             </column>
             <column name="value_type" type="VARCHAR(255)"/>
             <column name="aggregation_type" type="VARCHAR(32)"/>
-            <column name="is_reference" type="BOOLEAN">
-                <constraints nullable="false"/>
-            </column>
+            <column name="is_reference" type="BOOLEAN" defaultValue="false"/>
             <column name="category_id" type="VARCHAR(26)"/>
             <column name="is_category" type="BOOLEAN"/>
             <column name="option_set_uid" type="VARCHAR(11)"/>
-            <column name="is_multi" type="BOOLEAN">
-                <constraints nullable="false"/>
-            </column>
-            <column name="is_measure" type="BOOLEAN">
-                <constraints nullable="false"/>
-            </column>
-            <column name="is_dimension" type="BOOLEAN">
-                <constraints nullable="false"/>
-            </column>
+            <column name="is_multi" type="BOOLEAN" defaultValue="false"/>
+            <column name="is_measure" type="BOOLEAN" defaultValue="false"/>
+            <column name="is_dimension" type="BOOLEAN" defaultValue="false"/>
             <column name="sort_order" type="INT"/>
-            <column name="semantic_grain" type="VARCHAR(255)"/>
             <column name="id_path" type="VARCHAR(3000)">
                 <constraints nullable="false"/>
             </column>
-            <column name="path_hash" type="BIGINT"/>
+<!--            <column name="path_hash" type="BIGINT"/>-->
             <column name="name_path" type="VARCHAR(3000)"/>
             <column name="semantic_path" type="VARCHAR(3000)"/>
-            <column name="has_repeat_ancestor" type="BOOLEAN">
-                <constraints nullable="false"/>
-            </column>
             <column name="ancestor_repeat_semantic_path" type="VARCHAR(3000)"/>
+            <column name="repeat_uid" type="VARCHAR(64)"/>
+            <column name="has_repeat_ancestor" type="BOOLEAN" defaultValue="false"/>
             <column name="ancestor_repeat_path" type="VARCHAR(3000)"/>
             <column name="display_label" type="jsonb"/>
             <column name="definition_json" type="jsonb"/>
+            <column name="is_entity_candidate" type="BOOLEAN" defaultValue="false"/>
+            <column name="analytics_intent" type="jsonb" defaultValueComputed="'{}'::jsonb"/>
+            <column name="natural_key_candidates" type="jsonb"  defaultValueComputed="'[]'::jsonb"/>
             <column name="created_at" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
         </createTable>
     </changeSet>
-    <changeSet id="1757388734054-37" author="Hamza">
-        <addUniqueConstraint columnNames="uid" constraintName="uc_element_template_config_uid"
-                             tableName="element_template_config"/>
+    <changeSet id="1758409632058-48" author="Hamza">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_template_element_uid" tableName="template_element"/>
     </changeSet>
-    <changeSet id="1757388734054-38" author="Hamza">
+    <changeSet id="1758409632058-49" author="Hamza">
         <addUniqueConstraint columnNames="template_uid, template_version_uid, id_path"
-                             constraintName="ux_element_template_config_tpl_ver_idpath"
-                             tableName="element_template_config"/>
+                             constraintName="ux_template_element_tpl_ver_idpath" tableName="template_element"/>
     </changeSet>
-    <changeSet id="1757388734054-39" author="Hamza">
-        <createIndex indexName="idx_element_template_config_dataelement" tableName="element_template_config">
+    <changeSet id="1758409632058-50" author="Hamza">
+        <createIndex indexName="idx_template_element_dataelement" tableName="template_element">
             <column name="data_element_uid"/>
         </createIndex>
     </changeSet>
-    <changeSet id="1757388734054-40" author="Hamza">
-        <createIndex indexName="idx_element_template_config_repeat_path" tableName="element_template_config">
+    <changeSet id="1758409632058-51" author="Hamza">
+        <createIndex indexName="idx_template_element_repeat_path" tableName="template_element">
             <column name="template_uid"/>
             <column name="ancestor_repeat_path"/>
         </createIndex>
     </changeSet>
-    <changeSet id="1757388734054-41" author="Hamza">
-        <createIndex indexName="idx_element_template_config_template_version" tableName="element_template_config">
+    <changeSet id="1758409632058-52" author="Hamza">
+        <createIndex indexName="idx_template_element_repeat_uid" tableName="template_element">
+            <column name="repeat_uid"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1758409632058-53" author="Hamza">
+        <createIndex indexName="idx_template_element_template_version" tableName="template_element">
             <column name="template_uid"/>
             <column name="template_version_uid"/>
         </createIndex>
     </changeSet>
-    <changeSet id="1757388734054-42" author="Hamza">
-        <createIndex indexName="idx_element_template_config_template_version_no" tableName="element_template_config">
+    <changeSet id="1758409632058-54" author="Hamza">
+        <createIndex indexName="idx_template_element_template_version_no" tableName="template_element">
             <column name="template_uid"/>
             <column name="template_version_no"/>
         </createIndex>

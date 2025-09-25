@@ -205,7 +205,7 @@ Idempotence: if the same publish event is re-processed, metadata upsert is a no-
 # Example metadata outputs the generator should persist (conceptual)
 
 * `analytics_entity` record for `templateA_v3_household_members` with `entity_uid`, `mv_name`, `semantic_repeat_path`, `grain_config` reference.
-* `analytics_attribute` rows mapping each `element_template_config` to a column alias and indicating dimension/measure status.
+* `analytics_attribute` rows mapping each `element_template` to a column alias and indicating dimension/measure status.
 * `mv_registry` entry with `mv_name`, `ddl_snippet`, `status`.
 * `run_log` entry with `metadata_version`, `diff_summary`, `author`.
 

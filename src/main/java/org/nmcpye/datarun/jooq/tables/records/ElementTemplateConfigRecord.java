@@ -4,12 +4,12 @@
 package org.nmcpye.datarun.jooq.tables.records;
 
 
-import java.time.LocalDateTime;
-
 import org.jooq.JSONB;
 import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;
 import org.nmcpye.datarun.jooq.tables.ElementTemplateConfig;
+
+import java.time.LocalDateTime;
 
 
 /**
@@ -21,56 +21,56 @@ public class ElementTemplateConfigRecord extends UpdatableRecordImpl<ElementTemp
     private static final long serialVersionUID = 1L;
 
     /**
-     * Setter for <code>public.element_template_config.id</code>.
+     * Setter for <code>public.template_element.id</code>.
      */
     public void setId(Long value) {
         set(0, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.id</code>.
+     * Getter for <code>public.template_element.id</code>.
      */
     public Long getId() {
         return (Long) get(0);
     }
 
     /**
-     * Setter for <code>public.element_template_config.uid</code>.
+     * Setter for <code>public.template_element.uid</code>.
      */
     public void setUid(String value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.uid</code>.
+     * Getter for <code>public.template_element.uid</code>.
      */
     public String getUid() {
         return (String) get(1);
     }
 
     /**
-     * Setter for <code>public.element_template_config.element_kind</code>.
+     * Setter for <code>public.template_element.element_kind</code>.
      */
     public void setElementKind(String value) {
         set(2, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.element_kind</code>.
+     * Getter for <code>public.template_element.element_kind</code>.
      */
     public String getElementKind() {
         return (String) get(2);
     }
 
     /**
-     * Setter for <code>public.element_template_config.template_uid</code>.
+     * Setter for <code>public.template_element.template_uid</code>.
      */
     public void setTemplateUid(String value) {
         set(3, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.template_uid</code>.
+     * Getter for <code>public.template_element.template_uid</code>.
      */
     public String getTemplateUid() {
         return (String) get(3);
@@ -78,7 +78,7 @@ public class ElementTemplateConfigRecord extends UpdatableRecordImpl<ElementTemp
 
     /**
      * Setter for
-     * <code>public.element_template_config.template_version_uid</code>.
+     * <code>public.template_element.template_version_uid</code>.
      */
     public void setTemplateVersionUid(String value) {
         set(4, value);
@@ -86,7 +86,7 @@ public class ElementTemplateConfigRecord extends UpdatableRecordImpl<ElementTemp
 
     /**
      * Getter for
-     * <code>public.element_template_config.template_version_uid</code>.
+     * <code>public.template_element.template_version_uid</code>.
      */
     public String getTemplateVersionUid() {
         return (String) get(4);
@@ -94,7 +94,7 @@ public class ElementTemplateConfigRecord extends UpdatableRecordImpl<ElementTemp
 
     /**
      * Setter for
-     * <code>public.element_template_config.template_version_no</code>.
+     * <code>public.template_element.template_version_no</code>.
      */
     public void setTemplateVersionNo(Integer value) {
         set(5, value);
@@ -102,245 +102,245 @@ public class ElementTemplateConfigRecord extends UpdatableRecordImpl<ElementTemp
 
     /**
      * Getter for
-     * <code>public.element_template_config.template_version_no</code>.
+     * <code>public.template_element.template_version_no</code>.
      */
     public Integer getTemplateVersionNo() {
         return (Integer) get(5);
     }
 
     /**
-     * Setter for <code>public.element_template_config.data_element_uid</code>.
+     * Setter for <code>public.template_element.data_element_uid</code>.
      */
     public void setDataElementUid(String value) {
         set(6, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.data_element_uid</code>.
+     * Getter for <code>public.template_element.data_element_uid</code>.
      */
     public String getDataElementUid() {
         return (String) get(6);
     }
 
     /**
-     * Setter for <code>public.element_template_config.name</code>.
+     * Setter for <code>public.template_element.name</code>.
      */
     public void setName(String value) {
         set(7, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.name</code>.
+     * Getter for <code>public.template_element.name</code>.
      */
     public String getName() {
         return (String) get(7);
     }
 
     /**
-     * Setter for <code>public.element_template_config.value_type</code>.
+     * Setter for <code>public.template_element.value_type</code>.
      */
     public void setValueType(String value) {
         set(8, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.value_type</code>.
+     * Getter for <code>public.template_element.value_type</code>.
      */
     public String getValueType() {
         return (String) get(8);
     }
 
     /**
-     * Setter for <code>public.element_template_config.aggregation_type</code>.
+     * Setter for <code>public.template_element.aggregation_type</code>.
      */
     public void setAggregationType(String value) {
         set(9, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.aggregation_type</code>.
+     * Getter for <code>public.template_element.aggregation_type</code>.
      */
     public String getAggregationType() {
         return (String) get(9);
     }
 
     /**
-     * Setter for <code>public.element_template_config.is_reference</code>.
+     * Setter for <code>public.template_element.is_reference</code>.
      */
     public void setIsReference(Boolean value) {
         set(10, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.is_reference</code>.
+     * Getter for <code>public.template_element.is_reference</code>.
      */
     public Boolean getIsReference() {
         return (Boolean) get(10);
     }
 
     /**
-     * Setter for <code>public.element_template_config.category_id</code>.
+     * Setter for <code>public.template_element.category_id</code>.
      */
     public void setCategoryId(String value) {
         set(11, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.category_id</code>.
+     * Getter for <code>public.template_element.category_id</code>.
      */
     public String getCategoryId() {
         return (String) get(11);
     }
 
     /**
-     * Setter for <code>public.element_template_config.is_category</code>.
+     * Setter for <code>public.template_element.is_category</code>.
      */
     public void setIsCategory(Boolean value) {
         set(12, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.is_category</code>.
+     * Getter for <code>public.template_element.is_category</code>.
      */
     public Boolean getIsCategory() {
         return (Boolean) get(12);
     }
 
     /**
-     * Setter for <code>public.element_template_config.option_set_uid</code>.
+     * Setter for <code>public.template_element.option_set_uid</code>.
      */
     public void setOptionSetUid(String value) {
         set(13, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.option_set_uid</code>.
+     * Getter for <code>public.template_element.option_set_uid</code>.
      */
     public String getOptionSetUid() {
         return (String) get(13);
     }
 
     /**
-     * Setter for <code>public.element_template_config.is_multi</code>.
+     * Setter for <code>public.element_template.is_multi</code>.
      */
     public void setIsMulti(Boolean value) {
         set(14, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.is_multi</code>.
+     * Getter for <code>public.element_template.is_multi</code>.
      */
     public Boolean getIsMulti() {
         return (Boolean) get(14);
     }
 
     /**
-     * Setter for <code>public.element_template_config.is_measure</code>.
+     * Setter for <code>public.element_template.is_measure</code>.
      */
     public void setIsMeasure(Boolean value) {
         set(15, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.is_measure</code>.
+     * Getter for <code>public.element_template.is_measure</code>.
      */
     public Boolean getIsMeasure() {
         return (Boolean) get(15);
     }
 
     /**
-     * Setter for <code>public.element_template_config.is_dimension</code>.
+     * Setter for <code>public.element_template.is_dimension</code>.
      */
     public void setIsDimension(Boolean value) {
         set(16, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.is_dimension</code>.
+     * Getter for <code>public.element_template.is_dimension</code>.
      */
     public Boolean getIsDimension() {
         return (Boolean) get(16);
     }
 
     /**
-     * Setter for <code>public.element_template_config.sort_order</code>.
+     * Setter for <code>public.element_template.sort_order</code>.
      */
     public void setSortOrder(Integer value) {
         set(17, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.sort_order</code>.
+     * Getter for <code>public.element_template.sort_order</code>.
      */
     public Integer getSortOrder() {
         return (Integer) get(17);
     }
 
     /**
-     * Setter for <code>public.element_template_config.semantic_grain</code>.
+     * Setter for <code>public.element_template.semantic_grain</code>.
      */
     public void setSemanticGrain(String value) {
         set(18, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.semantic_grain</code>.
+     * Getter for <code>public.element_template.semantic_grain</code>.
      */
     public String getSemanticGrain() {
         return (String) get(18);
     }
 
     /**
-     * Setter for <code>public.element_template_config.id_path</code>.
+     * Setter for <code>public.element_template.id_path</code>.
      */
     public void setIdPath(String value) {
         set(19, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.id_path</code>.
+     * Getter for <code>public.element_template.id_path</code>.
      */
     public String getIdPath() {
         return (String) get(19);
     }
 
     /**
-     * Setter for <code>public.element_template_config.path_hash</code>.
+     * Setter for <code>public.element_template.path_hash</code>.
      */
     public void setPathHash(Long value) {
         set(20, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.path_hash</code>.
+     * Getter for <code>public.element_template.path_hash</code>.
      */
     public Long getPathHash() {
         return (Long) get(20);
     }
 
     /**
-     * Setter for <code>public.element_template_config.name_path</code>.
+     * Setter for <code>public.element_template.name_path</code>.
      */
     public void setNamePath(String value) {
         set(21, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.name_path</code>.
+     * Getter for <code>public.element_template.name_path</code>.
      */
     public String getNamePath() {
         return (String) get(21);
     }
 
     /**
-     * Setter for <code>public.element_template_config.semantic_path</code>.
+     * Setter for <code>public.element_template.semantic_path</code>.
      */
     public void setSemanticPath(String value) {
         set(22, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.semantic_path</code>.
+     * Getter for <code>public.element_template.semantic_path</code>.
      */
     public String getSemanticPath() {
         return (String) get(22);
@@ -348,7 +348,7 @@ public class ElementTemplateConfigRecord extends UpdatableRecordImpl<ElementTemp
 
     /**
      * Setter for
-     * <code>public.element_template_config.has_repeat_ancestor</code>.
+     * <code>public.element_template.has_repeat_ancestor</code>.
      */
     public void setHasRepeatAncestor(Boolean value) {
         set(23, value);
@@ -356,7 +356,7 @@ public class ElementTemplateConfigRecord extends UpdatableRecordImpl<ElementTemp
 
     /**
      * Getter for
-     * <code>public.element_template_config.has_repeat_ancestor</code>.
+     * <code>public.element_template.has_repeat_ancestor</code>.
      */
     public Boolean getHasRepeatAncestor() {
         return (Boolean) get(23);
@@ -364,7 +364,7 @@ public class ElementTemplateConfigRecord extends UpdatableRecordImpl<ElementTemp
 
     /**
      * Setter for
-     * <code>public.element_template_config.ancestor_repeat_semantic_path</code>.
+     * <code>public.element_template.ancestor_repeat_semantic_path</code>.
      */
     public void setAncestorRepeatSemanticPath(String value) {
         set(24, value);
@@ -372,7 +372,7 @@ public class ElementTemplateConfigRecord extends UpdatableRecordImpl<ElementTemp
 
     /**
      * Getter for
-     * <code>public.element_template_config.ancestor_repeat_semantic_path</code>.
+     * <code>public.element_template.ancestor_repeat_semantic_path</code>.
      */
     public String getAncestorRepeatSemanticPath() {
         return (String) get(24);
@@ -380,7 +380,7 @@ public class ElementTemplateConfigRecord extends UpdatableRecordImpl<ElementTemp
 
     /**
      * Setter for
-     * <code>public.element_template_config.ancestor_repeat_path</code>.
+     * <code>public.element_template.ancestor_repeat_path</code>.
      */
     public void setAncestorRepeatPath(String value) {
         set(25, value);
@@ -388,49 +388,49 @@ public class ElementTemplateConfigRecord extends UpdatableRecordImpl<ElementTemp
 
     /**
      * Getter for
-     * <code>public.element_template_config.ancestor_repeat_path</code>.
+     * <code>public.element_template.ancestor_repeat_path</code>.
      */
     public String getAncestorRepeatPath() {
         return (String) get(25);
     }
 
     /**
-     * Setter for <code>public.element_template_config.display_label</code>.
+     * Setter for <code>public.element_template.display_label</code>.
      */
     public void setDisplayLabel(JSONB value) {
         set(26, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.display_label</code>.
+     * Getter for <code>public.element_template.display_label</code>.
      */
     public JSONB getDisplayLabel() {
         return (JSONB) get(26);
     }
 
     /**
-     * Setter for <code>public.element_template_config.definition_json</code>.
+     * Setter for <code>public.element_template.definition_json</code>.
      */
     public void setDefinitionJson(JSONB value) {
         set(27, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.definition_json</code>.
+     * Getter for <code>public.element_template.definition_json</code>.
      */
     public JSONB getDefinitionJson() {
         return (JSONB) get(27);
     }
 
     /**
-     * Setter for <code>public.element_template_config.created_at</code>.
+     * Setter for <code>public.element_template.created_at</code>.
      */
     public void setCreatedAt(LocalDateTime value) {
         set(28, value);
     }
 
     /**
-     * Getter for <code>public.element_template_config.created_at</code>.
+     * Getter for <code>public.element_template.created_at</code>.
      */
     public LocalDateTime getCreatedAt() {
         return (LocalDateTime) get(28);

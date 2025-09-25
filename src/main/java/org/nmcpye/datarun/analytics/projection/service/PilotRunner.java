@@ -108,7 +108,7 @@
 //            // 1) try to load semantic paths from projection_config
 //            List<String> semanticPaths = loadSemanticPathsFromProjectionConfig(repeatUid);
 //
-//            // 2) fallback: discover from element_template_config
+//            // 2) fallback: discover from template_element
 //            if (semanticPaths.isEmpty()) {
 //                semanticPaths = discoverSemanticPathsForRepeat(repeatUid);
 //            }
@@ -171,10 +171,10 @@
 //    }
 //
 //    /**
-//     * discover from element_template_config table
+//     * discover from template_element table
 //     */
 //    private List<String> discoverSemanticPathsForRepeat(String repeatUid) {
-//        String sql = "SELECT DISTINCT semantic_path FROM element_template_config WHERE repeat_uid = :repeatUid";
+//        String sql = "SELECT DISTINCT semantic_path FROM template_element WHERE repeat_uid = :repeatUid";
 //        MapSqlParameterSource p = new MapSqlParameterSource().addValue("repeatUid", repeatUid);
 //        List<String> paths = jdbc.queryForList(sql, p, String.class);
 //        return paths;

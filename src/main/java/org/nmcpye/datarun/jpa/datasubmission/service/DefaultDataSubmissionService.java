@@ -183,7 +183,6 @@ public class DefaultDataSubmissionService
     private void beforeUpsertChecks(DataSubmission incomingEntity, boolean isNew, CurrentUserDetails user) {
     }
 
-
     private OutboxEvent createOutboxEvent(DataSubmission saved, String eventType) {
         OutboxEvent evOk = new OutboxEvent();
         evOk.setAggregateType("DataSubmission");

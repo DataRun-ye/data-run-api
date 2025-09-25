@@ -1,7 +1,7 @@
 //package org.nmcpye.datarun.jpa.pivot;
 //
 //import lombok.RequiredArgsConstructor;
-//import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
+//import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 //import org.nmcpye.datarun.jpa.datatemplate.repository.ElementTemplateConfigRepository;
 //import org.springframework.cache.annotation.Cacheable;
 //import org.springframework.stereotype.Service;
@@ -13,7 +13,7 @@
 //import java.util.stream.Collectors;
 //
 ///**
-// * Loads and caches element_template_config metadata for templates.
+// * Loads and caches template_element metadata for templates.
 // * Uses Spring @Cacheable — make sure cache name "pivotMetadata" is configured in Ehcache.
 // *
 // * @author Hamza Assada - 7amza.it@gmail.com
@@ -32,9 +32,9 @@
 //     * Use templateVersionNo == null to fetch latest (repository method may be adapted).
 //     */
 //    @Cacheable(cacheNames = PIVOT_METADATA_CACHE, key = "#templateId + '::' + (#versionNo == null ? 'latest' : #versionNo)")
-//    public List<ElementTemplateConfig> getFieldsForTemplate(String templateId, Integer versionNo) {
+//    public List<TemplateElement> getFieldsForTemplate(String templateId, Integer versionNo) {
 //        // repository method - adapt if your repo uses different signature for latest version.
-//        List<ElementTemplateConfig> rows = elementTemplateConfigRepository.findAllByTemplateIdAndVersionNo(templateId, versionNo);
+//        List<TemplateElement> rows = elementTemplateConfigRepository.findAllByTemplateIdAndVersionNo(templateId, versionNo);
 //        if (rows == null) return Collections.emptyList();
 //        return Collections.unmodifiableList(rows);
 //    }
@@ -42,7 +42,7 @@
 //    /**
 //     * Convenience: get element config by elementId (dataElementId) or by element config name.
 //     */
-//    public Optional<ElementTemplateConfig> getField(String templateId, Integer versionNo, String elementIdOrName) {
+//    public Optional<TemplateElement> getField(String templateId, Integer versionNo, String elementIdOrName) {
 //        return getFieldsForTemplate(templateId, versionNo).stream()
 //                .filter(cfg -> elementIdOrName != null &&
 //                        (elementIdOrName.equals(cfg.getDataElementId()) || elementIdOrName.equals(cfg.getName())))
@@ -52,8 +52,8 @@
 //    /**
 //     * Map elementId -> config for quick lookups.
 //     */
-//    public Map<String, ElementTemplateConfig> getFieldMap(String templateId, Integer versionNo) {
+//    public Map<String, TemplateElement> getFieldMap(String templateId, Integer versionNo) {
 //        return getFieldsForTemplate(templateId, versionNo).stream()
-//                .collect(Collectors.toMap(ElementTemplateConfig::getDataElementId, c -> c));
+//                .collect(Collectors.toMap(TemplateElement::getDataElementId, c -> c));
 //    }
 //}

@@ -3,7 +3,7 @@ package org.nmcpye.datarun.analytics;
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.analytics.domaintabletoolkit.model.ElementColumnDefinition;
 import org.nmcpye.datarun.analytics.domaintabletoolkit.model.ProjectAnalyticsMetadata;
-import org.nmcpye.datarun.jpa.datatemplate.repository.ElementTemplateConfigRepository;
+import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateElementRepository;
 import org.nmcpye.datarun.jpa.etl.model.AnalyticValueType;
 import org.nmcpye.datarun.jpa.etl.model.AnalyticValueTypeMapper;
 import org.nmcpye.datarun.jpa.project.service.ProjectService;
@@ -19,13 +19,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ElementMetadataService {
-    // Inject your repository for element_template_config or data_element
-    private final ElementTemplateConfigRepository elementConfigRepo;
+    // Inject your repository for template_element or data_element
+    private final TemplateElementRepository elementConfigRepo;
     private final ProjectService projectService;
 
 
     /**
-     * queries <code>element_template_config</code> and/or <code>DataElement</code> analytics domain elements.
+     * queries <code>template_element</code> and/or <code>DataElement</code> analytics domain elements.
      *
      * @return all project's wide elements that are considered "measures" or "dimensions"
      * for the wide view.
@@ -37,7 +37,7 @@ public class ElementMetadataService {
                 .projectAlias(project.getUid())
                 .projectName(project.getCode() != null ? project.getCode() : "");
 
-        // TODO(Hamza) add project to element_template_config
+        // TODO(Hamza) add project to template_element
         return metadata.elements(elementConfigRepo.findAll().stream()
                 .map(config -> ElementColumnDefinition.builder()
                         .elementId(config.getDataElementUid())

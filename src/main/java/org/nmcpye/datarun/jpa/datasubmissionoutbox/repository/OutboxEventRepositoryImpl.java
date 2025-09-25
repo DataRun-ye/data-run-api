@@ -4,8 +4,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 import org.nmcpye.datarun.jpa.datasubmissionoutbox.OutboxEvent;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,8 +20,6 @@ import java.util.List;
  * @author Hamza Assada
  * @since 15/08/2025
  */
-@Repository
-@Transactional
 public class OutboxEventRepositoryImpl implements OutboxEventClaimsRepository {
 
     @PersistenceContext
@@ -66,15 +62,47 @@ public class OutboxEventRepositoryImpl implements OutboxEventClaimsRepository {
     }
 
     @Override
+    public List<OutboxEvent> claimBatch(int limit, String eventType, String owner) {
+        String sql = """
+            WITH cte AS (
+                SELECT id
+                  FROM outbox_event
+                  WHERE event_type = :eventType
+                    AND status = 'PENDING'
+                    AND available_at <= now()
+                  ORDER BY created_at
+                  FOR UPDATE SKIP LOCKED
+                  LIMIT :limit
+            )
+            UPDATE outbox_event o
+            SET status = 'PROCESSING',
+                attempts = o.attempts + 1,
+                processing_owner = :owner,
+                processing_started_at = now()
+            FROM cte
+            WHERE o.id = cte.id
+            RETURNING o.*;
+            """;
+
+        Query q = em.createNativeQuery(sql, OutboxEvent.class)
+            .setParameter("limit", limit)
+            .setParameter("eventType", eventType)
+            .setParameter("owner", owner);
+
+        @SuppressWarnings("unchecked")
+        List<OutboxEvent> rows = q.getResultList();
+        return rows;
+    }
+
+    @Override
     public void markDone(long id, Instant processedAt) {
         String sql = """
             UPDATE outbox_event
-               SET status = 'DONE',
-                   processed_at = :processedAt
-             WHERE id = :id
+               SET status = 'DONE', processed_at = now(),
+                   processing_owner = NULL, processing_started_at = NULL
+               WHERE id = :id;
             """;
         em.createNativeQuery(sql)
-            .setParameter("processedAt", processedAt)
             .setParameter("id", id)
             .executeUpdate();
     }
@@ -82,11 +110,14 @@ public class OutboxEventRepositoryImpl implements OutboxEventClaimsRepository {
     @Override
     public void reschedule(long id, String errorMessage, Instant nextAvailableAt) {
         String sql = """
+
             UPDATE outbox_event
                SET status = 'PENDING',
                    available_at = :nextAvailableAt,
-                   last_error = :error
-             WHERE id = :id
+                   last_error = :error,
+                   processing_owner = NULL,
+                   processing_started_at = NULL
+               WHERE id = :id;
             """;
         em.createNativeQuery(sql)
             .setParameter("nextAvailableAt", nextAvailableAt)
@@ -96,17 +127,49 @@ public class OutboxEventRepositoryImpl implements OutboxEventClaimsRepository {
     }
 
     @Override
-    public void markFailed(long id, String errorMessage) {
+    public void markDlq(long id, String errorMessage) {
         String sql = """
             UPDATE outbox_event
-               SET status = 'FAILED',
-                   last_error = :error
-             WHERE id = :id
+               SET status = 'DLQ', last_error = :errorMessage,
+                   processing_owner = NULL, processing_started_at = NULL
+               WHERE id = :id;
             """;
         em.createNativeQuery(sql)
-            .setParameter("error", truncate(errorMessage, 2000))
+            .setParameter("errorMessage", truncate(errorMessage, 2000))
             .setParameter("id", id)
             .executeUpdate();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<Long> reclaimStale(int visibilitySeconds) {
+        String sql = """
+        UPDATE outbox_event
+           SET status = 'PENDING',
+               processing_owner = NULL,
+               processing_started_at = NULL,
+               available_at = now() + interval '30 seconds'
+         WHERE status = 'PROCESSING'
+           AND processing_started_at < now() - (:visibilitySeconds || ' seconds')::interval
+        RETURNING id
+        """;
+
+        Query q = em.createNativeQuery(sql);
+        q.setParameter("visibilitySeconds", visibilitySeconds);
+
+        @SuppressWarnings("unchecked")
+        List<Object> raw = q.getResultList();
+        // result elements are usually BigInteger (Postgres numeric), convert to Long
+        List<Long> ids = new java.util.ArrayList<>(raw.size());
+        for (Object o : raw) {
+            if (o instanceof Number) {
+                ids.add(((Number) o).longValue());
+            } else {
+                // defensive fallback
+                ids.add(Long.parseLong(o.toString()));
+            }
+        }
+        return ids;
     }
 
     private String truncate(String s, int max) {

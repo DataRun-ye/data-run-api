@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.datatemplate.service;
 
-import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
-import org.nmcpye.datarun.jpa.datatemplate.repository.ElementTemplateConfigRepository;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
+import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateElementRepository;
 import org.nmcpye.datarun.jpa.etl.model.TemplateElementMap;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -16,9 +16,9 @@ public class TemplateElementService {
     public final static String TEMPLATE_MAP_CACHE = "templateMapCacheByTemplateAndVersion";
 
     private final DataTemplateInstanceService templateInstanceService;
-    private final ElementTemplateConfigRepository templateConfigRepository;
+    private final TemplateElementRepository templateConfigRepository;
 
-    public TemplateElementService(DataTemplateInstanceService templateInstanceService, ElementTemplateConfigRepository templateConfigRepository) {
+    public TemplateElementService(DataTemplateInstanceService templateInstanceService, TemplateElementRepository templateConfigRepository) {
         this.templateInstanceService = templateInstanceService;
         this.templateConfigRepository = templateConfigRepository;
     }
@@ -32,7 +32,7 @@ public class TemplateElementService {
     public TemplateElementMap getTemplateElementMap(String id, String versionUid) {
         final var elementsConfMap =
             templateConfigRepository.findAllByTemplateUidAndTemplateVersionUid(id, versionUid).stream().collect(Collectors.toMap(
-                ElementTemplateConfig::getNamePath, Function.identity()));
+                TemplateElement::getNamePath, Function.identity()));
         return new TemplateElementMap(templateInstanceService.findByTemplateAndVersionUid(id, versionUid)
             .orElseThrow(), elementsConfMap);
     }
@@ -40,7 +40,7 @@ public class TemplateElementService {
     public TemplateElementMap getTemplateElementMap(String id, Integer version) {
         final var elementsConfMap =
             templateConfigRepository.findAllByTemplateUidAndVersionNo(id, version).stream().collect(Collectors.toMap(
-                ElementTemplateConfig::getNamePath, Function.identity()));
+                TemplateElement::getNamePath, Function.identity()));
         return new TemplateElementMap(templateInstanceService.findByTemplateAndVersionNo(id, version)
             .orElseThrow(), elementsConfMap);
     }

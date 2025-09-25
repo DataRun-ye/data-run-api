@@ -4,12 +4,12 @@
 package org.nmcpye.datarun.jooq.tables.records;
 
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
 import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;
 import org.nmcpye.datarun.jooq.tables.ElementDataValue;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 
 /**
@@ -148,7 +148,7 @@ public class ElementDataValueRecord extends UpdatableRecordImpl<ElementDataValue
 
     /**
      * Setter for
-     * <code>public.element_data_value.element_template_config_uid</code>.
+     * <code>public.element_data_value.template_element_config_uid</code>.
      */
     public void setElementTemplateConfigUid(String value) {
         set(9, value);
@@ -156,7 +156,7 @@ public class ElementDataValueRecord extends UpdatableRecordImpl<ElementDataValue
 
     /**
      * Getter for
-     * <code>public.element_data_value.element_template_config_uid</code>.
+     * <code>public.element_data_value.template_element_config_uid</code>.
      */
     public String getElementTemplateConfigUid() {
         return (String) get(9);

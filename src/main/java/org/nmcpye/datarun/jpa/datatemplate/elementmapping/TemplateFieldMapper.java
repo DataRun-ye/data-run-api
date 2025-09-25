@@ -8,7 +8,7 @@
 //import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 //import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 //import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
-//import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
+//import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 //import org.springframework.stereotype.Service;
 //
 ///**
@@ -33,7 +33,7 @@
 //        };
 //    }
 //
-//    public ElementTemplateConfig from(
+//    public TemplateElement from(
 //        String templateUid,
 //        String templateVersionUid,
 //        int templateVersionNo,
@@ -42,7 +42,7 @@
 //        String repeatPath,
 //        String categoryForRepeatElementUid,
 //        Boolean isCategory) {
-//        ElementTemplateConfig.ElementTemplateConfigBuilder builder = ElementTemplateConfig.builder()
+//        TemplateElement.ElementTemplateConfigBuilder builder = TemplateElement.builder()
 //            .templateUid(templateUid)
 //            .templateVersionUid(templateVersionUid)
 //            .versionNo(templateVersionNo)
@@ -57,10 +57,10 @@
 ////            .ref(meta.referenceTable())
 //            .optionSetUid(conf instanceof FormDataElementConf f ? f.getOptionSet() : null)
 //            .hasRepeatAncestor(conf instanceof FormSectionConf s ? Boolean.TRUE.equals(s.getRepeatable()) : Boolean.FALSE)
-//            .elementKind(conf instanceof FormDataElementConf ? ElementTemplateConfig.ElementKind.FIELD : ElementTemplateConfig.ElementKind.REPEAT);
+//            .elementKind(conf instanceof FormDataElementConf ? TemplateElement.ElementKind.FIELD : TemplateElement.ElementKind.REPEAT);
 //
 //        if (conf instanceof FormDataElementConf field) {
-//            builder.elementKind(ElementTemplateConfig.ElementKind.FIELD);
+//            builder.elementKind(TemplateElement.ElementKind.FIELD);
 //            builder.valueType(meta.valueType());
 //            builder.namePath(field.getPath().replaceFirst(field.getId(), field.getName()));
 //            builder.isMulti(Boolean.TRUE.equals(field.isMultiSelect()));
@@ -69,7 +69,7 @@
 //            builder.aggregationType(/*field.getAggregationType() == null ? */getDefaultAggregationType(field.getType())/* : field.getAggregationType()*/);
 //        } else {
 //            // section defaults
-//            builder.elementKind(ElementTemplateConfig.ElementKind.REPEAT);
+//            builder.elementKind(TemplateElement.ElementKind.REPEAT);
 //            builder.isMulti(Boolean.FALSE);
 //            builder.isMeasure(Boolean.FALSE);
 //            builder.aggregationType(AggregationType.DEFAULT);

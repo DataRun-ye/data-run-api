@@ -103,10 +103,17 @@ datarun:
         token-validity-in-seconds-for-remember-me: 2592000
 outbox:
   relay:
-    poll-interval-ms: 10000   # polling delay between polls (ms)
-    batch-size: 70           # how many to claim per poll
-    worker-threads: 6        # number of concurrent worker threads
-    max-attempts: 2
+    poll-interval-ms: 2000   # polling delay between polls (ms)
+    batch-size: 20           # how many to claim per poll
+    worker-threads: 8        # number of concurrent worker threads
+    max-attempts: 5
+    visibility-timeout-seconds: 600   # reclaim if processing_started older than this
+    reclaim-interval-ms: 60000
+backoff:
+  base-seconds: 30
+  jitter-seconds: 5
+  max-seconds: 3600
+
 
 pilot:
   repeat:

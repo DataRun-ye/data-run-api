@@ -31,9 +31,9 @@ public class Sequences {
     public static final Sequence<Long> BATCH_STEP_EXECUTION_SEQ = Internal.createSequence("batch_step_execution_seq", Public.PUBLIC, SQLDataType.BIGINT.nullable(false), null, null, null, null, false, null);
 
     /**
-     * The sequence <code>public.element_template_config_seq</code>
+     * The sequence <code>public.template_element_config_seq</code>
      */
-    public static final Sequence<Long> ELEMENT_TEMPLATE_CONFIG_SEQ = Internal.createSequence("element_template_config_seq", Public.PUBLIC, SQLDataType.BIGINT.nullable(false), null, null, null, null, false, null);
+    public static final Sequence<Long> ELEMENT_TEMPLATE_CONFIG_SEQ = Internal.createSequence("template_element_config_seq", Public.PUBLIC, SQLDataType.BIGINT.nullable(false), null, null, null, null, false, null);
 
     /**
      * The sequence <code>public.sequence_generator</code>

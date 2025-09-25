@@ -4,7 +4,7 @@ package org.nmcpye.datarun.jpa.etl.model;
 import lombok.Getter;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 
 import java.util.List;
@@ -38,11 +38,11 @@ public class TemplateElementMap {
     private final Map<String, AbstractElement> elementByNamePathMap;
 
     /**
-     * namePath -> ElementTemplateConfig
-     * (NEW) source element_template_config, used in normalization for each
-     * value to reference the id of the element_template_conf that produced it.
+     * namePath -> TemplateElement
+     * (NEW) source template_element, used in normalization for each
+     * value to reference the id of the template_element_conf that produced it.
      */
-    private final Map<String, ElementTemplateConfig> elementConfigByNamePathMap;
+    private final Map<String, TemplateElement> elementConfigByNamePathMap;
 
     /**
      * repeat_uid -> semantic_path
@@ -64,7 +64,7 @@ public class TemplateElementMap {
      */
     private final Map<String, String> repeatPathToCategoryElementIdMap;
 
-    public TemplateElementMap(DataTemplateInstanceDto dto, Map<String, ElementTemplateConfig> elementConfigByNamePathMap) {
+    public TemplateElementMap(DataTemplateInstanceDto dto, Map<String, TemplateElement> elementConfigByNamePathMap) {
         this.templateInstanceDto = dto;
         this.repeatIdPaths = List.copyOf(dto.getRepeatSectionsPaths() == null ? List.of() : dto.getRepeatSectionsPaths());
         this.topLevelFieldIdPathToElementIdCache = Map.copyOf(dto.getTopLevelFieldPathToElementId() == null ? Map.of() : dto.getTopLevelFieldPathToElementId());
@@ -86,7 +86,7 @@ public class TemplateElementMap {
         this.elementConfigByNamePathMap = elementConfigByNamePathMap;
         this.repeatSemanticPathMap = elementConfigByNamePathMap.values()
             .stream()
-            .filter(ElementTemplateConfig::isRepeat).collect(Collectors
-                .toMap(ElementTemplateConfig::getRepeatUid, ElementTemplateConfig::getIdPath));
+            .filter(TemplateElement::isRepeat).collect(Collectors
+                .toMap(TemplateElement::getRepeatUid, TemplateElement::getIdPath));
     }
 }

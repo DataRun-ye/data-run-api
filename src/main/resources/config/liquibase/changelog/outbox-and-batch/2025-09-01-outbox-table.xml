@@ -23,6 +23,8 @@
             <column name="last_error" type="text"/>
             <column name="created_at" type="DATETIME" defaultValueComputed="now()"/>
             <column name="available_at" type="DATETIME" defaultValueComputed="now()"/>
+            <column name="processing_owner" type="VARCHAR(255)"/>
+            <column name="processing_started_at" type="DATETIME"/>
             <column name="processed_at" type="DATETIME"/>
         </createTable>
 
@@ -34,6 +36,14 @@
         <createIndex tableName="outbox_event" indexName="idx_outbox_aggregate">
             <column name="aggregate_type"/>
             <column name="aggregate_id"/>
+        </createIndex>
+        <createIndex indexName="idx_outbox_eventtype_available" tableName="outbox_event">
+            <column name="event_type"/>
+            <column name="status"/>
+            <column name="available_at"/>
+        </createIndex>
+        <createIndex indexName="idx_outbox_processing_started_at  " tableName="outbox_event">
+            <column name="processing_started_at"/>
         </createIndex>
     </changeSet>
 </databaseChangeLog>

@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.jpa.etl.service;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.analytics.ElementMetadataService;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.etl.model.NormalizedSubmission;
@@ -30,7 +29,6 @@ public class EtlCoordinatorService {
     private final DataSubmissionRepository submissionRepo;
     private final NormalizedSubmissionPersister persister;
     private final Normalizer normalizer;
-    private final ElementMetadataService elementMetadataService;
 
     /**
      * Process a submission end-to-end.

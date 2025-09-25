@@ -4,26 +4,7 @@
 package org.nmcpye.datarun.jooq.tables;
 
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
-import org.jooq.Condition;
-import org.jooq.Field;
-import org.jooq.Index;
-import org.jooq.JSONB;
-import org.jooq.Name;
-import org.jooq.PlainSQL;
-import org.jooq.QueryPart;
-import org.jooq.SQL;
-import org.jooq.Schema;
-import org.jooq.Select;
-import org.jooq.Stringly;
-import org.jooq.Table;
-import org.jooq.TableField;
-import org.jooq.TableOptions;
-import org.jooq.UniqueKey;
+import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
@@ -31,6 +12,11 @@ import org.nmcpye.datarun.jooq.Indexes;
 import org.nmcpye.datarun.jooq.Keys;
 import org.nmcpye.datarun.jooq.Public;
 import org.nmcpye.datarun.jooq.tables.records.ElementTemplateConfigRecord;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 
 /**
@@ -42,7 +28,7 @@ public class ElementTemplateConfig extends TableImpl<ElementTemplateConfigRecord
     private static final long serialVersionUID = 1L;
 
     /**
-     * The reference instance of <code>public.element_template_config</code>
+     * The reference instance of <code>public.template_element</code>
      */
     public static final ElementTemplateConfig ELEMENT_TEMPLATE_CONFIG = new ElementTemplateConfig();
 
@@ -55,152 +41,152 @@ public class ElementTemplateConfig extends TableImpl<ElementTemplateConfigRecord
     }
 
     /**
-     * The column <code>public.element_template_config.id</code>.
+     * The column <code>public.template_element.id</code>.
      */
     public final TableField<ElementTemplateConfigRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
-     * The column <code>public.element_template_config.uid</code>.
+     * The column <code>public.template_element.uid</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> UID = createField(DSL.name("uid"), SQLDataType.VARCHAR(11).nullable(false), this, "");
 
     /**
-     * The column <code>public.element_template_config.element_kind</code>.
+     * The column <code>public.template_element.element_kind</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> ELEMENT_KIND = createField(DSL.name("element_kind"), SQLDataType.VARCHAR(16).nullable(false), this, "");
 
     /**
-     * The column <code>public.element_template_config.template_uid</code>.
+     * The column <code>public.template_element.template_uid</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> TEMPLATE_UID = createField(DSL.name("template_uid"), SQLDataType.VARCHAR(11).nullable(false), this, "");
 
     /**
      * The column
-     * <code>public.element_template_config.template_version_uid</code>.
+     * <code>public.template_element.template_version_uid</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> TEMPLATE_VERSION_UID = createField(DSL.name("template_version_uid"), SQLDataType.VARCHAR(11).nullable(false), this, "");
 
     /**
      * The column
-     * <code>public.element_template_config.template_version_no</code>.
+     * <code>public.template_element.template_version_no</code>.
      */
     public final TableField<ElementTemplateConfigRecord, Integer> TEMPLATE_VERSION_NO = createField(DSL.name("template_version_no"), SQLDataType.INTEGER.nullable(false), this, "");
 
     /**
-     * The column <code>public.element_template_config.data_element_uid</code>.
+     * The column <code>public.template_element.data_element_uid</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> DATA_ELEMENT_UID = createField(DSL.name("data_element_uid"), SQLDataType.VARCHAR(100).nullable(false), this, "");
 
     /**
-     * The column <code>public.element_template_config.name</code>.
+     * The column <code>public.template_element.name</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> NAME = createField(DSL.name("name"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
-     * The column <code>public.element_template_config.value_type</code>.
+     * The column <code>public.template_element.value_type</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> VALUE_TYPE = createField(DSL.name("value_type"), SQLDataType.VARCHAR(255), this, "");
 
     /**
-     * The column <code>public.element_template_config.aggregation_type</code>.
+     * The column <code>public.template_element.aggregation_type</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> AGGREGATION_TYPE = createField(DSL.name("aggregation_type"), SQLDataType.VARCHAR(32), this, "");
 
     /**
-     * The column <code>public.element_template_config.is_reference</code>.
+     * The column <code>public.template_element.is_reference</code>.
      */
     public final TableField<ElementTemplateConfigRecord, Boolean> IS_REFERENCE = createField(DSL.name("is_reference"), SQLDataType.BOOLEAN.nullable(false), this, "");
 
     /**
-     * The column <code>public.element_template_config.category_id</code>.
+     * The column <code>public.template_element.category_id</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> CATEGORY_ID = createField(DSL.name("category_id"), SQLDataType.VARCHAR(26), this, "");
 
     /**
-     * The column <code>public.element_template_config.is_category</code>.
+     * The column <code>public.template_element.is_category</code>.
      */
     public final TableField<ElementTemplateConfigRecord, Boolean> IS_CATEGORY = createField(DSL.name("is_category"), SQLDataType.BOOLEAN, this, "");
 
     /**
-     * The column <code>public.element_template_config.option_set_uid</code>.
+     * The column <code>public.template_element.option_set_uid</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> OPTION_SET_UID = createField(DSL.name("option_set_uid"), SQLDataType.VARCHAR(11), this, "");
 
     /**
-     * The column <code>public.element_template_config.is_multi</code>.
+     * The column <code>public.template_element.is_multi</code>.
      */
     public final TableField<ElementTemplateConfigRecord, Boolean> IS_MULTI = createField(DSL.name("is_multi"), SQLDataType.BOOLEAN.nullable(false), this, "");
 
     /**
-     * The column <code>public.element_template_config.is_measure</code>.
+     * The column <code>public.template_element.is_measure</code>.
      */
     public final TableField<ElementTemplateConfigRecord, Boolean> IS_MEASURE = createField(DSL.name("is_measure"), SQLDataType.BOOLEAN.nullable(false), this, "");
 
     /**
-     * The column <code>public.element_template_config.is_dimension</code>.
+     * The column <code>public.template_element.is_dimension</code>.
      */
     public final TableField<ElementTemplateConfigRecord, Boolean> IS_DIMENSION = createField(DSL.name("is_dimension"), SQLDataType.BOOLEAN.nullable(false), this, "");
 
     /**
-     * The column <code>public.element_template_config.sort_order</code>.
+     * The column <code>public.template_element.sort_order</code>.
      */
     public final TableField<ElementTemplateConfigRecord, Integer> SORT_ORDER = createField(DSL.name("sort_order"), SQLDataType.INTEGER, this, "");
 
     /**
-     * The column <code>public.element_template_config.semantic_grain</code>.
+     * The column <code>public.template_element.semantic_grain</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> SEMANTIC_GRAIN = createField(DSL.name("semantic_grain"), SQLDataType.VARCHAR(255), this, "");
 
     /**
-     * The column <code>public.element_template_config.id_path</code>.
+     * The column <code>public.template_element.id_path</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> ID_PATH = createField(DSL.name("id_path"), SQLDataType.VARCHAR(3000).nullable(false), this, "");
 
     /**
-     * The column <code>public.element_template_config.path_hash</code>.
+     * The column <code>public.template_element.path_hash</code>.
      */
     public final TableField<ElementTemplateConfigRecord, Long> PATH_HASH = createField(DSL.name("path_hash"), SQLDataType.BIGINT, this, "");
 
     /**
-     * The column <code>public.element_template_config.name_path</code>.
+     * The column <code>public.template_element.name_path</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> NAME_PATH = createField(DSL.name("name_path"), SQLDataType.VARCHAR(3000), this, "");
 
     /**
-     * The column <code>public.element_template_config.semantic_path</code>.
+     * The column <code>public.template_element.semantic_path</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> SEMANTIC_PATH = createField(DSL.name("semantic_path"), SQLDataType.VARCHAR(3000), this, "");
 
     /**
      * The column
-     * <code>public.element_template_config.has_repeat_ancestor</code>.
+     * <code>public.template_element.has_repeat_ancestor</code>.
      */
     public final TableField<ElementTemplateConfigRecord, Boolean> HAS_REPEAT_ANCESTOR = createField(DSL.name("has_repeat_ancestor"), SQLDataType.BOOLEAN.nullable(false), this, "");
 
     /**
      * The column
-     * <code>public.element_template_config.ancestor_repeat_semantic_path</code>.
+     * <code>public.template_element.ancestor_repeat_semantic_path</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> ANCESTOR_REPEAT_SEMANTIC_PATH = createField(DSL.name("ancestor_repeat_semantic_path"), SQLDataType.VARCHAR(3000), this, "");
 
     /**
      * The column
-     * <code>public.element_template_config.ancestor_repeat_path</code>.
+     * <code>public.template_element.ancestor_repeat_path</code>.
      */
     public final TableField<ElementTemplateConfigRecord, String> ANCESTOR_REPEAT_PATH = createField(DSL.name("ancestor_repeat_path"), SQLDataType.VARCHAR(3000), this, "");
 
     /**
-     * The column <code>public.element_template_config.display_label</code>.
+     * The column <code>public.template_element.display_label</code>.
      */
     public final TableField<ElementTemplateConfigRecord, JSONB> DISPLAY_LABEL = createField(DSL.name("display_label"), SQLDataType.JSONB, this, "");
 
     /**
-     * The column <code>public.element_template_config.definition_json</code>.
+     * The column <code>public.template_element.definition_json</code>.
      */
     public final TableField<ElementTemplateConfigRecord, JSONB> DEFINITION_JSON = createField(DSL.name("definition_json"), SQLDataType.JSONB, this, "");
 
     /**
-     * The column <code>public.element_template_config.created_at</code>.
+     * The column <code>public.template_element.created_at</code>.
      */
     public final TableField<ElementTemplateConfigRecord, LocalDateTime> CREATED_AT = createField(DSL.name("created_at"), SQLDataType.LOCALDATETIME(6).nullable(false), this, "");
 
@@ -213,7 +199,7 @@ public class ElementTemplateConfig extends TableImpl<ElementTemplateConfigRecord
     }
 
     /**
-     * Create an aliased <code>public.element_template_config</code> table
+     * Create an aliased <code>public.template_element</code> table
      * reference
      */
     public ElementTemplateConfig(String alias) {
@@ -221,7 +207,7 @@ public class ElementTemplateConfig extends TableImpl<ElementTemplateConfigRecord
     }
 
     /**
-     * Create an aliased <code>public.element_template_config</code> table
+     * Create an aliased <code>public.template_element</code> table
      * reference
      */
     public ElementTemplateConfig(Name alias) {
@@ -229,10 +215,10 @@ public class ElementTemplateConfig extends TableImpl<ElementTemplateConfigRecord
     }
 
     /**
-     * Create a <code>public.element_template_config</code> table reference
+     * Create a <code>public.template_element</code> table reference
      */
     public ElementTemplateConfig() {
-        this(DSL.name("element_template_config"), null);
+        this(DSL.name("template_element"), null);
     }
 
     @Override

@@ -3,7 +3,7 @@ package org.nmcpye.datarun.jpa.datatemplate.repository;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.nmcpye.datarun.jpa.common.BaseJpaIdentifiableRepository;
-import org.nmcpye.datarun.jpa.datatemplate.ElementTemplateConfig;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -14,28 +14,30 @@ import java.util.Optional;
 /// Spring Data MongoDB repository for the DataFormTemplate entity.
 @Repository
 //@JaversSpringDataAuditable
-public interface ElementTemplateConfigRepository
-    extends BaseJpaIdentifiableRepository<ElementTemplateConfig, Long> {
+public interface TemplateElementRepository
+    extends BaseJpaIdentifiableRepository<TemplateElement, Long> {
     void deleteAllByTemplateUidAndTemplateVersionUid(String templateUid, String templateVersionUid);
 
-    @Query("SELECT e.id FROM ElementTemplateConfig e " +
+    @Query("SELECT e.id FROM TemplateElement e " +
         "WHERE e.templateUid=:templateUid AND e.templateVersionUid=:templateVersionUid")
     List<Long> findIdsByTemplateUidAndTemplateVersionUid(@Param("templateUid") String templateUid,
                                                          @Param("templateVersionUid") String templateVersionUid);
 
-    Optional<ElementTemplateConfig> findByUid(@Size(max = 11) String uid);
-    List<ElementTemplateConfig> findAllByTemplateUidAndTemplateVersionUid(String templateUid, String templateVersionUid);
+    Optional<TemplateElement> findByUid(@Size(max = 11) String uid);
 
-    List<ElementTemplateConfig> findAllByTemplateUidAndVersionNo(String templateUid, Integer templateVersionNo);
+    List<TemplateElement> findAllByTemplateUidAndTemplateVersionUid(String templateUid, String templateVersionUid);
 
-    Optional<ElementTemplateConfig> findTopByTemplateUidOrderByVersionNoDesc(@NotNull String templateId);
+    List<TemplateElement> findAllByTemplateUidAndVersionNo(String templateUid, Integer templateVersionNo);
 
-    List<ElementTemplateConfig> findByTemplateVersionUid(String templateVersionUid);
+    Optional<TemplateElement> findTopByTemplateUidOrderByVersionNoDesc(@NotNull String templateId);
 
-    Optional<ElementTemplateConfig> findByRepeatUid(String repeatUid);
+    List<TemplateElement> findByTemplateVersionUid(String templateVersionUid);
+
+    Optional<TemplateElement> findByRepeatUid(String repeatUid);
 
     // load only repeat entries (cached in app)
-    @Query("SELECT e.repeatUid, e.semanticPath FROM ElementTemplateConfig e WHERE e.elementKind = 'REPEAT'")
+    @Query("SELECT e.repeatUid, e.canonicalPath FROM TemplateElement e WHERE e.elementKind = 'REPEAT'")
     List<Object[]> findAllRepeats(); // returns [repeatUid, semanticPath] rows
 
+    List<TemplateElement> findBySchemaFingerprint(String schemaFingerprint);
 }
