@@ -14,7 +14,7 @@ import java.util.Map;
  * @since 23/09/2025
  */
 @Entity
-@Table(name = "feature_flags")
+@Table(name = "feature_flag")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -34,10 +34,11 @@ public class FeatureFlag {
     private String description;
 
     @Column(nullable = false)
+    @Builder.Default
     private String environment = "production";
 
     @Column(nullable = false)
-    private boolean enabled = false;
+    private boolean enabled;
 
     @Type(JsonType.class)
     @Column(columnDefinition = "jsonb", nullable = false)
@@ -56,10 +57,13 @@ public class FeatureFlag {
     private Map<String, Object> metadata;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer version = 1;
 
     private String createdBy;
+    @Builder.Default
     private Instant createdAt = Instant.now();
     private String updatedBy;
+    @Builder.Default
     private Instant updatedAt = Instant.now();
 }

@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.jpa.etl.service;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.jpa.etl.dao.IElementDataValueDao;
-import org.nmcpye.datarun.jpa.etl.dao.IRepeatInstancesDao;
 import org.nmcpye.datarun.jpa.etl.model.NormalizedSubmission;
+import org.nmcpye.datarun.jpa.etl.repository.IElementDataValueDao;
+import org.nmcpye.datarun.jpa.etl.repository.IRepeatInstancesDao;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;

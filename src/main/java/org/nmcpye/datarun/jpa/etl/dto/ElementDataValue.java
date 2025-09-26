@@ -1,8 +1,9 @@
 package org.nmcpye.datarun.jpa.etl.dto;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.*;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 
 import java.math.BigDecimal;
@@ -21,17 +22,20 @@ import java.time.Instant;
  * @author Hamza Assada
  * @since 2025-10-08
  */
-@Data
+@Entity
+@Table(name = "element_data_value")
+@Getter
+@Setter
 @Builder
-@EqualsAndHashCode(of = {"submissionUid", "repeatInstanceId",
-    "elementUid", "optionUid"},
-    cacheStrategy = EqualsAndHashCode.CacheStrategy.LAZY)
+@AllArgsConstructor
+@NoArgsConstructor
 public class ElementDataValue {
 
     /**
      * Primary DB id (bigserial).
      * db: {@code id, PK}
      */
+    @Id
     private Long id;
 
     private String canonicalPath;

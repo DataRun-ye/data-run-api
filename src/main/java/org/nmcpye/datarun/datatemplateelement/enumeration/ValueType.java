@@ -6,11 +6,9 @@ import java.util.List;
  * The ValueType enumeration.
  */
 public enum ValueType {
-    @Deprecated(since = "Remove for Value Type rendering")
     ScannedCode,
-    @Deprecated(since = "Remove for boolean repeatable in section")
     RepeatableSection,
-    Section,
+    Section, // ui group
     SelectMulti,
     SelectOne,
     Age,

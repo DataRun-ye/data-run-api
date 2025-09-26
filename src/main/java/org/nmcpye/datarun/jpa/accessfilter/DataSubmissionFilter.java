@@ -28,7 +28,7 @@ public class DataSubmissionFilter extends DefaultJpaFilter<DataSubmission> {
             }
 
             final var viewForms = user.getFormAccess().stream()
-                .filter(UserFormAccess::canViewSubmission)
+                .filter(UserFormAccess::canEditSubmission)
                 .map(UserFormAccess::getForm)
                 .toList();
 

@@ -30,7 +30,7 @@ public class MongoRangeItemReader<T> {
         this.targetType = targetType;
         this.collection = collection;
         this.pageSize = pageSize;
-        this.idField = "_id";
+        this.idField = "serialNumber";
     }
 
     /**
@@ -63,15 +63,15 @@ public class MongoRangeItemReader<T> {
     private Object extractId(T entity) {
         try {
             var clazz = entity.getClass();
-            var f = clazz.getDeclaredField("id");
+            var f = clazz.getDeclaredField("serialNumber");
             f.setAccessible(true);
             return f.get(entity);
         } catch (NoSuchFieldException nsfe) {
             try {
-                var m = entity.getClass().getMethod("getId");
+                var m = entity.getClass().getMethod("setSerialNumber");
                 return m.invoke(entity);
             } catch (Exception e) {
-                throw new RuntimeException("Unable to extract id from Mongo entity. Add a public getId() or field id", e);
+                throw new RuntimeException("Unable to extract id from Mongo entity. Add a public setSerialNumber() or field id", e);
             }
         } catch (Exception ex) {
             throw new RuntimeException("Unable to extract id from Mongo entity", ex);

@@ -10,7 +10,6 @@ import org.nmcpye.datarun.jpa.datasubmissionoutbox.repository.OutboxEventReposit
 import org.nmcpye.datarun.jpa.datasubmissionoutbox.workers.OutboxWorker;
 import org.nmcpye.datarun.jpa.etl.service.EtlCoordinatorService;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -86,7 +85,7 @@ public class OutboxRelay implements DisposableBean {
      * Scheduled poller. We use fixedDelay so that interval begins after processing completes.
      * Poll interval is configurable via outbox.relay.poll-interval-ms.
      */
-    @Scheduled(fixedDelayString = "${outbox.relay.poll-interval-ms:2000}")
+//    @Scheduled(fixedDelayString = "${outbox.relay.poll-interval-ms:2000}")
     public void pollAndProcess() {
         try {
             // claim in a short transaction to leverage FOR UPDATE SKIP LOCKED

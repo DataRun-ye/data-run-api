@@ -42,7 +42,7 @@ public class DataSubmission extends JpaSoftDeleteObject {
      * DB-generated serial (bigint sequence + unique).
      * Keep insertable=false if DB default nextval() used.
      */
-    @Column(name = "serial_number", nullable = false, unique = true, insertable = false, updatable = false)
+    @Column(name = "serial_number", nullable = false, unique = true, /*insertable = false,*/ updatable = false)
     private Long serialNumber;
 
     @Size(max = 11)

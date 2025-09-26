@@ -1,4 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE databaseChangeLog [
+    <!ELEMENT databaseChangeLog (changeSet)*>
+    <!ATTLIST databaseChangeLog
+        xmlns CDATA #REQUIRED
+        xmlns:xsi CDATA #REQUIRED
+        xsi:schemaLocation CDATA #REQUIRED>
+    <!ELEMENT changeSet (createTable|rollback|addForeignKeyConstraint|createIndex|addColumn|sql|insert)*>
+    <!ATTLIST changeSet
+        author CDATA #REQUIRED
+        id CDATA #REQUIRED
+        runOnChange CDATA #IMPLIED>
+    <!ELEMENT createTable (column)*>
+    <!ATTLIST createTable
+        tableName CDATA #REQUIRED>
+    <!ELEMENT column (constraints)*>
+    <!ATTLIST column
+        defaultValue CDATA #IMPLIED
+        defaultValueComputed CDATA #IMPLIED
+        defaultValueNumeric CDATA #IMPLIED
+        name CDATA #REQUIRED
+        type CDATA #IMPLIED
+        value CDATA #IMPLIED
+        valueComputed CDATA #IMPLIED>
+    <!ELEMENT constraints (#PCDATA)>
+    <!ATTLIST constraints
+        nullable CDATA #REQUIRED
+        primaryKey CDATA #IMPLIED
+        unique CDATA #IMPLIED>
+    <!ELEMENT rollback (dropTable|dropIndex|dropColumn|delete)*>
+    <!ELEMENT dropTable (#PCDATA)>
+    <!ATTLIST dropTable
+        tableName CDATA #REQUIRED>
+    <!ELEMENT addForeignKeyConstraint (#PCDATA)>
+    <!ATTLIST addForeignKeyConstraint
+        baseColumnNames CDATA #REQUIRED
+        baseTableName CDATA #REQUIRED
+        constraintName CDATA #REQUIRED
+        referencedColumnNames CDATA #REQUIRED
+        referencedTableName CDATA #REQUIRED>
+    <!ELEMENT createIndex (column)*>
+    <!ATTLIST createIndex
+        indexName CDATA #REQUIRED
+        tableName CDATA #REQUIRED
+        unique CDATA #IMPLIED>
+    <!ELEMENT addColumn (column)*>
+    <!ATTLIST addColumn
+        tableName CDATA #REQUIRED>
+    <!ELEMENT sql (#PCDATA)>
+    <!ELEMENT dropIndex (#PCDATA)>
+    <!ATTLIST dropIndex
+        indexName CDATA #REQUIRED
+        tableName CDATA #REQUIRED>
+    <!ELEMENT dropColumn (#PCDATA)>
+    <!ATTLIST dropColumn
+        columnName CDATA #REQUIRED
+        tableName CDATA #REQUIRED>
+    <!ELEMENT insert (column)*>
+    <!ATTLIST insert
+        tableName CDATA #REQUIRED>
+    <!ELEMENT delete (where)*>
+    <!ATTLIST delete
+        tableName CDATA #REQUIRED>
+    <!ELEMENT where (#PCDATA)>
+    ]>
 <databaseChangeLog
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.domainmapping.util;
+package org.nmcpye.datarun.utils;
 
 
 import org.apache.commons.codec.binary.Hex;

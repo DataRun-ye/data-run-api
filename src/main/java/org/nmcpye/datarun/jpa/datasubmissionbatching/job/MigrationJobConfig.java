@@ -28,6 +28,7 @@ import org.springframework.batch.item.support.CompositeItemWriter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -41,7 +42,7 @@ import java.util.List;
  *
  * @author Hamza Assada 16/08/2025 (7amza.it@gmail.com)
  */
-//@Configuration
+@Configuration
 @Slf4j
 public class MigrationJobConfig {
 
@@ -190,6 +191,9 @@ public class MigrationJobConfig {
         ds.setStartEntryTime(mongo.getStartEntryTime());
         ds.setFinishedEntryTime(mongo.getFinishedEntryTime());
         ds.setFormData(objectMapper.convertValue(mongo.getFormData(), JsonNode.class));
+        ds.setSerialNumber(mongo.getSerialNumber());
+        ds.setCreatedBy(mongo.getCreatedBy());
+        ds.setCreatedDate(mongo.getCreatedDate());
         if (mongo.getSerialNumber() != null) ds.setSerialNumber(mongo.getSerialNumber());
         return ds;
     }

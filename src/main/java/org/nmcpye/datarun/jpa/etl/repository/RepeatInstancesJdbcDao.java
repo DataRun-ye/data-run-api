@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.etl.dao;
+package org.nmcpye.datarun.jpa.etl.repository;
 
 import org.nmcpye.datarun.jpa.etl.dto.RepeatInstance;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;

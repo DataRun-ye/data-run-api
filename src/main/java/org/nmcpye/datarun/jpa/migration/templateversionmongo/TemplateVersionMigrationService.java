@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Hamza Assada - 7amza.it@gmail.com
@@ -128,20 +129,29 @@ public class TemplateVersionMigrationService {
      * Collect DataTemplateVersion.uids that correspond to template-version pairs that have submissions.
      */
     private List<String> collectVersionUidsFromSubmissionsIncludingLatestForNoSubmissions() {
-        // 1) All (form,version) pairs that appear in submissions
-        List<DataFormSubmissionRepository.FormVersionPair> pairs = submissionRepo.findDistinctFormAndVersion();
+        // 1) All (form,version) versionNoPair that appear in submissions
 
+        var versionNoPair =
+            submissionRepo.findDistinctFormAndVersion().stream()
+                .filter(dtv -> dtv.getCurrentVersion() != null)
+                .flatMap(p -> mongoRepo.findByTemplateUidAndVersionNumber(p.getForm(), p.getCurrentVersion())
+                    .stream())
+                .toList();
+        var versionUidPairs =
+            submissionRepo.findDistinctFormAndVersionUid().stream()
+                .filter(dtv -> dtv.getFormVersion() != null)
+                .flatMap(p -> mongoRepo.findByTemplateUidAndUid(p.getForm(), p.getFormVersion())
+                    .stream()).toList();
+        var versions = Stream
+            .concat(versionNoPair.stream(), versionUidPairs.stream()).collect(Collectors.toSet());
         Set<String> uids = new LinkedHashSet<>(); // preserve deterministic order
         Set<String> formsWithSubs = new HashSet<>();
 
-        if (pairs != null) {
-            for (DataFormSubmissionRepository.FormVersionPair p : pairs) {
-                if (p.getForm() == null || p.getCurrentVersion() == null) continue;
-                formsWithSubs.add(p.getForm());
-                mongoRepo.findByTemplateUidAndVersionNumber(p.getForm(), p.getCurrentVersion())
-                    .ifPresent(dtv -> uids.add(dtv.getUid()));
-            }
-        }
+//        if (versionNoPair != null) {
+        versions.forEach(p -> {
+            uids.add(p.getUid());
+            formsWithSubs.add(p.getTemplateUid());
+        });
 
         List<DataTemplate> templates = templateRepository.findAll();
         List<String> latestVersions = mongoRepo.
@@ -169,6 +179,8 @@ public class TemplateVersionMigrationService {
             .fields(src.getFields())
             .sections(src.getSections())
             .build();
+        e.setCreatedBy(dataTemplate.getCreatedBy());
+        e.setCreatedDate(dataTemplate.getCreatedDate());
 
         return e;
     }

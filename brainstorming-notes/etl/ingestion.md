@@ -16,6 +16,7 @@ sequenceDiagram
     participant Downstream
 
     Client->>API: POST /submissions (raw payload)
+    Client->>API: POST /submissions (outbox payload)
     API->>DB: persist raw_payload pointer + submission row (status=PENDING)
     API->>Queue: enqueue(injest_id, submission_uid)
 

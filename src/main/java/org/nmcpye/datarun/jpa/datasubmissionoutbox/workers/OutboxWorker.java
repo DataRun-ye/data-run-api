@@ -5,7 +5,6 @@ import org.nmcpye.datarun.config.datarun.OutboxProperties;
 import org.nmcpye.datarun.jpa.datasubmissionoutbox.BackoffPolicy;
 import org.nmcpye.datarun.jpa.datasubmissionoutbox.OutboxEvent;
 import org.nmcpye.datarun.jpa.datasubmissionoutbox.repository.OutboxEventRepository;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -53,7 +52,7 @@ public abstract class OutboxWorker {
 
     public abstract void handle(OutboxEvent ev) throws Exception;
 
-    @Scheduled(fixedDelayString = "${outbox.poll-interval-ms:2000}")
+//    @Scheduled(fixedDelayString = "${outbox.poll-interval-ms:2000}")
     public void pollAndProcess() {
         // claim in short tx
         List<OutboxEvent> claimed = txTemplate.execute(s ->
