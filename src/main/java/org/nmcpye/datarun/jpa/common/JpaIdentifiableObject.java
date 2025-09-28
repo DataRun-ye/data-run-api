@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.domain.Persistable;
@@ -43,7 +45,7 @@ public abstract class JpaIdentifiableObject
     @Serial
     private static final long serialVersionUID = 1L;
 
-//    @CreatedBy
+    @CreatedBy
     @Column(name = "created_by", nullable = false, length = 50, updatable = false)
     protected String createdBy;
 
@@ -51,7 +53,7 @@ public abstract class JpaIdentifiableObject
     @Column(name = "last_modified_by", length = 50)
     protected String lastModifiedBy;
 
-//    @CreatedDate
+    @CreatedDate
     @Column(name = "created_date", updatable = false)
     protected Instant createdDate = Instant.now();
 

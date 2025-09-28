@@ -4,12 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.springframework.stereotype.Component;
-
-import java.util.Objects;
 
 /**
  * @author Hamza Assada 20/08/2025 (7amza.it@gmail.com)
@@ -19,6 +18,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class SubmissionAccessValidator {
     private final FormAccessService formAccessService;
+    private final AssignmentRepository assignmentRepository;
 
     public DataSubmission validateAccess(DataSubmission submission, CurrentUserDetails user) {
         if (!user.isSuper()) {
@@ -26,11 +26,13 @@ public class SubmissionAccessValidator {
                 log.error("User {} cannot submit data", user.getUsername());
                 throw new IllegalQueryException(ErrorCode.E1112, submission.getTeam());
             }
-            if (Objects.isNull(submission.getTeam())) {
-                log.error("Team is not present in submission {}", submission.getUid());
-                throw new IllegalQueryException(ErrorCode.E4113, submission.getUid());
+            if (submission.getAssignment() == null) {
+                throw new DomainValidationException("Assignment is required");
             }
-            final var incomingTeam = submission.getTeam();
+            final var assignment = assignmentRepository.findByUid(submission.getAssignment())
+                .orElseThrow(() -> new DomainValidationException("Assignment is required"));
+
+            final var incomingTeam = assignment.getTeam().getUid();
             if (!user.getUserTeamsUIDs().contains(incomingTeam)) {
                 log.error("User {}, with team {} cannot submit data", user.getUsername(), incomingTeam);
                 throw new IllegalQueryException(ErrorCode.E4114, submission.getTeam(), submission.getUid());

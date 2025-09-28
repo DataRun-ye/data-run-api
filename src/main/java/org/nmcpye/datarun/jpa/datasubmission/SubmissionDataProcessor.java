@@ -31,8 +31,8 @@ import java.util.Map;
 public class SubmissionDataProcessor {
 
     private final CompositeSubmissionValidator compositeValidator;
-    private final FormDataProcessor formDataProcessor;
     private final SubmissionAccessValidator submissionAccessValidator;
+    private final FormDataProcessor formDataProcessor;
 
     /**
      * '
@@ -44,13 +44,14 @@ public class SubmissionDataProcessor {
      *
      * @param submission incoming submission
      */
-    public void processIncomingSubmission(DataSubmission submission, CurrentUserDetails user) {
-        submissionAccessValidator.validateAccess(submission, user);
-        compositeValidator.validateAndEnrich(submission);
+    public DataSubmission processIncomingSubmission(DataSubmission submission, CurrentUserDetails user) {
+//        submissionAccessValidator.validateAccess(submission, user);
+//        compositeValidator.validateAndEnrich(submission);
         final var enrichedFormData = formDataProcessor.enrichFormData(submission, true);
 //         assertRepeatIdsPresent(submission.getFormData(),
 //             elementMapService.getTemplateElementMap(submission.getForm(), submission.getFormVersion()));
         submission.setFormData(enrichedFormData);
+        return submission;
     }
 
 

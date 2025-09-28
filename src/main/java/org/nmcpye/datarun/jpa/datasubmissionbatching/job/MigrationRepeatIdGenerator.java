@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.jpa.datasubmissionbatching.job;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
@@ -46,11 +45,9 @@ public final class MigrationRepeatIdGenerator {
     private static final String SUBMISSION_UID_FIELD = "_submissionUid";
     private static final String INDEX_FIELD = "_index";
 
-    private final ObjectMapper objectMapper;
     private final TemplateElementMap elementMap;
 
-    public MigrationRepeatIdGenerator(ObjectMapper objectMapper, TemplateElementMap elementMap) {
-        this.objectMapper = objectMapper;
+    public MigrationRepeatIdGenerator(TemplateElementMap elementMap) {
         this.elementMap = elementMap;
     }
 

@@ -57,6 +57,7 @@ public class RawRepeatPayload implements Serializable {
     private String payloadId;
 
     @Column(name = "occurrence_index", nullable = false)
+    @Builder.Default
     private Integer occurrenceIndex = 0;
 
     @Type(JsonType.class)

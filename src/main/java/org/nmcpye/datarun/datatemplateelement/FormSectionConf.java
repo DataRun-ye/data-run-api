@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.datatemplateelement;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,7 +14,7 @@ public class FormSectionConf extends AbstractElement implements Serializable {
     private String categoryId;
 
     @JsonProperty
-    @JsonIgnore
+//    @JsonIgnore
     public String getId() {
         return getName();
     }

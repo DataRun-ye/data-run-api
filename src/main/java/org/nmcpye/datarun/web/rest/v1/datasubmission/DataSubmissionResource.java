@@ -3,11 +3,17 @@ package org.nmcpye.datarun.web.rest.v1.datasubmission;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.SubmissionDataProcessor;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
+import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
+import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidator;
+import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
+import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.utils.FormSubmissionDataUtil;
@@ -25,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for managing {@link DataSubmission}.
@@ -39,14 +46,20 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     private final ObjectMapper objectMapper;
     final private DataSubmissionService submissionService;
     private final SubmissionDataProcessor submissionDataProcessor;
+    private final CompositeSubmissionValidator compositeValidator;
+    private final SubmissionAccessValidator submissionAccessValidator;
+    private final TemplateElementService templateElementService;
 
     public DataSubmissionResource(DataSubmissionService submissionService,
                                   DataSubmissionRepository submissionRepository, ObjectMapper objectMapper,
-                                  SubmissionDataProcessor submissionDataProcessor) {
+                                  SubmissionDataProcessor submissionDataProcessor, CompositeSubmissionValidator compositeValidator, SubmissionAccessValidator submissionAccessValidator, TemplateElementService templateElementService) {
         super(submissionService, submissionRepository);
         this.submissionService = submissionService;
         this.objectMapper = objectMapper;
         this.submissionDataProcessor = submissionDataProcessor;
+        this.compositeValidator = compositeValidator;
+        this.submissionAccessValidator = submissionAccessValidator;
+        this.templateElementService = templateElementService;
     }
 
     @Deprecated(since = "V7, main method do the same now")
@@ -86,8 +99,9 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
 
     @Override
     protected void saveEntity(DataSubmission payLoadEntity, EntitySaveSummaryVM summary) {
+        hasMinimalRightsOrThrow(SecurityUtils.getCurrentUserDetailsOrThrow());
         var processedEntity = preProcess(List.of(payLoadEntity))
-            .stream().findFirst().get();
+            .stream().findFirst().orElseThrow(() -> new IllegalQueryException("processing: " + payLoadEntity.getUid() + " swallowed submission"));
         submissionService.upsert(processedEntity,
             SecurityUtils.getCurrentUserDetailsOrThrow(), summary);
 
@@ -95,18 +109,27 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
 
     @Override
     public ResponseEntity<EntitySaveSummaryVM> saveAll(List<DataSubmission> entities) {
+        hasMinimalRightsOrThrow(SecurityUtils.getCurrentUserDetailsOrThrow());
         EntitySaveSummaryVM summaryVM = new EntitySaveSummaryVM();
-        submissionService.upsertAll(entities, SecurityUtils.getCurrentUserDetailsOrThrow(), summaryVM);
+        submissionService.upsertAll(preProcess(entities), SecurityUtils.getCurrentUserDetailsOrThrow(), summaryVM);
         return ResponseEntity.ok(summaryVM);
     }
 
     @Override
     protected List<DataSubmission> preProcess(List<DataSubmission> payLoadEntities) {
-        for (DataSubmission payLoadEntity : payLoadEntities) {
-            submissionDataProcessor.processIncomingSubmission(payLoadEntity, SecurityUtils.getCurrentUserDetailsOrThrow());
-        }
+        return payLoadEntities.stream()
+            .peek(payLoadEntity -> {
+                ObjectNode root = (ObjectNode) (payLoadEntity.getFormData() == null ? objectMapper.createObjectNode() : payLoadEntity.getFormData().deepCopy());
+                final var migrationRepeatIdGenerator = new MigrationRepeatIdGenerator(templateElementService.getTemplateElementMap(payLoadEntity.getForm(), payLoadEntity.getFormVersion()));
+                int generated = migrationRepeatIdGenerator
+                    .generateMissingIdsForMigration(root, payLoadEntity.getUid());
+                if (generated > 0) {
+                    payLoadEntity.setFormData(root);
+                }
 
-        return payLoadEntities;
+                compositeValidator.validateAndEnrich(submissionAccessValidator.validateAccess(payLoadEntity,
+                    SecurityUtils.getCurrentUserDetailsOrThrow()));
+            }).collect(Collectors.toList());
     }
 
     @Override

@@ -43,7 +43,7 @@
 
     <!-- etl   -->
     <include file="/config/liquibase/changelog/outbox-and-batch/2025-09-01-outbox-table.xml" relativeToChangelogFile="false"/>
-<!--    <include file="/config/liquibase/changelog/outbox-and-batch/2025-09-01-batch-submission-migration-errors-table.xml" relativeToChangelogFile="false"/>-->
+    <include file="/config/liquibase/changelog/outbox-and-batch/2025-09-01-batch-submission-migration-errors-table.xml" relativeToChangelogFile="false"/>
 <!--    <include file="/config/liquibase/changelog/element-template/25-01-extraction-manifest-table.xml" relativeToChangelogFile="false"/>-->
 <!--    <include file="/config/liquibase/changelog/element-template/25-01-canonical-element-table.xml" relativeToChangelogFile="false"/>-->
 <!--    <include file="/config/liquibase/changelog/element-template/2025-09-20-template-element-table.xml" relativeToChangelogFile="false"/>-->

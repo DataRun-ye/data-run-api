@@ -60,18 +60,22 @@ public class OutboxEvent {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 32, nullable = false)
+    @Builder.Default
     private OutboxEventStatus status = OutboxEventStatus.PENDING;
 
     @Column(name = "attempts", nullable = false)
+    @Builder.Default
     private Integer attempts = 0;
 
     @Column(name = "last_error")
     private String lastError;
 
     @Column(name = "created_at", nullable = false)
+    @Builder.Default
     private Instant createdAt = Instant.now();
 
     @Column(name = "available_at", nullable = false)
+    @Builder.Default
     private Instant availableAt = Instant.now();
 
     @Column(name = "processed_at")

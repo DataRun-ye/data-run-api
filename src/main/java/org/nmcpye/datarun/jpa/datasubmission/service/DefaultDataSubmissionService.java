@@ -14,6 +14,7 @@ import org.nmcpye.datarun.jpa.datasubmission.events.SubmissionSavedEvent;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmissionoutbox.OutboxEvent;
 import org.nmcpye.datarun.jpa.datasubmissionoutbox.OutboxEventStatus;
+import org.nmcpye.datarun.jpa.datasubmissionoutbox.repository.OutboxEventRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationEventPublisher;
@@ -37,19 +38,19 @@ public class DefaultDataSubmissionService
     implements DataSubmissionService {
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
-//    private final OutboxEventRepository outboxEventRepository;
+    private final OutboxEventRepository outboxEventRepository;
 
     public DefaultDataSubmissionService(
         DataSubmissionRepository repository,
         CacheManager cacheManager,
         UserAccessService userAccessService,
         ApplicationEventPublisher eventPublisher,
-//        OutboxEventRepository outboxEventRepository,
+        OutboxEventRepository outboxEventRepository,
         ObjectMapper objectMapper) {
         super(repository, cacheManager, userAccessService);
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
-//        this.outboxEventRepository = outboxEventRepository;
+        this.outboxEventRepository = outboxEventRepository;
     }
 
     @Transactional
@@ -148,10 +149,10 @@ public class DefaultDataSubmissionService
 
         if (!entitiesToPersist.isEmpty()) {
             persistedResults = jpaAuditableObjectRepository.persistAllAndFlush(entitiesToPersist);
-//            final var outboxEvents = persistedResults.stream()
-//                .map(s -> createOutboxEvent(s, "submission.saved"))
-//                .toList();
-//            outboxEventRepository.persistAllAndFlush(outboxEvents);
+            final var outboxEvents = persistedResults.stream()
+                .map(s -> createOutboxEvent(s, "submission.saved"))
+                .toList();
+            outboxEventRepository.persistAllAndFlush(outboxEvents);
 
             persistedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
                 SubmissionChangeType.CREATE, s.getLockVersion())));
@@ -159,10 +160,10 @@ public class DefaultDataSubmissionService
         }
         if (!entitiesToUpdate.isEmpty()) {
             updatedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToUpdate);
-//            final var outboxEvents = updatedResults.stream()
-//                .map(s -> createOutboxEvent(s, "submission.updated"))
-//                .toList();
-//            outboxEventRepository.persistAllAndFlush(outboxEvents);
+            final var outboxEvents = updatedResults.stream()
+                .map(s -> createOutboxEvent(s, "submission.updated"))
+                .toList();
+            outboxEventRepository.persistAllAndFlush(outboxEvents);
 
             updatedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
                 SubmissionChangeType.UPDATE, s.getLockVersion()))); // Apply post-update hook for each

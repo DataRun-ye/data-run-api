@@ -38,7 +38,8 @@ public class MetadataSubmissionResourceCustom
 
     @Override
     protected Page<MetadataSubmission> getList(QueryRequest queryRequest, String jsonQueryBody) {
-        return metadataSubmissionGranularRepository.getReferencedMetadataSubmissions(queryRequest);
+//        return metadataSubmissionGranularRepository.getReferencedMetadataSubmissions(queryRequest);
+        return Page.empty();
     }
 
     @Override
