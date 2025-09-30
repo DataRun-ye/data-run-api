@@ -24,6 +24,14 @@ springdoc:
   api-docs:
     enabled: false
 ---
+feign:
+  circuitbreaker:
+    enabled: true
+  # client:
+  #   config:
+  #     default:
+  #       connectTimeout: 5000
+  #       readTimeout: 5000
 management:
   endpoints:
     web:
@@ -42,7 +50,6 @@ management:
           - threaddump
           - caches
           - liquibase
-          - metrics
   endpoint:
     health:
       show-details: when_authorized
@@ -88,12 +95,26 @@ management:
       repository:
         autotime:
           enabled: true
-#mongock:
-#  migration-scan-package:
-#    - org.nmcpye.datarun.config.dbmigrations
+    tags:
+      application: ${spring.application.name}
+
 spring:
   application:
-    name: dataRunApi
+    name: datRunApi
+  cloud:
+    consul:
+      discovery:
+        healthCheckPath: /management/health
+        instanceId: dataRunApi:${spring.application.instance-id:${random.value}}
+        service-name: dataRunApi
+      config:
+        watch:
+          enabled: false
+  docker:
+    compose:
+      enabled: true
+      lifecycle-management: start-only
+      file: src/main/docker/postgresql.yml
   profiles:
     # The commented value for `active` can be replaced with valid Spring profiles to load.
     # Otherwise, it will be filled in by maven when building the JAR file

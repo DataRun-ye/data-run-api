@@ -1,5 +1,9 @@
 # Datarun
 
+This is a "microservice" application intended to be part of a microservice architecture.
+
+This application is configured for Service Discovery and Configuration with Consul. On launch, it will refuse to start if it is not able to connect to Consul at [http://localhost:8500](http://localhost:8500). For more information, read our documentation on [Service Discovery and Configuration with Consul][].
+
 ## Build dependencies
 
 The current system is built upon:

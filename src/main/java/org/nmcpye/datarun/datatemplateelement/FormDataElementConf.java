@@ -31,7 +31,7 @@ public class FormDataElementConf extends AbstractElement implements Serializable
     private String choiceFilter;
     private ElementValidationRule validationRule;
 
-    private String mainField;
+    private Boolean mainField;
 
     /**
      * Deprecated, use {@link #validationRule#expression}'sinstead

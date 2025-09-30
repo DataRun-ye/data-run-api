@@ -15,17 +15,17 @@ services:
       - SPRING_DATA_MONGODB_USERNAME=dRunUser
       - SPRING_DATA_MONGODB_PASSWORD=dRunUser
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/dRunMongoDb
+      - SPRING_CLOUD_CONSUL_HOST=consul
+      - SPRING_CLOUD_CONSUL_PORT=8500
 #    volumes:
 #      - ../../target/data-run-api-0.0.1-SNAPSHOT.jar:/app/data-run-api-0.0.1-SNAPSHOT.jar
 #    command: ["java", "-jar", "/app/data-run-api-0.0.1-SNAPSHOT.jar"]
-    ports:
-      - 8080:8080
     healthcheck:
       test:
         - CMD
         - curl
         - -f
-        - http://localhost:8080/management/health
+        - http://localhost:8081/management/health
       interval: 5s
       timeout: 5s
       retries: 40
@@ -44,10 +44,18 @@ services:
     extends:
       file: ./mongodb.yml
       service: mongodb
-volumes:
-  mongodb_data:
-  postgis_data:
-
-networks:
-  nmcp-network:
-    external: true
+  consul:
+    extends:
+      file: ./consul.yml
+      service: consul
+  consul-config-loader:
+    extends:
+      file: ./consul.yml
+      service: consul-config-loader
+#volumes:
+#  mongodb_data:
+#  postgis_data:
+#
+#networks:
+#  nmcp-network:
+#    external: true

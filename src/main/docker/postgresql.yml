@@ -4,8 +4,8 @@ services:
   postgresql:
     image: postgres:16.2
     container_name: datarunapi-postgresql
-    volumes:
-      - postgis_data:/var/lib/postgresql/data
+#    volumes:
+#      - postgis_data:/var/lib/postgresql/data
 #      - ./nmcpdb_backup.sql:/docker-entrypoint-initdb.d/nmcpdb_backup.sql
     environment:
       - POSTGRES_USER=dRunUser
@@ -18,7 +18,7 @@ services:
       timeout: 5s
       retries: 10
     ports:
-      - 5433:5432
+      - 5434:5432
 #    command: >
 #      bash -c "
 #      docker-entrypoint.sh postgres &
