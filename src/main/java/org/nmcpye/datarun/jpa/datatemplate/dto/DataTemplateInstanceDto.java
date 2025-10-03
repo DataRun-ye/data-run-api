@@ -133,6 +133,7 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
      *
      * @return reverse map
      */
+    @JsonIgnore
     public Map<String, String> getFieldElementReversePathMap() {
         return getAllElementPathMap().entrySet()
             .stream()
