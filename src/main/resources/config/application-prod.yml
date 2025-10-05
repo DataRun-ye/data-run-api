@@ -24,12 +24,12 @@ management:
     metrics:
       export:
         enabled: false
-  zipkin: # Use the "zipkin" Maven profile to have the Spring Cloud Zipkin dependencies
-    tracing:
-      endpoint: http://localhost:9411/api/v2/spans
-  tracing:
-    sampling:
-      probability: 1.0 # report 100% of traces
+#  zipkin: # Use the "zipkin" Maven profile to have the Spring Cloud Zipkin dependencies
+#    tracing:
+#      endpoint: http://localhost:9411/api/v2/spans
+#  tracing:
+#    sampling:
+#      probability: 1.0 # report 100% of traces
 
 spring:
   devtools:
@@ -37,12 +37,12 @@ spring:
       enabled: false
     livereload:
       enabled: false
-  cloud:
-    consul:
-      discovery:
-        prefer-ip-address: true
-      host: localhost
-      port: 8500
+#  cloud:
+#    consul:
+#      discovery:
+#        prefer-ip-address: true
+#      host: localhost
+#      port: 8500
   data:
     mongodb:
       uri: mongodb://dRunUser:dRunUser@localhost:27017/dataRunApi
@@ -90,7 +90,7 @@ spring:
 #     ciphers: TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 ,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 ,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 ,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,TLS_DHE_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA,TLS_RSA_WITH_CAMELLIA_256_CBC_SHA,TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA,TLS_RSA_WITH_CAMELLIA_128_CBC_SHA
 # ===================================================================
 server:
-  port: 8081
+  port: 8080
   shutdown: graceful # see https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-graceful-shutdown
   compression:
     enabled: true

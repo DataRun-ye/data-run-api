@@ -36,22 +36,22 @@ spring:
   jackson:
     serialization:
       indent-output: true
-  cloud:
-    consul:
-      config:
-        fail-fast: false # if not in "prod" profile, do not force to use Spring Cloud Config
-        format: yaml
-        profile-separator: '-'
-      discovery:
-        prefer-ip-address: true
-        tags:
-          - profile=${spring.profiles.active}
-          - version='@project.version@'
-          - git-version=${git.commit.id.describe:}
-          - git-commit=${git.commit.id.abbrev:}
-          - git-branch=${git.branch:}
-      host: localhost
-      port: 8500
+#  cloud:
+#    consul:
+#      config:
+#        fail-fast: false # if not in "prod" profile, do not force to use Spring Cloud Config
+#        format: yaml
+#        profile-separator: '-'
+#      discovery:
+#        prefer-ip-address: true
+#        tags:
+#          - profile=${spring.profiles.active}
+#          - version='@project.version@'
+#          - git-version=${git.commit.id.describe:}
+#          - git-commit=${git.commit.id.abbrev:}
+#          - git-branch=${git.branch:}
+#      host: localhost
+#      port: 8500
   data:
     mongodb:
       uri: mongodb://dRunUser:dRunUser@localhost:27017/dataRunApi
@@ -97,7 +97,7 @@ spring:
 #      transforms.flatten.type: org.apache.kafka.connect.transforms.Flatten$Value
 
 server:
-  port: 8081
+  port: 8080
   # From the jhipster new upgrade
   # make sure requests the proxy uri instead of the server one
 #  forward-headers-strategy: native
