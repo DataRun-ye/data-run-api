@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 //@RequestMapping("/api")
@@ -183,8 +185,9 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
             log.warn("REST Prevent Access to `{}`, no minimal rights: `{}`", getEntityClass().getSimpleName(), user);
             return Page.empty();
         }
-        return identifiableObjectService.findAllByUser(queryRequest, jsonQueryBody)
-            .map(s -> postProcess(s, queryRequest, jsonQueryBody));
+        return new PageImpl<>(identifiableObjectService.findAllByUser(queryRequest, jsonQueryBody)
+            .stream().filter(Objects::nonNull)
+            .map(s -> postProcess(s, queryRequest, jsonQueryBody)).toList());
     }
 
     protected T postProcess(T entity, QueryRequest queryRequest, String jsonQuery) {
