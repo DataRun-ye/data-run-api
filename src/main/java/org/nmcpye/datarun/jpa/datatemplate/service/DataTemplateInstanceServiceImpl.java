@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
@@ -61,22 +62,26 @@ public class DataTemplateInstanceServiceImpl
             .map(existing -> {
                 // existing: bump version number in memory; we'll persist later
                 existing.setVersionNumber(existing.getVersionNumber() + 1);
+                existing.setVersionUid(CodeGenerator.generateUid());
                 return existing;
             })
             .orElseGet(() -> {
                 // new template: initialize versionNumber = 1 and persist to obtain DB identity
                 // so that TemplateVersion can reference the persisted DataTemplate (FK)
                 incomingTemplate.setVersionNumber(1);
+                incomingTemplate.setVersionUid(CodeGenerator.generateUid());
                 return dataTemplateRepository.persist(incomingTemplate);
             });
 
         final int newVersionNumber = template.getVersionNumber();
-        log.debug("Using versionNumber={} for template uid={}", newVersionNumber, template.getUid());
+        final String newVersionUid = template.getVersionUid();
+        log.debug("Using versionNumber, versionUid={}:{} for template uid={}", newVersionNumber, newVersionUid, template.getUid());
 
         // Build TemplateVersion entity (immutable version snapshot)
         TemplateVersion version = jpaVersionMapper.fromInstanceDto(dto);
         // override fields that must come from DB logic
         version.setVersionNumber(newVersionNumber);
+        version.setUid(newVersionUid);
         version.setTemplateUid(template.getUid());
         version.setDataTemplate(template); // set FK
 
@@ -86,7 +91,7 @@ public class DataTemplateInstanceServiceImpl
 
         // Update the DataTemplate latest-pointer fields and persist the change
         // versionNumber is already set earlier (bumped or 1).
-        template.setVersionUid(persistedVersion.getUid());
+//        template.setVersionUid(persistedVersion.getUid());
         DataTemplate mergedTemplate = dataTemplateRepository.merge(template);
 
         log.debug("Updated DataTemplate uid={} latest versionUid={} versionNumber={}",

@@ -100,13 +100,13 @@ management:
 
 spring:
   application:
-    name: datRunApi
+    name: datarunapi
   cloud:
     consul:
       discovery:
         healthCheckPath: /management/health
-        instanceId: dataRunApi:${spring.application.instance-id:${random.value}}
-        service-name: dataRunApi
+        instanceId: datarunapi:${spring.application.instance-id:${random.value}}
+        service-name: datarunapi
       config:
         watch:
           enabled: false
