@@ -815,7 +815,7 @@
                             </platforms>
                         </from>
                         <to>
-                            <image>kaswarah/datarunapi</image>
+                            <image>datarunapi</image>
                             <tags>
                                 <!-- exact project version, e.g. "1.2.3" -->
                                 <tag>${project.version}</tag>
