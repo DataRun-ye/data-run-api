@@ -44,13 +44,13 @@ spring:
           authorities-claim-name: auth
   task:
     execution:
-      thread-name-prefix: data-run-api-task-
+      thread-name-prefix: datarunapi-task-
       pool:
         core-size: 1
         max-size: 50
         queue-capacity: 10000
     scheduling:
-      thread-name-prefix: data-run-api-scheduling-
+      thread-name-prefix: datarunapi-scheduling-
       pool:
         size: 20
   thymeleaf:

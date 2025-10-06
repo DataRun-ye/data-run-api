@@ -135,7 +135,7 @@ migration:
 
 jhipster:
   client-app:
-    name: "datarun"
+    name: "datarunapi"
   http:
     cache: # Used by the CachingHttpHeadersFilter
       timeToLiveInDays: 1461

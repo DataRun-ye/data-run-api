@@ -42,7 +42,7 @@ management:
           - env
           - health
           - info
-          - jhimetrics
+#          - jhimetrics
           - jhiopenapigroups
           - logfile
           - loggers
@@ -61,8 +61,8 @@ management:
           include: livenessState
         readiness:
           include: readinessState,db
-    jhimetrics:
-      enabled: true
+#    jhimetrics:
+#      enabled: true
   info:
     git:
       mode: full
@@ -169,13 +169,13 @@ spring:
           authorities-claim-name: auth
   task:
     execution:
-      thread-name-prefix: data-run-api-task-
+      thread-name-prefix: datarunapi-task-
       pool:
         core-size: 2
         max-size: 50
         queue-capacity: 10000
     scheduling:
-      thread-name-prefix: data-run-api-scheduling-
+      thread-name-prefix: datarunapi-scheduling-
       pool:
         size: 2
   thymeleaf:
@@ -206,7 +206,7 @@ info:
 
 jhipster:
   clientApp:
-    name: 'dataRunApiApp'
+    name: 'datarunapiApp'
   # By default CORS is disabled. Uncomment to enable.
   # cors:
   #   allowed-origins: "http://localhost:8100,http://localhost:9000"
@@ -216,7 +216,7 @@ jhipster:
   #   allow-credentials: true
   #   max-age: 1800
   mail:
-    from: dataRunApi@localhost
+    from: datarunapi@localhost
   api-docs:
     default-include-pattern: /api/**
     management-include-pattern: /management/**
@@ -230,6 +230,7 @@ jhipster:
     license: unlicensed
     license-url:
   security:
+    content-security-policy: "default-src 'self'; frame-src 'self' data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://storage.googleapis.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com data:"
 # ===================================================================
 # Application specific properties
 # Add your own application properties here, see the ApplicationProperties class

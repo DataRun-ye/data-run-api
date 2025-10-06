@@ -1,15 +1,9 @@
 {
   "generator-jhipster": {
-    "applicationType": "monolith",
+    "applicationType": "microservice",
     "authenticationType": "jwt",
     "autoCrlf": true,
-    "baseName": "dataRunApi",
-    "blueprints": [
-      {
-        "name": "generator-jhipster-entity-audit",
-        "version": "5.5.0"
-      }
-    ],
+    "baseName": "datarunapi",
     "buildTool": "maven",
     "cacheProvider": "ehcache",
     "creationTimestamp": 1715997578910,
@@ -18,12 +12,11 @@
     "enableHibernateCache": true,
     "enableSwaggerCodegen": false,
     "enableTranslation": true,
-    "entities": [
-    ],
+    "entities": [],
     "feignClient": null,
     "incrementalChangelog": true,
     "jhiPrefix": "app",
-    "jhipsterVersion": "8.6.0",
+    "jhipsterVersion": "8.11.0",
     "jwtSecretKey": "MjJmNDA2ZjQwMzg5NWE0ZDFiZmZmY2IzYzk2NmQ0MmI4OTM0NWU1MDBjYmU1N2VkYmNjOWM2ZmI2OGVlZWVmYTI0NDM0Y2JhY2ZhMWI2Nzg2ZGY2YWNhZjNmMTViYTcyZTNmMjMwNmFjZTRkMTAzOTVhYjlkNDRhOWZhNDJhY2I=",
     "languages": ["en", "ar-ly"],
     "lastLiquibaseTimestamp": 1722975381000,
@@ -33,19 +26,14 @@
     "prodDatabaseType": "postgresql",
     "reactive": false,
     "searchEngine": false,
-    "serverPort": null,
+    "serverPort": "8081",
     "serverSideOptions": [],
-    "serviceDiscoveryType": false,
+    "serviceDiscoveryType": "consul",
     "skipClient": true,
     "skipCommitHook": true,
     "skipFakeData": true,
     "syncUserWithIdp": null,
     "testFrameworks": [],
     "websocket": false
-  },
-  "generator-jhipster-entity-audit": {
-    "auditFramework": "custom",
-    "auditPage": true,
-    "entityAuditEventChangelogDate": "20240518020044"
   }
 }
