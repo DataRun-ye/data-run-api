@@ -6,7 +6,6 @@ import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceService;
-import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,8 +19,6 @@ import java.util.Objects;
 @Component
 @RequiredArgsConstructor
 public class FormVersionValidator implements SubmissionValidator {
-
-    private final DataTemplateVersionRepository versionRepo;
     private final DataTemplateInstanceService dataTemplateInstanceService;
 
     @Override

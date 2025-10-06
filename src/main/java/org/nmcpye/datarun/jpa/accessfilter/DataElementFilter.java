@@ -3,8 +3,8 @@ package org.nmcpye.datarun.jpa.accessfilter;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
-import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
-import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
+import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
@@ -22,9 +22,9 @@ import java.util.stream.Collectors;
  */
 @Component
 public class DataElementFilter extends DefaultJpaFilter<DataElement> {
-    private final DataTemplateVersionRepository templateRepository;
+    private final TemplateVersionRepository templateRepository;
 
-    public DataElementFilter(DataTemplateVersionRepository templateRepository) {
+    public DataElementFilter(TemplateVersionRepository templateRepository) {
         this.templateRepository = templateRepository;
     }
 
@@ -35,7 +35,7 @@ public class DataElementFilter extends DefaultJpaFilter<DataElement> {
     @Override
     public Specification<DataElement> getAccessSpecification(CurrentUserDetails user,
                                                              QueryRequest queryRequest) {
-        Collection<DataTemplateVersion> forms = getUserFormsWithWritePermission();
+        Collection<TemplateVersion> forms = getUserFormsWithWritePermission();
 
         Set<String> userDataElements = forms
             .stream()
@@ -51,9 +51,9 @@ public class DataElementFilter extends DefaultJpaFilter<DataElement> {
         };
     }
 
-    public Collection<DataTemplateVersion> getUserFormsWithWritePermission() {
+    public Collection<TemplateVersion> getUserFormsWithWritePermission() {
         final var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
-        List<DataTemplateVersion> versions = templateRepository
+        List<TemplateVersion> versions = templateRepository
             .findDistinctByTemplateUidInOrderByVersionNumberDesc(currentUser.getUserFormsUIDs());
         return versions;
     }
