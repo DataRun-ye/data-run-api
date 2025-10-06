@@ -6,8 +6,6 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
-import org.nmcpye.datarun.jpa.etl.repository.IElementDataValueDao;
-import org.nmcpye.datarun.jpa.etl.repository.IRepeatInstancesDao;
 import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
 import org.nmcpye.datarun.mongo.common.DefaultMongoSoftDeleteService;
 import org.nmcpye.datarun.mongo.datastagesubmission.repository.DataFormSubmissionRepository;
@@ -48,18 +46,16 @@ public class DefaultDataFormSubmissionService
     private final SubmissionMaintenanceService maintenanceService;
     private final DataTemplateVersionRepository versionRepository;
     private final FormAccessService formAccessService;
-    private final IElementDataValueDao submissionValuesDao;
-    private final IRepeatInstancesDao repeatInstancesDao;
 
     public DefaultDataFormSubmissionService(
-            DataFormSubmissionRepository repository,
-            CacheManager cacheManager,
-            DataFormSubmissionHistoryService submissionHistoryService,
-            AssignmentRepository assignmentRepository,
-            SequenceGeneratorService sequenceGeneratorService,
-            SubmissionMaintenanceService maintenanceService,
-            DataTemplateVersionRepository versionRepository,
-            FormAccessService formAccessService, IElementDataValueDao submissionValuesDao, IRepeatInstancesDao repeatInstancesDao) {
+        DataFormSubmissionRepository repository,
+        CacheManager cacheManager,
+        DataFormSubmissionHistoryService submissionHistoryService,
+        AssignmentRepository assignmentRepository,
+        SequenceGeneratorService sequenceGeneratorService,
+        SubmissionMaintenanceService maintenanceService,
+        DataTemplateVersionRepository versionRepository,
+        FormAccessService formAccessService) {
         super(repository, cacheManager);
         this.repository = repository;
         this.submissionHistoryService = submissionHistoryService;
@@ -68,8 +64,6 @@ public class DefaultDataFormSubmissionService
         this.maintenanceService = maintenanceService;
         this.versionRepository = versionRepository;
         this.formAccessService = formAccessService;
-        this.submissionValuesDao = submissionValuesDao;
-        this.repeatInstancesDao = repeatInstancesDao;
     }
 
     @Transactional
@@ -225,7 +219,5 @@ public class DefaultDataFormSubmissionService
         // and upsert will not run after this and
         // reverse the effect, (soft delete here is an update)
         super.deleteByUid(uid);
-        repeatInstancesDao.markAllAsDeletedForSubmission(uid);
-        submissionValuesDao.markAllAsDeletedForSubmission(uid);
     }
 }

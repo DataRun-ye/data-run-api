@@ -13,7 +13,6 @@ import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
-import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 
 import java.util.List;
@@ -26,7 +25,6 @@ import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
 
 /**
  * DTO, a merge of {@link DataTemplate}
- * and one of its {@link DataTemplateVersion}
  */
 @SuppressWarnings("unused")
 @Setter
@@ -40,7 +38,6 @@ public class DataTemplateInstanceDto extends BaseDto implements DataTemplateVers
     private String uid;
 
     /**
-     * {@link DataTemplateVersion} uid,
      * formVersion is treated as output-only (i.e. set in backend and ignored on inbound JSON)
      */
     @JsonProperty(access = READ_ONLY)
