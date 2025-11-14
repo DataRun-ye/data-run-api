@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.jpa.datatemplate;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -10,13 +9,13 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
-import org.nmcpye.datarun.datatemplateelement.AggregationType;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -37,21 +36,15 @@ import java.util.Set;
 @Table(name = "template_element",
     uniqueConstraints = {
         @UniqueConstraint(name = "ux_template_element_tpl_ver_idpath",
-            columnNames = {"template_uid", "template_version_uid", "id_path"}),
-        @UniqueConstraint(name = "ux_template_element_tpl_ver_idpath",
-            columnNames = {"template_uid", "template_version_uid", "semantic_path", "data_element_uid"})
+            columnNames = {"template_uid", "template_version_uid", "canonical_path"})
     },
     indexes = {
-        @Index(name = "idx_template_element_template_version",
-            columnList = "template_uid, template_version_uid"),
-        @Index(name = "idx_template_element_template_version_no",
-            columnList = "template_uid, template_version_no"),
-        @Index(name = "idx_template_element_dataelement", columnList = "data_element_uid"),
-        @Index(name = "idx_template_element_repeat_uid", columnList = "repeat_uid"),
-        @Index(name = "idx_template_element_repeat_path", columnList = "template_uid, ancestor_repeat_path")
+        @Index(name = "idx_template_element_template_version", columnList = "template_uid, template_version_uid"),
+        @Index(name = "idx_template_element_template_version_no", columnList = "template_uid, template_version_no"),
+        @Index(name = "idx_template_element_canonical_uid", columnList = "canonical_element_uid"),
+        @Index(name = "idx_template_element_repeat_path", columnList = "template_uid, parent_repeat_json_data_path")
     }
 )
-@NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
@@ -59,7 +52,7 @@ import java.util.Set;
 @ToString(onlyExplicitlyIncluded = true)
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class TemplateElement {
-    public enum ElementKind {FIELD, REPEAT}
+    public enum ElementKind {FIELD, REPEAT, SECTION}
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "template_element_seq")
@@ -110,44 +103,16 @@ public class TemplateElement {
     @Column(name = "value_type", updatable = false)
     protected ValueType valueType;
 
-    /// Aggregation strategy when used as a measure in analytics (pivot tables, charts, etc).
-    /// Examples: `SUM`, `AVG`, `COUNT`, `FIRST`, `LAST`, etc.
-    @Enumerated(EnumType.STRING)
-    @Column(name = "aggregation_type", length = 32)
-    private AggregationType aggregationType;
-
-    /// True if this element valueType is a reference type (e.g. Team, OrgUnit, Activity, Option).
-    @Column(name = "is_reference")
-    @Builder.Default
-    private Boolean isReference = Boolean.FALSE;
-
-    /**
-     * true if this element itself, is configured as a category for a repeat,
-     * if {@link FormSectionConf#getCategoryId()} is set.
-     */
-    @Column(name = "is_category")
-    @Builder.Default
-    private Boolean isCategory = Boolean.FALSE;
-
     /// Option set uid
     /// [#SelectMulti] field.
     /// Immutable and copied from [DataElement] for fast access, single source of truth is still [DataElement]
     @Column(name = "option_set_uid", length = 11)
     private String optionSetUid;
-    /// True if this element is a multi-select.
-    @Column(name = "is_multi")
-    @Builder.Default
-    private Boolean isMulti = Boolean.FALSE;
-
-    /// True if this element is considered a measure for analytics.
-    @Column(name = "is_measure")
-    @Builder.Default
-    private Boolean isMeasure = Boolean.FALSE;
-
-    /// True if this element is considered a measure for analytics.
-    @Column(name = "is_dimension")
-    @Builder.Default
-    private Boolean isDimension = Boolean.FALSE;
+    /// Option set uid
+    /// [#SelectMulti] field.
+    /// Immutable and copied from [DataElement] for fast access, single source of truth is still [DataElement]
+    @Column(name = "option_set_id", length = 11)
+    private String optionSetId;
 
     @Column(name = "sort_order")
     private Integer sortOrder;
@@ -165,105 +130,90 @@ public class TemplateElement {
     /// Used in normalization.
     /// For [FormSectionConf], the id is its name.
     /// For [FormDataElementConf], the id is linked to [DataElement] uid.
-    @Column(name = "name_path", length = 3000, nullable = false)
-    private String namePath;
+    @Column(name = "json_data_path", length = 3000, nullable = false)
+    private String jsonDataPath;
 
-    /// The Canonical path. that semantically represent a grain of data
-    /// null if submission-level
+    /// The Canonical path. that canonically represent a grain of data
+    /// name of element if submission-level
     /// the full `repeat_path` (e.g., `root.householdinfo.children`) mixes two different concepts:
     /// 1.  **Structural Grouping:** The `householdinfo` part is just a visual grouping on the form. An admin could rename it to `household_details` tomorrow, and it would mean the exact same thing to the user.
-    /// 2.  **Data Grain:** The `children` part, because it is `repeatable: true`, defines a fundamental change in the data's structure. It means "one or more children related to one parent submission." This is the true semantic grain.
-    @Column(name = "semantic_path", length = 3000)
+    /// 2.  **Data Grain:** The `children` part, because it is `repeatable: true`, defines a fundamental change in the data's structure. It means "one or more children related to one parent submission." This is the true canonical grain.
+    @Column(name = "canonical_path", length = 3000)
     private String canonicalPath;
 
     /**
      * repeat-only path to nearest repeatable ancestor
      */
-    @Column(name = "ancestor_repeat_semantic_path", length = 3000)
+    @Column(name = "parent_repeat_canonical_path", length = 3000)
     private String parentRepeatCanonicalPath;
 
-    /**
-     * te.uid of the repeat this te belongs to
-     */
-    @Column(name = "repeat_uid", length = 64)
-    private String repeatUid;
+//    /**
+//     * repeat-only path to nearest repeatable ancestor
+//     */
+//    @Column(name = "parent_canonical_element_uid")
+//    private String parentCanonicalElementUid;
 
-    //------------------------------
-    // Repeat related attributes
-    //------------------------------
-    /// Is this field part of a repeatable section?
-    @Column(name = "has_repeat_ancestor", nullable = false)
-    @Builder.Default
-    private Boolean hasRepeatAncestor = Boolean.FALSE;
-
-
-    /// full idPath to nearest repeatable ancestor (or null)
-    @Column(name = "ancestor_repeat_path", length = 3000)
-    private String ancestorRepeatPath;
+    /// full path to nearest repeatable ancestor (or null), dot delimited. no array [*]
+    @Column(name = "parent_repeat_json_data_path", length = 3000)
+    private String parentRepeatJsonDataPath;
 
     /// Localized display labels, e.g. `{"en": "Child Name", "ar": "..."}`.
     @Type(JsonType.class)
     @Column(name = "display_label", columnDefinition = "jsonb default '{}'::jsonb")
     private Map<String, String> displayLabel;
 
-    /// Snapshot of the element definition, stored as JSON and deserialized to
-    @Type(JsonType.class)
-    @Column(name = "definition_json", columnDefinition = "jsonb")
-    private JsonNode definitionJson;
-
-    @Column(name = "is_natural_candidate", length = 64)
-    private Boolean isNaturalKeyCandidate;
-
     //-----------------------
     // Canonical and metadata
     //-----------------------
-    @Column(name = "control_type", length = 64)
-    private String controlType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "data_type", length = 64)
+    private DataType dataType;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "semantic_type", length = 64)
-    private String semanticType;
+    private SemanticType semanticType;
 
-    @Column(name = "cardinality", length = 20)
+    // if it has a repeat ancestor
+    @Column(name = "cardinality", length = 2)
     private String cardinality; // 1 | N
 
     @Column(name = "schema_fingerprint", length = 64)
     private String schemaFingerprint;
 
-    @Column(name = "canonical_element_uid")
-    private String canonicalElementUid; // FK to canonical_element
-
-    // ---------------------
-    // Properties set if elementKind = REPEAT
-    // ---------------------
-    /**
-     * uid of the category element that in the same repeat this element is part of
-     * if {@link FormSectionConf#getCategoryId()} is set.
-     */
-    @Column(name = "category_id", length = 26)
-    private String categoryId;
+    @Column(name = "canonical_element_uid", nullable = false)
+    private String canonicalElementUid;
 
     /**
      * if this is a repeat, what's element compose a natural key for its instances
      */
     @Type(JsonType.class)
+    @Singular
     @Column(name = "natural_key_candidates", columnDefinition = "jsonb default '[]'::jsonb")
-    private Set<String> naturalKeyCandidates;
+    private Set<String> naturalKeyCandidates = new HashSet<>();
 
 
     /// Timestamp of creation.
     @NotNull
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+    @Column(name = "created_date", nullable = false, updatable = false)
+    private Instant createdDate;
 
     public boolean isRepeat() {
         return this.elementKind == ElementKind.REPEAT;
     }
 
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) createdAt = Instant.now();
-        if (getUid() == null || getUid().isEmpty()) setUid(CodeGenerator.generateUid());
-        if (aggregationType == null) aggregationType = AggregationType.DEFAULT;
+    public boolean isSection() {
+        return this.elementKind == ElementKind.SECTION;
+    }
+
+    public TemplateElement() {
+        setAutoFields();
+    }
+
+    public void setAutoFields() {
+        if (createdDate == null) createdDate = Instant.now();
+        if (getUid() == null || getUid().isEmpty()) {
+            setUid(CodeGenerator.generateUid());
+        }
     }
 
     @Override

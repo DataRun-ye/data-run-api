@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.datatemplateelement;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import lombok.Getter;
 import lombok.Setter;
@@ -113,17 +114,23 @@ public class FormDataElementConf extends AbstractElement implements Serializable
     // @JsonGetter("constraint")
     // public String getConstraintLegacy() { ... } // map from validationRule as needed
 
+    // Accept legacy property when reading JSON:
+    // Accept legacy JSON input "mainField" but do not emit it when serializing:
     /**
      * deprecated property use {@link #showInSummary} instead
      *
      * @return show in summary or not
      */
-    // Accept legacy property when reading JSON:
-    // Accept legacy JSON input "mainField" but do not emit it when serializing:
     @Deprecated(forRemoval = true)
     @JsonSetter("mainField")
     public void setMainFieldLegacy(Boolean legacyMain) {
         if (legacyMain != null) this.showInSummary = legacyMain;
+    }
+
+    @Deprecated(forRemoval = true)
+    @JsonGetter("readOnly")
+    public Boolean getReadOnlyLegacy() {
+        return false;
     }
 
     // If you want to emit it (not recommended), add:

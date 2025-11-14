@@ -24,7 +24,7 @@ import java.util.stream.Stream;
  * - Should load all TemplateElement rows for templateUid+templateVersionUid, batch-load their DataElement metadata,
  * and produce a list of QueryableElement objects:
  * <pre>
- * - QueryableElement.sourceColumn must map to the materialized view column (e.g., "etc_uid", "value_num", "option_uid", "value_ts", "team_uid").
+ * - QueryableElement.sourceColumn must map to the materialized view column (e.g., "te_uid", "value_num", "option_uid", "value_ts", "team_uid").
  * - QueryableElement.dataType uses the "value_num"/"option_uid"/"value_ts"/"value_bool"/"value_text" nomenclature.
  * - aggregationModes should be computed via AllowedAggregationsResolver based on DataElement.valueType.
  * </pre>
@@ -128,12 +128,12 @@ public class MetadataServiceImpl implements MetadataService {
             .name(etc.getName())
             .label(etc.getDisplayLabel())
             .dataType(resolveDataType(etc, de))
-            .sourceColumn("etc_uid") // The column used for predicates and grouping
+            .sourceColumn("te_uid") // The column used for predicates and grouping
             .deUid(etc.getDataElementUid())
             .displayGroup(etc.getParentRepeatCanonicalPath() != null ?
                 etc.getParentRepeatCanonicalPath() : "Template")
             .isSortable(etc.getValueType().isNumeric())
-            .isDimension(etc.getIsDimension())
+//            .isDimension(etc.getIsDimension())
             .aggregationModes(aggrResolver.allowedFor(de != null ? de.getValueType() : null))
             .extras(extras)
             .build();
@@ -194,12 +194,12 @@ public class MetadataServiceImpl implements MetadataService {
      */
     private Map<String, Object> buildExtras(TemplateElement etc, DataElement de) {
         Map<String, Object> extras = new HashMap<>();
-        extras.put("isMulti", Boolean.TRUE.equals(etc.getIsMulti()));
-        extras.put("isReference", Boolean.TRUE.equals(etc.getIsReference()));
+//        extras.put("isMulti", Boolean.TRUE.equals(etc.getIsMulti()));
+//        extras.put("isReference", Boolean.TRUE.equals(etc.getIsReference()));
         extras.put("isRepeat", etc.getElementKind() == TemplateElement.ElementKind.REPEAT);
-        extras.put("repeatPath", etc.getAncestorRepeatPath());
-        extras.put("semanticRepeatPath", etc.getParentRepeatCanonicalPath());
-        extras.put("semanticPath", etc.getCanonicalPath());
+        extras.put("repeatPath", etc.getParentRepeatJsonDataPath());
+        extras.put("canonicalRepeatPath", etc.getParentRepeatCanonicalPath());
+        extras.put("canonicalPath", etc.getCanonicalPath());
 
         // Add resolution metadata for Option Sets to drive the UI
         if (de != null && de.getOptionSet() != null) {
@@ -211,14 +211,14 @@ public class MetadataServiceImpl implements MetadataService {
 
         // --- NEW LOGIC FOR RECOMMENDATIONS ---
         // Check if the field is in a repeatable section AND that section has a category defined.
-        if (Boolean.TRUE.equals(etc.getHasRepeatAncestor()) && etc.getCategoryId() != null && !etc.getCategoryId().isBlank()) {
-
-            // If so, add the "recommendedDimensions" hint to the extras.
-            // We recommend grouping by "child_category_name" because the ETL process
-            // denormalizes the category's friendly name into this column in the materialized view.
-            // We use the standardized ID as this is what the client will use in its query.
-            extras.put("recommendedDimensions", List.of("core:child_category_name"));
-        }
+//        if (Boolean.TRUE.equals(etc.getHasParentRepeat()) && etc.getCategoryId() != null && !etc.getCategoryId().isBlank()) {
+//
+//            // If so, add the "recommendedDimensions" hint to the extras.
+//            // We recommend grouping by "child_category_name" because the ETL process
+//            // denormalizes the category's friendly name into this column in the materialized view.
+//            // We use the standardized ID as this is what the client will use in its query.
+//            extras.put("recommendedDimensions", List.of("core:child_category_name"));
+//        }
         return extras;
     }
 
@@ -244,8 +244,8 @@ public class MetadataServiceImpl implements MetadataService {
         }
 
         // fallback to template hints if DataElement absent
-        if (Boolean.TRUE.equals(etc.getIsMulti())) return DataType.OPTION;
-        if (Boolean.TRUE.equals(etc.getIsReference())) return DataType.UID;
+//        if (Boolean.TRUE.equals(etc.getIsMulti())) return DataType.OPTION;
+//        if (Boolean.TRUE.equals(etc.getIsReference())) return DataType.UID;
         return DataType.TEXT;
     }
 

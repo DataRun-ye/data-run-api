@@ -4,7 +4,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.*;
-import org.nmcpye.datarun.jpa.dataelement.DataElement;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -44,9 +43,7 @@ public class ElementDataValue {
      * Reference to the element configuration that produced this value.
      * db: {@code template_element_config_uid, not null}
      */
-    private String etcUid;
-
-    private String manifestUid;
+    private String teUid;
     // ------------------------
     // Submission & Context
     // ------------------------
@@ -94,12 +91,6 @@ public class ElementDataValue {
      * db: {@code element_id, not null}
      */
     private String canonicalElementUid;
-
-    /**
-     * element value type i.e Text, Number, DateTime, Team, OrgUnit, ...etc
-     * {@link DataElement#getValueType()}
-     */
-    private String valueType;
 
     // ------------------------
     // Template/Form parameters
@@ -182,7 +173,6 @@ public class ElementDataValue {
      */
     private String valueAsText;
 
-    private String valueArray;
     // ------------------------
     // Auditing & lifecycle
     // ------------------------

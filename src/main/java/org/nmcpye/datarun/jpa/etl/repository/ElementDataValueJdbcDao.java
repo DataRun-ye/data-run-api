@@ -22,12 +22,12 @@ public class ElementDataValueJdbcDao implements IElementDataValueDao {
     // A single, unified UPSERT statement handles all cases.
     private static final String UPSERT_SQL = """
         INSERT INTO element_data_value (
-            semantic_path, submission_uid, assignment_uid, team_uid, org_unit_uid, activity_uid,
-            canonical_element_uid, manifest_uid, etc_uid, repeat_instance_id, option_uid,
+            canonical_path, submission_uid, assignment_uid, team_uid, org_unit_uid, activity_uid,
+            canonical_element_uid, te_uid, repeat_instance_id, option_uid,
             value_text, value_num, value_bool, value_ts, value_ref_uid, row_type, created_date, last_modified_date, deleted_at
         ) VALUES (
-            :semanticPath, :submissionUid, :assignmentUid, :teamUid, :orgUnitUid, :activityUid,
-            :canonicalElementUid, :manifestUid, :etcUid, :repeatInstanceId, :optionUid,
+            :canonicalPath, :submissionUid, :assignmentUid, :teamUid, :orgUnitUid, :activityUid,
+            :canonicalElementUid,  :teUid, :repeatInstanceId, :optionUid,
             :valueText, :valueNum, :valueBool, :valueTs, :valueRefUid,:rowType, :createdDate, :lastModifiedDate, NULL
         )
         ON CONFLICT (submission_uid, canonical_path, repeat_instance_key, row_type, selection_key)
@@ -41,7 +41,7 @@ public class ElementDataValueJdbcDao implements IElementDataValueDao {
             value_bool = EXCLUDED.value_bool,
             value_ts = EXCLUDED.value_ts,
             value_ref_uid = EXCLUDED.value_ref_uid,
-            etc_uid = EXCLUDED.etc_uid,
+            te_uid = EXCLUDED.te_uid,
             canonical_element_uid = EXCLUDED.canonical_element_uid,
            -- manifest_uid = EXCLUDED.manifest_uid,
             last_modified_date = now(),
@@ -72,16 +72,14 @@ public class ElementDataValueJdbcDao implements IElementDataValueDao {
         if (r.getLastModifiedDate() == null) r.setLastModifiedDate(Instant.now());
 
         return new MapSqlParameterSource()
-            .addValue("semanticPath", r.getCanonicalPath())
+            .addValue("canonicalPath", r.getCanonicalPath())
             .addValue("submissionUid", r.getSubmissionUid())
             .addValue("assignmentUid", r.getAssignmentUid())
             .addValue("teamUid", r.getTeamUid())
             .addValue("orgUnitUid", r.getOrgUnitUid())
             .addValue("activityUid", r.getActivityUid())
             .addValue("canonicalElementUid", r.getCanonicalElementUid())
-            .addValue("etcUid", r.getEtcUid())
-            .addValue("manifestUid", r.getManifestUid())
-            .addValue("valueType", r.getValueType())
+            .addValue("teUid", r.getTeUid())
             .addValue("repeatInstanceId", r.getRepeatInstanceId())
             .addValue("optionUid", r.getOptionUid())
             .addValue("valueText", r.getValueText())

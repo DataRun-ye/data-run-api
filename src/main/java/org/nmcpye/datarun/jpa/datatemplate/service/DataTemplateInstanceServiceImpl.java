@@ -12,6 +12,7 @@ import org.nmcpye.datarun.jpa.datatemplate.mapper.DataTemplateMapper;
 import org.nmcpye.datarun.jpa.datatemplate.mapper.FormJpaTemplateVersionMapper;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
+import org.nmcpye.datarun.jpa.datatemplategenerator.TemplateElementGeneratorService;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.mongo.datatemplateversion.dto.FormTemplateVersionDto;
 import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
@@ -44,7 +45,7 @@ public class DataTemplateInstanceServiceImpl
 
     private final TemplateVersionRepository jpaTemplateVersionRepository;
     private final DataTemplateMapper dataTemplateMapper;
-
+    private final TemplateElementGeneratorService elementGeneratorService;
     /**
      * Create a brand-new TemplateVersion and atomically flip the DataTemplate latest pointer to it.
      * Uses a PESSIMISTIC_WRITE lock on the DataTemplate to avoid concurrent versionNumber races.
@@ -339,7 +340,9 @@ public class DataTemplateInstanceServiceImpl
     })
     @Override
     public DataTemplateInstanceDto save(DataTemplateInstanceDto dataTemplateInstanceDto) {
-        return saveNewVersion(dataTemplateInstanceDto);
+        final var saved = saveNewVersion(dataTemplateInstanceDto);
+        elementGeneratorService.generate(saved.getUid(), saved.getVersionUid());
+        return saved;
     }
 
     @Override
@@ -375,7 +378,9 @@ public class DataTemplateInstanceServiceImpl
     public DataTemplateInstanceDto update(DataTemplateInstanceDto dataTemplateInstanceDto) {
         dataTemplateRepository.findByUid(dataTemplateInstanceDto.getUid()).orElseThrow(() ->
             new IllegalQueryException(ErrorCode.E1113, dataTemplateInstanceDto.getUid()));
-        return save(dataTemplateInstanceDto);
+        final var updated = save(dataTemplateInstanceDto);
+        elementGeneratorService.generate(updated.getUid(), updated.getVersionUid());
+        return updated;
     }
 
     @Override

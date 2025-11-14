@@ -234,6 +234,26 @@
 //        jdbc.update(sql, p);
 //    }
 //
+//    private void insertCanonicalElement(String id, String templateVersionUid, String generatorVersion, String checksum, String manifestJson) {
+//        String sql = "INSERT INTO canonical_element (canonical_element_uid, preferred_name, data_type, semantic_type, " +
+//            "canonical_path, cardinality, option_set_id,canonical_candidates, notes, created_date)" +
+//            "            SELECT DISTINCT gen_random_uuid(), schema_fingerprint, name_path AS preferred_name, now()\n" +
+//            "            FROM template_element te\n" +
+//            "            WHERE te.schema_fingerprint IS NOT NULL\n" +
+//            "              AND NOT EXISTS (\n" +
+//            "                SELECT 1 FROM canonical_element ce WHERE ce.schema_fingerprint = te.schema_fingerprint\n" +
+//            "            );";
+////        String sql = "INSERT INTO template_extraction_snapshot (id, template_version_uid, generator_version, checksum, payload, created_at) " +
+////            "VALUES (:id, :tv, :gv, :checksum, (:payload)::jsonb, now())";
+//        MapSqlParameterSource p = new MapSqlParameterSource();
+//        p.addValue("id", id);
+//        p.addValue("tv", templateVersionUid);
+//        p.addValue("gv", generatorVersion);
+//        p.addValue("checksum", checksum);
+//        p.addValue("payload", manifestJson);
+//        jdbc.update(sql, p);
+//    }
+//
 //    /**
 //     * Insert repeat_extraction_plan
 //     */

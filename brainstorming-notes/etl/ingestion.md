@@ -65,7 +65,7 @@ sequenceDiagram
 ### 2) Stream-parse & emit
 
 * Use a streaming (SAX-like) JSON parser.
-* On encountering a repeat start: create an in-memory object for that repeat instance (small footprint), assign a new ULID for `id`, record `etc_uid`, `semantic_path`, `repeat_index`, `parent_repeat_instance_id` (if nested), minimal `metadata` (ingest\_id, created\_by).
+* On encountering a repeat start: create an in-memory object for that repeat instance (small footprint), assign a new ULID for `id`, record `te_uid`, `semantic_path`, `repeat_index`, `parent_repeat_instance_id` (if nested), minimal `metadata` (ingest\_id, created\_by).
 * On encountering primitive fields inside the repeat instance: append a value row to the current repeat's buffer as a plain tuple ready for COPY.
 * When a repeat instance ends: flush the repeat and its value rows to the temporary buffer/file and discard in-memory structures.
 
@@ -85,14 +85,14 @@ Run quick SQL checks against staging tables for this `ingest_id`:
 
 ```sql
 -- returns rows for repeat nodes missing min instances
-SELECT sr.etc_uid, sr.semantic_path, (sr.count) as found, etc.repeat_cardinality->>'min' as min
+SELECT sr.te_uid, sr.semantic_path, (sr.count) as found, etc.repeat_cardinality->>'min' as min
 FROM (
-  SELECT semantic_path, etc_uid, COUNT(*) as count
+  SELECT semantic_path, te_uid, COUNT(*) as count
   FROM staging_repeat_instance
   WHERE ingest_id = :ingest_id
-  GROUP BY semantic_path, etc_uid
+  GROUP BY semantic_path, te_uid
 ) sr
-JOIN element_template_config etc ON etc.uid = sr.etc_uid
+JOIN element_template_config etc ON etc.uid = sr.te_uid
 WHERE (etc.repeat_cardinality->>'min')::int > sr.count;
 ```
 
@@ -115,7 +115,7 @@ SELECT id FROM p WHERE depth > :max_depth LIMIT 1;
 
 * Required fields check: ensure required child elements present for each repeat instance (simple left-join count check).
 
-If checks return rows, insert error records into `etl_error_bucket` with `ingest_id`, `submission_uid`, `etc_uid`, `semantic_path`, `reason` and policy `fatal` or `flagged`.
+If checks return rows, insert error records into `etl_error_bucket` with `ingest_id`, `submission_uid`, `te_uid`, `semantic_path`, `reason` and policy `fatal` or `flagged`.
 
 ### 5) Activation swap (short transaction)
 
@@ -141,13 +141,13 @@ WHERE submission_uid = :submission_uid
 Example:
 
 ```sql
-INSERT INTO repeat_instance (id, submission_uid, etc_uid, semantic_path, parent_repeat_instance_id, repeat_index, metadata, created_at)
-SELECT id, submission_uid, etc_uid, semantic_path, parent_repeat_instance_id, repeat_index, metadata, staged_at
+INSERT INTO repeat_instance (id, submission_uid, te_uid, semantic_path, parent_repeat_instance_id, repeat_index, metadata, created_at)
+SELECT id, submission_uid, te_uid, semantic_path, parent_repeat_instance_id, repeat_index, metadata, staged_at
 FROM staging_repeat_instance
 WHERE ingest_id = :ingest_id;
 
-INSERT INTO element_data_value (id, repeat_instance_id, submission_uid, etc_uid, element_uid, semantic_path, value_text, value_num, created_at)
-SELECT id, repeat_instance_id, submission_uid, etc_uid, element_uid, semantic_path, value_text, value_num, staged_at
+INSERT INTO element_data_value (id, repeat_instance_id, submission_uid, te_uid, element_uid, semantic_path, value_text, value_num, created_at)
+SELECT id, repeat_instance_id, submission_uid, te_uid, element_uid, semantic_path, value_text, value_num, staged_at
 FROM staging_element_data_value
 WHERE ingest_id = :ingest_id;
 ```
@@ -177,7 +177,7 @@ CREATE TABLE staging_repeat_instance (
   ingest_id varchar,
   id varchar,
   submission_uid varchar,
-  etc_uid varchar,
+  te_uid varchar,
   semantic_path varchar,
   parent_repeat_instance_id varchar NULL,
   repeat_index int,
@@ -190,7 +190,7 @@ CREATE TABLE staging_element_data_value (
   id bigserial,
   repeat_instance_id varchar NULL,
   submission_uid varchar,
-  etc_uid varchar,
+  te_uid varchar,
   element_uid varchar,
   semantic_path varchar,
   value_text text,

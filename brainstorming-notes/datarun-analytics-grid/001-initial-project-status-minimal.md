@@ -31,7 +31,7 @@ element), maintain the canonical schema metadata of a template per template vers
 
 ### 1) ET paths Conceptual rules (short)
 
-* **`namePath`** = *UI/physical path* showing where that element *is stored in the submission's JSON* (may
+* **`jsonDataPath`** = *UI/physical path* showing where that element *is stored in the submission's JSON* (may
   include normal sections or UI grouping segments). Example: `mainsection.breedingsources.breeding_habitat_type` vs
   `breedingsources.breeding_habitat_type` (semantic). Use `namePath` when you must mirror the *exact* stored location.
 * **Rule of thumb:** Use `namePath` when you traverse the exact stored location for a particular submission version.

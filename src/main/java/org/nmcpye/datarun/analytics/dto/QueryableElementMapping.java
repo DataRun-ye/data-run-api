@@ -15,7 +15,7 @@ import org.jooq.Field;
  * <p>Important semantics:</p>
  * <ul>
  *   <li>Use {@link #elementPredicate} via {@code filterWhere(...)} so each aggregate can be scoped independently of the global WHERE.</li>
- *   <li>If the incoming client identifier is in the form {@code etc:<uid>} prefer {@code etc_uid} scoping. If it is {@code de:<uid>} use {@code de_uid} scoping.</li>
+ *   <li>If the incoming client identifier is in the form {@code etc:<uid>} prefer {@code te_uid} scoping. If it is {@code de:<uid>} use {@code de_uid} scoping.</li>
  *   <li>{@code targetField} must be correctly typed (e.g. Field<BigDecimal> for value_num) — this prevents jOOQ binding/type errors at runtime.</li>
  * </ul>
  *

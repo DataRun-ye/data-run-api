@@ -12,7 +12,7 @@ public final class PathUtils {
      * Replace last segment of idPath with fieldName (structural name, not display label).
      * If fieldName is null/blank, returns idPath (caller may fallback later).
      */
-    public static String computeNamePath(String idPath, String fieldName) {
+    public static String computeDataPath(String idPath, String fieldName) {
         if (idPath == null || idPath.isBlank()) return idPath;
         String[] parts = idPath.split("\\.", -1);
         if (parts.length == 0) return idPath;

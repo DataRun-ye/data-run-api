@@ -79,7 +79,7 @@ public class AnalyticsFieldResolver {
             case "de_option_set_uid" -> PG.DE_OPTION_SET_UID;
 
             // etc template uids
-            case "etc_uid" -> PG.ETC_UID;
+            case "te_uid" -> PG.ETC_UID;
             case "template_repeat_path" -> PG.TEMPLATE_REPEAT_PATH;
             case "template_id_path" -> PG.TEMPLATE_ID_PATH;
             case "template_name_path" -> PG.TEMPLATE_NAME_PATH;

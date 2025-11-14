@@ -4,12 +4,12 @@
 package org.nmcpye.datarun.jooq.tables.records;
 
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
 import org.jooq.JSONB;
 import org.jooq.impl.TableRecordImpl;
 import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 
 /**
@@ -77,14 +77,14 @@ public class PivotGridFactsRecord extends TableRecordImpl<PivotGridFactsRecord> 
     }
 
     /**
-     * Setter for <code>public.pivot_grid_facts.etc_uid</code>.
+     * Setter for <code>public.pivot_grid_facts.te_uid</code>.
      */
     public void setEtcUid(String value) {
         set(4, value);
     }
 
     /**
-     * Getter for <code>public.pivot_grid_facts.etc_uid</code>.
+     * Getter for <code>public.pivot_grid_facts.te_uid</code>.
      */
     public String getEtcUid() {
         return (String) get(4);

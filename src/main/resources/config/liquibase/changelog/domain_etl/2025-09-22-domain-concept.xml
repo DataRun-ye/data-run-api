@@ -105,7 +105,7 @@
                 <constraints nullable="false"/>
             </column>
             <column name="template_version_uid" type="varchar(11)"/>
-            <column name="etc_uid" type="varchar(11)"/>
+            <column name="te_uid" type="varchar(11)"/>
             <column name="data_element_uid" type="varchar(11)"/>
             <column name="domain_concept_id" type="uuid"/>
             <column name="mapping_expr" type="jsonb"/>
@@ -126,7 +126,7 @@
         </createIndex>
 
         <createIndex indexName="ix_demapping_etc" tableName="dataelement_domain_mapping" unique="false">
-            <column name="etc_uid"/>
+            <column name="te_uid"/>
         </createIndex>
 
         <rollback>
@@ -165,7 +165,7 @@
             </column>
             <column name="mapping_run_id" type="uuid"/>
             <column name="element_data_value_id" type="bigint"/>
-            <column name="etc_uid" type="varchar(11)"/>
+            <column name="te_uid" type="varchar(11)"/>
             <column name="target_domain_concept_id" type="uuid"/>
             <column name="result" type="varchar(20)"/>
             <column name="error" type="text"/>

@@ -99,6 +99,9 @@ public enum ValueType {
     public boolean isSection() {
         return this == Section;
     }
+    public boolean isMultiSelect() {
+        return this == SelectMulti;
+    }
 
     public boolean isRepeat() {
         return this == RepeatableSection;

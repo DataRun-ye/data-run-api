@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1762719219391-51" author="Hamza">
+        <createTable tableName="canonical_element">
+            <column name="canonical_element_uid" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_canonical_element"/>
+            </column>
+            <column name="template_uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="preferred_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_type" type="VARCHAR(64)"/>
+            <column name="semantic_type" type="VARCHAR(64)"/>
+            <column name="canonical_path" type="VARCHAR(3000)"/>
+            <column name="cardinality" type="VARCHAR(2)"/>
+            <column name="option_set_Uid" type="VARCHAR(11)"/>
+            <column name="option_set_id" type="VARCHAR(26)"/>
+            <column defaultValueComputed="'{}'::jsonb" name="display_label" type="jsonb"/>
+            <column defaultValueComputed="'[]'::jsonb" name="json_data_paths" type="jsonb"/>
+            <column name="notes" type="text"/>
+            <column name="created_date" type="DATETIME"/>
+            <column name="last_modified_date" type="timestamp" defaultValueComputed="now()"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1762719219391-56" author="Hamza">
+        <createTable tableName="template_element">
+            <column name="id" type="bigserial">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_template_element"/>
+            </column>
+            <column name="uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="element_kind" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="template_uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="template_version_uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="template_version_no" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_element_uid" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value_type" type="VARCHAR(255)"/>
+            <column name="option_set_uid" type="VARCHAR(11)"/>
+            <column name="option_set_id" type="VARCHAR(26)"/>
+            <column name="sort_order" type="INT"/>
+            <column name="id_path" type="VARCHAR(3000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="json_data_path" type="VARCHAR(3000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="canonical_path" type="VARCHAR(3000)"/>
+            <column name="parent_repeat_canonical_path" type="VARCHAR(3000)"/>
+            <column name="parent_repeat_json_data_path" type="VARCHAR(3000)"/>
+            <column defaultValueComputed="'{}'::jsonb" name="display_label" type="jsonb"/>
+            <column name="data_type" type="VARCHAR(64)"/>
+            <column name="semantic_type" type="VARCHAR(64)"/>
+            <column name="cardinality" type="VARCHAR(2)"/>
+            <column name="schema_fingerprint" type="VARCHAR(255)"/>
+            <column name="canonical_element_uid" type="VARCHAR(255)"/>
+            <column defaultValueComputed="'[]'::jsonb" name="natural_key_candidates" type="jsonb"/>
+            <column name="created_date" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+<!--    <changeSet id="1762719219391-6" author="Hamza">-->
+<!--        <addUniqueConstraint columnNames="template_uid, canonical_element_uid"-->
+<!--                             constraintName="ux_canonical_element_template_path" tableName="canonical_element"/>-->
+<!--    </changeSet>-->
+    <changeSet id="1762719219391-61" author="Hamza">
+        <addUniqueConstraint columnNames="uid" constraintName="uc_template_element_uid" tableName="template_element"/>
+    </changeSet>
+    <changeSet id="1762719219391-62" author="Hamza">
+        <addUniqueConstraint columnNames="template_uid, template_version_uid, canonical_path"
+                             constraintName="ux_template_element_tpl_ver_idpath" tableName="template_element"/>
+    </changeSet>
+    <changeSet id="1762719219391-69" author="Hamza">
+        <createIndex indexName="idx_template_element_canonical_uid" tableName="template_element">
+            <column name="canonical_element_uid"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1762719219391-70" author="Hamza">
+        <createIndex indexName="idx_template_element_repeat_path" tableName="template_element">
+            <column name="template_uid"/>
+            <column name="parent_repeat_json_data_path"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1762719219391-71" author="Hamza">
+        <createIndex indexName="idx_template_element_template_version" tableName="template_element">
+            <column name="template_uid"/>
+            <column name="template_version_uid"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1762719219391-72" author="Hamza">
+        <createIndex indexName="idx_template_element_template_version_no" tableName="template_element">
+            <column name="template_uid"/>
+            <column name="template_version_no"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="1762719219391-73" author="Hamza">
+        <addForeignKeyConstraint baseColumnNames="canonical_element_uid" baseTableName="template_element"
+                                 constraintName="FK_TEMPLATE_ELEMENT_ON_CANONICAL_ELEMENT" referencedColumnNames="canonical_element_uid"
+                                 referencedTableName="canonical_element"/>
+    </changeSet>
+</databaseChangeLog>

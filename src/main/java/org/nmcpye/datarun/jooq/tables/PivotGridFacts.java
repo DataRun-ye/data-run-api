@@ -4,32 +4,19 @@
 package org.nmcpye.datarun.jooq.tables;
 
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
-import org.jooq.Condition;
-import org.jooq.Field;
-import org.jooq.Index;
-import org.jooq.JSONB;
-import org.jooq.Name;
-import org.jooq.PlainSQL;
-import org.jooq.QueryPart;
-import org.jooq.SQL;
-import org.jooq.Schema;
-import org.jooq.Select;
-import org.jooq.Stringly;
-import org.jooq.Table;
-import org.jooq.TableField;
-import org.jooq.TableOptions;
+import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 import org.nmcpye.datarun.jooq.Indexes;
 import org.nmcpye.datarun.jooq.Public;
 import org.nmcpye.datarun.jooq.tables.records.PivotGridFactsRecord;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 
 /**
@@ -74,9 +61,9 @@ public class PivotGridFacts extends TableImpl<PivotGridFactsRecord> {
     public final TableField<PivotGridFactsRecord, String> FORM_VERSION_UID = createField(DSL.name("form_version_uid"), SQLDataType.VARCHAR(255), this, "");
 
     /**
-     * The column <code>public.pivot_grid_facts.etc_uid</code>.
+     * The column <code>public.pivot_grid_facts.te_uid</code>.
      */
-    public final TableField<PivotGridFactsRecord, String> ETC_UID = createField(DSL.name("etc_uid"), SQLDataType.VARCHAR(11), this, "");
+    public final TableField<PivotGridFactsRecord, String> ETC_UID = createField(DSL.name("te_uid"), SQLDataType.VARCHAR(11), this, "");
 
     /**
      * The column <code>public.pivot_grid_facts.template_repeat_path</code>.

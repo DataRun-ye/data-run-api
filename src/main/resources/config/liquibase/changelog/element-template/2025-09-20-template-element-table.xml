@@ -35,29 +35,29 @@
                 <constraints nullable="false"/>
             </column>
             <column name="value_type" type="VARCHAR(255)"/>
-            <column name="aggregation_type" type="VARCHAR(32)"/>
+<!--            <column name="aggregation_type" type="VARCHAR(32)"/>-->
             <column name="is_reference" type="BOOLEAN" defaultValue="false"/>
-            <column name="category_id" type="VARCHAR(26)"/>
-            <column name="is_category" type="BOOLEAN"/>
+<!--            <column name="category_id" type="VARCHAR(26)"/>-->
+<!--            <column name="is_category" type="BOOLEAN"/>-->
             <column name="option_set_uid" type="VARCHAR(11)"/>
             <column name="is_multi" type="BOOLEAN" defaultValue="false"/>
-            <column name="is_measure" type="BOOLEAN" defaultValue="false"/>
-            <column name="is_dimension" type="BOOLEAN" defaultValue="false"/>
+<!--            <column name="is_measure" type="BOOLEAN" defaultValue="false"/>-->
+<!--            <column name="is_dimension" type="BOOLEAN" defaultValue="false"/>-->
             <column name="sort_order" type="INT"/>
             <column name="id_path" type="VARCHAR(3000)">
                 <constraints nullable="false"/>
             </column>
 <!--            <column name="path_hash" type="BIGINT"/>-->
-            <column name="name_path" type="VARCHAR(3000)"/>
-            <column name="semantic_path" type="VARCHAR(3000)"/>
-            <column name="ancestor_repeat_semantic_path" type="VARCHAR(3000)"/>
+            <column name="json_value_path" type="VARCHAR(3000)"/>
+            <column name="canonical_path" type="VARCHAR(3000)"/>
+            <column name="canonical_parent_repeat_path" type="VARCHAR(3000)"/>
             <column name="repeat_uid" type="VARCHAR(64)"/>
-            <column name="has_repeat_ancestor" type="BOOLEAN" defaultValue="false"/>
-            <column name="ancestor_repeat_path" type="VARCHAR(3000)"/>
+<!--            <column name="has_repeat_ancestor" type="BOOLEAN" defaultValue="false"/>-->
+            <column name="parent_repeat_path" type="VARCHAR(3000)"/>
             <column name="display_label" type="jsonb"/>
             <column name="definition_json" type="jsonb"/>
-            <column name="is_entity_candidate" type="BOOLEAN" defaultValue="false"/>
-            <column name="analytics_intent" type="jsonb" defaultValueComputed="'{}'::jsonb"/>
+<!--            <column name="is_entity_candidate" type="BOOLEAN" defaultValue="false"/>-->
+<!--            <column name="analytics_intent" type="jsonb" defaultValueComputed="'{}'::jsonb"/>-->
             <column name="natural_key_candidates" type="jsonb"  defaultValueComputed="'[]'::jsonb"/>
             <column name="created_at" type="DATETIME">
                 <constraints nullable="false"/>

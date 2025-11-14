@@ -21,10 +21,10 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
 
     // The UPSERT SQL handles "undeleting" via the ON CONFLICT clause (deleted_at = NULL in both places).
     private static final String UPSERT_SQL = """
-        INSERT INTO repeat_instance ( id, etc_uid, canonical_element_uid, manifest_uid, canonical_path, submission_uid, repeat_path, parent_repeat_instance_id, repeat_index,
+        INSERT INTO repeat_instance ( id, te_uid, canonical_element_uid, manifest_uid, canonical_path, submission_uid, repeat_path, parent_repeat_instance_id, repeat_index,
             client_updated_at, created_date, last_modified_date, created_by, last_modified_by, submission_completed_at, deleted_at
         ) VALUES (
-            :id, :etcUid, :canonicalElementUid, :manifestUid, :canonicalPath, :submissionUid, :repeatPath, :parentRepeatInstanceId, :repeatIndex,
+            :id, :teUid, :canonicalElementUid, :manifestUid, :canonicalPath, :submissionUid, :repeatPath, :parentRepeatInstanceId, :repeatIndex,
             :clientUpdatedAt, :createdDate, :lastModifiedDate, :createdBy, :lastModifiedBy, :submissionCompletedAt, NULL
         )
         ON CONFLICT (id) DO UPDATE SET
@@ -34,7 +34,7 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
             repeat_index = EXCLUDED.repeat_index,
             client_updated_at = EXCLUDED.client_updated_at,
             submission_completed_at = EXCLUDED.submission_completed_at,
-            etc_uid = EXCLUDED.etc_uid,
+            te_uid = EXCLUDED.te_uid,
             canonical_element_uid = EXCLUDED.canonical_element_uid,
             manifest_uid = EXCLUDED.manifest_uid,
             last_modified_date = now(),
@@ -67,10 +67,9 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
 
         return new MapSqlParameterSource()
             .addValue("id", ri.getId())
-            .addValue("etcUid", ri.getEtcUid())
+            .addValue("teUid", ri.getTeUid())
             .addValue("canonicalPath", ri.getCanonicalPath())
             .addValue("canonicalElementUid", ri.getCanonicalElementUid())
-            .addValue("manifestUid", ri.getManifestUid())
             .addValue("submissionUid", ri.getSubmissionUid())
             .addValue("repeatPath", ri.getRepeatPath())
             .addValue("parentRepeatInstanceId", ri.getParentRepeatInstanceId()) // New field

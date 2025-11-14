@@ -40,7 +40,7 @@ import static org.nmcpye.datarun.jooq.Tables.PIVOT_GRID_FACTS;
  * <p>
  * Implementation notes:
  * - All predicates and grouping should default to only consider rows where deleted_at IS NULL.
- * - Template-mode measures must scope to etc_uid, while global measures use de_uid.
+ * - Template-mode measures must scope to te_uid, while global measures use de_uid.
  * - Methods should avoid fluent-type generics fights by using SelectQuery/Select<Record> where helpful.
  *
  * @author Hamza Assada

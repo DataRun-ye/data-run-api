@@ -35,19 +35,19 @@ public class TemplateElementMap {
 
     private final Map<String, AbstractElement> elementByIdPathMap;
 
-    private final Map<String, AbstractElement> elementByNamePathMap;
+    private final Map<String, AbstractElement> elementByJsonDataPathMap;
 
     /**
-     * namePath -> TemplateElement
+     * jsonDataPath -> TemplateElement
      * (NEW) source template_element, used in normalization for each
      * value to reference the id of the template_element_conf that produced it.
      */
     private final Map<String, TemplateElement> elementConfigByNamePathMap;
 
-    /**
-     * repeat_uid -> semantic_path
-     */
-    private final Map<String, String> repeatSemanticPathMap;
+//    /**
+//     * repeat_uid -> semantic_path
+//     */
+//    private final Map<String, String> repeatCanonicalPathMap;
 
     /**
      * elementId->path reverse map, for getting path by an elementId for retrieving categoryElement's path by its id
@@ -64,10 +64,11 @@ public class TemplateElementMap {
      */
     private final Map<String, String> repeatPathToCategoryElementIdMap;
 
-    public TemplateElementMap(DataTemplateInstanceDto dto, Map<String, TemplateElement> elementConfigByNamePathMap) {
+    public TemplateElementMap(DataTemplateInstanceDto dto, Map<String, TemplateElement> elementConfigByJsonDataPathMap) {
         this.templateInstanceDto = dto;
         this.repeatIdPaths = List.copyOf(dto.getRepeatSectionsPaths() == null ? List.of() : dto.getRepeatSectionsPaths());
         this.topLevelFieldIdPathToElementIdCache = Map.copyOf(dto.getTopLevelFieldPathToElementId() == null ? Map.of() : dto.getTopLevelFieldPathToElementId());
+
         this.repeatChildrenMap = dto.getRepeatSectionChildrenMap() == null ? Map.of() : dto.getRepeatSectionChildrenMap().entrySet().stream()
             .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> Map.copyOf(e.getValue())));
         this.repeatPathToCategoryElementIdMap = Map.copyOf(dto.getRepeatCategoryElementMap() == null ? Map.of() : dto.getRepeatCategoryElementMap());
@@ -77,16 +78,16 @@ public class TemplateElementMap {
             .filter(FormDataElementConf.class::isInstance)
             .map(FormDataElementConf.class::cast)
             .collect(Collectors.toMap(FormDataElementConf::getId, Function.identity())));
-        this.elementByNamePathMap = this.elementByIdPathMap.entrySet().stream()
+        this.elementByJsonDataPathMap = this.elementByIdPathMap.entrySet().stream()
             .collect(Collectors.toMap(
                 entry -> entry.getKey()
                     .replaceFirst(entry.getValue()
                         .getId(), entry.getValue().getName()),
                 Map.Entry::getValue));
-        this.elementConfigByNamePathMap = elementConfigByNamePathMap;
-        this.repeatSemanticPathMap = elementConfigByNamePathMap.values()
-            .stream()
-            .filter(TemplateElement::isRepeat).collect(Collectors
-                .toMap(TemplateElement::getRepeatUid, TemplateElement::getIdPath));
+        this.elementConfigByNamePathMap = elementConfigByJsonDataPathMap;
+//        this.repeatCanonicalPathMap = elementConfigByJsonDataPathMap.values()
+//            .stream()
+//            .filter(TemplateElement::isRepeat).collect(Collectors
+//                .toMap(TemplateElement::getRepeatUid, TemplateElement::getIdPath));
     }
 }

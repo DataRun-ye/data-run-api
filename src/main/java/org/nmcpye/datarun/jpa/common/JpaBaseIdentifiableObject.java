@@ -3,6 +3,7 @@ package org.nmcpye.datarun.jpa.common;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
@@ -161,6 +162,7 @@ abstract public class JpaBaseIdentifiableObject extends JpaIdentifiableObject
     }
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Schema(example = "{\"ar\": \"ar label\", \"en\": \"en label\"}")
     public Map<String, String> getLabel() {
         if (translations == null || translations.isEmpty()) {
             return null;

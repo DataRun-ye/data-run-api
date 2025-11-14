@@ -33,11 +33,11 @@ public interface TemplateElementRepository
 
     List<TemplateElement> findByTemplateVersionUid(String templateVersionUid);
 
-    Optional<TemplateElement> findByRepeatUid(String repeatUid);
-
-    // load only repeat entries (cached in app)
-    @Query("SELECT e.repeatUid, e.canonicalPath FROM TemplateElement e WHERE e.elementKind = 'REPEAT'")
-    List<Object[]> findAllRepeats(); // returns [repeatUid, semanticPath] rows
+//    Optional<TemplateElement> findByRepeatUid(String repeatUid);
+//
+//    // load only repeat entries (cached in app)
+//    @Query("SELECT e.repeatUid, e.canonicalPath FROM TemplateElement e WHERE e.elementKind = 'REPEAT'")
+//    List<Object[]> findAllRepeats(); // returns [repeatUid, semanticPath] rows
 
     List<TemplateElement> findBySchemaFingerprint(String schemaFingerprint);
 }

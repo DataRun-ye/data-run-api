@@ -19,7 +19,7 @@ public class MeasureRequest {
     /**
      * fieldId: client identifier for the element. Accepts:
      * <p>
-     * - "etc:< uid >"   => template-scoped element (prefer etc_uid)
+     * - "etc:< uid >"   => template-scoped element (prefer te_uid)
      * <p>
      * - "de:< uid >" or "<de_uid>" => global DataElement referenced by de_uid
      * <p>

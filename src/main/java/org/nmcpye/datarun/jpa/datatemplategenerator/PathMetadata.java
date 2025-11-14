@@ -13,13 +13,13 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class PathMetadata {
-    private final String idPath;
-    private final String namePath;
+    private final String jsonDataIdPath;
+    private final String jsonDataPath;
     // null if submission-level
-    private final String semanticPath;
-    private final Boolean hasAncestorRepeat;
+    private final String canonicalPath;
+    private final Boolean hasParentRepeat;
     // full idPath to nearest repeatable ancestor (or null)
-    private final String repeatAncestorIdPath;
+    private final String parentRepeatIdPath;
     // repeat-only path to nearest repeatable ancestor
-    private final String semanticRepeatAncestorPath;
+    private final String canonicalParentRepeatPath;
 }
