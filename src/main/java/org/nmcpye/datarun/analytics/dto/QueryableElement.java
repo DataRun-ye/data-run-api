@@ -17,7 +17,7 @@ import java.util.Set;
 /// @param dataType         The data type of the field's *value* (e.g., `value_num`, `value_ts`, `option_uid`).
 ///                         This informs the UI how to build filter controls and informs the backend which value column in the materialized view to aggregate.
 /// @param sourceColumn     The column in the materialized view/table used for *identifying* rows belonging to this field.
-///                         This is used in `WHERE/GROUP` BY clauses. (e.g., `etc_uid`, `team_uid`).
+///                         This is used in `WHERE/GROUP` BY clauses. (e.g., `te_uid`, `team_uid`).
 /// @param deUid
 /// @param aggregationModes List of aggregations allowed for this field. E.g., `["SUM", "AVG"]`
 /// @param extras           Extras for UI: `referenceTable`, `repeatPath`, `isMulti`, etc.

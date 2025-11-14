@@ -1,0 +1,330 @@
+[
+  {
+    "uid": "rkwH5QNofRn",
+    "versionUid": "Y0UVcIutUWv",
+    "versionNumber": 8,
+    "name": "health_facilities_supervision_laboratory_402",
+    "deleted": false,
+    "fields": [
+      {
+        "parent": "main",
+        "name": "DateAndTime",
+        "id": "E0mkcxV1MAU",
+        "type": "DateTime"
+      },
+      {
+        "parent": "main",
+        "name": "contact_name",
+        "id": "ztV4iHHaNzF",
+        "type": "FullName"
+      },
+      {
+        "parent": "main",
+        "name": "mobile_phone",
+        "id": "dzs71rsLPrt",
+        "type": "IntegerPositive"
+      },
+      {
+        "parent": "main",
+        "name": "lab_registers",
+        "id": "eCWUsNAc8Ma",
+        "type": "SelectMulti",
+        "optionSet": "bh7ZbTM33rX"
+      },
+      {
+        "parent": "main",
+        "name": "lab_posters",
+        "id": "WPcJigF5d3c",
+        "type": "SelectMulti",
+        "optionSet": "LVPJtB1pcr7"
+      },
+      {
+        "parent": "cases",
+        "name": "mrdt_tested",
+        "id": "UCkj09fyP6k",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "cases",
+        "name": "mrdt_pf",
+        "id": "wmPvpmUiLhM",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "cases",
+        "name": "mrdt_pv_pan_mixed",
+        "id": "xoAeJZiHpS3",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "cases",
+        "name": "mic_tested",
+        "id": "rMVnjcEOBdR",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "cases",
+        "name": "mic_pf",
+        "id": "nrV6is8GHit",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "cases",
+        "name": "mic_pv_mixed_other",
+        "id": "oQbto93KT9E",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "cases",
+        "name": "drdt_tested",
+        "id": "rOmzE8QozC7",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "cases",
+        "name": "drdt_ns1",
+        "id": "rYqB5hxtYKH",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "cases",
+        "name": "drdt_igm",
+        "id": "sN5iwFPUjO8",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "cases",
+        "name": "drdt_igg",
+        "id": "zBGJVg0yqSv",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "microscopy_applied",
+        "id": "yMDltXGuqx4",
+        "type": "YesNo"
+      },
+      {
+        "parent": "quality",
+        "name": "mic_slides_evaluated",
+        "id": "YNgmEGrn23U",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "negative_mic_slides_lab",
+        "id": "eGONKKTXYiu",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "negative_mic_slides_evaluated",
+        "id": "dARoBiyAR4j",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "positive_mic_slides_lab",
+        "id": "k4nXyMzy2EA",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "positive_mic_slides_evaluated",
+        "id": "mTOLMjDP8I2",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "parasite_density_mic_slides_lab",
+        "id": "hufRMlBeind",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "parasite_density_mic_slides_evaluated",
+        "id": "xFkMvYaw28D",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "pf_mic_slides_lab",
+        "id": "KMsPOC6YfLQ",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "pf_mic_slides_evaluated",
+        "id": "hyM3XFU2jGn",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "pv_mic_slides_lab",
+        "id": "mB6DBxK6fQ2",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "pv_mic_slides_evaluated",
+        "id": "lAsYUoYGfn1",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "mixed_mic_slides_lab",
+        "id": "A8D9pk73zbG",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "mixed_mic_slides_evaluated",
+        "id": "QUlPYRzKa2M",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "pm_mic_slides_lab",
+        "id": "hYMNELAzTGH",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "quality",
+        "name": "pm_mic_slides_evaluated",
+        "id": "Iyy8aTjKF9E",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "trainee",
+        "name": "mrdt_testing",
+        "id": "vmJTcIl8cFL",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "drdt_testing",
+        "id": "Pxcqc0tpGdL",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "pf_mic__identification",
+        "id": "TICY5Y3Az2F",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "pv_pm_mic_identification_trained",
+        "id": "DM5Sc5sxCH9",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "malaria_smear_staining",
+        "id": "xfOBmpykXLD",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "mrdt_testing_trained",
+        "id": "xYH8EJpjq5D",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "drdt_testing_trained",
+        "id": "PvlSjS8r3rB",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "pf_mic_identification_trained",
+        "id": "KnKQmfhRjCQ",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "malaria_smear_staining_trained",
+        "id": "IrTvgEEkCM4",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "microscope_handling_trained",
+        "id": "HHUziixvBzD",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "lab_recording_trained",
+        "id": "HYZefhuTsyX",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "other_lab_skills_trained",
+        "id": "uHGNMg0yxaA",
+        "type": "LongText"
+      },
+      {
+        "parent": "cases",
+        "name": "month_name",
+        "id": "T7QqiTeFdHF",
+        "type": "SelectOne",
+        "optionSet": "NN8fDdIJmCn"
+      },
+      {
+        "parent": "training",
+        "name": "lab_staff_total",
+        "id": "WmJGlvdSW1c",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "training",
+        "name": "lab_staff_present",
+        "id": "aro2zqKnqgg",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "trainee",
+        "name": "name",
+        "id": "YtBEZsXvD5A",
+        "type": "FullName"
+      },
+      {
+        "parent": "trainee",
+        "name": "phone",
+        "id": "EHIXCT3t3te",
+        "type": "IntegerPositive"
+      }
+    ],
+    "sections": [
+      {
+        "name": "cases",
+        "repeatable": true,
+        "id": "cases"
+      },
+      {
+        "parent": "training",
+        "name": "trainee",
+        "repeatable": true,
+        "id": "trainee"
+      },
+      {
+        "name": "training",
+        "repeatable": false,
+        "id": "training"
+      },
+      {
+        "name": "main",
+        "repeatable": false,
+        "id": "main"
+      },
+      {
+        "name": "quality",
+        "repeatable": false,
+        "id": "quality"
+      }
+    ]
+  }
+]

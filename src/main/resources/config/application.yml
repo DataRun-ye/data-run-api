@@ -238,6 +238,14 @@ jhipster:
 # More documentation is available at:
 # https://www.jhipster.tech/common-application-properties/
 # ===================================================================
+analytics:
+  refresh:
+    # 1. Every night at 3 AM (03:00:00)
+    cron: "0 0 3 * * *"
+    # 2. Weekly on Sunday at 3 AM (03:00:00)
+#    cron: "0 0 3 ? * 0"
+    # Note: Sunday is typically '0' or '7' in cron, using '0' here.
+    # Change '0' to '1' for Monday, '2' for Tuesday, etc.
 #feature:
 #  mapping-worker:
 #    enabled: false

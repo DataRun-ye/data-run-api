@@ -1,0 +1,1002 @@
+[
+  {
+    "canonical_element_uid": "af0fc741-8274-3db2-9f3d-e6f24024392d",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "trainee",
+    "data_type": "ARRAY",
+    "semantic_type": "Repeat",
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "المدربين",
+      "en": "trainee"
+    },
+    "json_data_paths": [
+      "training.trainee"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "88334666-28a7-37f9-a9fb-97050ec8d98e",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "cases",
+    "data_type": "ARRAY",
+    "semantic_type": "Repeat",
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "الحالات",
+      "en": "cases"
+    },
+    "json_data_paths": [
+      "cases"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "14c709ea-5942-3ad6-9f2e-2dc297e27bce",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "DateAndTime",
+    "data_type": "TIMESTAMP",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "الوقت والتاريخ",
+      "en": "DateAndTime"
+    },
+    "json_data_paths": [
+      "main.DateAndTime"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "c9e5e122-772d-31da-a8f6-a60dd3036f63",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "contact_name",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "اسم مسؤول المختبر",
+      "en": "contact_name"
+    },
+    "json_data_paths": [
+      "main.contact_name"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "610e4150-3db0-3b88-82c9-ba94676bd844",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "mobile_phone",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "رقم تلفون مسؤول المختبر",
+      "en": "mobile_phone"
+    },
+    "json_data_paths": [
+      "main.mobile_phone"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "c9499bb9-40e3-307e-a80c-974ce80daa26",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "lab_registers",
+    "data_type": "ARRAY",
+    "semantic_type": "Option",
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": "bh7ZbTM33rX",
+    "option_set_id": "01K1EH91PBXSPVF8PNS73PY69F",
+    "display_label": {
+      "ar": "السجلات",
+      "en": "lab_registers"
+    },
+    "json_data_paths": [
+      "main.lab_registers"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "595fcd7e-9f63-3f8f-9a05-2caca4aecbd3",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "lab_posters",
+    "data_type": "ARRAY",
+    "semantic_type": "Option",
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": "LVPJtB1pcr7",
+    "option_set_id": "01K1EHPE2H6JQ2T5JCC771BP5W",
+    "display_label": {
+      "ar": "الملصقات",
+      "en": "lab_posters"
+    },
+    "json_data_paths": [
+      "main.lab_posters"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "d898835c-8d6d-3f73-b6ab-e03ef79ffd53",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "mrdt_tested",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "عدد المفحوصين للملاريا (فحص سريع)",
+      "en": "mrdt_tested"
+    },
+    "json_data_paths": [
+      "cases.mrdt_tested"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "8986b825-a0a9-3331-bf0d-abf75f8f51f4",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "mrdt_pf",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "PF",
+      "en": "mrdt_pf"
+    },
+    "json_data_paths": [
+      "cases.mrdt_pf"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "c77d52ea-770f-3fb9-9c8c-392cf7ca4a19",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "mrdt_pv_pan_mixed",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "PV/PAN/Mixed",
+      "en": "mrdt_pv_pan_mixed"
+    },
+    "json_data_paths": [
+      "cases.mrdt_pv_pan_mixed"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "116ada1e-6bc8-325b-9a4f-1f89ff019916",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "mic_tested",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "عدد المفحوصين بالمجهر",
+      "en": "mic_tested"
+    },
+    "json_data_paths": [
+      "cases.mic_tested"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "e021b7b7-d930-3e03-bf2f-6ad06d91f8b1",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "mic_pf",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "PF",
+      "en": "mic_pf"
+    },
+    "json_data_paths": [
+      "cases.mic_pf"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "603e9c8b-c7a8-36f6-abe1-21333daf6382",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "mic_pv_mixed_other",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "PV/Mixed/Other",
+      "en": "mic_pv_mixed_other"
+    },
+    "json_data_paths": [
+      "cases.mic_pv_mixed_other"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "570d5c3e-6f5e-3abb-b3ff-aa651218aab4",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "drdt_tested",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "عدد المفحوصين للضنك",
+      "en": "drdt_tested"
+    },
+    "json_data_paths": [
+      "cases.drdt_tested"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "46dc9adc-57ff-3401-b605-b1dc959afd5c",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "drdt_ns1",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "NS1",
+      "en": "drdt_ns1"
+    },
+    "json_data_paths": [
+      "cases.drdt_ns1"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "d4e571ae-cbbf-3e56-9e4f-84bb2770fa60",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "drdt_igm",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "IgM",
+      "en": "drdt_igm"
+    },
+    "json_data_paths": [
+      "cases.drdt_igm"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "7f01025d-600c-311d-8ea1-a29bae96c37a",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "drdt_igg",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "IgG",
+      "en": "drdt_igg"
+    },
+    "json_data_paths": [
+      "cases.drdt_igg"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "906c2ad0-256d-3ecd-8d30-7d860c376d7f",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "microscopy_applied",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "يتم فحص الملاريا بالمجهر",
+      "en": "microscopy_applied"
+    },
+    "json_data_paths": [
+      "quality.microscopy_applied"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "c82d9b52-011e-301f-8e95-a8f11f562c94",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "mic_slides_evaluated",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "Microscopic slide حدد عدد",
+      "en": "mic_slides_evaluated"
+    },
+    "json_data_paths": [
+      "quality.mic_slides_evaluated"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "c3c17077-24af-33f2-a06c-c182ea8784e0",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "negative_mic_slides_lab",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "Negative (بحسب نتائج المختبر)",
+      "en": "negative_mic_slides_lab"
+    },
+    "json_data_paths": [
+      "quality.negative_mic_slides_lab"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "51d2b684-f508-33f3-930d-f8a2cf293039",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "negative_mic_slides_evaluated",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "Negative (بعد تقييم ضبط الجودة)",
+      "en": "negative_mic_slides_evaluated"
+    },
+    "json_data_paths": [
+      "quality.negative_mic_slides_evaluated"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "f9784b3b-52bd-38a7-8a30-21f97dc46c70",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "positive_mic_slides_lab",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "Positive (بحسب نتائج المختبر)",
+      "en": "positive_mic_slides_lab"
+    },
+    "json_data_paths": [
+      "quality.positive_mic_slides_lab"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "e7f46314-6882-3b6d-b477-e76a7a675241",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "positive_mic_slides_evaluated",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "Positive (بعد تقييم ضبط الجودة)",
+      "en": "positive_mic_slides_evaluated"
+    },
+    "json_data_paths": [
+      "quality.positive_mic_slides_evaluated"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "459fcf59-fb91-382e-80cb-287cf9e95845",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "parasite_density_mic_slides_lab",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "Parasite Denisty (بحسب نتائج المختبر)",
+      "en": "parasite_density_mic_slides_lab"
+    },
+    "json_data_paths": [
+      "quality.parasite_density_mic_slides_lab"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "6ef6bc8e-fbcd-38b7-9c5d-e5b956667abb",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "parasite_density_mic_slides_evaluated",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "Parasite Denisty (بعد تقييم ضبط الجودة)",
+      "en": "parasite_density_mic_slides_evaluated"
+    },
+    "json_data_paths": [
+      "quality.parasite_density_mic_slides_evaluated"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "51d553e6-9697-3ed4-9fdb-31d5c6c04ce2",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "pf_mic_slides_lab",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "pf (بحسب نتائج المختبر)",
+      "en": "pf_mic_slides_lab"
+    },
+    "json_data_paths": [
+      "quality.pf_mic_slides_lab"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "9e8a9067-78aa-3894-b300-5a09e63a708e",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "pf_mic_slides_evaluated",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "pf (بعد تقييم ضبط الجودة)",
+      "en": "pf_mic_slides_evaluated"
+    },
+    "json_data_paths": [
+      "quality.pf_mic_slides_evaluated"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "e4ee6c42-113a-3162-aaf4-f9a618511e18",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "pv_mic_slides_lab",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "pv (بحسب نتائج المختبر)",
+      "en": "pv_mic_slides_lab"
+    },
+    "json_data_paths": [
+      "quality.pv_mic_slides_lab"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "fc3f562b-0c0d-3bb1-8b2b-4c7b014e4728",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "pv_mic_slides_evaluated",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "pv (بعد تقييم ضبط الجودة)",
+      "en": "pv_mic_slides_evaluated"
+    },
+    "json_data_paths": [
+      "quality.pv_mic_slides_evaluated"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "888e897a-4049-33c4-bc38-22951a55eda9",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "mixed_mic_slides_lab",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "Mixed (بحسب نتائج المختبر)",
+      "en": "mixed_mic_slides_lab"
+    },
+    "json_data_paths": [
+      "quality.mixed_mic_slides_lab"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "e4d868a3-4f21-3577-99a6-0985474dbc02",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "mixed_mic_slides_evaluated",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "Mixed (بعد تقييم ضبط الجودة)",
+      "en": "mixed_mic_slides_evaluated"
+    },
+    "json_data_paths": [
+      "quality.mixed_mic_slides_evaluated"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "b853c66f-8a53-3539-be8b-cd8267b8c45b",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "pm_mic_slides_lab",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "Pm (بحسب نتائج المختبر)",
+      "en": "pm_mic_slides_lab"
+    },
+    "json_data_paths": [
+      "quality.pm_mic_slides_lab"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "9d350696-8f0e-38c4-b14d-8ced67ca3532",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "pm_mic_slides_evaluated",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "Pm (بعد تقييم ضبط الجودة)",
+      "en": "pm_mic_slides_evaluated"
+    },
+    "json_data_paths": [
+      "quality.pm_mic_slides_evaluated"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "23387241-2b24-310e-b99d-2330ea09110b",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "mrdt_testing",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "الفحص السريع للملاريا",
+      "en": "mrdt_testing"
+    },
+    "json_data_paths": [
+      "training.trainee.mrdt_testing"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "cba62a13-4022-3b0a-8d64-5467634273eb",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "drdt_testing",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "الفحص السريع للضنك",
+      "en": "drdt_testing"
+    },
+    "json_data_paths": [
+      "training.trainee.drdt_testing"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "8984bd06-4a78-339c-8ae5-bc04f2a49d74",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "pf_mic__identification",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "تشخيص PF بالمجهر",
+      "en": "pf_mic_identification"
+    },
+    "json_data_paths": [
+      "training.trainee.pf_mic__identification"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "16a2b3e6-ccb9-35eb-ab64-31fbfe349727",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "pv_pm_mic_identification_trained",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "التشخيص المجهري PV-PM",
+      "en": "pv_pm_mic_identification_trained"
+    },
+    "json_data_paths": [
+      "training.trainee.pv_pm_mic_identification_trained"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "5c91f776-1e20-3bc1-b58b-6f3f6fb93299",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "malaria_smear_staining",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "مهارات الصبغ والتحضير",
+      "en": "malaria_smear_staining"
+    },
+    "json_data_paths": [
+      "training.trainee.malaria_smear_staining"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "16124533-10e2-32da-b1bf-b8d80a0a6665",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "mrdt_testing_trained",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "الفحص السريع للملاريا",
+      "en": "mrdt_testing_trained"
+    },
+    "json_data_paths": [
+      "training.trainee.mrdt_testing_trained"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "ece79ed9-601b-3322-9f9e-bbe43365dd39",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "drdt_testing_trained",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "الفحص السريع للضنك",
+      "en": "drdt_testing_trained"
+    },
+    "json_data_paths": [
+      "training.trainee.drdt_testing_trained"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "60037336-a272-33fb-ae99-aff59ee412a2",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "pf_mic_identification_trained",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "التشخيص المجهري PF",
+      "en": "pf_mic_identification_trained"
+    },
+    "json_data_paths": [
+      "training.trainee.pf_mic_identification_trained"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "0e37c720-dac5-3078-8fd1-ee2cef182b4f",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "malaria_smear_staining_trained",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "مهارات الصبغ والتحضير",
+      "en": "malaria_smear_staining_trained"
+    },
+    "json_data_paths": [
+      "training.trainee.malaria_smear_staining_trained"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "aa536cc2-1c96-3247-8e06-d5c95b86fb05",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "microscope_handling_trained",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "التعامل مع المجهر الضوئي",
+      "en": "microscope_handling_trained"
+    },
+    "json_data_paths": [
+      "training.trainee.microscope_handling_trained"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "38b6ac7a-0861-3a42-af47-26704ce56028",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "lab_recording_trained",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "تنظيم سجل المختبر",
+      "en": "lab_recording_trained"
+    },
+    "json_data_paths": [
+      "training.trainee.lab_recording_trained"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "05ee6cf9-f223-3f12-aa82-b1bd0b754875",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "other_lab_skills_trained",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "مهارات اخرى",
+      "en": "other_lab_skills_trained"
+    },
+    "json_data_paths": [
+      "training.trainee.other_lab_skills_trained"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "9482081a-a06c-3182-b1e3-15e6920262be",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "month_name",
+    "data_type": "TEXT",
+    "semantic_type": "Option",
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": "NN8fDdIJmCn",
+    "option_set_id": "01JZKZGHBXPB3REJ7NGPQSWPYD",
+    "display_label": {
+      "ar": "الشهر",
+      "en": "month_name"
+    },
+    "json_data_paths": [
+      "cases.month_name"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "1f38d64e-e5fe-37d2-afe5-88da97506473",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "lab_staff_total",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "عدد المخولين بتقديم خدمات الفحص في المرفق الصحي",
+      "en": "lab_staff_total"
+    },
+    "json_data_paths": [
+      "training.lab_staff_total"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "b7752b8b-e040-39d0-8177-a544a663d8bb",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "lab_staff_present",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "1",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "عدد المتواجدين أثناء الزيارة",
+      "en": "lab_staff_present"
+    },
+    "json_data_paths": [
+      "training.lab_staff_present"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "07db591e-02b9-3a78-ac6e-74331e4ed046",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "name",
+    "data_type": "TEXT",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "الاسم الرباعي",
+      "en": "name"
+    },
+    "json_data_paths": [
+      "training.trainee.name"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  },
+  {
+    "canonical_element_uid": "261fad81-a344-33a6-b042-4e64b26e23a5",
+    "template_uid": "rkwH5QNofRn",
+    "preferred_name": "phone",
+    "data_type": "INTEGER",
+    "semantic_type": null,
+    "canonical_path": null,
+    "cardinality": "N",
+    "option_set_uid": null,
+    "option_set_id": null,
+    "display_label": {
+      "ar": "رقم الهاتف",
+      "en": "phone"
+    },
+    "json_data_paths": [
+      "training.trainee.phone"
+    ],
+    "created_date": "2025-11-11 00:51:50.360925",
+    "last_modified_date": "2025-11-11 00:51:50.360925"
+  }
+]

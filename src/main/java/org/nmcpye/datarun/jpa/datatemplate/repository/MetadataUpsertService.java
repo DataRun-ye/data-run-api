@@ -26,19 +26,22 @@ public class MetadataUpsertService {
     private static final String CANONICAL_UPSERT_SQL = """
         INSERT INTO canonical_element
           (canonical_element_uid, template_uid, preferred_name, data_type, semantic_type, display_label,
-           cardinality, option_set_id, canonical_candidates, notes, created_date, last_modified_date)
+           json_data_paths, cardinality, option_set_uid, option_set_id, notes, created_date, last_modified_date)
         VALUES
           (:canonicalElementUid, :templateUid, :preferredName, :dataType, :semanticType, CAST(:displayLabel AS jsonb),
-           :cardinality, :optionSetId, :notes, now(), now())
+            CAST(:jsonDataPaths AS jsonb), :cardinality, :optionSetUid, :optionSetId, :notes, now(), now())
         ON CONFLICT (canonical_element_uid) DO UPDATE
           SET preferred_name = EXCLUDED.preferred_name,
               data_type = EXCLUDED.data_type,
               semantic_type = EXCLUDED.semantic_type,
               canonical_path = COALESCE(EXCLUDED.canonical_path, canonical_element.canonical_path),
               cardinality = COALESCE(EXCLUDED.cardinality, canonical_element.cardinality),
+              option_set_uid = COALESCE(EXCLUDED.option_set_uid, canonical_element.option_set_uid),
               option_set_id = COALESCE(EXCLUDED.option_set_id, canonical_element.option_set_id),
-              canonical_candidates = canonical_element.canonical_candidates || EXCLUDED.canonical_candidates,
-              notes = COALESCE(EXCLUDED.notes, canonical_element.notes)
+              display_label = canonical_element.display_label || EXCLUDED.display_label,
+              json_data_paths = canonical_element.json_data_paths || EXCLUDED.json_data_paths,
+              notes = COALESCE(EXCLUDED.notes, canonical_element.notes),
+              last_modified_date = EXCLUDED.last_modified_date
         """;
 
     @Transactional
@@ -48,21 +51,24 @@ public class MetadataUpsertService {
         for (CanonicalElement e : elems) {
             MapSqlParameterSource p = new MapSqlParameterSource();
             p.addValue("canonicalElementUid", e.getCanonicalElementUid());
-            p.addValue("template_uid", e.getTemplateUid());
+            p.addValue("templateUid", e.getTemplateUid());
             p.addValue("preferredName", e.getPreferredName());
             p.addValue("dataType", e.getDataType() == null ? null : e.getDataType().name());
             p.addValue("semanticType", e.getSemanticType() == null ? null : e.getSemanticType().name());
             try {
                 p.addValue("displayLabel", objectMapper.writeValueAsString(e.getDisplayLabel()));
+                p.addValue("jsonDataPaths", objectMapper.writeValueAsString(e.getJsonDataPaths()));
             } catch (JsonProcessingException ex) {
                 throw new IllegalStateException(ex);
             }
             p.addValue("cardinality", e.getCardinality());
+            p.addValue("optionSetUid", e.getOptionSetUid());
             p.addValue("optionSetId", e.getOptionSetId());
             p.addValue("notes", e.getNotes());
             batch.add(p);
         }
         // chunked execution
+//        chunkExecution(batch, CANONICAL_UPSERT_SQL);
         for (int i = 0; i < batch.size(); i += BATCH_SIZE) {
             int end = Math.min(batch.size(), i + BATCH_SIZE);
             List<SqlParameterSource> slice = batch.subList(i, end);
@@ -70,33 +76,27 @@ public class MetadataUpsertService {
         }
     }
 
+//    private void chunkExecution(List<SqlParameterSource> batch, String canonicalUpsertSql) {
+//        for (int i = 0; i < batch.size(); i += BATCH_SIZE) {
+//            int end = Math.min(batch.size(), i + BATCH_SIZE);
+//            List<SqlParameterSource> slice = batch.subList(i, end);
+//            npJdbc.batchUpdate(canonicalUpsertSql, slice.toArray(new SqlParameterSource[0]));
+//        }
+//    }
+
     // -------- template_element upsert ----------
     // Ensure you have unique index on (template_uid, template_version_uid, id_path)
     private static final String TEMPLATE_UPSERT_SQL = """
-        INSERT INTO template_element
-          (uid, template_uid, template_version_uid, template_version_no, element_kind, canonical_element_uid,
+        INSERT INTO template_element (uid, template_uid, template_version_uid, template_version_no, element_kind, canonical_element_uid,
            schema_fingerprint, id_path, json_data_path, canonical_path, name, data_element_uid,
-           data_type, semantic_type, cardinality, option_set_uid, parent_repeat_json_data_path,
+           data_type, semantic_type, cardinality, option_set_uid, option_set_id, parent_repeat_json_data_path,
            parent_repeat_canonical_path, display_label, sort_order, value_type, created_date)
         VALUES
           (:uid, :templateUid, :templateVersionUid, :versionNo, :elementKind, :canonicalElementUid,
            :schemaFingerprint, :idPath, :jsonDataPath, :canonicalPath, :name, :dataElementUid,
-           :dataType, :semanticType, :cardinality, :optionSetUid, :parentRepeatJsonDataPath,
+           :dataType, :semanticType, :cardinality, :optionSetUid, :optionSetId, :parentRepeatJsonDataPath,
            :parentRepeatCanonicalPath, CAST(:displayLabel AS jsonb), :sortOrder, :valueType, now())
-        ON CONFLICT (template_uid, template_version_uid, id_path) DO UPDATE
-          SET schema_fingerprint = EXCLUDED.schema_fingerprint,
-              canonical_element_uid = EXCLUDED.canonical_element_uid,
-              name = EXCLUDED.name,
-              data_element_uid = EXCLUDED.data_element_uid,
-              data_type = EXCLUDED.data_type,
-              semantic_type = EXCLUDED.semantic_type,
-              cardinality = EXCLUDED.cardinality,
-              option_set_uid = EXCLUDED.option_set_uid,
-              parent_repeat_json_data_path = EXCLUDED.parent_repeat_json_data_path,
-              parent_repeat_canonical_path = EXCLUDED.parent_repeat_canonical_path,
-              display_label = EXCLUDED.display_label,
-              sort_order = EXCLUDED.sort_order,
-              value_type = EXCLUDED.value_type
+         ON CONFLICT (template_uid, template_version_uid, canonical_path) DO Nothing;
         """;
 
     @Transactional
@@ -121,6 +121,7 @@ public class MetadataUpsertService {
             p.addValue("semanticType", e.getSemanticType() == null ? null : e.getSemanticType().name());
             p.addValue("cardinality", e.getCardinality());
             p.addValue("optionSetUid", e.getOptionSetUid());
+            p.addValue("optionSetId", e.getOptionSetId());
             p.addValue("parentRepeatJsonDataPath", e.getParentRepeatJsonDataPath());
             p.addValue("parentRepeatCanonicalPath", e.getParentRepeatCanonicalPath());
             try {
@@ -133,6 +134,7 @@ public class MetadataUpsertService {
             batch.add(p);
         }
 
+//        chunkExecution(batch, TEMPLATE_UPSERT_SQL);
         for (int i = 0; i < batch.size(); i += BATCH_SIZE) {
             int end = Math.min(batch.size(), i + BATCH_SIZE);
             List<SqlParameterSource> slice = batch.subList(i, end);

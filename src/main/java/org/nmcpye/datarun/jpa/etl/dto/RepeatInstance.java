@@ -48,10 +48,9 @@ public class RepeatInstance {
      */
     protected String id;
 
-    protected String etcUid;
+    protected String teUid;
 
     private String canonicalPath;
-    private String manifestUid;
     private String canonicalElementUid;
 
     // ------------------------

@@ -30,7 +30,7 @@ public class ExtractorWorker extends OutboxWorker {
 
     @Override
     public String eventType() {
-        return "submission.created";
+        return "submission.saved";
     }
 
     @Override

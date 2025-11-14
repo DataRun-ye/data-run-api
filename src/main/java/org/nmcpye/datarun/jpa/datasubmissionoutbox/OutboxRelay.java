@@ -146,9 +146,9 @@ public class OutboxRelay implements DisposableBean {
         // run ETL and measure time
         try {
             workersMap.get(ev.getEventType()).handle(ev);
-            if (ev.getEventType().equals("submission.created")) {
+            if (ev.getEventType().equals("submission.saved")) {
                 processingTimer.record(() -> {
-//                    etlService.processSubmission(submissionId, true);
+                    etlService.processSubmission(submissionId, true);
 //                    extractor.processSubmission(e.getPayload().get("submissionId").asText());
                 });
                 // extractor should upsert extraction_manifest and in same TX create manifest.created outbox row

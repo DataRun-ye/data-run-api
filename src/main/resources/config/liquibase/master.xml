@@ -44,10 +44,11 @@
     <!-- etl   -->
     <include file="/config/liquibase/changelog/outbox-and-batch/2025-09-01-outbox-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/outbox-and-batch/2025-09-01-batch-submission-migration-errors-table.xml" relativeToChangelogFile="false"/>
-<!--    <include file="/config/liquibase/changelog/element-template/25-01-extraction-manifest-table.xml" relativeToChangelogFile="false"/>-->
 <!--    <include file="/config/liquibase/changelog/element-template/25-01-canonical-element-table.xml" relativeToChangelogFile="false"/>-->
-<!--    <include file="/config/liquibase/changelog/element-template/2025-09-20-template-element-table.xml" relativeToChangelogFile="false"/>-->
-<!--    <include file="/config/liquibase/changelog/etl/2025-09-01-normalization-repeat-and-values-tables.xml" relativeToChangelogFile="false"/>-->
+    <include file="/config/liquibase/changelog/element-template/2024-11-09-element-template.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/etl/2025-09-01-normalization-repeat-and-values-tables.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/analytics_dims/changelog-analytics.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/analytics_dims/changelog-mv-refresh-log.xml" relativeToChangelogFile="false"/>
 <!--    <include file="/config/liquibase/changelog/2025-09-15-pilot/2025-09-17-raw-repeat-payload-table.xml" relativeToChangelogFile="false"/>-->
 <!--    <include file="/config/liquibase/changelog/2025-09-15-pilot/2025-09-17-proj-supply-breeding.xml" relativeToChangelogFile="false"/>-->
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->

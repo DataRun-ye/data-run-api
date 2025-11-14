@@ -1,275 +1,484 @@
-{
-  "uid": "YLcsWJlB7uy",
-  "versionUid": "NUVxNr9gQUk",
-  "versionNumber": 2,
-  "name": "emergency_investigation_and_response_lab_202",
-  "deleted": false,
-  "label": {
-    "ar": "التقصي والاستجابة الطارئة-المخبري",
-    "en": "Emergency Investigation and Response -Lab 202"
+[
+  {
+    "uid": "YLcsWJlB7uy",
+    "versionUid": "Xo3tiwn1elJ",
+    "versionNumber": 4,
+    "name": "emergency_investigation_and_response_lab_202",
+    "deleted": false,
+    "fields": [
+      {
+        "parent": "main",
+        "name": "emergency_team_type",
+        "id": "YSRmNhpN1ry",
+        "type": "SelectOne",
+        "optionSet": "pb6PTAOtcZ5"
+      },
+      {
+        "parent": "main",
+        "name": "other",
+        "id": "scxTYkhsvwp",
+        "type": "Text"
+      },
+      {
+        "parent": "main",
+        "name": "NotificationNumber",
+        "id": "wZIDLQtSHL2",
+        "type": "IntegerPositive"
+      },
+      {
+        "parent": "main",
+        "name": "visitdate",
+        "id": "LyIGccZ5mna",
+        "type": "Date"
+      },
+      {
+        "parent": "patients",
+        "name": "serialNumber",
+        "id": "w8VQRZmmz82",
+        "type": "IntegerPositive"
+      },
+      {
+        "parent": "patients",
+        "name": "PatientId",
+        "id": "hiBiDozHei7",
+        "type": "IntegerPositive"
+      },
+      {
+        "parent": "patients",
+        "name": "PatientName",
+        "id": "KBmP3fPjrLG",
+        "type": "FullName"
+      },
+      {
+        "parent": "patients",
+        "name": "is_test_preformed",
+        "id": "GQbku0J0BTA",
+        "type": "SelectOne",
+        "optionSet": "zK7EdFCwpx9"
+      },
+      {
+        "parent": "investigations",
+        "name": "lab_test_type",
+        "id": "BqErQ3xrUex",
+        "type": "SelectOne",
+        "optionSet": "PiGAyROTsAB"
+      },
+      {
+        "parent": "investigations",
+        "name": "test_result",
+        "id": "jLX69mxv8JJ",
+        "type": "SelectOne",
+        "optionSet": "tQjriOFVC2T"
+      },
+      {
+        "parent": "investigations",
+        "name": "other_lab_test_type",
+        "id": "IiDjTXKA9cY",
+        "type": "Text"
+      },
+      {
+        "parent": "investigations",
+        "name": "other_lab_test_result",
+        "id": "rxRO7xoeHq7",
+        "type": "Text"
+      },
+      {
+        "parent": "investigations",
+        "name": "mrdt_positive_types",
+        "id": "VfNoULcNZ0R",
+        "type": "SelectMulti",
+        "optionSet": "ISh7s9y1md4"
+      },
+      {
+        "parent": "investigations",
+        "name": "mic_positive_types",
+        "id": "LVvDwD3uK4H",
+        "type": "SelectMulti",
+        "optionSet": "YINY2NUHdPo"
+      },
+      {
+        "parent": "investigations",
+        "name": "drdt_positive_types",
+        "id": "t0xvnON73rJ",
+        "type": "SelectMulti",
+        "optionSet": "ySRdItzNQH4"
+      }
+    ],
+    "sections": [
+      {
+        "name": "patients",
+        "repeatable": true,
+        "id": "patients"
+      },
+      {
+        "parent": "patients",
+        "name": "investigations",
+        "repeatable": true,
+        "id": "investigations"
+      },
+      {
+        "name": "main",
+        "repeatable": false,
+        "id": "main"
+      }
+    ]
   },
-  "fields": [
-    {
-      "parent": "main",
-      "name": "emergency_team_type",
-      "code": "emergency_team_type",
-      "label": {
-        "en": "emergency_team_type",
-        "ar": "فريق التدخل الطارئ"
+  {
+    "uid": "ck2pHW93sk2",
+    "versionUid": "Nvsp2XDPaTq",
+    "versionNumber": 15,
+    "name": "emergency_investigation_and_response_physician_201",
+    "deleted": false,
+    "fields": [
+      {
+        "parent": "main",
+        "name": "visitdate",
+        "id": "LyIGccZ5mna",
+        "type": "Date"
       },
-      "rules": [],
-      "order": 101,
-      "id": "YSRmNhpN1ry",
-      "type": "SelectOne",
-      "mandatory": true,
-      "mainField": true,
-      "readOnly": false,
-      "optionSet": "pb6PTAOtcZ5",
-      "valueTypeRendering": "DEFAULT",
-      "aggregationType": "DEFAULT"
-    },
-    {
-      "parent": "main",
-      "name": "other",
-      "code": "other",
-      "label": {
-        "en": "other",
-        "ar": "أخرى"
+      {
+        "parent": "patients",
+        "name": "serialNumber",
+        "id": "w8VQRZmmz82",
+        "type": "IntegerPositive"
       },
-      "rules": [],
-      "order": 102,
-      "id": "scxTYkhsvwp",
-      "type": "Text",
-      "mandatory": true,
-      "mainField": true,
-      "readOnly": false,
-      "valueTypeRendering": "DEFAULT",
-      "aggregationType": "DEFAULT"
-    },
-    {
-      "parent": "main",
-      "name": "NotificationNumber",
-      "code": "NotificationNumber",
-      "description": "Indoor entomological surveillance",
-      "label": {
-        "en": "NotificationNumber",
-        "ar": "رقم البلاغ الطارئ"
+      {
+        "parent": "patients",
+        "name": "PatientName",
+        "id": "KBmP3fPjrLG",
+        "type": "FullName"
       },
-      "rules": [],
-      "order": 103,
-      "id": "wZIDLQtSHL2",
-      "type": "IntegerPositive",
-      "mandatory": true,
-      "mainField": true,
-      "readOnly": false,
-      "valueTypeRendering": "DEFAULT",
-      "aggregationType": "DEFAULT"
-    },
-    {
-      "parent": "main",
-      "name": "visitdate",
-      "code": "visitdate",
-      "label": {
-        "en": "visitdate",
-        "ar": "تاريخ الاستجابة"
+      {
+        "parent": "patients",
+        "name": "age",
+        "id": "oFGuq5BgGSr",
+        "type": "Age"
       },
-      "rules": [],
-      "order": 104,
-      "id": "LyIGccZ5mna",
-      "type": "Date",
-      "mandatory": true,
-      "mainField": true,
-      "readOnly": false,
-      "valueTypeRendering": "DEFAULT",
-      "aggregationType": "DEFAULT"
-    },
-    {
-      "parent": "patients",
-      "name": "serialNumber",
-      "code": "serialNumber",
-      "label": {
-        "en": "serialNumber",
-        "ar": "الرقم التسلسلي"
+      {
+        "parent": "patients",
+        "name": "gender",
+        "id": "eCw9HcbcnW7",
+        "type": "SelectOne",
+        "optionSet": "Bu2LhXFDicp"
       },
-      "rules": [],
-      "order": 201,
-      "id": "w8VQRZmmz82",
-      "type": "IntegerPositive",
-      "mandatory": true,
-      "mainField": true,
-      "readOnly": false,
-      "valueTypeRendering": "DEFAULT",
-      "aggregationType": "DEFAULT"
-    },
-    {
-      "parent": "patients",
-      "name": "PatientId",
-      "code": "PatientId",
-      "description": "cpes Patient Id",
-      "label": {
-        "en": "PatientId",
-        "ar": "رقم المريض"
+      {
+        "parent": "patients",
+        "name": "ispregnant",
+        "id": "FjfKSsEWAYf",
+        "type": "YesNo"
       },
-      "rules": [],
-      "order": 202,
-      "id": "hiBiDozHei7",
-      "type": "IntegerPositive",
-      "mandatory": true,
-      "mainField": true,
-      "readOnly": false,
-      "valueTypeRendering": "DEFAULT",
-      "aggregationType": "DEFAULT"
-    },
-    {
-      "parent": "patients",
-      "name": "PatientName",
-      "code": "PatientName",
-      "description": "cpes Patient Name",
-      "label": {
-        "en": "PatientName",
-        "ar": "اسم المريض"
+      {
+        "parent": "patients",
+        "name": "pregnancy_month",
+        "id": "aEjEOwZ9Mk0",
+        "type": "IntegerPositive"
       },
-      "rules": [],
-      "order": 203,
-      "id": "KBmP3fPjrLG",
-      "type": "FullName",
-      "mandatory": true,
-      "mainField": true,
-      "readOnly": false,
-      "valueTypeRendering": "DEFAULT",
-      "aggregationType": "DEFAULT"
-    },
-    {
-      "parent": "patients",
-      "name": "is_test_preformed",
-      "code": "is_test_preformed",
-      "description": "test performed",
-      "label": {
-        "en": "is_test_preformed",
-        "ar": "تم عمل فحوصات"
+      {
+        "parent": "patients",
+        "name": "lab_test",
+        "id": "GzyNDOGyNUW",
+        "type": "SelectMulti",
+        "optionSet": "AxpBXSCqnDa"
       },
-      "rules": [],
-      "order": 204,
-      "id": "GQbku0J0BTA",
-      "type": "SelectOne",
-      "mandatory": true,
-      "mainField": true,
-      "readOnly": false,
-      "optionSet": "zK7EdFCwpx9",
-      "valueTypeRendering": "DEFAULT",
-      "aggregationType": "DEFAULT"
-    },
-    {
-      "parent": "investigations",
-      "name": "lab_test_type",
-      "code": "de_lab_test",
-      "description": "test performed, rdt dengue malaria , microscopy, other test or none in mass treatment",
-      "label": {
-        "en": "lab_test_type",
-        "ar": "نوع الفحص"
+      {
+        "parent": "patients",
+        "name": "diagnosed_disease_type",
+        "id": "UiM4N3o8OiG",
+        "type": "SelectOne",
+        "optionSet": "AjpOXeUAqnQ"
       },
-      "rules": [],
-      "order": 301,
-      "id": "BqErQ3xrUex",
-      "type": "SelectOne",
-      "mandatory": true,
-      "mainField": true,
-      "readOnly": false,
-      "optionSet": "PiGAyROTsAB",
-      "valueTypeRendering": "DEFAULT",
-      "aggregationType": "DEFAULT"
-    },
-    {
-      "parent": "investigations",
-      "name": "test_result",
-      "code": "de_test_result",
-      "description": "test result, positve or negative",
-      "label": {
-        "en": "test_result",
-        "ar": "نتيجة الفحص"
+      {
+        "parent": "patients",
+        "name": "other_diagnosed_disease_name",
+        "id": "MYZOyP37ilc",
+        "type": "Text"
       },
-      "rules": [],
-      "order": 302,
-      "id": "jLX69mxv8JJ",
-      "type": "SelectOne",
-      "mandatory": true,
-      "mainField": true,
-      "readOnly": false,
-      "optionSet": "tQjriOFVC2T",
-      "valueTypeRendering": "DEFAULT",
-      "aggregationType": "DEFAULT"
-    },
-    {
-      "parent": "investigations",
-      "name": "other_lab_test_type",
-      "code": "other_lab_test_type",
-      "label": {
-        "en": "other_lab_test_type",
-        "ar": "نوع الفحص الاخر"
+      {
+        "parent": "patients",
+        "name": "cm_measures",
+        "id": "W5QDhN3qanw",
+        "type": "SelectOne",
+        "optionSet": "vcYOprXCzar"
       },
-      "rules": [],
-      "order": 304,
-      "id": "IiDjTXKA9cY",
-      "type": "Text",
-      "mandatory": true,
-      "mainField": true,
-      "readOnly": false,
-      "valueTypeRendering": "DEFAULT",
-      "aggregationType": "DEFAULT"
-    },
-    {
-      "parent": "investigations",
-      "name": "other_lab_test_result",
-      "code": "other_lab_test_result",
-      "label": {
-        "en": "other_lab_test_result",
-        "ar": "نتيجة الفحص الاخر"
+      {
+        "parent": "patients",
+        "name": "referral_type",
+        "id": "BOGECC3MSLb",
+        "type": "SelectOne",
+        "optionSet": "PnCIWkhM47L"
       },
-      "rules": [],
-      "order": 305,
-      "id": "rxRO7xoeHq7",
-      "type": "Text",
-      "mandatory": true,
-      "mainField": true,
-      "readOnly": false,
-      "valueTypeRendering": "DEFAULT",
-      "aggregationType": "DEFAULT"
-    }
-  ],
-  "sections": [
-    {
-      "name": "patients",
-      "label": {
-        "en": "patients",
-        "ar": "الحالات"
+      {
+        "parent": "patients",
+        "name": "other_prescribeddrugs",
+        "id": "IhR1E0E2BkO",
+        "type": "Text"
       },
-      "rules": [],
-      "order": 200,
-      "repeatable": true,
-      "id": "patients"
-    },
-    {
-      "parent": "patients",
-      "name": "investigations",
-      "label": {
-        "en": "investigations",
-        "ar": "الفحوصات"
+      {
+        "parent": "patients",
+        "name": "malariadrugs",
+        "id": "EChCVEduGEK",
+        "type": "SelectMulti",
+        "optionSet": "YPubNKrnO1e"
       },
-      "rules": [],
-      "order": 300,
-      "repeatable": true,
-      "id": "investigations"
-    },
-    {
-      "name": "main",
-      "label": {
-        "en": "main"
+      {
+        "parent": "patients",
+        "name": "symptomsv2",
+        "id": "pf1mzFIngOl",
+        "type": "SelectMulti",
+        "optionSet": "HFccPl89PPX"
+      }
+    ],
+    "sections": [
+      {
+        "name": "patients",
+        "repeatable": true,
+        "id": "patients"
       },
-      "rules": [],
-      "order": 100,
-      "repeatable": false,
-      "id": "main"
-    }
-  ],
-  "id": "01JZTERV9JJDV8SF3P931KF5DT"
-}
+      {
+        "name": "main",
+        "repeatable": false,
+        "id": "main"
+      }
+    ]
+  },
+  {
+    "uid": "IP2dMtoJkO4",
+    "versionUid": "gtDiIttxx0W",
+    "versionNumber": 8,
+    "name": "health_facilities_supervision _physcian_401",
+    "deleted": false,
+    "fields": [
+      {
+        "parent": "main",
+        "name": "DateAndTime",
+        "id": "E0mkcxV1MAU",
+        "type": "DateTime"
+      },
+      {
+        "parent": "main",
+        "name": "facility_supervision_team_type",
+        "id": "SOcwneala7s",
+        "type": "SelectOne",
+        "optionSet": "UDX20myLcFQ"
+      },
+      {
+        "parent": "main",
+        "name": "other_facility_supervision_team_type",
+        "id": "veazGXG44Kr",
+        "type": "Text"
+      },
+      {
+        "parent": "main",
+        "name": "contact_name",
+        "id": "ztV4iHHaNzF",
+        "type": "FullName"
+      },
+      {
+        "parent": "main",
+        "name": "mobile_phone",
+        "id": "dzs71rsLPrt",
+        "type": "IntegerPositive"
+      },
+      {
+        "parent": "main",
+        "name": "sector",
+        "id": "LNokA7mVLab",
+        "type": "SelectOne",
+        "optionSet": "PyIXFMZhcdL"
+      },
+      {
+        "parent": "main",
+        "name": "facility_type",
+        "id": "oAHiVyAGGSE",
+        "type": "SelectOne",
+        "optionSet": "mn3vxPT9VOC"
+      },
+      {
+        "parent": "cases",
+        "name": "month_name",
+        "id": "T7QqiTeFdHF",
+        "type": "SelectOne",
+        "optionSet": "NN8fDdIJmCn"
+      },
+      {
+        "parent": "main",
+        "name": "facility_register",
+        "id": "QyexA4leFlC",
+        "type": "SelectOne",
+        "optionSet": "Q8BJ3ZyoJiW"
+      },
+      {
+        "parent": "main",
+        "name": "other_facility_register",
+        "id": "L68DGUHnwul",
+        "type": "Text"
+      },
+      {
+        "parent": "cases",
+        "name": "malaria_cases_registered",
+        "id": "yEYm6rzGCBY",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "cases",
+        "name": "dengue_cases_registered",
+        "id": "unuIhvsSj2U",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "foci",
+        "name": "mrdt_mic_positive_cases",
+        "id": "N1h8j33GCnn",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "training",
+        "name": "authorized_treatment_service_providers",
+        "id": "Fb7E9jLkvyL",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "training",
+        "name": "treatment_providers_present",
+        "id": "yE0tPMdSmmu",
+        "type": "IntegerZeroOrPositive"
+      },
+      {
+        "parent": "trainee",
+        "name": "serialNumber",
+        "id": "w8VQRZmmz82",
+        "type": "IntegerPositive"
+      },
+      {
+        "parent": "trainee",
+        "name": "name",
+        "id": "YtBEZsXvD5A",
+        "type": "FullName"
+      },
+      {
+        "parent": "trainee",
+        "name": "phone",
+        "id": "EHIXCT3t3te",
+        "type": "IntegerPositive"
+      },
+      {
+        "parent": "trainee",
+        "name": "know_simple_malaria_medicine_usage",
+        "id": "EnvTj68tMSA",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "Know_artesunate_usage",
+        "id": "mo58gmk56ci",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "know_primaquine_usage",
+        "id": "Jrisoh8Yw5F",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "Know_children_pregnant_treatment",
+        "id": "UNubGRrPiau",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "treatment_policy_adherence",
+        "id": "YV7oSERtpoU",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "simple_malaria_medicine_trained",
+        "id": "hToo8qZ10gd",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "artesunate_usage_trained",
+        "id": "fSjwDxaRbZF",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "primaquine_usage_trained",
+        "id": "E2rg6YbERR0",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "children_pregnants_treatment_trained",
+        "id": "oGclAxBcIUE",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "pv_malaria_treatment_trained",
+        "id": "TCKdDOVTRxP",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "simple_dengue_case_management",
+        "id": "QJHvFP6Mizg",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "severe_dengue_case_management",
+        "id": "RSkokz9S1bh",
+        "type": "YesNo"
+      },
+      {
+        "parent": "trainee",
+        "name": "other_skills_traind",
+        "id": "yZV8NaWMF5O",
+        "type": "LongText"
+      },
+      {
+        "parent": "foci",
+        "name": "village",
+        "id": "nn75KuaMHzp",
+        "type": "OrganisationUnit"
+      },
+      {
+        "parent": "main",
+        "name": "NotificationNumber",
+        "id": "wZIDLQtSHL2",
+        "type": "IntegerPositive"
+      }
+    ],
+    "sections": [
+      {
+        "name": "cases",
+        "repeatable": true,
+        "id": "cases"
+      },
+      {
+        "parent": "training",
+        "name": "trainee",
+        "repeatable": true,
+        "id": "trainee"
+      },
+      {
+        "name": "training",
+        "repeatable": false,
+        "id": "training"
+      },
+      {
+        "name": "main",
+        "repeatable": false,
+        "id": "main"
+      },
+      {
+        "name": "foci",
+        "repeatable": true,
+        "id": "foci"
+      }
+    ]
+  }
+]

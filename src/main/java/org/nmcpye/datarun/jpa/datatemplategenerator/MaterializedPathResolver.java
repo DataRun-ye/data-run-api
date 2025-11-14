@@ -12,11 +12,11 @@ import java.util.stream.Collectors;
 ///
 /// Rules implemented:
 /// - `idPath`: authoritative element.getPath() with final segment normalized to field.getId() for fields.
-/// - `namePath`: same as idPath for sections; for fields replace last segment with field.getName() (structural name).
-/// - `semanticPath`: join only repeatable segments (repeat-only path) + element leaf (section name or field id).
-/// If there are no repeatable ancestors and element is not repeatable, semanticPath is null.
+/// - `dataPath`: same as idPath for sections; for fields replace last segment with field.getName() (structural name).
+/// - `canonicalPath`: join only repeatable segments (repeat-only path) + element leaf (section name or field id).
+/// If there are no repeatable ancestors and element is not repeatable, canonicalPath is null.
 /// - `repeatAncestorIdPath`: the full idPath of the nearest repeatable ancestor (the array in JSON that contains the element).
-/// - `semanticRepeatAncestorPath`: join only repeatable ancestor segment names up to the nearest repeatable ancestor.
+/// - `canonicalParentRepeatPath`: join only repeatable ancestor segment names up to the nearest repeatable ancestor.
 /// - `hasRepeatableAncestor`: true if any repeatable ancestor exists (for elements nested in repeats).
 ///
 /// @author Hamza Assada
@@ -39,7 +39,7 @@ public class MaterializedPathResolver implements PathResolver {
         Objects.requireNonNull(field, "field required");
 
         // authoritative raw path (may be "DE1" or "household.children.DE1")
-        String rawPath = field.getPath();
+        String rawPath = field.getPath().replaceFirst(field.getId(), field.getName());
         if (rawPath == null || rawPath.isBlank()) {
             String parent = field.getParent();
             rawPath = (parent == null || parent.isBlank()) ? field.getId() : parent + "." + field.getId();
@@ -48,35 +48,35 @@ public class MaterializedPathResolver implements PathResolver {
         List<String> segments = splitSegments(rawPath);
 
         // ensure last segment equals DataElement UID (field.getId())
-        String leafUid = field.getId();
+        String leafName = field.getName();
         if (segments.isEmpty()) {
-            segments = new ArrayList<>(Collections.singletonList(leafUid));
+            segments = new ArrayList<>(Collections.singletonList(leafName));
         } else {
-            segments.set(segments.size() - 1, leafUid);
+            segments.set(segments.size() - 1, leafName);
         }
         String idPath = String.join(".", segments);
 
-        // namePath: replace final segment with structural name (field.getName())
-        String namePath = PathUtils.computeNamePath(idPath, field.getName());
+        // jsonDataPath: replace final segment with structural name (field.getName())
+        String jsonDataPath = PathUtils.computeDataPath(idPath, field.getName());
 
         // Determine repeatable ancestors by checking sections for each non-final segment
         RepeatAnalysis ra = analyzeRepeatSegments(segments, /*lastIndexExclusive*/ segments.size() - 1);
 
         boolean hasRepeatableAncestor = !ra.repeatableSegments.isEmpty();
-        String semanticPath = null;
+        String canonicalPath = null;
         if (hasRepeatableAncestor) {
             List<String> sem = new ArrayList<>(ra.repeatableSegments);
-            sem.add(leafUid); // leaf is the dataElement uid (ties to canonical DE)
-            semanticPath = String.join(".", sem);
+            sem.add(leafName); // leaf is the dataElement uid (ties to canonical DE)
+            canonicalPath = String.join(".", sem);
         } else {
-            semanticPath = leafUid;
+            canonicalPath = leafName;
         }
 
         // nearest repeatable ancestor idPath is full idPath up to that segment
-        String repeatAncestorIdPath = ra.nearestRepeatAncestorFullPath;
-        String semanticRepeatAncestorPath = ra.semanticRepeatAncestorPath;
+        String repeatIdPath = ra.nearestParentRepeatFullPath;
+        String canonicalParentRepeatPath = ra.canonicalParentRepeatPath;
 
-        return new PathMetadata(idPath, namePath, semanticPath, hasRepeatableAncestor, repeatAncestorIdPath, semanticRepeatAncestorPath);
+        return new PathMetadata(idPath, jsonDataPath, canonicalPath, hasRepeatableAncestor, repeatIdPath, canonicalParentRepeatPath);
     }
 
     @Override
@@ -91,7 +91,7 @@ public class MaterializedPathResolver implements PathResolver {
 
         List<String> segments = splitSegments(rawPath);
         String idPath = String.join(".", segments);
-        String namePath = idPath; // sections use structural name segments; namePath == idPath
+        String jsonDataPath = idPath; // sections use structural name segments; jsonDataPath == idPath
 
         // Determine repeatable ancestors by checking all segments EXCLUDING the final segment? We want
         // repeatable ancestors above this section, but semantic path for this section must include
@@ -100,8 +100,8 @@ public class MaterializedPathResolver implements PathResolver {
 
         // Now compute semantic path for the section:
         // - If there are repeatable segments, semantic path is join(repeatable segments up to this section).
-        // - If no repeatable ancestors and the section itself is repeatable -> semanticPath = section.name
-        String semanticPath = null;
+        // - If no repeatable ancestors and the section itself is repeatable -> canonicalPath = section.name
+        String canonicalPath = null;
         if (!ra.repeatableSegments.isEmpty()) {
             // If section name is itself repeatable but wasn't the last repeat segment in ra's list, ensure it's included.
             List<String> sem = new ArrayList<>(ra.repeatableSegments);
@@ -109,17 +109,17 @@ public class MaterializedPathResolver implements PathResolver {
             if (Boolean.TRUE.equals(section.getRepeatable()) && (sem.isEmpty() || !sem.get(sem.size() - 1).equals(section.getName()))) {
                 sem.add(section.getName());
             }
-            semanticPath = String.join(".", sem);
+            canonicalPath = String.join(".", sem);
         } else if (Boolean.TRUE.equals(section.getRepeatable())) {
-            semanticPath = section.getName();
+            canonicalPath = section.getName();
         }
 
         // nearest repeatable ancestor is the repeatable ancestor above (not itself)
         // For sections we want the nearest repeatable ancestor *above* this section, so compute that:
         String nearestAncestorAbove = findNearestRepeatAncestorAbove(segments);
 
-        // semanticRepeatAncestorPath: semantic-repeat-only path for nearestAncestorAbove
-        String semanticRepeatAncestorPath = null;
+        // canonicalParentRepeatPath: semantic-repeat-only path for nearestAncestorAbove
+        String canonicalParentRepeatPath = null;
         if (nearestAncestorAbove != null) {
             // build list of repeatable segments up to that ancestor
             List<String> prefixSegments = segmentsUpTo(segments, nearestAncestorAbove);
@@ -128,14 +128,14 @@ public class MaterializedPathResolver implements PathResolver {
                     Boolean.TRUE.equals(sectionByName.get(s).getRepeatable()))
                 .collect(Collectors.toList());
             if (!repeatOnly.isEmpty()) {
-                semanticRepeatAncestorPath = String.join(".", repeatOnly);
+                canonicalParentRepeatPath = String.join(".", repeatOnly);
             }
         }
 
         boolean hasRepeatableAncestor = ra.repeatableSegments.stream()
             .anyMatch(seg -> !seg.equals(section.getName())); // true if there is a repeatable ancestor above
 
-        return new PathMetadata(idPath, namePath, semanticPath, hasRepeatableAncestor, nearestAncestorAbove, semanticRepeatAncestorPath);
+        return new PathMetadata(idPath, jsonDataPath, canonicalPath, hasRepeatableAncestor, nearestAncestorAbove, canonicalParentRepeatPath);
     }
 
     // ------------------- helpers -------------------
@@ -154,12 +154,12 @@ public class MaterializedPathResolver implements PathResolver {
      * Returns:
      * - repeatableSegments: list of the repeatable segment names in order (only segments that are repeatable)
      * - nearestRepeatAncestorFullPath: the full idPath (join of segments) to the nearest repeatable ancestor (closest)
-     * - semanticRepeatAncestorPath: join of repeatable segment names up to nearest
+     * - canonicalParentRepeatPath: join of repeatable segment names up to nearest
      */
     private RepeatAnalysis analyzeRepeatSegments(List<String> segments, int lastIndexExclusive) {
         List<String> repeatableSegments = new ArrayList<>();
-        String nearestRepeatAncestorFullPath = null;
-        String semanticRepeatAncestorPath = null;
+        String nearestParentRepeatFullPath = null;
+        String canonicalParentRepeatPath = null;
 
         // examine segments up to lastIndexExclusive (exclusive)
         for (int i = 0; i < Math.max(0, Math.min(lastIndexExclusive, segments.size())); i++) {
@@ -167,14 +167,14 @@ public class MaterializedPathResolver implements PathResolver {
             FormSectionConf s = sectionByName.get(seg);
             if (s != null && Boolean.TRUE.equals(s.getRepeatable())) {
                 repeatableSegments.add(seg);
-                // nearestRepeatAncestorFullPath should become the most recent repeatable ancestor's full path
-                nearestRepeatAncestorFullPath = String.join(".", segments.subList(0, i + 1));
-                // semanticRepeatAncestorPath is join of repeatable segments so far
-                semanticRepeatAncestorPath = String.join(".", repeatableSegments);
+                // nearestParentRepeatFullPath should become the most recent repeatable ancestor's full path
+                nearestParentRepeatFullPath = String.join(".", segments.subList(0, i + 1));
+                // canonicalParentRepeatPath is join of repeatable segments so far
+                canonicalParentRepeatPath = String.join(".", repeatableSegments);
             }
         }
 
-        return new RepeatAnalysis(repeatableSegments, nearestRepeatAncestorFullPath, semanticRepeatAncestorPath);
+        return new RepeatAnalysis(repeatableSegments, nearestParentRepeatFullPath, canonicalParentRepeatPath);
     }
 
     // For sections: find nearest repeatable ancestor *above* this section (i.e., among earlier segments)
@@ -203,13 +203,13 @@ public class MaterializedPathResolver implements PathResolver {
     // small helper holder
     private static final class RepeatAnalysis {
         final List<String> repeatableSegments;
-        final String nearestRepeatAncestorFullPath;
-        final String semanticRepeatAncestorPath;
+        final String nearestParentRepeatFullPath;
+        final String canonicalParentRepeatPath;
 
-        RepeatAnalysis(List<String> repeatableSegments, String nearestRepeatAncestorFullPath, String semanticRepeatAncestorPath) {
+        RepeatAnalysis(List<String> repeatableSegments, String nearestParentRepeatFullPath, String canonicalParentRepeatPath) {
             this.repeatableSegments = repeatableSegments;
-            this.nearestRepeatAncestorFullPath = nearestRepeatAncestorFullPath;
-            this.semanticRepeatAncestorPath = semanticRepeatAncestorPath;
+            this.nearestParentRepeatFullPath = nearestParentRepeatFullPath;
+            this.canonicalParentRepeatPath = canonicalParentRepeatPath;
         }
     }
 }

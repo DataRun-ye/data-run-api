@@ -13,8 +13,8 @@
         <sql>
             CREATE TABLE IF NOT EXISTS repeat_instance (
                 id varchar(26) PRIMARY KEY,
-                etc_uid varchar(11) NOT NULL,
-                manifest_uid varchar(64),
+                te_uid varchar(11) NOT NULL,
+--                 manifest_uid varchar(64),
                 canonical_element_uid varchar(64),
                 canonical_path varchar(3000) NOT NULL,
                 parent_repeat_instance_id varchar(26),
@@ -62,8 +62,8 @@
                 id bigserial PRIMARY KEY,
                 repeat_instance_id varchar(26),
                 submission_uid varchar(11) NOT NULL,
-                etc_uid varchar(11) NOT NULL,
-                manifest_uid varchar(64),
+                te_uid varchar(11) NOT NULL,
+--                 manifest_uid varchar(64),
                 canonical_element_uid varchar(64),
                 canonical_path varchar(3000) NOT NULL,
                 assignment_uid varchar(11),

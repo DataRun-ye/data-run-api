@@ -171,7 +171,7 @@ public class Normalizer {
             final String key = entry.getKey();
             final Object rawValue = entry.getValue();
             final String childPath = currentPath.isEmpty() ? key : currentPath + "." + key;
-            final AbstractElement element = elementMap.getElementByNamePathMap().get(childPath);
+            final AbstractElement element = elementMap.getElementByJsonDataPathMap().get(childPath);
             final TemplateElement etc = elementMap.getElementConfigByNamePathMap().get(childPath);
 
             if (element == null) continue; // Skip data not defined in the template
@@ -196,7 +196,8 @@ public class Normalizer {
                     // Create the RepeatInstance DTO, linking it to its parent via the context.
                     final var ri = RepeatInstance.builder()
                         .id(repeatId)
-                        .etcUid(etc.getUid())
+                        .teUid(etc.getUid())
+                        .canonicalElementUid(etc.getCanonicalElementUid())
                         .submissionUid(ns.getSubmissionUid())
 //                        .categoryUid(category != null ? category.getUid() : null)
 //                        .categoryKind(category != null ? category.getKind() : null)
@@ -282,13 +283,13 @@ public class Normalizer {
 
         // --- CORE IDENTIFIERS & DIMENSIONS ---
         builder.submissionUid(submission.getUid())
-            .canonicalElementUid(field.getId())
+            .canonicalElementUid(etc.getCanonicalElementUid())
             // --- EXPANDED ASSIGNMENT DIMENSIONS ---
             .assignmentUid(submission.getAssignment())
             .teamUid(submission.getTeam())
             .orgUnitUid(submission.getOrgUnit())
             .activityUid(submission.getActivity())
-            .etcUid(etc.getUid())
+            .teUid(etc.getUid())
             .canonicalPath(etc.getCanonicalPath())
             // --- CONTEXT FROM REPEAT ---
             .repeatInstanceId(context.instanceId())

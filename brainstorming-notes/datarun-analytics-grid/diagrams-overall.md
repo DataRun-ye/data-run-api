@@ -313,7 +313,7 @@ erDiagram
         JSONB repeat_section_label
         VARCHAR(11) submission_uid
         VARCHAR(3000) semantic_path "repeat template semantic path"
-        VARCHAR(11) etc_uid "repeat's ElementTemplateConfig.uid"
+        VARCHAR(11) te_uid "repeat's ElementTemplateConfig.uid"
         BIGINT repeat_index     "simple ordinal sequential number (Occurrence index)"
         TIMESTAMP client_updated_at
         TIMESTAMP deleted_at
@@ -325,7 +325,7 @@ erDiagram
         BIGINT id PK
         VARCHAR(26) repeat_instance_id FK
         VARCHAR(3000) semantic_path
-        VARCHAR(11) etc_uid "element template's config uid"
+        VARCHAR(11) te_uid "element template's config uid"
         VARCHAR(11) element_uid "canonical data_element.uid"
         TEXT value_text
         NUMERIC value_num

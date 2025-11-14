@@ -17,11 +17,14 @@
                 <constraints nullable="false"/>
             </column>
             <column name="preferred_name" type="VARCHAR(255)"/>
+            <column name="data_type" type="VARCHAR(64)"/>
             <column name="semantic_type" type="VARCHAR(64)"/>
-            <column defaultValueComputed="'[]'::jsonb" name="canonical_candidates" type="jsonb"/>
-            <column name="value_constraints" type="jsonb"/>
+            <column defaultValueComputed="'[]'::jsonb" name="jsonDataPaths" type="jsonb"/>
+            <column name="canonical_path" type="TEXT"/>
+            <column name="cardinality" type="VARCHAR(2)"/>
+            <column name="option_set_id" type="VARCHAR(26)"/>
             <column name="notes" type="text"/>
-            <column name="created_at" type="DATETIME"/>
+            <column name="created_date" type="DATETIME"/>
         </createTable>
     </changeSet>
     <changeSet id="1758757717738-49" author="Hamza">
