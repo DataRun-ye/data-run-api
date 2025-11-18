@@ -22,6 +22,7 @@ import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequestValidator;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
+import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -73,7 +74,7 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
 
         Page<DataSubmission> resultPage = getList(queryRequest.setSince(effectiveSince), jsonQuery);
 
-        String next = createNextPageLink(resultPage);
+        String next = PagingConfigurator.createNextPageLink(resultPage);
 
         PagedResponse<DataSubmission> response = new
             PagedResponse<>(resultPage, getName(), next);

@@ -14,6 +14,7 @@ import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess.FormTemplateProcessor;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -29,8 +30,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static org.nmcpye.datarun.web.rest.v1.formtemplate.FormTemplateMergeResource.V1;
-import static org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator.createNextPageLink;
-import static org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator.initPageResponse;
 
 @RestController
 @RequestMapping(value = {V1})
@@ -72,9 +71,9 @@ public class FormTemplateMergeResource {
 
         Page<DataTemplateInstanceDto> processedPage = getList(queryRequest, jsonQueryBody);
 
-        String next = createNextPageLink(processedPage);
+        String next = PagingConfigurator.createNextPageLink(processedPage);
 
-        PagedResponse<DataTemplateInstanceDto> response = initPageResponse(processedPage, next, getName());
+        PagedResponse<DataTemplateInstanceDto> response = PagingConfigurator.initPageResponse(processedPage, next, getName());
         return ResponseEntity.ok(response);
     }
 

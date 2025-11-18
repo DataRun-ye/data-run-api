@@ -5,17 +5,18 @@ import jakarta.validation.constraints.Pattern;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.jpa.user.User;
-import org.nmcpye.datarun.jpa.user.service.UserService;
 import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
+import org.nmcpye.datarun.jpa.user.repository.UserRepository;
+import org.nmcpye.datarun.jpa.user.service.UserService;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.errors.EmailAlreadyUsedException;
 import org.nmcpye.datarun.web.rest.errors.LoginAlreadyUsedException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
+import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.nmcpye.datarun.web.rest.vm.ManagedUserVM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,9 +121,9 @@ public class UserResource extends JpaBaseResource<User> {
 
         Page<User> processedPage = userRepository.findAll(spec, pageable);
 
-        String next = createNextPageLink(processedPage);
+        String next = PagingConfigurator.createNextPageLink(processedPage);
 
-        PagedResponse<User> response = initPageResponse(processedPage, next);
+        PagedResponse<User> response = PagingConfigurator.initPageResponse(processedPage, next, getName());
         return ResponseEntity.ok(response);
     }
 

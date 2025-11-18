@@ -13,6 +13,7 @@ import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
+import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -52,9 +53,9 @@ public class AssignmentResource
 
         Page<AssignmentWithAccessDto> processedPage = assignmentService.getAllUserAccessibleDto(queryRequest, jsonQuery);
 
-        String next = createNextPageLink(processedPage);
+        String next = PagingConfigurator.createNextPageLink(processedPage);
 
-        PagedResponse<AssignmentWithAccessDto> response = initPageResponse(processedPage, next);
+        PagedResponse<AssignmentWithAccessDto> response = PagingConfigurator.initPageResponse(processedPage, next, getName());
         return ResponseEntity.ok(response);
     }
 
