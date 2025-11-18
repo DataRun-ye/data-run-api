@@ -1,10 +1,11 @@
 package org.nmcpye.datarun.jpa.datasubmission.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
+import org.nmcpye.datarun.etl.repository.jdbc.OutboxJdbcRepository;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.common.DefaultJpaSoftDeleteService;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
@@ -12,9 +13,6 @@ import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.events.SubmissionChangeType;
 import org.nmcpye.datarun.jpa.datasubmission.events.SubmissionSavedEvent;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
-import org.nmcpye.datarun.jpa.datasubmissionoutbox.OutboxEvent;
-import org.nmcpye.datarun.jpa.datasubmissionoutbox.OutboxEventStatus;
-import org.nmcpye.datarun.jpa.datasubmissionoutbox.repository.OutboxEventRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationEventPublisher;
@@ -38,19 +36,18 @@ public class DefaultDataSubmissionService
     implements DataSubmissionService {
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
-    private final OutboxEventRepository outboxEventRepository;
+    private final OutboxJdbcRepository outboxRepo;
 
     public DefaultDataSubmissionService(
         DataSubmissionRepository repository,
         CacheManager cacheManager,
         UserAccessService userAccessService,
         ApplicationEventPublisher eventPublisher,
-        OutboxEventRepository outboxEventRepository,
-        ObjectMapper objectMapper) {
+        ObjectMapper objectMapper, OutboxJdbcRepository outboxRepo) {
         super(repository, cacheManager, userAccessService);
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
-        this.outboxEventRepository = outboxEventRepository;
+        this.outboxRepo = outboxRepo;
     }
 
     @Transactional
@@ -149,10 +146,11 @@ public class DefaultDataSubmissionService
 
         if (!entitiesToPersist.isEmpty()) {
             persistedResults = jpaAuditableObjectRepository.persistAllAndFlush(entitiesToPersist);
+
             final var outboxEvents = persistedResults.stream()
-                .map(s -> createOutboxEvent(s, "submission.saved"))
+                .map(this::enqueueSubmissionsOutbox)
                 .toList();
-            outboxEventRepository.persistAllAndFlush(outboxEvents);
+            outboxRepo.insertIfNotExistsByEventType(outboxEvents, "SAVE");
 
             persistedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
                 SubmissionChangeType.CREATE, s.getLockVersion())));
@@ -161,9 +159,9 @@ public class DefaultDataSubmissionService
         if (!entitiesToUpdate.isEmpty()) {
             updatedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToUpdate);
             final var outboxEvents = updatedResults.stream()
-                .map(s -> createOutboxEvent(s, "submission.updated"))
+                .map(this::enqueueSubmissionsOutbox)
                 .toList();
-            outboxEventRepository.persistAllAndFlush(outboxEvents);
+            outboxRepo.insertIfNotExistsByEventType(outboxEvents, "UPDATE");
 
             updatedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
                 SubmissionChangeType.UPDATE, s.getLockVersion()))); // Apply post-update hook for each
@@ -175,6 +173,14 @@ public class DefaultDataSubmissionService
         return combinedResults;
     }
 
+    @Transactional
+    @Override
+    public void softDelete(DataSubmission object) {
+        var outbox = enqueueSubmissionsOutbox(object);
+        outboxRepo.insertIfNotExistsByEventType(List.of(outbox), "DELETE");
+        super.softDelete(object);
+    }
+
     private void beforeUpdate(DataSubmission existingEntity, DataSubmission incomingEntity) {
     }
 
@@ -184,19 +190,21 @@ public class DefaultDataSubmissionService
     private void beforeUpsertChecks(DataSubmission incomingEntity, boolean isNew, CurrentUserDetails user) {
     }
 
-    private OutboxEvent createOutboxEvent(DataSubmission saved, String eventType) {
-        OutboxEvent evOk = new OutboxEvent();
-        evOk.setAggregateType("DataSubmission");
-        evOk.setAggregateId(saved.getId());
-        evOk.setEventType(eventType);
-        ObjectNode payload = objectMapper.createObjectNode();
-        payload.put("submissionId", saved.getId());
-        payload.put("submissionVersion", saved.getLockVersion());
-        evOk.setPayload(payload);
-        evOk.setStatus(OutboxEventStatus.PENDING);
-        evOk.setAttempts(0);
-        evOk.setCreatedAt(Instant.now());
-        evOk.setAvailableAt(Instant.now());
-        return evOk;
+    private OutboxJdbcRepository.OutboxInsert enqueueSubmissionsOutbox(DataSubmission s) {
+        String payload;
+        try {
+            payload = objectMapper.writeValueAsString(s.getFormData());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        return new OutboxJdbcRepository.OutboxInsert(
+            s.getId(),
+            s.getUid(),
+            s.getFormVersion(),
+            payload,
+            Instant.now(),
+            s.getSerialNumber()
+        );
     }
 }

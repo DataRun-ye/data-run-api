@@ -29,6 +29,7 @@ import java.util.UUID;
  * <p>
  * NOTE: methods are stubs. Fill SQL and implement logic when ready.
  */
+@SuppressWarnings("ConcatenationWithEmptyString")
 @Repository
 @RequiredArgsConstructor
 @Slf4j
@@ -199,7 +200,7 @@ public class OutboxJdbcRepository {
     /**
      * Batch insert backfill rows using ON CONFLICT DO NOTHING against uq_outbox_submission_backfill.
      * Returns number of inserted rows (count of batchUpdate results > 0).
-     *
+     * <p>
      * Note: This method throws DataAccessException on DB errors so callers can retry/handle.
      */
     @Transactional
@@ -223,6 +224,45 @@ public class OutboxJdbcRepository {
             p.addValue("payload", it.payload);
             p.addValue("created_at", Timestamp.from(it.createdAt));
             p.addValue("submission_serial_number", it.submissionSerialNumber);
+            batch[i] = p;
+        }
+
+        try {
+            int[] results = jdbc.batchUpdate(sql, batch);
+            int inserted = 0;
+            for (int r : results) {
+                if (r > 0) inserted++;
+            }
+            log.info("OutboxRepository: attempted {} inserts, {} inserted", inserts.size(), inserted);
+            return inserted;
+        } catch (DataAccessException dae) {
+            log.error("OutboxRepository.insertBackfillIfNotExists failed: {}", dae.getMessage());
+            throw dae;
+        }
+    }
+
+    @Transactional
+    public int insertIfNotExistsByEventType(List<OutboxInsert> inserts, String eventType) {
+        if (inserts == null || inserts.isEmpty()) return 0;
+
+        final String sql = ""
+            + "INSERT INTO outbox ("
+            + " submission_id, submission_serial_number, submission_uid, topic, payload, event_type, status, attempt, created_at"
+            + ") VALUES ("
+            + " :submission_id, :submission_uid, :topic, cast(:payload AS jsonb), :event_type, 'pending', 0, :created_at, :submission_serial_number"
+            + ") ON CONFLICT (submission_id) WHERE (event_type = :event_type) DO NOTHING";
+
+        MapSqlParameterSource[] batch = new MapSqlParameterSource[inserts.size()];
+        for (int i = 0; i < inserts.size(); i++) {
+            OutboxInsert it = inserts.get(i);
+            MapSqlParameterSource p = new MapSqlParameterSource();
+            p.addValue("submission_serial_number", it.submissionSerialNumber);
+            p.addValue("submission_id", it.submissionId);
+            p.addValue("submission_uid", it.submissionUid);
+            p.addValue("event_type", eventType);
+            p.addValue("topic", it.templateVersionUid);
+            p.addValue("payload", it.payload);
+            p.addValue("created_at", Timestamp.from(it.createdAt));
             batch[i] = p;
         }
 

@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.etl.admin;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.etl.repository.jdbc.OutboxJdbcRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
@@ -15,6 +17,7 @@ import java.util.List;
 public class BackfillServiceImpl implements BackfillService {
     private final DataSubmissionRepository submissionRepo;
     private final OutboxJdbcRepository outboxRepo;
+    private final ObjectMapper objectMapper;
 
     @Override
     public int enqueueBySubmissionIds(List<String> submissionIds) {
@@ -39,7 +42,13 @@ public class BackfillServiceImpl implements BackfillService {
             String submissionId = s.getId();
             if (submissionId == null) continue;
 
-            String payload = s.getForm();
+            String payload;
+            try {
+                payload = objectMapper.writeValueAsString(s.getFormData());
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+
             String submissionUid = s.getUid();
             String templateVersionUid = s.getFormVersion();
 
@@ -55,7 +64,7 @@ public class BackfillServiceImpl implements BackfillService {
         }
 
         if (inserts.isEmpty()) return 0;
-        return outboxRepo.insertBackfillIfNotExists(inserts);
+        return outboxRepo.insertIfNotExistsByEventType(inserts, "BACKFILL");
     }
 }
 
