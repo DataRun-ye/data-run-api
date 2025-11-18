@@ -21,22 +21,22 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
 
     // The UPSERT SQL handles "undeleting" via the ON CONFLICT clause (deleted_at = NULL in both places).
     private static final String UPSERT_SQL = """
-        INSERT INTO repeat_instance ( id, te_uid, canonical_element_uid, manifest_uid, canonical_path, submission_uid, repeat_path, parent_repeat_instance_id, repeat_index,
+        INSERT INTO repeat_instance ( id, te_uid, canonical_element_uid, canonical_path, submission_uid, repeat_path, parent_repeat_instance_id, repeat_index,
             client_updated_at, created_date, last_modified_date, created_by, last_modified_by, submission_completed_at, deleted_at
         ) VALUES (
-            :id, :teUid, :canonicalElementUid, :manifestUid, :canonicalPath, :submissionUid, :repeatPath, :parentRepeatInstanceId, :repeatIndex,
+            :id, :teUid, :canonicalElementUid, :canonicalPath, :submissionUid, :repeatPath, :parentRepeatInstanceId, :repeatIndex,
             :clientUpdatedAt, :createdDate, :lastModifiedDate, :createdBy, :lastModifiedBy, :submissionCompletedAt, NULL
         )
         ON CONFLICT (id) DO UPDATE SET
             repeat_path = EXCLUDED.repeat_path,
-            canonical_path = EXCLUDED.canonical_path,
+            canonical_element_uid = EXCLUDED.canonical_element_uid,
             parent_repeat_instance_id = EXCLUDED.parent_repeat_instance_id,
             repeat_index = EXCLUDED.repeat_index,
             client_updated_at = EXCLUDED.client_updated_at,
             submission_completed_at = EXCLUDED.submission_completed_at,
             te_uid = EXCLUDED.te_uid,
             canonical_element_uid = EXCLUDED.canonical_element_uid,
-            manifest_uid = EXCLUDED.manifest_uid,
+            ingest_id = EXCLUDED.ingest_id,
             last_modified_date = now(),
             last_modified_by = EXCLUDED.last_modified_by,
             deleted_at = NULL;
@@ -67,9 +67,10 @@ public class RepeatInstancesJdbcDao implements IRepeatInstancesDao {
 
         return new MapSqlParameterSource()
             .addValue("id", ri.getId())
-            .addValue("teUid", ri.getTeUid())
+//            .addValue("teUid", ri.getTeUid())
             .addValue("canonicalPath", ri.getCanonicalPath())
-            .addValue("canonicalElementUid", ri.getCanonicalElementUid())
+            .addValue("jsonDataPath", ri.getJsonDataPath())
+//            .addValue("canonicalElementUid", ri.getCanonicalElementUid())
             .addValue("submissionUid", ri.getSubmissionUid())
             .addValue("repeatPath", ri.getRepeatPath())
             .addValue("parentRepeatInstanceId", ri.getParentRepeatInstanceId()) // New field

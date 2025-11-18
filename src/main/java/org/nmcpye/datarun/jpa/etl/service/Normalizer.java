@@ -8,7 +8,9 @@ import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.etl.dto.OutboxDto;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.jpa.etl.dto.ElementDataValue;
@@ -16,6 +18,7 @@ import org.nmcpye.datarun.jpa.etl.dto.RepeatInstance;
 import org.nmcpye.datarun.jpa.etl.exception.InvalidCategoryValueException;
 import org.nmcpye.datarun.jpa.etl.exception.MissingRepeatUidException;
 import org.nmcpye.datarun.jpa.etl.model.CategoryResolutionResult;
+import org.nmcpye.datarun.jpa.etl.model.NormalizedOutboxSubmission;
 import org.nmcpye.datarun.jpa.etl.model.NormalizedSubmission;
 import org.nmcpye.datarun.jpa.etl.model.TemplateElementMap;
 import org.nmcpye.datarun.jpa.etl.util.CategoryResolver;
@@ -28,6 +31,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Normalizer — converts a raw DataSubmission into a self-contained NormalizedSubmission.
@@ -82,6 +86,8 @@ public class Normalizer {
      */
     private final TemplateElementService templateElementService;
 
+    private final DataSubmissionRepository submissionRepo;
+
     /**
      * Jackson mapper used for converting form-data and serializing labels.
      */
@@ -105,11 +111,12 @@ public class Normalizer {
      *
      * <p>This is the main entry point: it fetches the template map, converts the raw form-data to a
      * Map, creates the NormalizedSubmission wrapper, and starts the recursive extraction.
-     *
+     * @deprecated use normalizeOutbox
      * @param submission                the incoming submission payload
      * @param generateMissingRepeatUids when true, generate ULIDs for repeat items missing client IDs
      * @return a fully populated NormalizedSubmission containing repeat instances and value rows
      */
+    @Deprecated
     public NormalizedSubmission normalize(DataSubmission submission, boolean generateMissingRepeatUids) {
         final TemplateElementMap elementMap =
             templateElementService.getTemplateElementMap(submission.getForm(),
@@ -128,6 +135,32 @@ public class Normalizer {
         // Start the recursive traversal from the root of the form data.
         extractNode(formData, "", ns, submission, elementMap,
             RepeatContext.ROOT, generateMissingRepeatUids);
+
+        return ns;
+    }
+
+    public NormalizedSubmission normalizeOutbox(OutboxDto outbox, UUID ingestId) {
+        DataSubmission submission = submissionRepo.findById(outbox.getSubmissionId())
+            .orElseThrow(() -> new IllegalStateException("Submission not found: " + outbox.getSubmissionId()));
+        final TemplateElementMap elementMap =
+            templateElementService.getTemplateElementMap(submission.getForm(),
+                submission.getFormVersion());
+
+        final Map<String, Object> formData =
+            objectMapper.convertValue(submission.getFormData(), new TypeReference<>() {
+            });
+
+        final NormalizedOutboxSubmission ns = new NormalizedOutboxSubmission(
+            submission.getUid(),
+            submission.getForm(),
+            submission.getAssignment(),
+            ingestId,
+            outbox.getOutboxId()
+        );
+
+        // Start the recursive traversal from the root of the form data.
+        extractNode(formData, "", ns, submission, elementMap,
+            RepeatContext.ROOT, true);
 
         return ns;
     }
@@ -196,18 +229,13 @@ public class Normalizer {
                     // Create the RepeatInstance DTO, linking it to its parent via the context.
                     final var ri = RepeatInstance.builder()
                         .id(repeatId)
-                        .teUid(etc.getUid())
+//                        .teUid(etc.getUid())
                         .canonicalElementUid(etc.getCanonicalElementUid())
                         .submissionUid(ns.getSubmissionUid())
-//                        .categoryUid(category != null ? category.getUid() : null)
-//                        .categoryKind(category != null ? category.getKind() : null)
-//                        .categoryName(category != null ? category.getName() : null)
-//                        .categoryLabel(toStringLabel(category != null ? category.getLabel() : null))
                         .repeatPath(childPath)
                         .canonicalPath(etc.getCanonicalPath())
                         .parentRepeatInstanceId(context.instanceId()) // NESTED HIERARCHY LINK
                         .repeatIndex(idx)
-//                        .repeatSectionLabel(toStringLabel(section.getLabel()))
                         .submissionCompletedAt(submission.getFinishedEntryTime())
                         .clientUpdatedAt(submission.getLastModifiedDate())
                         .createdDate(Instant.now())
@@ -289,7 +317,7 @@ public class Normalizer {
             .teamUid(submission.getTeam())
             .orgUnitUid(submission.getOrgUnit())
             .activityUid(submission.getActivity())
-            .teUid(etc.getUid())
+//            .teUid(etc.getUid())
             .canonicalPath(etc.getCanonicalPath())
             // --- CONTEXT FROM REPEAT ---
             .repeatInstanceId(context.instanceId())

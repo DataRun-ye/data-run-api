@@ -39,11 +39,11 @@ public class ElementDataValue {
 
     private String canonicalPath;
 
-    /**
-     * Reference to the element configuration that produced this value.
-     * db: {@code template_element_config_uid, not null}
-     */
-    private String teUid;
+//    /**
+//     * Reference to the element configuration that produced this value.
+//     * db: {@code template_element_config_uid, not null}
+//     */
+//    private String teUid;
     // ------------------------
     // Submission & Context
     // ------------------------

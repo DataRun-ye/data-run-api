@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+
+    <!--
+      ChangeSet set for tall_canonical table (Option 1 final schema).
+      - instance_key is a generated/stored column: COALESCE(repeat_instance_id, submission_uid)
+      - single UNIQUE constraint on (instance_key, canonical_element_uid) for idempotency
+      - indexes for common lookup paths
+      - occurrence_index dropped (we rely on producer's repeat_index/_index)
+    -->
+    <changeSet id="2025-11-15-01-create-tall-canonical" author="nmcpye">
+        <!-- Create table with core columns (instance_key added later as generated column) -->
+        <createTable tableName="tall_canonical">
+            <column name="tall_id" type="BIGSERIAL">
+                <constraints primaryKey="true" primaryKeyName="pk_tall_canonical"/>
+            </column>
+
+            <column name="outbox_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="ingest_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="submission_serial_number" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="submission_id" type="varchar(26)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="submission_uid" type="varchar(11)"/>
+
+            <!-- template_version_uid used to choose template version mappings -->
+            <column name="template_version_uid" type="varchar(11)"/>
+            <column name="instance_key" type="TEXT"/>
+            <column name="canonical_element_uid" type="uuid"/>
+
+            <column name="element_path" type="text"/>
+
+            <column name="repeat_instance_id" type="varchar(128)"/>
+
+            <column name="parent_instance_id" type="varchar(128)"/>
+
+            <column name="repeat_index" type="INT"/>
+
+            <!-- occurrence_index dropped in separate changeset if present; not created here -->
+
+            <column name="value_text" type="text"/>
+            <column name="value_number" type="numeric"/>
+            <column name="value_json" type="jsonb"/>
+
+            <column name="created_at" type="timestamp with time zone" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="updated_at" type="timestamp with time zone"/>
+
+            <column name="is_deleted" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Add the generated stored column instance_key (COALESCE(repeat_instance_id, submission_uid)) -->
+<!--    <changeSet id="2025-11-15-03-add-instance-key-generated" author="nmcpye">-->
+<!--        <preConditions onFail="MARK_RAN">-->
+<!--            &lt;!&ndash; ensure column doesn't exist already &ndash;&gt;-->
+<!--            <not>-->
+<!--                <columnExists tableName="tall_canonical" columnName="instance_key"/>-->
+<!--            </not>-->
+<!--        </preConditions>-->
+
+<!--        <sql>-->
+<!--            ALTER TABLE tall_canonical-->
+<!--                ADD COLUMN instance_key TEXT-->
+<!--                    GENERATED ALWAYS AS (COALESCE(repeat_instance_id, submission_uid)) STORED;-->
+<!--        </sql>-->
+<!--    </changeSet>-->
+
+    <!-- Add UNIQUE constraint on (instance_key, canonical_element_uid) for idempotency -->
+    <changeSet id="2025-11-15-04-unique-instance-canonical" author="nmcpye">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <uniqueConstraintExists tableName="tall_canonical" constraintName="uq_tall_instance_canonical"/>
+            </not>
+        </preConditions>
+
+        <addUniqueConstraint
+            tableName="tall_canonical"
+            columnNames="instance_key, canonical_element_uid"
+            constraintName="uq_tall_instance_canonical"/>
+    </changeSet>
+
+    <!-- Indexes to support common lookups and analytics -->
+    <changeSet id="2025-11-15-05-indexes" author="nmcpye">
+        <createIndex indexName="idx_tall_canonical_template_version_element" tableName="tall_canonical">
+            <column name="template_version_uid"/>
+            <column name="canonical_element_uid"/>
+        </createIndex>
+
+        <createIndex indexName="idx_tall_canonical_submission_uid" tableName="tall_canonical">
+            <column name="submission_uid"/>
+        </createIndex>
+
+        <createIndex indexName="idx_tall_canonical_repeat_instance" tableName="tall_canonical">
+            <column name="repeat_instance_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_tall_canonical_parent_instance" tableName="tall_canonical">
+            <column name="parent_instance_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_tall_canonical_updated_at" tableName="tall_canonical">
+            <column name="updated_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Optional: add comment to explain purpose (keeps schema self-documented) -->
+    <changeSet id="2025-11-15-06-comment-table" author="nmcpye">
+        <sql>
+            COMMENT ON TABLE tall_canonical IS
+            'Canonical tall analytics table. instance_key = COALESCE(repeat_instance_id, submission_uid) used for idempotency';
+        </sql>
+    </changeSet>
+</databaseChangeLog>

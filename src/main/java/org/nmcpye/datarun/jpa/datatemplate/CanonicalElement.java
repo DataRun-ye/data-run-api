@@ -26,7 +26,7 @@ public class CanonicalElement {
     @Column(name = "canonical_element_uid", updatable = false, nullable = false, unique = true)
     private String canonicalElementUid;
 
-    @Column(name = "template_uid", updatable = false, nullable = false, unique = true)
+    @Column(name = "template_uid", updatable = false, nullable = false, length = 11)
     private String templateUid;
 
     @Column(name = "preferred_name", updatable = false, nullable = false)
@@ -50,7 +50,7 @@ public class CanonicalElement {
     @Column(name = "option_set_uid", length = 11)
     private String optionSetUid;
 
-    @Column(name = "option_set_id", length = 11)
+    @Column(name = "option_set_id", length = 26)
     private String optionSetId;
 
     /// last updated Localized display labels, e.g. `{"en": "Child Name", "ar": "..."}`.

@@ -15,7 +15,6 @@ import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -111,7 +110,7 @@ public class TemplateElement {
     /// Option set uid
     /// [#SelectMulti] field.
     /// Immutable and copied from [DataElement] for fast access, single source of truth is still [DataElement]
-    @Column(name = "option_set_id", length = 11)
+    @Column(name = "option_set_id", length = 26)
     private String optionSetId;
 
     @Column(name = "sort_order")
@@ -177,7 +176,7 @@ public class TemplateElement {
     @Column(name = "cardinality", length = 2)
     private String cardinality; // 1 | N
 
-    @Column(name = "schema_fingerprint", length = 64)
+    @Column(name = "schema_fingerprint")
     private String schemaFingerprint;
 
     @Column(name = "canonical_element_uid", nullable = false)
@@ -189,7 +188,7 @@ public class TemplateElement {
     @Type(JsonType.class)
     @Singular
     @Column(name = "natural_key_candidates", columnDefinition = "jsonb default '[]'::jsonb")
-    private Set<String> naturalKeyCandidates = new HashSet<>();
+    private Set<String> naturalKeyCandidates;
 
 
     /// Timestamp of creation.

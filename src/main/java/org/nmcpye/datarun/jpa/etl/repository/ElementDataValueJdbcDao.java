@@ -79,7 +79,7 @@ public class ElementDataValueJdbcDao implements IElementDataValueDao {
             .addValue("orgUnitUid", r.getOrgUnitUid())
             .addValue("activityUid", r.getActivityUid())
             .addValue("canonicalElementUid", r.getCanonicalElementUid())
-            .addValue("teUid", r.getTeUid())
+//            .addValue("teUid", r.getTeUid())
             .addValue("repeatInstanceId", r.getRepeatInstanceId())
             .addValue("optionUid", r.getOptionUid())
             .addValue("valueText", r.getValueText())

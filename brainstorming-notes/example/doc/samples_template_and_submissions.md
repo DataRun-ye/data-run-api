@@ -1,71 +1,6 @@
-## Sample 1: OptionSet sample:
-```json
-[
-  {
-    "id": "01K1EHPE2H6JQ2T5JCC771BP5W",
-    "uid": "LVPJtB1pcr7",
-    "code": null,
-    "name": "posters_lab",
-    "options": null,
-    "translations": "[]",
-    "created_by": "admin",
-    "created_date": "30/7/2025 20:52:01.745324",
-    "last_modified_by": "admin",
-    "last_modified_date": "30/7/2025 20:52:01.745324",
-    "properties_map": null
-  }
-]
-```
+## Samples:
 
-### Sample 2: OptionSet's Options sample:
-
-```json-
-[
-  {
-    "id": "01K1EHH6BPZ6C0MRVMNEXMQWAC",
-    "code": "malaria_case_management",
-    "name": "malaria_case_management",
-    "translations": "[{\"value\": \"malaria_case_management\", \"locale\": \"en\", \"property\": \"name\"}, {\"value\": \"ملصقات تدبير حالات الملاريا\", \"locale\": \"ar\", \"property\": \"name\"}]",
-    "sort_order": 1,
-    "option_set_id": "01K1EHPE2H6JQ2T5JCC771BP5W",
-    "uid": "yqNt9De42lV"
-  },
-  {
-    "id": "01K1EHJN98G1V9BWZZF5NF3XZ8",
-    "code": "mrdt_posters",
-    "name": "mrdt_posters",
-    "translations": "[{\"value\": \"ملصقات فحص الملاري\", \"locale\": \"ar\", \"property\": \"name\"}, {\"value\": \"mrdt_posters\", \"locale\": \"en\", \"property\": \"name\"}]",
-    "sort_order": 2,
-    "option_set_id": "01K1EHPE2H6JQ2T5JCC771BP5W",
-    "uid": "JAkbOcS6pZB"
-  },
-  {
-    "id": "01K1EHN2HG1ZQPN5DHXYH0ZDNE",
-    "code": "standard_case_difination",
-    "name": "standard_case_difination",
-    "translations": "[{\"value\": \"standard_case_difination\", \"locale\": \"en\", \"property\": \"name\"}, {\"value\": \"ملصقات التعريف القياسي للأمراض\", \"locale\": \"ar\", \"property\": \"name\"}]",
-    "sort_order": 3,
-    "option_set_id": "01K1EHPE2H6JQ2T5JCC771BP5W",
-    "uid": "Yf6TbbmpXxo"
-  },
-  {
-    "id": "01K1EHP25XCYSC6SWW966QDF4R",
-    "code": "drdt_poster",
-    "name": "drdt_poster",
-    "translations": "[{\"value\": \"drdt_poster\", \"locale\": \"en\", \"property\": \"name\"}, {\"value\": \"ملصق فحص الضنك\", \"locale\": \"ar\", \"property\": \"name\"}]",
-    "sort_order": 4,
-    "option_set_id": "01K1EHPE2H6JQ2T5JCC771BP5W",
-    "uid": "rWbfMeioTil"
-  }
-]
-```
-
-## Sample 3: Data Template Version sample (ck2pHW93sk2)
-```json
-
-```
-
-**Sample 4: canonical elements samples of the elements of DataTemplate=`ck2pHW93sk2` (kept it short by omitting many elements, this just to provide an idea on what it is):**
+1. **sample CanonicalElements of DataTemplate `ck2pHW93sk2`**:
 
 ```json
 [
@@ -328,7 +263,7 @@
 ]
 ```
 
-**Sample 5: ElementTemplate samples of DataTemplate=`ck2pHW93sk2`, also kept it short by omitting many elements of the data template:**
+2. **sample TemplateElements of DataTemplate `ck2pHW93sk2`**:
 
 ```json
 [
@@ -703,7 +638,8 @@
 ]
 ```
 
-## Sample 6: A data submission sample for data template=`ck2pHW93sk2`:
+3. **sample DataSubmission for DataTemplate `ck2pHW93sk2`**:
+
 ```json
 {
     "createdBy": "772759361",
@@ -1242,22 +1178,25 @@
 }
 ```
 
-**OrgUnit sample:**
+4. **Dim optionSet/Options lookup lists materialized view (refreshed periodically):**
+   for lookup by name/label_locale/code, have no dto, need to haver repository using
+   `NamedParameterJdbcTemplate/JdbsTemplate` for easy lookup an option selected (by `uid`, `code`, `name`, `name_ar`, or
+   `name_en`)
 
-| id                         | uid         | code    | name                   | path                                             | level | parent_id                  | translations | created_by | created_date    | last_modified_by | last_modified_date |
-|----------------------------|-------------|---------|------------------------|--------------------------------------------------|-------|----------------------------|--------------|------------|-----------------|------------------|--------------------|
-| 01JYF3VBMB5QPYFJ43YVJQZ1MZ | gBsSQR1DZSU | 1       | Yemen                  | ,gBsSQR1DZSU                                     | 1     |                            |              | admin      | 1/1/01 12:06 AM | system           | 1/1/23 12:00 AM    |
-| 01JYF3VBMBCM7RBMR5SET9ZGAD | HP7pr1yGRlf | 18      | Al Hudaydah            | ,gBsSQR1DZSU,HP7pr1yGRlf                         | 2     | 01JYF3VBMB5QPYFJ43YVJQZ1MZ |              | admin      | 1/1/01 12:06 AM | system           | 1/1/23 12:00 AM    |
-| 01JYF3VBMBXD1J29AR083KDJ0C | BVIGsLlGR1a | 1807    | Az Zaydiyah            | ,gBsSQR1DZSU,HP7pr1yGRlf,BVIGsLlGR1a             | 3     | 01JYF3VBMBCM7RBMR5SET9ZGAD |              | admin      | 1/1/01 12:06 AM | system           | 1/1/23 12:00 AM    |
-| 01JYF3VBMBA1DV4NQQS8WC9PDE | B8RiTGy6Emb | 1807034 | وحدة  الصحية   دير علي | ,gBsSQR1DZSU,HP7pr1yGRlf,BVIGsLlGR1a,B8RiTGy6Emb | 4     | 01JYF3VBMBXD1J29AR083KDJ0C |              | admin      | 1/1/01 12:06 AM | system           | 1/1/23 3:05 AM     |
+| dim_option_id | option_id                  | option_uid  | option_set_id              | option_set_uid | code              | name_default      | name_en           | name_ar         | sort_order |
+|---------------|----------------------------|-------------|----------------------------|----------------|-------------------|-------------------|-------------------|-----------------|------------|
+| 697           | 01K1EH91PB7W3FC3VPVWBQK66B | fet2H5X7VQd | 01K1EH91PBXSPVF8PNS73PY69F | bh7ZbTM33rX    | case_register     | case_register     | case register     | سجل الحالات     | 1          |
+| 698           | 01K1EH91PB95NNF31AA57YRZDM | USgzM4EvJWW | 01K1EH91PBXSPVF8PNS73PY69F | bh7ZbTM33rX    | lab_register      | lab_register      | lab register      | سجل المختبر     | 2          |
+| 699           | 01K1EH91PBDJXW8EV5P7Q4EP4J | HHF66mLJMtd | 01K1EH91PBXSPVF8PNS73PY69F | bh7ZbTM33rX    | supply_register   | supply_register   | supply register   | سجل الإمداد     | 3          |
+| 700           | 01K1EH91PBST88AZRZ9KNF3561 | mjsmKGErMwZ | 01K1EH91PBXSPVF8PNS73PY69F | bh7ZbTM33rX    | physcian_register | physcian_register | physcian register | سجل الطبيب      | 4          |
+| 184           | 01K1EH91PBKA5G0AEPRKYZEG19 | DQofPW4ljSK | 01K1EH91PBXSPVF8PNS73PY69F | bh7ZbTM33rX    | surveillance_form | surveillance_form | Surveillance form | استمارات الترصد | 5          |
 
-**OrgUnit level sample:**
-| id | uid         | code | name     | level | translations | created_by | created_date | last_modified_by | last_modified_date |
-|----|-------------|------|----------|-------|--------------|------------|--------------|------------------|--------------------|
-| 1  | AZb0k8s7cf8 |      | Country  | 0     |              | admin      | 5/23/2024    | admin            | 5/23/2024          |
-| 2  | SFkMTSqslem |      | Gov      | 1     |              | admin      | 5/23/2024    | admin            | 5/23/2024          |
-| 3  | a8UntlZBHNH |      | District | 2     |              | admin      | 5/23/2024    | admin            | 5/23/2024          |
-| 4  | la6MffE1KrN |      | Hf       | 3     |              | admin      | 5/23/2024    | admin            | 5/23/2024          |
+5. **Dim OrgUnit lookup list materialized view:**
 
-
-**team, assignment, activity, and user samples where omitted for brevity**
+| id                         | org_unit_uid | code        | name_default     | level_int | parent_id                  | path_text                                                    | path_array                                                    | ancestors                                                                                                                                                                                                                                                                                                   | level_0_name | translations_jsonb | name_en          | name_ar          | level_1_name | level_2_name | level_3_name   | level_4_name     | created_at                    | updated_at                 |
+|----------------------------|--------------|-------------|------------------|-----------|----------------------------|--------------------------------------------------------------|---------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|--------------------|------------------|------------------|--------------|--------------|----------------|------------------|-------------------------------|----------------------------|
+| 01JYF3VBMB5QPYFJ43YVJQZ1MZ | gBsSQR1DZSU  | 1           | Yemen            | 1         |                            | ,gBsSQR1DZSU                                                 | {gBsSQR1DZSU}                                                 | [{"uid": "gBsSQR1DZSU", "name":   "Yemen", "level": 1}]                                                                                                                                                                                                                                                     | Yemen        | []                 | Yemen            | Yemen            |              |              |                |                  | 2001-01-01 00:06:20.395612+00 | 2023-01-01 00:00:02.589+00 |
+| 01JYF3VBMBKV94682F8DG4P31R | OzyNUU2aEWp  | 11          | Ibb              | 2         | 01JYF3VBMB5QPYFJ43YVJQZ1MZ | ,gBsSQR1DZSU,OzyNUU2aEWp                                     | {gBsSQR1DZSU,OzyNUU2aEWp}                                     | [{"uid": "gBsSQR1DZSU", "name":   "Yemen", "level": 1}, {"uid":   "OzyNUU2aEWp", "name": "Ibb",   "level": 2}]                                                                                                                                                                                              | Yemen        | []                 | Ibb              | Ibb              | Ibb          |              |                |                  | 2001-01-01 00:06:20.395612+00 | 2023-01-01 00:00:02.591+00 |
+| 01JYF3VBMB7XX821K2BTVGTF0Z | aBsDih1iyB2  | 1101        | Al Qafr          | 3         | 01JYF3VBMBKV94682F8DG4P31R | ,gBsSQR1DZSU,OzyNUU2aEWp,aBsDih1iyB2                         | {gBsSQR1DZSU,OzyNUU2aEWp,aBsDih1iyB2}                         | [{"uid": "gBsSQR1DZSU", "name":   "Yemen", "level": 1}, {"uid":   "OzyNUU2aEWp", "name": "Ibb",   "level": 2}, {"uid": "aBsDih1iyB2", "name":   "Al Qafr", "level": 3}]                                                                                                                                     | Yemen        | []                 | Al Qafr          | Al Qafr          | Ibb          | Al Qafr      |                |                  | 2001-01-01 00:06:20.395612+00 | 2023-01-01 00:00:14.799+00 |
+| 01JYF3VBMBGWZ9X9A36BTS59RZ | f7EelGcdWUH  | 110128      | بني عمر السافل   | 4         | 01JYF3VBMB7XX821K2BTVGTF0Z | ,gBsSQR1DZSU,OzyNUU2aEWp,aBsDih1iyB2,f7EelGcdWUH             | {gBsSQR1DZSU,OzyNUU2aEWp,aBsDih1iyB2,f7EelGcdWUH}             | [{"uid": "gBsSQR1DZSU", "name":   "Yemen", "level": 1}, {"uid":   "OzyNUU2aEWp", "name": "Ibb",   "level": 2}, {"uid": "aBsDih1iyB2", "name":   "Al Qafr", "level": 3}, {"uid":   "f7EelGcdWUH", "name": "بني عمر السافل",   "level": 4}]                                                                   | Yemen        | []                 | بني عمر السافل   | بني عمر السافل   | Ibb          | Al Qafr      | بني عمر السافل |                  | 2001-01-01 21:38:24.087286+00 | 2023-01-01 03:00:03.144+00 |
+| 01JYF3VBMBCNRE72JA7WPWN7J4 | Mi1X6B3zIFJ  | 11012810114 | المعازبه-الحماري | 5         | 01JYF3VBMBGWZ9X9A36BTS59RZ | ,gBsSQR1DZSU,OzyNUU2aEWp,aBsDih1iyB2,f7EelGcdWUH,Mi1X6B3zIFJ | {gBsSQR1DZSU,OzyNUU2aEWp,aBsDih1iyB2,f7EelGcdWUH,Mi1X6B3zIFJ} | [{"uid": "gBsSQR1DZSU", "name":   "Yemen", "level": 1}, {"uid":   "OzyNUU2aEWp", "name": "Ibb",   "level": 2}, {"uid": "aBsDih1iyB2", "name":   "Al Qafr", "level": 3}, {"uid":   "f7EelGcdWUH", "name": "بني عمر السافل",   "level": 4}, {"uid": "Mi1X6B3zIFJ",   "name": "المعازبه-الحماري", "level": 5}] | Yemen        | []                 | المعازبه-الحماري | المعازبه-الحماري | Ibb          | Al Qafr      | بني عمر السافل | المعازبه-الحماري | 2001-01-01 20:32:56.145657+00 | 2023-01-01 01:50:39.795+00 |

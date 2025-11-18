@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 //    "org.nmcpye.datarun.common",
 //    "org.nmcpye.datarun.drun.postgres.repository"})
 @EnableJpaRepositories(value = {"org.nmcpye.datarun.jpa",
+    "org.nmcpye.datarun.etl",
     "org.nmcpye.datarun.common"},
     repositoryBaseClass = BaseJpaIdentifiableRepositoryImpl.class
 )

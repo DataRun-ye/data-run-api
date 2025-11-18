@@ -2,6 +2,8 @@ package org.nmcpye.datarun.jpa.datasubmission.repository;
 
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -55,7 +57,13 @@ public interface DataSubmissionRepository
     List<String> findSubmissionUidsWithPath(@Param("path") String path, @Param("limit") int limit, @Param("offset") int offset);
 
     @Query(value = "SELECT template_version_uid FROM data_submission " +
-            "WHERE uid = :uid", nativeQuery = true)
+        "WHERE uid = :uid", nativeQuery = true)
     String findTemplateVersionUidByUid(@Param("uid") String uid);
 
+    // page by serialNumber cursor
+    Page<DataSubmission> findBySerialNumberGreaterThanOrderBySerialNumberAsc(Long lastSerial, Pageable pageable);
+
+    Page<DataSubmission> findBySerialNumberGreaterThanAndFormInOrderBySerialNumberAsc(Long lastSerial, List<String> uids, Pageable pageable);
+
+    List<DataSubmission> findBySerialNumberBetween(Long serialNumberAfter, Long serialNumberBefore);
 }

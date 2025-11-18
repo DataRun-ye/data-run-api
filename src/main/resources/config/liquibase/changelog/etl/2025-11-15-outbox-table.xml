@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="1763310444366-59" author="Hamza">
+        <createTable tableName="outbox">
+            <column name="outbox_id" type="bigserial">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_outbox"/>
+            </column>
+            <column name="submission_serial_number" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="submission_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="submission_uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="topic" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="event_type" type="VARCHAR(128)"/>
+            <column name="payload" type="jsonb"/>
+            <column name="status" type="VARCHAR(255)"/>
+            <column name="attempt" type="INT"/>
+            <column name="last_error" type="TEXT"/>
+            <column name="next_attempt_at" type="DATETIME"/>
+            <column name="ingest_id" type="UUID"/>
+            <column name="claimed_by" type="VARCHAR(255)"/>
+            <column name="claimed_at" type="DATETIME"/>
+            <column name="created_at" type="DATETIME"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2025-11-17-01-unique-outbox-backfill" author="nmcpye" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="uq_outbox_submission_backfill" tableName="outbox"/>
+            </not>
+        </preConditions>
+
+        <sql>
+            CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS uq_outbox_submission_backfill
+                ON outbox (submission_id)
+                WHERE event_type = 'BACKFILL';
+        </sql>
+    </changeSet>
+</databaseChangeLog>

@@ -55,7 +55,8 @@ public class TransformServiceImpl implements TransformService {
         }
 
         // Determine templateVersionUid (payload.formVersion preferred, fallback to outbox.topic)
-        String templateVersionUid = outbox.getTopic();
+        String templateVersionUid = Optional.ofNullable(root.path("formVersion").asText(null))
+            .orElse(Optional.ofNullable(outbox.getTopic()).orElse(null));
         if (templateVersionUid == null) {
             log.debug("Transform: missing templateVersionUid for outboxId={}, skipping", outbox.getOutboxId());
             return result;
@@ -181,6 +182,9 @@ public class TransformServiceImpl implements TransformService {
      * - when encountering arrays, iterate elements and continue traversal for each.
      * - preserves the array element node as parentRepeatNode so leaf fields can inherit repeat metadata.
      * - elementPath normalized to "arr[0].field" style.
+     * <p>
+     * Important fix: when a child field is reached under an array element, do NOT append the array index again
+     * to the child segment (avoid producing "arr[0].field[0]"). Only the array segment itself carries the index.
      */
     private List<PathHit> resolvePathHits(JsonNode root, String dottedPath) {
         List<PathHit> current = new ArrayList<>();
@@ -200,14 +204,22 @@ public class TransformServiceImpl implements TransformService {
                     int size = child.size();
                     for (int i = 0; i < size; i++) {
                         JsonNode elem = child.get(i);
+                        // array element path should include the index on the array segment
                         String newPath = buildPath(ph.elementPath, seg, i);
-                        // When iterating an array, parentRepeatNode is the element itself
-                        next.add(new PathHit(elem, i, newPath, elem));
+                        // If we're already under a repeat element, keep that node as parentRepeatNode;
+                        // otherwise the element itself becomes the parentRepeatNode (for top-level arrays).
+                        JsonNode parentRepeatForElem = ph.parentRepeatNode != null ? ph.parentRepeatNode : elem;
+                        next.add(new PathHit(elem, i, newPath, parentRepeatForElem));
+
+//                        // the element itself becomes the parentRepeatNode for downstream child fields
+//                        // propagate parentRepeatNode if any (...)
+//                        next.add(new PathHit(elem, i, newPath, elem));
                     }
                 } else {
-                    String newPath = buildPath(ph.elementPath, seg, ph.arrayIndex != null ? ph.arrayIndex : -1);
-                    // propagate parentRepeatNode if any (important: when child is under an array element,
-                    // ph.parentRepeatNode will hold the element and should be carried forward)
+                    // child is a scalar/object under the current node.
+                    // NOTE: do NOT re-apply array index here — if the parent was an array element,
+                    // ph.elementPath already contains the "[i]" and we should not append index to child.
+                    String newPath = buildPath(ph.elementPath, seg, -1);
                     next.add(new PathHit(child, ph.arrayIndex, newPath, ph.parentRepeatNode));
                 }
             }
@@ -222,6 +234,8 @@ public class TransformServiceImpl implements TransformService {
      * - "larvalHabitats[0]" for an array element
      * - "larvalHabitats[0].owner_name" for a child field
      * - "main.location_name" for a scalar path
+     * <p>
+     * arrayIndex == -1 means: do not append [index] for this segment.
      */
     private String buildPath(String base, String seg, int arrayIndex) {
         StringBuilder sb = new StringBuilder();
@@ -236,7 +250,7 @@ public class TransformServiceImpl implements TransformService {
 
     private static class PathHit {
         final JsonNode node;
-        final Integer arrayIndex; // index if array traversed at last segment
+        final Integer arrayIndex; // index if array traversed at last segment (may be null)
         final String elementPath;
         final JsonNode parentRepeatNode; // the array element node that acts as parent for leaf fields
 
@@ -248,3 +262,4 @@ public class TransformServiceImpl implements TransformService {
         }
     }
 }
+

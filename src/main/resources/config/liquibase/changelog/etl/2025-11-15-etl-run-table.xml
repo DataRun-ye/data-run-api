@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1763310444366-56" author="Hamza">
+        <createTable tableName="etl_runs">
+            <column name="etl_run_id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_etl_runs"/>
+            </column>
+            <column name="pipeline_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="started_at" type="DATETIME"/>
+            <column name="finished_at" type="DATETIME"/>
+            <column name="min_submission_serial" type="bigint"/>
+            <column name="max_submission_serial" type="bigint" />
+            <column name="status" type="VARCHAR(255)"/>
+            <column name="submitted_count" type="BIGINT"/>
+            <column name="success_count" type="BIGINT"/>
+            <column name="failure_count" type="BIGINT"/>
+            <column name="watermark" type="jsonb" defaultValueComputed="'{}'::jsonb"/>
+            <column name="metadata" type="jsonb" defaultValueComputed="'{}'::jsonb"/>
+            <column name="created_by" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>
