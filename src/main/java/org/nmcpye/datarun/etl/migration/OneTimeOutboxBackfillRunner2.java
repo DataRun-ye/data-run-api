@@ -35,7 +35,8 @@ public class OneTimeOutboxBackfillRunner2 implements CommandLineRunner {
     @Value("${migration.submissionUids:}")
     private String submissionUidsCsv;
 
-    private final int batchSize = 500;
+    @Value("${migration.size:500}")
+    private int batchSize;
 
     @Override
     @Transactional

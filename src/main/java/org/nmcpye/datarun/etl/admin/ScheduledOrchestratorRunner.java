@@ -3,6 +3,7 @@ package org.nmcpye.datarun.etl.admin;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -18,15 +19,16 @@ public class ScheduledOrchestratorRunner {
 
     // choose a stable big int lock key (unique per cluster)
     private static final long ADVISORY_LOCK_KEY = 123456789012345L;
-    private static final int SCHEDULE_BATCH_SIZE = 500;
+
+    @Value("${migration.size:500}")
+    private int SCHEDULE_BATCH_SIZE;
 
     public ScheduledOrchestratorRunner(NamedParameterJdbcTemplate jdbc, EtlOrchestrator orchestrator) {
         this.jdbc = jdbc;
         this.orchestrator = orchestrator;
     }
 
-    @Scheduled(cron = "0 */1 * * * *")
-//    @Transactional(timeout = 1800)        // outer tx -> holds the session
+    @Scheduled(cron = "0 */20 * * * *")
     public void scheduledRun() {
         log.info("Checking for pending outbox even...");
         Integer countPending = jdbc.queryForObject(
