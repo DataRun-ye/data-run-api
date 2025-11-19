@@ -7,6 +7,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -27,7 +28,7 @@ public class FormTemplateElementGeneration implements CommandLineRunner {
             "W8EtCDYfp1w", "MrxGOZ6stwS", "UYBPOIfCU0a", "mpmjpJcMuas", "IP2dMtoJkO4",
             "ONIaOpzoYAe", "LaGeMmmCEtH", "zglED4TsbTh", "M3fdtzBSpn8", "RQlMiMcukid");
 
-        final var all = dataTemplateInstanceService.findAllByUidIn(uids);
+        final var all = dataTemplateInstanceService.findAllByLastModifiedDateAfter(Instant.parse("2025-07-06T05:10:00.0Z"));
         all.forEach(t ->
             generatorService.generate(t.getUid(),
                 t.getVersionUid()/*, t.getVersionNumber(),
