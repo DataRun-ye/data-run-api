@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.datatemplateprocessor.postprocessors;
 
-import org.nmcpye.datarun.analytics.util.AliasSanitizer;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 
@@ -16,6 +15,6 @@ public class ValidateSectionNameNotNull
             throw new IllegalQueryException("Section name must not be null");
         }
 
-        return element.name(AliasSanitizer.sanitize(element.getName()));
+        return element;
     }
 }

@@ -16,7 +16,7 @@ import org.hibernate.annotations.ListIndexBase;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.IdScheme;
 import org.nmcpye.datarun.datatemplateelement.DataOption;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OptionSet extends JpaBaseIdentifiableObject {
+public class OptionSet extends TranslatableIdentifiable {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
@@ -55,11 +55,16 @@ public class OptionSet extends JpaBaseIdentifiableObject {
     private List<DataOption> legacyOptions;
 
     @OneToMany(mappedBy = "optionSet", cascade = CascadeType.ALL,
-            orphanRemoval = true, fetch = FetchType.EAGER)
+        orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderColumn(name = "sort_order")
     @ListIndexBase(1)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private List<Option> options = new ArrayList<>();
+
+    @Type(JsonType.class)
+    @Column(name = "properties_map", columnDefinition = "jsonb")
+    @JsonProperty
+    protected Map<String, Object> properties;
 
     @JsonIgnore
     public List<DataOption> getLegacyOptions() {
@@ -67,7 +72,7 @@ public class OptionSet extends JpaBaseIdentifiableObject {
     }
 
     @JsonProperty(value = "options")
-    @JsonSerialize(contentAs = JpaBaseIdentifiableObject.class)
+    @JsonSerialize(contentAs = TranslatableIdentifiable.class)
     public List<Option> getOptions() {
         return options;
     }
@@ -85,6 +90,7 @@ public class OptionSet extends JpaBaseIdentifiableObject {
         this.options.add(option);
         option.setOptionSet(this);
     }
+
 //    public void addOption(Option option) {
 //        if (option.getSortOrder() == null) {
 //            this.options.add(option);

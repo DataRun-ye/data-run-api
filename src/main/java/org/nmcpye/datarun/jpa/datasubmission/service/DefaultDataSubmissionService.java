@@ -146,7 +146,7 @@ public class DefaultDataSubmissionService
 
         if (!entitiesToPersist.isEmpty()) {
             persistedResults = jpaAuditableObjectRepository.persistAllAndFlush(entitiesToPersist);
-
+//            jpaAuditableObjectRepository.
             final var outboxEvents = persistedResults.stream()
                 .map(this::enqueueSubmissionsOutbox)
                 .toList();

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -13,11 +14,12 @@ import org.apache.commons.compress.utils.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.IdentifiableObjectUtils;
 import org.nmcpye.datarun.common.enumeration.EntityScope;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 import org.nmcpye.datarun.jpa.orgunitgroup.OrgUnitGroup;
 
 import java.util.*;
@@ -33,7 +35,7 @@ import java.util.*;
 @Getter
 @Setter
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
-public class OrgUnit extends JpaBaseIdentifiableObject {
+public class OrgUnit extends TranslatableIdentifiable {
 
     private static final String PATH_SEP = ",";
 
@@ -83,6 +85,11 @@ public class OrgUnit extends JpaBaseIdentifiableObject {
 
     @Transient
     private EntityScope entityScope;
+
+    @Type(JsonType.class)
+    @Column(name = "properties_map", columnDefinition = "jsonb")
+    @JsonProperty
+    protected Map<String, Object> properties;
 
     @PreRemove
     private void removeOuGroupsFromOu() {

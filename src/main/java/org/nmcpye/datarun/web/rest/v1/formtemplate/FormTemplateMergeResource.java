@@ -99,9 +99,9 @@ public class FormTemplateMergeResource {
     public ResponseEntity<EntitySaveSummaryVM> saveOne(@Valid @RequestBody DataTemplateInstanceDto formTemplate) {
         log.debug("REST request to saveOne {}", getName());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        final var processedTemplate = formTemplateProcessor.processMetadata(
-            formTemplateProcessor.validate(formTemplate));
-        this.saveEntity((DataTemplateInstanceDto) processedTemplate, summary);
+//        final var validated = formTemplateProcessor.validate(formTemplate);
+
+        this.saveEntity(formTemplate, summary);
 
         return ResponseEntity.ok(summary);
     }
@@ -120,7 +120,7 @@ public class FormTemplateMergeResource {
         var processedEntity = preProcess(payLoadEntity);
         try {
             if (payLoadEntity.getUid() != null && templateService.existsByUid(payLoadEntity.getUid())) {
-                processedEntity = templateService.update(payLoadEntity);
+                processedEntity = templateService.update(processedEntity);
                 summary.getUpdated().add(processedEntity.getUid());
             } else {
                 processedEntity = templateService.save(payLoadEntity);

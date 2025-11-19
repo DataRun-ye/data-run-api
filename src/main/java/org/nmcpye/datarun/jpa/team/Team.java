@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.jpa.team;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
@@ -16,7 +17,7 @@ import org.nmcpye.datarun.common.enumeration.EntityScope;
 import org.nmcpye.datarun.common.enumeration.FormPermission;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 import org.nmcpye.datarun.jpa.user.User;
 
 import java.util.*;
@@ -36,7 +37,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
-public class Team extends JpaBaseIdentifiableObject {
+public class Team extends TranslatableIdentifiable {
 //    @Id
 //    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
 //    @SequenceGenerator(name = "sequenceGenerator")
@@ -103,6 +104,11 @@ public class Team extends JpaBaseIdentifiableObject {
     @Type(JsonType.class)
     @Column(name = "form_permissions", columnDefinition = "jsonb")
     private Set<TeamFormPermissions> formPermissions = new HashSet<>();
+
+    @Type(JsonType.class)
+    @Column(name = "properties_map", columnDefinition = "jsonb")
+    @JsonProperty
+    protected Map<String, Object> properties;
 
     @Transient
     private EntityScope entityScope;

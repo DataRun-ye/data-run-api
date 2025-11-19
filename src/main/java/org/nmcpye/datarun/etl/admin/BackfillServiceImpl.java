@@ -64,7 +64,7 @@ public class BackfillServiceImpl implements BackfillService {
         }
 
         if (inserts.isEmpty()) return 0;
-        return outboxRepo.insertIfNotExistsByEventType(inserts, "BACKFILL");
+        return outboxRepo.insertBackfillIfNotExists(inserts);
     }
 }
 

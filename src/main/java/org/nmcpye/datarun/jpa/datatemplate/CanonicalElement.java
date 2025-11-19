@@ -6,8 +6,8 @@ import lombok.*;
 import org.hibernate.annotations.Type;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Hamza Assada
@@ -58,11 +58,9 @@ public class CanonicalElement {
     @Column(name = "display_label", columnDefinition = "jsonb default '{}'::jsonb")
     private Map<String, String> displayLabel;
 
-
-    @Singular
     @Type(JsonType.class)
     @Column(name = "json_data_paths", columnDefinition = "jsonb default '[]'::jsonb")
-    private List<String> jsonDataPaths;
+    private Set<String> jsonDataPaths;
 
     @Column(name = "notes", columnDefinition = "text")
     private String notes;

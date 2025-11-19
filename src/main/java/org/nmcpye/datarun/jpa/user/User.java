@@ -16,7 +16,7 @@ import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.config.Constants;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.usegroup.UserGroup;
 import org.nmcpye.datarun.jpa.userauthority.Authority;
@@ -37,7 +37,7 @@ import java.util.Set;
 @Getter
 @Setter
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
-public class User extends JpaBaseIdentifiableObject {
+public class User extends JpaIdentifiableObject {
 //    @Id
 //    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
 //    @SequenceGenerator(name = "sequenceGenerator")

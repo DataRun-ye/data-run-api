@@ -114,7 +114,7 @@ public class TemplateElementGeneratorService {
                     .cardinality(e.getCardinality())
                     .optionSetUid(e.getOptionSetUid())
                     .optionSetId(e.getOptionSetId())
-                    .jsonDataPaths(List.of(e.getJsonDataPath() == null ? "" : e.getJsonDataPath()))
+                    .jsonDataPaths(Set.of(e.getJsonDataPath() == null ? "" : e.getJsonDataPath()))
                     .notes(null)
 //                    .createdDate(Instant.now())
 //                    .lastModifiedDate(Instant.now())
@@ -124,9 +124,9 @@ public class TemplateElementGeneratorService {
                 // merge jsonDataPath into canonical_candidates if not present
                 String path = e.getJsonDataPath();
                 if (path != null && !path.isBlank()) {
-                    List<String> candidates = Optional.ofNullable(ce.getJsonDataPaths()).orElse(new ArrayList<>());
+                    Set<String> candidates = Optional.ofNullable(ce.getJsonDataPaths()).orElse(new HashSet<>());
                     if (!candidates.contains(path)) {
-                        candidates = new ArrayList<>(candidates);
+                        candidates = new HashSet<>(candidates);
                         candidates.add(path);
                         ce.setJsonDataPaths(candidates);
                         ce.setDisplayLabel(e.getDisplayLabel());

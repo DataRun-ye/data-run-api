@@ -24,7 +24,7 @@ public class DuplicateElementValidator implements TemplateValidator {
 
     public TemplateValidationResult validate(DataTemplateVersionInterface template) {
         final var sectionsErrors = validateNoDuplicates(
-            template.getSections(),
+            new ArrayList<>(template.getSections()),
             AbstractElement::getName,
             template.getUid(),
             "section"

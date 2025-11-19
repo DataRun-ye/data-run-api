@@ -17,7 +17,7 @@ import java.util.Objects;
 @MappedSuperclass
 @Getter
 @Setter
-public abstract class JpaSoftDeleteObject extends JpaBaseIdentifiableObject
+public abstract class JpaSoftDeleteObject extends TranslatableIdentifiable
     implements SoftDeleteObject<String> {
 
     @Override

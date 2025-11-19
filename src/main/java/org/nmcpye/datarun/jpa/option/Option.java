@@ -2,6 +2,7 @@ package org.nmcpye.datarun.jpa.option;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -10,7 +11,11 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
+
+import java.util.Map;
 
 /**
  * @author Hamza Assada
@@ -25,7 +30,7 @@ import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class Option extends JpaBaseIdentifiableObject {
+public class Option extends TranslatableIdentifiable {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
@@ -57,8 +62,13 @@ public class Option extends JpaBaseIdentifiableObject {
     @JoinColumn(name = "option_set_id", nullable = false, updatable = false)
     private OptionSet optionSet;
 
+    @Type(JsonType.class)
+    @Column(name = "properties_map", columnDefinition = "jsonb")
     @JsonProperty
-    @JsonSerialize(as = JpaBaseIdentifiableObject.class)
+    protected Map<String, Object> properties;
+
+    @JsonProperty
+    @JsonSerialize(as = JpaIdentifiableObject.class)
     public OptionSet getOptionSet() {
         return optionSet;
     }

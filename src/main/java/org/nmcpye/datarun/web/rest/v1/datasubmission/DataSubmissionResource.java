@@ -4,8 +4,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.repository.DeleteAccessDeniedException;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.SubmissionDataProcessor;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
@@ -15,6 +17,7 @@ import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidato
 import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.utils.FormSubmissionDataUtil;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
@@ -27,7 +30,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import tech.jhipster.web.util.HeaderUtil;
 
 import java.time.Instant;
 import java.util.List;
@@ -40,6 +45,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping(value = {DataSubmissionResource.CUSTOM, DataSubmissionResource.V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
+@Slf4j
 public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     protected static final String NAME = "/dataSubmission";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
@@ -114,6 +120,26 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
         EntitySaveSummaryVM summaryVM = new EntitySaveSummaryVM();
         submissionService.upsertAll(preProcess(entities), SecurityUtils.getCurrentUserDetailsOrThrow(), summaryVM);
         return ResponseEntity.ok(summaryVM);
+    }
+
+    @Override
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    public ResponseEntity<Void> deleteByIdUid(@PathVariable("id") String id,
+                                              @AuthenticationPrincipal CurrentUserDetails user) {
+        hasMinimalRightsOrThrow(user);
+        log.debug("REST request to delete from {}: {}", getName(), id);
+        final var entity = identifiableObjectService.findByUid(id).orElseThrow();
+        if (aclService.canDelete(entity, user)) {
+            identifiableObjectService.delete(entity);
+        } else {
+            throw new DeleteAccessDeniedException("");
+        }
+
+        return ResponseEntity
+            .noContent()
+            .headers(HeaderUtil
+                .createEntityDeletionAlert(applicationName, true, getName(), id)).build();
     }
 
     @Override

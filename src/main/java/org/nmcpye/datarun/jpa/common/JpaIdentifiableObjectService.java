@@ -15,19 +15,6 @@ import java.util.List;
  */
 public interface JpaIdentifiableObjectService<T extends JpaIdentifiableObject>
     extends IdentifiableObjectService<T, String> {
-
-//    static <T extends JpaIdentifiableObject> Specification<T> hasUid(String uid) {
-//        return (root, query, criteriaBuilder) -> uid == null ?
-//            criteriaBuilder.disjunction()
-//            : criteriaBuilder.equal(root.get("uid"), uid);
-//    }
-
-    static <T extends JpaIdentifiableObject> Specification<T> hasId(String id) {
-        return (root, query, criteriaBuilder) -> id == null ?
-            criteriaBuilder.disjunction()
-            : criteriaBuilder.equal(root.get("id"), id);
-    }
-
     @Deprecated(since = "v 6 use mongo like json query")
     static <E extends JpaIdentifiableObject> Specification<E> buildQuerySpecification(QueryRequest queryRequest) {
         return (root, query, cb) -> {

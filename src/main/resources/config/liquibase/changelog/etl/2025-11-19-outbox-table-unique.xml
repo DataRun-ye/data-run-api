@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="2025-11-19-01-unique-outbox-backfill" author="nmcpye" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="uq_outbox_submission_backfill" tableName="outbox"/>
+            </not>
+        </preConditions>
+
+        <sql>
+            CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS uq_outbox_submission_backfill
+                ON outbox (submission_id)
+                WHERE event_type = 'BACKFILL';
+        </sql>
+    </changeSet>
+</databaseChangeLog>

@@ -14,7 +14,7 @@ import java.util.List;
 @Value
 public class JpaIdentifiableOperationVm<T extends JpaIdentifiableObject> {
     @Singular
-    List<T> forCreatEntities;
+    List<T> forCreateEntities;
     @Singular
     List<T> forUpdateEntities;
 }

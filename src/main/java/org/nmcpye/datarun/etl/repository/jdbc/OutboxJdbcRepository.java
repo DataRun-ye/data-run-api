@@ -53,7 +53,7 @@ public class OutboxJdbcRepository {
             "UPDATE outbox " +
             "SET ingest_id = :ingestId, claimed_at= now(), claimed_by= :claimedBy " +
             "WHERE outbox_id IN (SELECT outbox_id FROM cte) " +
-            "RETURNING outbox_id, submission_serial_number, claimed_at, claimed_by, submission_id, submission_uid, topic, payload, status, attempt, ingest_id, created_at;";
+            "RETURNING outbox.*;";
 
     private static final String MARK_SUCCESS_SQL =
         "UPDATE outbox " +
@@ -87,6 +87,7 @@ public class OutboxJdbcRepository {
                 .submissionSerialNumber(rs.getLong("submission_serial_number"))
                 .submissionId(rs.getString("submission_id"))
                 .submissionUid(rs.getString("submission_uid"))
+                .eventType(rs.getString("event_type"))
                 .topic(rs.getString("topic"))
                 .payload(rs.getString("payload"))
                 .status(rs.getString("status"))
@@ -241,6 +242,7 @@ public class OutboxJdbcRepository {
         }
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     @Transactional
     public int insertIfNotExistsByEventType(List<OutboxInsert> inserts, String eventType) {
         if (inserts == null || inserts.isEmpty()) return 0;
@@ -249,8 +251,8 @@ public class OutboxJdbcRepository {
             + "INSERT INTO outbox ("
             + " submission_id, submission_serial_number, submission_uid, topic, payload, event_type, status, attempt, created_at"
             + ") VALUES ("
-            + " :submission_id, :submission_uid, :topic, cast(:payload AS jsonb), :event_type, 'pending', 0, :created_at, :submission_serial_number"
-            + ") ON CONFLICT (submission_id) WHERE (event_type = :event_type) DO NOTHING";
+            + " :submission_id, :submission_serial_number, :submission_uid, :topic, cast(:payload AS jsonb), :event_type, 'pending', 0, :created_at"
+            + ")";
 
         MapSqlParameterSource[] batch = new MapSqlParameterSource[inserts.size()];
         for (int i = 0; i < inserts.size(); i++) {
