@@ -1,0 +1,522 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <!--
+    Liquibase changelog to create CONCURRENT indexes for analytics dim tables.
+    NOTE: each changeSet uses runInTransaction="false" because CREATE INDEX CONCURRENTLY
+    cannot run inside a transaction block.
+    Adjust schema/table/column names if they differ.
+  -->
+
+    <!-- Helper: list of dims to index -->
+    <!-- dims: analytics.dim_option_set, analytics.dim_option, analytics.dim_org_unit,
+         analytics.dim_org_unit_group, analytics.dim_org_unit_group_member,
+         analytics.dim_team, analytics.dim_team_form_permission, analytics.dim_assignment,
+         analytics.dim_activity
+    -->
+
+    <!-- ===== dim_option_set ===== -->
+    <changeSet id="idx-001-dim_option_set-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_option_set_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_option_set_slm
+                ON analytics.dim_option_set (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_option_set_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-002-dim_option_set-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_option_set_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_option_set_uid_uniq
+                ON analytics.dim_option_set (option_set_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_option_set_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-003-dim_option_set-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_option_set_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_option_set_slm_uid
+                ON analytics.dim_option_set (source_last_modified_at, option_set_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_option_set_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ===== dim_option ===== -->
+    <changeSet id="idx-004-dim_option-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_option_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_option_slm
+                ON analytics.dim_option (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_option_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-005-dim_option-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_option_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_option_uid_uniq
+                ON analytics.dim_option (option_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_option_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-006-dim_option-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_option_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_option_slm_uid
+                ON analytics.dim_option (source_last_modified_at, option_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_option_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ===== dim_org_unit ===== -->
+    <changeSet id="idx-007-dim_org_unit-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_org_unit_slm
+                ON analytics.dim_org_unit (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-008-dim_org_unit-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_org_unit_uid_uniq
+                ON analytics.dim_org_unit (org_unit_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-009-dim_org_unit-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_org_unit_slm_uid
+                ON analytics.dim_org_unit (source_last_modified_at, org_unit_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ===== dim_org_unit_group ===== -->
+    <changeSet id="idx-010-dim_org_unit_group-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_group_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_org_unit_group_slm
+                ON analytics.dim_org_unit_group (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_group_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-011-dim_org_unit_group-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_group_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_org_unit_group_uid_uniq
+                ON analytics.dim_org_unit_group (group_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_group_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-012-dim_org_unit_group-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_group_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_org_unit_group_slm_uid
+                ON analytics.dim_org_unit_group (source_last_modified_at, group_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_group_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ===== dim_org_unit_group_member ===== -->
+    <changeSet id="idx-013-dim_org_unit_group_member-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_group_member_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_org_unit_group_member_slm
+                ON analytics.dim_org_unit_group_member (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_group_member_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-014-dim_org_unit_group_member-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_group_member_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_org_unit_group_member_uid_uniq
+                ON analytics.dim_org_unit_group_member (org_unit_uid, group_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_group_member_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-015-dim_org_unit_group_member-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_group_member_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_org_unit_group_member_slm_uid
+                ON analytics.dim_org_unit_group_member (source_last_modified_at, org_unit_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_group_member_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ===== dim_team ===== -->
+    <changeSet id="idx-016-dim_team-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_team_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_team_slm
+                ON analytics.dim_team (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-017-dim_team-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_team_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_team_uid_uniq
+                ON analytics.dim_team (team_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-018-dim_team-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_team_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_team_slm_uid
+                ON analytics.dim_team (source_last_modified_at, team_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ===== dim_team_form_permission ===== -->
+    <changeSet id="idx-019-dim_team_form_permission-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_team_form_permission_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_team_form_permission_slm
+                ON analytics.dim_team_form_permission (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_form_permission_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-020-dim_team_form_permission-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_team_form_permission_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_team_form_permission_uid_uniq
+                ON analytics.dim_team_form_permission (team_uid, form_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_form_permission_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-021-dim_team_form_permission-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_team_form_permission_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_team_form_permission_slm_uid
+                ON analytics.dim_team_form_permission (source_last_modified_at, team_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_form_permission_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ===== dim_assignment ===== -->
+    <changeSet id="idx-022-dim_assignment-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_assignment_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_assignment_slm
+                ON analytics.dim_assignment (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_assignment_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-023-dim_assignment-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_assignment_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_assignment_form_uid_uniq
+                ON analytics.dim_assignment (assignment_uid, form_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_assignment_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-024-dim_assignment-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_assignment_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_assignment_slm_uid
+                ON analytics.dim_assignment (source_last_modified_at, assignment_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_assignment_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ===== dim_activity ===== -->
+    <changeSet id="idx-025-dim_activity-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_activity_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_activity_slm
+                ON analytics.dim_activity (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_activity_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-026-dim_activity-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_activity_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_activity_uid_uniq
+                ON analytics.dim_activity (activity_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_activity_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-027-dim_activity-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_activity_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_activity_slm_uid
+                ON analytics.dim_activity (source_last_modified_at, activity_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_activity_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-027-dim_data_template-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_data_template_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_data_template_uid_uniq
+                ON analytics.dim_data_template (data_template_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_data_template_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+    <changeSet id="idx-028-dim_data_template-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_data_template_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_data_template_slm_uid
+                ON analytics.dim_data_template (source_last_modified_at, data_template_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_data_template_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

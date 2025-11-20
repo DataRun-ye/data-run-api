@@ -6,7 +6,6 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <!--
-   changelog: analytics schema, helper function, materialized views and indexes.
    Author: hamza
    Note: adjust source table names/schema if they differ in your DB (I used public.option_set, public.option_set_option,
          public.org_unit, public.org_unit_group, public.org_unit_group_members, public.team, public.assignment, public.activity).
@@ -49,30 +48,17 @@
                 os.uid AS option_set_uid,
                 os.code,
                 os.name AS name_default,
-                COALESCE(os.translations, '[]'::jsonb) AS translations_jsonb,
                 TRIM(COALESCE(analytics.translation_value(COALESCE(os.translations, '[]'::jsonb), 'en', 'name'), os.name)) AS name_en,
                 TRIM(COALESCE(analytics.translation_value(COALESCE(os.translations, '[]'::jsonb), 'ar', 'name'), os.name)) AS name_ar,
-                os.created_by,
-                (os.created_date::timestamp) AT TIME ZONE 'UTC' AS created_at,
                 os.last_modified_by,
-                (os.last_modified_date::timestamp) AT TIME ZONE 'UTC' AS updated_at
+                GREATEST(COALESCE(os.created_date, '1970-01-01'::timestamp),
+                         COALESCE(os.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
             FROM public.option_set os;
             ]]>
     </sql>
         <rollback>
             <sql>DROP MATERIALIZED VIEW IF EXISTS analytics.dim_option_set;</sql>
-        </rollback>
-    </changeSet>
-
-    <!-- 004: unique index on dim_option_set.option_set_uid -->
-    <changeSet id="004-idx-dim-option-set-uid" author="hamza">
-        <sql>
-      <![CDATA[
-            CREATE UNIQUE INDEX idx_dim_option_set_option_set_uid ON analytics.dim_option_set (option_set_uid);
-            ]]>
-    </sql>
-        <rollback>
-            <sql>DROP INDEX IF EXISTS analytics.idx_dim_option_set_option_set_uid;</sql>
         </rollback>
     </changeSet>
 
@@ -89,30 +75,19 @@
                 os.uid AS option_set_uid,
                 o.code,
                 o.name AS name_default,
-                COALESCE(o.translations, '[]'::jsonb) AS translations_jsonb,
                 TRIM(COALESCE(analytics.translation_value(COALESCE(o.translations, '[]'::jsonb), 'en', 'name'), o.name)) AS name_en,
                 TRIM(COALESCE(analytics.translation_value(COALESCE(o.translations, '[]'::jsonb), 'ar', 'name'), o.name)) AS name_ar,
                 o.sort_order,
-                (os.created_date::timestamp) AT TIME ZONE 'UTC' AS created_at,
-                (os.last_modified_date::timestamp) AT TIME ZONE 'UTC' AS updated_at
+                os.last_modified_by,
+                GREATEST(COALESCE(os.created_date, '1970-01-01'::timestamp),
+                         COALESCE(os.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
             FROM public.option_value o
                      LEFT JOIN public.option_set os ON os.id = o.option_set_id;
             ]]>
     </sql>
         <rollback>
             <sql>DROP MATERIALIZED VIEW IF EXISTS analytics.dim_option;</sql>
-        </rollback>
-    </changeSet>
-
-    <!-- 006: unique index on dim_option.option_uid -->
-    <changeSet id="006-idx-dim-option-uid" author="hamza">
-        <sql>
-      <![CDATA[
-            CREATE UNIQUE INDEX idx_dim_option_option_uid ON analytics.dim_option (option_uid);
-            ]]>
-    </sql>
-        <rollback>
-            <sql>DROP INDEX IF EXISTS analytics.idx_dim_option_option_uid;</sql>
         </rollback>
     </changeSet>
 
@@ -132,8 +107,10 @@
         ou.path,
         COALESCE(ou.translations, '[]'::jsonb) AS translations,
         regexp_split_to_array(trim(BOTH ',' FROM coalesce(ou.path, '')), ',') AS path_array,
-        ou.created_date,
-        ou.last_modified_date
+        ou.last_modified_by,
+        GREATEST(COALESCE(ou.created_date, '1970-01-01'::timestamp),
+                         COALESCE(ou.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
       FROM public.org_unit ou
     )
             SELECT
@@ -150,39 +127,19 @@
                           JOIN public.org_unit ou2 ON ou2.uid = t.uid
                 ) AS ancestors,
                 (SELECT ou2.name FROM public.org_unit ou2 WHERE ou2.uid = (b.path_array[1]) LIMIT 1) AS level_0_name,
-        COALESCE(b.translations, '[]'::jsonb) AS translations_jsonb,
         TRIM(COALESCE(analytics.translation_value(COALESCE(b.translations, '[]'::jsonb), 'en', 'name'), b.name)) AS name_en,
         TRIM(COALESCE(analytics.translation_value(COALESCE(b.translations, '[]'::jsonb), 'ar', 'name'), b.name)) AS name_ar,
         (SELECT ou2.name FROM public.org_unit ou2 WHERE ou2.uid = (b.path_array[2]) LIMIT 1) AS level_1_name,
         (SELECT ou2.name FROM public.org_unit ou2 WHERE ou2.uid = (b.path_array[3]) LIMIT 1) AS level_2_name,
         (SELECT ou2.name FROM public.org_unit ou2 WHERE ou2.uid = (b.path_array[4]) LIMIT 1) AS level_3_name,
         (SELECT ou2.name FROM public.org_unit ou2 WHERE ou2.uid = (b.path_array[5]) LIMIT 1) AS level_4_name,
-        (b.created_date::timestamp) AT TIME ZONE 'UTC' AS created_at,
-        (b.last_modified_date::timestamp) AT TIME ZONE 'UTC' AS updated_at
+        b.last_modified_by,
+        (b.source_last_modified_at::timestamp) AT TIME ZONE 'UTC' AS source_last_modified_at
             FROM base b;
             ]]>
     </sql>
         <rollback>
             <sql>DROP MATERIALIZED VIEW IF EXISTS analytics.dim_org_unit;</sql>
-        </rollback>
-    </changeSet>
-
-    <!-- 008: indexes on dim_org_unit -->
-    <changeSet id="008-idx-dim-org-unit" author="hamza">
-        <sql>
-      <![CDATA[
-            CREATE UNIQUE INDEX idx_dim_org_unit_org_unit_uid ON analytics.dim_org_unit (org_unit_uid);
-            CREATE INDEX idx_dim_org_unit_level ON analytics.dim_org_unit (level_int);
-            -- GIN index for path_array (text[])
-            CREATE INDEX idx_dim_org_unit_path_array ON analytics.dim_org_unit USING GIN (path_array);
-            ]]>
-    </sql>
-        <rollback>
-            <sql>
-                DROP INDEX IF EXISTS analytics.idx_dim_org_unit_path_array;
-                DROP INDEX IF EXISTS analytics.idx_dim_org_unit_level;
-                DROP INDEX IF EXISTS analytics.idx_dim_org_unit_org_unit_uid;
-            </sql>
         </rollback>
     </changeSet>
 
@@ -197,16 +154,15 @@
                 g.uid AS group_uid,
                 g.code,
                 g.name AS name_default,
-                COALESCE(g.translations, '[]'::jsonb) AS translations_jsonb,
                 TRIM(COALESCE(analytics.translation_value(COALESCE(g.translations, '[]'::jsonb), 'en', 'name'), g.name)) AS name_en,
                 TRIM(COALESCE(analytics.translation_value(COALESCE(g.translations, '[]'::jsonb), 'ar', 'name'), g.name)) AS name_ar,
                 COALESCE(g.properties_map::jsonb, '{}'::jsonb) AS properties_jsonb,
                 g.inactive,
-                (g.created_date::timestamp) AT TIME ZONE 'UTC' AS created_at,
-                (g.last_modified_date::timestamp) AT TIME ZONE 'UTC' AS updated_at
+                g.last_modified_by,
+                GREATEST(COALESCE(g.created_date, '1970-01-01'::timestamp),
+                         COALESCE(g.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
             FROM public.org_unit_group g;
-
-            CREATE UNIQUE INDEX idx_dim_org_unit_group_group_uid ON analytics.dim_org_unit_group (group_uid);
 
             CREATE MATERIALIZED VIEW analytics.dim_org_unit_group_member AS
             SELECT
@@ -215,22 +171,17 @@
                 g.uid AS group_uid,
                 gm.org_unit_id,
                 ou.uid AS org_unit_uid,
-                (g.created_date::timestamp) AT TIME ZONE 'UTC' AS created_at,
-                (g.last_modified_date::timestamp) AT TIME ZONE 'UTC' AS updated_at
+                GREATEST(COALESCE(g.created_date, '1970-01-01'::timestamp),
+                         COALESCE(g.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
             FROM public.org_unit_group_members gm
                      LEFT JOIN public.org_unit_group g ON g.id = gm.group_id
                      LEFT JOIN public.org_unit ou ON ou.id = gm.org_unit_id;
-
-            CREATE INDEX idx_dim_org_unit_group_member_org_unit_uid ON analytics.dim_org_unit_group_member (org_unit_uid);
-            CREATE INDEX idx_dim_org_unit_group_member_group_uid ON analytics.dim_org_unit_group_member (group_uid);
             ]]>
     </sql>
         <rollback>
             <sql>
-                DROP INDEX IF EXISTS analytics.idx_dim_org_unit_group_member_group_uid;
-                DROP INDEX IF EXISTS analytics.idx_dim_org_unit_group_member_org_unit_uid;
                 DROP MATERIALIZED VIEW IF EXISTS analytics.dim_org_unit_group_member;
-                DROP INDEX IF EXISTS analytics.idx_dim_org_unit_group_group_uid;
                 DROP MATERIALIZED VIEW IF EXISTS analytics.dim_org_unit_group;
             </sql>
         </rollback>
@@ -247,11 +198,11 @@
                 t.uid AS team_uid,
                 t.code, t.name AS name_default, t.activity_id, t.disabled,
                 COALESCE(t.form_permissions, '[]'::jsonb) AS form_permissions_jsonb,
-                (t.created_date::timestamp) AT TIME ZONE 'UTC' AS created_at,
-                (t.last_modified_date::timestamp) AT TIME ZONE 'UTC' AS updated_at
+                t.last_modified_by,
+                GREATEST(COALESCE(t.created_date, '1970-01-01'::timestamp),
+                         COALESCE(t.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
             FROM public.team t;
-
-            CREATE UNIQUE INDEX idx_dim_team_team_uid ON analytics.dim_team (team_uid);
 
             CREATE MATERIALIZED VIEW analytics.dim_team_form_permission AS
             SELECT
@@ -260,21 +211,17 @@
                 t.id AS team_id,
                 fp ->> 'form' AS form_uid,
                 (fp -> 'permissions')::jsonb AS permissions_jsonb,
-                (t.created_date::timestamp) AT TIME ZONE 'UTC' AS created_at,
-                (t.last_modified_date::timestamp) AT TIME ZONE 'UTC' AS updated_at
+                t.last_modified_by,
+                GREATEST(COALESCE(t.created_date, '1970-01-01'::timestamp),
+                    COALESCE(t.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
             FROM public.team t,
                 LATERAL jsonb_array_elements(COALESCE(t.form_permissions, '[]'::jsonb)) fp;
-
-            CREATE INDEX idx_dim_team_form_permission_team_uid ON analytics.dim_team_form_permission (team_uid);
-            CREATE INDEX idx_dim_team_form_permission_form_uid ON analytics.dim_team_form_permission (form_uid);
             ]]>
     </sql>
         <rollback>
             <sql>
-                DROP INDEX IF EXISTS analytics.idx_dim_team_form_permission_form_uid;
-                DROP INDEX IF EXISTS analytics.idx_dim_team_form_permission_team_uid;
                 DROP MATERIALIZED VIEW IF EXISTS analytics.dim_team_form_permission;
-                DROP INDEX IF EXISTS analytics.idx_dim_team_team_uid;
                 DROP MATERIALIZED VIEW IF EXISTS analytics.dim_team;
             </sql>
         </rollback>
@@ -291,21 +238,27 @@
                 a.uid AS assignment_uid,
                 a.deleted::boolean AS deleted,
                 a.activity_id,
+                act.uid AS activity_uid,
                 a.start_day,
                 a.org_unit_id,
                 ou.uid AS org_unit_uid,
+                ou.code AS org_unit_code,
                 a.team_id,
                 t.uid AS team_uid,
+                t.code AS team_code,
                 COALESCE(a.forms, '[]'::jsonb) AS forms_jsonb,
                 f.form_uid,
                 a.allocated_resources,
                 a.status,
                 a.last_submitted_by,
-                (a.created_date::timestamp) AT TIME ZONE 'UTC' AS created_at,
-                (a.last_modified_date::timestamp) AT TIME ZONE 'UTC' AS updated_at
+                a.last_modified_by,
+                GREATEST(COALESCE(a.created_date, '1970-01-01'::timestamp),
+                         COALESCE(a.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
             FROM public.assignment a
                      LEFT JOIN public.org_unit ou ON ou.id = a.org_unit_id
                      LEFT JOIN public.team t ON t.id = a.team_id
+                     LEFT JOIN public.activity act ON act.id = a.activity_id
                      LEFT JOIN LATERAL (
                 SELECT value::text AS form_uid
                 FROM jsonb_array_elements_text(COALESCE(a.forms, '[]'::jsonb)) AS arr(value)
@@ -332,19 +285,18 @@
                 a.end_date::timestamp AS end_date,
 
                 a.project_id,
-                COALESCE(a.translations, '[]'::jsonb) AS translations_jsonb,
                 TRIM(COALESCE(analytics.translation_value(COALESCE(a.translations, '[]'::jsonb), 'en', 'name'), a.name)) AS name_en,
                 TRIM(COALESCE(analytics.translation_value(COALESCE(a.translations, '[]'::jsonb), 'ar', 'name'), a.name)) AS name_ar,
-                (a.created_date::timestamp) AT TIME ZONE 'UTC' AS created_at,
-                (a.last_modified_date::timestamp) AT TIME ZONE 'UTC' AS updated_at
+                a.last_modified_by,
+                GREATEST(COALESCE(a.created_date, '1970-01-01'::timestamp),
+                         COALESCE(a.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
             FROM public.activity a;
 
-            CREATE UNIQUE INDEX idx_dim_activity_activity_uid ON analytics.dim_activity (activity_uid);
             ]]>
     </sql>
         <rollback>
             <sql>
-                DROP INDEX IF EXISTS analytics.idx_dim_activity_activity_uid;
                 DROP MATERIALIZED VIEW IF EXISTS analytics.dim_activity;
             </sql>
         </rollback>
@@ -362,40 +314,18 @@
                 dt.version_number AS version_no,
                 dt.code,
                 dt.name AS name_default,
-                COALESCE(dt.translations, '[]'::jsonb) AS translations_jsonb,
                 TRIM(COALESCE(analytics.translation_value(COALESCE(dt.translations, '[]'::jsonb), 'en', 'name'), dt.name)) AS name_en,
                 TRIM(COALESCE(analytics.translation_value(COALESCE(dt.translations, '[]'::jsonb), 'ar', 'name'), dt.name)) AS name_ar,
-                dt.created_by,
-                (dt.created_date::timestamp) AT TIME ZONE 'UTC' AS created_at,
                 dt.last_modified_by,
-                (dt.last_modified_date::timestamp) AT TIME ZONE 'UTC' AS updated_at
+                GREATEST(COALESCE(dt.created_date, '1970-01-01'::timestamp),
+                         COALESCE(dt.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
             FROM public.data_template dt;
-
-            CREATE UNIQUE INDEX idx_dim_data_template_data_template_uid ON analytics.dim_data_template (data_template_uid);
             ]]>
     </sql>
         <rollback>
             <sql>
-                DROP INDEX IF EXISTS analytics.idx_dim_data_template_data_template_uid;
                 DROP MATERIALIZED VIEW IF EXISTS analytics.dim_data_template;
-            </sql>
-        </rollback>
-    </changeSet>
-
-    <!-- optional: add other indexes you may want (example: dim_option.option_set_uid) -->
-    <changeSet id="013-add-extra-indexes" author="hamza">
-        <sql>
-      <![CDATA[
-            CREATE INDEX IF NOT EXISTS idx_dim_option_option_set_uid ON analytics.dim_option (option_set_uid);
-            CREATE INDEX IF NOT EXISTS idx_dim_team_form_permission_permissions ON analytics.dim_team_form_permission USING GIN (permissions_jsonb);
---             CREATE INDEX IF NOT EXISTS idx_dim_option_name_en_trgm ON analytics.dim_option USING gin (name_en gin_trgm_ops);
-            ]]>
-    </sql>
-        <rollback>
-            <sql>
-<!--                DROP INDEX IF EXISTS analytics.idx_dim_option_name_en_trgm;-->
-                DROP INDEX IF EXISTS analytics.idx_dim_team_form_permission_permissions;
-                DROP INDEX IF EXISTS analytics.idx_dim_option_option_set_uid;
             </sql>
         </rollback>
     </changeSet>
