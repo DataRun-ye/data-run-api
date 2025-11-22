@@ -25,23 +25,28 @@ public class MetadataUpsertService {
     // -------- canonical_element upsert ----------
     private static final String CANONICAL_UPSERT_SQL = """
         INSERT INTO canonical_element
-          (canonical_element_uid, template_uid, preferred_name, data_type, semantic_type, display_label,
-           json_data_paths, cardinality, option_set_uid, option_set_id, notes, created_date, last_modified_date)
-        VALUES
-          (:canonicalElementUid, :templateUid, :preferredName, :dataType, :semanticType, CAST(:displayLabel AS jsonb),
-            CAST(:jsonDataPaths AS jsonb), :cardinality, :optionSetUid, :optionSetId, :notes, now(), now())
-        ON CONFLICT (canonical_element_uid) DO UPDATE
-          SET preferred_name = EXCLUDED.preferred_name,
-              data_type = EXCLUDED.data_type,
-              semantic_type = EXCLUDED.semantic_type,
-              canonical_path = COALESCE(EXCLUDED.canonical_path, canonical_element.canonical_path),
-              cardinality = COALESCE(EXCLUDED.cardinality, canonical_element.cardinality),
-              option_set_uid = COALESCE(EXCLUDED.option_set_uid, canonical_element.option_set_uid),
-              option_set_id = COALESCE(EXCLUDED.option_set_id, canonical_element.option_set_id),
-              display_label = canonical_element.display_label || EXCLUDED.display_label,
-              json_data_paths = canonical_element.json_data_paths || EXCLUDED.json_data_paths,
-              notes = COALESCE(EXCLUDED.notes, canonical_element.notes),
-              last_modified_date = EXCLUDED.last_modified_date
+            (id, template_uid, preferred_name, safe_name, data_type, semantic_type, display_label,
+             canonical_path, json_data_paths, option_set_uid, option_set_id, parent_repeat_id, created_date, last_modified_date)
+          VALUES
+            (:id, :templateUid, :preferredName, :safeName, :dataType, :semanticType, CAST(:displayLabel AS jsonb),
+             :canonicalPath, CAST(:jsonDataPaths AS jsonb), :optionSetUid, :optionSetId, :parentRepeatUid, now(), now())
+          ON CONFLICT (id) DO UPDATE
+            SET preferred_name = EXCLUDED.preferred_name,
+                data_type = EXCLUDED.data_type,
+                semantic_type = EXCLUDED.semantic_type,
+                canonical_path = COALESCE(canonical_element.canonical_path, EXCLUDED.canonical_path),
+                safe_name = COALESCE(canonical_element.safe_name, EXCLUDED.safe_name),
+                parent_repeat_id = COALESCE(canonical_element.parent_repeat_id, EXCLUDED.parent_repeat_id),
+                option_set_uid = COALESCE(canonical_element.option_set_uid, EXCLUDED.option_set_uid),
+                option_set_id = COALESCE(canonical_element.option_set_id, EXCLUDED.option_set_id),
+                display_label = canonical_element.display_label || EXCLUDED.display_label,
+                json_data_paths = (
+                   SELECT jsonb_agg(DISTINCT elem)
+                   FROM jsonb_array_elements_text(
+                      COALESCE(canonical_element.json_data_paths, '[]'::jsonb) || COALESCE(EXCLUDED.json_data_paths, '[]'::jsonb)
+                   ) AS t(elem)
+                ),
+                last_modified_date = EXCLUDED.last_modified_date;
         """;
 
     @Transactional
@@ -50,7 +55,7 @@ public class MetadataUpsertService {
         List<SqlParameterSource> batch = new ArrayList<>(elems.size());
         for (CanonicalElement e : elems) {
             MapSqlParameterSource p = new MapSqlParameterSource();
-            p.addValue("canonicalElementUid", e.getCanonicalElementUid());
+            p.addValue("id", e.getId());
             p.addValue("templateUid", e.getTemplateUid());
             p.addValue("preferredName", e.getPreferredName());
             p.addValue("dataType", e.getDataType() == null ? null : e.getDataType().name());
@@ -61,10 +66,11 @@ public class MetadataUpsertService {
             } catch (JsonProcessingException ex) {
                 throw new IllegalStateException(ex);
             }
-            p.addValue("cardinality", e.getCardinality());
+            p.addValue("canonicalPath", e.getCanonicalPath()); // canonicalPath may be a string/list; objectMapper ensures JSON
+            p.addValue("safeName", e.getSafeName());
+            p.addValue("parentRepeatUid", e.getParentRepeatId());
             p.addValue("optionSetUid", e.getOptionSetUid());
             p.addValue("optionSetId", e.getOptionSetId());
-            p.addValue("notes", e.getNotes());
             batch.add(p);
         }
         // chunked execution
@@ -76,26 +82,17 @@ public class MetadataUpsertService {
         }
     }
 
-//    private void chunkExecution(List<SqlParameterSource> batch, String canonicalUpsertSql) {
-//        for (int i = 0; i < batch.size(); i += BATCH_SIZE) {
-//            int end = Math.min(batch.size(), i + BATCH_SIZE);
-//            List<SqlParameterSource> slice = batch.subList(i, end);
-//            npJdbc.batchUpdate(canonicalUpsertSql, slice.toArray(new SqlParameterSource[0]));
-//        }
-//    }
-
     // -------- template_element upsert ----------
-    // Ensure you have unique index on (template_uid, template_version_uid, id_path)
     private static final String TEMPLATE_UPSERT_SQL = """
-        INSERT INTO template_element (uid, template_uid, template_version_uid, template_version_no, element_kind, canonical_element_uid,
-           schema_fingerprint, id_path, json_data_path, canonical_path, name, data_element_uid,
-           data_type, semantic_type, cardinality, option_set_uid, option_set_id, parent_repeat_json_data_path,
-           parent_repeat_canonical_path, display_label, sort_order, value_type, created_date)
+        INSERT INTO template_element (uid, template_uid, template_version_uid, template_version_no,
+                                      canonical_element_id, json_data_path, canonical_path, name, data_element_uid,
+           data_type, semantic_type, option_set_uid, option_set_id, parent_repeat_json_data_path,
+           parent_repeat_canonical_path, display_label, sort_order, created_date)
         VALUES
-          (:uid, :templateUid, :templateVersionUid, :versionNo, :elementKind, :canonicalElementUid,
-           :schemaFingerprint, :idPath, :jsonDataPath, :canonicalPath, :name, :dataElementUid,
-           :dataType, :semanticType, :cardinality, :optionSetUid, :optionSetId, :parentRepeatJsonDataPath,
-           :parentRepeatCanonicalPath, CAST(:displayLabel AS jsonb), :sortOrder, :valueType, now())
+          (:uid, :templateUid, :templateVersionUid, :templateVersionNo, :canonicalElementId,
+           :jsonDataPath, :canonicalPath, :name, :dataElementUid,
+           :dataType, :semanticType, :optionSetUid, :optionSetId, :parentRepeatJsonDataPath,
+           :parentRepeatCanonicalPath, CAST(:displayLabel AS jsonb), :sortOrder, now())
          ON CONFLICT (template_uid, template_version_uid, canonical_path) DO Nothing;
         """;
 
@@ -108,18 +105,14 @@ public class MetadataUpsertService {
             p.addValue("uid", e.getUid());
             p.addValue("templateUid", e.getTemplateUid());
             p.addValue("templateVersionUid", e.getTemplateVersionUid());
-            p.addValue("versionNo", e.getVersionNo());
-            p.addValue("elementKind", e.getElementKind() == null ? null : e.getElementKind().name());
-            p.addValue("canonicalElementUid", e.getCanonicalElementUid());
-            p.addValue("schemaFingerprint", e.getSchemaFingerprint());
-            p.addValue("idPath", e.getIdPath());
+            p.addValue("templateVersionNo", e.getTemplateVersionNo());
+            p.addValue("canonicalElementId", e.getCanonicalElementId());
             p.addValue("jsonDataPath", e.getJsonDataPath());
             p.addValue("canonicalPath", e.getCanonicalPath());
             p.addValue("name", e.getName());
             p.addValue("dataElementUid", e.getDataElementUid());
             p.addValue("dataType", e.getDataType() == null ? null : e.getDataType().name());
             p.addValue("semanticType", e.getSemanticType() == null ? null : e.getSemanticType().name());
-            p.addValue("cardinality", e.getCardinality());
             p.addValue("optionSetUid", e.getOptionSetUid());
             p.addValue("optionSetId", e.getOptionSetId());
             p.addValue("parentRepeatJsonDataPath", e.getParentRepeatJsonDataPath());
@@ -130,7 +123,6 @@ public class MetadataUpsertService {
                 throw new IllegalStateException(ex);
             }
             p.addValue("sortOrder", e.getSortOrder());
-            p.addValue("valueType", e.getValueType() == null ? null : e.getValueType().name());
             batch.add(p);
         }
 

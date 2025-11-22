@@ -3,6 +3,7 @@ package org.nmcpye.datarun.jpa.datatemplate;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.Accessors;
 import org.hibernate.annotations.Type;
 
 import java.time.Instant;
@@ -17,20 +18,27 @@ import java.util.Set;
 @Table(name = "canonical_element")
 @Getter
 @Setter
+@Accessors(chain = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CanonicalElement {
 
     @Id
-    @Column(name = "canonical_element_uid", updatable = false, nullable = false, unique = true)
-    private String canonicalElementUid;
+    @Column(name = "id", updatable = false, nullable = false, unique = true)
+    private String id;
 
     @Column(name = "template_uid", updatable = false, nullable = false, length = 11)
     private String templateUid;
 
     @Column(name = "preferred_name", updatable = false, nullable = false)
     private String preferredName;
+
+    /**
+     * deterministic, safe, short name, for pivoting column names.
+     */
+    @Column(name = "safe_name", updatable = false, nullable = false, length = 63)
+    private String safeName;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "data_type", length = 64)
@@ -43,9 +51,6 @@ public class CanonicalElement {
     @Type(JsonType.class)
     @Column(name = "canonical_path", length = 3000)
     private String canonicalPath;
-
-    @Column(name = "cardinality", length = 2)
-    private String cardinality;
 
     @Column(name = "option_set_uid", length = 11)
     private String optionSetUid;
@@ -62,13 +67,12 @@ public class CanonicalElement {
     @Column(name = "json_data_paths", columnDefinition = "jsonb default '[]'::jsonb")
     private Set<String> jsonDataPaths;
 
-    @Column(name = "notes", columnDefinition = "text")
-    private String notes;
+    @Column(name = "parent_repeat_id", columnDefinition = "text")
+    private String parentRepeatId;
 
     @Column(name = "created_date")
     private Instant createdDate;
 
     @Column(name = "last_modified_date")
     private Instant lastModifiedDate;
-    // convenience method to get canonicalCandidates as List<String> via ObjectMapper
 }

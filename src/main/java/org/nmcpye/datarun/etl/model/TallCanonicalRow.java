@@ -19,15 +19,18 @@ public class TallCanonicalRow {
     private Long submissionSerialNumber;
     private String submissionId;
     private String submissionUid;
+    private String templateUid;
     private String templateVersionUid;
-    private String canonicalElementUid; // UUID string
+    private String canonicalElementId; // UUID string
     private String elementPath;
     private String repeatInstanceId; // nullable
     private String parentInstanceId; // nullable
     private Integer repeatIndex; // nullable// fallback if repeatInstanceId absent
     private String valueText;
     private BigDecimal valueNumber;
+    private Boolean valueBool;
     private String valueJson; // JSON string
+    private Instant submissionCreationTime;
     private Instant createdAt;
     private Instant updatedAt;
     private Boolean isDeleted;

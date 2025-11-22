@@ -8,6 +8,8 @@ import org.nmcpye.datarun.etl.service.EventProcessorService;
 import org.nmcpye.datarun.etl.service.OutboxProcessingService;
 import org.nmcpye.datarun.etl.service.TransformService;
 import org.nmcpye.datarun.etl.util.InstanceKeyUtil;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
+import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -38,6 +40,7 @@ public class EventProcessorServiceImpl implements EventProcessorService {
     private final TallCanonicalJdbcRepository tallRepo;
     private final OutboxProcessingService outboxProcessingService;
     private final PlatformTransactionManager txManager;
+    private final TemplateVersionRepository templateVersionRepository;
 
     /**
      * Process a single outbox event.
@@ -76,7 +79,7 @@ public class EventProcessorServiceImpl implements EventProcessorService {
                 // print first sample to inspect instance_key / lengths (avoid printing huge JSONs)
                 TallCanonicalRow sample = rows.get(0);
                 log.debug("Sample row (first): canonical={}, instanceKey={}, elementPathLen={}, valueTextLen={}",
-                    sample.getCanonicalElementUid(),
+                    sample.getCanonicalElementId(),
                     sample.getRepeatInstanceId() != null ? sample.getRepeatInstanceId() : sample.getSubmissionUid(),
                     sample.getElementPath() == null ? 0 : sample.getElementPath().length(),
                     sample.getValueText() == null ? 0 : sample.getValueText().length());
@@ -96,7 +99,10 @@ public class EventProcessorServiceImpl implements EventProcessorService {
                 if (r.getSubmissionSerialNumber() == null)
                     r.setSubmissionSerialNumber(outbox.getSubmissionSerialNumber());
                 if (r.getSubmissionUid() == null) r.setSubmissionUid(outbox.getSubmissionUid());
+                if (r.getSubmissionCreationTime() == null) r.setSubmissionCreationTime(outbox.getCreatedAt());
                 if (r.getTemplateVersionUid() == null) r.setTemplateVersionUid(outbox.getTopic());
+                if (r.getTemplateUid() == null) r.setTemplateUid(templateVersionRepository.findByUid(outbox.getTopic())
+                    .map(TemplateVersion::getUid).orElse(null));
             }
 
             // idempotent upsert: unique constraint on instance_key + canonical_element_uid prevents duplicates
@@ -126,7 +132,7 @@ public class EventProcessorServiceImpl implements EventProcessorService {
             String instanceKey = InstanceKeyUtil.computeInstanceKey(r);
 
             // group by canonical_element_uid
-            String canonicalUid = r.getCanonicalElementUid();
+            String canonicalUid = r.getCanonicalElementId();
             keepMap.computeIfAbsent(canonicalUid, k -> new HashSet<>()).add(instanceKey);
         }
 

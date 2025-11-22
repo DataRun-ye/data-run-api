@@ -10,7 +10,7 @@
     <!--
       ChangeSet set for tall_canonical table (Option 1 final schema).
       - instance_key is a generated/stored column: COALESCE(repeat_instance_id, submission_uid)
-      - single UNIQUE constraint on (instance_key, canonical_element_uid) for idempotency
+      - single UNIQUE constraint on (instance_key, canonical_element_id) for idempotency
       - indexes for common lookup paths
       - occurrence_index dropped (we rely on producer's repeat_index/_index)
     -->
@@ -28,6 +28,7 @@
             <column name="ingest_id" type="uuid">
                 <constraints nullable="false"/>
             </column>
+
             <column name="submission_serial_number" type="bigint">
                 <constraints nullable="false"/>
             </column>
@@ -39,9 +40,10 @@
             <column name="submission_uid" type="varchar(11)"/>
 
             <!-- template_version_uid used to choose template version mappings -->
+            <column name="template_uid" type="varchar(11)"/>
             <column name="template_version_uid" type="varchar(11)"/>
             <column name="instance_key" type="TEXT"/>
-            <column name="canonical_element_uid" type="uuid"/>
+            <column name="canonical_element_id" type="uuid"/>
 
             <column name="element_path" type="text"/>
 
@@ -55,13 +57,17 @@
 
             <column name="value_text" type="text"/>
             <column name="value_number" type="numeric"/>
+            <column name="value_bool" type="boolean"/>
             <column name="value_json" type="jsonb"/>
+            <column name="submission_creation_time" type="timestamp"/>
+<!--            <column name="start_entry_time" type="timestamp"/>-->
+<!--            <column name="complete_entry_time" type="timestamp"/>-->
 
-            <column name="created_at" type="timestamp with time zone" defaultValueComputed="NOW()">
+            <column name="created_at" type="timestamp" defaultValueComputed="NOW()">
                 <constraints nullable="false"/>
             </column>
 
-            <column name="updated_at" type="timestamp with time zone"/>
+            <column name="updated_at" type="timestamp"/>
 
             <column name="is_deleted" type="boolean" defaultValueBoolean="false"/>
         </createTable>
@@ -83,7 +89,7 @@
 <!--        </sql>-->
 <!--    </changeSet>-->
 
-    <!-- Add UNIQUE constraint on (instance_key, canonical_element_uid) for idempotency -->
+    <!-- Add UNIQUE constraint on (instance_key, canonical_element_id) for idempotency -->
     <changeSet id="2025-11-15-04-unique-instance-canonical" author="nmcpye">
         <preConditions onFail="MARK_RAN">
             <not>
@@ -93,7 +99,7 @@
 
         <addUniqueConstraint
             tableName="tall_canonical"
-            columnNames="instance_key, canonical_element_uid"
+            columnNames="instance_key, canonical_element_id"
             constraintName="uq_tall_instance_canonical"/>
     </changeSet>
 
@@ -101,7 +107,11 @@
     <changeSet id="2025-11-15-05-indexes" author="nmcpye">
         <createIndex indexName="idx_tall_canonical_template_version_element" tableName="tall_canonical">
             <column name="template_version_uid"/>
-            <column name="canonical_element_uid"/>
+            <column name="canonical_element_id"/>
+        </createIndex>
+        <createIndex indexName="idx_tall_canonical_template_element" tableName="tall_canonical">
+            <column name="template_uid"/>
+            <column name="canonical_element_id"/>
         </createIndex>
 
         <createIndex indexName="idx_tall_canonical_submission_uid" tableName="tall_canonical">

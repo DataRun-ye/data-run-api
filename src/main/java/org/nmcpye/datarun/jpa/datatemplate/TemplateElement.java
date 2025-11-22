@@ -11,7 +11,6 @@ import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
-import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 
 import java.time.Instant;
@@ -40,7 +39,7 @@ import java.util.Set;
     indexes = {
         @Index(name = "idx_template_element_template_version", columnList = "template_uid, template_version_uid"),
         @Index(name = "idx_template_element_template_version_no", columnList = "template_uid, template_version_no"),
-        @Index(name = "idx_template_element_canonical_uid", columnList = "canonical_element_uid"),
+        @Index(name = "idx_template_element_canonical_uid", columnList = "canonical_element_id"),
         @Index(name = "idx_template_element_repeat_path", columnList = "template_uid, parent_repeat_json_data_path")
     }
 )
@@ -51,7 +50,7 @@ import java.util.Set;
 @ToString(onlyExplicitlyIncluded = true)
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class TemplateElement {
-    public enum ElementKind {FIELD, REPEAT, SECTION}
+    public enum ElementKind {FIELD, REPEAT}
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "template_element_seq")
@@ -59,13 +58,13 @@ public class TemplateElement {
     private Long id;
 
     @Size(max = 11)
-    @Column(name = "uid", length = 11, updatable = false, unique = true, nullable = false)
+    @Column(name = "uid", length = 64, updatable = false, unique = true, nullable = false)
     protected String uid;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "element_kind", length = 16, nullable = false)
-    @Builder.Default
-    private ElementKind elementKind = ElementKind.FIELD;
+//    @Enumerated(EnumType.STRING)
+//    @Column(name = "element_kind", length = 16, nullable = false)
+//    @Builder.Default
+//    private ElementKind elementKind = ElementKind.FIELD;
 
     /// uid of the [DataTemplate] containing this configuration.
     @NotNull
@@ -82,11 +81,12 @@ public class TemplateElement {
     /// Version number of the [TemplateVersion].
     @NotNull
     @Column(name = "template_version_no", nullable = false)
-    private Integer versionNo;
+    private Integer templateVersionNo;
 
     /// globally immutable unique uid of the [DataElement] being configured.
     @NotNull
-    @Column(name = "data_element_uid", length = 100, nullable = false)
+    @Deprecated
+    @Column(name = "data_element_uid", length = 100)
     private String dataElementUid;
 
     /// Used as a key in [#getFormData()].
@@ -95,12 +95,12 @@ public class TemplateElement {
     @Column(name = "name", columnDefinition = "text", nullable = false)
     private String name;
 
-    /// Value type of this element.
-    /// For sections = null.
-    /// Immutable and copied from [DataElement] for fast access only, single source of truth is still [DataElement]
-    @Enumerated(EnumType.STRING)
-    @Column(name = "value_type", updatable = false)
-    protected ValueType valueType;
+//    /// Value type of this element.
+//    /// For sections = null.
+//    /// Immutable and copied from [DataElement] for fast access only, single source of truth is still [DataElement]
+//    @Enumerated(EnumType.STRING)
+//    @Column(name = "value_type", updatable = false)
+//    protected ValueType valueType;
 
     /// Option set uid
     /// [#SelectMulti] field.
@@ -117,12 +117,12 @@ public class TemplateElement {
     private Integer sortOrder;
 
 
-    /// Path built with element IDs (e.g. "household.children.<elementUid>").
-    @NotNull
-    @Column(name = "id_path", length = 3000, nullable = false)
-    @ToString.Include
-    @EqualsAndHashCode.Include
-    private String idPath;
+//    /// Path built with element IDs (e.g. "household.children.<elementUid>").
+//    @NotNull
+//    @Column(name = "id_path", length = 3000, nullable = false)
+//    @ToString.Include
+//    @EqualsAndHashCode.Include
+//    private String idPath;
 
     /// Path built with element names (ends with name). Used during normalization.
     ///
@@ -146,12 +146,6 @@ public class TemplateElement {
     @Column(name = "parent_repeat_canonical_path", length = 3000)
     private String parentRepeatCanonicalPath;
 
-//    /**
-//     * repeat-only path to nearest repeatable ancestor
-//     */
-//    @Column(name = "parent_canonical_element_uid")
-//    private String parentCanonicalElementUid;
-
     /// full path to nearest repeatable ancestor (or null), dot delimited. no array [*]
     @Column(name = "parent_repeat_json_data_path", length = 3000)
     private String parentRepeatJsonDataPath;
@@ -172,15 +166,15 @@ public class TemplateElement {
     @Column(name = "semantic_type", length = 64)
     private SemanticType semanticType;
 
-    // if it has a repeat ancestor
-    @Column(name = "cardinality", length = 2)
-    private String cardinality; // 1 | N
+//    // if it has a repeat ancestor
+//    @Column(name = "cardinality", length = 2)
+//    private String cardinality; // 1 | N
 
-    @Column(name = "schema_fingerprint")
-    private String schemaFingerprint;
+//    @Column(name = "schema_fingerprint")
+//    private String schemaFingerprint;
 
-    @Column(name = "canonical_element_uid", nullable = false)
-    private String canonicalElementUid;
+    @Column(name = "canonical_element_id", nullable = false)
+    private String canonicalElementId;
 
     /**
      * if this is a repeat, what's element compose a natural key for its instances
@@ -197,11 +191,7 @@ public class TemplateElement {
     private Instant createdDate;
 
     public boolean isRepeat() {
-        return this.elementKind == ElementKind.REPEAT;
-    }
-
-    public boolean isSection() {
-        return this.elementKind == ElementKind.SECTION;
+        return this.semanticType == SemanticType.Repeat;
     }
 
     public TemplateElement() {

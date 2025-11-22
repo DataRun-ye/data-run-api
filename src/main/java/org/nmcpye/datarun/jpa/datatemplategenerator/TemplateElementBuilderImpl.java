@@ -2,7 +2,6 @@ package org.nmcpye.datarun.jpa.datatemplategenerator;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.datatemplate.DataType;
@@ -12,10 +11,8 @@ import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Builds TemplateElement instances. Keeps responsibility small: mapping / normalization.
@@ -37,56 +34,27 @@ public class TemplateElementBuilderImpl implements TemplateElementBuilder {
         Objects.requireNonNull(meta);
         Objects.requireNonNull(templateVersion);
 
-        final CanonicalKeys canonicalKeys = CanonicalKeys
-            .builder().templateUid(templateVersion.getTemplateUid())
-            .canonicalPath(meta.getCanonicalPath())
-            .dataType(DataType.fromValueType(f.getType()))
-            .semanticType(SemanticType.fromValueType(f.getType()))
-            .optionSetUid(f.getOptionSet())
-            .cardinality(Boolean.TRUE.equals(meta.getHasParentRepeat()) || f.getType().isMultiSelect() ? "N" : "1")
-            .build();
+        final var h = hashToLong(String.join("|", templateVersion.getUid(),
+            meta.getJsonDataPath(), DataType.ARRAY.name(), SemanticType.Repeat.name()));
 
-        final var canonicalElementUid = canonicalUidFromStringAsUuid(canonicalKeys(canonicalKeys));
-
-        final var h = hashToLong(String.join("|",
-            templateVersion.getUid(),
-            meta.getJsonDataPath(),
-            canonicalKeys(canonicalKeys)));
+        // synthetic dataElementUid for repeat grain
         final var schemaFingerprint = "E_" + Long.toUnsignedString(h, 36);
 
-        //        String parentCanonicalElement;
-//        if(meta.getHasParentRepeat()) {
-//            final CanonicalKeys parentCanonicalKeys = CanonicalKeys
-//                .builder().templateUid(templateVersion.getTemplateUid())
-//                .canonicalPath(meta.getCanonicalParentRepeatPath())
-//                .dataType(DataType.ARRAY)
-//                .semanticType(SemanticType.Repeat)
-//                .cardinality(Boolean.TRUE.equals(meta.getHasParentRepeat()) || f.getType().isMultiSelect() ? "N" : "1")
-//                .build();
-//
-//            parentCanonicalElement = canonicalUidFromStringAsUuid(canonicalKeys(parentCanonicalKeys));
-//        }
-
         var cfg = TemplateElement.builder()
-            .uid(CodeGenerator.generateUid())
-            .canonicalElementUid(canonicalElementUid)
-            .schemaFingerprint(schemaFingerprint)
+//            .canonicalElementUid(schemaFingerprint) // set by caller
+            .dataElementUid(f.getId())
+            .uid(schemaFingerprint)
             .templateUid(templateVersion.getTemplateUid())
             .templateVersionUid(templateVersion.getUid())
-            .versionNo(templateVersion.getVersionNumber())
-            .elementKind(TemplateElement.ElementKind.FIELD)
-            .dataElementUid(f.getId())
+            .templateVersionNo(templateVersion.getVersionNumber())
             .name(f.getName())
-            .idPath(meta.getJsonDataIdPath())
             .jsonDataPath(meta.getJsonDataPath())
             .canonicalPath(meta.getCanonicalPath())
-            .cardinality(Boolean.TRUE.equals(meta.getHasParentRepeat()) || f.getType().isMultiSelect() ? "N" : "1")
             .dataType(DataType.fromValueType(f.getType()))
             .semanticType(SemanticType.fromValueType(f.getType()))
             .parentRepeatJsonDataPath(meta.getParentRepeatIdPath())
             .parentRepeatCanonicalPath(meta.getCanonicalParentRepeatPath())
             .sortOrder(f.getOrder())
-            .valueType(f.getType())
             .optionSetUid(f.getOptionSet())
             .displayLabel(f.getLabel());
         return cfg.build();
@@ -103,37 +71,23 @@ public class TemplateElementBuilderImpl implements TemplateElementBuilder {
         var cfg = TemplateElement.builder()
             .templateUid(templateVersion.getTemplateUid())
             .templateVersionUid(templateVersion.getUid())
-            .versionNo(templateVersion.getVersionNumber())
-            .elementKind(TemplateElement.ElementKind.REPEAT);
-
-        final CanonicalKeys canonicalKeys = CanonicalKeys
-            .builder().templateUid(templateVersion.getTemplateUid())
-            .canonicalPath(meta.getCanonicalPath())
+            .templateVersionNo(templateVersion.getVersionNumber())
             .dataType(DataType.ARRAY)
-            .semanticType(SemanticType.Repeat)
-            .cardinality("N")
-            .build();
+            .semanticType(SemanticType.Repeat);
 
-        final var canonicalElementUid = canonicalUidFromStringAsUuid(canonicalKeys(canonicalKeys));
+        final var h = hashToLong(String.join("|", templateVersion.getUid(),
+            meta.getJsonDataPath(), DataType.ARRAY.name(), SemanticType.Repeat.name()));
 
-        final var h = hashToLong(String.join("|",
-            templateVersion.getUid(),
-            meta.getJsonDataPath(),
-            canonicalKeys(canonicalKeys)));
         // synthetic dataElementUid for repeat grain
-        final var schemaFingerprint = "RPT_" + Math.abs(h);
+        final var schemaFingerprint = "R_" + Math.abs(h);
 
-        cfg.canonicalElementUid(canonicalElementUid)
-            .uid(CodeGenerator.generateUid())
+        cfg
+//            .canonicalElementUid(canonicalElementUid) // set by caller
+            .uid(schemaFingerprint)
             .dataElementUid(schemaFingerprint)
-            .schemaFingerprint(schemaFingerprint)
-            .idPath(meta.getJsonDataIdPath())
             .jsonDataPath(meta.getJsonDataPath())
             .name(section.getName())
-            .semanticType(SemanticType.Repeat)
-            .dataType(DataType.ARRAY)
             .canonicalPath(meta.getCanonicalPath())
-            .cardinality("N")
             .parentRepeatJsonDataPath(meta.getParentRepeatIdPath())
             .parentRepeatCanonicalPath(meta.getCanonicalParentRepeatPath())
             .displayLabel(section.getLabel())
@@ -145,21 +99,6 @@ public class TemplateElementBuilderImpl implements TemplateElementBuilder {
     }
 
     // ---------- helper methods (small) ------------
-
-    public static String canonicalKeys(CanonicalKeys canonicalKeys) {
-        return String.join("|", canonicalKeys.templateUid(),
-            canonicalKeys.canonicalPath(),
-            canonicalKeys.dataType() == null ? "" : canonicalKeys.dataType().name(),
-            canonicalKeys.semanticType() == null ? "" : canonicalKeys.semanticType().name(),
-            canonicalKeys.optionSetUid() == null ? "" : canonicalKeys.optionSetUid(),
-            canonicalKeys.cardinality());
-    }
-
-    public static String canonicalUidFromStringAsUuid(String key) {
-        // Deterministic name-based UUID (same input -> same UUID)
-        return UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8)).toString();
-    }
-
     public static long hashToLong(String input) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");

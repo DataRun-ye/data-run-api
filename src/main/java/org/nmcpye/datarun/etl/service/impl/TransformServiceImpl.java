@@ -8,7 +8,9 @@ import org.nmcpye.datarun.etl.model.TallCanonicalRow;
 import org.nmcpye.datarun.etl.service.TransformService;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateElementRepository;
+import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -38,6 +40,7 @@ public class TransformServiceImpl implements TransformService {
     private static final int VALUE_JSON_MAX = 10000;
 
     private final TemplateElementRepository templateElementRepository;
+    private final TemplateVersionRepository templateVersionRepository;
     private final DataSubmissionRepository submissionRepository;
     private final ObjectMapper objectMapper;
 
@@ -57,6 +60,7 @@ public class TransformServiceImpl implements TransformService {
         // Determine templateVersionUid (payload.formVersion preferred, fallback to outbox.topic)
         String templateVersionUid = Optional.ofNullable(root.path("formVersion").asText(null))
             .orElse(Optional.ofNullable(outbox.getTopic()).orElse(null));
+        String templateUid = templateVersionRepository.findByUid(templateVersionUid).map(TemplateVersion::getUid).orElse(null);
         if (templateVersionUid == null) {
             log.debug("Transform: missing templateVersionUid for outboxId={}, skipping", outbox.getOutboxId());
             return result;
@@ -80,7 +84,7 @@ public class TransformServiceImpl implements TransformService {
             List<PathHit> hits = resolvePathHits(root, jsonPath);
             if (te.isRepeat() && (hits == null || hits.isEmpty())) {
                 log.debug("Transform: repeat TemplateElement {} has no array hits in payload for outboxId={}",
-                    te.getCanonicalElementUid(), outbox.getOutboxId());
+                    te.getCanonicalElementId(), outbox.getOutboxId());
             }
 
             for (PathHit hit : hits) {
@@ -110,19 +114,23 @@ public class TransformServiceImpl implements TransformService {
 
                 // Derive values
                 String valueText = null;
+                Boolean valueBool = null;
                 BigDecimal valueNumber = null;
                 String valueJson = null;
 
                 if (node.isNumber()) {
                     valueNumber = node.decimalValue();
                     valueText = node.asText();
-                } else if (node.isTextual() || node.isBoolean() || node.isNull()) {
+                } else if (node.isBoolean()) {
+                    valueText = node.asText();
+                    valueBool = node.asBoolean();
+                } else if (node.isTextual() || node.isNull()) {
                     valueText = node.isNull() ? null : node.asText();
                 } else if (node.isObject() || node.isArray()) {
                     String raw = node.toString();
                     if (raw.length() > VALUE_JSON_MAX) {
                         valueJson = raw.substring(0, VALUE_JSON_MAX) + "...(truncated)";
-                        valueText = raw.substring(0, Math.min(VALUE_TEXT_MAX, raw.length())) + "...(truncated)";
+                        valueText = raw.substring(0, VALUE_TEXT_MAX) + "...(truncated)";
                     } else {
                         valueJson = raw;
                     }
@@ -146,13 +154,15 @@ public class TransformServiceImpl implements TransformService {
                     .submissionUid(submissionUidForRow)
                     .submissionSerialNumber(outbox.getSubmissionSerialNumber())
                     .templateVersionUid(templateVersionUid)
-                    .canonicalElementUid(te.getCanonicalElementUid())
+                    .templateUid(templateUid)
+                    .canonicalElementId(te.getCanonicalElementId())
                     .elementPath(hit.elementPath)
                     .repeatInstanceId(repeatInstanceId)
                     .parentInstanceId(parentInstanceId)
                     .repeatIndex(repeatIndex)
                     .valueText(valueText)
                     .valueNumber(valueNumber)
+                    .valueBool(valueBool)
                     .valueJson(valueJson)
                     .createdAt(now)
                     .updatedAt(now)

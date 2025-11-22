@@ -230,7 +230,7 @@ public class Normalizer {
                     final var ri = RepeatInstance.builder()
                         .id(repeatId)
 //                        .teUid(etc.getUid())
-                        .canonicalElementUid(etc.getCanonicalElementUid())
+                        .canonicalElementUid(etc.getCanonicalElementId())
                         .submissionUid(ns.getSubmissionUid())
                         .repeatPath(childPath)
                         .canonicalPath(etc.getCanonicalPath())
@@ -311,7 +311,7 @@ public class Normalizer {
 
         // --- CORE IDENTIFIERS & DIMENSIONS ---
         builder.submissionUid(submission.getUid())
-            .canonicalElementUid(etc.getCanonicalElementUid())
+            .canonicalElementUid(etc.getCanonicalElementId())
             // --- EXPANDED ASSIGNMENT DIMENSIONS ---
             .assignmentUid(submission.getAssignment())
             .teamUid(submission.getTeam())

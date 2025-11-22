@@ -15,9 +15,6 @@ import org.nmcpye.datarun.etl.model.TallCanonicalRow;
  * Also truncates to INSTANCE_KEY_MAX to protect DB column length.
  */
 public final class InstanceKeyUtil {
-    // keep in sync with DB column limits; choose safe default
-    //    public static final int INSTANCE_KEY_MAX = 2000;
-
     private InstanceKeyUtil() {
     }
 
@@ -40,8 +37,6 @@ public final class InstanceKeyUtil {
         } else {
             raw = submission + "|" + element;
         }
-
-//        if (raw.length() >= INSTANCE_KEY_MAX) return raw.substring(0, INSTANCE_KEY_MAX);
 
         return raw;
     }

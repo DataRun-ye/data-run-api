@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceService;
 import org.nmcpye.datarun.jpa.datatemplategenerator.TemplateElementGeneratorService;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -15,7 +14,7 @@ import java.util.List;
  * @since 14/05/2025
  */
 @Component
-@Order(1200)
+//@Order(1200)
 @RequiredArgsConstructor
 public class FormTemplateElementGeneration implements CommandLineRunner {
     private final DataTemplateInstanceService dataTemplateInstanceService;

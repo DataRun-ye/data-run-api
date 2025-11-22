@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * JDBC repository responsible for idempotent upserts into tall_canonical.
  * <p>
  * Idempotency: unique constraint is based on logical source identity via instance_key (COALESCE(repeat_instance_id, submission_uid))
- * and canonical_element_uid. ingest_id/outbox_id are provenance only and overwritten on upsert.
+ * and canonical_element_id. ingest_id/outbox_id are provenance only and overwritten on upsert.
  */
 @SuppressWarnings("ConcatenationWithEmptyString")
 @Repository
@@ -27,22 +27,24 @@ public class TallCanonicalJdbcRepository {
     private final NamedParameterJdbcTemplate jdbc;
     final String sql = ""
         + "INSERT INTO tall_canonical ("
-        + "  instance_key, canonical_element_uid, outbox_id, ingest_id,"
-        + "  submission_id, submission_uid, submission_serial_number, template_version_uid,"
+        + "  instance_key, canonical_element_id, outbox_id, ingest_id,"
+        + "  submission_id, submission_uid, submission_serial_number, template_uid, template_version_uid,"
         + "  element_path, repeat_instance_id, parent_instance_id, repeat_index,"
-        + "  value_text, value_number, value_json, created_at, updated_at, is_deleted"
+        + "  value_text, value_bool, value_number, value_json, submission_creation_time, created_at, updated_at, is_deleted"
         + ") VALUES ("
-        + "  :instance_key, CAST(:canonical_element_uid AS uuid), :outbox_id, :ingest_id,"
-        + "  :submission_id, :submission_uid, :submission_serial_number, :template_version_uid,"
+        + "  :instance_key, CAST(:canonical_element_id AS uuid), :outbox_id, :ingest_id,"
+        + "  :submission_id, :submission_uid, :submission_serial_number, :template_uid, :template_version_uid,"
         + "  :element_path, :repeat_instance_id, :parent_instance_id, :repeat_index,"
-        + "  :value_text, :value_number, cast(:value_json AS jsonb), :created_at, :updated_at, :is_deleted"
+        + "  :value_text, :value_bool, :value_number, cast(:value_json AS jsonb), :submission_creation_time,:created_at, :updated_at, :is_deleted"
         + ") "
-        + "ON CONFLICT (instance_key, canonical_element_uid) DO UPDATE SET "
+        + "ON CONFLICT (instance_key, canonical_element_id) DO UPDATE SET "
         + "  value_text = EXCLUDED.value_text, "
+        + "  value_bool = EXCLUDED.value_bool, "
         + "  value_number = EXCLUDED.value_number, "
         + "  value_json = EXCLUDED.value_json, "
         + "  outbox_id = EXCLUDED.outbox_id, "
         + "  ingest_id = EXCLUDED.ingest_id, "
+        + "  submission_creation_time = coalesce(EXCLUDED.submission_creation_time, tall_canonical.submission_creation_time),"
         + "  updated_at = now(), "
         + "  is_deleted = EXCLUDED.is_deleted;";
 
@@ -72,12 +74,15 @@ public class TallCanonicalJdbcRepository {
             String instanceKey = InstanceKeyUtil.computeInstanceKey(r);
             MapSqlParameterSource p = new MapSqlParameterSource();
             p.addValue("instance_key", instanceKey);
-            p.addValue("canonical_element_uid", r.getCanonicalElementUid());
+            p.addValue("canonical_element_id", r.getCanonicalElementId());
             p.addValue("outbox_id", r.getOutboxId());
             p.addValue("ingest_id", r.getIngestId());
             p.addValue("submission_id", r.getSubmissionId());
             p.addValue("submission_uid", r.getSubmissionUid());
             p.addValue("submission_serial_number", r.getSubmissionSerialNumber());
+            p.addValue("submission_creation_time",
+                r.getSubmissionCreationTime() != null ? Timestamp.from(r.getSubmissionCreationTime()) : null);
+            p.addValue("template_uid", r.getTemplateUid());
             p.addValue("template_version_uid", r.getTemplateVersionUid());
             p.addValue("element_path", r.getElementPath());
             p.addValue("repeat_instance_id", r.getRepeatInstanceId());
@@ -88,6 +93,7 @@ public class TallCanonicalJdbcRepository {
             if (vt != null && vt.length() > VALUE_TEXT_MAX) vt = vt.substring(0, VALUE_TEXT_MAX) + "...(truncated)";
             p.addValue("value_text", vt);
             p.addValue("value_number", r.getValueNumber());
+            p.addValue("value_bool", r.getValueBool());
             String vj = r.getValueJson();
             if (vj != null && vj.length() > VALUE_JSON_MAX) vj = vj.substring(0, VALUE_JSON_MAX) + "...(truncated)";
             p.addValue("value_json", vj);
@@ -122,10 +128,10 @@ public class TallCanonicalJdbcRepository {
 
 
     /**
-     * Mark as deleted any tall_canonical rows for the given submission + canonical_element_uid
+     * Mark as deleted any tall_canonical rows for the given submission + canonical_element_id
      * whose instance_key is NOT in the provided keepKeys set.
      * <p>
-     * If keepKeys is null or empty, this will mark ALL rows for the submission+canonical_element_uid
+     * If keepKeys is null or empty, this will mark ALL rows for the submission+canonical_element_id
      * as deleted (useful to model "user cleared all values").
      * <p>
      * This marks rows as deleted (logical delete). If you prefer hard DELETE, replace UPDATE ...
@@ -134,27 +140,27 @@ public class TallCanonicalJdbcRepository {
      * It filters AND is_deleted = false to avoid touching already-deleted rows (cheap).
      *
      * @param submissionUid       submissionUid
-     * @param canonicalElementUid canonicalElementUid
+     * @param canonicalElementId canonicalElementId
      * @param keepKeys            keepKeys
      * @return number of rows updated (marked deleted).
      */
-    public int deleteNotIn(String submissionUid, String canonicalElementUid, java.util.Collection<String> keepKeys) {
+    public int deleteNotIn(String submissionUid, String canonicalElementId, java.util.Collection<String> keepKeys) {
         final String sqlAll = ""
             + "UPDATE tall_canonical SET is_deleted = true, updated_at = now() "
             + "WHERE submission_uid = :submissionUid "
-            + "  AND canonical_element_uid = CAST(:canonicalElementUid AS uuid) "
+            + "  AND canonical_element_id = CAST(:canonicalElementId AS uuid) "
             + "  AND is_deleted = false";
 
         final String sqlNotIn = ""
             + "UPDATE tall_canonical SET is_deleted = true, updated_at = now() "
             + "WHERE submission_uid = :submissionUid "
-            + "  AND canonical_element_uid = CAST(:canonicalElementUid AS uuid) "
+            + "  AND canonical_element_id = CAST(:canonicalElementId AS uuid) "
             + "  AND instance_key NOT IN (:keepKeys) "
             + "  AND is_deleted = false";
 
         MapSqlParameterSource params = new MapSqlParameterSource()
             .addValue("submissionUid", submissionUid)
-            .addValue("canonicalElementUid", canonicalElementUid);
+            .addValue("canonicalElementId", canonicalElementId);
 
         if (keepKeys == null || keepKeys.isEmpty()) {
             return jdbc.update(sqlAll, params);

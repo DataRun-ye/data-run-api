@@ -117,7 +117,7 @@ datarun:
 outbox:
   relay:
     poll-interval-ms: 10000   # polling delay between polls (ms)
-    batch-size: 100           # how many to claim per poll
+    batch-size: 500           # how many to claim per poll
     worker-threads: 6        # number of concurrent worker threads
     max-attempts: 10
 
@@ -126,9 +126,9 @@ migration:
   mongo:
     collection: data_form_submission
   chunk:
-    size: 500
+    size: 50
   page:
-    size: 200
+    size: 50
   run: false
   auto-start: true
   size: 50

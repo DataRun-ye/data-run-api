@@ -21,72 +21,9 @@ Actual structures depend entirely on each deployed data template.
 |------------------------|----------------------------------------------------------------------------|
 | **json_data_path**     | The template-defined structural path (e.g., `group.subfield.items`).       |
 | **element_path**       | The actual fully-resolved path in a *submission*, including array indices. |
-| **repeat_instance_id** | The `_id` provided by Kobo/ODK for a repeat row.                           |
+| **repeat_instance_id** | The `_id` provided by collection app for a repeat row.                     |
 | **submission_uid**     | Submission-level unique ID used for top-level array elements.              |
 | **instance_key**       | The uniqueness key used for UPSERT into `tall_canonical`.                  |
-
-## 2. **How `element_path` is computed**
-
-### A. **Simple field**
-
-```
-json_data_path:     fieldA
-element_path:       fieldA
-```
-
-### B. **Field inside a group**
-
-```
-json_data_path:     group1.fieldA
-element_path:       group1.fieldA
-```
-
-### C. **Repeat**
-
-A repeat creates an array — indices are inserted.
-
-```
-json_data_path:     repeatA
-element_path:       repeatA[0]          ← first repeat row
-                     repeatA[1]          ← second
-```
-
-### D. **Field inside repeat**
-
-```
-json_data_path:     repeatA.fieldX
-element_path:       repeatA[0].fieldX
-                     repeatA[1].fieldX
-```
-
-### E. **Nested repeat**
-
-```
-json_data_path:     repeatA.repeatB.fieldY
-element_path:       repeatA[0].repeatB[0].fieldY
-                     repeatA[0].repeatB[1].fieldY
-                     repeatA[1].repeatB[0].fieldY
-```
-
-### F. **Scalar array field (SelectMulti)**
-
-Top-level:
-
-```
-json_data_path:     tags
-element_path:       tags[0]
-                     tags[1]
-                     tags[2]
-```
-
-Inside a repeat:
-
-```
-json_data_path:     repeatA.roles
-element_path:       repeatA[0].roles[0]
-                     repeatA[0].roles[1]
-                     repeatA[1].roles[0]
-```
 
 ---
 
@@ -102,7 +39,7 @@ element_path:       repeatA[0].roles[0]
 }
 ```
 
-### template_elements (only relevant rows)
+### template_elements (only relevant rows, multi elements per canonical element)
 
 | uid              | element_kind        | json_data_path            | canonical_element_uid                | cardinality |
 |------------------|---------------------|---------------------------|--------------------------------------|-------------|
@@ -113,38 +50,50 @@ element_path:       repeatA[0].roles[0]
 | e-member-age     | FIELD               | households.members.age    | 33333333-3333-3333-3333-555555555555 | 1           |
 | e-member-roles   | FIELD (SelectMulti) | households.members.roles  | 33333333-3333-3333-3333-666666666666 | N           |
 
-### canonical_elements (minimal)
+### canonical_elements table (minimal, json format, across data collections paths)
 
 ```json-
 [
     {
         "canonical_element_uid": "11111111-1111-1111-1111-111111111111",
-        "path": "households",
+        "name_preferred": "households",
+        "display_label": {"en": "Households data", "ar": "بيانات المنازل" },
+        "paths": ["households"],
         "type": "REPEAT"
     },
     {
         "canonical_element_uid": "22222222-2222-2222-2222-222222222222",
-        "path": "households.household_name",
+        "name_preferred": "household_name",
+        "display_label": {"en": "Household Name", "ar": "اسم رب المنزل" },
+        "paths": ["households.household_name"],
         "type": "TEXT"
     },
     {
         "canonical_element_uid": "33333333-3333-3333-3333-333333333333",
-        "path": "households.members",
+        "name_preferred": "members",
+        "display_label": {"en": "Household Members", "ar": "أفراد المنزل" },
+        "paths": ["households.members"],
         "type": "REPEAT"
     },
     {
         "canonical_element_uid": "44444444-4444-4444-4444-444444444444",
-        "path": "households.members.name",
+        "name_preferred": "name",
+        "display_label": {"en": "Member name", "ar": "اسم الفرد" },
+        "paths": ["households.members.name"],
         "type": "TEXT"
     },
     {
         "canonical_element_uid": "55555555-5555-5555-5555-555555555555",
-        "path": "households.members.age",
+        "name_preferred": "age",
+        "display_label": {"en": "Age", "ar": "العمر" },
+        "paths": ["households.members.age"],
         "type": "INTEGER"
     },
     {
         "canonical_element_uid": "66666666-6666-6666-6666-666666666666",
-        "path": "households.members.roles",
+        "name_preferred": "roles",
+        "display_label": {"en": "Member Roles", "ar": ".." },
+        "paths": ["households.members.roles"],
         "type": "SelectMulti"
     }
 ]
@@ -260,7 +209,9 @@ This shows:
 ```json
 {
     "canonical_element_uid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-    "path": "symptoms",
+    "name_preferred": "symptoms",
+    "display_label": {"en": "Symptoms", "ar": "الأعراض" },
+    "paths": ["symptoms"],
     "type": "SelectMulti"
 }
 ```
@@ -283,11 +234,3 @@ This shows:
 |-------------|---------------:|-----------------------|--------------|-------------------:|-------------:|------------|
 | symptoms[0] | S1#symptoms[0] | aaaa...               | symptoms[0]  |             (null) |            0 | "fever"    |
 | symptoms[1] | S1#symptoms[1] | aaaa...               | symptoms[1]  |             (null) |            1 | "cough"    |
-
----
-
-## Quick mapping notes / reminders (how these samples map to your code)
-
-* `element_path` is normalized with array indices (e.g., `households[0].members[1].roles[0]`).
-* For `repeat` elements we expect the repeat node to contain `_id` and `_index`; `repeat_instance_id` is taken from that
-  `_id` already provided in submission repeats by the system.
