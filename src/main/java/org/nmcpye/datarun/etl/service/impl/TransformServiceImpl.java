@@ -6,9 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.etl.dto.OutboxDto;
 import org.nmcpye.datarun.etl.model.TallCanonicalRow;
 import org.nmcpye.datarun.etl.service.TransformService;
+import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
-import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateElementRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.slf4j.Logger;
@@ -60,7 +60,7 @@ public class TransformServiceImpl implements TransformService {
         // Determine templateVersionUid (payload.formVersion preferred, fallback to outbox.topic)
         String templateVersionUid = Optional.ofNullable(root.path("formVersion").asText(null))
             .orElse(Optional.ofNullable(outbox.getTopic()).orElse(null));
-        String templateUid = templateVersionRepository.findByUid(templateVersionUid).map(TemplateVersion::getUid).orElse(null);
+        String templateUid = submissionRepository.findByUid(outbox.getSubmissionUid()).map(DataSubmission::getForm).orElseThrow();
         if (templateVersionUid == null) {
             log.debug("Transform: missing templateVersionUid for outboxId={}, skipping", outbox.getOutboxId());
             return result;

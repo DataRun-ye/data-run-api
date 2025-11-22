@@ -30,12 +30,12 @@ public class ScheduledOrchestratorRunner {
 
     @Scheduled(cron = "0 */20 * * * *")
     public void scheduledRun() {
-        log.info("Checking for pending outbox even...");
+        log.info("Checking for pending outbox events...");
         Integer countPending = jdbc.queryForObject(
             "SELECT COUNT(1) FROM outbox WHERE status = 'pending'",
             new MapSqlParameterSource(), Integer.class);
         if (countPending != null && countPending > 0) {
-            log.info("{} pending outbox even, starting orchestrator run ...", countPending);
+            log.info("{} pending outbox events, starting orchestrator run ...", countPending);
             Boolean acquired = jdbc.queryForObject(
                 "SELECT pg_try_advisory_lock(:key)",
                 new MapSqlParameterSource("key", ADVISORY_LOCK_KEY),

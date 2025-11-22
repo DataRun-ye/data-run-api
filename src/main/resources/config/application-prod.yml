@@ -117,7 +117,7 @@ datarun:
 outbox:
   relay:
     poll-interval-ms: 10000   # polling delay between polls (ms)
-    batch-size: 500           # how many to claim per poll
+    batch-size: 50           # how many to claim per poll
     worker-threads: 6        # number of concurrent worker threads
     max-attempts: 10
 

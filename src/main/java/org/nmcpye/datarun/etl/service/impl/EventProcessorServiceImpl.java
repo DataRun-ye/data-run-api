@@ -102,7 +102,7 @@ public class EventProcessorServiceImpl implements EventProcessorService {
                 if (r.getSubmissionCreationTime() == null) r.setSubmissionCreationTime(outbox.getCreatedAt());
                 if (r.getTemplateVersionUid() == null) r.setTemplateVersionUid(outbox.getTopic());
                 if (r.getTemplateUid() == null) r.setTemplateUid(templateVersionRepository.findByUid(outbox.getTopic())
-                    .map(TemplateVersion::getUid).orElse(null));
+                    .map(TemplateVersion::getTemplateUid).orElse(null));
             }
 
             // idempotent upsert: unique constraint on instance_key + canonical_element_uid prevents duplicates
