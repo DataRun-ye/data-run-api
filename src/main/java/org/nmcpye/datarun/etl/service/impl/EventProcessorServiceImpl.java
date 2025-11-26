@@ -1,15 +1,17 @@
 package org.nmcpye.datarun.etl.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.etl.dto.OutboxDto;
+import org.nmcpye.datarun.etl.mapper.DataSubmissionMapper;
 import org.nmcpye.datarun.etl.model.TallCanonicalRow;
 import org.nmcpye.datarun.etl.repository.TallCanonicalJdbcRepository;
 import org.nmcpye.datarun.etl.service.EventProcessorService;
 import org.nmcpye.datarun.etl.service.OutboxProcessingService;
-import org.nmcpye.datarun.etl.service.TransformService;
 import org.nmcpye.datarun.etl.util.InstanceKeyUtil;
-import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
-import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
+import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateElementRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -36,11 +38,13 @@ public class EventProcessorServiceImpl implements EventProcessorService {
 
     private static final Logger log = LoggerFactory.getLogger(EventProcessorServiceImpl.class);
 
-    private final TransformService transformService;
+    private final DataSubmissionRepository submissionRepository;
+    private final TransformServiceRobust transformServiceRobust;
     private final TallCanonicalJdbcRepository tallRepo;
     private final OutboxProcessingService outboxProcessingService;
     private final PlatformTransactionManager txManager;
-    private final TemplateVersionRepository templateVersionRepository;
+    private final TemplateElementRepository templateElementRepository;
+    private final DataSubmissionMapper dataSubmissionMapper;
 
     /**
      * Process a single outbox event.
@@ -59,6 +63,11 @@ public class EventProcessorServiceImpl implements EventProcessorService {
 
         final Long outboxId = outbox.getOutboxId();
         final String eventType = outbox.getEventType() == null ? "SAVE" : outbox.getEventType().toUpperCase();
+        final var submission = submissionRepository.findByUid(outbox.getSubmissionUid())
+            .orElseThrow(() -> new IllegalQueryException("Submission" + outbox.getSubmissionUid()
+                + "of outbox event: " + outbox.getOutboxId()));
+
+//        final SubmissionContext submissionContext = dataSubmissionMapper.toDto(submission);
 
         try {
             if ("DELETE".equals(eventType)) {
@@ -72,43 +81,46 @@ public class EventProcessorServiceImpl implements EventProcessorService {
                 return;
             }
 
-            // SAVE / UPDATE / REPLACE / BACKFILL -> mapping + upsert
-            List<TallCanonicalRow> rows = transformService.transform(outbox);
-            log.debug("Transform produced {} rows for outboxId={}, submission_uid={}", rows == null ? 0 : rows.size(), outbox.getOutboxId(), outbox.getSubmissionUid());
-            if (rows != null && !rows.isEmpty()) {
-                // print first sample to inspect instance_key / lengths (avoid printing huge JSONs)
-                TallCanonicalRow sample = rows.get(0);
-                log.debug("Sample row (first): canonical={}, instanceKey={}, elementPathLen={}, valueTextLen={}",
-                    sample.getCanonicalElementId(),
-                    sample.getRepeatInstanceId() != null ? sample.getRepeatInstanceId() : sample.getSubmissionUid(),
-                    sample.getElementPath() == null ? 0 : sample.getElementPath().length(),
-                    sample.getValueText() == null ? 0 : sample.getValueText().length());
-            }
+            JsonNode payload = submission.getFormData();
+            String templateUid = submission.getForm();
+            String templateVersionUid = submission.getFormVersion();
+            var templateElements = templateElementRepository.findByTemplateVersionUid(templateVersionUid);
 
-            if (rows == null || rows.isEmpty()) {
+            // SAVE / UPDATE / REPLACE / BACKFILL -> mapping + upsert
+            List<TallCanonicalRow> robustRows = transformServiceRobust.transform(payload,
+                templateElements, false);
+
+            log.debug("Transform produced {} rows for outboxId={}, submission_uid={}", robustRows == null ? 0 :
+                robustRows.size(), outbox.getOutboxId(), outbox.getSubmissionUid());
+
+            if (robustRows == null || robustRows.isEmpty()) {
                 // nothing to persist -> still a successful processing
                 outboxProcessingService.recordSuccess(etlRunId, outbox);
                 return;
             }
 
             // ensure provenance fields filled before persisting
-            for (TallCanonicalRow r : rows) {
-                if (r.getIngestId() == null) r.setIngestId(ingestId);
-                if (r.getOutboxId() == null) r.setOutboxId(outboxId);
-                if (r.getSubmissionId() == null) r.setSubmissionId(outbox.getSubmissionId());
-                if (r.getSubmissionSerialNumber() == null)
-                    r.setSubmissionSerialNumber(outbox.getSubmissionSerialNumber());
-                if (r.getSubmissionUid() == null) r.setSubmissionUid(outbox.getSubmissionUid());
-                if (r.getSubmissionCreationTime() == null) r.setSubmissionCreationTime(outbox.getCreatedAt());
-                if (r.getTemplateVersionUid() == null) r.setTemplateVersionUid(outbox.getTopic());
-                if (r.getTemplateUid() == null) r.setTemplateUid(templateVersionRepository.findByUid(outbox.getTopic())
-                    .map(TemplateVersion::getTemplateUid).orElse(null));
+            for (TallCanonicalRow r : robustRows) {
+                r.setIngestId(ingestId);
+                r.setOutboxId(outboxId);
+                r.setSubmissionSerialNumber(outbox.getSubmissionSerialNumber());
+                r.setSubmissionId(submission.getId());
+                r.setSubmissionUid(submission.getUid());
+                r.setSubmissionCreationTime(submission.getCreatedDate());
+                r.setSubmissionStartTime(submission.getStartEntryTime());
+                r.setTemplateUid(submission.getForm());
+                r.setTemplateVersionUid(submission.getFormVersion());
+                r.setActivity(submission.getActivity());
+                r.setAssignment(submission.getAssignment());
+                r.setOrgUnit(submission.getOrgUnit());
+                r.setTeam(submission.getTeam());
+                r.setIsDeleted(Boolean.FALSE);
             }
 
             // idempotent upsert: unique constraint on instance_key + canonical_element_uid prevents duplicates
-            tallRepo.upsertBatch(rows);
+            tallRepo.upsertBatch(robustRows);
 
-            markDeleted(rows, outbox);
+//            markDeleted(robustRows, outbox);
             // on success, record success (updates outbox and run counters)
             outboxProcessingService.recordSuccess(etlRunId, outbox);
         } catch (Exception ex) {
