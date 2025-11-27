@@ -7,6 +7,7 @@ import org.ehcache.jsr107.Eh107Configuration;
 import org.hibernate.cache.jcache.ConfigSettings;
 import org.nmcpye.datarun.analytics.metadata.MetadataServiceImpl;
 import org.nmcpye.datarun.caching.UserKeyGenerator;
+import org.nmcpye.datarun.etl.service.impl.RefResolutionService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.auditing.EntityAuditEvent;
@@ -164,6 +165,7 @@ public class CacheConfiguration {
             createCache(cm, TemplateVersion.class.getName());
 
             createCache(cm, org.nmcpye.datarun.jpa.datasubmission.DataSubmission.class.getName());
+            createCache(cm, RefResolutionService.REF_RESOLUTION_CACHE_NAME);
         };
     }
 

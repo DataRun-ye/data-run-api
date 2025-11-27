@@ -3,15 +3,20 @@ package org.nmcpye.datarun.etl.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.etl.dto.CanonicalElementAnchorDto;
 import org.nmcpye.datarun.etl.dto.OutboxDto;
 import org.nmcpye.datarun.etl.mapper.DataSubmissionMapper;
+import org.nmcpye.datarun.etl.model.SubmissionContext;
 import org.nmcpye.datarun.etl.model.TallCanonicalRow;
+import org.nmcpye.datarun.etl.model.TemplateContext;
+import org.nmcpye.datarun.etl.repository.CanonicalAnchorJdbcRepository;
 import org.nmcpye.datarun.etl.repository.TallCanonicalJdbcRepository;
 import org.nmcpye.datarun.etl.service.EventProcessorService;
 import org.nmcpye.datarun.etl.service.OutboxProcessingService;
 import org.nmcpye.datarun.etl.util.InstanceKeyUtil;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
-import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateElementRepository;
+import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
+import org.nmcpye.datarun.jpa.datatemplate.repository.CanonicalElementRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -22,6 +27,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Event processor that applies the semantics for outbox event types (SAVE/UPDATE/DELETE/BACKFILL).
@@ -39,12 +46,13 @@ public class EventProcessorServiceImpl implements EventProcessorService {
     private static final Logger log = LoggerFactory.getLogger(EventProcessorServiceImpl.class);
 
     private final DataSubmissionRepository submissionRepository;
-    private final TransformServiceRobust transformServiceRobust;
+    private final TransformServiceV2 transformServiceRobust;
     private final TallCanonicalJdbcRepository tallRepo;
     private final OutboxProcessingService outboxProcessingService;
     private final PlatformTransactionManager txManager;
-    private final TemplateElementRepository templateElementRepository;
     private final DataSubmissionMapper dataSubmissionMapper;
+    private final CanonicalAnchorJdbcRepository anchorRepository;
+    private final CanonicalElementRepository canonicalElementRepository;
 
     /**
      * Process a single outbox event.
@@ -63,12 +71,6 @@ public class EventProcessorServiceImpl implements EventProcessorService {
 
         final Long outboxId = outbox.getOutboxId();
         final String eventType = outbox.getEventType() == null ? "SAVE" : outbox.getEventType().toUpperCase();
-        final var submission = submissionRepository.findByUid(outbox.getSubmissionUid())
-            .orElseThrow(() -> new IllegalQueryException("Submission" + outbox.getSubmissionUid()
-                + "of outbox event: " + outbox.getOutboxId()));
-
-//        final SubmissionContext submissionContext = dataSubmissionMapper.toDto(submission);
-
         try {
             if ("DELETE".equals(eventType)) {
                 int deleted = tallRepo.deleteBySubmissionUid(outbox.getSubmissionUid());
@@ -81,14 +83,36 @@ public class EventProcessorServiceImpl implements EventProcessorService {
                 return;
             }
 
+            final var submission = submissionRepository.findByUid(outbox.getSubmissionUid())
+                .orElseThrow(() -> new IllegalQueryException("Submission" + outbox.getSubmissionUid()
+                    + "of outbox event: " + outbox.getOutboxId()));
+
             JsonNode payload = submission.getFormData();
-            String templateUid = submission.getForm();
-            String templateVersionUid = submission.getFormVersion();
-            var templateElements = templateElementRepository.findByTemplateVersionUid(templateVersionUid);
+
+            final SubmissionContext submissionContext = dataSubmissionMapper.toDto(submission);
+
+            // 3) load CE metadata for templateVersionUid and index by canonical_element_id
+            // List<CanonicalElement> ces = canonicalElementRepository.findByTemplateUid(templateVersionUid);
+            var elements = canonicalElementRepository.findByTemplateUid(submissionContext.getTemplateUid()).stream()
+                .collect(Collectors.toMap(CanonicalElement::getId, Function.identity()));
+            Set<String> uids = elements.keySet();
+            Map<String, CanonicalElementAnchorDto> anchors = anchorRepository.findByCanonicalElementIds(uids);
+            TemplateContext templateContext = TemplateContext.builder().templateUid(submissionContext.getTemplateUid())
+                .canonicalElementsMap(elements)
+                .anchorsMap(anchors)
+                .build();
+            //
+
+//            // 1) upsert submission_keys (seed root)
+//            submissionKeysService.upsert(submissionContext.getSubmissionUid(), submissionContext.getSubmissionSerial(),
+//                submissionContext.getStatus() == null ? null : submissionContext.getStatus().name(),
+//                submissionContext.getSubmissionId(), submissionContext.getAssignmentUid(),
+//                submissionContext.getActivityUid(), submissionContext.getOrgUnitUid(), submissionContext.getTeamUid(),
+//                submissionContext.getTemplateUid(), Instant.now());
 
             // SAVE / UPDATE / REPLACE / BACKFILL -> mapping + upsert
             List<TallCanonicalRow> robustRows = transformServiceRobust.transform(payload,
-                templateElements, false);
+                false, submissionContext, templateContext);
 
             log.debug("Transform produced {} rows for outboxId={}, submission_uid={}", robustRows == null ? 0 :
                 robustRows.size(), outbox.getOutboxId(), outbox.getSubmissionUid());
@@ -103,24 +127,25 @@ public class EventProcessorServiceImpl implements EventProcessorService {
             for (TallCanonicalRow r : robustRows) {
                 r.setIngestId(ingestId);
                 r.setOutboxId(outboxId);
-                r.setSubmissionSerialNumber(outbox.getSubmissionSerialNumber());
-                r.setSubmissionId(submission.getId());
-                r.setSubmissionUid(submission.getUid());
-                r.setSubmissionCreationTime(submission.getCreatedDate());
-                r.setSubmissionStartTime(submission.getStartEntryTime());
-                r.setTemplateUid(submission.getForm());
-                r.setTemplateVersionUid(submission.getFormVersion());
-                r.setActivity(submission.getActivity());
-                r.setAssignment(submission.getAssignment());
-                r.setOrgUnit(submission.getOrgUnit());
-                r.setTeam(submission.getTeam());
+                r.setSubmissionSerialNumber(submissionContext.getSubmissionSerial());
+                r.setSubmissionId(submissionContext.getSubmissionId());
+                r.setSubmissionUid(submissionContext.getSubmissionUid());
+                r.setSubmissionCreationTime(submissionContext.getSubmissionCreationTime());
+                r.setSubmissionStartTime(submissionContext.getStartTime());
+                r.setTemplateUid(submissionContext.getTemplateUid());
+                r.setTemplateVersionUid(submissionContext.getTemplateVersionUid());
+                r.setActivity(submissionContext.getActivityUid());
+                r.setAssignment(submissionContext.getAssignmentUid());
+                r.setOrgUnit(submissionContext.getOrgUnitUid());
+                r.setTeam(submissionContext.getTeamUid());
                 r.setIsDeleted(Boolean.FALSE);
             }
 
             // idempotent upsert: unique constraint on instance_key + canonical_element_uid prevents duplicates
             tallRepo.upsertBatch(robustRows);
-
-//            markDeleted(robustRows, outbox);
+            log.debug("About to upsert {} tall rows for submissionUid={}", robustRows.size(), submissionContext.getSubmissionUid());
+            tallRepo.upsertBatch(robustRows);
+            log.debug("tallRepo.upsertBatch affected={}", 0);
             // on success, record success (updates outbox and run counters)
             outboxProcessingService.recordSuccess(etlRunId, outbox);
         } catch (Exception ex) {

@@ -11,8 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
@@ -35,7 +33,6 @@ public class EtlOrchestrator {
     private final OutboxProcessingService outboxProcessingService;
     private final EventProcessorService eventProcessorService;
     private final TransactionTemplate txTemplate;
-    private final TransactionTemplate perOutboxTx;      // REQUIRES_NEW for per-outbox work
 
     public EtlOrchestrator(EtlRunService etlRunService,
                            OutboxClaimService outboxClaimService,
@@ -49,11 +46,6 @@ public class EtlOrchestrator {
 
         // default template (not used for per-outbox work anymore)
         this.txTemplate = new TransactionTemplate(txManager);
-
-        // create a dedicated TransactionTemplate for per-outbox processing that forces REQUIRES_NEW
-        DefaultTransactionDefinition def = new DefaultTransactionDefinition();
-        def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        this.perOutboxTx = new TransactionTemplate(txManager, def);
     }
 
     /**

@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,7 +19,7 @@ public class ScheduledOrchestratorRunner {
     // choose a stable big int lock key (unique per cluster)
     private static final long ADVISORY_LOCK_KEY = 123456789012345L;
 
-    @Value("${migration.size:500}")
+    @Value("${migration.size:100}")
     private int SCHEDULE_BATCH_SIZE;
 
     public ScheduledOrchestratorRunner(NamedParameterJdbcTemplate jdbc, EtlOrchestrator orchestrator) {
@@ -28,7 +27,7 @@ public class ScheduledOrchestratorRunner {
         this.orchestrator = orchestrator;
     }
 
-    @Scheduled(cron = "0 */20 * * * *")
+//    @Scheduled(cron = "0 */1 * * * *")
     public void scheduledRun() {
         log.info("Checking for pending outbox events...");
         Integer countPending = jdbc.queryForObject(

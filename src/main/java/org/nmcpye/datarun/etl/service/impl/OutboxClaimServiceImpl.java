@@ -2,7 +2,7 @@ package org.nmcpye.datarun.etl.service.impl;
 
 import org.nmcpye.datarun.etl.dto.OutboxDto;
 import org.nmcpye.datarun.etl.entity.EtlRun;
-import org.nmcpye.datarun.etl.repository.jdbc.OutboxJdbcRepository;
+import org.nmcpye.datarun.etl.repository.OutboxJdbcRepository;
 import org.nmcpye.datarun.etl.service.OutboxClaimService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -31,10 +31,25 @@ public class DefaultOrgUnitService extends DefaultJpaIdentifiableService<OrgUnit
     }
 
     @Override
+    public OrgUnit save(OrgUnit object) {
+        OrgUnit parent = object.getParent();
+        if (parent != null) {
+            parent = findParent(parent);
+
+            // persistent instance references an unsaved transient instance
+            parent.setPersisted(true);
+
+            object.setParent(parent);
+        }
+        return repository.save(object);
+    }
+
+    @Override
     public OrgUnit saveWithRelations(OrgUnit object) {
         OrgUnit parent = object.getParent();
         if (parent != null) {
             parent = findParent(parent);
+            parent.setPersisted(true);
             object.setParent(parent);
         }
         return save(object);
@@ -47,153 +62,10 @@ public class DefaultOrgUnitService extends DefaultJpaIdentifiableService<OrgUnit
                 .flatMap(repository::findByUid))
             .or(() -> Optional.ofNullable(parent.getCode())
                 .flatMap(repository::findByCode))
+//            .map(OrgUnit::setIsPersisted)
+//            .map(OrgUnit.class::cast)
             .orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
     }
-
-//    @Override
-//    public Page<OrgUnit> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
-////        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-////            return repository.findAll(pageable);
-////        }
-//
-//        String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow(
-//            new ErrorMessage(ErrorCode.E3004, getClass().getName()));
-//
-//        // Get user's direct teams
-//        List<Team> userDirectTeams = userRepository.findOneByLogin(currentUserLogin)
-//            .map(user -> user.getTeams().stream()
-//                .filter(team -> !team.getDisabled())
-//                .filter(team -> !team.getActivity().getDisabled())
-//                .collect(Collectors.toList()))
-//            .orElse(Collections.emptyList());
-//
-//        // Get user's indirect teams (managed teams of direct teams)
-//        List<Team> userIndirectTeams = userDirectTeams.stream()
-//            .flatMap(team -> team.getManagedTeams().stream())
-//            .filter(team -> !team.getDisabled())
-//            .filter(team -> !team.getActivity().getDisabled())
-//            .toList();
-//
-//         Combine direct and indirect teams
-//        List<Team> allUserTeams = new ArrayList<>(userDirectTeams);
-//        allUserTeams.addAll(userIndirectTeams);
-//
-//        // Get assignments for all teams
-//        List<Assignment> userAssignments = assignmentRepository.findAllByTeamIn(allUserTeams);
-//
-//        // Extract OrgUnits from assignments
-//        Set<OrgUnit> userOrgUnits = userAssignments.stream()
-//            .map(Assignment::getOrgUnit)
-//            .collect(Collectors.toSet());
-//
-//        // Add ancestors of the user's OrgUnits
-//        Set<OrgUnit> ancestors = userOrgUnits.stream()
-//            .flatMap(orgUnit -> orgUnit.getAncestors().stream())
-//            .collect(Collectors.toSet());
-//
-//        userOrgUnits.addAll(ancestors);
-//
-//        List<OrgUnit> sortedOrgUnits = new ArrayList<>(userOrgUnits);
-//        sortedOrgUnits.sort(Comparator.comparing(OrgUnit::getName));
-//
-//        if (pageable.isUnpaged()) {
-//            return new PageImpl<>(sortedOrgUnits);
-//        }
-//
-//        int start = (int) pageable.getOffset();
-//        int end = Math.min((start + pageable.getPageSize()), sortedOrgUnits.size());
-//        if (start > end) {
-//            return Page.empty(pageable);
-//        }
-//
-//        List<OrgUnit> sublist = sortedOrgUnits.subList(start, end);
-//        return new PageImpl<>(sublist, pageable, sortedOrgUnits.size());
-//    }
-
-//    @Override
-//    public Page<OrgUnit> findAllByUser(Specification<OrgUnit> spec, Pageable pageable) {
-//        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
-//            return repository.findAll(spec, pageable);
-//        }
-//
-//        String currentUserLogin = SecurityUtils.getCurrentUserLoginOrThrow(
-//            new ErrorMessage(ErrorCode.E3004, getClass().getName()));
-//
-//        // Get user's direct teams
-//        List<Team> userDirectTeams = userRepository.findOneByLogin(currentUserLogin)
-//            .map(user -> user.getTeams().stream()
-//                .filter(team -> !team.getDisabled())
-//                .filter(team -> !team.getActivity().getDisabled())
-//                .collect(Collectors.toList()))
-//            .orElse(Collections.emptyList());
-//
-//        // Get user's indirect teams (managed teams of direct teams)
-//        List<Team> userIndirectTeams = userDirectTeams.stream()
-//            .flatMap(team -> team.getManagedTeams().stream())
-//            .filter(team -> !team.getDisabled())
-//            .filter(team -> !team.getActivity().getDisabled())
-//            .toList();
-//
-//        // Combine direct and indirect teams
-//        List<Team> allUserTeams = new ArrayList<>(userDirectTeams);
-//        allUserTeams.addAll(userIndirectTeams);
-//
-//        // Get assignments for all teams
-//        List<Assignment> userAssignments = assignmentRepository.findAllByTeamIn(allUserTeams);
-//
-//        // Extract OrgUnits from assignments
-//        Set<OrgUnit> userOrgUnits = userAssignments.stream()
-//            .map(Assignment::getOrgUnit)
-//            .collect(Collectors.toSet());
-//
-//        // Add ancestors of the user's OrgUnits
-//        Set<OrgUnit> ancestors = userOrgUnits.stream()
-//            .flatMap(orgUnit -> orgUnit.getAncestors().stream())
-//            .collect(Collectors.toSet());
-//
-//        userOrgUnits.addAll(ancestors);
-//
-//        List<OrgUnit> sortedOrgUnits = new ArrayList<>(userOrgUnits);
-//        sortedOrgUnits.sort(Comparator.comparing(OrgUnit::getName));
-//
-//        if (pageable.isUnpaged()) {
-//            return new PageImpl<>(sortedOrgUnits);
-//        }
-//
-//        int start = (int) pageable.getOffset();
-//        int end = Math.min((start + pageable.getPageSize()), sortedOrgUnits.size());
-//        if (start > end) {
-//            return Page.empty(pageable);
-//        }
-//
-//        List<OrgUnit> sublist = sortedOrgUnits.subList(start, end);
-//        return new PageImpl<>(sublist, pageable, sortedOrgUnits.size());
-//    }
-
-//    @Override
-//    public Set<OrgUnit> getUserTeamsOrganisationUnits() {
-//        var userLogin = SecurityUtils.getCurrentUserLoginOrThrow(
-//            new ErrorMessage(ErrorCode.E3004, getClass().getName()));
-//
-//        var user = userRepository.findOneByLogin(userLogin);
-//        return user.stream().flatMap(u -> u.getTeams().stream())
-//            .filter(team -> !team.getDisabled())
-//            .filter(team -> !team.getActivity().getDisabled())
-//            .map(Team::getAssignments)
-//            .flatMap(Collection::stream)
-//            .map(Assignment::getOrgUnit)
-//            .collect(Collectors.toSet());
-//    }
-
-//    @Override
-//    public Set<OrgUnit> getUserManagedTeamsOrganisationUnits() {
-//        return Set.of();
-//    }
-//
-//    @Override
-//    public Set<OrgUnit> getAllUserAccessibleOrganisationUnits() {
-//        return Set.of();
-//    }
 
     /**
      * Updates the paths of organization units in the system.
@@ -203,17 +75,15 @@ public class DefaultOrgUnitService extends DefaultJpaIdentifiableService<OrgUnit
      */
     @Override
     @Transactional
-    @Scheduled(cron = "0 0 3 * * ?")
+    @Scheduled(cron = "0 0 4 * * ?")
     public void updatePaths() {
         maintenanceService.updateMissingPaths();
-//        repository.updatePaths();
     }
 
     @Override
     @Transactional
     public void forceUpdatePaths() {
         maintenanceService.forceRecomputePaths();
-//        repository.forceUpdatePaths();
     }
 
 }

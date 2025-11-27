@@ -27,7 +27,7 @@ public class DefaultDataElementService extends DefaultJpaIdentifiableService<Dat
 
     @Override
     public DataElement saveWithRelations(DataElement element) {
-        if (element.getValueType().isOptionsType() && element.getOptionSet() != null) {
+        if (element.getType().isOptionsType() && element.getOptionSet() != null) {
             final var optionSet = optionSetRepository.findByUid(element.getOptionSet().getUid())
                 .or(() -> optionSetRepository
                     .findById(element.getOptionSet()

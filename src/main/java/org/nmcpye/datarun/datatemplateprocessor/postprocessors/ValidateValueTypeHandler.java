@@ -22,7 +22,7 @@ public class ValidateValueTypeHandler
     @Override
     protected FormDataElementConf handle(FormDataElementConf element) {
         ValueType declared = element.getType();
-        ValueType actual   = source.getValueType();
+        ValueType actual   = source.getType();
 
         if (declared != null && !declared.isCompatible(actual)) {
             // E1105: element ID, declared type, actual type
