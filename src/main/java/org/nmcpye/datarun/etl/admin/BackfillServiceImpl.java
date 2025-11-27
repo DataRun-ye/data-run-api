@@ -3,7 +3,7 @@ package org.nmcpye.datarun.etl.admin;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.etl.repository.jdbc.OutboxJdbcRepository;
+import org.nmcpye.datarun.etl.repository.OutboxJdbcRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.springframework.stereotype.Service;

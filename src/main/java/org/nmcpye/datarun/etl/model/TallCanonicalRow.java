@@ -16,6 +16,10 @@ import java.util.UUID;
 public class TallCanonicalRow {
     private Long outboxId;
     private UUID ingestId;
+    private String orgUnit;
+    private String team;
+    private String activity;
+    private String assignment;
     private Long submissionSerialNumber;
     private String submissionId;
     private String submissionUid;
@@ -29,8 +33,11 @@ public class TallCanonicalRow {
     private String valueText;
     private BigDecimal valueNumber;
     private Boolean valueBool;
-    private String valueJson; // JSON string
+    private String valueJson;
+    private String valueRefUid;
+    private String valueRefType;
     private Instant submissionCreationTime;
+    private Instant submissionStartTime;
     private Instant createdAt;
     private Instant updatedAt;
     private Boolean isDeleted;

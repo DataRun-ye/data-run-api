@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.etl.repository.jdbc;
+package org.nmcpye.datarun.etl.repository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

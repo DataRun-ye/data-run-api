@@ -1,8 +1,11 @@
 package org.nmcpye.datarun.etl.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.nmcpye.datarun.etl.dto.OutboxDto;
 import org.nmcpye.datarun.etl.model.TallCanonicalRow;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -23,4 +26,7 @@ public interface TransformService {
      * - This method will eventually return a transform result object (e.g., rowsWritten).
      */
     List<TallCanonicalRow> transform(OutboxDto outbox) throws Exception;
+    default List<TallCanonicalRow> transformSimplified(JsonNode root, List<TemplateElement> elements) {
+        return Collections.emptyList();
+    }
 }

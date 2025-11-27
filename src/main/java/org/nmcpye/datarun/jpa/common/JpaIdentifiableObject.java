@@ -108,9 +108,8 @@ public abstract class JpaIdentifiableObject
         return !this.isPersisted;
     }
 
-    public JpaIdentifiableObject setIsPersisted() {
+    public void setIsPersisted() {
         this.isPersisted = true;
-        return this;
     }
 
     abstract protected void setUid(String uid);

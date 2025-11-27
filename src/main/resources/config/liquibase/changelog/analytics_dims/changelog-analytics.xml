@@ -196,13 +196,14 @@
                 row_number() OVER ()::bigint AS dim_team_id,
                 t.id AS team_id,
                 t.uid AS team_uid,
-                t.code, t.name AS name_default, t.activity_id, t.disabled,
+                t.code, t.name AS name_default, t.activity_id, act.uid AS activity_uid, t.disabled,
                 COALESCE(t.form_permissions, '[]'::jsonb) AS form_permissions_jsonb,
                 t.last_modified_by,
                 GREATEST(COALESCE(t.created_date, '1970-01-01'::timestamp),
                          COALESCE(t.last_modified_date, '1970-01-01'::timestamp)
                 ) AT TIME ZONE 'UTC' AS source_last_modified_at
-            FROM public.team t;
+            FROM public.team t
+                     LEFT JOIN public.activity act ON act.id = t.activity_id;
 
             CREATE MATERIALIZED VIEW analytics.dim_team_form_permission AS
             SELECT

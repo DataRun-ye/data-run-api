@@ -223,13 +223,12 @@ public class Normalizer {
                     String repeatId = getOrGenerateRepeatId(item, childPath,
                         idx, generateMissingRepeatUids);
 
-//                    // Resolve category for this new repeat item.
-//                    CategoryResolutionResult category = extractCategoryForItem(item, childPath, elementMap);
+                    // Resolve category for this new repeat item.
+                    CategoryResolutionResult category = extractCategoryForItem(item, childPath, elementMap);
 
                     // Create the RepeatInstance DTO, linking it to its parent via the context.
                     final var ri = RepeatInstance.builder()
                         .id(repeatId)
-//                        .teUid(etc.getUid())
                         .canonicalElementUid(etc.getCanonicalElementId())
                         .submissionUid(ns.getSubmissionUid())
                         .repeatPath(childPath)

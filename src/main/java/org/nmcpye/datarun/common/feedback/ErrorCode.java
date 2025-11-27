@@ -72,14 +72,7 @@ public enum ErrorCode {
     E4113("Team submitted the data must be present in submission: {0}"),
     E4114("your user is not part of the team {0} that created the submission: {1}"),
     E4115("updating submission's form version is not allowed: incoming `{0}` required: `{1}`"),
-//    E4116("{0} : Expected array for multi-value scope"),
-//    E4117("{0} : Expected single value"),
-//    E4118("{0} : Invalid reference {1} for {2}"),
-//    E4119("RequestBody is empty"),
-//    E4120("Inconsistent state: FormTemplate `{0}` have no Version in the system"),
-//    E4121("selected Choices {0} in multi select element do not exist"),
-//    E4199("System configuration Error: `{0}`"),
-
+    E4116("Submission {} not found"),
 
     /* Users */
     E6201("User account not found"),

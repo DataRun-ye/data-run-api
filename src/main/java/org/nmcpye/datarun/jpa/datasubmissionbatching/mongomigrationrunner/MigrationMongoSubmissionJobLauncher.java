@@ -6,7 +6,9 @@ import org.springframework.batch.core.*;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
@@ -24,8 +26,8 @@ import java.time.Instant;
  *
  * @author Hamza Assada 16/08/2025 (7amza.it@gmail.com)
  */
-//@Component
-//@Order(1500)
+@Component
+@Order(1500)
 @Slf4j
 @RequiredArgsConstructor
 public class MigrationMongoSubmissionJobLauncher implements CommandLineRunner {

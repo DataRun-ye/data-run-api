@@ -26,25 +26,32 @@ public class TallCanonicalJdbcRepository {
 
     private final NamedParameterJdbcTemplate jdbc;
     final String sql = ""
-        + "INSERT INTO tall_canonical ("
-        + "  instance_key, canonical_element_id, outbox_id, ingest_id,"
+        + "INSERT INTO analytics.tall_canonical ("
+        + "  instance_key, activity_uid, assignment_uid, org_unit_uid, team_uid,  canonical_element_id, outbox_id, ingest_id,"
         + "  submission_id, submission_uid, submission_serial_number, template_uid, template_version_uid,"
         + "  element_path, repeat_instance_id, parent_instance_id, repeat_index,"
-        + "  value_text, value_bool, value_number, value_json, submission_creation_time, created_at, updated_at, is_deleted"
+        + "  value_text, value_bool, value_number, value_json, value_ref_type, value_ref_uid, submission_creation_time, start_time, created_at, updated_at, is_deleted"
         + ") VALUES ("
-        + "  :instance_key, CAST(:canonical_element_id AS uuid), :outbox_id, :ingest_id,"
+        + "  :instance_key, :activity_uid, :assignment_uid, :org_unit_uid, :team_uid, CAST(:canonical_element_id AS uuid), :outbox_id, :ingest_id,"
         + "  :submission_id, :submission_uid, :submission_serial_number, :template_uid, :template_version_uid,"
         + "  :element_path, :repeat_instance_id, :parent_instance_id, :repeat_index,"
-        + "  :value_text, :value_bool, :value_number, cast(:value_json AS jsonb), :submission_creation_time,:created_at, :updated_at, :is_deleted"
+        + "  :value_text, :value_bool, :value_number, cast(:value_json AS jsonb), :value_ref_type, :value_ref_uid, :submission_creation_time, :start_time, :created_at, :updated_at, :is_deleted"
         + ") "
         + "ON CONFLICT (instance_key, canonical_element_id) DO UPDATE SET "
+        + "  activity_uid = EXCLUDED.activity_uid, "
+        + "  assignment_uid = EXCLUDED.assignment_uid, "
+        + "  org_unit_uid = EXCLUDED.org_unit_uid, "
+        + "  team_uid = EXCLUDED.team_uid, "
         + "  value_text = EXCLUDED.value_text, "
         + "  value_bool = EXCLUDED.value_bool, "
         + "  value_number = EXCLUDED.value_number, "
         + "  value_json = EXCLUDED.value_json, "
+        + "  value_ref_type = EXCLUDED.value_ref_type, "
+        + "  value_ref_uid = EXCLUDED.value_ref_uid, "
         + "  outbox_id = EXCLUDED.outbox_id, "
         + "  ingest_id = EXCLUDED.ingest_id, "
         + "  submission_creation_time = coalesce(EXCLUDED.submission_creation_time, tall_canonical.submission_creation_time),"
+        + "  start_time = coalesce(EXCLUDED.start_time, tall_canonical.start_time),"
         + "  updated_at = now(), "
         + "  is_deleted = EXCLUDED.is_deleted;";
 
@@ -74,6 +81,10 @@ public class TallCanonicalJdbcRepository {
             String instanceKey = InstanceKeyUtil.computeInstanceKey(r);
             MapSqlParameterSource p = new MapSqlParameterSource();
             p.addValue("instance_key", instanceKey);
+            p.addValue("activity_uid", r.getActivity());
+            p.addValue("org_unit_uid", r.getOrgUnit());
+            p.addValue("team_uid", r.getTeam());
+            p.addValue("assignment_uid", r.getAssignment());
             p.addValue("canonical_element_id", r.getCanonicalElementId());
             p.addValue("outbox_id", r.getOutboxId());
             p.addValue("ingest_id", r.getIngestId());
@@ -82,6 +93,8 @@ public class TallCanonicalJdbcRepository {
             p.addValue("submission_serial_number", r.getSubmissionSerialNumber());
             p.addValue("submission_creation_time",
                 r.getSubmissionCreationTime() != null ? Timestamp.from(r.getSubmissionCreationTime()) : null);
+            p.addValue("start_time",
+                r.getSubmissionCreationTime() != null ? Timestamp.from(r.getSubmissionStartTime()) : null);
             p.addValue("template_uid", r.getTemplateUid());
             p.addValue("template_version_uid", r.getTemplateVersionUid());
             p.addValue("element_path", r.getElementPath());
@@ -100,6 +113,9 @@ public class TallCanonicalJdbcRepository {
             p.addValue("created_at", r.getCreatedAt() != null ? Timestamp.from(r.getCreatedAt()) : Timestamp.from(Instant.now()));
             p.addValue("updated_at", r.getUpdatedAt() != null ? Timestamp.from(r.getUpdatedAt()) : Timestamp.from(Instant.now()));
             p.addValue("is_deleted", Boolean.TRUE.equals(r.getIsDeleted()));
+
+            p.addValue("value_ref_type", r.getValueRefType());
+            p.addValue("value_ref_uid", r.getValueRefUid());
 
             params[i] = p;
         }
@@ -139,20 +155,20 @@ public class TallCanonicalJdbcRepository {
      * <p>
      * It filters AND is_deleted = false to avoid touching already-deleted rows (cheap).
      *
-     * @param submissionUid       submissionUid
+     * @param submissionUid      submissionUid
      * @param canonicalElementId canonicalElementId
-     * @param keepKeys            keepKeys
+     * @param keepKeys           keepKeys
      * @return number of rows updated (marked deleted).
      */
     public int deleteNotIn(String submissionUid, String canonicalElementId, java.util.Collection<String> keepKeys) {
         final String sqlAll = ""
-            + "UPDATE tall_canonical SET is_deleted = true, updated_at = now() "
+            + "UPDATE analytics.tall_canonical SET is_deleted = true, updated_at = now() "
             + "WHERE submission_uid = :submissionUid "
             + "  AND canonical_element_id = CAST(:canonicalElementId AS uuid) "
             + "  AND is_deleted = false";
 
         final String sqlNotIn = ""
-            + "UPDATE tall_canonical SET is_deleted = true, updated_at = now() "
+            + "UPDATE analytics.tall_canonical SET is_deleted = true, updated_at = now() "
             + "WHERE submission_uid = :submissionUid "
             + "  AND canonical_element_id = CAST(:canonicalElementId AS uuid) "
             + "  AND instance_key NOT IN (:keepKeys) "
@@ -178,7 +194,7 @@ public class TallCanonicalJdbcRepository {
      * Note: deletes are destructive. For BACKFILL/REPLAY prefer idempotent upserts; explicit deletes are used for event_type=DELETE.
      */
     public int deleteByRepeatInstanceId(String repeatInstanceId) {
-        final String sql = "DELETE FROM tall_canonical WHERE repeat_instance_id = :repeatInstanceId";
+        final String sql = "DELETE FROM analytics.tall_canonical WHERE repeat_instance_id = :repeatInstanceId";
         MapSqlParameterSource params = new MapSqlParameterSource().addValue("repeatInstanceId", repeatInstanceId);
         return jdbc.update(sql, params);
     }
@@ -189,7 +205,7 @@ public class TallCanonicalJdbcRepository {
      * Returns number of rows deleted.
      */
     public int deleteBySubmissionUid(String submissionUid) {
-        final String sql = "DELETE FROM tall_canonical WHERE submission_uid = :submissionUid";
+        final String sql = "DELETE FROM analytics.tall_canonical WHERE submission_uid = :submissionUid";
         MapSqlParameterSource params = new MapSqlParameterSource().addValue("submissionUid", submissionUid);
         return jdbc.update(sql, params);
     }
