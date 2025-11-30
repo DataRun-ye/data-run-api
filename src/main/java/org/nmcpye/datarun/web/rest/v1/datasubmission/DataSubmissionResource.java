@@ -9,7 +9,6 @@ import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.repository.DeleteAccessDeniedException;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.SubmissionDataProcessor;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
@@ -52,18 +51,18 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     protected static final String V1 = ApiVersion.API_V1 + NAME;
     private final ObjectMapper objectMapper;
     final private DataSubmissionService submissionService;
-    private final SubmissionDataProcessor submissionDataProcessor;
     private final CompositeSubmissionValidator compositeValidator;
     private final SubmissionAccessValidator submissionAccessValidator;
     private final TemplateElementService templateElementService;
 
     public DataSubmissionResource(DataSubmissionService submissionService,
-                                  DataSubmissionRepository submissionRepository, ObjectMapper objectMapper,
-                                  SubmissionDataProcessor submissionDataProcessor, CompositeSubmissionValidator compositeValidator, SubmissionAccessValidator submissionAccessValidator, TemplateElementService templateElementService) {
+                                  DataSubmissionRepository submissionRepository,
+                                  ObjectMapper objectMapper, CompositeSubmissionValidator compositeValidator,
+                                  SubmissionAccessValidator submissionAccessValidator,
+                                  TemplateElementService templateElementService) {
         super(submissionService, submissionRepository);
         this.submissionService = submissionService;
         this.objectMapper = objectMapper;
-        this.submissionDataProcessor = submissionDataProcessor;
         this.compositeValidator = compositeValidator;
         this.submissionAccessValidator = submissionAccessValidator;
         this.templateElementService = templateElementService;

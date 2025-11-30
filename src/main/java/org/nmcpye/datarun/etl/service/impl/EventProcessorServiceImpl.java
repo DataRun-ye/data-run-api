@@ -142,7 +142,7 @@ public class EventProcessorServiceImpl implements EventProcessorService {
             }
 
             // idempotent upsert: unique constraint on instance_key + canonical_element_uid prevents duplicates
-            tallRepo.upsertBatch(robustRows);
+//            tallRepo.upsertBatch(robustRows);
             log.debug("About to upsert {} tall rows for submissionUid={}", robustRows.size(), submissionContext.getSubmissionUid());
             tallRepo.upsertBatch(robustRows);
             log.debug("tallRepo.upsertBatch affected={}", 0);

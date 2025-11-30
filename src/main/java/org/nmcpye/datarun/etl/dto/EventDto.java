@@ -51,7 +51,20 @@ public class EventDto {
     private Instant createdAt;
     private Instant updatedAt;
 
-    public static final RowMapper<EventDto> ROW_MAPPER = (rs, rowNum) -> EventDto.builder().eventUid(rs.getString("event_uid")).instanceKey(rs.getString("instance_key")).eventType(rs.getString("event_type")).submissionUid(rs.getString("submission_uid")).submissionId(rs.getString("submission_id")).assignmentUid(rs.getString("assignment_uid")).activityUid(rs.getString("activity_uid")).orgUnitUid(rs.getString("org_unit_uid")).teamUid(rs.getString("team_uid")).templateUid(rs.getString("template_uid")).submissionCreationTime(getInstant(rs, "submission_creation_time")).startTime(getInstant(rs, "start_time")).lastSeen(getInstant(rs, "last_seen"))
+    public static final RowMapper<EventDto> ROW_MAPPER = (rs, rowNum) -> EventDto.builder()
+        .eventUid(rs.getString("event_id"))
+        .instanceKey(rs.getString("instance_key"))
+        .eventType(rs.getString("event_type"))
+        .submissionUid(rs.getString("submission_uid"))
+        .submissionId(rs.getString("submission_id"))
+        .assignmentUid(rs.getString("assignment_uid"))
+        .activityUid(rs.getString("activity_uid"))
+        .orgUnitUid(rs.getString("org_unit_uid"))
+        .teamUid(rs.getString("team_uid"))
+        .templateUid(rs.getString("template_uid"))
+        .submissionCreationTime(getInstant(rs, "submission_creation_time"))
+        .startTime(getInstant(rs, "start_time"))
+        .lastSeen(getInstant(rs, "last_seen"))
 
         // anchor fields
         .anchorCeId(rs.getString("anchor_ce_id")).anchorRefUid(rs.getString("anchor_ref_uid")).anchorValueText(rs.getString("anchor_value_text")).anchorConfidence(rs.getBigDecimal("anchor_confidence")).anchorResolvedAt(getInstant(rs, "anchor_resolved_at"))

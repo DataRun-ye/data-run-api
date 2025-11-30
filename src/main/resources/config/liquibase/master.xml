@@ -46,15 +46,23 @@
     <include file="/config/liquibase/changelog/outbox-and-batch/2025-09-01-batch-submission-migration-errors-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/element-template/2024-11-09-canonical-element.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/element-template/2025-09-20-template-element-table.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/analytics_dims/changelog-analytics.xml" relativeToChangelogFile="false"/>
+
+    <include file="/config/liquibase/changelog/activity/20251129-activity.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/analytics_dims/20251129-analytics-translation-value-function.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/analytics_dims/20251129-analytics-dim-activity.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/analytics_dims/20251129-analytics-dim-data-template.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/analytics_dims/20251129-analytics-dim-option.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/analytics_dims/20251129-analytics-dim-option-set.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/analytics_dims/20251129-analytics-dim-team.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/analytics_dims/20251129-analytics-dim-org-unit.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/analytics_dims/20251129-analytics-dim-assignment.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/analytics_dims/changelog-mv-refresh-log.xml" relativeToChangelogFile="false"/>
-<!--    <include file="/config/liquibase/changelog/etl/2025-09-01-normalization-repeat-and-values-tables.xml" relativeToChangelogFile="false"/>-->
 
     <include file="/config/liquibase/changelog/etl/2025-11-15-outbox-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/2025-11-15-etl-run-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/2025-11-15-outbox-processing-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/2025-11-16-tall-canonical-table.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/analytics_dims/changelog-analytics-indexes.xml" relativeToChangelogFile="false"/>
+
 
     <include file="/config/liquibase/changelog/etl/2025-11-24-canonical-element-anchor-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/2025-11-24-ref-resolution-table.xml" relativeToChangelogFile="false"/>

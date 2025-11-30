@@ -131,7 +131,7 @@
 //                f.put("elementUid", fd.elementUid);
 //                f.put("fieldUid", fd.fieldUid);
 //                f.put("jsonPointer", fd.jsonPointer);
-//                f.put("valueType", fd.valueType);
+//                f.put("dataType", fd.dataType);
 //                f.put("optionSetUid", fd.optionSetUid);
 //                f.put("isMulti", fd.isMulti);
 //                f.put("explode", fd.explode);
@@ -183,7 +183,7 @@
 //                p.addValue("element_uid", fd.elementUid);
 //                p.addValue("field_uid", fd.fieldUid);
 //                p.addValue("json_pointer", fd.jsonPointer);
-//                p.addValue("value_type", fd.valueType);
+//                p.addValue("value_type", fd.dataType);
 //                p.addValue("option_set_uid", fd.optionSetUid);
 //                p.addValue("is_multi", fd.isMulti);
 //                p.addValue("explode", fd.explode);
@@ -310,7 +310,7 @@
 //        }
 //        fd.jsonPointer = jsonPointer;
 //        // value type
-//        fd.valueType = safe(etc.getValueType().name());
+//        fd.dataType = safe(etc.getValueType().name());
 //        fd.optionSetUid = safe(etc.getOptionSetUid());
 //        fd.isMulti = Boolean.TRUE.equals(etc.getIsMulti());
 //        fd.explode = false; // default; can be set true via analytics_intent or definition_json hints
@@ -379,7 +379,7 @@
 //        public String elementUid;
 //        public String fieldUid;
 //        public String jsonPointer;
-//        public String valueType;
+//        public String dataType;
 //        public String optionSetUid;
 //        public boolean isMulti;
 //        public boolean explode;

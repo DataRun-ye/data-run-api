@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,7 +28,7 @@ public class ScheduledOrchestratorRunner {
         this.orchestrator = orchestrator;
     }
 
-//    @Scheduled(cron = "0 */1 * * * *")
+    @Scheduled(cron = "0 */1 * * * *")
     public void scheduledRun() {
         log.info("Checking for pending outbox events...");
         Integer countPending = jdbc.queryForObject(

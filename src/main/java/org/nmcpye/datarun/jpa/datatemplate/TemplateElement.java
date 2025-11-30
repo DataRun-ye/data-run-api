@@ -50,8 +50,6 @@ import java.util.Set;
 @ToString(onlyExplicitlyIncluded = true)
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class TemplateElement {
-    public enum ElementKind {FIELD, REPEAT}
-
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "template_element_seq")
     @SequenceGenerator(name = "template_element_seq", sequenceName = "template_element_seq", allocationSize = 1)
@@ -60,11 +58,6 @@ public class TemplateElement {
     @Size(max = 11)
     @Column(name = "uid", length = 64, updatable = false, unique = true, nullable = false)
     protected String uid;
-
-//    @Enumerated(EnumType.STRING)
-//    @Column(name = "element_kind", length = 16, nullable = false)
-//    @Builder.Default
-//    private ElementKind elementKind = ElementKind.FIELD;
 
     /// uid of the [DataTemplate] containing this configuration.
     @NotNull
@@ -95,13 +88,6 @@ public class TemplateElement {
     @Column(name = "name", columnDefinition = "text", nullable = false)
     private String name;
 
-//    /// Value type of this element.
-//    /// For sections = null.
-//    /// Immutable and copied from [DataElement] for fast access only, single source of truth is still [DataElement]
-//    @Enumerated(EnumType.STRING)
-//    @Column(name = "value_type", updatable = false)
-//    protected ValueType valueType;
-
     /// Option set uid
     /// [#SelectMulti] field.
     /// Immutable and copied from [DataElement] for fast access, single source of truth is still [DataElement]
@@ -115,14 +101,6 @@ public class TemplateElement {
 
     @Column(name = "sort_order")
     private Integer sortOrder;
-
-
-//    /// Path built with element IDs (e.g. "household.children.<elementUid>").
-//    @NotNull
-//    @Column(name = "id_path", length = 3000, nullable = false)
-//    @ToString.Include
-//    @EqualsAndHashCode.Include
-//    private String idPath;
 
     /// Path built with element names (ends with name). Used during normalization.
     ///
@@ -165,13 +143,6 @@ public class TemplateElement {
     @Enumerated(EnumType.STRING)
     @Column(name = "semantic_type", length = 64)
     private SemanticType semanticType;
-
-//    // if it has a repeat ancestor
-//    @Column(name = "cardinality", length = 2)
-//    private String cardinality; // 1 | N
-
-//    @Column(name = "schema_fingerprint")
-//    private String schemaFingerprint;
 
     @Column(name = "canonical_element_id", nullable = false)
     private String canonicalElementId;

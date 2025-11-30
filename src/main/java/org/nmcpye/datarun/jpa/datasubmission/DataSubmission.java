@@ -97,12 +97,6 @@ public class DataSubmission extends JpaSoftDeleteObject {
     @Column(name = "assignment_uid")
     private String assignment;
 
-//    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-//    @JsonSerialize(contentAs = JpaIdentifiableObject.class)
-//    @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
-//    private Assignment assignment;
-
-
     @Column(name = "start_entry_time")
     private Instant startEntryTime;
 

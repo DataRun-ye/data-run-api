@@ -66,4 +66,6 @@ public interface DataSubmissionRepository
     Page<DataSubmission> findBySerialNumberGreaterThanAndFormInOrderBySerialNumberAsc(Long lastSerial, List<String> uids, Pageable pageable);
 
     List<DataSubmission> findBySerialNumberBetween(Long serialNumberAfter, Long serialNumberBefore);
+
+    Integer countBySerialNumberGreaterThan(Long serialNumberIsGreaterThan);
 }

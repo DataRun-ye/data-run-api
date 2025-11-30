@@ -3,7 +3,7 @@
 //import lombok.RequiredArgsConstructor;
 //import lombok.extern.slf4j.Slf4j;
 //import org.nmcpye.datarun.analytics.ElementMetadataService;
-//import org.nmcpye.datarun.analytics.domaintabletoolkit.model.ElementColumnDefinition;
+//import org.nmcpye.datarun.analytics.domaintabletoolkit.model.CeMeta;
 //import org.nmcpye.datarun.analytics.domaintabletoolkit.model.ProjectAnalyticsMetadata;
 //import org.springframework.stereotype.Service;
 //
@@ -32,7 +32,7 @@
 //        final var elements = metadata.elements();
 //        StringBuilder columnsBuilder = new StringBuilder();
 //        Set<String> projectElementIds = metadata.elements().stream()
-//                .map(ElementColumnDefinition::columnAlias).collect(Collectors.toSet());
+//            .map(CeMeta::columnAlias).collect(Collectors.toSet());
 //
 //        StringBuilder ddl = new StringBuilder();
 ////        ddl.append(String.format("CREATE MATERIALIZED VIEW %s AS\nSELECT\n", viewName));
@@ -92,48 +92,57 @@
 //            String valueColumn = mapValueTypeToColumn(element); // "Number" -> "ev.value_num"
 //
 //            columnsBuilder.append(String.format(
-//                    ",\n    MAX(CASE WHEN ev.element_id = '%s' THEN %s END) AS %s",
-//                    element.elementId(),
-//                    valueColumn,
-//                    columnName
+//                ",\n    MAX(CASE WHEN ev.element_id = '%s' THEN %s END) AS %s",
+//                element.elementId(),
+//                valueColumn,
+//                columnName
 //            ));
 //        }
 //
-//        String VIEW_NAME = VIEW_PREFIX + metadata.projectAlias();
+//        String VIEW_NAME = VIEW_PREFIX + metadata.activityAlias();
 //
 //        // Using a template for the static part of the query is best practice
 //        return String.format(
-//                """
-//                        CREATE MATERIALIZED VIEW %s AS
-//                        SELECT
-//                            sub.id AS submission_id,
-//                            sub.assignment_id,
-//                            sub.team_id,
-//                            sub.org_unit_id,
-//                            sub.activity_id,
-//                            ri.id AS repeat_instance_id
-//                            %s
-//                        FROM
-//                            data_submission sub
-//                            LEFT JOIN repeat_instance ri ON sub.id = ri.submission_id
-//                            LEFT JOIN element_data_value ev ON sub.id = ev.submission_id AND COALESCE(ri.id, '') = COALESCE(ev.repeat_instance_id, '')
-//                        WHERE
-//                            sub.deleted_at IS NULL
-//                        GROUP BY
-//                            sub.id,
-//                            ri.id;
-//                        """, VIEW_NAME, columnsBuilder.toString()
+//            """
+//                CREATE MATERIALIZED VIEW %s AS
+//                SELECT
+//                    sub.id AS submission_id,
+//                    sub.assignment_id,
+//                    sub.team_id,
+//                    sub.org_unit_id,
+//                    sub.activity_id,
+//                    ri.id AS repeat_instance_id
+//                    %s
+//                FROM
+//                    data_submission sub
+//                    LEFT JOIN repeat_instance ri ON sub.id = ri.submission_id
+//                    LEFT JOIN element_data_value ev ON sub.id = ev.submission_id AND COALESCE(ri.id, '') = COALESCE(ev.repeat_instance_id, '')
+//                WHERE
+//                    sub.deleted_at IS NULL
+//                GROUP BY
+//                    sub.id,
+//                    ri.id;
+//                """, VIEW_NAME, columnsBuilder.toString()
 //        );
 //    }
 //
-//    private String mapValueTypeToColumn(ElementColumnDefinition element) {
-//        return switch (element.valueType()) {
-//            case NUMBER -> "ev.value_num";
-//            case OPTION -> "ev.option_id";
-//            case DATE -> "ev.value_ts";
-//            case BOOLEAN -> "ev.value_bool";
-//            case CATEGORY -> "ev.category_id";
-//            case REFERENCE, TEXT -> "ev.value_text";
+//
+//    private String mapValueTypeToColumn(CeMeta element) {
+//        final var semanticType = element.semanticType();
+//        if (semanticType != null) {
+//            if (semanticType.isRef()) {
+//                return switch (element.semanticType()) {
+//                    case OrgUnit, Team, Activity, Option -> "ev.value_ref_uid";
+//                    case MultiSelectOption -> "ev.value_json";
+//                    default -> "ev.value_text";
+//                };
+//            }
+//
+//        }
+//
+//        return switch (element.dataType()) {
+//            case INTEGER, DECIMAL -> "ev.value_number";
+//            default -> "ev.value_text";
 //        };
 //    }
 //}

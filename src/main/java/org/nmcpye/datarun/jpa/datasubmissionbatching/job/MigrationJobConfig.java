@@ -2,19 +2,13 @@ package org.nmcpye.datarun.jpa.datasubmissionbatching.job;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.SubmissionDataProcessor;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.service.FormDataProcessor;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
 import org.nmcpye.datarun.jpa.datasubmissionbatching.service.MigrationSkipListener;
-import org.nmcpye.datarun.jpa.datasubmissionoutbox.OutboxEvent;
-import org.nmcpye.datarun.jpa.datasubmissionoutbox.OutboxEventStatus;
-import org.nmcpye.datarun.jpa.datasubmissionoutbox.repository.OutboxEventRepository;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -24,16 +18,13 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.support.CompositeItemWriter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -74,13 +65,13 @@ public class MigrationJobConfig {
                               PlatformTransactionManager transactionManager,
                               ItemReader<DataFormSubmission> mongoItemReader,
                               ItemProcessor<DataFormSubmission, DataSubmission> migrationProcessor,
-                              @Qualifier("migrationCompositeWriter") ItemWriter<DataSubmission> writer,
+                              @Qualifier("submissionWriter") ItemWriter<DataSubmission> submissionWriter,
                               MigrationSkipListener migrationSkipListener) {
         return new StepBuilder("mongoToPgStep", jobRepository)
             .<DataFormSubmission, DataSubmission>chunk(chunkSize, transactionManager)
             .reader(mongoItemReader)
             .processor(migrationProcessor)
-            .writer(writer)
+            .writer(submissionWriter)
             .faultTolerant()
             .skipLimit(Integer.MAX_VALUE)        // ensure the job doesn't fail on many skips
 //            .skipPolicy(migrationSkipPolicy())   // or use .skip(...) lines below
@@ -112,10 +103,8 @@ public class MigrationJobConfig {
 
     @Bean
     public ItemProcessor<DataFormSubmission, DataSubmission> migrationProcessor(
-        SubmissionDataProcessor submissionDataProcessor,
         FormDataProcessor formDataProcessor,
         CompositeSubmissionValidator compositeValidator,
-        TemplateElementService templateElementService,
         ObjectMapper objectMapper
     ) {
         return mongoDoc -> {
@@ -123,12 +112,6 @@ public class MigrationJobConfig {
             formDataProcessor.enrichFormData(ds, true);
             compositeValidator.validateAndEnrich(ds);
 
-//            ObjectNode root = (ObjectNode) (ds.getFormData() == null ? objectMapper.createObjectNode() : ds.getFormData().deepCopy());
-//            final var migrationRepeatIdGenerator = new MigrationRepeatIdGenerator(objectMapper, templateElementService.getTemplateElementMap(ds.getForm(), ds.getVersion()));
-//            int generated = migrationRepeatIdGenerator.generateMissingIdsForMigration(root, ds.getUid());
-//            if (generated > 0) {
-//                ds.setFormData(root);
-//            }
             return ds;
         };
     }
@@ -136,40 +119,6 @@ public class MigrationJobConfig {
     @Bean
     public ItemWriter<DataSubmission> submissionWriter(DataSubmissionRepository submissionRepository) {
         return submissionRepository::persistAllAndFlush;
-    }
-
-    @Bean
-    public ItemWriter<DataSubmission> outboxEventWriter(OutboxEventRepository outboxEventRepository, ObjectMapper objectMapper) {
-        return items -> {
-            if (items.isEmpty()) return;
-            List<OutboxEvent> outboxEvents = new ArrayList<>(items.size());
-            for (DataSubmission ds : items) {
-                OutboxEvent ev = new OutboxEvent();
-                ev.setAggregateType("DataSubmission");
-                ev.setAggregateId(ds.getId());
-                ev.setEventType("submission.saved");
-                ObjectNode p = objectMapper.createObjectNode();
-                p.put("submissionId", ds.getId());
-                p.put("submissionVersion", ds.getLockVersion());
-                ev.setPayload(p);
-                ev.setStatus(OutboxEventStatus.PENDING);
-                ev.setAttempts(0);
-                ev.setCreatedAt(Instant.now());
-                ev.setAvailableAt(Instant.now());
-                outboxEvents.add(ev);
-            }
-            outboxEventRepository.persistAllAndFlush(outboxEvents);
-        };
-    }
-
-    @Bean
-    public ItemWriter<DataSubmission> migrationCompositeWriter(
-        @Qualifier("submissionWriter") ItemWriter<DataSubmission> submissionWriter,
-        @Qualifier("outboxEventWriter") ItemWriter<DataSubmission> outboxEventWriter
-    ) {
-        CompositeItemWriter<DataSubmission> compositeWriter = new CompositeItemWriter<>();
-        compositeWriter.setDelegates(Arrays.asList(submissionWriter, outboxEventWriter));
-        return compositeWriter;
     }
 
     private DataSubmission mapMongoToJpa(DataFormSubmission mongo, ObjectMapper objectMapper) {
@@ -184,6 +133,8 @@ public class MigrationJobConfig {
         ds.setOrgUnit(mongo.getOrgUnit());
         ds.setOrgUnitCode(mongo.getOrgUnitCode());
         ds.setOrgUnitName(mongo.getOrgUnitName());
+        ds.setDeleted(mongo.getDeleted());
+        ds.setDeletedAt(mongo.getDeletedAt());
         ds.setActivity(mongo.getActivity());
         ds.setAssignment(mongo.getAssignment());
         ds.setStatus(mongo.getStatus());
@@ -193,7 +144,7 @@ public class MigrationJobConfig {
         ds.setSerialNumber(mongo.getSerialNumber());
         ds.setCreatedBy(mongo.getCreatedBy());
         ds.setCreatedDate(mongo.getCreatedDate());
-        if (mongo.getSerialNumber() != null) ds.setSerialNumber(mongo.getSerialNumber());
+//        if (mongo.getSerialNumber() != null) ds.setSerialNumber(mongo.getSerialNumber());
         return ds;
     }
 

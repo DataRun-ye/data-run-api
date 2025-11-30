@@ -1,4 +1,19 @@
-package org.nmcpye.datarun.analytics.domaintabletoolkit;//package org.nmcpye.datarun.analytics;
+//package org.nmcpye.datarun.analytics.domaintabletoolkit;//package org.nmcpye.datarun.analytics;
+//
+//import lombok.RequiredArgsConstructor;
+//import lombok.extern.slf4j.Slf4j;
+//import org.nmcpye.datarun.analytics.ElementMetadataService;
+//import org.nmcpye.datarun.analytics.domaintabletoolkit.model.CeMeta;
+//import org.nmcpye.datarun.analytics.domaintabletoolkit.model.ProjectAnalyticsMetadata;
+//import org.springframework.dao.EmptyResultDataAccessException;
+//import org.springframework.jdbc.core.JdbcTemplate;
+//import org.springframework.stereotype.Service;
+//
+//import java.util.Arrays;
+//import java.util.List;
+//import java.util.regex.Matcher;
+//import java.util.regex.Pattern;
+//import java.util.stream.Collectors;
 //
 ///**
 // * @author Hamza Assada - 7amza.it@gmail.com
@@ -6,8 +21,8 @@ package org.nmcpye.datarun.analytics.domaintabletoolkit;//package org.nmcpye.dat
 // */
 //@Service
 //@Slf4j
-//@AllArgsConstructor
-//public class WideViewManagerService {
+//@RequiredArgsConstructor
+//public class WideViewManagerServiceOld {
 //    private final ElementMetadataService elementMetadataService;
 //
 //    private final JdbcTemplate jdbcTemplate;
@@ -61,8 +76,8 @@ package org.nmcpye.datarun.analytics.domaintabletoolkit;//package org.nmcpye.dat
 //        // Step 2: Create any necessary indexes on the new view. This is also non-blocking.
 //        log.info("Step 2/4: Creating indexes on new view '{}'.", newViewName);
 //        jdbcTemplate.execute(String.format(
-//                "CREATE UNIQUE INDEX %s_unique_idx ON %s (submission_id, COALESCE(repeat_instance_id, ''));",
-//                newViewName, newViewName
+//            "CREATE UNIQUE INDEX %s_unique_idx ON %s (submission_id, COALESCE(repeat_instance_id, ''));",
+//            newViewName, newViewName
 //        ));
 //        // Add other performance indexes here...
 //        log.info("Indexes created successfully.");
@@ -72,14 +87,14 @@ package org.nmcpye.datarun.analytics.domaintabletoolkit;//package org.nmcpye.dat
 //        // The transaction ensures that the renames happen together or not at all.
 //        log.info("Step 3/4: Performing atomic swap within a transaction.");
 //        jdbcTemplate.execute(
-//                "BEGIN;" +
-//                        // Drop any leftover old view from a previously failed run
-//                        "DROP MATERIALIZED VIEW IF EXISTS " + oldViewName + ";" +
-//                        // Rename the current, active view to "_old"
-//                        "ALTER MATERIALIZED VIEW IF EXISTS " + VIEW_NAME + " RENAME TO " + oldViewName + ";" +
-//                        // Rename the new, fully prepared view to become the active one
-//                        "ALTER MATERIALIZED VIEW " + newViewName + " RENAME TO " + VIEW_NAME + ";" +
-//                        "COMMIT;"
+//            "BEGIN;" +
+//                // Drop any leftover old view from a previously failed run
+//                "DROP MATERIALIZED VIEW IF EXISTS " + oldViewName + ";" +
+//                // Rename the current, active view to "_old"
+//                "ALTER MATERIALIZED VIEW IF EXISTS " + VIEW_NAME + " RENAME TO " + oldViewName + ";" +
+//                // Rename the new, fully prepared view to become the active one
+//                "ALTER MATERIALIZED VIEW " + newViewName + " RENAME TO " + VIEW_NAME + ";" +
+//                "COMMIT;"
 //        );
 //        log.info("Atomic swap completed. New view is now live.");
 //
@@ -95,56 +110,62 @@ package org.nmcpye.datarun.analytics.domaintabletoolkit;//package org.nmcpye.dat
 //        jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY " + VIEW_NAME + ";");
 //    }
 //
-//    private String generateTargetDdl() {
-//        Set<PivotableElement> elements = elementMetadataService.getPivotableElements();
+//    private String generateTargetDdl(String activity) {
+//        ProjectAnalyticsMetadata ceMeta = elementMetadataService.getPivotableElements(activity);
 //        StringBuilder columnsBuilder = new StringBuilder();
 //
-//        for (PivotableElement element : elements) {
-//            String columnName = canonicalize(element.elementName());
+//        for (CeMeta element : ceMeta.elements()) {
+//            String columnName = canonicalize(element.columnAlias());
 //            String valueColumn = mapValueTypeToColumn(element); // "Number" -> "ev.value_num"
 //
 //            columnsBuilder.append(String.format(
-//                    ",\n    MAX(CASE WHEN ev.element_id = '%s' THEN %s END) AS %s",
-//                    element.elementId(),
-//                    valueColumn,
-//                    columnName
+//                ",\n    MAX(CASE WHEN ev.element_id = '%s' THEN %s END) AS %s",
+//                element.elementId(),
+//                valueColumn,
+//                columnName
 //            ));
 //        }
 //
 //        // Using a template for the static part of the query is best practice
 //        return String.format(
-//                """
-//                        CREATE MATERIALIZED VIEW %s AS
-//                        SELECT
-//                            sub.id AS submission_id,
-//                            sub.assignment_id,
-//                            sub.team_id,
-//                            sub.org_unit_id,
-//                            sub.activity_id,
-//                            ri.id AS repeat_instance_id
-//                            %s
-//                        FROM
-//                            data_submission sub
-//                            LEFT JOIN repeat_instance ri ON sub.id = ri.submission_id
-//                            LEFT JOIN element_data_value ev ON sub.id = ev.submission_id AND COALESCE(ri.id, '') = COALESCE(ev.repeat_instance_id, '')
-//                        WHERE
-//                            sub.deleted_at IS NULL
-//                        GROUP BY
-//                            sub.id,
-//                            ri.id;
-//                        """, VIEW_NAME, columnsBuilder.toString()
+//            """
+//                CREATE MATERIALIZED VIEW %s AS
+//                SELECT
+//                    ri.id AS instance_key
+//                    sub.id AS submission_uid,
+//                    sub.assignment_uid,
+//                    sub.team_uid,
+//                    sub.org_unit_uid,
+//                    sub.activity_uid,
+//                    %s
+//                FROM
+//                    data_submission sub
+//                    LEFT JOIN repeat_instance ri ON sub.id = ri.submission_id
+//                    LEFT JOIN element_data_value ev ON sub.id = ev.submission_id AND COALESCE(ri.id, '') = COALESCE(ev.repeat_instance_id, '')
+//                WHERE
+//                    sub.deleted_at IS NULL
+//                GROUP BY
+//                    sub.id,
+//                    ri.id;
+//                """, VIEW_NAME, columnsBuilder
 //        );
 //    }
 //
-//    private String mapValueTypeToColumn(PivotableElement element) {
+//    private String mapValueTypeToColumn(CeMeta element) {
+//        final var semanticType = element.semanticType();
+//        if (semanticType != null) {
+//            if (semanticType.isRef()) {
+//                return switch (element.semanticType()) {
+//                    case OrgUnit, Team, Activity, Option -> "ev.value_ref_uid";
+//                    case MultiSelectOption -> "ev.value_json";
+//                    default -> "ev.value_text";
+//                };
+//            }
+//
+//        }
+//
 //        return switch (element.dataType()) {
-//            case Number, Integer, Percentage, UnitInterval, IntegerPositive,
-//                 IntegerNegative, IntegerZeroOrPositive -> "ev.value_num";
-//            case SelectMulti -> "ev.option_id";
-//            case Date, DateTime, Time -> "ev.value_ts";
-//            case Boolean, TrueOnly -> "ev.value_bool";
-//            case Team, OrganisationUnit, Activity, SelectOne ->
-//                    element.isCategory() ? "ev.category_id" : "ev.value_text";
+//            case INTEGER, DECIMAL -> "ev.value_number";
 //            default -> "ev.value_text";
 //        };
 //    }
@@ -154,9 +175,9 @@ package org.nmcpye.datarun.analytics.domaintabletoolkit;//package org.nmcpye.dat
 //        // Query PostgreSQL's system catalog to get the current view definition
 //        try {
 //            return jdbcTemplate.queryForObject(
-//                    "SELECT definition FROM pg_matviews WHERE matviewname = ?",
-//                    String.class,
-//                    VIEW_NAME
+//                "SELECT definition FROM pg_matviews WHERE matviewname = ?",
+//                String.class,
+//                VIEW_NAME
 //            );
 //        } catch (EmptyResultDataAccessException e) {
 //            return null; // View doesn't exist
@@ -170,9 +191,9 @@ package org.nmcpye.datarun.analytics.domaintabletoolkit;//package org.nmcpye.dat
 //    private static String generateDdlSignature(String ddl) {
 //        // 1. Normalize the entire string to handle whitespace and casing
 //        String normalizedDdl = ddl.toLowerCase()
-//                .replaceAll("--.*", "")       // Remove SQL comments
-//                .replaceAll("\\s+", " ") // Collapse all whitespace to single spaces
-//                .trim();
+//            .replaceAll("--.*", "")       // Remove SQL comments
+//            .replaceAll("\\s+", " ") // Collapse all whitespace to single spaces
+//            .trim();
 //
 //        // 2. Extract the most volatile part: the column definitions
 //        // This regex captures the text between SELECT and FROM
@@ -188,9 +209,9 @@ package org.nmcpye.datarun.analytics.domaintabletoolkit;//package org.nmcpye.dat
 //
 //        // 3. Create an order-independent representation of the columns
 //        List<String> columns = Arrays.stream(columnPart.split(","))
-//                .map(String::trim)
-//                .sorted() // Sort alphabetically to make order irrelevant
-//                .collect(Collectors.toList());
+//            .map(String::trim)
+//            .sorted() // Sort alphabetically to make order irrelevant
+//            .collect(Collectors.toList());
 //
 //        // 4. Reconstruct the signature using the sorted columns and the rest of the DDL
 //        String stableColumnPart = String.join(",", columns);
@@ -229,16 +250,16 @@ package org.nmcpye.datarun.analytics.domaintabletoolkit;//package org.nmcpye.dat
 //        if (ddl == null) return "";
 //
 //        return ddl
-//                // Remove block comments /* ... */
-//                .replaceAll("/\\*.*?\\*/", "")
-//                // Remove line comments -- ...
-//                .replaceAll("--.*", "")
-//                // Convert to a single case
-//                .toLowerCase()
-//                // Replace all sequences of whitespace (spaces, tabs, newlines) with a single space
-//                .replaceAll("\\s+", " ")
-//                // Trim leading/trailing whitespace and remove trailing semicolon
-//                .trim()
-//                .replaceAll(";$", "");
+//            // Remove block comments /* ... */
+//            .replaceAll("/\\*.*?\\*/", "")
+//            // Remove line comments -- ...
+//            .replaceAll("--.*", "")
+//            // Convert to a single case
+//            .toLowerCase()
+//            // Replace all sequences of whitespace (spaces, tabs, newlines) with a single space
+//            .replaceAll("\\s+", " ")
+//            // Trim leading/trailing whitespace and remove trailing semicolon
+//            .trim()
+//            .replaceAll(";$", "");
 //    }
 //}

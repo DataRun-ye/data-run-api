@@ -28,7 +28,6 @@ public class AnalyticsFieldResolver {
      *
      * @param standardizedId The public-facing ID from the API contract (e.g., "core:team_uid").
      * @return The corresponding jOOQ Field from the pivot_grid_facts view.
-     * @throws InvalidRequestException if the field ID cannot be resolved.
      */
     public Field<?> resolveDimensionField(String standardizedId) {
         MappedQueryableElement field = MappedQueryableElement.from(standardizedId);

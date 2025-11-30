@@ -6,9 +6,7 @@ import org.springframework.batch.core.*;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
@@ -26,8 +24,8 @@ import java.time.Instant;
  *
  * @author Hamza Assada 16/08/2025 (7amza.it@gmail.com)
  */
-@Component
-@Order(1500)
+//@Component
+//@Order(1500)
 @Slf4j
 @RequiredArgsConstructor
 public class MigrationMongoSubmissionJobLauncher implements CommandLineRunner {
@@ -75,7 +73,6 @@ public class MigrationMongoSubmissionJobLauncher implements CommandLineRunner {
             while (execution.isRunning() || execution.getStatus().isRunning()) {
                 log.info("Migration job is running... stepStatuses={}", execution.getStepExecutions());
                 Thread.sleep(1000L); // small sleep; tune if you want longer intervals
-//                execution = execution.getJobExecution(); // refresh pointer if needed
             }
 
             log.info("Migration job finished with status: {}, exitCode: {}, exitMessage: {}",

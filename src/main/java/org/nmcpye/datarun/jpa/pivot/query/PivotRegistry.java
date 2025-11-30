@@ -90,11 +90,11 @@
 //    /**
 //     * map specific domain enum to pivot enum
 //     *
-//     * @param valueType domain value type
+//     * @param dataType domain value type
 //     * @return pivot value type
 //     */
-//    private PivotDataType mapValueTypeToPivotType(ValueType valueType) {
-//        return switch (valueType) {
+//    private PivotDataType mapValueTypeToPivotType(ValueType dataType) {
+//        return switch (dataType) {
 //            case Number, Integer, Percentage, UnitInterval, IntegerPositive,
 //                 IntegerNegative, IntegerZeroOrPositive -> PivotDataType.NUMERIC;
 //            case Boolean, TrueOnly -> PivotDataType.BOOLEAN;
@@ -292,11 +292,11 @@
 //    /**
 //     * map specific domain enum to pivot enum
 //     *
-//     * @param valueType domain value type
+//     * @param dataType domain value type
 //     * @return pivot value type
 //     */
-//    private PivotDataType mapValueTypeToPivotType(ValueType valueType) {
-//        return switch (valueType) {
+//    private PivotDataType mapValueTypeToPivotType(ValueType dataType) {
+//        return switch (dataType) {
 //            case Number, Integer, Percentage, UnitInterval, IntegerPositive,
 //                 IntegerNegative, IntegerZeroOrPositive -> PivotDataType.NUMERIC;
 //            case Boolean, TrueOnly -> PivotDataType.BOOLEAN;

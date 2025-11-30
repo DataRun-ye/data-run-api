@@ -148,7 +148,7 @@
 //                attr.setEntityRefType(etc.getValueType().name());
 //                break;
 //            default:
-//                throw new IllegalArgumentException("Unsupported dimension valueType: " + etc.getValueType());
+//                throw new IllegalArgumentException("Unsupported dimension dataType: " + etc.getValueType());
 //        }
 //
 //        return attr;

@@ -27,7 +27,7 @@ import java.util.stream.Stream;
  * <pre>
  * - QueryableElement.sourceColumn must map to the materialized view column (e.g., "te_uid", "value_num", "option_uid", "value_ts", "team_uid").
  * - QueryableElement.dataType uses the "value_num"/"option_uid"/"value_ts"/"value_bool"/"value_text" nomenclature.
- * - aggregationModes should be computed via AllowedAggregationsResolver based on DataElement.valueType.
+ * - aggregationModes should be computed via AllowedAggregationsResolver based on DataElement.dataType.
  * </pre>
  * <p>
  * - Cache the assembled PivotMetadataResponse with @Cacheable. Invalidation should occur when a template/version is updated/published.

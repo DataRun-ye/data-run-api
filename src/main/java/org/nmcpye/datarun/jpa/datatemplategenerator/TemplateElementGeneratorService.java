@@ -62,6 +62,7 @@ public class TemplateElementGeneratorService {
 
         // 1) Build repeat configs and their canonical elements (one per repeatable section)
         List<TemplateElement> out = new ArrayList<>(snap.fields.size() + snap.sectionByName.size());
+
         for (FormSectionConf section : snap.sectionByName.values()) {
             PathMetadata sectionMeta = resolver.resolveForSection(section);
             if (!Boolean.TRUE.equals(section.getRepeatable())) continue;
@@ -161,6 +162,7 @@ public class TemplateElementGeneratorService {
         }
 
         // 3) Prepare lists and upsert - canonical elements first
+        SafeNameUtils.ensureUniqueSafeNamesBasePreferred(canonicalByUid);
         List<CanonicalElement> canonicalList = new ArrayList<>(canonicalByUid.values());
 
         // canonical elements upsert (this will append json_data_paths via SQL OR merge logic)
@@ -198,6 +200,7 @@ public class TemplateElementGeneratorService {
      * @param parentRepeatUid the parent repeat canonical uid (may be null)
      */
     private static CanonicalElement createCanonicalElement(TemplateElement e, String canonicalUid, String parentRepeatUid) {
+
         CanonicalElement.CanonicalElementBuilder builder = CanonicalElement.builder()
             .id(canonicalUid)
             .templateUid(e.getTemplateUid())
@@ -218,10 +221,7 @@ public class TemplateElementGeneratorService {
             builder.jsonDataPaths(Set.of());
         }
 
-        // safeName requires canonical UID (stable) -> generate deterministically
-        // safeName should be deterministic and derived from canonicalUid and preferredName
-        String safeName = ColumnNameGenerator.toStableColumnName(canonicalUid, e.getName());
-        builder.safeName(safeName);
+        builder.safeName(e.getName());
 
         return builder.build();
     }

@@ -32,7 +32,7 @@ public class MigrateDeprecatedPropertiesHandler
             element.setValidationRule(elementValidationRule);
         }
 
-        if (source.getType() == ValueType.ScannedCode) {
+        if (source.getValueType() == ValueType.ScannedCode) {
             element
                 .setValueTypeRendering(Optional.ofNullable(element.getValueTypeRendering())
                     .orElse(ValueTypeRendering.BAR_CODE));

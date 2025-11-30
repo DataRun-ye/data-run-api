@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <!-- 007: dim_org_unit (hierarchy flattening) -->
+    <changeSet id="007-create-dim-org-unit" author="hamza">
+        <sql>
+      <![CDATA[
+            CREATE MATERIALIZED VIEW analytics.dim_org_unit AS
+      WITH base AS (
+      SELECT
+        ou.id,
+        ou.uid,
+        ou.code,
+        ou.name,
+        ou.level::int AS level_int,
+        ou.parent_id,
+        ou.path,
+        COALESCE(ou.translations, '[]'::jsonb) AS translations,
+        regexp_split_to_array(trim(BOTH ',' FROM coalesce(ou.path, '')), ',') AS path_array,
+        ou.last_modified_by,
+        GREATEST(COALESCE(ou.created_date, '1970-01-01'::timestamp),
+                         COALESCE(ou.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
+      FROM public.org_unit ou
+    )
+            SELECT
+                b.id,
+                b.uid AS org_unit_uid,
+                b.code,
+                b.name AS name_default,
+                b.level_int,
+                b.parent_id,
+                b.path AS path_text,
+                b.path_array,
+                (SELECT jsonb_agg(jsonb_build_object('uid', ou2.uid, 'name', ou2.name, 'level', ou2.level) ORDER BY ord)
+                 FROM unnest(b.path_array) WITH ORDINALITY AS t(uid, ord)
+                          JOIN public.org_unit ou2 ON ou2.uid = t.uid
+                ) AS ancestors,
+                (SELECT ou2.name FROM public.org_unit ou2 WHERE ou2.uid = (b.path_array[1]) LIMIT 1) AS level_0_name,
+        TRIM(COALESCE(analytics.translation_value(COALESCE(b.translations, '[]'::jsonb), 'en', 'name'), b.name)) AS name_en,
+        TRIM(COALESCE(analytics.translation_value(COALESCE(b.translations, '[]'::jsonb), 'ar', 'name'), b.name)) AS name_ar,
+        (SELECT ou2.name FROM public.org_unit ou2 WHERE ou2.uid = (b.path_array[2]) LIMIT 1) AS level_1_name,
+        (SELECT ou2.name FROM public.org_unit ou2 WHERE ou2.uid = (b.path_array[3]) LIMIT 1) AS level_2_name,
+        (SELECT ou2.name FROM public.org_unit ou2 WHERE ou2.uid = (b.path_array[4]) LIMIT 1) AS level_3_name,
+        (SELECT ou2.name FROM public.org_unit ou2 WHERE ou2.uid = (b.path_array[5]) LIMIT 1) AS level_4_name,
+        b.last_modified_by,
+        (b.source_last_modified_at::timestamp) AT TIME ZONE 'UTC' AS source_last_modified_at
+            FROM base b;
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP MATERIALIZED VIEW IF EXISTS analytics.dim_org_unit;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- 009: dim_org_unit_group + members -->
+    <changeSet id="009-create-dim-org-unit-group-and-members" author="hamza">
+        <sql>
+      <![CDATA[
+            CREATE MATERIALIZED VIEW analytics.dim_org_unit_group AS
+            SELECT
+                row_number() OVER ()::bigint AS dim_org_unit_group_id,
+                g.id AS group_id,
+                g.uid AS group_uid,
+                g.code,
+                g.name AS name_default,
+                TRIM(COALESCE(analytics.translation_value(COALESCE(g.translations, '[]'::jsonb), 'en', 'name'), g.name)) AS name_en,
+                TRIM(COALESCE(analytics.translation_value(COALESCE(g.translations, '[]'::jsonb), 'ar', 'name'), g.name)) AS name_ar,
+                COALESCE(g.properties_map::jsonb, '{}'::jsonb) AS properties_jsonb,
+                g.inactive,
+                g.last_modified_by,
+                GREATEST(COALESCE(g.created_date, '1970-01-01'::timestamp),
+                         COALESCE(g.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
+            FROM public.org_unit_group g;
+
+            CREATE MATERIALIZED VIEW analytics.dim_org_unit_group_member AS
+            SELECT
+                row_number() OVER ()::bigint AS id,
+                gm.group_id,
+                g.uid AS group_uid,
+                gm.org_unit_id,
+                ou.uid AS org_unit_uid,
+                GREATEST(COALESCE(g.created_date, '1970-01-01'::timestamp),
+                         COALESCE(g.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
+            FROM public.org_unit_group_members gm
+                     LEFT JOIN public.org_unit_group g ON g.id = gm.group_id
+                     LEFT JOIN public.org_unit ou ON ou.id = gm.org_unit_id;
+            ]]>
+    </sql>
+        <rollback>
+            <sql>
+                DROP MATERIALIZED VIEW IF EXISTS analytics.dim_org_unit_group_member;
+                DROP MATERIALIZED VIEW IF EXISTS analytics.dim_org_unit_group;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ===== dim_org_unit ===== -->
+    <changeSet id="idx-007-dim_org_unit-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_org_unit_slm
+                ON analytics.dim_org_unit (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-008-dim_org_unit-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_org_unit_uid_uniq
+                ON analytics.dim_org_unit (org_unit_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-009-dim_org_unit-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_org_unit_slm_uid
+                ON analytics.dim_org_unit (source_last_modified_at, org_unit_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ===== dim_org_unit_group ===== -->
+    <changeSet id="idx-010-dim_org_unit_group-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_group_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_org_unit_group_slm
+                ON analytics.dim_org_unit_group (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_group_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-011-dim_org_unit_group-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_group_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_org_unit_group_uid_uniq
+                ON analytics.dim_org_unit_group (group_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_group_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-012-dim_org_unit_group-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_group_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_org_unit_group_slm_uid
+                ON analytics.dim_org_unit_group (source_last_modified_at, group_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_group_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ===== dim_org_unit_group_member ===== -->
+    <changeSet id="idx-013-dim_org_unit_group_member-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_group_member_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_org_unit_group_member_slm
+                ON analytics.dim_org_unit_group_member (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_group_member_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-014-dim_org_unit_group_member-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_group_member_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_org_unit_group_member_uid_uniq
+                ON analytics.dim_org_unit_group_member (org_unit_uid, group_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_group_member_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-015-dim_org_unit_group_member-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_org_unit_group_member_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_org_unit_group_member_slm_uid
+                ON analytics.dim_org_unit_group_member (source_last_modified_at, org_unit_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_org_unit_group_member_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
