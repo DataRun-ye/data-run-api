@@ -6,10 +6,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Repository
 @RequiredArgsConstructor
@@ -22,10 +19,12 @@ public class CanonicalAnchorJdbcRepository {
      */
     public Map<String, CanonicalElementAnchorDto> findByCanonicalElementIds(Collection<String> ceIds) {
         if (ceIds == null || ceIds.isEmpty()) return Map.of();
+        var uuids = ceIds.stream().map(UUID::fromString).toList();
         String sql = "SELECT canonical_element_id, anchor_allowed, anchor_priority, updated_by, updated_at "
             + "FROM canonical_element_anchor "
             + "WHERE canonical_element_id = ANY(:ids)";
-        MapSqlParameterSource params = new MapSqlParameterSource().addValue("ids", ceIds.toArray(new String[0]));
+        // or IN (:ids::uuid[])
+        MapSqlParameterSource params = new MapSqlParameterSource().addValue("ids", uuids.toArray(new UUID[0]));
         List<CanonicalElementAnchorDto> rows = jdbc.query(sql, params, CanonicalElementAnchorDto.ROW_MAPPER);
         Map<String, CanonicalElementAnchorDto> map = new HashMap<>();
         for (CanonicalElementAnchorDto d : rows) map.put(d.getCanonicalElementId(), d);

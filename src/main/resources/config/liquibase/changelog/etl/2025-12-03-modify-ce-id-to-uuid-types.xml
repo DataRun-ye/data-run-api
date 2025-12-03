@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!-- drop FK then convert id in ce and te then recreate fk from te to ce   -->
+    <changeSet id="drop-fk-template-element-canonical-element-2025-12-04" author="you">
+        <dropForeignKeyConstraint baseTableName="template_element"
+                                  constraintName="FK_TEMPLATE_ELEMENT_ON_CANONICAL_ELEMENT"/>
+        <rollback>
+            <!-- NO-OP: recreated later by the addFK changeSet -->
+        </rollback>
+    </changeSet>
+
+    <changeSet id="convert-ce-id-to-uuid-direct-2025-12-03" author="you">
+        <!-- optional: ensure pgcrypto available if you plan to use gen_random_uuid later -->
+        <sql>CREATE EXTENSION IF NOT EXISTS "pgcrypto";</sql>
+        <!-- The ALTER uses USING to cast textual uuid format into uuid type -->
+        <sql>
+            ALTER TABLE canonical_element
+                ALTER COLUMN id SET DATA TYPE uuid USING id::uuid;
+        </sql>
+
+        <rollback>
+            <!-- rollback: convert back to text (if needed) -->
+            <sql>ALTER TABLE canonical_element ALTER COLUMN id SET DATA TYPE varchar(64) USING id::text;</sql>
+            <sql>ALTER TABLE canonical_element ALTER COLUMN id DROP DEFAULT;</sql>
+        </rollback>
+    </changeSet>
+    <changeSet id="convert-te-ce-id-to-uuid-direct-2025-12-03" author="you">
+        <!-- The ALTER uses USING to cast textual uuid format into uuid type -->
+        <sql>
+            ALTER TABLE template_element
+                ALTER COLUMN canonical_element_id SET DATA TYPE uuid USING canonical_element_id::uuid;
+        </sql>
+
+        <rollback>
+            <!-- rollback: convert back to text (if needed) -->
+            <sql>ALTER TABLE template_element ALTER COLUMN canonical_element_id SET DATA TYPE varchar(36) USING canonical_element_id::text;</sql>
+            <sql>ALTER TABLE template_element ALTER COLUMN canonical_element_id DROP DEFAULT;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="recreate-fk-template-element-canonical-element-2025-12-04" author="you">
+        <addForeignKeyConstraint baseTableName="template_element"
+                                 baseColumnNames="canonical_element_id"
+                                 referencedTableName="canonical_element"
+                                 referencedColumnNames="id"
+                                 constraintName="FK_TEMPLATE_ELEMENT_ON_CANONICAL_ELEMENT"/>
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="template_element"
+                                      constraintName="FK_TEMPLATE_ELEMENT_ON_CANONICAL_ELEMENT"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="convert-ce-anchor-id-to-uuid-direct-2025-12-03" author="you">
+        <!-- The ALTER uses USING to cast textual uuid format into uuid type -->
+        <sql>
+            ALTER TABLE canonical_element_anchor
+                ALTER COLUMN canonical_element_id SET DATA TYPE uuid USING canonical_element_id::uuid;
+        </sql>
+
+        <rollback>
+            <!-- rollback: convert back to text (if needed) -->
+            <sql>ALTER TABLE canonical_element_anchor ALTER COLUMN canonical_element_id SET DATA TYPE varchar(64) USING canonical_element_id::text;</sql>
+            <sql>ALTER TABLE canonical_element_anchor ALTER COLUMN canonical_element_id DROP DEFAULT;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="convert-event-anchor-ce-id-to-uuid-direct-2025-12-03" author="you">
+        <!-- The ALTER uses USING to cast textual uuid format into uuid type -->
+        <sql>
+            ALTER TABLE analytics.events
+                ALTER COLUMN anchor_ce_id SET DATA TYPE uuid USING anchor_ce_id::uuid;
+        </sql>
+
+        <rollback>
+            <!-- rollback: convert back to text (if needed) -->
+            <sql>ALTER TABLE analytics.events ALTER COLUMN anchor_ce_id SET DATA TYPE varchar(36) USING anchor_ce_id::text;</sql>
+            <sql>ALTER TABLE analytics.events ALTER COLUMN anchor_ce_id DROP DEFAULT;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

@@ -3,6 +3,7 @@ package org.nmcpye.datarun.etl.repository;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.etl.model.TallCanonicalRow;
 import org.nmcpye.datarun.etl.util.InstanceKeyUtil;
+import org.nmcpye.datarun.utils.UuidUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -32,7 +33,7 @@ public class TallCanonicalJdbcRepository {
         + "  element_path, repeat_instance_id, parent_instance_id, repeat_index,"
         + "  value_text, value_bool, value_number, value_json, value_ref_type, value_ref_uid, submission_creation_time, start_time, created_at, updated_at, is_deleted"
         + ") VALUES ("
-        + "  :instance_key, :activity_uid, :assignment_uid, :org_unit_uid, :team_uid, CAST(:canonical_element_id AS uuid), :outbox_id, :ingest_id,"
+        + "  :instance_key, :activity_uid, :assignment_uid, :org_unit_uid, :team_uid, :canonical_element_id, :outbox_id, :ingest_id,"
         + "  :submission_id, :submission_uid, :submission_serial_number, :template_uid, :template_version_uid,"
         + "  :element_path, :repeat_instance_id, :parent_instance_id, :repeat_index,"
         + "  :value_text, :value_bool, :value_number, cast(:value_json AS jsonb), :value_ref_type, :value_ref_uid, :submission_creation_time, :start_time, :created_at, :updated_at, :is_deleted"
@@ -85,7 +86,8 @@ public class TallCanonicalJdbcRepository {
             p.addValue("org_unit_uid", r.getOrgUnit());
             p.addValue("team_uid", r.getTeam());
             p.addValue("assignment_uid", r.getAssignment());
-            p.addValue("canonical_element_id", r.getCanonicalElementId());
+            var ceId = UuidUtils.toUuidOrNull(r.getCanonicalElementId());
+            p.addValue("canonical_element_id", ceId);
             p.addValue("outbox_id", r.getOutboxId());
             p.addValue("ingest_id", r.getIngestId());
             p.addValue("submission_id", r.getSubmissionId());
@@ -164,13 +166,13 @@ public class TallCanonicalJdbcRepository {
         final String sqlAll = ""
             + "UPDATE analytics.tall_canonical SET is_deleted = true, updated_at = now() "
             + "WHERE submission_uid = :submissionUid "
-            + "  AND canonical_element_id = CAST(:canonicalElementId AS uuid) "
+            + "  AND canonical_element_id = :canonicalElementId::uuid "
             + "  AND is_deleted = false";
 
         final String sqlNotIn = ""
             + "UPDATE analytics.tall_canonical SET is_deleted = true, updated_at = now() "
             + "WHERE submission_uid = :submissionUid "
-            + "  AND canonical_element_id = CAST(:canonicalElementId AS uuid) "
+            + "  AND canonical_element_id = :canonicalElementId::uuid "
             + "  AND instance_key NOT IN (:keepKeys) "
             + "  AND is_deleted = false";
 

@@ -2,6 +2,7 @@ package org.nmcpye.datarun.etl.repository;
 
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.etl.dto.EventDto;
+import org.nmcpye.datarun.utils.UuidUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -44,6 +45,7 @@ public class EventEntityJdbcRepository {
             + "anchor_resolved_at = CASE WHEN EXCLUDED.anchor_ref_uid IS NOT NULL AND (events.anchor_ref_uid IS NULL OR COALESCE(EXCLUDED.anchor_confidence,0) > COALESCE(events.anchor_confidence,0) OR (EXCLUDED.anchor_resolved_at IS NOT NULL AND (events.anchor_resolved_at IS NULL OR EXCLUDED.anchor_resolved_at > events.anchor_resolved_at))) THEN EXCLUDED.anchor_resolved_at ELSE events.anchor_resolved_at END, "
             + "updated_at = CURRENT_TIMESTAMP";
 
+        var ceId = UuidUtils.toUuidOrNull(eventDto.anchorCeId());
         MapSqlParameterSource p = new MapSqlParameterSource()
             .addValue("eventUid", eventDto.eventUid())
             .addValue("instanceKey", eventDto.instanceKey())
@@ -58,7 +60,7 @@ public class EventEntityJdbcRepository {
             .addValue("submissionCreationTime", getTimestamp(eventDto.submissionCreationTime()))
             .addValue("startTime", getTimestamp(eventDto.startTime()))
             .addValue("lastSeen", getTimestamp(eventDto.lastSeen()))
-            .addValue("anchorCeId", eventDto.anchorCeId())
+            .addValue("anchorCeId", ceId)
             .addValue("anchorRefUid", eventDto.anchorRefUid())
             .addValue("anchorValueText", eventDto.anchorValueText())
             .addValue("anchorConfidence", eventDto.anchorConfidence())

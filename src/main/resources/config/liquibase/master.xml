@@ -68,6 +68,7 @@
     <include file="/config/liquibase/changelog/etl/2025-11-24-ref-resolution-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/2025-11-24-submission-keys-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20251126-events-add.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/etl/2025-12-03-modify-ce-id-to-uuid-types.xml" relativeToChangelogFile="false"/>
 
 <!--    <include file="/config/liquibase/changelog/2025-09-15-pilot/2025-09-17-raw-repeat-payload-table.xml" relativeToChangelogFile="false"/>-->
 <!--    <include file="/config/liquibase/changelog/2025-09-15-pilot/2025-09-17-proj-supply-breeding.xml" relativeToChangelogFile="false"/>-->

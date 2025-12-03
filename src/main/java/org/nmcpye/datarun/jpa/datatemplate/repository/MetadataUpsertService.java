@@ -5,12 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
+import org.nmcpye.datarun.utils.UuidUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,7 +57,8 @@ public class MetadataUpsertService {
         List<SqlParameterSource> batch = new ArrayList<>(elems.size());
         for (CanonicalElement e : elems) {
             MapSqlParameterSource p = new MapSqlParameterSource();
-            p.addValue("id", e.getId());
+            var ceId = UuidUtils.toUuidOrNull(e.getId());
+            p.addValue("id", ceId, Types.OTHER);
             p.addValue("templateUid", e.getTemplateUid());
             p.addValue("preferredName", e.getPreferredName());
             p.addValue("dataType", e.getDataType() == null ? null : e.getDataType().name());
@@ -106,7 +109,8 @@ public class MetadataUpsertService {
             p.addValue("templateUid", e.getTemplateUid());
             p.addValue("templateVersionUid", e.getTemplateVersionUid());
             p.addValue("templateVersionNo", e.getTemplateVersionNo());
-            p.addValue("canonicalElementId", e.getCanonicalElementId());
+            var ceId = UuidUtils.toUuidOrNull(e.getCanonicalElementId());
+            p.addValue("canonicalElementId", ceId);
             p.addValue("jsonDataPath", e.getJsonDataPath());
             p.addValue("canonicalPath", e.getCanonicalPath());
             p.addValue("name", e.getName());
