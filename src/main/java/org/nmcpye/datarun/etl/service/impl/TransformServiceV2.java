@@ -5,9 +5,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.etl.dto.CanonicalElementAnchorDto;
 import org.nmcpye.datarun.etl.dto.EventDto;
+import org.nmcpye.datarun.etl.dto.RefTypeValue;
 import org.nmcpye.datarun.etl.model.SubmissionContext;
 import org.nmcpye.datarun.etl.model.TallCanonicalRow;
 import org.nmcpye.datarun.etl.model.TemplateContext;
+import org.nmcpye.datarun.etl.repository.RefTypeValueRepository;
 import org.nmcpye.datarun.etl.service.EventEntityService;
 import org.nmcpye.datarun.etl.service.SubmissionKeysService;
 import org.springframework.stereotype.Service;
@@ -27,7 +29,8 @@ import java.util.*;
 public class TransformServiceV2 {
 
     private final TransformServiceRobust baseTransform;
-    private final RefResolutionService refResolutionService;
+    private final RefTypeValueResolutionService refTypeValueResolutionService;
+    private final RefTypeValueRepository refTypeValueRepository;
     private final EventEntityService eventEntityService;
     private final SubmissionKeysService submissionKeysService;
 
@@ -113,7 +116,7 @@ public class TransformServiceV2 {
         Map<String, List<ResolutionCandidate>> candidatesByInstance = new HashMap<>();
         // Also collect all observed instance keys so we create events even when no candidate exists
         Set<String> allInstanceKeys = new HashSet<>();
-
+        Set<RefTypeValue> refTypeValues = new HashSet<>();
         for (TallCanonicalRow r : rows) {
             // ensure provenance fields set on row if absent
             r.setSubmissionUid(submissionUid);
@@ -146,27 +149,35 @@ public class TransformServiceV2 {
                 semanticType.equalsIgnoreCase("team") ||
                 semanticType.equalsIgnoreCase("activity"))) {
 
+//                RefResolutionService.Resolution res = refResolutionService.resolve(
+//                    token, semanticType, optionSetUid, submissionContext.getActivityUid(), instanceKey);
+
+                RefTypeValue refTypeValue = refTypeValueResolutionService.resolve(r, semanticType, submissionContext.getActivityUid(),
+                    submissionContext.getTemplateUid(), submissionUid, instanceKey, optionSetUid,
+                    submissionContext.getStartTime());
                 // choose token from value_text first, else value_json
-                String token = r.getValueText();
-                if (token == null && r.getValueJson() != null) token = r.getValueJson();
+                String token = refTypeValue.getRawValue();
+                if (token == null && r.getValueJson() != null) {
+                    refTypeValue.setRawValue(r.getValueJson());
+                    refTypeValue.setRefType("MultiSelectOption");
+                }
 
-                RefResolutionService.Resolution res = refResolutionService.resolve(
-                    token, semanticType, optionSetUid, submissionContext.getActivityUid(), submissionUid);
-
-                // set on tall row (may be null)
-                r.setValueRefUid(res.resolvedUid());
+                refTypeValues.add(refTypeValue);
+                r.setValueRefUid(refTypeValue.getValueRefUid());
                 r.setValueRefType(semanticType);
 
                 // if anchor allowed, collect candidate (even if resolvedUid==null — we still want identity row)
                 if (anchorAllowed) {
                     ResolutionCandidate cand = new ResolutionCandidate(
-                        ceId, res.resolvedUid(), res.confidence(), res.resolvedAt(), token, anchorPriority
+                        ceId, refTypeValue.getValueRefUid(), refTypeValue.getValueRefUid() == null ? 0 : 1, Instant.now(),
+                        token, anchorPriority
                     );
                     candidatesByInstance.computeIfAbsent(instanceKey, k -> new ArrayList<>()).add(cand);
                 }
             }
         }
 
+        refTypeValueRepository.batchUpsert(refTypeValues);
         // For each observed instanceKey, pick best candidate if present, else create event with null anchors
         for (String instanceKey : allInstanceKeys) {
             List<ResolutionCandidate> list = candidatesByInstance.getOrDefault(instanceKey, Collections.emptyList());
@@ -203,6 +214,8 @@ public class TransformServiceV2 {
                     anchorCeId, anchorRefUid, anchorValueText,
                     anchorConfidence, anchorResolvedAt
                 );
+
+
                 log.debug("Event upserted: instanceKey={}, eventType={}, anchorRefUid={}", instanceKey, eventType, anchorRefUid);
             } catch (Exception ex) {
                 log.error("Failed to upsert event for instanceKey=" + instanceKey, ex);

@@ -24,7 +24,7 @@ logging:
             FilterChainProxy=TRACE:
     org.springframework.batch: INFO
 #    org.nmcpye.datarun.jpa.datasubmission.migration: DEBUG
-    org.nmcpye.datarun.etl: DEBUG
+    org.nmcpye.datarun.etl: INFO
     ROOT: DEBUG
 #    tech.jhipster: DEBUG
 #    org.hibernate.SQL: DEBUG
