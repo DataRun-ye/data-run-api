@@ -25,7 +25,7 @@ public class EventEntityService {
                        String orgUnitUid, String teamUid, String templateUid,
                        Instant submissionCreationTime, Instant startTime, Instant lastSeen,
                        String anchorCeId, String anchorRefUid, String anchorValueText,
-                       BigDecimal anchorConfidence, Instant anchorResolvedAt) {
+                       String anchorValueRefType, BigDecimal anchorConfidence, Instant anchorResolvedAt) {
 
         String uid = eventUid != null ? eventUid : CodeGenerator.nextUlid();
         eventRepo.upsertEventEntity(EventDto.builder()
@@ -45,6 +45,7 @@ public class EventEntityService {
             .anchorCeId(anchorCeId)
             .anchorRefUid(anchorRefUid)
             .anchorValueText(anchorValueText)
+            .anchorValueRefType(anchorValueRefType)
             .anchorConfidence(anchorConfidence)
             .anchorResolvedAt(anchorResolvedAt)
             .build());

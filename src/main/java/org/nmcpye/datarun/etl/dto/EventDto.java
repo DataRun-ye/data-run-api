@@ -37,6 +37,7 @@ public class EventDto {
     private String orgUnitUid;
     private String teamUid;
     private String templateUid;
+
     private Instant submissionCreationTime;
     private Instant startTime;
     private Instant lastSeen;
@@ -45,6 +46,7 @@ public class EventDto {
     private String anchorCeId;
     private String anchorRefUid;
     private String anchorValueText;
+    private String anchorValueRefType;
     private BigDecimal anchorConfidence;
     private Instant anchorResolvedAt;
 
@@ -67,7 +69,12 @@ public class EventDto {
         .lastSeen(getInstant(rs, "last_seen"))
 
         // anchor fields
-        .anchorCeId(rs.getString("anchor_ce_id")).anchorRefUid(rs.getString("anchor_ref_uid")).anchorValueText(rs.getString("anchor_value_text")).anchorConfidence(rs.getBigDecimal("anchor_confidence")).anchorResolvedAt(getInstant(rs, "anchor_resolved_at"))
+        .anchorCeId(rs.getString("anchor_ce_id"))
+        .anchorRefUid(rs.getString("anchor_ref_uid"))
+        .anchorValueText(rs.getString("anchor_value_text"))
+        .anchorConfidence(rs.getBigDecimal("anchor_confidence"))
+        .anchorResolvedAt(getInstant(rs, "anchor_resolved_at"))
+        .anchorValueRefType(rs.getString("anchor_value_ref_type"))
 
         .createdAt(getInstant(rs, "created_at")).updatedAt(getInstant(rs, "updated_at")).build();
 

@@ -12,6 +12,7 @@ import org.nmcpye.datarun.etl.model.TemplateContext;
 import org.nmcpye.datarun.etl.repository.RefTypeValueRepository;
 import org.nmcpye.datarun.etl.service.EventEntityService;
 import org.nmcpye.datarun.etl.service.SubmissionKeysService;
+import org.nmcpye.datarun.jpa.datatemplate.SemanticType;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -29,27 +30,25 @@ import java.util.*;
 public class TransformServiceV2 {
 
     private final TransformServiceRobust baseTransform;
+    private final RefResolutionService refResolutionService;
     private final RefTypeValueResolutionService refTypeValueResolutionService;
     private final RefTypeValueRepository refTypeValueRepository;
     private final EventEntityService eventEntityService;
     private final SubmissionKeysService submissionKeysService;
 
     public static class ResolutionCandidate {
-        public final String ceId;
-        public final String resolvedUid;
+        public final RefTypeValue refTypeValue;
+        //        public final String resolvedUid;
+//        public final String rawToken;
         public final double confidence;
         public final Instant resolvedAt;
-        public final String rawToken;
         public final int priority;
 
-        public ResolutionCandidate(String ceId, String resolvedUid,
-                                   double confidence, Instant resolvedAt,
-                                   String rawToken, int priority) {
-            this.ceId = ceId;
-            this.resolvedUid = resolvedUid;
+        public ResolutionCandidate(RefTypeValue refTypeValue,
+                                   double confidence, Instant resolvedAt, int priority) {
+            this.refTypeValue = refTypeValue;
             this.confidence = confidence;
             this.resolvedAt = resolvedAt;
-            this.rawToken = rawToken;
             this.priority = priority;
         }
     }
@@ -137,40 +136,43 @@ public class TransformServiceV2 {
             org.nmcpye.datarun.jpa.datatemplate.CanonicalElement ceMeta =
                 templateContext.canonicalElementsMap().get(ceId);
 
-            String semanticType = ceMeta == null || ceMeta.getSemanticType() == null ? null :
-                ceMeta.getSemanticType().name();
+            SemanticType semanticType = ceMeta == null || ceMeta.getSemanticType() == null ? null :
+                ceMeta.getSemanticType();
             String optionSetUid = ceMeta == null ? null : ceMeta.getOptionSetUid();
             boolean anchorAllowed = anchorDto != null && Boolean.TRUE.equals(anchorDto.getAnchorAllowed());
             int anchorPriority = anchorDto == null ? 100 : anchorDto.getAnchorPriority();
 
             // only resolve ref semantic types
-            if (semanticType != null && (semanticType.equalsIgnoreCase("option") ||
-                semanticType.equalsIgnoreCase("orgunit") ||
-                semanticType.equalsIgnoreCase("team") ||
-                semanticType.equalsIgnoreCase("activity"))) {
+            if (semanticType != null && semanticType.isRef()) {
+                r.setValueRefType(semanticType.name());
+                String token = r.getValueText();
 
 //                RefResolutionService.Resolution res = refResolutionService.resolve(
 //                    token, semanticType, optionSetUid, submissionContext.getActivityUid(), instanceKey);
 
-                RefTypeValue refTypeValue = refTypeValueResolutionService.resolve(r, semanticType, submissionContext.getActivityUid(),
+                RefTypeValue refTypeValue = refTypeValueResolutionService.resolve(r, semanticType.name(), submissionContext.getActivityUid(),
                     submissionContext.getTemplateUid(), submissionUid, instanceKey, optionSetUid,
                     submissionContext.getStartTime());
                 // choose token from value_text first, else value_json
-                String token = refTypeValue.getRawValue();
                 if (token == null && r.getValueJson() != null) {
+                    var refType = SemanticType.MultiSelectOption.name();
                     refTypeValue.setRawValue(r.getValueJson());
-                    refTypeValue.setRefType("MultiSelectOption");
+
+                    // misconfigured MultiSelectOption as Option
+                    r.setValueRefType(refType);
+
+                    refTypeValue.setRefType(refType);
                 }
 
                 refTypeValues.add(refTypeValue);
                 r.setValueRefUid(refTypeValue.getValueRefUid());
-                r.setValueRefType(semanticType);
+
 
                 // if anchor allowed, collect candidate (even if resolvedUid==null — we still want identity row)
                 if (anchorAllowed) {
                     ResolutionCandidate cand = new ResolutionCandidate(
-                        ceId, refTypeValue.getValueRefUid(), refTypeValue.getValueRefUid() == null ? 0 : 1, Instant.now(),
-                        token, anchorPriority
+                        refTypeValue, refTypeValue.getValueRefUid() == null ? 0 : 1, Instant.now(),
+                        anchorPriority
                     );
                     candidatesByInstance.computeIfAbsent(instanceKey, k -> new ArrayList<>()).add(cand);
                 }
@@ -187,7 +189,7 @@ public class TransformServiceV2 {
                 list.sort(Comparator.comparingInt((ResolutionCandidate c) -> c.priority)
                     .thenComparingDouble((ResolutionCandidate c) -> -c.confidence)
                     .thenComparing((ResolutionCandidate c) -> c.resolvedAt == null ? Instant.EPOCH : c.resolvedAt, Comparator.reverseOrder())
-                    .thenComparing(c -> c.ceId));
+                    .thenComparing(c -> c.refTypeValue.getCeId()));
                 best = list.get(0);
             }
 
@@ -197,9 +199,10 @@ public class TransformServiceV2 {
 
             Instant now = Instant.now();
 
-            String anchorCeId = best != null ? best.ceId : null;
-            String anchorRefUid = best != null ? best.resolvedUid : null;
-            String anchorValueText = best != null ? best.rawToken : null;
+            String anchorCeId = best != null ? best.refTypeValue.getCeId().toString() : null;
+            String anchorRefUid = best != null ? best.refTypeValue.getValueRefUid() : null;
+            String anchorRefType = best != null ? best.refTypeValue.getRefType() : null;
+            String anchorValueText = best != null ? best.refTypeValue.getRawValue() : null;
             BigDecimal anchorConfidence = best != null ? BigDecimal.valueOf(best.confidence) : null;
             Instant anchorResolvedAt = best != null ? best.resolvedAt : null;
 
@@ -212,7 +215,7 @@ public class TransformServiceV2 {
                     orgUnitUid, teamUid, templateUid,
                     submissionCreationTime, startTime, now,
                     anchorCeId, anchorRefUid, anchorValueText,
-                    anchorConfidence, anchorResolvedAt
+                    anchorRefType, anchorConfidence, anchorResolvedAt
                 );
 
 

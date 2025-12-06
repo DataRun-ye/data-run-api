@@ -15,7 +15,7 @@ public class DimAssignmentJdbcRepository {
 
     public List<String> templatesByActivity(String activityUid) {
         if (activityUid == null) return Collections.emptyList();
-        String sql = "SELECT Distinct form_uid FROM analytics.dim_assignment WHERE activity_uid = :uid";
+        String sql = "SELECT Distinct template_uid FROM analytics.dim_assignment WHERE activity_uid = :uid";
         MapSqlParameterSource p = new MapSqlParameterSource().addValue("uid", activityUid);
         return jdbc.queryForList(sql, p, String.class);
     }

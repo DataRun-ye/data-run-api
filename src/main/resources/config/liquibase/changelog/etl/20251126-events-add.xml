@@ -33,6 +33,7 @@
 
             <column name="anchor_ce_id" type="varchar(36)"/>
             <column name="anchor_ref_uid" type="varchar(11)"/>
+            <column name="anchor_value_ref_type" type="varchar(64)"/>
             <column name="anchor_value_text" type="text"/>
             <column name="anchor_confidence" type="numeric(5,4)"/>
             <column name="anchor_resolved_at" type="timestamp"/>

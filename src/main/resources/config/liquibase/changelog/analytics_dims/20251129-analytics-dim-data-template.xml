@@ -12,14 +12,14 @@
             CREATE MATERIALIZED VIEW analytics.dim_data_template AS
             SELECT
                 row_number() OVER ()::bigint AS dim_template_id,
-                dt.id AS data_template_id,
-                dt.uid AS data_template_uid,
-                dt.version_uid AS version_uid,
-                dt.version_number AS version_no,
-                dt.code,
-                dt.name AS name_default,
-                TRIM(COALESCE(analytics.translation_value(COALESCE(dt.translations, '[]'::jsonb), 'en', 'name'), dt.name)) AS name_en,
-                TRIM(COALESCE(analytics.translation_value(COALESCE(dt.translations, '[]'::jsonb), 'ar', 'name'), dt.name)) AS name_ar,
+                dt.id AS template_id,
+                dt.uid AS template_uid,
+                dt.version_uid AS template_version_uid,
+                dt.version_number AS template_version_no,
+                dt.code AS template_code,
+                dt.name AS template_name,
+                TRIM(COALESCE(analytics.translation_value(COALESCE(dt.translations, '[]'::jsonb), 'en', 'name'), dt.name)) AS template_name_en,
+                TRIM(COALESCE(analytics.translation_value(COALESCE(dt.translations, '[]'::jsonb), 'ar', 'name'), dt.name)) AS template_name_ar,
                 dt.last_modified_by,
                 GREATEST(COALESCE(dt.created_date, '1970-01-01'::timestamp),
                          COALESCE(dt.last_modified_date, '1970-01-01'::timestamp)
@@ -45,7 +45,7 @@
         <sql>
       <![CDATA[
             CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_data_template_uid_uniq
-                ON analytics.dim_data_template (data_template_uid);
+                ON analytics.dim_data_template (template_uid);
             ]]>
     </sql>
         <rollback>
@@ -61,7 +61,7 @@
         <sql>
       <![CDATA[
             CREATE INDEX CONCURRENTLY idx_analytics_dim_data_template_slm_uid
-                ON analytics.dim_data_template (source_last_modified_at, data_template_uid);
+                ON analytics.dim_data_template (source_last_modified_at, template_uid);
             ]]>
     </sql>
         <rollback>

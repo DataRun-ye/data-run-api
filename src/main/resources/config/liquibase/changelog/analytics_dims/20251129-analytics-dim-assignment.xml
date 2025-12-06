@@ -24,10 +24,10 @@
                 a.team_id,
                 t.uid AS team_uid,
                 t.code AS team_code,
-                COALESCE(a.forms, '[]'::jsonb) AS forms_jsonb,
-                f.form_uid,
+                COALESCE(a.forms, '[]'::jsonb) AS templates_jsonb,
+                f.form_uid AS template_uid,
                 a.allocated_resources,
-                a.status,
+                a.status AS assignment_status,
                 a.last_submitted_by,
                 a.last_modified_by,
                 GREATEST(COALESCE(a.created_date, '1970-01-01'::timestamp),
@@ -76,7 +76,7 @@
         <sql>
       <![CDATA[
             CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_assignment_form_uid_uniq
-                ON analytics.dim_assignment (assignment_uid, form_uid);
+                ON analytics.dim_assignment (assignment_uid, template_uid);
             ]]>
     </sql>
         <rollback>

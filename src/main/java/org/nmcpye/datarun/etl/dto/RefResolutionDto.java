@@ -45,7 +45,7 @@ public class RefResolutionDto {
     private Instant updatedAt;
 
     public static final RowMapper<RefResolutionDto> ROW_MAPPER = (rs, rowNum) -> RefResolutionDto.builder()
-        .refResolutionUid(rs.getString("ref_resolution_uid"))
+        .refResolutionUid(rs.getString("value_ref_uid"))
         .rawValue(rs.getString("raw_value"))
         .rawSource(rs.getString("raw_source"))
         .refType(rs.getString("ref_type"))

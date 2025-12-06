@@ -26,8 +26,8 @@ public class DimTeamJdbcRepository {
     public Optional<Map<String,Object>> findByActivityAndCodeOrUid(String activityUid, String token) {
         if (activityUid == null || token == null) return Optional.empty();
         String sql = "SELECT * FROM analytics.dim_team "
-            + "WHERE activity_uid = :activityUid AND (code = :t OR team_uid = :t) "
-            + "ORDER BY CASE WHEN code = :t THEN 1 WHEN team_uid = :t THEN 2 ELSE 3 END "
+            + "WHERE activity_uid = :activityUid AND (team_code = :t OR team_uid = :t) "
+            + "ORDER BY CASE WHEN team_code = :t THEN 1 WHEN team_uid = :t THEN 2 ELSE 3 END "
             + "LIMIT 1";
         MapSqlParameterSource p = new MapSqlParameterSource().addValue("activityUid", activityUid)
             .addValue("t", token);

@@ -16,15 +16,15 @@ public class DimOptionJdbcRepository {
     private final NamedParameterJdbcTemplate jdbc;
 
     /**
-     * Find option by any variant: code, option_uid, name_default, option_name_en, option_name_ar.
+     * Find option by any variant: code, option_uid, option_name, option_name_en, option_name_ar.
      * Return the canonical option row as a map. Keep exact matches first.
      */
     public Optional<Map<String,Object>> findByCodeOrUidOrNameVariants(String token) {
         if (token == null) return Optional.empty();
         String sql = ""
             + "SELECT * FROM analytics.dim_option "
-            + "WHERE code = :t OR option_uid = :t OR name_default = :t OR name_en = :t OR name_ar = :t "
-            + "ORDER BY CASE WHEN code = :t THEN 1 WHEN option_uid = :t THEN 2 WHEN name_default = :t THEN 3 WHEN name_en = :t THEN 4 WHEN name_ar = :t THEN 5 ELSE 6 END "
+            + "WHERE option_code = :t OR option_uid = :t OR option_name = :t OR option_name_en = :t OR option_name_ar = :t "
+            + "ORDER BY CASE WHEN option_code = :t THEN 1 WHEN option_uid = :t THEN 2 WHEN option_name = :t THEN 3 WHEN option_name_en = :t THEN 4 WHEN option_name_ar = :t THEN 5 ELSE 6 END "
             + "LIMIT 1";
         MapSqlParameterSource p = new MapSqlParameterSource().addValue("t", token);
         var rows = jdbc.queryForList(sql, p);
@@ -36,8 +36,8 @@ public class DimOptionJdbcRepository {
         if (optionSetUid == null || token == null) return Optional.empty();
         String sql = ""
             + "SELECT * FROM analytics.dim_option "
-            + "WHERE option_set_uid = :optSetUid AND (code = :t OR option_uid = :t OR name_default = :t OR name_en = :t OR name_ar = :t) "
-            + "ORDER BY CASE WHEN code = :t THEN 1 WHEN option_uid = :t THEN 2 WHEN name_default = :t THEN 3 WHEN name_en = :t THEN 4 WHEN name_ar = :t THEN 5 ELSE 6 END "
+            + "WHERE option_set_uid = :optSetUid AND (option_code = :t OR option_uid = :t OR option_name = :t OR option_name_en = :t OR option_name_ar = :t) "
+            + "ORDER BY CASE WHEN option_code = :t THEN 1 WHEN option_uid = :t THEN 2 WHEN option_name = :t THEN 3 WHEN option_name_en = :t THEN 4 WHEN option_name_ar = :t THEN 5 ELSE 6 END "
             + "LIMIT 1";
         MapSqlParameterSource p = new MapSqlParameterSource().addValue("optSetUid", optionSetUid).addValue("t", token);
         var rows = jdbc.queryForList(sql, p);
@@ -47,7 +47,7 @@ public class DimOptionJdbcRepository {
 
     public List<Map<String,Object>> findByOptionSetUid(String optionSetUid) {
         if (optionSetUid == null) return Collections.emptyList();
-        String sql = "SELECT * FROM analytics.dim_option WHERE option_set_uid = :optSetUid ORDER BY code NULLS LAST";
+        String sql = "SELECT * FROM analytics.dim_option WHERE option_set_uid = :optSetUid ORDER BY option_code NULLS LAST";
         MapSqlParameterSource p = new MapSqlParameterSource().addValue("optSetUid", optionSetUid);
         return jdbc.queryForList(sql, p);
     }

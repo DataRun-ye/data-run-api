@@ -74,7 +74,7 @@ erDiagram
     }
 
     ref_resolution {
-        varchar26 ref_resolution_uid PK
+        varchar26 value_ref_uid PK
         text raw_value
         varchar50 ref_type
         varchar11 resolved_uid FK

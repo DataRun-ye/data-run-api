@@ -66,7 +66,7 @@ key types, service responsibilities, and deterministic behaviors used by transfo
 ### analytics.ref_resolution
 
 * Purpose: authoritative audit and cache of raw token → canonical uid resolutions.
-* PK: `ref_resolution_uid (varchar)`.
+* PK: `value_ref_uid (varchar)`.
 * Columns: `raw_value (text)`, `raw_source (varchar100)`, `ref_type (varchar50)` (e.g., `option`, `orgunit`, `team`,
   `activity`, `assignment`), `resolved_uid (varchar11)`, `confidence numeric(5,4)`, `resolved_at (timetamp)`,
   `replaced_by (varchar26)`, `notes`, `created_at`, `updated_at`.
@@ -186,7 +186,7 @@ erDiagram
     }
 
     ref_resolution {
-        varchar26 ref_resolution_uid PK
+        varchar26 value_ref_uid PK
         text raw_value
         varchar50 ref_type
         varchar11 resolved_uid FK

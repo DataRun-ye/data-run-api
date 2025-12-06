@@ -24,7 +24,6 @@ public enum SemanticType {
     GeoJson;
 
     public static SemanticType fromValueType(ValueType valueType) {
-        if (valueType.isOptionsType()) return Option;
         if (valueType.isMultiSelect()) return MultiSelectOption;
 
         for (SemanticType type : SemanticType.values()) {
