@@ -28,6 +28,8 @@ public interface DataTemplateRepository
     @Override
     Optional<DataTemplate> findByUid(String uid);
 
+    Optional<DataTemplate> findFirstByCodeOrUidOrId(String code, String uid, String id);
+
     @Query("SELECT d.uid FROM DataTemplate d")
     List<String> findAllUids();
 }

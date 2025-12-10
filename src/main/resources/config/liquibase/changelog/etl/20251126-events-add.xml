@@ -13,15 +13,14 @@
                 <constraints primaryKey="true" nullable="false"/>
             </column>
 
-            <column name="instance_key" type="varchar(26)">
-                <constraints nullable="false" unique="true"/>
-            </column>
+            <column name="submission_serial" type="bigint"/>
 
             <column name="event_type" type="varchar(20)"/>
 
             <column name="submission_uid" type="varchar(11)"/>
             <column name="submission_id" type="varchar(26)"/>
-
+            <column name="parent_event_id" type="varchar(26)"/>
+            <column name="event_ce_id" type="uuid"/>
             <column name="assignment_uid" type="varchar(11)"/>
             <column name="activity_uid" type="varchar(11)"/>
             <column name="org_unit_uid" type="varchar(11)"/>

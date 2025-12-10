@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.analytics.domaintabletoolkit.pivot;
+package org.nmcpye.datarun.etl.pivot;
 
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
@@ -33,7 +33,7 @@ public final class Naming {
     public String fqFactTableForTemplate(String templateUid) {
         final var template = templateRepository.findByUid(templateUid).orElseThrow();
         final String code = template.getCode();
-        return "analytics." + factsBaseForTemplate(code != null ? code : templateUid);
+        return "pivot." + factsBaseForTemplate(code != null ? code : templateUid);
     }
 
     public static String newName(String baseFqName) {

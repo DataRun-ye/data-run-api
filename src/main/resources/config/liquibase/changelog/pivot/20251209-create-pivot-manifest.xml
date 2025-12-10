@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="2025-12-09-create-pivot-manifest" author="hamza">
+        <createTable tableName="pivot_manifest" schemaName="pivot">
+            <column name="template_uid" type="varchar(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="view_name" type="varchar(255)"/>
+            <column name="version" type="int" defaultValueNumeric="1"/>
+            <column name="status" type="varchar(50)"/>
+            <column name="build_started_at" type="timestamp"/>
+            <column name="build_finished_at" type="timestamp"/>
+            <column name="build_duration_secs" type="int"/>
+            <column name="columns_json" type="jsonb"/>
+            <column name="notes" type="text"/>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

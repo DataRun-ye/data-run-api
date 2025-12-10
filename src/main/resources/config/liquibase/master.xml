@@ -70,6 +70,8 @@
     <include file="/config/liquibase/changelog/etl/20251126-events-add.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/2025-12-03-modify-ce-id-to-uuid-types.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/2025-11-24-ref-type-value-table.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/pivot/20251210-pivot-schema-create.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/pivot/20251209-create-pivot-manifest.xml" relativeToChangelogFile="false"/>
 
 <!--    <include file="/config/liquibase/changelog/analytics_dims/20251206-analytics-mv-ref-type-value-enriched.xml" relativeToChangelogFile="false"/>-->
 

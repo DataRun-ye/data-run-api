@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.analytics.domaintabletoolkit.pivot;
+package org.nmcpye.datarun.etl.pivot;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -80,8 +80,8 @@ public class SqlGenerator {
                 SELECT
                   %2$s,
                   %3$s
-                FROM analytics.events_enriched e
-                LEFT JOIN analytics.data_values_enriched dv
+                FROM pivot.events_enriched e
+                LEFT JOIN pivot.data_values_enriched dv
                     ON (dv.event_id = e.event_id OR dv.repeat_instance_id = e.event_id)
                 WHERE e.event_type IN ('root', 'submission') AND e.activity_uid = '%4$s'
                 GROUP BY
@@ -151,8 +151,8 @@ public class SqlGenerator {
                 SELECT
                   %2$s,
                   %3$s
-                FROM analytics.events_enriched e
-                JOIN analytics.data_values_enriched dv
+                FROM pivot.events_enriched e
+                JOIN pivot.data_values_enriched dv
                   ON  dv.event_id = e.event_id
                 WHERE e.event_type = 'repeat' AND e.activity_uid = '%4$s'
                 GROUP BY
@@ -168,7 +168,7 @@ public class SqlGenerator {
     }
 
     /**
-     * Creates SQL that writes to {baseFq}_new (baseFq must include schema, e.g. analytics.fact_mytemplate)
+     * Creates SQL that writes to {baseFq}_new (baseFq must include schema, e.g. pivot.fact_mytemplate)
      */
     public String buildTemplateCreateSqlForBase(String baseFq, String templateUid, List<CanonicalElement> ces) {
         String tableNew = Naming.newName(baseFq);
@@ -187,6 +187,20 @@ public class SqlGenerator {
             "e.activity_uid",
             "e.assigned_team_uid",
             "e.assigned_org_unit_uid",
+
+            "e.assigned_org_unit_gov",
+            "e.assigned_org_unit_district",
+            "e.assigned_org_unit_code",
+            "e.assigned_org_unit_name",
+            "e.activity_name",
+            "e.assigned_team_code",
+            "e.planned_day",
+            "e.user_group_name",
+            "e.user_group_code",
+            "e.user_uid",
+            "e.user_mobile",
+            "e.user_first_name",
+
             "e.anchor_ce_id",
             "e.anchor_semantic_type",
             "e.anchor_data_type",
@@ -229,6 +243,20 @@ public class SqlGenerator {
                     e.activity_uid,
                     e.assigned_team_uid,
                     e.assigned_org_unit_uid,
+
+                    e.assigned_org_unit_gov,
+                    e.assigned_org_unit_district,
+                    e.assigned_org_unit_code,
+                    e.assigned_org_unit_name,
+                    e.activity_name,
+                    e.assigned_team_code,
+                    e.planned_day,
+                    e.user_group_name,
+                    e.user_group_code,
+                    e.user_uid,
+                    e.user_mobile,
+                    e.user_first_name,
+
                     e.anchor_ce_id,
                     e.anchor_semantic_type,
                     e.anchor_data_type,
@@ -237,14 +265,14 @@ public class SqlGenerator {
                     e.anchor_value_text,
                     e.anchor_ref_uid,
                     e.anchor_resolved_label
-                  FROM analytics.events_enriched e
+                  FROM pivot.events_enriched e
                   WHERE e.template_uid = '%2$s'
                 )
                 SELECT
                   %3$s,
                   %4$s
                 FROM events e
-                LEFT JOIN analytics.data_values_enriched dv
+                LEFT JOIN pivot.data_values_enriched dv
                     ON dv.event_id = e.event_id
                 GROUP BY
                   %3$s;
@@ -283,14 +311,14 @@ public class SqlGenerator {
                 "MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_ref_uid END) AS \"%s\"",
                 ceId, uidCol);
 
-            if ("option".equals(st)) {
-                String optionSetExpr = String.format(
-                    "MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.ref_option_set_uid END) AS \"%s_option_set_uid\"",
-                    ceId, alias);
-                return labelExpr + ",\n    " + uidExpr + ",\n    " + optionSetExpr;
-            } else {
+//            if ("option".equals(st)) {
+//                String optionSetExpr = String.format(
+//                    "MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.ref_option_set_uid END) AS \"%s_option_set_uid\"",
+//                    ceId, alias);
+//                return labelExpr + ",\n    " + uidExpr + ",\n    " + optionSetExpr;
+//            } else {
                 return labelExpr + ",\n    " + uidExpr;
-            }
+//            }
         }
 
         // JSON / ARRAY: if semantic type is repeat -> jsonb_agg, else single-value MAX-cast

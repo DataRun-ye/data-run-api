@@ -9,10 +9,11 @@ import org.nmcpye.datarun.etl.dto.RefTypeValue;
 import org.nmcpye.datarun.etl.model.SubmissionContext;
 import org.nmcpye.datarun.etl.model.TallCanonicalRow;
 import org.nmcpye.datarun.etl.model.TemplateContext;
+import org.nmcpye.datarun.etl.repository.EventEntityJdbcRepository;
 import org.nmcpye.datarun.etl.repository.RefTypeValueRepository;
-import org.nmcpye.datarun.etl.service.EventEntityService;
-import org.nmcpye.datarun.etl.service.SubmissionKeysService;
+import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
 import org.nmcpye.datarun.jpa.datatemplate.SemanticType;
+import org.nmcpye.datarun.utils.UuidUtils;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -30,11 +31,9 @@ import java.util.*;
 public class TransformServiceV2 {
 
     private final TransformServiceRobust baseTransform;
-    private final RefResolutionService refResolutionService;
     private final RefTypeValueResolutionService refTypeValueResolutionService;
     private final RefTypeValueRepository refTypeValueRepository;
-    private final EventEntityService eventEntityService;
-    private final SubmissionKeysService submissionKeysService;
+    private final EventEntityJdbcRepository eventJdbcRepository;
 
     public static class ResolutionCandidate {
         public final RefTypeValue refTypeValue;
@@ -61,6 +60,7 @@ public class TransformServiceV2 {
      * @param flattenPrimitiveArrays flatten flag forwarded to base transform
      * @param submissionContext      context map with keys: submissionUid, submissionId, templateUid, templateVersionUid, submissionCreationTime, startTime, assignmentUid, activityUid, orgUnitUid, teamUid
      */
+    // replace the inner content of transform(...) with the following:
     public List<TallCanonicalRow> transform(JsonNode root,
                                             boolean flattenPrimitiveArrays,
                                             SubmissionContext submissionContext,
@@ -79,16 +79,11 @@ public class TransformServiceV2 {
         Instant startTime = submissionContext.getStartTime();
 
         log.debug("TransformV2: submissionUid={}, templateUid={}, templateVersionUid={}, payloadNull={}",
-            submissionContext.getSubmissionUid(), submissionContext.getTemplateUid(),
-            submissionContext.getTemplateVersionUid(), root == null);
+            submissionUid, templateUid, templateVersionUid, root == null);
 
-        log.debug("TransformV2: templateElements count = {}", templateContext.canonicalElementsMap().size());
-
-        // Run existing robust transform to get tall rows (no persistence here)
         List<TallCanonicalRow> rows = baseTransform.transform(
             root,
-            // IMPORTANT: baseTransform expects List<TemplateElement> — ensure values are TemplateElement
-            templateContext.canonicalElementsMap().values().stream().toList(),
+            templateContext.allCanonicalElementsMap().values().stream().toList(),
             flattenPrimitiveArrays
         );
 
@@ -97,27 +92,16 @@ public class TransformServiceV2 {
             return Collections.emptyList();
         }
 
-        // Upsert submission_keys (seed root)
-        submissionKeysService.upsert(
-            submissionContext.getSubmissionUid(),
-            submissionContext.getSubmissionSerial(),
-            submissionContext.getStatus() == null ? null : submissionContext.getStatus().name(),
-            submissionContext.getSubmissionId(),
-            submissionContext.getAssignmentUid(),
-            submissionContext.getActivityUid(),
-            submissionContext.getOrgUnitUid(),
-            submissionContext.getTeamUid(),
-            submissionContext.getTemplateUid(),
-            Instant.now()
-        );
-
-        // Iterate rows, resolve refs, collect anchor candidates per instance_key
+        // collectors
         Map<String, List<ResolutionCandidate>> candidatesByInstance = new HashMap<>();
-        // Also collect all observed instance keys so we create events even when no candidate exists
         Set<String> allInstanceKeys = new HashSet<>();
-        Set<RefTypeValue> refTypeValues = new HashSet<>();
+        Map<UUID, RefTypeValue> refTypeValues = new HashMap<>();
+        Map<String, String> instanceRepeatCeMap = new HashMap<>();
+        Map<String, String> parentForInstance = new HashMap<>();
+
+        // 1) scan rows: provenance, record repeat CE, resolve refs, collect candidates, capture parent from row
         for (TallCanonicalRow r : rows) {
-            // ensure provenance fields set on row if absent
+            // provenance
             r.setSubmissionUid(submissionUid);
             r.setSubmissionSerialNumber(submissionSerial);
             r.setSubmissionId(submissionId);
@@ -131,47 +115,57 @@ public class TransformServiceV2 {
             String instanceKey = r.getRepeatInstanceId() != null ? r.getRepeatInstanceId() : submissionUid;
             allInstanceKeys.add(instanceKey);
 
+            // If a row declares its parent instance, capture it directly
+            String explicitParent = r.getParentInstanceId(); // direct call, assumed present on TallCanonicalRow
+            if (explicitParent != null) parentForInstance.put(instanceKey, explicitParent);
+
             String ceId = r.getCanonicalElementId();
             CanonicalElementAnchorDto anchorDto = templateContext.anchorsMap().get(ceId);
-            org.nmcpye.datarun.jpa.datatemplate.CanonicalElement ceMeta =
-                templateContext.canonicalElementsMap().get(ceId);
-
-            SemanticType semanticType = ceMeta == null || ceMeta.getSemanticType() == null ? null :
-                ceMeta.getSemanticType();
+            CanonicalElement ceMeta = templateContext.allCanonicalElementsMap().get(ceId);
+            SemanticType semanticType = ceMeta == null ? null : ceMeta.getSemanticType();
             String optionSetUid = ceMeta == null ? null : ceMeta.getOptionSetUid();
             boolean anchorAllowed = anchorDto != null && Boolean.TRUE.equals(anchorDto.getAnchorAllowed());
             int anchorPriority = anchorDto == null ? 100 : anchorDto.getAnchorPriority();
 
-            // only resolve ref semantic types
+            // record repeat CE for the instance
+            if (semanticType != null && semanticType.isRepeat()) {
+                instanceRepeatCeMap.putIfAbsent(instanceKey, ceId);
+            }
+
+            // if ref-type, resolve and add candidate if anchorAllowed
             if (semanticType != null && semanticType.isRef()) {
-                r.setValueRefType(semanticType.name());
                 String token = r.getValueText();
+                String refType = semanticType.name();
+                String resolvedUid = refTypeValueResolutionService.resolve(token, refType, optionSetUid, activityUid);
 
-//                RefResolutionService.Resolution res = refResolutionService.resolve(
-//                    token, semanticType, optionSetUid, submissionContext.getActivityUid(), instanceKey);
+                RefTypeValue refTypeValue = RefTypeValue.builder()
+                    .valueRefUid(resolvedUid)
+                    .ceId(UuidUtils.toUuidOrNull(ceId))
+                    .submissionUid(submissionUid)
+                    .instanceKey(instanceKey)
+                    .templateUid(templateUid)
+                    .rawValue(token)
+                    .refType(refType)
+                    .createdAt(startTime)
+                    .optionSetUid(optionSetUid)
+                    .build();
 
-                RefTypeValue refTypeValue = refTypeValueResolutionService.resolve(r, semanticType.name(), submissionContext.getActivityUid(),
-                    submissionContext.getTemplateUid(), submissionUid, instanceKey, optionSetUid,
-                    submissionContext.getStartTime());
-                // choose token from value_text first, else value_json
+                r.setValueRefUid(resolvedUid);
                 if (token == null && r.getValueJson() != null) {
-                    var refType = SemanticType.MultiSelectOption.name();
                     refTypeValue.setRawValue(r.getValueJson());
-
-                    // misconfigured MultiSelectOption as Option
                     r.setValueRefType(refType);
-
                     refTypeValue.setRefType(refType);
                 }
 
-                refTypeValues.add(refTypeValue);
-                r.setValueRefUid(refTypeValue.getValueRefUid());
+                if (refTypeValue.getCeId() != null) {
+                    refTypeValues.putIfAbsent(refTypeValue.getCeId(), refTypeValue);
+                }
 
-
-                // if anchor allowed, collect candidate (even if resolvedUid==null — we still want identity row)
                 if (anchorAllowed) {
                     ResolutionCandidate cand = new ResolutionCandidate(
-                        refTypeValue, refTypeValue.getValueRefUid() == null ? 0 : 1, Instant.now(),
+                        refTypeValue,
+                        refTypeValue.getValueRefUid() == null ? 0.0 : 1.0,
+                        Instant.now(),
                         anchorPriority
                     );
                     candidatesByInstance.computeIfAbsent(instanceKey, k -> new ArrayList<>()).add(cand);
@@ -179,55 +173,78 @@ public class TransformServiceV2 {
             }
         }
 
-        refTypeValueRepository.batchUpsert(refTypeValues);
-        // For each observed instanceKey, pick best candidate if present, else create event with null anchors
-        for (String instanceKey : allInstanceKeys) {
-            List<ResolutionCandidate> list = candidatesByInstance.getOrDefault(instanceKey, Collections.emptyList());
+        // 2) persist ref-type values in batch
+        if (!refTypeValues.isEmpty()) {
+            refTypeValueRepository.batchUpsert(refTypeValues.values());
+        }
 
+        // 3) Build events: use explicit parent when present, else for non-root fall back to submissionUid
+        List<EventDto> eventsToPatchUpsert = new ArrayList<>(allInstanceKeys.size());
+        Instant now = Instant.now();
+
+        for (String instanceKey : allInstanceKeys) {
+            boolean isRoot = instanceKey.equals(submissionUid);
+            String parentInstance = parentForInstance.get(instanceKey);
+            String parentEventId = isRoot ? null : (parentInstance != null ? parentInstance : submissionUid);
+
+            // pick best anchor candidate for this instance
+            List<ResolutionCandidate> candidates = candidatesByInstance.getOrDefault(instanceKey, Collections.emptyList());
             ResolutionCandidate best = null;
-            if (!list.isEmpty()) {
-                list.sort(Comparator.comparingInt((ResolutionCandidate c) -> c.priority)
+            if (!candidates.isEmpty()) {
+                candidates.sort(Comparator.comparingInt((ResolutionCandidate c) -> c.priority)
                     .thenComparingDouble((ResolutionCandidate c) -> -c.confidence)
                     .thenComparing((ResolutionCandidate c) -> c.resolvedAt == null ? Instant.EPOCH : c.resolvedAt, Comparator.reverseOrder())
-                    .thenComparing(c -> c.refTypeValue.getCeId()));
-                best = list.get(0);
+                    .thenComparing(c -> c.refTypeValue.getCeId() == null ? null : c.refTypeValue.getCeId().toString(), Comparator.nullsLast(Comparator.naturalOrder())));
+                best = candidates.get(0);
             }
 
-            String eventType = instanceKey.equals(submissionUid) ? "root" : "repeat";
-            Optional<EventDto> existing = eventEntityService.findByInstanceKey(instanceKey);
-            String eventUid = existing.map(EventDto::eventUid).orElse(null);
+            String eventType = isRoot ? "root" : "repeat";
+            String eventCeId = isRoot ? null : instanceRepeatCeMap.get(instanceKey);
 
-            Instant now = Instant.now();
-
-            String anchorCeId = best != null ? best.refTypeValue.getCeId().toString() : null;
+            String anchorCeId = best != null && best.refTypeValue.getCeId() != null ? best.refTypeValue.getCeId().toString() : null;
             String anchorRefUid = best != null ? best.refTypeValue.getValueRefUid() : null;
             String anchorRefType = best != null ? best.refTypeValue.getRefType() : null;
             String anchorValueText = best != null ? best.refTypeValue.getRawValue() : null;
             BigDecimal anchorConfidence = best != null ? BigDecimal.valueOf(best.confidence) : null;
             Instant anchorResolvedAt = best != null ? best.resolvedAt : null;
 
-            // Upsert event row; your repo's CASE prevents overwriting a better anchor with nulls.
-            try {
-                eventEntityService.upsert(
-                    eventUid, instanceKey, eventType,
-                    submissionUid, submissionId,
-                    assignmentUid, activityUid,
-                    orgUnitUid, teamUid, templateUid,
-                    submissionCreationTime, startTime, now,
-                    anchorCeId, anchorRefUid, anchorValueText,
-                    anchorRefType, anchorConfidence, anchorResolvedAt
-                );
+            EventDto evt = EventDto.builder()
+                .eventId(instanceKey)
+                .assignmentUid(assignmentUid)
+                .eventType(eventType)
+                .parentEventId(parentEventId)
+                .eventCeId(eventCeId)
+                .submissionUid(submissionUid)
+                .submissionId(submissionId)
+                .submissionSerial(submissionSerial)
+                .submissionCreationTime(submissionCreationTime)
+                .activityUid(activityUid)
+                .orgUnitUid(orgUnitUid)
+                .teamUid(teamUid)
+                .templateUid(templateUid)
+                .startTime(startTime)
+                .createdAt(now)
+                .lastSeen(now)
+                .anchorCeId(anchorCeId)
+                .anchorValueText(anchorValueText)
+                .anchorConfidence(anchorConfidence)
+                .anchorResolvedAt(anchorResolvedAt)
+                .anchorValueRefType(anchorRefType)
+                .anchorRefUid(anchorRefUid)
+                .build();
 
-
-                log.debug("Event upserted: instanceKey={}, eventType={}, anchorRefUid={}", instanceKey, eventType, anchorRefUid);
-            } catch (Exception ex) {
-                log.error("Failed to upsert event for instanceKey=" + instanceKey, ex);
-                // do not fail whole transform here; caller will catch if necessary — but log for debugging
-                throw ex;
-            }
+            eventsToPatchUpsert.add(evt);
         }
 
-        // Return enriched rows; caller will set final provenance and persist tall rows via tallRepo
+        // 4) single batch patch-upsert
+        try {
+            eventJdbcRepository.patchUpsertEvents(eventsToPatchUpsert);
+            log.debug("Patched up {} event(s) for submissionUid={}", eventsToPatchUpsert.size(), submissionUid);
+        } catch (Exception ex) {
+            log.error("Failed to patch-upsert events for submissionUid=" + submissionUid, ex);
+            throw ex;
+        }
+
         return rows;
     }
 }

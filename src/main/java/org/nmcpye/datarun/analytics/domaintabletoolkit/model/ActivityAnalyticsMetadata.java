@@ -14,7 +14,7 @@ import java.util.List;
  * @since 25/08/2025
  */
 @Builder
-public record ProjectAnalyticsMetadata(
+public record ActivityAnalyticsMetadata(
         String activityName,
         String activityAlias,
         List<CeMeta> elements

@@ -51,6 +51,7 @@ public class OneTimeOutboxBackfillRunner2 implements CommandLineRunner {
         log.info("Starting OUTBOX backfill…");
 
         long lastSerial = queryRawCount();
+//        long lastSerial = 0;
         Integer submissionsToBackfill = submissionRepository.countBySerialNumberGreaterThan(lastSerial);
         int scanned = 0;
         int insertedTotal = 0;
@@ -70,6 +71,7 @@ public class OneTimeOutboxBackfillRunner2 implements CommandLineRunner {
                 List<DataSubmission> list = page.getContent();
                 scanned += list.size();
 
+                log.info("Scanned: {}", scanned);
                 // collect serials
                 List<Long> serials = list.stream()
                     .map(DataSubmission::getSerialNumber)
@@ -90,6 +92,7 @@ public class OneTimeOutboxBackfillRunner2 implements CommandLineRunner {
                     )
                 );
 
+                log.info("existing: {}", existing.size());
                 List<MapSqlParameterSource> inserts = new ArrayList<>();
 
                 for (DataSubmission s : list) {

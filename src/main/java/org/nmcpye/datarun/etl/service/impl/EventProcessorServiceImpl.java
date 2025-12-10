@@ -93,22 +93,21 @@ public class EventProcessorServiceImpl implements EventProcessorService {
 
             // 3) load CE metadata for templateVersionUid and index by canonical_element_id
             // List<CanonicalElement> ces = canonicalElementRepository.findByTemplateUid(templateVersionUid);
-            var elements = canonicalElementRepository.findByTemplateUid(submissionContext.getTemplateUid()).stream()
+            var elements = canonicalElementRepository.findByTemplateUid(submissionContext.getTemplateUid());
+            var allCEsMap = elements.stream()
                 .collect(Collectors.toMap(CanonicalElement::getId, Function.identity()));
-            Set<String> uids = elements.keySet();
+            var repeatEsMap = elements.stream()
+                .filter(CanonicalElement::isRepeatCE)
+                .collect(Collectors.toMap(CanonicalElement::getId, Function.identity()));
+
+            Set<String> uids = allCEsMap.keySet();
             Map<String, CanonicalElementAnchorDto> anchors = anchorRepository.findByCanonicalElementIds(uids);
             TemplateContext templateContext = TemplateContext.builder().templateUid(submissionContext.getTemplateUid())
-                .canonicalElementsMap(elements)
+                .allCanonicalElementsMap(allCEsMap)
+                .repeatCanonicalElementsMap(repeatEsMap)
                 .anchorsMap(anchors)
                 .build();
             //
-
-//            // 1) upsert submission_keys (seed root)
-//            submissionKeysService.upsert(submissionContext.getSubmissionUid(), submissionContext.getSubmissionSerial(),
-//                submissionContext.getStatus() == null ? null : submissionContext.getStatus().name(),
-//                submissionContext.getSubmissionId(), submissionContext.getAssignmentUid(),
-//                submissionContext.getActivityUid(), submissionContext.getOrgUnitUid(), submissionContext.getTeamUid(),
-//                submissionContext.getTemplateUid(), Instant.now());
 
             // SAVE / UPDATE / REPLACE / BACKFILL -> mapping + upsert
             List<TallCanonicalRow> robustRows = transformServiceRobust.transform(payload,

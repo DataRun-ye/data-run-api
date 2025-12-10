@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.analytics.domaintabletoolkit.pivot;
+package org.nmcpye.datarun.etl.pivot;
 
 
 import lombok.RequiredArgsConstructor;

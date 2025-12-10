@@ -1,8 +1,10 @@
-package org.nmcpye.datarun.analytics.domaintabletoolkit.pivot;
+package org.nmcpye.datarun.etl.pivot;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -17,10 +19,11 @@ public class PivotManifestRepository {
     private final JdbcTemplate jdbc;
     private final Naming naming;
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void startBuild(String templateUid, Instant startedAt) {
         String fqName = naming.fqFactTableForTemplate(templateUid);
         String sql = """
-            INSERT INTO analytics.pivot_manifest(template_uid, view_name, version, status, build_started_at)
+            INSERT INTO pivot.pivot_manifest(template_uid, view_name, version, status, build_started_at)
             VALUES (?, ?, 1, ?, ?)
             ON CONFLICT (template_uid) DO UPDATE
               SET status = EXCLUDED.status, build_started_at = EXCLUDED.build_started_at
@@ -30,7 +33,7 @@ public class PivotManifestRepository {
 
     public void completeBuild(String templateUid, java.time.Duration duration, Object vr1, Object vr2) {
         String sql = """
-            UPDATE analytics.pivot_manifest
+            UPDATE pivot.pivot_manifest
             SET status = ?,
                 build_finished_at = now(),
                 build_duration_secs = ?,
@@ -42,7 +45,7 @@ public class PivotManifestRepository {
 
     public void failBuild(String templateUid, Object reason) {
         String sql = """
-                UPDATE analytics.pivot_manifest
+                UPDATE pivot.pivot_manifest
                 SET status = ?,
                     build_finished_at = now(),
                     notes = ?
@@ -64,7 +67,7 @@ public class PivotManifestRepository {
                    build_duration_secs,
                    columns_json,
                    notes
-            FROM analytics.pivot_manifest
+            FROM pivot.pivot_manifest
             WHERE template_uid = ?
             """;
         return jdbc.queryForObject(sql, new Object[]{templateUid}, (rs, rn) -> {

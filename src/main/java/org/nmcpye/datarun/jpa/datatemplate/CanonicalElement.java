@@ -75,4 +75,8 @@ public class CanonicalElement {
 
     @Column(name = "last_modified_date")
     private Instant lastModifiedDate;
+
+    public boolean isRepeatCE() {
+        return this.getSemanticType() == SemanticType.Repeat;
+    }
 }

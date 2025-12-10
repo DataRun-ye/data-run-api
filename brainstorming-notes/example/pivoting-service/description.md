@@ -14,63 +14,7 @@ key types, service responsibilities, and deterministic behaviors used by transfo
 * **Caching**: Employs Ehcache and Hibernate 2nd-level cache annotations where appropriate.
 * **Mapping and Codegen Tools**: Lombok (preferred for compactness and brevity) and MapStruct are used.
 
-## Key primitive types and lengths
-
-* `submission_uid`: `varchar(11)` (external short id used in submissions)
-* `submission_id`: `varchar(26)` (internal ULID for submission records)
-* `instance_key`: `varchar(26)` (ULID; equals `submission_uid` for root, `repeat_instance_id` for repeats)
-* `value_ref_uid`: canonical 11-char UIDs for values of reference type i.e referencing a canonical entity in the system
-  `ce.semantic_type` = one of `Option`, `OrgUnit`, `Team`, `Activity`, it would have the resolved `option_uid`,
-  `org_unit_uid`, `team_uid`, etc. already resolved upstream.
-* `canonical_element_id`: `uuid` (deterministic id derived from template_uid + canonical_path + data_type +
-  semantic_type)
-
----
-
 ## Tables (concise spec)
-
-### analytics.submission_keys
-
-* Purpose: small denorm one-row-per-submission for fast grouping/filters.
-* PK: `submission_uid (varchar11)`.
-* Columns: `submission_id (varchar26)`, `assignment_uid (varchar11)`, `activity_uid (varchar11)`,
-  `org_unit_uid (varchar11)`, `team_uid (varchar11)`, `template_uid (varchar11)`, `last_seen`, `created_at`,
-  `updated_at`.
-* Indexes: `activity_uid`, `org_unit_uid`, `team_uid`.
-
-### analytics.events
-
-* Purpose: canonical instance registry (root or repeat) with anchors.
-* PK: `event_uid (varchar26)`, unique `instance_key (varchar26)`.
-* Columns: `instance_key`, `event_type` (`root`|`repeat`), `submission_uid`, `submission_id`, `assignment_uid`,
-  `activity_uid`, `org_unit_uid`, `team_uid`, `template_uid`, `submission_creation_time`, `start_time`, `last_seen`,
-  `created_at`, `updated_at`.
-* Anchor columns: `anchor_ce_id uuid`, `anchor_ref_uid (varchar11)`, `anchor_value_text (text)`,
-  `anchor_confidence (numeric(5,4))`, `anchor_resolved_at (timetamp)`.
-* Indexes: unique(instance_key), `(anchor_ce_id, anchor_ref_uid)`, `submission_uid`.
-
-### analytics.tall_canonical
-
-* Purpose: EAV tall attribute store (one row per attribute instance).
-* Uniqueness: unique constraint on `(instance_key, canonical_element_id)` for idempotent upserts.
-* Important columns: `instance_key (varchar26)`, `submission_uid (varchar11)`, `submission_id (varchar26)`,
-  `canonical_element_id (uuid)`, `element_path`, `repeat_instance_id`, `parent_instance_id`, `repeat_index`, typed
-  values `value_text` (store all type of values), `value_number` (values numeric types also available here),
-  `value_json` (values of List<String> i.e multi-select choices, or other json type values are stored only here),
-  `value_ref_type` (if value of ref type i.e ce.semantic_type=Option, OrgUnit, Team, etc, in addition to storing the raw
-  value in value_text,  `value_ref_uid` will store the resolved uid of the entity),
-  `is_deleted`, provenance (`outbox_id, ingest_id, created_at, updated_at`, `submission_creation_time`, `start_time`).
-* Joins: `tall_canonical.instance_key -> events.instance_key` for instance joins;
-  `tall_canonical.value_ref_uid -> dim_*` for resolved refs.
-
-### analytics.ref_resolution
-
-* Purpose: authoritative audit and cache of raw token → canonical uid resolutions.
-* PK: `value_ref_uid (varchar)`.
-* Columns: `raw_value (text)`, `raw_source (varchar100)`, `ref_type (varchar50)` (e.g., `option`, `orgunit`, `team`,
-  `activity`, `assignment`), `resolved_uid (varchar11)`, `confidence numeric(5,4)`, `resolved_at (timetamp)`,
-  `replaced_by (varchar26)`, `notes`, `created_at`, `updated_at`.
-* Indexes: `(raw_value, ref_type)`, `(resolved_uid)`.
 
 ### public.canonical_element (ce)
 
@@ -79,8 +23,6 @@ key types, service responsibilities, and deterministic behaviors used by transfo
 * Key attrs: `semantic_type` (e.g., `option`, `orgunit`, `team`, `activity`, `assignment`), `option_set_uid`,
   `canonical_path`, `data_type`.
 * Treated as stable/immutable; used to map element → semantic handling.
-
-### public.canonical_element_anchor (cea)
 
 * Purpose: 1:1 auxiliary config for ce used as anchors.
 * PK/FK: `canonical_element_id` → `canonical_element.canonical_element_id`.

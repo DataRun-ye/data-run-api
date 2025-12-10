@@ -66,10 +66,10 @@ public class MaterializedViewRefresher {
 
         viewToSourceMaxSql.put("analytics.dim_malaria_unit_user_group",
             "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.user_group");
-        viewToSourceMaxSql.put("analytics.mv_assignments_detail",
-            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.assignment");
-        viewToSourceMaxSql.put("analytics.mv_org_unit_hierarchy",
-            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.org_unit");
+//        viewToSourceMaxSql.put("analytics.mv_assignments_detail",
+//            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.assignment");
+//        viewToSourceMaxSql.put("analytics.mv_org_unit_hierarchy",
+//            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.org_unit");
     }
 
     @PostConstruct

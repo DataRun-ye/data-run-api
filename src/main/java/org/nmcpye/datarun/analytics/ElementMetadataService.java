@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.analytics;
 
 import lombok.RequiredArgsConstructor;
+import org.nmcpye.datarun.analytics.domaintabletoolkit.model.ActivityAnalyticsMetadata;
 import org.nmcpye.datarun.analytics.domaintabletoolkit.model.CeMeta;
-import org.nmcpye.datarun.analytics.domaintabletoolkit.model.ProjectAnalyticsMetadata;
 import org.nmcpye.datarun.etl.repository.DimAssignmentJdbcRepository;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.CanonicalElementRepository;
@@ -31,9 +31,9 @@ public class ElementMetadataService {
      * for the wide view.
      */
     @Cacheable(cacheNames = "pivotableElements") // Cache this result heavily
-    public ProjectAnalyticsMetadata getPivotableElements(String activityUid) {
+    public ActivityAnalyticsMetadata getPivotableElements(String activityUid) {
         final var activity = activityRepository.findByUid(activityUid).orElseThrow();
-        final var metadata = ProjectAnalyticsMetadata.builder()
+        final var metadata = ActivityAnalyticsMetadata.builder()
             .activityAlias(activity.getUid())
             .activityName(activity.getCode() != null ? activity.getCode() : "");
 

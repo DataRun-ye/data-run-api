@@ -27,16 +27,22 @@ import java.time.Instant;
 @AllArgsConstructor
 @Accessors(fluent = true)
 public class EventDto {
-    private String eventUid;
-    private String instanceKey;
+    private String eventId;
+//    private String instanceKey;
     private String eventType;
     private String submissionId;
     private String submissionUid;
+
+    private Long submissionSerial;
+    private String parentEventId;
+    private String eventCeId;
+
     private String assignmentUid;
     private String activityUid;
     private String orgUnitUid;
     private String teamUid;
     private String templateUid;
+
 
     private Instant submissionCreationTime;
     private Instant startTime;
@@ -54,11 +60,16 @@ public class EventDto {
     private Instant updatedAt;
 
     public static final RowMapper<EventDto> ROW_MAPPER = (rs, rowNum) -> EventDto.builder()
-        .eventUid(rs.getString("event_id"))
-        .instanceKey(rs.getString("instance_key"))
+        .eventId(rs.getString("event_id"))
+//        .instanceKey(rs.getString("instance_key"))
         .eventType(rs.getString("event_type"))
         .submissionUid(rs.getString("submission_uid"))
         .submissionId(rs.getString("submission_id"))
+
+        .submissionSerial(rs.getLong("submission_serial"))
+        .parentEventId(rs.getString("parent_event_id"))
+        .eventCeId(rs.getString("event_ce_id"))
+
         .assignmentUid(rs.getString("assignment_uid"))
         .activityUid(rs.getString("activity_uid"))
         .orgUnitUid(rs.getString("org_unit_uid"))
