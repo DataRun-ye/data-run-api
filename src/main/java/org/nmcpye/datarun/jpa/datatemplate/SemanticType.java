@@ -25,6 +25,9 @@ public enum SemanticType {
 
     public static SemanticType fromValueType(ValueType valueType) {
         if (valueType.isMultiSelect()) return MultiSelectOption;
+        if (valueType.isSingleSelect()) return Option;
+        if (valueType == ValueType.RepeatableSection) return Repeat;
+        if (valueType == ValueType.FullName) return Name;
 
         for (SemanticType type : SemanticType.values()) {
             if (type.name().equalsIgnoreCase(valueType.name())) {
