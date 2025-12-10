@@ -46,7 +46,7 @@ public class PivotService {
 
         try {
             log.info("pivot: start build template={}, baseFq={}, sql-length={}", templateUid, baseFq, createSql.length());
-            ddl.execute(createSql);
+            ddl.execute(createSql, Naming.newName(baseFq));
             log.info("pivot: DDL created (committed): template={}, checking validation", templateUid);
 
             log.debug("pivot: running validator.validateTemplateTable for baseFq={}, template={}", baseFq, templateUid);
@@ -59,7 +59,8 @@ public class PivotService {
             log.info("pivot: validation passed, performing atomic swap for template={}", templateUid);
             ddl.atomicSwapTemplate(templateUid);
             log.info("pivot: atomic swap completed for template={}", templateUid);
-
+            log.info("pivot: start creating indexes template={}, baseFq={}, sql-length={}", templateUid, baseFq, createSql.length());
+            log.info("pivot: indexes created for template={}, baseFq={}", templateUid, baseFq);
             Duration duration = Duration.between(start, Instant.now());
             manifestRepo.completeBuild(templateUid, duration, vr, null);
             return BuildResponse.success(duration.getSeconds());

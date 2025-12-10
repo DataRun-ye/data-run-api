@@ -27,15 +27,24 @@ public class DdlExecutor {
      * Use REQUIRES_NEW so callers' transactions don't affect visibility/commit of the DDL.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void execute(String sql) {
+    public void execute(String sql, String baseFq) {
         Objects.requireNonNull(sql);
         log.info("Executing DDL (REQUIRES_NEW) - length={} chars", sql.length());
         // single-shot execute for generated DDL; keep simple
         jdbc.execute(sql);
+        addIndexes(baseFq);
         // committed by Spring when this method returns (REQUIRES_NEW)
         log.info("DDL executed and committed (REQUIRES_NEW)");
     }
 
+    public void addIndexes(String tableName) {
+        try {
+            jdbc.execute("CREATE UNIQUE INDEX IF NOT EXISTS " + tableName.replace('.', '_') + "_event_id_idx ON " + tableName + " (event_id)");
+            jdbc.execute("CREATE INDEX IF NOT EXISTS " + tableName.replace('.', '_') + "_updated_date_idx ON " + tableName + " (updated_at)");
+        } catch (Exception e) {
+            log.warn("Could not create indexes on {}: {}", tableName, e.getMessage());
+        }
+    }
     /**
      * Atomic swap for a template facts table.
      * Runs in its own transaction / connection to avoid interaction with outer txs.

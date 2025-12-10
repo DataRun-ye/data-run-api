@@ -266,7 +266,7 @@ public class SqlGenerator {
                     e.anchor_value_text,
                     e.anchor_ref_uid,
                     e.anchor_resolved_label,
-                    "e.updated_at"
+                    e.updated_at
                   FROM pivot.events_enriched e
                   WHERE e.template_uid = '%2$s'
                 )
