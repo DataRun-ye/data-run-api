@@ -62,7 +62,7 @@ public class PivotService {
             log.info("pivot: start creating indexes template={}, baseFq={}, sql-length={}", templateUid, baseFq, createSql.length());
             log.info("pivot: indexes created for template={}, baseFq={}", templateUid, baseFq);
             Duration duration = Duration.between(start, Instant.now());
-            manifestRepo.completeBuild(templateUid, duration, vr, null);
+            manifestRepo.completeBuild(templateUid, duration);
             return BuildResponse.success(duration.getSeconds());
         } catch (Exception ex) {
             manifestRepo.failBuild(templateUid, ex);

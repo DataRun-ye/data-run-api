@@ -24,14 +24,15 @@ public class PivotManifestRepository {
         String fqName = naming.fqFactTableForTemplate(templateUid);
         String sql = """
             INSERT INTO pivot.pivot_manifest(template_uid, view_name, version, status, build_started_at)
-            VALUES (?, ?, 1, ?, ?)
+            VALUES (?, ?, 1, ?, ?, ?)
             ON CONFLICT (template_uid) DO UPDATE
               SET status = EXCLUDED.status, build_started_at = EXCLUDED.build_started_at
             """;
         jdbc.update(sql, templateUid, fqName, "running", Timestamp.from(startedAt));
     }
 
-    public void completeBuild(String templateUid, java.time.Duration duration, Object vr1, Object vr2) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void completeBuild(String templateUid, java.time.Duration duration) {
         String sql = """
             UPDATE pivot.pivot_manifest
             SET status = ?,
@@ -43,6 +44,7 @@ public class PivotManifestRepository {
         jdbc.update(sql, "success", (int) duration.getSeconds(), "validation ok", templateUid);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void failBuild(String templateUid, Object reason) {
         String sql = """
                 UPDATE pivot.pivot_manifest
@@ -52,10 +54,6 @@ public class PivotManifestRepository {
                 WHERE template_uid = ?
                 """;
         jdbc.update(sql, "failed", reason == null ? "failed" : reason.toString(), templateUid);
-    }
-
-    public void failBuild(String templateUid, ValidationResult v1, ValidationResult v2) {
-        failBuild(templateUid, v1.message());
     }
 
     public StatusResponse getStatus(String templateUid) {
