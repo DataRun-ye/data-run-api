@@ -208,7 +208,8 @@ public class SqlGenerator {
             "e.anchor_option_set_uid",
             "e.anchor_value_text",
             "e.anchor_ref_uid",
-            "e.anchor_resolved_label"
+            "e.anchor_resolved_label",
+            "e.updated_at"
         );
 
         LinkedHashMap<String, String> exprs = new LinkedHashMap<>();
@@ -264,7 +265,8 @@ public class SqlGenerator {
                     e.anchor_option_set_uid,
                     e.anchor_value_text,
                     e.anchor_ref_uid,
-                    e.anchor_resolved_label
+                    e.anchor_resolved_label,
+                    "e.updated_at"
                   FROM pivot.events_enriched e
                   WHERE e.template_uid = '%2$s'
                 )
@@ -341,7 +343,7 @@ public class SqlGenerator {
             case "integer", "int", "numeric", "decimal", "float", "double" ->
                 String.format("MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_number END) AS \"%s\"", ceId, alias);
             case "boolean", "bool" ->
-                String.format("MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_bool END) AS \"%s\"", ceId, alias);
+                String.format("(MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_bool::text END))::bool AS \"%s\"", ceId, alias);
             case "timestamp", "date", "timestamptz" ->
                 String.format("MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_text END) AS \"%s\"", ceId, alias);
             default ->
