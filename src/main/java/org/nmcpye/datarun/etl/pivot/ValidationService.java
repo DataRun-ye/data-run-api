@@ -29,7 +29,7 @@ public class ValidationService {
         Objects.requireNonNull(baseFq, "baseFq required");
 
         // derive schema and table
-        String schema = "analytics";
+        String schema = "pivot";
         String table = baseFq;
         if (baseFq.contains(".")) {
             String[] parts = baseFq.split("\\.", 2);

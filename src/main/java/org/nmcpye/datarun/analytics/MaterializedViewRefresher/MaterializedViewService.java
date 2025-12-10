@@ -41,8 +41,10 @@ public class MaterializedViewService {
         m.put("analytics.dim_activity", "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.activity");
         m.put("analytics.dim_data_template", "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.data_template");
         m.put("analytics.dim_malaria_unit_user_group", "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.user_group");
-//        m.put("analytics.mv_assignments_detail", "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.assignment");
-//        m.put("analytics.mv_org_unit_hierarchy", "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.org_unit");
+
+        m.put("pivot.ref_value_enriched", "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.ref_type_value");
+        m.put("pivot.events_enriched", "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.events");
+        m.put("pivot.data_values_enriched", "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.tall_canonical");
         this.viewToSourceMaxSql = Collections.unmodifiableMap(m);
     }
 
