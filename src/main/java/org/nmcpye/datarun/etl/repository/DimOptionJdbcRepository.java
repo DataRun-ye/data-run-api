@@ -39,7 +39,9 @@ public class DimOptionJdbcRepository {
             + "WHERE option_set_uid = :optSetUid AND (option_code = :t OR option_uid = :t OR option_name = :t OR option_name_en = :t OR option_name_ar = :t) "
             + "ORDER BY CASE WHEN option_code = :t THEN 1 WHEN option_uid = :t THEN 2 WHEN option_name = :t THEN 3 WHEN option_name_en = :t THEN 4 WHEN option_name_ar = :t THEN 5 ELSE 6 END "
             + "LIMIT 1";
-        MapSqlParameterSource p = new MapSqlParameterSource().addValue("optSetUid", optionSetUid).addValue("t", token);
+        MapSqlParameterSource p = new MapSqlParameterSource()
+            .addValue("optSetUid", optionSetUid)
+            .addValue("t", token);
         var rows = jdbc.queryForList(sql, p);
         if (rows.isEmpty()) return Optional.empty();
         return Optional.of(rows.get(0));

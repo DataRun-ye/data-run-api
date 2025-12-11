@@ -81,8 +81,8 @@ public class SqlGenerator {
                   %2$s,
                   %3$s
                 FROM pivot.events_enriched e
-                LEFT JOIN pivot.data_values_enriched dv
-                    ON (dv.event_id = e.event_id OR dv.repeat_instance_id = e.event_id)
+                LEFT JOIN pivot.tall_canonical dv
+                    ON dv.instance_key = e.event_id
                 WHERE e.event_type IN ('root', 'submission') AND e.activity_uid = '%4$s'
                 GROUP BY
                   %2$s;
@@ -153,7 +153,7 @@ public class SqlGenerator {
                   %3$s
                 FROM pivot.events_enriched e
                 JOIN pivot.data_values_enriched dv
-                  ON  dv.event_id = e.event_id
+                  ON  dv.instance_key = e.event_id
                 WHERE e.event_type = 'repeat' AND e.activity_uid = '%4$s'
                 GROUP BY
                   %2$s;
@@ -259,7 +259,7 @@ public class SqlGenerator {
                     e.user_uid,
                     e.user_mobile,
                     e.user_first_name,
-                    e.anchor_ce_id",
+                    e.anchor_ce_id,
                     e.anchor_semantic_type,
                     e.anchor_data_type,
                     e.anchor_name,
@@ -275,8 +275,8 @@ public class SqlGenerator {
                   %3$s,
                   %4$s
                 FROM events e
-                LEFT JOIN pivot.data_values_enriched dv
-                    ON dv.event_id = e.event_id
+                LEFT JOIN analytics.tall_canonical dv
+                    ON dv.instance_key = e.event_id
                 GROUP BY
                   %3$s;
                 """,
@@ -306,10 +306,10 @@ public class SqlGenerator {
             || st.equals("org_unit") || st.equals("activity") || st.equals("assignment"))) {
 
             String labelExpr = String.format(
-                "MAX(CASE WHEN dv.canonical_element_id = '%s' THEN COALESCE(dv.resolved_ref_label, dv.value_text) END) AS \"%s\"",
+                "MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_text END) AS \"%s\"",
                 ceId, alias);
 
-            String uidCol = alias + "_" + (st.equals("orgunit") || st.equals("org_unit") ? "ou" : st) + "_uid";
+            String uidCol = alias + /*"_" + (st.equals("orgunit") || st.equals("org_unit") ? "ou" : st) +*/ "_uid";
             String uidExpr = String.format(
                 "MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_ref_uid END) AS \"%s\"",
                 ceId, uidCol);
@@ -348,7 +348,7 @@ public class SqlGenerator {
             case "timestamp", "date", "timestamptz" ->
                 String.format("MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_text END) AS \"%s\"", ceId, alias);
             default ->
-                String.format("MAX(CASE WHEN dv.canonical_element_id = '%s' THEN COALESCE(dv.resolved_ref_label, dv.value_text) END) AS \"%s\"", ceId, alias);
+                String.format("MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_text END) AS \"%s\"", ceId, alias);
         };
     }
 

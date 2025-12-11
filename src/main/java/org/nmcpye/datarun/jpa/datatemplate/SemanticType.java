@@ -39,7 +39,7 @@ public enum SemanticType {
     }
 
     static public List<SemanticType> refTypes() {
-        return List.of(OrgUnit, Option, OrgUnit, Team, MultiSelectOption);
+        return List.of(OrgUnit, Option, Activity, Team, MultiSelectOption);
     }
 
     public Boolean isRef() {

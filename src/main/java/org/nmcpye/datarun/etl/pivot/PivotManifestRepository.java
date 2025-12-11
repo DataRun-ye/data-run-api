@@ -24,7 +24,7 @@ public class PivotManifestRepository {
         String fqName = naming.fqFactTableForTemplate(templateUid);
         String sql = """
             INSERT INTO pivot.pivot_manifest(template_uid, view_name, version, status, build_started_at)
-            VALUES (?, ?, 1, ?, ?, ?)
+            VALUES (?, ?, 1, ?, ?)
             ON CONFLICT (template_uid) DO UPDATE
               SET status = EXCLUDED.status, build_started_at = EXCLUDED.build_started_at
             """;

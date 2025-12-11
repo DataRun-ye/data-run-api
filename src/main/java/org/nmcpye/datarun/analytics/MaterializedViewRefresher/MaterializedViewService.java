@@ -44,7 +44,7 @@ public class MaterializedViewService {
 
         m.put("pivot.ref_value_enriched", "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.ref_type_value");
         m.put("pivot.events_enriched", "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.events");
-        m.put("pivot.data_values_enriched", "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.tall_canonical");
+//        m.put("pivot.data_values_enriched", "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.tall_canonical");
         this.viewToSourceMaxSql = Collections.unmodifiableMap(m);
     }
 

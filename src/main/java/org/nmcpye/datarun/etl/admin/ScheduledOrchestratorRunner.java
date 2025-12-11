@@ -28,7 +28,9 @@ public class ScheduledOrchestratorRunner {
         this.orchestrator = orchestrator;
     }
 
-    @Scheduled(cron = "0 */10 * * * *")
+    //
+
+    @Scheduled(cron = "${migration.cron:0 */1 * * * *}")
     public void scheduledRun() {
         log.info("Checking for pending outbox events...");
         Integer countPending = jdbc.queryForObject(

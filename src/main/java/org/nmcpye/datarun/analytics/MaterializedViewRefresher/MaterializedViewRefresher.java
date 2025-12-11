@@ -74,8 +74,8 @@ public class MaterializedViewRefresher {
             "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.ref_type_value");
         viewToSourceMaxSql.put("pivot.events_enriched",
             "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.events");
-        viewToSourceMaxSql.put("pivot.data_values_enriched",
-            "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.tall_canonical");
+//        viewToSourceMaxSql.put("pivot.data_values_enriched",
+//            "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.tall_canonical");
     }
 
     @PostConstruct

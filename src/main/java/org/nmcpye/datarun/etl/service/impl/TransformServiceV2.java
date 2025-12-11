@@ -151,11 +151,13 @@ public class TransformServiceV2 {
                     .build();
 
                 r.setValueRefUid(resolvedUid);
+
                 if (token == null && r.getValueJson() != null) {
                     refTypeValue.setRawValue(r.getValueJson());
-                    r.setValueRefType(refType);
-                    refTypeValue.setRefType(refType);
                 }
+
+                r.setValueRefType(refType);
+
 
                 if (refTypeValue.getCeId() != null) {
                     refTypeValues.putIfAbsent(refTypeValue.getCeId(), refTypeValue);
