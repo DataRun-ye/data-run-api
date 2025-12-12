@@ -89,24 +89,22 @@ public class SqlGenerator {
                 CREATE TABLE %1$s AS
                 WITH events AS (
                   SELECT
+                    e.template_uid,
                     e.submission_uid,
                     e.submission_serial,
                     e.event_type,
                     e.event_name,
                     e.parent_event_id,
-                    e.event_ce_id,
                     e.event_id,
-                    e.event_ce_id,
                     e.assigned_org_unit_gov,
                     e.assigned_org_unit_district,
-                    e.assigned_org_unit_code,
                     e.assigned_org_unit_name,
                     e.activity_name,
                     e.assigned_team_code,
                     e.planned_day,
                     e.user_group_name,
                     e.user_first_name,
-                    e.template_uid,
+                    e.assigned_org_unit_code,
                     e.submission_creation_time,
                     e.start_time,
                     e.assigned_assignment_uid,
@@ -124,6 +122,7 @@ public class SqlGenerator {
                     e.anchor_value_text,
                     e.anchor_ref_uid,
                     e.anchor_resolved_label,
+                    e.event_ce_id,
                     e.updated_at
                   FROM pivot.events_enriched e
                   WHERE e.template_uid = '%2$s'
