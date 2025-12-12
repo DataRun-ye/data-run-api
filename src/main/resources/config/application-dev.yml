@@ -22,11 +22,10 @@ logging:
         security:
           web:
             FilterChainProxy=TRACE:
+    ROOT: INFO
     org.springframework.batch: INFO
-#    org.nmcpye.datarun.jpa.datasubmission.migration: DEBUG
-    org.nmcpye.datarun.etl: INFO
-    ROOT: DEBUG
-#    tech.jhipster: DEBUG
+    tech.jhipster: DEBUG
+    org.nmcpye.datarun: DEBUG
 #    org.hibernate.SQL: DEBUG
 #    org.nmcpye.datarun: DEBUG
 
@@ -155,7 +154,7 @@ migration:
   run: true
   auto-start: true
 
-  size: 400
+  size: 200
   cron: "0 */1 * * * *"
   generate-missing-ids: true
   submissionUids: Eelt7ZePvz0, LaGeMmmCEtH, QIMwgBqVsqW, zglED4TsbTh, M3fdtzBSpn8, RQlMiMcukid, gGyX1CVnOaw, YLcsWJlB7uy, hcLU8ZtUdSd, Ls9TW9eSlYH, ck2pHW93sk2, rkwH5QNofRn, KcsA3KETRbY, woOl5yAmi8C, BoEmHvJUEpb,W8EtCDYfp1w, MrxGOZ6stwS, UYBPOIfCU0a, mpmjpJcMuas, IP2dMtoJkO4, ONIaOpzoYAe

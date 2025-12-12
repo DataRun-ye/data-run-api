@@ -23,7 +23,7 @@ public class PivotManifestRepository {
     public void startBuild(String templateUid, Instant startedAt) {
         String fqName = naming.fqFactTableForTemplate(templateUid);
         String sql = """
-            INSERT INTO pivot.pivot_manifest(template_uid, view_name, version, status, build_started_at)
+            INSERT INTO analytics.pivot_manifest(template_uid, view_name, version, status, build_started_at)
             VALUES (?, ?, 1, ?, ?)
             ON CONFLICT (template_uid) DO UPDATE
               SET status = EXCLUDED.status, build_started_at = EXCLUDED.build_started_at
@@ -34,7 +34,7 @@ public class PivotManifestRepository {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void completeBuild(String templateUid, java.time.Duration duration) {
         String sql = """
-            UPDATE pivot.pivot_manifest
+            UPDATE analytics.pivot_manifest
             SET status = ?,
                 build_finished_at = now(),
                 build_duration_secs = ?,
@@ -47,12 +47,12 @@ public class PivotManifestRepository {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void failBuild(String templateUid, Object reason) {
         String sql = """
-                UPDATE pivot.pivot_manifest
-                SET status = ?,
-                    build_finished_at = now(),
-                    notes = ?
-                WHERE template_uid = ?
-                """;
+            UPDATE analytics.pivot_manifest
+            SET status = ?,
+                build_finished_at = now(),
+                notes = ?
+            WHERE template_uid = ?
+            """;
         jdbc.update(sql, "failed", reason == null ? "failed" : reason.toString(), templateUid);
     }
 
@@ -65,7 +65,7 @@ public class PivotManifestRepository {
                    build_duration_secs,
                    columns_json,
                    notes
-            FROM pivot.pivot_manifest
+            FROM analytics.pivot_manifest
             WHERE template_uid = ?
             """;
         return jdbc.queryForObject(sql, new Object[]{templateUid}, (rs, rn) -> {

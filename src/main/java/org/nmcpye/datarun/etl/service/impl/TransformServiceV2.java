@@ -37,7 +37,7 @@ public class TransformServiceV2 {
 
     public static class ResolutionCandidate {
         public final RefTypeValue refTypeValue;
-        //        public final String resolvedUid;
+//        public final String resolvedUid;
 //        public final String rawToken;
         public final double confidence;
         public final Instant resolvedAt;

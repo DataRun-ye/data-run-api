@@ -23,167 +23,24 @@ public class SqlGenerator {
     }
 
     /**
-     * Create a wide table pivoting top-level (non-repeat) events for an activity.
-     * Writes to {baseFq}_new.
-     */
-    public String buildSubmissionCreateSqlForBase(String baseFq, String activityId, List<CanonicalElement> ces) {
-        String tableNew = Naming.newName(baseFq);
-
-
-        // top-level CEs: parentRepeatId == null
-        List<CanonicalElement> rootCes = ces.stream()
-            .filter(c -> c.getParentRepeatId() == null)
-            .toList();
-
-        LinkedHashMap<String, String> exprs = new LinkedHashMap<>();
-        for (CanonicalElement c : rootCes) {
-            String base = Optional.ofNullable(c.getSafeName()).filter(s -> !s.isBlank()).orElse(c.getCanonicalElementId());
-            String alias = wrap(base);
-            exprs.put(alias, getExpression(c, alias));
-        }
-
-        String pivotCols = String.join(",\n    ", exprs.values());
-
-        if (exprs.isEmpty()) {
-            // create empty table with the dims but no pivoted columns
-            String emptySql = String.format("DROP TABLE IF EXISTS %1$s; CREATE TABLE %1$s AS SELECT %2$s WHERE false;", tableNew, rootCes);
-            return emptySql;
-        }
-
-        // dimensions / group by keys
-        String dims = String.join(", ",
-            "e.event_id",
-            "e.parent_event_id",
-            "e.event_ce_id",
-            "e.template_uid",
-            "e.submission_uid",
-            "e.submission_creation_time",
-            "e.event_type",
-            "e.event_name",
-            "e.assigned_assignment_uid",
-            "e.activity_uid",
-            "e.assigned_team_uid",
-            "e.assigned_org_unit_uid",
-            "e.anchor_ce_id",
-            "e.anchor_semantic_type",
-            "e.anchor_data_type",
-            "e.anchor_name",
-            "e.anchor_option_set_uid",
-            "e.anchor_value_text",
-            "e.anchor_ref_uid",
-            "e.anchor_resolved_label"
-        );
-
-        String sql = String.format("""
-                DROP TABLE IF EXISTS %1$s;
-                CREATE TABLE %1$s AS
-                SELECT
-                  %2$s,
-                  %3$s
-                FROM pivot.events_enriched e
-                LEFT JOIN pivot.tall_canonical dv
-                    ON dv.instance_key = e.event_id
-                WHERE e.event_type IN ('root', 'submission') AND e.activity_uid = '%4$s'
-                GROUP BY
-                  %2$s;
-                """,
-            tableNew,   // %1$s
-            dims,       // %2$s
-            pivotCols,  // %3$s
-            activityId  // %4$s
-        );
-
-        return sql;
-    }
-
-    /**
-     * Create a wide table pivoting repeat-child events for an activity.
-     * Writes to {baseFq}_new (usually baseFq ends with _repeats)
-     */
-    public String buildRepeatsCreateSqlForBase(String baseFq, String activityId, List<CanonicalElement> ces) {
-        String newFq = Naming.newName(baseFq);
-        String tableNew = baseFq + newFq;
-
-        // child CEs: parentRepeatId != null
-        List<CanonicalElement> childCes = ces.stream()
-            .filter(c -> c.getParentRepeatId() != null)
-            .toList();
-
-        LinkedHashMap<String, String> exprs = new LinkedHashMap<>();
-        for (CanonicalElement c : childCes) {
-            String base = Optional.ofNullable(c.getSafeName()).filter(s -> !s.isBlank()).orElse(c.getCanonicalElementId());
-            String alias = wrap(base);
-            exprs.put(alias, getExpression(c, alias));
-        }
-
-        String pivotCols = String.join(",\n    ", exprs.values());
-
-        // dimensions / group by keys for repeat events
-        String dims = String.join(", ",
-            "e.event_id",
-            "e.parent_event_id",
-            "e.event_ce_id",
-            "e.template_uid",
-            "e.submission_uid",
-            "e.submission_creation_time",
-            "e.event_type",
-            "e.event_name",
-            "e.assigned_assignment_uid",
-            "e.activity_uid",
-            "e.assigned_team_uid",
-            "e.assigned_org_unit_uid",
-            "e.anchor_ce_id",
-            "e.anchor_semantic_type",
-            "e.anchor_data_type",
-            "e.anchor_name",
-            "e.anchor_option_set_uid",
-            "e.anchor_value_text",
-            "e.anchor_ref_uid",
-            "e.anchor_resolved_label",
-            "dv.repeat_instance_id",
-            "dv.parent_repeat_id",
-            "dv.repeat_index"
-        );
-
-        String sql = String.format("""
-                DROP TABLE IF EXISTS %1$s;
-                CREATE TABLE %1$s AS
-                SELECT
-                  %2$s,
-                  %3$s
-                FROM pivot.events_enriched e
-                JOIN pivot.data_values_enriched dv
-                  ON  dv.instance_key = e.event_id
-                WHERE e.event_type = 'repeat' AND e.activity_uid = '%4$s'
-                GROUP BY
-                  %2$s;
-                """,
-            tableNew,   // %1$s
-            dims,       // %2$s
-            pivotCols,  // %3$s
-            activityId  // %4$s
-        );
-
-        return sql;
-    }
-
-    /**
      * Creates SQL that writes to {baseFq}_new (baseFq must include schema, e.g. pivot.fact_mytemplate)
      */
+    // --- REPLACE buildTemplateCreateSqlForBase(...) method body with this ---
     public String buildTemplateCreateSqlForBase(String baseFq, String templateUid, List<CanonicalElement> ces) {
         String tableNew = Naming.newName(baseFq);
 
-        // dims (event-level) — adjust to exactly the columns present in events_enriched
         String dims = String.join(", ",
-            "e.event_id",
-            "e.parent_event_id",
-            "e.event_ce_id",
-            "e.template_uid",
             "e.submission_uid",
-            "e.start_time",
-            "e.submission_creation_time",
+            "e.submission_serial",
             "e.event_type",
             "e.event_name",
+            "e.parent_event_id",
+            "e.event_ce_id",
+            "e.event_id",
+
+            "e.template_uid",
+            "e.start_time",
+            "e.submission_creation_time",
             "e.assigned_assignment_uid",
             "e.activity_uid",
             "e.assigned_team_uid",
@@ -216,13 +73,12 @@ public class SqlGenerator {
         LinkedHashMap<String, String> exprs = new LinkedHashMap<>();
         for (CanonicalElement c : ces) {
             String base = Optional.ofNullable(c.getSafeName()).filter(s -> !s.isBlank()).orElse(c.getCanonicalElementId());
-            String alias = wrap(base); // wrap() already defined in your SqlGenerator
+            String alias = wrap(base);
             exprs.put(alias, getExpression(c, alias));
         }
         String pivotCols = String.join(",\n    ", exprs.values());
 
         if (exprs.isEmpty()) {
-            // create empty table with the dims but no pivoted columns
             String emptySql = String.format("DROP TABLE IF EXISTS %1$s; CREATE TABLE %1$s AS SELECT %2$s WHERE false;",
                 tableNew, dims);
             return emptySql;
@@ -233,20 +89,14 @@ public class SqlGenerator {
                 CREATE TABLE %1$s AS
                 WITH events AS (
                   SELECT
-                    e.event_id,
-                    e.parent_event_id,
-                    e.event_ce_id,
-                    e.template_uid,
                     e.submission_uid,
-                    e.submission_creation_time,
-                    e.start_time,
+                    e.submission_serial,
                     e.event_type,
                     e.event_name,
-                    e.assigned_assignment_uid,
-                    e.activity_uid,
-                    e.assigned_team_uid,
-                    e.assigned_org_unit_uid,
-
+                    e.parent_event_id,
+                    e.event_ce_id,
+                    e.event_id,
+                    e.event_ce_id,
                     e.assigned_org_unit_gov,
                     e.assigned_org_unit_district,
                     e.assigned_org_unit_code,
@@ -255,10 +105,17 @@ public class SqlGenerator {
                     e.assigned_team_code,
                     e.planned_day,
                     e.user_group_name,
+                    e.user_first_name,
+                    e.template_uid,
+                    e.submission_creation_time,
+                    e.start_time,
+                    e.assigned_assignment_uid,
+                    e.activity_uid,
+                    e.assigned_team_uid,
+                    e.assigned_org_unit_uid,
                     e.user_group_code,
                     e.user_uid,
                     e.user_mobile,
-                    e.user_first_name,
                     e.anchor_ce_id,
                     e.anchor_semantic_type,
                     e.anchor_data_type,
@@ -270,25 +127,47 @@ public class SqlGenerator {
                     e.updated_at
                   FROM pivot.events_enriched e
                   WHERE e.template_uid = '%2$s'
+                ),
+                -- nearest lookup: find closest ancestor (distance ASC) that has a tall_canonical row
+                nearest_vals AS (
+                  SELECT
+                    ea.target_event,
+                    tc.canonical_element_id,
+                    tc.value_text,
+                    tc.value_number,
+                    tc.value_bool,
+                    tc.value_json,
+                    tc.value_ref_uid,
+                    row_number() OVER (
+                      PARTITION BY ea.target_event, tc.canonical_element_id
+                      ORDER BY ea.distance
+                    ) AS rn
+                  FROM analytics.event_ancestors ea
+                  JOIN analytics.tall_canonical tc
+                    ON tc.instance_key = ea.ancestor_event
+                  WHERE ea.target_event IN (SELECT event_id FROM events)
+                ),
+                nearest AS (
+                  SELECT target_event, canonical_element_id, value_text, value_number, value_bool, value_json, value_ref_uid
+                  FROM nearest_vals WHERE rn = 1
                 )
                 SELECT
                   %3$s,
                   %4$s
                 FROM events e
-                LEFT JOIN analytics.tall_canonical dv
-                    ON dv.instance_key = e.event_id
+                LEFT JOIN nearest n
+                    ON n.target_event = e.event_id
                 GROUP BY
                   %3$s;
                 """,
-            tableNew,       // %1$s
-            templateUid,    // %2$s
-            dims,           // %3$s
-            pivotCols       // %4$s
+            tableNew,
+            templateUid,
+            dims,
+            pivotCols
         );
 
         return sql;
     }
-
 
     /**
      * Generate pivot expression(s) for a canonical element.
@@ -301,55 +180,38 @@ public class SqlGenerator {
         String dt = Optional.ofNullable(c.getDataType()).orElse("").toLowerCase(Locale.ROOT);
         String st = Optional.ofNullable(c.getSemanticType()).orElse("").toLowerCase(Locale.ROOT);
 
-        // ref types -> label and uid (and option_set_uid for option)
+        // expressions reference alias 'n' (nearest)
+        String n_text = String.format("MAX(CASE WHEN n.canonical_element_id = '%s' THEN n.value_text END)", ceId);
+        String n_num = String.format("MAX(CASE WHEN n.canonical_element_id = '%s' THEN n.value_number END)", ceId);
+        String n_bool = String.format("MAX(CASE WHEN n.canonical_element_id = '%s' THEN n.value_bool::text END)", ceId);
+        String n_json = String.format("MAX(CASE WHEN n.canonical_element_id = '%s' THEN n.value_json::text END)", ceId);
+        String n_ref = String.format("MAX(CASE WHEN n.canonical_element_id = '%s' THEN n.value_ref_uid END)", ceId);
+
+        // ref types -> label and uid
         if (!st.isEmpty() && (st.equals("option") || st.equals("team") || st.equals("orgunit")
             || st.equals("org_unit") || st.equals("activity") || st.equals("assignment"))) {
 
-            String labelExpr = String.format(
-                "MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_text END) AS \"%s\"",
-                ceId, alias);
+            String labelExpr = String.format("%s AS \"%s\"", n_text, alias);
 
-            String uidCol = alias + /*"_" + (st.equals("orgunit") || st.equals("org_unit") ? "ou" : st) +*/ "_uid";
-            String uidExpr = String.format(
-                "MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_ref_uid END) AS \"%s\"",
-                ceId, uidCol);
+            String uidCol = alias + "_uid";
+            String uidExpr = String.format("%s AS \"%s\"", n_ref, uidCol);
 
-//            if ("option".equals(st)) {
-//                String optionSetExpr = String.format(
-//                    "MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.ref_option_set_uid END) AS \"%s_option_set_uid\"",
-//                    ceId, alias);
-//                return labelExpr + ",\n    " + uidExpr + ",\n    " + optionSetExpr;
-//            } else {
-                return labelExpr + ",\n    " + uidExpr;
-//            }
+            return labelExpr + ",\n    " + uidExpr;
         }
 
-        // JSON / ARRAY: if semantic type is repeat -> jsonb_agg, else single-value MAX-cast
+        // JSON / ARRAY (single-valued or multiselect stored as json) -- keep simple coalesce behavior
         if ("json".equals(dt) || "array".equals(dt)) {
-            if ("repeat".equals(st)) {
-                // collect all json values into an array
-                return String.format(
-                    "COALESCE(jsonb_agg(DISTINCT dv.value_json) FILTER (WHERE dv.canonical_element_id = '%s'), '[]'::jsonb) AS \"%s\"",
-                    ceId, alias);
-            } else {
-                // single-valued: aggregate text and cast back to jsonb
-                return String.format(
-                    "(MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_json::text END))::jsonb AS \"%s\"",
-                    ceId, alias);
-            }
+            // single-valued: take nearest.value_json
+            return String.format("(%s)::jsonb AS \"%s\"", n_json, alias);
         }
 
-        // non-ref scalar types -> single expression
+        // non-ref scalar types -> single expression with MAX(...) like before
         return switch (dt) {
             case "integer", "int", "numeric", "decimal", "float", "double" ->
-                String.format("MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_number END) AS \"%s\"", ceId, alias);
-            case "boolean", "bool" ->
-                String.format("(MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_bool::text END))::bool AS \"%s\"", ceId, alias);
-            case "timestamp", "date", "timestamptz" ->
-                String.format("MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_text END) AS \"%s\"", ceId, alias);
-            default ->
-                String.format("MAX(CASE WHEN dv.canonical_element_id = '%s' THEN dv.value_text END) AS \"%s\"", ceId, alias);
+                String.format("%s AS \"%s\"", n_num, alias);
+            case "boolean", "bool" -> String.format("(%s)::bool AS \"%s\"", n_bool, alias);
+            case "timestamp", "date", "timestamptz" -> String.format("%s AS \"%s\"", n_text, alias);
+            default -> String.format("%s AS \"%s\"", n_text, alias);
         };
     }
-
 }

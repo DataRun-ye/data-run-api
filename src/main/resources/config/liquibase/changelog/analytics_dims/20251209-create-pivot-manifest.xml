@@ -7,7 +7,7 @@
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
 
     <changeSet id="2025-12-09-create-pivot-manifest" author="hamza">
-        <createTable tableName="pivot_manifest" schemaName="pivot">
+        <createTable tableName="pivot_manifest" schemaName="analytics">
             <column name="template_uid" type="varchar(255)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
