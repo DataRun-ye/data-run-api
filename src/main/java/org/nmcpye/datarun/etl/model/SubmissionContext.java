@@ -59,4 +59,9 @@ public class SubmissionContext implements Serializable {
     private Instant startTime;
     @Builder.Default
     private Instant submissionCreationTime = Instant.now();
+
+    @NotNull
+    private String createdBy;
+    private String lastModifiedBy;
+
 }

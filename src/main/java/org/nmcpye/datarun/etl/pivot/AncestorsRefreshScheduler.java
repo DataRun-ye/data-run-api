@@ -33,7 +33,7 @@ public class AncestorsRefreshScheduler {
     public void scheduleRefresh() {
         String sql = """
           SELECT DISTINCT e.template_uid
-          FROM pivot.events_enriched e
+          FROM analytics.events_enriched e
           LEFT JOIN analytics.mv_refresh_log l ON l.view_name = e.template_uid
           WHERE l.last_refresh IS NULL OR e.updated_at > l.last_refresh
         """;

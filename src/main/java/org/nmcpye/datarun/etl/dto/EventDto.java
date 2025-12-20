@@ -56,6 +56,8 @@ public class EventDto {
     private BigDecimal anchorConfidence;
     private Instant anchorResolvedAt;
 
+    private String createdBy;
+    private String lastModifiedBy;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -74,6 +76,8 @@ public class EventDto {
         .activityUid(rs.getString("activity_uid"))
         .orgUnitUid(rs.getString("org_unit_uid"))
         .teamUid(rs.getString("team_uid"))
+        .createdBy(rs.getString("created_by"))
+        .lastModifiedBy(rs.getString("last_modified_by"))
         .templateUid(rs.getString("template_uid"))
         .submissionCreationTime(getInstant(rs, "submission_creation_time"))
         .startTime(getInstant(rs, "start_time"))

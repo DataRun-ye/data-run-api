@@ -25,12 +25,12 @@ public class EventEntityJdbcRepository {
             + "INSERT INTO analytics.events ("
             + "event_id, event_type, submission_uid, submission_id, submission_serial, "
             + "parent_event_id, event_ce_id, assignment_uid, activity_uid, org_unit_uid, team_uid, template_uid, "
-            + "submission_creation_time, start_time, last_seen, "
+            + "submission_creation_time, start_time, last_seen, created_by, last_modified_by, "
             + "anchor_ce_id, anchor_ref_uid, anchor_value_text, anchor_value_ref_type, anchor_confidence, anchor_resolved_at, created_at, updated_at) "
             + "VALUES ("
             + ":eventId, :eventType, :submissionUid, :submissionId, :submissionSerial, "
             + ":parentEventId, :eventCeId, :assignmentUid, :activityUid, :orgUnitUid, :teamUid, :templateUid, "
-            + ":submissionCreationTime, :startTime, :lastSeen, "
+            + ":submissionCreationTime, :startTime, :lastSeen,  :createdBy, :lastModifiedBy, "
             + ":anchorCeId, :anchorRefUid, :anchorValueText, :anchorValueRefType, :anchorConfidence, :anchorResolvedAt, "
             + "CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) "
             + "ON CONFLICT (event_id) DO UPDATE SET "
@@ -48,6 +48,8 @@ public class EventEntityJdbcRepository {
             + "template_uid = COALESCE(EXCLUDED.template_uid, events.template_uid), "
             + "submission_creation_time = COALESCE(events.submission_creation_time, EXCLUDED.submission_creation_time), "
             + "start_time = COALESCE(events.start_time, EXCLUDED.start_time), "
+            + "created_by = COALESCE(events.created_by, EXCLUDED.created_by), "
+            + "last_modified_by = COALESCE(events.last_modified_by, EXCLUDED.last_modified_by), "
             + "last_seen = GREATEST(COALESCE(events.last_seen, TIMESTAMP '1970-01-01'), COALESCE(EXCLUDED.last_seen, TIMESTAMP '1970-01-01')), "
             // anchor update: replace
             + "anchor_ref_uid = EXCLUDED.anchor_ref_uid, "
@@ -75,6 +77,8 @@ public class EventEntityJdbcRepository {
             .addValue("submissionCreationTime", getTimestamp(eventDto.submissionCreationTime()))
             .addValue("startTime", getTimestamp(eventDto.startTime()))
             .addValue("lastSeen", getTimestamp(eventDto.lastSeen()))
+            .addValue("createdBy", eventDto.createdBy())
+            .addValue("lastModifiedBy", eventDto.lastModifiedBy())
             .addValue("anchorCeId", ceId)
             .addValue("anchorRefUid", eventDto.anchorRefUid())
             .addValue("anchorValueText", eventDto.anchorValueText())
@@ -106,12 +110,12 @@ public class EventEntityJdbcRepository {
             + "INSERT INTO analytics.events ("
             + "event_id, event_type, submission_uid, submission_id, submission_serial, "
             + "parent_event_id, event_ce_id, assignment_uid, activity_uid, org_unit_uid, team_uid, template_uid, "
-            + "submission_creation_time, start_time, last_seen, "
+            + "submission_creation_time, start_time, last_seen, created_by, last_modified_by, "
             + "anchor_ce_id, anchor_ref_uid, anchor_value_text, anchor_value_ref_type, anchor_confidence, anchor_resolved_at, created_at, updated_at) "
             + "VALUES ("
             + ":eventId, :eventType, :submissionUid, :submissionId, :submissionSerial, "
             + ":parentEventId, :eventCeId, :assignmentUid, :activityUid, :orgUnitUid, :teamUid, :templateUid, "
-            + ":submissionCreationTime, :startTime, :lastSeen, "
+            + ":submissionCreationTime, :startTime, :lastSeen, :createdBy, :lastModifiedBy, "
             + ":anchorCeId, :anchorRefUid, :anchorValueText, :anchorValueRefType, :anchorConfidence, :anchorResolvedAt, "
             + "CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) "
             + "ON CONFLICT (event_id) DO UPDATE SET "
@@ -126,6 +130,8 @@ public class EventEntityJdbcRepository {
             + "org_unit_uid = COALESCE(EXCLUDED.org_unit_uid, events.org_unit_uid), "
             + "team_uid = COALESCE(EXCLUDED.team_uid, events.team_uid), "
             + "template_uid = COALESCE(EXCLUDED.template_uid, events.template_uid), "
+            + "created_by = COALESCE(events.created_by, EXCLUDED.created_by), "
+            + "last_modified_by = COALESCE(events.last_modified_by, EXCLUDED.last_modified_by), "
             + "submission_creation_time = COALESCE(events.submission_creation_time, EXCLUDED.submission_creation_time), "
             + "start_time = COALESCE(events.start_time, EXCLUDED.start_time), "
             + "last_seen = GREATEST(COALESCE(events.last_seen, TIMESTAMP '1970-01-01'), COALESCE(EXCLUDED.last_seen, TIMESTAMP '1970-01-01')), "
@@ -179,6 +185,8 @@ public class EventEntityJdbcRepository {
                 .addValue("orgUnitUid", e.orgUnitUid())
                 .addValue("teamUid", e.teamUid())
                 .addValue("templateUid", e.templateUid())
+                .addValue("createdBy", e.createdBy())
+                .addValue("lastModifiedBy", e.lastModifiedBy())
                 .addValue("submissionCreationTime", getTimestamp(e.submissionCreationTime()))
                 .addValue("startTime", getTimestamp(e.startTime()))
                 .addValue("lastSeen", getTimestamp(e.lastSeen()))

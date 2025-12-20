@@ -22,10 +22,6 @@ public class DdlExecutor {
     private final JdbcTemplate jdbc;
     private final Naming naming;
 
-    /**
-     * Execute DDL in an isolated transaction that is committed when the method returns.
-     * Use REQUIRES_NEW so callers' transactions don't affect visibility/commit of the DDL.
-     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void execute(String sql, String baseFq) {
         Objects.requireNonNull(sql);
@@ -45,10 +41,7 @@ public class DdlExecutor {
             log.warn("Could not create indexes on {}: {}", tableName, e.getMessage());
         }
     }
-    /**
-     * Atomic swap for a template facts table.
-     * Runs in its own transaction / connection to avoid interaction with outer txs.
-     */
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void atomicSwapTemplate(String templateUid) {
         String baseFq = naming.fqFactTableForTemplate(templateUid); // e.g. "analytics.fact_ggyx1cvnoaw"

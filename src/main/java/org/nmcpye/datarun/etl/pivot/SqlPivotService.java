@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  * General pivoting service: builds facts_wide table per template and populates it.
  *
  * Assumptions (explicit):
- * - tables exist: pivot.events_enriched, pivot.data_values_enriched, public.canonical_element
+ * - tables exist: analytics.events_enriched, public.tall_canonical, public.canonical_element
  * - canonical_element rows for a template include: canonical_element_id, safe_name, semantic_type, data_type, is_multiselect (boolean)
  * - event_id is canonical id (submission uid || repeat instance id)
  *
@@ -38,7 +38,7 @@ public class SqlPivotService {
 
     public void buildForAllTemplates() {
         List<String> templates = jdbc.query(
-            "SELECT DISTINCT template_uid FROM pivot.events_enriched",
+            "SELECT DISTINCT template_uid FROM analytics.events_enriched",
             (rs, rowNum) -> rs.getString("template_uid")
         );
         log.info("Found {} templates to build", templates.size());
@@ -174,8 +174,8 @@ public class SqlPivotService {
         // We'll include dv in join so MAX(CASE...) works; multiselects are handled via subqueries above (so duplicates OK)
         String sql = "INSERT INTO " + tableName + " (" + targetCols + ")\n" +
             "SELECT\n  " + selectList + "\n" +
-            "FROM pivot.events_enriched ev\n" +
-            "LEFT JOIN pivot.data_values_enriched dv ON dv.event_id = ev.event_id\n" +
+            "FROM analytics.events_enriched ev\n" +
+            "LEFT JOIN analytics.data_values_enriched dv ON dv.event_id = ev.event_id\n" +
             "WHERE ev.template_uid = '" + escapeLiteral(templateUid) + "'\n" +
             "GROUP BY ev.event_id, ev.parent_event_id, ev.submission_uid, ev.template_uid, ev.submission_creation_time;";
         return sql;

@@ -136,6 +136,8 @@ public class EventProcessorServiceImpl implements EventProcessorService {
                 r.setActivity(submissionContext.getActivityUid());
                 r.setAssignment(submissionContext.getAssignmentUid());
                 r.setOrgUnit(submissionContext.getOrgUnitUid());
+                r.setCreatedBy(submissionContext.getCreatedBy());
+                r.setLastModifiedBy(submissionContext.getLastModifiedBy());
                 r.setTeam(submissionContext.getTeamUid());
                 r.setIsDeleted(Boolean.FALSE);
             }

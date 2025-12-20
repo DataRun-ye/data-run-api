@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -33,8 +32,10 @@ public class PivotService {
 
         manifestRepo.startBuild(templateUid, start);
 
-        List<CanonicalElement> ces = ceRepo.getElementsForTemplate(templateUid)
-            .stream().filter(ce -> !Objects.equals(ce.getSemanticType(), "Repeat")).toList();
+        List<CanonicalElementWithConfig> ces = ceRepo.getElementsForTemplateWithConfig(templateUid)
+            .stream()
+            .filter(ce -> !"Repeat".equalsIgnoreCase(ce.getSemanticType()))
+            .toList();
 
         if (ces.isEmpty()) {
             String msg = "No CE metadata found for template=" + templateUid;

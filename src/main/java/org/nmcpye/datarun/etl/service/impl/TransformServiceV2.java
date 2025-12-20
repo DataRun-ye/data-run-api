@@ -37,8 +37,6 @@ public class TransformServiceV2 {
 
     public static class ResolutionCandidate {
         public final RefTypeValue refTypeValue;
-//        public final String resolvedUid;
-//        public final String rawToken;
         public final double confidence;
         public final Instant resolvedAt;
         public final int priority;
@@ -60,26 +58,26 @@ public class TransformServiceV2 {
      * @param flattenPrimitiveArrays flatten flag forwarded to base transform
      * @param submissionContext      context map with keys: submissionUid, submissionId, templateUid, templateVersionUid, submissionCreationTime, startTime, assignmentUid, activityUid, orgUnitUid, teamUid
      */
-    // replace the inner content of transform(...) with the following:
     public List<TallCanonicalRow> transform(JsonNode root,
                                             boolean flattenPrimitiveArrays,
                                             SubmissionContext submissionContext,
                                             TemplateContext templateContext) {
 
-        String submissionUid = submissionContext.getSubmissionUid();
-        Long submissionSerial = submissionContext.getSubmissionSerial();
-        String submissionId = submissionContext.getSubmissionId();
-        String templateUid = submissionContext.getTemplateUid();
-        String templateVersionUid = submissionContext.getTemplateVersionUid();
-        String activityUid = submissionContext.getActivityUid();
-        String orgUnitUid = submissionContext.getOrgUnitUid();
-        String teamUid = submissionContext.getTeamUid();
-        String assignmentUid = submissionContext.getAssignmentUid();
-        Instant submissionCreationTime = submissionContext.getSubmissionCreationTime();
-        Instant startTime = submissionContext.getStartTime();
+//        String submissionUid = submissionContext.getSubmissionUid();
+//        Long submissionSerial = submissionContext.getSubmissionSerial();
+//        String submissionId = submissionContext.getSubmissionId();
+//        String templateUid = submissionContext.getTemplateUid();
+//        String templateVersionUid = submissionContext.getTemplateVersionUid();
+//        String activityUid = submissionContext.getActivityUid();
+//        String orgUnitUid = submissionContext.getOrgUnitUid();
+//        String teamUid = submissionContext.getTeamUid();
+//        String assignmentUid = submissionContext.getAssignmentUid();
+//        Instant submissionCreationTime = submissionContext.getSubmissionCreationTime();
+//        Instant startTime = submissionContext.getStartTime();
 
         log.debug("TransformV2: submissionUid={}, templateUid={}, templateVersionUid={}, payloadNull={}",
-            submissionUid, templateUid, templateVersionUid, root == null);
+            submissionContext.getSubmissionUid(), submissionContext.getTemplateUid(),
+            submissionContext.getTemplateVersionUid(), root == null);
 
         List<TallCanonicalRow> rows = baseTransform.transform(
             root,
@@ -88,7 +86,8 @@ public class TransformServiceV2 {
         );
 
         if (rows == null || rows.isEmpty()) {
-            log.debug("TransformV2: baseTransform returned no rows for submissionUid={}", submissionUid);
+            log.debug("TransformV2: baseTransform returned no rows for submissionUid={}",
+                submissionContext.getSubmissionUid());
             return Collections.emptyList();
         }
 
@@ -102,17 +101,20 @@ public class TransformServiceV2 {
         // 1) scan rows: provenance, record repeat CE, resolve refs, collect candidates, capture parent from row
         for (TallCanonicalRow r : rows) {
             // provenance
-            r.setSubmissionUid(submissionUid);
-            r.setSubmissionSerialNumber(submissionSerial);
-            r.setSubmissionId(submissionId);
-            r.setTemplateUid(templateUid);
-            r.setTemplateVersionUid(templateVersionUid);
-            r.setAssignment(assignmentUid);
-            r.setActivity(activityUid);
-            r.setOrgUnit(orgUnitUid);
-            r.setTeam(teamUid);
+            r.setSubmissionUid(submissionContext.getSubmissionUid());
+            r.setSubmissionSerialNumber(submissionContext.getSubmissionSerial());
+            r.setSubmissionId(submissionContext.getSubmissionId());
+            r.setTemplateUid(submissionContext.getTemplateUid());
+            r.setTemplateVersionUid(submissionContext.getTemplateUid());
+            r.setAssignment(submissionContext.getAssignmentUid());
+            r.setActivity(submissionContext.getActivityUid());
+            r.setOrgUnit(submissionContext.getOrgUnitUid());
+            r.setTeam(submissionContext.getTeamUid());
+            r.setCreatedBy(submissionContext.getCreatedBy());
+            r.setLastModifiedBy(submissionContext.getLastModifiedBy());
 
-            String instanceKey = r.getRepeatInstanceId() != null ? r.getRepeatInstanceId() : submissionUid;
+            String instanceKey = r.getRepeatInstanceId() != null ? r.getRepeatInstanceId() :
+                submissionContext.getSubmissionUid();
             allInstanceKeys.add(instanceKey);
 
             // If a row declares its parent instance, capture it directly
@@ -136,17 +138,18 @@ public class TransformServiceV2 {
             if (semanticType != null && semanticType.isRef()) {
                 String token = r.getValueText();
                 String refType = semanticType.name();
-                String resolvedUid = refTypeValueResolutionService.resolve(token, refType, optionSetUid, activityUid);
+                String resolvedUid = refTypeValueResolutionService.resolve(token, refType, optionSetUid,
+                    submissionContext.getActivityUid());
 
                 RefTypeValue refTypeValue = RefTypeValue.builder()
                     .valueRefUid(resolvedUid)
                     .ceId(UuidUtils.toUuidOrNull(ceId))
-                    .submissionUid(submissionUid)
+                    .submissionUid(submissionContext.getSubmissionUid())
                     .instanceKey(instanceKey)
-                    .templateUid(templateUid)
+                    .templateUid(submissionContext.getTemplateUid())
                     .rawValue(token)
                     .refType(refType)
-                    .createdAt(startTime)
+                    .createdAt(submissionContext.getStartTime())
                     .optionSetUid(optionSetUid)
                     .build();
 
@@ -185,9 +188,10 @@ public class TransformServiceV2 {
         Instant now = Instant.now();
 
         for (String instanceKey : allInstanceKeys) {
-            boolean isRoot = instanceKey.equals(submissionUid);
+            boolean isRoot = instanceKey.equals(submissionContext.getSubmissionUid());
             String parentInstance = parentForInstance.get(instanceKey);
-            String parentEventId = isRoot ? null : (parentInstance != null ? parentInstance : submissionUid);
+            String parentEventId = isRoot ? null : (parentInstance != null ? parentInstance :
+                submissionContext.getSubmissionUid());
 
             // pick best anchor candidate for this instance
             List<ResolutionCandidate> candidates = candidatesByInstance.getOrDefault(instanceKey, Collections.emptyList());
@@ -212,19 +216,21 @@ public class TransformServiceV2 {
 
             EventDto evt = EventDto.builder()
                 .eventId(instanceKey)
-                .assignmentUid(assignmentUid)
+                .assignmentUid(submissionContext.getAssignmentUid())
                 .eventType(eventType)
                 .parentEventId(parentEventId)
                 .eventCeId(eventCeId)
-                .submissionUid(submissionUid)
-                .submissionId(submissionId)
-                .submissionSerial(submissionSerial)
-                .submissionCreationTime(submissionCreationTime)
-                .activityUid(activityUid)
-                .orgUnitUid(orgUnitUid)
-                .teamUid(teamUid)
-                .templateUid(templateUid)
-                .startTime(startTime)
+                .createdBy(submissionContext.getCreatedBy())
+                .lastModifiedBy(submissionContext.getLastModifiedBy())
+                .submissionUid(submissionContext.getSubmissionUid())
+                .submissionId(submissionContext.getSubmissionId())
+                .submissionSerial(submissionContext.getSubmissionSerial())
+                .submissionCreationTime(submissionContext.getSubmissionCreationTime())
+                .activityUid(submissionContext.getActivityUid())
+                .orgUnitUid(submissionContext.getOrgUnitUid())
+                .teamUid(submissionContext.getTeamUid())
+                .templateUid(submissionContext.getSubmissionUid())
+                .startTime(submissionContext.getStartTime())
                 .createdAt(now)
                 .lastSeen(now)
                 .anchorCeId(anchorCeId)
@@ -241,9 +247,10 @@ public class TransformServiceV2 {
         // 4) single batch patch-upsert
         try {
             eventJdbcRepository.patchUpsertEvents(eventsToPatchUpsert);
-            log.debug("Patched up {} event(s) for submissionUid={}", eventsToPatchUpsert.size(), submissionUid);
+            log.debug("Patched up {} event(s) for submissionUid={}", eventsToPatchUpsert.size(),
+                submissionContext.getSubmissionUid());
         } catch (Exception ex) {
-            log.error("Failed to patch-upsert events for submissionUid=" + submissionUid, ex);
+            log.error("Failed to patch-upsert events for submissionUid=" + submissionContext.getSubmissionUid(), ex);
             throw ex;
         }
 

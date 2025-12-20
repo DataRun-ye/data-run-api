@@ -38,6 +38,8 @@ public class TallCanonicalRow {
     private String valueRefType;
     private Instant submissionCreationTime;
     private Instant submissionStartTime;
+    private String createdBy;
+    private String lastModifiedBy;
     private Instant createdAt;
     private Instant updatedAt;
     private Boolean isDeleted;

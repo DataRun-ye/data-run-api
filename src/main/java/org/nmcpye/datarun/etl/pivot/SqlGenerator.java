@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.etl.pivot;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
@@ -11,22 +12,18 @@ import java.util.Optional;
 @SuppressWarnings("UnnecessaryLocalVariable")
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class SqlGenerator {
 
     private static final Locale LOCALE = Locale.ROOT;
     private final Naming naming;
 
     private String wrap(String s) {
-        // sanitize/normalize identifier to safe column name
         if (s == null) return null;
         return s.replaceAll("[^a-zA-Z0-9_]", "_").toLowerCase(LOCALE);
     }
 
-    /**
-     * Creates SQL that writes to {baseFq}_new (baseFq must include schema, e.g. pivot.fact_mytemplate)
-     */
-    // --- REPLACE buildTemplateCreateSqlForBase(...) method body with this ---
-    public String buildTemplateCreateSqlForBase(String baseFq, String templateUid, List<CanonicalElement> ces) {
+    public String buildTemplateCreateSqlForBase(String baseFq, String templateUid, List<CanonicalElementWithConfig> ces) {
         String tableNew = Naming.newName(baseFq);
 
         String dims = String.join(", ",
@@ -67,11 +64,12 @@ public class SqlGenerator {
             "e.anchor_value_text",
             "e.anchor_ref_uid",
             "e.anchor_resolved_label",
-            "e.updated_at"
+            "e.updated_at",
+            "e.created_at"
         );
 
         LinkedHashMap<String, String> exprs = new LinkedHashMap<>();
-        for (CanonicalElement c : ces) {
+        for (CanonicalElementWithConfig c : ces) {
             String base = Optional.ofNullable(c.getSafeName()).filter(s -> !s.isBlank()).orElse(c.getCanonicalElementId());
             String alias = wrap(base);
             exprs.put(alias, getExpression(c, alias));
@@ -123,8 +121,9 @@ public class SqlGenerator {
                     e.anchor_ref_uid,
                     e.anchor_resolved_label,
                     e.event_ce_id,
-                    e.updated_at
-                  FROM pivot.events_enriched e
+                    e.updated_at,
+                    e.created_at
+                  FROM analytics.events_enriched e
                   WHERE e.template_uid = '%2$s'
                 ),
                 -- nearest lookup: find closest ancestor (distance ASC) that has a tall_canonical row
@@ -168,13 +167,7 @@ public class SqlGenerator {
         return sql;
     }
 
-    /**
-     * Generate pivot expression(s) for a canonical element.
-     * Returns either a single expression or multiple comma-separated expressions
-     * (for ref-types we emit label + uid (+ option_set) columns).
-     * `alias` must already be sanitized (wrap()).
-     */
-    private static String getExpression(CanonicalElement c, String alias) {
+    private static String getExpression(CanonicalElementWithConfig c, String alias) {
         String ceId = Optional.ofNullable(c.getCanonicalElementId()).orElse("");
         String dt = Optional.ofNullable(c.getDataType()).orElse("").toLowerCase(Locale.ROOT);
         String st = Optional.ofNullable(c.getSemanticType()).orElse("").toLowerCase(Locale.ROOT);
