@@ -10,21 +10,29 @@
     <changeSet id="010-create-dim-team-and-permissions" author="hamza">
         <sql>
       <![CDATA[
-            CREATE MATERIALIZED VIEW analytics.dim_team AS
+            CREATE MATERIALIZED VIEW IF NOT EXISTS analytics.dim_team AS
             SELECT
                 row_number() OVER ()::bigint AS dim_team_id,
                 t.id AS team_id,
                 t.uid AS team_uid,
-                t.code AS team_code, t.name AS team_name, t.activity_id, act.uid AS activity_uid, t.disabled,
+                t.code AS team_code,
+                t.name AS team_name,
+                t.activity_id,
+                act.uid AS activity_uid,
+                t.disabled,
+                string_agg(u.first_name, ' & ') AS assigned_users,
                 COALESCE(t.form_permissions, '[]'::jsonb) AS template_permissions_jsonb,
                 t.last_modified_by,
                 GREATEST(COALESCE(t.created_date, '1970-01-01'::timestamp),
                          COALESCE(t.last_modified_date, '1970-01-01'::timestamp)
                 ) AT TIME ZONE 'UTC' AS source_last_modified_at
             FROM public.team t
-                     LEFT JOIN public.activity act ON act.id = t.activity_id;
+                     LEFT JOIN public.activity act ON act.id = t.activity_id
+                     LEFT JOIN public.team_user tu ON tu.team_id = t.id
+                     LEFT JOIN public.app_user u ON u.id = tu.user_id
+            GROUP BY t.id, act.uid;
 
-            CREATE MATERIALIZED VIEW analytics.dim_team_template_permission AS
+            CREATE MATERIALIZED VIEW IF NOT EXISTS analytics.dim_team_template_permission AS
             SELECT
                 row_number() OVER ()::bigint AS id,
                 t.uid AS team_uid,
@@ -58,7 +66,7 @@
         </preConditions>
         <sql>
       <![CDATA[
-            CREATE INDEX CONCURRENTLY idx_analytics_dim_team_slm
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_team_slm
                 ON analytics.dim_team (source_last_modified_at);
             ]]>
     </sql>
@@ -75,7 +83,7 @@
         </preConditions>
         <sql>
       <![CDATA[
-            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_team_uid_uniq
+            CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_team_uid_uniq
                 ON analytics.dim_team (team_uid);
             ]]>
     </sql>
@@ -92,7 +100,7 @@
         </preConditions>
         <sql>
       <![CDATA[
-            CREATE INDEX CONCURRENTLY idx_analytics_dim_team_slm_uid
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_team_slm_uid
                 ON analytics.dim_team (source_last_modified_at, team_uid);
             ]]>
     </sql>
@@ -110,7 +118,7 @@
         </preConditions>
         <sql>
       <![CDATA[
-            CREATE INDEX CONCURRENTLY idx_analytics_dim_team_template_permission_slm
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_team_template_permission_slm
                 ON analytics.dim_team_template_permission (source_last_modified_at);
             ]]>
     </sql>
@@ -127,7 +135,7 @@
         </preConditions>
         <sql>
       <![CDATA[
-            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_team_template_permission_uid_uniq
+            CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_team_template_permission_uid_uniq
                 ON analytics.dim_team_template_permission (team_uid, template_uid);
             ]]>
     </sql>
@@ -144,7 +152,7 @@
         </preConditions>
         <sql>
       <![CDATA[
-            CREATE INDEX CONCURRENTLY idx_analytics_dim_team_template_permission_slm_uid
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_team_template_permission_slm_uid
                 ON analytics.dim_team_template_permission (source_last_modified_at, team_uid);
             ]]>
     </sql>

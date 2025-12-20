@@ -55,6 +55,8 @@ public class SqlGenerator {
             "e.user_uid",
             "e.user_mobile",
             "e.user_first_name",
+            "e.created_by_user",
+            "e.assigned_users",
 
             "e.anchor_ce_id",
             "e.anchor_semantic_type",
@@ -112,6 +114,8 @@ public class SqlGenerator {
                     e.user_group_code,
                     e.user_uid,
                     e.user_mobile,
+                    e.created_by_user,
+                    e.assigned_users,
                     e.anchor_ce_id,
                     e.anchor_semantic_type,
                     e.anchor_data_type,
