@@ -229,7 +229,7 @@ public class TransformServiceV2 {
                 .activityUid(submissionContext.getActivityUid())
                 .orgUnitUid(submissionContext.getOrgUnitUid())
                 .teamUid(submissionContext.getTeamUid())
-                .templateUid(submissionContext.getSubmissionUid())
+                .templateUid(submissionContext.getTemplateUid())
                 .startTime(submissionContext.getStartTime())
                 .createdAt(now)
                 .lastSeen(now)
