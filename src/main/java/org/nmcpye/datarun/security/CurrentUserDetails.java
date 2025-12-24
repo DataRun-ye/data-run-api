@@ -76,7 +76,5 @@ public interface CurrentUserDetails extends UserDetails {
 
     Set<String> getUserFormsUIDs();
 
-    Set<String> getUserActiveFlowIds();
-
     List<UserFormAccess> getFormAccess();
 }

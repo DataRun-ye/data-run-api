@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.web.rest.v1.authenticate;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.userrefreshtoken.TokenRefreshException;
 import org.nmcpye.datarun.jpa.userrefreshtoken.dto.RefreshTokenDto;
 import org.nmcpye.datarun.jpa.userrefreshtoken.repository.RefreshTokenRepository;
@@ -22,16 +23,12 @@ import static org.nmcpye.datarun.web.rest.v1.authenticate.RefreshTokenResource.V
  */
 @RestController
 @RequestMapping(V1)
+@RequiredArgsConstructor
 public class RefreshTokenResource {
     protected static final String V1 = ApiVersion.API_V1;
 
     private final TokenService tokenService;
     private final RefreshTokenRepository tokenRepository;
-
-    public RefreshTokenResource(TokenService tokenService, RefreshTokenRepository tokenRepository) {
-        this.tokenService = tokenService;
-        this.tokenRepository = tokenRepository;
-    }
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@Valid @RequestBody TokenRefreshRequest request) {
@@ -41,7 +38,6 @@ public class RefreshTokenResource {
         }
 
         // Retrieve the user. How you do this depends on your user management.
-
         return refreshTokenOpt
             .map(refreshToken -> {
                 String username = refreshTokenOpt.get().getUser().getLogin();
@@ -59,5 +55,4 @@ public class RefreshTokenResource {
             })
             .orElseThrow(() -> new TokenRefreshException("Invalid refresh token"));
     }
-
 }

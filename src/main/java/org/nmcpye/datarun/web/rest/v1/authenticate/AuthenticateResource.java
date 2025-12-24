@@ -2,13 +2,13 @@ package org.nmcpye.datarun.web.rest.v1.authenticate;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.nmcpye.datarun.jpa.userrefreshtoken.service.TokenService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.jpa.userrefreshtoken.dto.RefreshTokenDto;
+import org.nmcpye.datarun.jpa.userrefreshtoken.service.TokenService;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshResponse;
 import org.nmcpye.datarun.web.rest.vm.LoginVM;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,20 +24,14 @@ import static org.nmcpye.datarun.web.rest.v1.authenticate.AuthenticateResource.V
  */
 @RestController
 @RequestMapping(V1)
+@RequiredArgsConstructor
+@Slf4j
 public class AuthenticateResource {
     protected static final String V1 = ApiVersion.API_V1;
-
-    private static final Logger log = LoggerFactory.getLogger(AuthenticateResource.class);
 
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
 
     private final TokenService tokenService;
-
-    public AuthenticateResource(AuthenticationManagerBuilder authenticationManagerBuilder,
-                                TokenService tokenService) {
-        this.authenticationManagerBuilder = authenticationManagerBuilder;
-        this.tokenService = tokenService;
-    }
 
     @PostMapping("/authenticate")
     public ResponseEntity<?> authorize(@Valid @RequestBody LoginVM loginVM) {
