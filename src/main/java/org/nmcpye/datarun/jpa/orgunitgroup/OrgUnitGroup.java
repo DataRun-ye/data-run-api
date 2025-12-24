@@ -2,17 +2,20 @@ package org.nmcpye.datarun.jpa.orgunitgroup;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunitgroupset.OrgUnitGroupSet;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -24,7 +27,7 @@ import java.util.Set;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OrgUnitGroup extends JpaBaseIdentifiableObject {
+public class OrgUnitGroup extends TranslatableIdentifiable {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
@@ -49,6 +52,11 @@ public class OrgUnitGroup extends JpaBaseIdentifiableObject {
 
     @Column(name = "inactive")
     private Boolean inactive = false;
+
+    @Type(JsonType.class)
+    @Column(name = "properties_map", columnDefinition = "jsonb")
+    @JsonProperty
+    protected Map<String, Object> properties;
 
     @ManyToMany
     @JoinTable(

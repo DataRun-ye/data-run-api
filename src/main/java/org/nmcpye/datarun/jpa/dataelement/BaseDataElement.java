@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 
 /**
  * A DataElement, a configuration definition of a data element
@@ -22,7 +22,7 @@ import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 @Setter
 @NoArgsConstructor
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class BaseDataElement extends JpaBaseIdentifiableObject {
+public class BaseDataElement extends TranslatableIdentifiable {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;

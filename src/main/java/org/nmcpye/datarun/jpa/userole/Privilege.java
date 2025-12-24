@@ -10,7 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 
 import java.util.Collection;
 
@@ -23,7 +23,7 @@ import java.util.Collection;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
-public class Privilege extends JpaBaseIdentifiableObject {
+public class Privilege extends JpaIdentifiableObject {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;

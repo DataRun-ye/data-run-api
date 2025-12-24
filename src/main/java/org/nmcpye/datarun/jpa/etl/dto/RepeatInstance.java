@@ -51,6 +51,7 @@ public class RepeatInstance {
     protected String teUid;
 
     private String canonicalPath;
+    private String jsonDataPath;
     private String canonicalElementUid;
 
     // ------------------------

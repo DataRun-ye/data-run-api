@@ -14,6 +14,7 @@ import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.dataformtemplate.postsaveprocess.FormTemplateProcessor;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -29,8 +30,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static org.nmcpye.datarun.web.rest.v1.formtemplate.FormTemplateMergeResource.V1;
-import static org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator.createNextPageLink;
-import static org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator.initPageResponse;
 
 @RestController
 @RequestMapping(value = {V1})
@@ -72,9 +71,9 @@ public class FormTemplateMergeResource {
 
         Page<DataTemplateInstanceDto> processedPage = getList(queryRequest, jsonQueryBody);
 
-        String next = createNextPageLink(processedPage);
+        String next = PagingConfigurator.createNextPageLink(processedPage);
 
-        PagedResponse<DataTemplateInstanceDto> response = initPageResponse(processedPage, next, getName());
+        PagedResponse<DataTemplateInstanceDto> response = PagingConfigurator.initPageResponse(processedPage, next, getName());
         return ResponseEntity.ok(response);
     }
 
@@ -100,9 +99,9 @@ public class FormTemplateMergeResource {
     public ResponseEntity<EntitySaveSummaryVM> saveOne(@Valid @RequestBody DataTemplateInstanceDto formTemplate) {
         log.debug("REST request to saveOne {}", getName());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        final var processedTemplate = formTemplateProcessor.processMetadata(
-            formTemplateProcessor.validate(formTemplate));
-        this.saveEntity((DataTemplateInstanceDto) processedTemplate, summary);
+//        final var validated = formTemplateProcessor.validate(formTemplate);
+
+        this.saveEntity(formTemplate, summary);
 
         return ResponseEntity.ok(summary);
     }
@@ -121,7 +120,7 @@ public class FormTemplateMergeResource {
         var processedEntity = preProcess(payLoadEntity);
         try {
             if (payLoadEntity.getUid() != null && templateService.existsByUid(payLoadEntity.getUid())) {
-                processedEntity = templateService.update(payLoadEntity);
+                processedEntity = templateService.update(processedEntity);
                 summary.getUpdated().add(processedEntity.getUid());
             } else {
                 processedEntity = templateService.save(payLoadEntity);

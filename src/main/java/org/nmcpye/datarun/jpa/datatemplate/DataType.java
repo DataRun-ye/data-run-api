@@ -17,7 +17,7 @@ public enum DataType {
                  IntegerZeroOrPositive -> INTEGER;
             case Number, Percentage,
                  UnitInterval -> DECIMAL;
-            case Boolean, TrueOnly -> BOOLEAN;
+            case Boolean, TrueOnly, YesNo -> BOOLEAN;
             case SelectMulti -> ARRAY;
             case Date, DateTime, Time -> TIMESTAMP;
             default -> TEXT;

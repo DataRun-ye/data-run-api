@@ -6,6 +6,7 @@ import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +24,7 @@ public interface DataTemplateInstanceService {
 
     Page<DataTemplateInstanceDto> findAllByUidIn(Collection<String> uids, Pageable pageable);
     List<DataTemplateInstanceDto> findAllByUidIn(Collection<String> uids);
+    List<DataTemplateInstanceDto> findAllByLastModifiedDateAfter(Instant date);
     List<DataTemplateInstanceDto> findAll();
 
     Page<DataTemplateInstanceDto> findAllByUser(QueryRequest queryRequest, String jsonQueryBody);

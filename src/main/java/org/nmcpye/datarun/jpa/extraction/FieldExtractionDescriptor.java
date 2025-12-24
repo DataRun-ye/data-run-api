@@ -40,7 +40,7 @@
 //    private String jsonPointer;
 //
 //    @Column(name = "value_type", length = 32)
-//    private String valueType;
+//    private String dataType;
 //
 //    @Column(name = "option_set_uid", length = 64)
 //    private String optionSetUid;

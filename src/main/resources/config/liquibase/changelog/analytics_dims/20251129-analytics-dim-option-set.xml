@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <!-- 003: dim_option_set materialized view -->
+    <changeSet id="003-create-dim-option-set" author="hamza">
+        <sql>
+      <![CDATA[
+            CREATE MATERIALIZED VIEW analytics.dim_option_set AS
+            SELECT
+                row_number() OVER ()::bigint AS dim_option_set_id,
+                os.id AS option_set_id,
+                os.uid AS option_set_uid,
+                os.code AS option_set_code,
+                os.name AS option_set_name,
+                TRIM(COALESCE(analytics.translation_value(COALESCE(os.translations, '[]'::jsonb), 'en', 'name'), os.name)) AS option_set_name_en,
+                TRIM(COALESCE(analytics.translation_value(COALESCE(os.translations, '[]'::jsonb), 'ar', 'name'), os.name)) AS option_set_name_ar,
+                os.last_modified_by,
+                GREATEST(COALESCE(os.created_date, '1970-01-01'::timestamp),
+                         COALESCE(os.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
+            FROM public.option_set os;
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP MATERIALIZED VIEW IF EXISTS analytics.dim_option_set;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ===== dim_option_set ===== -->
+    <changeSet id="idx-001-dim_option_set-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_option_set_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_option_set_slm
+                ON analytics.dim_option_set (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_option_set_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-002-dim_option_set-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_option_set_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_option_set_uid_uniq
+                ON analytics.dim_option_set (option_set_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_option_set_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-003-dim_option_set-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_option_set_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_option_set_slm_uid
+                ON analytics.dim_option_set (source_last_modified_at, option_set_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_option_set_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

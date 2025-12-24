@@ -15,14 +15,17 @@ logging:
   level:
     org:
       springframework:
+#        jdbc:
+#          core: DEBUG
+#          pool: DEBUG
+#          transaction: DEBUG
         security:
           web:
             FilterChainProxy=TRACE:
-#    org.springframework.batch: INFO
-#    org.nmcpye.datarun.jpa.datasubmission.migration: DEBUG
-#    org.nmcpye.datarun.jpa.outbox: DEBUG
-    ROOT: DEBUG
-#    tech.jhipster: DEBUG
+    ROOT: INFO
+    org.springframework.batch: INFO
+    tech.jhipster: DEBUG
+    org.nmcpye.datarun: DEBUG
 #    org.hibernate.SQL: DEBUG
 #    org.nmcpye.datarun: DEBUG
 
@@ -145,12 +148,17 @@ migration:
   mongo:
     collection: data_form_submission
   chunk:
-    size: 200
+    size: 150
   page:
-    size: 200
-  run: false
-  auto-start: false
+    size: 150
+  run: true
+  auto-start: true
+
+  size: 200
+  cron: "0 */30 * * * *"
   generate-missing-ids: true
+  submissionUids: Eelt7ZePvz0, LaGeMmmCEtH, QIMwgBqVsqW, zglED4TsbTh, M3fdtzBSpn8, RQlMiMcukid, gGyX1CVnOaw, YLcsWJlB7uy, hcLU8ZtUdSd, Ls9TW9eSlYH, ck2pHW93sk2, rkwH5QNofRn, KcsA3KETRbY, woOl5yAmi8C, BoEmHvJUEpb,W8EtCDYfp1w, MrxGOZ6stwS, UYBPOIfCU0a, mpmjpJcMuas, IP2dMtoJkO4, ONIaOpzoYAe
+  runOutboxBackfill: true
 
 jhipster:
   client-app:
@@ -158,7 +166,7 @@ jhipster:
   cache: # Cache configuration
     ehcache: # Ehcache configuration
       time-to-live-seconds: 3600 # By default objects stay 1 hour in the cache
-      max-entries: 100 # Number of objects in each cache entry
+      max-entries: 200 # Number of objects in each cache entry
   # CORS is only enabled by default with the "dev" profile
   cors:
     # Allow Ionic for JHipster by default (* no longer allowed in Spring Boot 2.4+)

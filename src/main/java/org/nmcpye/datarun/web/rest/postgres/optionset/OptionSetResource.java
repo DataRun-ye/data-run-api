@@ -9,7 +9,6 @@ import org.nmcpye.datarun.jpa.option.service.OptionSetService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
-import org.springframework.beans.BeanUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -62,30 +61,38 @@ public class OptionSetResource
         List<OptionSet> existingEntities = optionSetRepository.findAllByUidIn(incomingKeys);
         JpaIdentifiableOperationVm<OptionSet> operationVm = split(payLoadEntities, existingEntities);
         return Stream.concat(operationVm.getForUpdateEntities().stream(),
-            operationVm.getForCreatEntities().stream()).toList();
+            operationVm.getForCreateEntities().stream()).toList();
     }
 
     JpaIdentifiableOperationVm<OptionSet> split(List<OptionSet> incomingEntities, List<OptionSet> existingEntities) {
         Map<String, OptionSet> existingMap = existingEntities.stream()
             .collect(Collectors.toMap(OptionSet::getUid, Function.identity()));
-        final var builder =
-            JpaIdentifiableOperationVm.<OptionSet>builder();
+        final var builder = JpaIdentifiableOperationVm.<OptionSet>builder();
         for (OptionSet incomingEntity : incomingEntities) {
             if (existingMap.containsKey(incomingEntity.getUid())) {
                 // It's an update
                 OptionSet existing = existingMap.get(incomingEntity.getUid());
                 processOptions(incomingEntity, existing);
-                // Copy relevant data from incomingEntity to existing
-                incomingEntity.setUid(existing.getUid());
-                incomingEntity.setId(existing.getId());
-                BeanUtils.copyProperties(incomingEntity, existing, "id", "uid", "version"); // Use a utility to copy properties, skipping the ID
+                copyProperties(incomingEntity, existing); // Use a utility to copy properties, skipping the ID
                 builder.forUpdateEntity(existing);
             } else {
                 // It's a creation
-                builder.forCreatEntity(incomingEntity);
+                builder.forCreateEntity(incomingEntity);
             }
         }
         return builder.build();
+    }
+
+    private void copyProperties(OptionSet incoming, OptionSet existing) {
+        if(incoming != null && existing != null) {
+            if(incoming.getName() != null) {
+                existing.setName(incoming.getName());
+            }
+
+            existing.setLabel(incoming.getLabel());
+            existing.setProperties(incoming.getProperties());
+            existing.setCode(incoming.getCode());
+        }
     }
 
     private void processOptions(OptionSet incomingEntity, OptionSet existing) {

@@ -7,6 +7,7 @@ import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.userdetail.UserFormAccess;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
+import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import static org.nmcpye.datarun.web.rest.v1.account.AccountResourceV1.V1;
 
@@ -43,30 +43,13 @@ public class UserFormPermissionsResource {
 
         Page<UserFormAccess> processedPage = new PageImpl<>(user.getFormAccess());
 
-        String next = createNextPageLink(processedPage);
+        String next = PagingConfigurator.createNextPageLink(processedPage);
 
-        PagedResponse<UserFormAccess> response = initPageResponse(processedPage, next);
+        PagedResponse<UserFormAccess> response = PagingConfigurator.initPageResponse(processedPage, next, getName());
         return ResponseEntity.ok(response);
     }
 
     protected String getName() {
         return "formPermissions";
-    }
-
-    protected PagedResponse<UserFormAccess> initPageResponse(Page<UserFormAccess> page, String next) {
-        PagedResponse<UserFormAccess> response = new PagedResponse<>(page, getName(), next);
-        response.setNextPage(next);
-        response.setEntityName(getName());
-        return response;
-    }
-
-    protected String createNextPageLink(Page<?> page) {
-        if (page.hasNext()) {
-            return ServletUriComponentsBuilder.fromCurrentRequest()
-                .queryParam("page", page.getNumber() + 1) // page is 0-based, but we display it 1-based
-                .toUriString();
-        } else {
-            return null;
-        }
     }
 }

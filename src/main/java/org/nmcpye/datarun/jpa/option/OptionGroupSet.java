@@ -9,7 +9,7 @@ import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.ListIndexBase;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,15 +20,14 @@ import java.util.List;
  */
 @Entity
 @Table(name = "option_group_set", uniqueConstraints = {
-        @UniqueConstraint(name = "uc_group_set_option_set_name",columnNames = {"name", "option_set_id"}),
-        @UniqueConstraint(name = "uc_group_set_option_set_code",columnNames = {"code", "option_set_id"}),
+    @UniqueConstraint(name = "uc_group_set_option_set_name", columnNames = {"name", "option_set_id"}),
+    @UniqueConstraint(name = "uc_group_set_option_set_code", columnNames = {"code", "option_set_id"}),
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OptionGroupSet extends
-        JpaBaseIdentifiableObject {
+public class OptionGroupSet extends TranslatableIdentifiable {
     /**
      * The unique code for this object.
      */
@@ -54,9 +53,9 @@ public class OptionGroupSet extends
 
     @ManyToMany
     @JoinTable(
-            name = "option_groupset__option_group",
-            joinColumns = @JoinColumn(name = "groupset_id"),
-            inverseJoinColumns = @JoinColumn(name = "option_group_id")
+        name = "option_groupset__option_group",
+        joinColumns = @JoinColumn(name = "groupset_id"),
+        inverseJoinColumns = @JoinColumn(name = "option_group_id")
     )
     @OrderColumn(name = "sort_order")
     @ListIndexBase(1)
@@ -64,12 +63,12 @@ public class OptionGroupSet extends
     private List<OptionGroup> optionGroups = new ArrayList<>();
 
     @JsonProperty
-    @JsonSerialize(contentAs = JpaBaseIdentifiableObject.class)
+    @JsonSerialize(contentAs = TranslatableIdentifiable.class)
     public List<OptionGroup> getOptionGroups() {
         return optionGroups;
     }
 
-    @JsonSerialize(as = JpaBaseIdentifiableObject.class)
+    @JsonSerialize(as = TranslatableIdentifiable.class)
     public OptionSet getOptionSet() {
         return optionSet;
     }

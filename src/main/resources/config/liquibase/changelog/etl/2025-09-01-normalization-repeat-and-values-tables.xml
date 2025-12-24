@@ -13,17 +13,14 @@
         <sql>
             CREATE TABLE IF NOT EXISTS repeat_instance (
                 id varchar(26) PRIMARY KEY,
-                te_uid varchar(11) NOT NULL,
+--                 te_uid varchar(11) NOT NULL,
 --                 manifest_uid varchar(64),
+                ingest_id UUID,
+                outbox_id bigint,
                 canonical_element_uid varchar(64),
                 canonical_path varchar(3000) NOT NULL,
                 parent_repeat_instance_id varchar(26),
                 submission_uid varchar(11) NOT NULL,
---                 repeat_section_label jsonb DEFAULT '{}'::jsonb,
---                 category_kind varchar(200),
---                 category_uid varchar(26),
---                 category_name varchar(200),
---                 category_label jsonb DEFAULT '{}'::jsonb,
                 repeat_path varchar(3000) NOT NULL,
                 repeat_index bigint,
                 client_updated_at timestamp,
@@ -37,7 +34,7 @@
         </sql>
 
         <sql>
-            CREATE INDEX IF NOT EXISTS idx_repeat_instance_submission_path ON repeat_instance(submission_uid, repeat_path);
+            CREATE INDEX IF NOT EXISTS idx_repeat_instance_submission_path ON repeat_instance(submission_uid, canonical_element_uid);
             CREATE INDEX IF NOT EXISTS idx_repeat_instance_parent_id ON repeat_instance(parent_repeat_instance_id);
             ALTER TABLE repeat_instance ADD CONSTRAINT fk_repeat_instance_parent
                 FOREIGN KEY(parent_repeat_instance_id) REFERENCES repeat_instance(id);
@@ -62,15 +59,14 @@
                 id bigserial PRIMARY KEY,
                 repeat_instance_id varchar(26),
                 submission_uid varchar(11) NOT NULL,
-                te_uid varchar(11) NOT NULL,
---                 manifest_uid varchar(64),
+                outbox_id bigint,
+                ingest_id UUID,
                 canonical_element_uid varchar(64),
                 canonical_path varchar(3000) NOT NULL,
                 assignment_uid varchar(11),
                 team_uid varchar(11),
                 org_unit_uid varchar(11),
                 activity_uid varchar(11),
---                 template_element_config_uid varchar(11) NOT NULL,
                 option_uid varchar(11), -- only for multi select or null
                 value_text text,
                 value_num numeric,
@@ -90,7 +86,7 @@
             CREATE UNIQUE INDEX IF NOT EXISTS ux_element_value_unique
                 ON element_data_value (
                 submission_uid,
-                canonical_path,
+                canonical_element_uid,
                 repeat_instance_key,
                 row_type,
                 selection_key
@@ -101,7 +97,7 @@
             CREATE INDEX IF NOT EXISTS idx_element_data_value_submission_repeat ON element_data_value(submission_uid, repeat_instance_id);
         </sql>
         <sql>
-            CREATE INDEX idx_edv_element_active ON element_data_value(canonical_element_uid)
+            CREATE INDEX idx_edv_element_active ON element_data_value(canonical_path)
                 WHERE deleted_at IS NULL;
             CREATE INDEX idx_edv_team_active ON element_data_value(team_uid)
                 WHERE deleted_at IS NULL;

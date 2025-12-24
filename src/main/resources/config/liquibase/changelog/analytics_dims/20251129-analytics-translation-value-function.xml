@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!-- 002: create helper function analytics.translation_value -->
+    <changeSet id="002-create-translation-value-fn" author="hamza">
+        <sql>
+      <![CDATA[
+            CREATE OR REPLACE FUNCTION analytics.translation_value(translations jsonb, locale text, property text)
+      RETURNS text
+      LANGUAGE sql IMMUTABLE AS $$
+            SELECT (elem->>'value')
+            FROM jsonb_array_elements(translations) elem
+            WHERE elem->>'locale' = $2 AND elem->>'property' = $3
+                LIMIT 1
+            $$;
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP FUNCTION IF EXISTS analytics.translation_value(jsonb, text, text);</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

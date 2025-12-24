@@ -19,32 +19,6 @@ public abstract class JpaBaseResource<T extends JpaIdentifiableObject>
         this.jpaIdentifiableRepository = repository;
     }
 
-    //    @GetMapping(value = "/stream", produces = MediaType.APPLICATION_NDJSON_VALUE)
-//    public ResponseEntity<StreamingResponseBody> streamAssignments(
-//        @RequestParam(required = false) Instant since) {
-//
-//        Instant cutoff = since != null ? since : Instant.EPOCH;
-//        StreamingResponseBody body = out -> {
-//            jpaIdentifiableRepository.streamByLastModifiedDateAfter(cutoff)
-//                .forEach(entity -> {
-//                    String line = null;
-//                    try {
-//                        line = objectMapper.writeValueAsString(entity) + "\n";
-//                        out.write(line.getBytes(StandardCharsets.UTF_8));
-//                        out.flush();  // push each record immediately
-//                    } catch (IOException e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                });
-//        };
-//
-//        // You can still send a Last-Modified header based on max timestamp
-//        Instant maxTs = jpaIdentifiableRepository.findMaxLastModifiedAfter(cutoff);
-//        return ResponseEntity.ok()
-//            .lastModified(maxTs.toEpochMilli())
-//            .body(body);
-//    }
-
     @Override
     protected JpaIdentifiableRepository<T> getRepository() {
         return (JpaIdentifiableRepository<T>) super.getRepository();

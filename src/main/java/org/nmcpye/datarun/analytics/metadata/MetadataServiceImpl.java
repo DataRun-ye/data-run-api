@@ -8,6 +8,7 @@ import org.nmcpye.datarun.analytics.dto.QueryableElement;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
+import org.nmcpye.datarun.jpa.datatemplate.SemanticType;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateElementRepository;
 import org.springframework.cache.annotation.Cacheable;
@@ -26,7 +27,7 @@ import java.util.stream.Stream;
  * <pre>
  * - QueryableElement.sourceColumn must map to the materialized view column (e.g., "te_uid", "value_num", "option_uid", "value_ts", "team_uid").
  * - QueryableElement.dataType uses the "value_num"/"option_uid"/"value_ts"/"value_bool"/"value_text" nomenclature.
- * - aggregationModes should be computed via AllowedAggregationsResolver based on DataElement.valueType.
+ * - aggregationModes should be computed via AllowedAggregationsResolver based on DataElement.dataType.
  * </pre>
  * <p>
  * - Cache the assembled PivotMetadataResponse with @Cacheable. Invalidation should occur when a template/version is updated/published.
@@ -70,7 +71,7 @@ public class MetadataServiceImpl implements MetadataService {
 
         // STEP 1: Build DTOs for template-specific fields.
         List<QueryableElement> templateFields = etcRows.stream().map(etc -> {
-            if (etc.getElementKind() == TemplateElement.ElementKind.REPEAT) {
+            if (etc.getSemanticType() == SemanticType.Repeat) {
                 return buildForRepeat(etc);
             }
             return buildForField(etc, dataElementMap);
@@ -132,7 +133,7 @@ public class MetadataServiceImpl implements MetadataService {
             .deUid(etc.getDataElementUid())
             .displayGroup(etc.getParentRepeatCanonicalPath() != null ?
                 etc.getParentRepeatCanonicalPath() : "Template")
-            .isSortable(etc.getValueType().isNumeric())
+//            .isSortable(etc.getValueType().isNumeric())
 //            .isDimension(etc.getIsDimension())
             .aggregationModes(aggrResolver.allowedFor(de != null ? de.getValueType() : null))
             .extras(extras)
@@ -196,7 +197,7 @@ public class MetadataServiceImpl implements MetadataService {
         Map<String, Object> extras = new HashMap<>();
 //        extras.put("isMulti", Boolean.TRUE.equals(etc.getIsMulti()));
 //        extras.put("isReference", Boolean.TRUE.equals(etc.getIsReference()));
-        extras.put("isRepeat", etc.getElementKind() == TemplateElement.ElementKind.REPEAT);
+        extras.put("isRepeat", etc.isRepeat());
         extras.put("repeatPath", etc.getParentRepeatJsonDataPath());
         extras.put("canonicalRepeatPath", etc.getParentRepeatCanonicalPath());
         extras.put("canonicalPath", etc.getCanonicalPath());

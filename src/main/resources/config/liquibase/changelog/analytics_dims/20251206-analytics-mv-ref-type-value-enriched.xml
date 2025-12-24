@@ -1,0 +1,80 @@
+<!--<?xml version="1.0" encoding="UTF-8"?>-->
+<!--<databaseChangeLog-->
+<!--    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"-->
+<!--    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"-->
+<!--    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-->
+<!--                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"-->
+<!--    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">-->
+<!--    &lt;!&ndash; 011: dim_assignment (explode forms array) &ndash;&gt;-->
+<!--    <changeSet id="20251205-01-create-mv-ref-type-enriched" author="you">-->
+<!--        <comment>Create enriched canonical tall MV for Superset</comment>-->
+
+<!--        <sql>-->
+<!--            CREATE MATERIALIZED VIEW analytics.mv_ref_type_value_enriched AS-->
+<!--            SELECT-->
+<!--                rs.template_uid,-->
+<!--                rs.submission_uid,-->
+<!--                rs.instance_key,-->
+<!--                rs.ce_id,-->
+<!--                rs.ref_type,-->
+<!--                rs.raw_value,-->
+<!--                rs.value_ref_uid,-->
+<!--                rs.option_set_uid,-->
+<!--                rs.updated_at,-->
+<!--                ops.option_set_name as option_set_name,-->
+<!--                ops.option_set_name_ar as option_set_name_ar,-->
+<!--                COALESCE(op.option_name, t.team_code, ou.org_unit_name, rs.raw_value) AS ref_name,-->
+<!--                COALESCE(op.option_name_ar, t.team_code, ou.org_unit_name_ar, rs.raw_value) AS ref_name_ar-->
+<!--            FROM-->
+<!--                analytics.ref_type_value rs-->
+<!--                    LEFT JOIN analytics.dim_option op ON rs.ref_type = 'Option'-->
+<!--                    AND op.option_uid = rs.value_ref_uid-->
+<!--                    LEFT JOIN analytics.dim_option_set ops ON rs.ref_type = 'Option'-->
+<!--                    AND ops.option_set_uid = op.option_set_uid-->
+<!--                    LEFT JOIN analytics.dim_org_unit ou ON rs.ref_type = 'OrgUnit'-->
+<!--                    AND ou.org_unit_uid = rs.value_ref_uid-->
+<!--                    LEFT JOIN analytics.dim_team T ON rs.ref_type = 'Team'-->
+<!--                    AND T.team_uid = rs.value_ref_uid;-->
+<!--        </sql>-->
+<!--    </changeSet>-->
+
+<!--    <changeSet id="20251206-01-mv-ref-type-value-enriched-idx-instance_key" author="you" runInTransaction="false">-->
+<!--        <comment>Index on instance_key</comment>-->
+<!--        <sql>-->
+<!--            CREATE INDEX CONCURRENTLY IF NOT EXISTS mv_ref_type_value_enriched_instance_key_idx-->
+<!--                ON analytics.mv_ref_type_value_enriched(instance_key);-->
+<!--        </sql>-->
+<!--    </changeSet>-->
+
+<!--    <changeSet id="20251206-02-mv-ref-type-value-enriched-idx-instance_ce" author="you" runInTransaction="false">-->
+<!--        <comment>Index on (instance_key, ce_id)</comment>-->
+<!--        <sql>-->
+<!--            CREATE INDEX CONCURRENTLY IF NOT EXISTS mv_ref_type_value_enriched_instance_ce_idx-->
+<!--                ON analytics.mv_ref_type_value_enriched(instance_key, ce_id);-->
+<!--        </sql>-->
+<!--    </changeSet>-->
+
+<!--    <changeSet id="20251206-03-mv-ref-type-value-enriched-idx-instance_ce_value_ref" author="you" runInTransaction="false">-->
+<!--        <comment>Index on (instance_key, ce_id, value_ref_uid)</comment>-->
+<!--        <sql>-->
+<!--            CREATE INDEX CONCURRENTLY IF NOT EXISTS mv_ref_type_value_enriched_instance_ce_value_ref_idx-->
+<!--                ON analytics.mv_ref_type_value_enriched(instance_key, ce_id, value_ref_uid);-->
+<!--        </sql>-->
+<!--    </changeSet>-->
+
+<!--    <changeSet id="20251206-04-mv-ref-type-value-enriched-idx-instance_ce_updated" author="you" runInTransaction="false">-->
+<!--        <comment>Index on (instance_key, ce_id, updated_at)</comment>-->
+<!--        <sql>-->
+<!--            CREATE INDEX CONCURRENTLY IF NOT EXISTS mv_ref_type_value_enriched_instance_ce_updated_idx-->
+<!--                ON analytics.mv_ref_type_value_enriched(instance_key, ce_id, updated_at);-->
+<!--        </sql>-->
+<!--    </changeSet>-->
+
+<!--    <changeSet id="20251206-05-mv-ref-type-value-enriched-idx-instance_option_set" author="you" runInTransaction="false">-->
+<!--        <comment>Index on (instance_key, option_set_uid)</comment>-->
+<!--        <sql>-->
+<!--            CREATE INDEX CONCURRENTLY IF NOT EXISTS mv_ref_type_value_enriched_instance_option_set_idx-->
+<!--                ON analytics.mv_ref_type_value_enriched(instance_key, option_set_uid);-->
+<!--        </sql>-->
+<!--    </changeSet>-->
+<!--</databaseChangeLog>-->

@@ -2,11 +2,15 @@ package org.nmcpye.datarun.jpa.datatemplate;
 
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 
+import java.util.List;
+
 public enum SemanticType {
     OrgUnit,
     Team,
     Activity,
     Option,
+    MultiSelectOption,
+    Repeat,
     Name,
     Age,
     PhoneNumber,
@@ -17,11 +21,13 @@ public enum SemanticType {
     Entity,
     Username,
     Coordinate,
-    Repeat,
     GeoJson;
 
     public static SemanticType fromValueType(ValueType valueType) {
-        if(valueType.isOptionsType()) return Option;
+        if (valueType.isMultiSelect()) return MultiSelectOption;
+        if (valueType.isSingleSelect()) return Option;
+        if (valueType == ValueType.RepeatableSection) return Repeat;
+        if (valueType == ValueType.FullName) return Name;
 
         for (SemanticType type : SemanticType.values()) {
             if (type.name().equalsIgnoreCase(valueType.name())) {
@@ -30,5 +36,21 @@ public enum SemanticType {
         }
 
         return null;
+    }
+
+    static public List<SemanticType> refTypes() {
+        return List.of(OrgUnit, Option, Activity, Team, MultiSelectOption);
+    }
+
+    public Boolean isRef() {
+        return refTypes().contains(this);
+    }
+
+    public Boolean isRepeat() {
+        return this == Repeat;
+    }
+
+    public Boolean isMultiSelect() {
+        return this == MultiSelectOption;
     }
 }

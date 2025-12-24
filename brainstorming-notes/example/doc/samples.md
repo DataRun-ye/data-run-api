@@ -60,992 +60,1184 @@
 ]
 ```
 
-## Sample 3: Data Template Version sample (rkwH5QNofRn)
+## Sample 3: Data Template Version sample (ck2pHW93sk2)
 ```json
-{
-  "uid": "rkwH5QNofRn",
-  "versionUid": "Y0UVcIutUWv",
-  "versionNumber": 8,
-  "name": "health_facilities_supervision_laboratory_402",
-  "deleted": false,
-  "fields": [
-    {
-      "parent": "main",
-      "name": "DateAndTime",
-      "id": "E0mkcxV1MAU",
-      "type": "DateTime"
-    },
-    {
-      "parent": "main",
-      "name": "contact_name",
-      "id": "ztV4iHHaNzF",
-      "type": "FullName"
-    },
-    {
-      "parent": "main",
-      "name": "mobile_phone",
-      "id": "dzs71rsLPrt",
-      "type": "IntegerPositive"
-    },
-    {
-      "parent": "main",
-      "name": "lab_registers",
-      "id": "eCWUsNAc8Ma",
-      "type": "SelectMulti",
-      "optionSet": "bh7ZbTM33rX"
-    },
-    {
-      "parent": "main",
-      "name": "lab_posters",
-      "id": "WPcJigF5d3c",
-      "type": "SelectMulti",
-      "optionSet": "LVPJtB1pcr7"
-    },
-    {
-      "parent": "cases",
-      "name": "mrdt_tested",
-      "id": "UCkj09fyP6k",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "cases",
-      "name": "mrdt_pf",
-      "id": "wmPvpmUiLhM",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "cases",
-      "name": "mrdt_pv_pan_mixed",
-      "id": "xoAeJZiHpS3",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "cases",
-      "name": "mic_tested",
-      "id": "rMVnjcEOBdR",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "cases",
-      "name": "mic_pf",
-      "id": "nrV6is8GHit",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "cases",
-      "name": "mic_pv_mixed_other",
-      "id": "oQbto93KT9E",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "cases",
-      "name": "drdt_tested",
-      "id": "rOmzE8QozC7",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "cases",
-      "name": "drdt_ns1",
-      "id": "rYqB5hxtYKH",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "cases",
-      "name": "drdt_igm",
-      "id": "sN5iwFPUjO8",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "cases",
-      "name": "drdt_igg",
-      "id": "zBGJVg0yqSv",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "microscopy_applied",
-      "id": "yMDltXGuqx4",
-      "type": "YesNo"
-    },
-    {
-      "parent": "quality",
-      "name": "mic_slides_evaluated",
-      "id": "YNgmEGrn23U",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "negative_mic_slides_lab",
-      "id": "eGONKKTXYiu",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "negative_mic_slides_evaluated",
-      "id": "dARoBiyAR4j",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "positive_mic_slides_lab",
-      "id": "k4nXyMzy2EA",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "positive_mic_slides_evaluated",
-      "id": "mTOLMjDP8I2",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "parasite_density_mic_slides_lab",
-      "id": "hufRMlBeind",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "parasite_density_mic_slides_evaluated",
-      "id": "xFkMvYaw28D",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "pf_mic_slides_lab",
-      "id": "KMsPOC6YfLQ",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "pf_mic_slides_evaluated",
-      "id": "hyM3XFU2jGn",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "pv_mic_slides_lab",
-      "id": "mB6DBxK6fQ2",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "pv_mic_slides_evaluated",
-      "id": "lAsYUoYGfn1",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "mixed_mic_slides_lab",
-      "id": "A8D9pk73zbG",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "mixed_mic_slides_evaluated",
-      "id": "QUlPYRzKa2M",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "pm_mic_slides_lab",
-      "id": "hYMNELAzTGH",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "quality",
-      "name": "pm_mic_slides_evaluated",
-      "id": "Iyy8aTjKF9E",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "trainee",
-      "name": "mrdt_testing",
-      "id": "vmJTcIl8cFL",
-      "type": "YesNo"
-    },
-    {
-      "parent": "trainee",
-      "name": "drdt_testing",
-      "id": "Pxcqc0tpGdL",
-      "type": "YesNo"
-    },
-    {
-      "parent": "trainee",
-      "name": "pf_mic__identification",
-      "id": "TICY5Y3Az2F",
-      "type": "YesNo"
-    },
-    {
-      "parent": "trainee",
-      "name": "pv_pm_mic_identification_trained",
-      "id": "DM5Sc5sxCH9",
-      "type": "YesNo"
-    },
-    {
-      "parent": "trainee",
-      "name": "malaria_smear_staining",
-      "id": "xfOBmpykXLD",
-      "type": "YesNo"
-    },
-    {
-      "parent": "trainee",
-      "name": "mrdt_testing_trained",
-      "id": "xYH8EJpjq5D",
-      "type": "YesNo"
-    },
-    {
-      "parent": "trainee",
-      "name": "drdt_testing_trained",
-      "id": "PvlSjS8r3rB",
-      "type": "YesNo"
-    },
-    {
-      "parent": "trainee",
-      "name": "pf_mic_identification_trained",
-      "id": "KnKQmfhRjCQ",
-      "type": "YesNo"
-    },
-    {
-      "parent": "trainee",
-      "name": "malaria_smear_staining_trained",
-      "id": "IrTvgEEkCM4",
-      "type": "YesNo"
-    },
-    {
-      "parent": "trainee",
-      "name": "microscope_handling_trained",
-      "id": "HHUziixvBzD",
-      "type": "YesNo"
-    },
-    {
-      "parent": "trainee",
-      "name": "lab_recording_trained",
-      "id": "HYZefhuTsyX",
-      "type": "YesNo"
-    },
-    {
-      "parent": "trainee",
-      "name": "other_lab_skills_trained",
-      "id": "uHGNMg0yxaA",
-      "type": "LongText"
-    },
-    {
-      "parent": "cases",
-      "name": "month_name",
-      "id": "T7QqiTeFdHF",
-      "type": "SelectOne",
-      "optionSet": "NN8fDdIJmCn"
-    },
-    {
-      "parent": "training",
-      "name": "lab_staff_total",
-      "id": "WmJGlvdSW1c",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "training",
-      "name": "lab_staff_present",
-      "id": "aro2zqKnqgg",
-      "type": "IntegerZeroOrPositive"
-    },
-    {
-      "parent": "trainee",
-      "name": "name",
-      "id": "YtBEZsXvD5A",
-      "type": "FullName"
-    },
-    {
-      "parent": "trainee",
-      "name": "phone",
-      "id": "EHIXCT3t3te",
-      "type": "IntegerPositive"
-    }
-  ],
-  "sections": [
-    {
-      "name": "cases",
-      "repeatable": true,
-      "id": "cases"
-    },
-    {
-      "parent": "training",
-      "name": "trainee",
-      "repeatable": true,
-      "id": "trainee"
-    },
-    {
-      "name": "training",
-      "repeatable": false,
-      "id": "training"
-    },
-    {
-      "name": "main",
-      "repeatable": false,
-      "id": "main"
-    },
-    {
-      "name": "quality",
-      "repeatable": false,
-      "id": "quality"
-    }
-  ]
-}
+
 ```
 
-**Sample 4: some of the data template's `rkwH5QNofRn` canonical elements (kept it short by omitting many elements, this just to provide an idea on what it is):**
+**Sample 4: canonical elements samples of the elements of DataTemplate=`ck2pHW93sk2` (kept it short by omitting many elements, this just to provide an idea on what it is):**
 
 ```json
 [
-  {
-    "canonical_element_uid": "af0fc741-8274-3db2-9f3d-e6f24024392d",
-    "template_uid": "rkwH5QNofRn",
-    "preferred_name": "trainee",
-    "data_type": "ARRAY",
-    "semantic_type": "Repeat",
-    "canonical_path": null,
-    "cardinality": "N",
-    "option_set_uid": null,
-    "option_set_id": null,
-    "display_label": {
-      "ar": "المدربين",
-      "en": "trainee"
+    {
+        "canonical_element_uid": "0e7bdab9-6213-3437-9a90-16c071b0b169",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "patients",
+        "data_type": "ARRAY",
+        "semantic_type": "Repeat",
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "display_label": "{\"ar\": \"الحالة\", \"en\": \"patients\"}",
+        "json_data_paths": "[\"patients\", \"patients\", \"patients\", \"patients\", \"patients\", \"patients\", \"patients\", \"patients\", \"patients\", \"patients\", \"patients\", \"patients\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
     },
-    "json_data_paths": [
-      "training.trainee"
-    ],
-    "created_date": "2025-11-11 00:51:50.360925",
-    "last_modified_date": "2025-11-11 00:51:50.360925"
-  },
-  {
-    "canonical_element_uid": "88334666-28a7-37f9-a9fb-97050ec8d98e",
-    "template_uid": "rkwH5QNofRn",
-    "preferred_name": "cases",
-    "data_type": "ARRAY",
-    "semantic_type": "Repeat",
-    "canonical_path": null,
-    "cardinality": "N",
-    "option_set_uid": null,
-    "option_set_id": null,
-    "display_label": {
-      "ar": "الحالات",
-      "en": "cases"
+    {
+        "canonical_element_uid": "0aaead1e-ac2e-3206-8728-818b1c6ad714",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "serialNumber",
+        "data_type": "INTEGER",
+        "semantic_type": null,
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "display_label": "{\"ar\": \"الرقم التسلسلي\", \"en\": \"serialNumber\"}",
+        "json_data_paths": "[\"patients.serialNumber\", \"patients.serialNumber\", \"patients.serialNumber\", \"patients.serialNumber\", \"patients.serialNumber\", \"patients.serialNumber\", \"patients.serialNumber\", \"patients.serialNumber\", \"patients.serialNumber\", \"patients.serialNumber\", \"patients.serialNumber\", \"patients.serialNumber\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
     },
-    "json_data_paths": [
-      "cases"
-    ],
-    "created_date": "2025-11-11 00:51:50.360925",
-    "last_modified_date": "2025-11-11 00:51:50.360925"
-  },
-  {
-    "canonical_element_uid": "14c709ea-5942-3ad6-9f2e-2dc297e27bce",
-    "template_uid": "rkwH5QNofRn",
-    "preferred_name": "DateAndTime",
-    "data_type": "TIMESTAMP",
-    "semantic_type": null,
-    "canonical_path": null,
-    "cardinality": "1",
-    "option_set_uid": null,
-    "option_set_id": null,
-    "display_label": {
-      "ar": "الوقت والتاريخ",
-      "en": "DateAndTime"
+    {
+        "canonical_element_uid": "046ee0b0-ac85-384f-bbc7-9a3ab7f9dc74",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "PatientName",
+        "data_type": "TEXT",
+        "semantic_type": null,
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "display_label": "{\"ar\": \"اسم المريض\", \"en\": \"PatientName\"}",
+        "json_data_paths": "[\"patients.PatientName\", \"patients.PatientName\", \"patients.PatientName\", \"patients.PatientName\", \"patients.PatientName\", \"patients.PatientName\", \"patients.PatientName\", \"patients.PatientName\", \"patients.PatientName\", \"patients.PatientName\", \"patients.PatientName\", \"patients.PatientName\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
     },
-    "json_data_paths": [
-      "main.DateAndTime"
-    ],
-    "created_date": "2025-11-11 00:51:50.360925",
-    "last_modified_date": "2025-11-11 00:51:50.360925"
-  },
-  {
-    "canonical_element_uid": "c9e5e122-772d-31da-a8f6-a60dd3036f63",
-    "template_uid": "rkwH5QNofRn",
-    "preferred_name": "contact_name",
-    "data_type": "TEXT",
-    "semantic_type": null,
-    "canonical_path": null,
-    "cardinality": "1",
-    "option_set_uid": null,
-    "option_set_id": null,
-    "display_label": {
-      "ar": "اسم مسؤول المختبر",
-      "en": "contact_name"
+    {
+        "canonical_element_uid": "cf12fa47-ab1d-3c31-a9dd-a5d995b1678f",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "age",
+        "data_type": "TEXT",
+        "semantic_type": "Age",
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "display_label": "{\"ar\": \"العمر\", \"en\": \"age\"}",
+        "json_data_paths": "[\"patients.age\", \"patients.age\", \"patients.age\", \"patients.age\", \"patients.age\", \"patients.age\", \"patients.age\", \"patients.age\", \"patients.age\", \"patients.age\", \"patients.age\", \"patients.age\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
     },
-    "json_data_paths": [
-      "main.contact_name"
-    ],
-    "created_date": "2025-11-11 00:51:50.360925",
-    "last_modified_date": "2025-11-11 00:51:50.360925"
-  },
-  {
-    "canonical_element_uid": "610e4150-3db0-3b88-82c9-ba94676bd844",
-    "template_uid": "rkwH5QNofRn",
-    "preferred_name": "mobile_phone",
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "canonical_path": null,
-    "cardinality": "1",
-    "option_set_uid": null,
-    "option_set_id": null,
-    "display_label": {
-      "ar": "رقم تلفون مسؤول المختبر",
-      "en": "mobile_phone"
+    {
+        "canonical_element_uid": "9fd10fe9-fc81-35e6-b617-69234e5cb901",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "gender",
+        "data_type": "TEXT",
+        "semantic_type": "Option",
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": "Bu2LhXFDicp",
+        "option_set_id": "01JYF3WW0H5R3NFXGDCMX4K70D",
+        "display_label": "{\"ar\": \"الجنس\", \"en\": \"gender\"}",
+        "json_data_paths": "[\"patients.gender\", \"patients.gender\", \"patients.gender\", \"patients.gender\", \"patients.gender\", \"patients.gender\", \"patients.gender\", \"patients.gender\", \"patients.gender\", \"patients.gender\", \"patients.gender\", \"patients.gender\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
     },
-    "json_data_paths": [
-      "main.mobile_phone"
-    ],
-    "created_date": "2025-11-11 00:51:50.360925",
-    "last_modified_date": "2025-11-11 00:51:50.360925"
-  },
-  {
-    "canonical_element_uid": "c9499bb9-40e3-307e-a80c-974ce80daa26",
-    "template_uid": "rkwH5QNofRn",
-    "preferred_name": "lab_registers",
-    "data_type": "ARRAY",
-    "semantic_type": "Option",
-    "canonical_path": null,
-    "cardinality": "N",
-    "option_set_uid": "bh7ZbTM33rX",
-    "option_set_id": "01K1EH91PBXSPVF8PNS73PY69F",
-    "display_label": {
-      "ar": "السجلات",
-      "en": "lab_registers"
+    {
+        "canonical_element_uid": "f52766cb-abd5-368d-a211-6a49c0759d3c",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "ispregnant",
+        "data_type": "TEXT",
+        "semantic_type": null,
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "display_label": "{\"ar\": \"حامل\", \"en\": \"ispregnant\"}",
+        "json_data_paths": "[\"patients.ispregnant\", \"patients.ispregnant\", \"patients.ispregnant\", \"patients.ispregnant\", \"patients.ispregnant\", \"patients.ispregnant\", \"patients.ispregnant\", \"patients.ispregnant\", \"patients.ispregnant\", \"patients.ispregnant\", \"patients.ispregnant\", \"patients.ispregnant\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
     },
-    "json_data_paths": [
-      "main.lab_registers"
-    ],
-    "created_date": "2025-11-11 00:51:50.360925",
-    "last_modified_date": "2025-11-11 00:51:50.360925"
-  },
-  {
-    "canonical_element_uid": "595fcd7e-9f63-3f8f-9a05-2caca4aecbd3",
-    "template_uid": "rkwH5QNofRn",
-    "preferred_name": "lab_posters",
-    "data_type": "ARRAY",
-    "semantic_type": "Option",
-    "canonical_path": null,
-    "cardinality": "N",
-    "option_set_uid": "LVPJtB1pcr7",
-    "option_set_id": "01K1EHPE2H6JQ2T5JCC771BP5W",
-    "display_label": {
-      "ar": "الملصقات",
-      "en": "lab_posters"
+    {
+        "canonical_element_uid": "d91d6e71-5798-38f7-aa53-3c54ba09a036",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "pregnancy_month",
+        "data_type": "INTEGER",
+        "semantic_type": null,
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "display_label": "{\"ar\": \"شهر الحمل\", \"en\": \"pregnancy_month\"}",
+        "json_data_paths": "[\"patients.pregnancy_month\", \"patients.pregnancy_month\", \"patients.pregnancy_month\", \"patients.pregnancy_month\", \"patients.pregnancy_month\", \"patients.pregnancy_month\", \"patients.pregnancy_month\", \"patients.pregnancy_month\", \"patients.pregnancy_month\", \"patients.pregnancy_month\", \"patients.pregnancy_month\", \"patients.pregnancy_month\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
     },
-    "json_data_paths": [
-      "main.lab_posters"
-    ],
-    "created_date": "2025-11-11 00:51:50.360925",
-    "last_modified_date": "2025-11-11 00:51:50.360925"
-  },
-  {
-    "canonical_element_uid": "d898835c-8d6d-3f73-b6ab-e03ef79ffd53",
-    "template_uid": "rkwH5QNofRn",
-    "preferred_name": "mrdt_tested",
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "canonical_path": null,
-    "cardinality": "N",
-    "option_set_uid": null,
-    "option_set_id": null,
-    "display_label": {
-      "ar": "عدد المفحوصين للملاريا (فحص سريع)",
-      "en": "mrdt_tested"
+    {
+        "canonical_element_uid": "04a75f1a-74e2-3885-bb64-bdb46adaf59c",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "symptomsv2",
+        "data_type": "ARRAY",
+        "semantic_type": "Option",
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": "HFccPl89PPX",
+        "option_set_id": "01K89XVCHE2QT90JTTYNK7R7J9",
+        "display_label": "{\"ar\": \"الاعراض والعلامات\", \"en\": \"symptoms\"}",
+        "json_data_paths": "[\"patients.symptomsv2\", \"patients.symptomsv2\", \"patients.symptomsv2\", \"patients.symptomsv2\", \"patients.symptomsv2\", \"patients.symptomsv2\", \"patients.symptomsv2\", \"patients.symptomsv2\", \"patients.symptomsv2\", \"patients.symptomsv2\", \"patients.symptomsv2\", \"patients.symptomsv2\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
     },
-    "json_data_paths": [
-      "cases.mrdt_tested"
-    ],
-    "created_date": "2025-11-11 00:51:50.360925",
-    "last_modified_date": "2025-11-11 00:51:50.360925"
-  },
-  {
-    "canonical_element_uid": "8986b825-a0a9-3331-bf0d-abf75f8f51f4",
-    "template_uid": "rkwH5QNofRn",
-    "preferred_name": "mrdt_pf",
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "canonical_path": null,
-    "cardinality": "N",
-    "option_set_uid": null,
-    "option_set_id": null,
-    "display_label": {
-      "ar": "PF",
-      "en": "mrdt_pf"
+    {
+        "canonical_element_uid": "f95fc8d5-e54a-314f-8c04-643268b87af5",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "lab_test",
+        "data_type": "ARRAY",
+        "semantic_type": "Option",
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": "AxpBXSCqnDa",
+        "option_set_id": "01JZT74FWP1VHQTBEGCTW61G2J",
+        "display_label": "{\"ar\": \"الفحوصات المطلوبة\", \"en\": \"lab_test\"}",
+        "json_data_paths": "[\"patients.lab_test\", \"patients.lab_test\", \"patients.lab_test\", \"patients.lab_test\", \"patients.lab_test\", \"patients.lab_test\", \"patients.lab_test\", \"patients.lab_test\", \"patients.lab_test\", \"patients.lab_test\", \"patients.lab_test\", \"patients.lab_test\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
     },
-    "json_data_paths": [
-      "cases.mrdt_pf"
-    ],
-    "created_date": "2025-11-11 00:51:50.360925",
-    "last_modified_date": "2025-11-11 00:51:50.360925"
-  }
+    {
+        "canonical_element_uid": "c27b75e9-aeae-3a7c-9f2f-ef930a8229ce",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "diagnosed_disease_type",
+        "data_type": "TEXT",
+        "semantic_type": "Option",
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": "AjpOXeUAqnQ",
+        "option_set_id": "01JYF3WW0HD3CTRDRZ4DG6E71G",
+        "display_label": "{\"ar\": \"التشخيص\", \"en\": \"diagnosed_disease_typ\"}",
+        "json_data_paths": "[\"patients.diagnosed_disease_type\", \"patients.diagnosed_disease_type\", \"patients.diagnosed_disease_type\", \"patients.diagnosed_disease_type\", \"patients.diagnosed_disease_type\", \"patients.diagnosed_disease_type\", \"patients.diagnosed_disease_type\", \"patients.diagnosed_disease_type\", \"patients.diagnosed_disease_type\", \"patients.diagnosed_disease_type\", \"patients.diagnosed_disease_type\", \"patients.diagnosed_disease_type\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
+    },
+    {
+        "canonical_element_uid": "84d5aaaa-ee37-3c12-9adf-b1a5632a1979",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "other_diagnosed_disease_name",
+        "data_type": "TEXT",
+        "semantic_type": null,
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "display_label": "{\"ar\": \"مرض اخر\", \"en\": \"other_diagnosed_disease_name\"}",
+        "json_data_paths": "[\"patients.other_diagnosed_disease_name\", \"patients.other_diagnosed_disease_name\", \"patients.other_diagnosed_disease_name\", \"patients.other_diagnosed_disease_name\", \"patients.other_diagnosed_disease_name\", \"patients.other_diagnosed_disease_name\", \"patients.other_diagnosed_disease_name\", \"patients.other_diagnosed_disease_name\", \"patients.other_diagnosed_disease_name\", \"patients.other_diagnosed_disease_name\", \"patients.other_diagnosed_disease_name\", \"patients.other_diagnosed_disease_name\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
+    },
+    {
+        "canonical_element_uid": "82ee0992-0ab0-3eac-8305-e23a5f945e18",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "malariadrugs",
+        "data_type": "ARRAY",
+        "semantic_type": "Option",
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": "YPubNKrnO1e",
+        "option_set_id": "01K89WKVR94ZBJDE0TKCCTZV0P",
+        "display_label": "{\"ar\": \"أدوية الملاريا\", \"en\": \"malariadrugs\"}",
+        "json_data_paths": "[\"patients.malariadrugs\", \"patients.malariadrugs\", \"patients.malariadrugs\", \"patients.malariadrugs\", \"patients.malariadrugs\", \"patients.malariadrugs\", \"patients.malariadrugs\", \"patients.malariadrugs\", \"patients.malariadrugs\", \"patients.malariadrugs\", \"patients.malariadrugs\", \"patients.malariadrugs\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
+    },
+    {
+        "canonical_element_uid": "3a58846f-337f-308f-8f58-a4039903102f",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "other_prescribeddrugs",
+        "data_type": "TEXT",
+        "semantic_type": null,
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "display_label": "{\"ar\": \"صنف اخر\", \"en\": \"other_prescribeddrugs\"}",
+        "json_data_paths": "[\"patients.other_prescribeddrugs\", \"patients.other_prescribeddrugs\", \"patients.other_prescribeddrugs\", \"patients.other_prescribeddrugs\", \"patients.other_prescribeddrugs\", \"patients.other_prescribeddrugs\", \"patients.other_prescribeddrugs\", \"patients.other_prescribeddrugs\", \"patients.other_prescribeddrugs\", \"patients.other_prescribeddrugs\", \"patients.other_prescribeddrugs\", \"patients.other_prescribeddrugs\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
+    },
+    {
+        "canonical_element_uid": "37f8ec22-3c9e-3ce1-89a1-0b96be441e60",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "cm_measures",
+        "data_type": "TEXT",
+        "semantic_type": "Option",
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": "vcYOprXCzar",
+        "option_set_id": "01JYF3WW0HM5TPPGMG7F22A3MP",
+        "display_label": "{\"ar\": \"التدابير\", \"en\": \"cm_measures\"}",
+        "json_data_paths": "[\"patients.cm_measures\", \"patients.cm_measures\", \"patients.cm_measures\", \"patients.cm_measures\", \"patients.cm_measures\", \"patients.cm_measures\", \"patients.cm_measures\", \"patients.cm_measures\", \"patients.cm_measures\", \"patients.cm_measures\", \"patients.cm_measures\", \"patients.cm_measures\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
+    },
+    {
+        "canonical_element_uid": "70878f3e-9808-3ef5-a279-88ec0542553f",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "referral_type",
+        "data_type": "TEXT",
+        "semantic_type": "Option",
+        "canonical_path": null,
+        "cardinality": "N",
+        "option_set_uid": "PnCIWkhM47L",
+        "option_set_id": "01JYF3WW0HFH9T5C8ZMQZDSQ3R",
+        "display_label": "{\"ar\": \"إحالة\", \"en\": \"referral_type\"}",
+        "json_data_paths": "[\"patients.referral_type\", \"patients.referral_type\", \"patients.referral_type\", \"patients.referral_type\", \"patients.referral_type\", \"patients.referral_type\", \"patients.referral_type\", \"patients.referral_type\", \"patients.referral_type\", \"patients.referral_type\", \"patients.referral_type\", \"patients.referral_type\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
+    },
+    {
+        "canonical_element_uid": "08e6aad1-c067-30cd-9858-f1c7fe9cde54",
+        "template_uid": "ck2pHW93sk2",
+        "preferred_name": "visitdate",
+        "data_type": "TIMESTAMP",
+        "semantic_type": null,
+        "canonical_path": null,
+        "cardinality": "1",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "display_label": "{\"ar\": \"تاريخ الاستجابة\", \"en\": \"visitdate\"}",
+        "json_data_paths": "[\"main.visitdate\", \"main.visitdate\", \"main.visitdate\", \"main.visitdate\", \"main.visitdate\", \"main.visitdate\", \"main.visitdate\", \"main.visitdate\", \"main.visitdate\", \"main.visitdate\", \"main.visitdate\", \"main.visitdate\"]",
+        "notes": null,
+        "created_date": "2025-11-11 00:51:50.911555",
+        "last_modified_date": "2025-11-13 00:43:07.158926"
+    }
 ]
 ```
 
-**Sample 5: some of data template `rkwH5QNofRn` element_template samples, also kept it short by omitting many elements of the data template:**
+**Sample 5: ElementTemplate samples of DataTemplate=`ck2pHW93sk2`, also kept it short by omitting many elements of the data template:**
 
 ```json
 [
-  {
-    "uid": "GPlCIVia0hw",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "mrdt_pf",
-    "option_set_uid": null,
-    "json_data_path": "cases.mrdt_pf",
-    "canonical_path": "cases.mrdt_pf",
-    "parent_repeat_canonical_path": "cases",
-    "parent_repeat_json_data_path": "cases",
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "N",
-    "canonical_element_uid": "8986b825-a0a9-3331-bf0d-abf75f8f51f4",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "KxuNvywKaka",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "mrdt_pv_pan_mixed",
-    "option_set_uid": null,
-    "json_data_path": "cases.mrdt_pv_pan_mixed",
-    "canonical_path": "cases.mrdt_pv_pan_mixed",
-    "parent_repeat_canonical_path": "cases",
-    "parent_repeat_json_data_path": "cases",
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "N",
-    "canonical_element_uid": "c77d52ea-770f-3fb9-9c8c-392cf7ca4a19",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "o0FmNlDl5am",
-    "element_kind": "REPEAT",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "cases",
-    "option_set_uid": null,
-    "json_data_path": "cases",
-    "canonical_path": "cases",
-    "parent_repeat_canonical_path": "cases",
-    "parent_repeat_json_data_path": "cases",
-    "data_type": "ARRAY",
-    "semantic_type": "Repeat",
-    "cardinality": "N",
-    "canonical_element_uid": "88334666-28a7-37f9-a9fb-97050ec8d98e",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "idZnqWYn8Ec",
-    "element_kind": "REPEAT",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "trainee",
-    "option_set_uid": null,
-    "json_data_path": "training.trainee",
-    "canonical_path": "trainee",
-    "parent_repeat_canonical_path": "trainee",
-    "parent_repeat_json_data_path": "training.trainee",
-    "data_type": "ARRAY",
-    "semantic_type": "Repeat",
-    "cardinality": "N",
-    "canonical_element_uid": "af0fc741-8274-3db2-9f3d-e6f24024392d",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "wggbsTIwJWC",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "DateAndTime",
-    "option_set_uid": null,
-    "json_data_path": "main.DateAndTime",
-    "canonical_path": "DateAndTime",
-    "parent_repeat_canonical_path": null,
-    "parent_repeat_json_data_path": null,
-    "data_type": "TIMESTAMP",
-    "semantic_type": null,
-    "cardinality": "1",
-    "canonical_element_uid": "14c709ea-5942-3ad6-9f2e-2dc297e27bce",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "kzwYhDwTOcv",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "contact_name",
-    "option_set_uid": null,
-    "json_data_path": "main.contact_name",
-    "canonical_path": "contact_name",
-    "parent_repeat_canonical_path": null,
-    "parent_repeat_json_data_path": null,
-    "data_type": "TEXT",
-    "semantic_type": null,
-    "cardinality": "1",
-    "canonical_element_uid": "c9e5e122-772d-31da-a8f6-a60dd3036f63",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "saH33YSXoGJ",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "mobile_phone",
-    "option_set_uid": null,
-    "json_data_path": "main.mobile_phone",
-    "canonical_path": "mobile_phone",
-    "parent_repeat_canonical_path": null,
-    "parent_repeat_json_data_path": null,
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "1",
-    "canonical_element_uid": "610e4150-3db0-3b88-82c9-ba94676bd844",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "NVaiCOajan5",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "lab_registers",
-    "option_set_uid": "bh7ZbTM33rX",
-    "json_data_path": "main.lab_registers",
-    "canonical_path": "lab_registers",
-    "parent_repeat_canonical_path": null,
-    "parent_repeat_json_data_path": null,
-    "data_type": "ARRAY",
-    "semantic_type": "Option",
-    "cardinality": "N",
-    "canonical_element_uid": "c9499bb9-40e3-307e-a80c-974ce80daa26",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "jMRic7B9UWU",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "lab_posters",
-    "option_set_uid": "LVPJtB1pcr7",
-    "json_data_path": "main.lab_posters",
-    "canonical_path": "lab_posters",
-    "parent_repeat_canonical_path": null,
-    "parent_repeat_json_data_path": null,
-    "data_type": "ARRAY",
-    "semantic_type": "Option",
-    "cardinality": "N",
-    "canonical_element_uid": "595fcd7e-9f63-3f8f-9a05-2caca4aecbd3",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "KoFl3ZWrLhk",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "mrdt_tested",
-    "option_set_uid": null,
-    "json_data_path": "cases.mrdt_tested",
-    "canonical_path": "cases.mrdt_tested",
-    "parent_repeat_canonical_path": "cases",
-    "parent_repeat_json_data_path": "cases",
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "N",
-    "canonical_element_uid": "d898835c-8d6d-3f73-b6ab-e03ef79ffd53",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "N8rNj4E163G",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "mic_tested",
-    "option_set_uid": null,
-    "json_data_path": "cases.mic_tested",
-    "canonical_path": "cases.mic_tested",
-    "parent_repeat_canonical_path": "cases",
-    "parent_repeat_json_data_path": "cases",
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "N",
-    "canonical_element_uid": "116ada1e-6bc8-325b-9a4f-1f89ff019916",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "nqd5UR58dVh",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "mic_pf",
-    "option_set_uid": null,
-    "json_data_path": "cases.mic_pf",
-    "canonical_path": "cases.mic_pf",
-    "parent_repeat_canonical_path": "cases",
-    "parent_repeat_json_data_path": "cases",
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "N",
-    "canonical_element_uid": "e021b7b7-d930-3e03-bf2f-6ad06d91f8b1",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "ioW76CyCIPI",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "mic_pv_mixed_other",
-    "option_set_uid": null,
-    "json_data_path": "cases.mic_pv_mixed_other",
-    "canonical_path": "cases.mic_pv_mixed_other",
-    "parent_repeat_canonical_path": "cases",
-    "parent_repeat_json_data_path": "cases",
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "N",
-    "canonical_element_uid": "603e9c8b-c7a8-36f6-abe1-21333daf6382",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "M2nHxm5cxlu",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "drdt_tested",
-    "option_set_uid": null,
-    "json_data_path": "cases.drdt_tested",
-    "canonical_path": "cases.drdt_tested",
-    "parent_repeat_canonical_path": "cases",
-    "parent_repeat_json_data_path": "cases",
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "N",
-    "canonical_element_uid": "570d5c3e-6f5e-3abb-b3ff-aa651218aab4",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "wq9VdmHU0f3",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "drdt_ns1",
-    "option_set_uid": null,
-    "json_data_path": "cases.drdt_ns1",
-    "canonical_path": "cases.drdt_ns1",
-    "parent_repeat_canonical_path": "cases",
-    "parent_repeat_json_data_path": "cases",
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "N",
-    "canonical_element_uid": "46dc9adc-57ff-3401-b605-b1dc959afd5c",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "rKbF3b1Bt6p",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "drdt_igm",
-    "option_set_uid": null,
-    "json_data_path": "cases.drdt_igm",
-    "canonical_path": "cases.drdt_igm",
-    "parent_repeat_canonical_path": "cases",
-    "parent_repeat_json_data_path": "cases",
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "N",
-    "canonical_element_uid": "d4e571ae-cbbf-3e56-9e4f-84bb2770fa60",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "aUTXuZe26uS",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "drdt_igg",
-    "option_set_uid": null,
-    "json_data_path": "cases.drdt_igg",
-    "canonical_path": "cases.drdt_igg",
-    "parent_repeat_canonical_path": "cases",
-    "parent_repeat_json_data_path": "cases",
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "N",
-    "canonical_element_uid": "7f01025d-600c-311d-8ea1-a29bae96c37a",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "V80ZP1rahKU",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "microscopy_applied",
-    "option_set_uid": null,
-    "json_data_path": "quality.microscopy_applied",
-    "canonical_path": "microscopy_applied",
-    "parent_repeat_canonical_path": null,
-    "parent_repeat_json_data_path": null,
-    "data_type": "TEXT",
-    "semantic_type": null,
-    "cardinality": "1",
-    "canonical_element_uid": "906c2ad0-256d-3ecd-8d30-7d860c376d7f",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "vgl6pRg8brf",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "mic_slides_evaluated",
-    "option_set_uid": null,
-    "json_data_path": "quality.mic_slides_evaluated",
-    "canonical_path": "mic_slides_evaluated",
-    "parent_repeat_canonical_path": null,
-    "parent_repeat_json_data_path": null,
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "1",
-    "canonical_element_uid": "c82d9b52-011e-301f-8e95-a8f11f562c94",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "utXKZpueHfk",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "negative_mic_slides_lab",
-    "option_set_uid": null,
-    "json_data_path": "quality.negative_mic_slides_lab",
-    "canonical_path": "negative_mic_slides_lab",
-    "parent_repeat_canonical_path": null,
-    "parent_repeat_json_data_path": null,
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "1",
-    "canonical_element_uid": "c3c17077-24af-33f2-a06c-c182ea8784e0",
-    "natural_key_candidates": "[]"
-  },
-  {
-    "uid": "RuWJs5PV7ty",
-    "element_kind": "FIELD",
-    "template_uid": "rkwH5QNofRn",
-    "template_version_uid": "Y0UVcIutUWv",
-    "template_version_no": 8,
-    "name": "negative_mic_slides_evaluated",
-    "option_set_uid": null,
-    "json_data_path": "quality.negative_mic_slides_evaluated",
-    "canonical_path": "negative_mic_slides_evaluated",
-    "parent_repeat_canonical_path": null,
-    "parent_repeat_json_data_path": null,
-    "data_type": "INTEGER",
-    "semantic_type": null,
-    "cardinality": "1",
-    "canonical_element_uid": "51d2b684-f508-33f3-930d-f8a2cf293039",
-    "natural_key_candidates": "[]"
-  }
+    {
+        "id": 2262,
+        "uid": "nKpaGR36b7a",
+        "element_kind": "REPEAT",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "patients",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "sort_order": 13,
+        "json_data_path": "patients",
+        "canonical_path": "patients",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"الحالة\", \"en\": \"patients\"}",
+        "data_type": "ARRAY",
+        "semantic_type": "Repeat",
+        "cardinality": "N",
+        "canonical_element_uid": "0e7bdab9-6213-3437-9a90-16c071b0b169",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2264,
+        "uid": "wKZoP8NvduT",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "serialNumber",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "sort_order": 15,
+        "json_data_path": "patients.serialNumber",
+        "canonical_path": "patients.serialNumber",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"الرقم التسلسلي\", \"en\": \"serialNumber\"}",
+        "data_type": "INTEGER",
+        "semantic_type": null,
+        "cardinality": "N",
+        "canonical_element_uid": "0aaead1e-ac2e-3206-8728-818b1c6ad714",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2265,
+        "uid": "xFoPgA8ScDK",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "PatientName",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "sort_order": 16,
+        "json_data_path": "patients.PatientName",
+        "canonical_path": "patients.PatientName",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"اسم المريض\", \"en\": \"PatientName\"}",
+        "data_type": "TEXT",
+        "semantic_type": null,
+        "cardinality": "N",
+        "canonical_element_uid": "046ee0b0-ac85-384f-bbc7-9a3ab7f9dc74",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2266,
+        "uid": "XiHffC6EImH",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "age",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "sort_order": 17,
+        "json_data_path": "patients.age",
+        "canonical_path": "patients.age",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"العمر\", \"en\": \"age\"}",
+        "data_type": "TEXT",
+        "semantic_type": "Age",
+        "cardinality": "N",
+        "canonical_element_uid": "cf12fa47-ab1d-3c31-a9dd-a5d995b1678f",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2267,
+        "uid": "zh8M6KrHVWT",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "gender",
+        "option_set_uid": "Bu2LhXFDicp",
+        "option_set_id": "01JYF3WW0H5R3NFXGDCMX4K70D",
+        "sort_order": 18,
+        "json_data_path": "patients.gender",
+        "canonical_path": "patients.gender",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"الجنس\", \"en\": \"gender\"}",
+        "data_type": "TEXT",
+        "semantic_type": "Option",
+        "cardinality": "N",
+        "canonical_element_uid": "9fd10fe9-fc81-35e6-b617-69234e5cb901",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2268,
+        "uid": "mmRl6z8TAQn",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "ispregnant",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "sort_order": 19,
+        "json_data_path": "patients.ispregnant",
+        "canonical_path": "patients.ispregnant",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"حامل\", \"en\": \"ispregnant\"}",
+        "data_type": "TEXT",
+        "semantic_type": null,
+        "cardinality": "N",
+        "canonical_element_uid": "f52766cb-abd5-368d-a211-6a49c0759d3c",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2269,
+        "uid": "xfs8KYG7F13",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "pregnancy_month",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "sort_order": 20,
+        "json_data_path": "patients.pregnancy_month",
+        "canonical_path": "patients.pregnancy_month",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"شهر الحمل\", \"en\": \"pregnancy_month\"}",
+        "data_type": "INTEGER",
+        "semantic_type": null,
+        "cardinality": "N",
+        "canonical_element_uid": "d91d6e71-5798-38f7-aa53-3c54ba09a036",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2277,
+        "uid": "fkQAZl8fpLR",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "symptomsv2",
+        "option_set_uid": "HFccPl89PPX",
+        "option_set_id": "01K89XVCHE2QT90JTTYNK7R7J9",
+        "sort_order": 21,
+        "json_data_path": "patients.symptomsv2",
+        "canonical_path": "patients.symptomsv2",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"الاعراض والعلامات\", \"en\": \"symptoms\"}",
+        "data_type": "ARRAY",
+        "semantic_type": "Option",
+        "cardinality": "N",
+        "canonical_element_uid": "04a75f1a-74e2-3885-bb64-bdb46adaf59c",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2270,
+        "uid": "PT1Ne3qT4KE",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "lab_test",
+        "option_set_uid": "AxpBXSCqnDa",
+        "option_set_id": "01JZT74FWP1VHQTBEGCTW61G2J",
+        "sort_order": 22,
+        "json_data_path": "patients.lab_test",
+        "canonical_path": "patients.lab_test",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"الفحوصات المطلوبة\", \"en\": \"lab_test\"}",
+        "data_type": "ARRAY",
+        "semantic_type": "Option",
+        "cardinality": "N",
+        "canonical_element_uid": "f95fc8d5-e54a-314f-8c04-643268b87af5",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2271,
+        "uid": "bO85besGd0G",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "diagnosed_disease_type",
+        "option_set_uid": "AjpOXeUAqnQ",
+        "option_set_id": "01JYF3WW0HD3CTRDRZ4DG6E71G",
+        "sort_order": 23,
+        "json_data_path": "patients.diagnosed_disease_type",
+        "canonical_path": "patients.diagnosed_disease_type",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"التشخيص\", \"en\": \"diagnosed_disease_typ\"}",
+        "data_type": "TEXT",
+        "semantic_type": "Option",
+        "cardinality": "N",
+        "canonical_element_uid": "c27b75e9-aeae-3a7c-9f2f-ef930a8229ce",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2272,
+        "uid": "KAEaDc7YlhF",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "other_diagnosed_disease_name",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "sort_order": 24,
+        "json_data_path": "patients.other_diagnosed_disease_name",
+        "canonical_path": "patients.other_diagnosed_disease_name",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"مرض اخر\", \"en\": \"other_diagnosed_disease_name\"}",
+        "data_type": "TEXT",
+        "semantic_type": null,
+        "cardinality": "N",
+        "canonical_element_uid": "84d5aaaa-ee37-3c12-9adf-b1a5632a1979",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2276,
+        "uid": "afbdWRuqFlR",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "malariadrugs",
+        "option_set_uid": "YPubNKrnO1e",
+        "option_set_id": "01K89WKVR94ZBJDE0TKCCTZV0P",
+        "sort_order": 31,
+        "json_data_path": "patients.malariadrugs",
+        "canonical_path": "patients.malariadrugs",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"أدوية الملاريا\", \"en\": \"malariadrugs\"}",
+        "data_type": "ARRAY",
+        "semantic_type": "Option",
+        "cardinality": "N",
+        "canonical_element_uid": "82ee0992-0ab0-3eac-8305-e23a5f945e18",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2275,
+        "uid": "LFH09VEKdWY",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "other_prescribeddrugs",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "sort_order": 32,
+        "json_data_path": "patients.other_prescribeddrugs",
+        "canonical_path": "patients.other_prescribeddrugs",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"صنف اخر\", \"en\": \"other_prescribeddrugs\"}",
+        "data_type": "TEXT",
+        "semantic_type": null,
+        "cardinality": "N",
+        "canonical_element_uid": "3a58846f-337f-308f-8f58-a4039903102f",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2273,
+        "uid": "i8WFxzB4dTs",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "cm_measures",
+        "option_set_uid": "vcYOprXCzar",
+        "option_set_id": "01JYF3WW0HM5TPPGMG7F22A3MP",
+        "sort_order": 40,
+        "json_data_path": "patients.cm_measures",
+        "canonical_path": "patients.cm_measures",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"التدابير\", \"en\": \"cm_measures\"}",
+        "data_type": "TEXT",
+        "semantic_type": "Option",
+        "cardinality": "N",
+        "canonical_element_uid": "37f8ec22-3c9e-3ce1-89a1-0b96be441e60",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2274,
+        "uid": "PMFrhunX7qB",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "referral_type",
+        "option_set_uid": "PnCIWkhM47L",
+        "option_set_id": "01JYF3WW0HFH9T5C8ZMQZDSQ3R",
+        "sort_order": 41,
+        "json_data_path": "patients.referral_type",
+        "canonical_path": "patients.referral_type",
+        "parent_repeat_canonical_path": "patients",
+        "parent_repeat_json_data_path": "patients",
+        "display_label": "{\"ar\": \"إحالة\", \"en\": \"referral_type\"}",
+        "data_type": "TEXT",
+        "semantic_type": "Option",
+        "cardinality": "N",
+        "canonical_element_uid": "70878f3e-9808-3ef5-a279-88ec0542553f",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    },
+    {
+        "id": 2263,
+        "uid": "OfeCbQdMMVe",
+        "element_kind": "FIELD",
+        "template_uid": "ck2pHW93sk2",
+        "template_version_uid": "Nvsp2XDPaTq",
+        "template_version_no": 15,
+        "name": "visitdate",
+        "option_set_uid": null,
+        "option_set_id": null,
+        "sort_order": 2,
+        "json_data_path": "main.visitdate",
+        "canonical_path": "visitdate",
+        "parent_repeat_canonical_path": null,
+        "parent_repeat_json_data_path": null,
+        "display_label": "{\"ar\": \"تاريخ الاستجابة\", \"en\": \"visitdate\"}",
+        "data_type": "TIMESTAMP",
+        "semantic_type": null,
+        "cardinality": "1",
+        "canonical_element_uid": "08e6aad1-c067-30cd-9858-f1c7fe9cde54",
+        "natural_key_candidates": "[]",
+        "created_date": "2025-11-11 00:51:50.911555"
+    }
 ]
 ```
 
-## Sample 6: A data submission sample:
+## Sample 6: A data submission sample for data template=`ck2pHW93sk2`:
 ```json
 {
-    "createdBy": "733920955",
-    "lastModifiedBy": "733920955",
-    "createdDate": "2025-10-27T07:49:24.892649Z",
-    "lastModifiedDate": "2025-10-27T07:49:24.892649Z",
-    "serialNumber": 71707,
-    "uid": "Zdu0qS87Wlp",
+    "createdBy": "772759361",
+    "lastModifiedBy": "772759361",
+    "createdDate": "2025-11-11T16:40:08.119047Z",
+    "lastModifiedDate": "2025-11-11T16:40:08.119047Z",
+    "serialNumber": 72597,
+    "uid": "xiipWGCVkl7",
     "deleted": false,
     "formData": {
         "main": {
-            "DateAndTime": "2025-10-27 09:00",
-            "lab_posters": [
-                "ملصقات تدبير حالات الملاريا",
-                "ملصقات فحص الملاري",
-                "ملصقات التعريف القياسي للأمراض",
-                "ملصق فحص الضنك"
-            ],
-            "contact_name": "قاسم علي محمد البوني",
-            "mobile_phone": 776026359,
-            "lab_registers": [
-                "سجل المختبر",
-                "سجل الإمداد",
-                "سجل الطبيب",
-                "سجل الحالات",
-                "استمارات الترصد"
-            ]
+            "visitdate": "2025-11-11"
         },
-        "cases": [
+        "patients": [
             {
-                "_id": "01K8JA9CRDV3N68KH9BZPB4WNM",
+                "_id": "01K9SWKYMRDH43EZBKMHA7RZ7T",
+                "age": "2017-11-10T21:00:00.000Z",
                 "_index": 1,
-                "mrdt_pf": 0,
-                "_parentId": "Zdu0qS87Wlp",
-                "mic_tested": 0,
-                "month_name": "September",
-                "drdt_tested": 0,
-                "mrdt_tested": 34,
-                "_submissionUid": "Zdu0qS87Wlp",
-                "mrdt_pv_pan_mixed": 0
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "علاء عبده ربه علي ربيش",
+                "cm_measures": "none",
+                "serialNumber": 1,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSVRY7XSPPWYHM06HT",
+                "age": "2013-11-10T21:00:00.000Z",
+                "_index": 2,
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "حبيب عبده ربه علي ربيش",
+                "cm_measures": "none",
+                "serialNumber": 2,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSQTGTX5Q2S48X044X",
+                "age": "2015-11-10T21:00:00.000Z",
+                "_index": 3,
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "ضياء عبده ربه علي ربيش",
+                "cm_measures": "none",
+                "serialNumber": 3,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMS4WHQJ6N3YBX1TWGX",
+                "age": "2018-11-10T21:00:00.000Z",
+                "_index": 4,
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "محمد جمال محمد ربيش",
+                "cm_measures": "treatment",
+                "malariadrugs": [
+                    "شريط ACT 40",
+                    "قرص بريماكوين 15 ملجم"
+                ],
+                "serialNumber": 4,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "malaria"
+            },
+            {
+                "_id": "01K9SWKYMSEC146ZBF4PQ16X8X",
+                "age": "2018-11-10T21:00:00.000Z",
+                "_index": 5,
+                "gender": "FEMALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "ispregnant": false,
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "ابرار عبده ربه علي ربيش",
+                "cm_measures": "treatment",
+                "malariadrugs": [
+                    "شريط ACT 40",
+                    "قرص بريماكوين 15 ملجم"
+                ],
+                "serialNumber": 5,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "malaria"
+            },
+            {
+                "_id": "01K9SWKYMSY4YPMCHW1ZQJDHCG",
+                "age": "2006-11-10T21:00:00.000Z",
+                "_index": 6,
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "صقر سعيد احمد علي",
+                "cm_measures": "treatment",
+                "malariadrugs": [
+                    "شريط ACT 80",
+                    "قرص بريماكوين 15 ملجم"
+                ],
+                "serialNumber": 6,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "malaria"
+            },
+            {
+                "_id": "01K9SWKYMSZFCMDNHKV0NXYXF2",
+                "age": "1990-11-10T21:00:00.000Z",
+                "_index": 7,
+                "gender": "FEMALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "ispregnant": false,
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "افراح عبدالله محمد ربيش",
+                "cm_measures": "treatment",
+                "malariadrugs": [
+                    "شريط ACT 80",
+                    "قرص بريماكوين 15 ملجم"
+                ],
+                "serialNumber": 7,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "malaria"
+            },
+            {
+                "_id": "01K9SWKYMSRVHMEJT0VHNG6QKS",
+                "age": "2023-05-10T21:00:00.000Z",
+                "_index": 8,
+                "gender": "FEMALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "ispregnant": false,
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "براءة صالح علي ربيش",
+                "cm_measures": "none",
+                "serialNumber": 8,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMS72VKBJWKMCVGT5MV",
+                "age": "2018-11-10T21:00:00.000Z",
+                "_index": 9,
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "شامخ صالح علي ربيش",
+                "cm_measures": "none",
+                "serialNumber": 9,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSQ8HZC3R5FVH2DVJB",
+                "age": "1985-11-10T21:00:00.000Z",
+                "_index": 10,
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "عبده علي محمد ربيش",
+                "cm_measures": "none",
+                "serialNumber": 10,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSE2VP048FZ9A54BK4",
+                "age": "2016-11-10T21:00:00.000Z",
+                "_index": 11,
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "محمد عبده علي ربيش",
+                "cm_measures": "none",
+                "serialNumber": 11,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSH6B8X6QRT56YXTQP",
+                "age": "2021-11-10T21:00:00.000Z",
+                "_index": 12,
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "فارس عبده علي ربيش",
+                "cm_measures": "none",
+                "serialNumber": 12,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSATT3WCS7NG8SGM6K",
+                "age": "1993-11-10T21:00:00.000Z",
+                "_index": 13,
+                "gender": "FEMALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "ispregnant": false,
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "بخيته علي محمد ربيش",
+                "cm_measures": "none",
+                "serialNumber": 13,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMS81WJQV374X4H7JQP",
+                "age": "2013-11-10T21:00:00.000Z",
+                "_index": 14,
+                "gender": "FEMALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "ispregnant": false,
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "هنادي صالح علي ربيش",
+                "cm_measures": "none",
+                "serialNumber": 14,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSK54WK62X1Z2GEN70",
+                "age": "2020-11-10T21:00:00.000Z",
+                "_index": 15,
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "محمد صالح علي ربيش",
+                "cm_measures": "treatment",
+                "malariadrugs": [
+                    "شريط ACT 40",
+                    "قرص بريماكوين 15 ملجم"
+                ],
+                "serialNumber": 15,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "malaria"
+            },
+            {
+                "_id": "01K9SWKYMSK0WWADWP6R6HTTTQ",
+                "age": "2010-11-10T21:00:00.000Z",
+                "_index": 16,
+                "gender": "FEMALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "ispregnant": false,
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "افراح مرشد احمد القصلي",
+                "cm_measures": "none",
+                "serialNumber": 16,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSPV5K8779MVHDBXC8",
+                "age": "2021-11-10T21:00:00.000Z",
+                "_index": 17,
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "جبير مرشد احمد القصلي",
+                "cm_measures": "none",
+                "serialNumber": 17,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSG11XEX52BVYASY4W",
+                "age": "2024-07-10T21:00:00.000Z",
+                "_index": 18,
+                "gender": "FEMALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "ispregnant": false,
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "رفح عبده علي ربيش",
+                "cm_measures": "none",
+                "serialNumber": 18,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSQSBTZE6D0Z3TV7XW",
+                "age": "2012-11-10T21:00:00.000Z",
+                "_index": 19,
+                "gender": "FEMALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "ispregnant": false,
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "عبير عبده علي ربيش",
+                "cm_measures": "none",
+                "serialNumber": 19,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSSAJFCZWW5Q04FNQ3",
+                "age": "2018-11-10T21:00:00.000Z",
+                "_index": 20,
+                "gender": "FEMALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "ispregnant": false,
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "مسيرة سعيد احمد المعزبي",
+                "cm_measures": "none",
+                "serialNumber": 20,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSY9CXMR00ZMNCYG4G",
+                "age": "2022-11-10T21:00:00.000Z",
+                "_index": 21,
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "مختار صالح علي ربيش",
+                "cm_measures": "none",
+                "serialNumber": 21,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMS64GCVCVTJ5VTK2KW",
+                "age": "1975-11-10T21:00:00.000Z",
+                "_index": 22,
+                "gender": "FEMALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "ispregnant": false,
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "جمعه علي احمد الغماري",
+                "cm_measures": "none",
+                "serialNumber": 22,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSEXPF5TN31WTHPR59",
+                "age": "1965-11-10T21:00:00.000Z",
+                "_index": 23,
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "علي محمد ربيش المعزبي",
+                "cm_measures": "none",
+                "serialNumber": 23,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMS10V0A74QE7Z0V90E",
+                "age": "1993-11-10T21:00:00.000Z",
+                "_index": 24,
+                "gender": "FEMALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "ispregnant": false,
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "هديه عبدالله ربيش المعزبي",
+                "cm_measures": "none",
+                "serialNumber": 24,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
+            },
+            {
+                "_id": "01K9SWKYMSBK4X7PWETGBTJZV9",
+                "age": "2013-11-10T21:00:00.000Z",
+                "_index": 25,
+                "gender": "MALE",
+                "lab_test": [
+                    "الفحص السريع للملاريا"
+                ],
+                "_parentId": "xiipWGCVkl7",
+                "symptomsv2": [
+                    "حمى"
+                ],
+                "PatientName": "بندر ناصر صالح المعزبي",
+                "cm_measures": "none",
+                "serialNumber": 25,
+                "_submissionUid": "xiipWGCVkl7",
+                "other_prescribeddrugs": null,
+                "diagnosed_disease_type": "none"
             }
-        ],
-        "training": {
-            "trainee": [
-                {
-                    "_id": "01K8JA9CRDR1ZQR5Q0J9BXX6R9",
-                    "name": "قاسم علي محمد البوني",
-                    "phone": 776026359,
-                    "_index": 1,
-                    "_parentId": "Zdu0qS87Wlp",
-                    "drdt_testing": true,
-                    "mrdt_testing": true,
-                    "_submissionUid": "Zdu0qS87Wlp",
-                    "drdt_testing_trained": true,
-                    "mrdt_testing_trained": true,
-                    "lab_recording_trained": false,
-                    "malaria_smear_staining": false,
-                    "pf_mic__identification": false,
-                    "other_lab_skills_trained": "مسؤول المرفق ",
-                    "microscope_handling_trained": false,
-                    "pf_mic_identification_trained": false,
-                    "malaria_smear_staining_trained": false,
-                    "pv_pm_mic_identification_trained": false
-                }
-            ],
-            "lab_staff_total": 5,
-            "lab_staff_present": 1
-        }
+        ]
     },
-    "form": "rkwH5QNofRn",
-    "formVersion": "Y0UVcIutUWv",
-    "version": 8,
-    "team": "xj2gqlJHCet",
-    "teamCode": "1303",
-    "orgUnit": "n7cQS76qlgj",
-    "orgUnitCode": "1724013",
-    "orgUnitName": "الوحدة الصحية الظهر",
-    "activity": "OKP7MWeEEZe",
-    "assignment": "a6czaWtAssA",
-    "startEntryTime": "2025-10-27T07:42:21.753838Z",
-    "finishedEntryTime": "2025-10-27T07:48:21.751066Z",
+    "form": "ck2pHW93sk2",
+    "formVersion": "Nvsp2XDPaTq",
+    "version": 15,
+    "team": "nmn2OCrBNgt",
+    "teamCode": "1102",
+    "orgUnit": "Mi1X6B3zIFJ",
+    "orgUnitCode": "11012810114",
+    "orgUnitName": "المعازبه-الحماري",
+    "activity": "TYduVflHzfZ",
+    "assignment": "YN5ZpINUUFU",
+    "startEntryTime": "2025-11-11T16:26:12.253498Z",
+    "finishedEntryTime": "2025-11-11T16:40:02.998226Z",
     "lockVersion": 0
 }
 ```

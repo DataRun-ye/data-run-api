@@ -2,11 +2,13 @@ package org.nmcpye.datarun.jpa.datatemplategenerator;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
+import org.nmcpye.datarun.jpa.datatemplate.DataType;
+import org.nmcpye.datarun.jpa.datatemplate.SemanticType;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
-import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.repository.MetadataUpsertService;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.nmcpye.datarun.jpa.option.OptionSet;
@@ -14,21 +16,13 @@ import org.nmcpye.datarun.jpa.option.repository.OptionSetRepository;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Thin orchestrator that only composes small components. Pure generation — no database writes.
- * <p>
- * Usage:
- * List<TemplateElement> configs = generator.generate(templateUid, versionUid);
- * // persist configs using separate Publisher/Repository
- *
- * @author Hamza Assada
- * @since 09/09/2025
- */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TemplateElementGeneratorService {
     private final TemplateVersionRepository versionRepository;
     private final FlatTemplateProcessor flatProcessor;
@@ -45,108 +39,192 @@ public class TemplateElementGeneratorService {
         Objects.requireNonNull(templateUid, "templateUid required");
         Objects.requireNonNull(versionUid, "versionUid required");
 
-        TemplateVersion dtv = versionRepository.findByTemplateUidAndUid(templateUid, versionUid)
+        var dtv = versionRepository.findByTemplateUidAndUid(templateUid, versionUid)
             .orElseThrow(() -> new IllegalArgumentException("template version not found"));
 
         FlatTemplateProcessor.TemplateFlatSnapshot snap = flatProcessor.process(dtv);
         MaterializedPathResolver resolver = new MaterializedPathResolver(snap.sectionByName);
 
-        // 1) Build repeat configs (one per repeatable section)
+        // optionSetUid -> optionSetId (bulk lookup)
+        Map<String, String> optionSetIdByUidMap = optionSetRepository.findAllByUidIn(
+            snap.fields.stream()
+                .map(FormDataElementConf::getOptionSet)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet())
+        ).stream().collect(Collectors.toMap(OptionSet::getUid, OptionSet::getId));
+
+        // canonicalUid -> CanonicalElement (in-memory, deduped)
+        Map<String, CanonicalElement> canonicalByUid = new LinkedHashMap<>();
+
+        // helper map: jsonDataPath -> repeat canonical uid (so child fields can lookup parent repeat ce)
+        Map<String, String> repeatJsonPathToCanonicalUid = new HashMap<>();
+        Map<String, String> repeatCanonicalUidToParentJsonPath = new HashMap<>();
+
+        // 1) Build repeat configs and their canonical elements (one per repeatable section)
         List<TemplateElement> out = new ArrayList<>(snap.fields.size() + snap.sectionByName.size());
+
         for (FormSectionConf section : snap.sectionByName.values()) {
             PathMetadata sectionMeta = resolver.resolveForSection(section);
-            if (Boolean.TRUE.equals(section.getRepeatable())) {
-                TemplateElement repeatCfg = elementBuilder.buildTemplateElementFromRepeat(section, sectionMeta, dtv);
-                out.add(repeatCfg);
+            if (!Boolean.TRUE.equals(section.getRepeatable())) continue;
+
+            TemplateElement repeatCfg = elementBuilder.buildTemplateElementFromRepeat(section, sectionMeta, dtv);
+            // compute deterministic canonical uid for this repeat (repeat semantic & ARRAY type)
+            final String repeatCanonicalKey = canonicalKeys(
+                repeatCfg.getTemplateUid(),
+                repeatCfg.getCanonicalPath(),
+                DataType.ARRAY.name(),
+                SemanticType.Repeat.name()
+            );
+            final String repeatCanonicalUid = canonicalUidFromStringAsUuid(repeatCanonicalKey);
+
+            // attach to the template element
+            repeatCfg.setCanonicalElementId(repeatCanonicalUid);
+
+            CanonicalElement ce = createCanonicalElement(repeatCfg, repeatCanonicalUid, null);
+            canonicalByUid.putIfAbsent(repeatCanonicalUid, ce);
+
+
+            // record mappings for pass B and for fields to reference
+            if (repeatCfg.getJsonDataPath() != null && !repeatCfg.getJsonDataPath().isBlank()) {
+                repeatJsonPathToCanonicalUid.put(repeatCfg.getJsonDataPath(), repeatCanonicalUid);
+            }
+            // store the parent json path (may be null)
+            repeatCanonicalUidToParentJsonPath.put(repeatCanonicalUid, repeatCfg.getParentRepeatJsonDataPath());
+
+            out.add(repeatCfg);
+        }
+
+        // PASS B: wire parentRepeatUid for repeat CEs using the map above
+        for (Map.Entry<String, String> e : repeatCanonicalUidToParentJsonPath.entrySet()) {
+            String canonicalUid = e.getKey();
+            String parentJsonPath = e.getValue(); // may be null
+            if (parentJsonPath == null || parentJsonPath.isBlank()) continue;
+            String parentUid = repeatJsonPathToCanonicalUid.get(parentJsonPath);
+            CanonicalElement ce = canonicalByUid.get(canonicalUid);
+            if (ce != null && parentUid != null && !parentUid.equals(ce.getParentRepeatId())) {
+                ce.setParentRepeatId(parentUid);
             }
         }
 
-        // optionSetUid -> optionSetId
-        Map<String, String> optionSetIdByUidMap = optionSetRepository.findAllByUidIn(snap.fields.stream()
-                .map(FormDataElementConf::getOptionSet).filter(Objects::nonNull).collect(Collectors.toSet())).stream()
-            .collect(Collectors.toMap(OptionSet::getUid, OptionSet::getId));
-        // 2) Build field configs (single loop; previous code accidentally had this twice)
-        Set<String> seen = new HashSet<>();
+        // 2) Build field configs and their canonical elements
+        Set<String> seenIdPath = new HashSet<>();
         for (FormDataElementConf f : snap.fields) {
             PathMetadata meta = resolver.resolveForField(f);
 
-            if (!seen.add(meta.getJsonDataIdPath())) {
+            if (!seenIdPath.add(meta.getJsonDataIdPath())) {
                 throw new IllegalStateException("Duplicate idPath detected: " + meta.getJsonDataIdPath());
             }
+
             TemplateElement cfg = elementBuilder.buildTemplateElementFromField(f, meta, dtv);
-            if(cfg.getOptionSetUid() != null) {
+
+            // optionSetId resolution
+            if (cfg.getOptionSetUid() != null) {
                 cfg.setOptionSetId(optionSetIdByUidMap.get(cfg.getOptionSetUid()));
             }
+
+
+            // determine parent repeat canonical uid (if any) by looking up by parentRepeatJsonDataPath
+            String parentRepeatUid = null;
+            String parentRepeatJsonPath = cfg.getParentRepeatJsonDataPath();
+            if (parentRepeatJsonPath != null) {
+                parentRepeatUid = repeatJsonPathToCanonicalUid.get(parentRepeatJsonPath);
+            }
+
+            // build canonical key and uid for this field
+            final String fieldCanonicalKey = canonicalKeys(
+                cfg.getTemplateUid(),
+                cfg.getCanonicalPath(),
+                cfg.getDataType() == null ? null : cfg.getDataType().name(),
+                cfg.getSemanticType() == null ? null : cfg.getSemanticType().name()
+            );
+
+            final String fieldCanonicalUid = canonicalUidFromStringAsUuid(fieldCanonicalKey);
+
+            // attach to the template element
+            cfg.setCanonicalElementId(fieldCanonicalUid);
+
+            // create or merge canonical element
+
+            CanonicalElement ce = canonicalByUid.get(fieldCanonicalUid);
+            if (ce == null) {
+                ce = createCanonicalElement(cfg, fieldCanonicalUid, parentRepeatUid);
+                canonicalByUid.put(fieldCanonicalUid, ce);
+            } else {
+                // ensure parentRepeatUid exists if not set (prefer existing value)
+                if (ce.getParentRepeatId() == null && parentRepeatUid != null) {
+                    ce.setParentRepeatId(parentRepeatUid);
+                }
+                // merge json data path
+                ce.setJsonDataPaths(mergeJsonDataPath(ce, cfg.getJsonDataPath()));
+            }
+
             out.add(cfg);
         }
 
-        // 3) Ensure every TemplateElement has a deterministic uid (DB requires it non-null/unique)
-        //    and ensure canonicalElementUid exists (defensive).
-        for (TemplateElement e : out) {
-//            if (e.getUid() == null || e.getUid().isBlank()) {
-//                e.setUid(generateShortElementUid(e.getTemplateUid(), e.getIdPath()));
-//            }
-            if (e.getCanonicalElementUid() == null || e.getCanonicalElementUid().isBlank()) {
-                // fallback deterministic canonical uid built from canonicalPath + dataType + semanticType
-                String fallbackKey = String.join("|", e.getTemplateUid(),
-                    e.getCanonicalPath() == null ? "" : e.getCanonicalPath(),
-                    e.getDataType() == null ? "" : e.getDataType().name(),
-                    e.getSemanticType() == null ? "" : e.getSemanticType().name(), e.getCardinality());
-                e.setCanonicalElementUid(canonicalUidFromStringAsUuid(fallbackKey));
-            }
-        }
-
-        // 4) Build unique CanonicalElement list (one per canonicalElementUid)
-        Map<String, CanonicalElement> canonicalByUid = new LinkedHashMap<>(); // preserve insertion order
-        for (TemplateElement e : out) {
-            final String ceUid = e.getCanonicalElementUid();
-            CanonicalElement ce = canonicalByUid.get(ceUid);
-            if (ce == null) {
-                ce = CanonicalElement.builder()
-                    .canonicalElementUid(ceUid)
-                    .templateUid(e.getTemplateUid())
-                    .preferredName(e.getName() != null ? e.getName() : "unnamed")
-                    .dataType(e.getDataType())
-                    .displayLabel(e.getDisplayLabel())
-                    .semanticType(e.getSemanticType())
-                    // canonicalPath in your entity was declared as JSON -- store single-path list as convenience
-                    .canonicalPath(e.getCanonicalPath())
-                    .cardinality(e.getCardinality())
-                    .optionSetUid(e.getOptionSetUid())
-                    .optionSetId(e.getOptionSetId())
-                    .jsonDataPaths(List.of(e.getJsonDataPath() == null ? "" : e.getJsonDataPath()))
-                    .notes(null)
-//                    .createdDate(Instant.now())
-//                    .lastModifiedDate(Instant.now())
-                    .build();
-                canonicalByUid.put(ceUid, ce);
-            } else {
-                // merge jsonDataPath into canonical_candidates if not present
-                String path = e.getJsonDataPath();
-                if (path != null && !path.isBlank()) {
-                    List<String> candidates = Optional.ofNullable(ce.getJsonDataPaths()).orElse(new ArrayList<>());
-                    if (!candidates.contains(path)) {
-                        candidates = new ArrayList<>(candidates);
-                        candidates.add(path);
-                        ce.setJsonDataPaths(candidates);
-                        ce.setDisplayLabel(e.getDisplayLabel());
-                    }
-                }
-            }
-        }
-
+        // 3) Prepare lists and upsert - canonical elements first
+        SafeNameUtils.ensureUniqueSafeNamesBasePreferred(canonicalByUid);
         List<CanonicalElement> canonicalList = new ArrayList<>(canonicalByUid.values());
 
-        // 5) Upsert canonical elements first (FK referenced by template_element)
+        // canonical elements upsert (this will append json_data_paths via SQL OR merge logic)
         metadataUpsertService.upsertCanonicalElements(canonicalList);
 
-        // 6) Upsert template elements
+        // then template elements upsert
         metadataUpsertService.upsertTemplateElements(out);
 
-        // return the in-memory generated list (note: elements may not reflect DB default columns)
         return out;
     }
+
     // ---------- helpers ----------
+
+    /**
+     * Merge jsonDataPath into ce.jsonDataPaths (deduplicating).
+     */
+    private static Set<String> mergeJsonDataPath(CanonicalElement ce, String path) {
+        Set<String> candidates = Optional.ofNullable(ce.getJsonDataPaths()).orElse(new HashSet<>());
+        if (path != null && !path.isBlank()) {
+            if (!candidates.contains(path)) {
+                Set<String> copy = new LinkedHashSet<>(candidates);
+                copy.add(path);
+                ce.setJsonDataPaths(copy);
+                return copy;
+            }
+        }
+        return candidates;
+    }
+
+    /**
+     * Build a CanonicalElement instance from a TemplateElement.
+     *
+     * @param e               template element
+     * @param canonicalUid    deterministic canonical uid (precomputed)
+     * @param parentRepeatUid the parent repeat canonical uid (may be null)
+     */
+    private static CanonicalElement createCanonicalElement(TemplateElement e, String canonicalUid, String parentRepeatUid) {
+
+        CanonicalElement.CanonicalElementBuilder builder = CanonicalElement.builder()
+            .id(canonicalUid)
+            .templateUid(e.getTemplateUid())
+            .preferredName(e.getName() != null ? e.getName() : "unnamed")
+            .dataType(e.getDataType())
+            .semanticType(e.getSemanticType())
+            .displayLabel(e.getDisplayLabel())
+            .canonicalPath(e.getCanonicalPath())
+            .optionSetUid(e.getOptionSetUid())
+            .optionSetId(e.getOptionSetId())
+            .parentRepeatId(parentRepeatUid)
+            .createdDate(Instant.now());
+
+        // initialize jsonDataPaths as a set with current element's jsonDataPath (if any)
+        if (e.getJsonDataPath() != null && !e.getJsonDataPath().isBlank()) {
+            builder.jsonDataPaths(Set.of(e.getJsonDataPath()));
+        } else {
+            builder.jsonDataPaths(Set.of());
+        }
+
+        builder.safeName(e.getName());
+
+        return builder.build();
+    }
 
     /**
      * Deterministic canonical UID (UUID name-based).
@@ -156,64 +234,12 @@ public class TemplateElementGeneratorService {
         return UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8)).toString();
     }
 
-    /**
-     * Generate a short (11-char) deterministic uid for template_element.uid
-     * based on templateUid + idPath. Produces [a-f0-9] substring (no dashes).
-     */
-    private static String generateShortElementUid(String templateUid, String idPath) {
-        String seed = (templateUid == null ? "" : templateUid) + '|' + (idPath == null ? "" : idPath);
-        String hex = canonicalUidFromStringAsUuid(seed).replace("-", "");
-        // take first 11 chars. This gives 11 hex chars (safely within length), adjust if you want different base.
-        return hex.substring(0, Math.min(11, hex.length()));
+    public static String canonicalKeys(String templateUid, String canonicalPath, String dataType,
+                                       String semanticType) {
+        return String.join("|",
+            templateUid == null ? "" : templateUid,
+            canonicalPath == null ? "" : canonicalPath,
+            dataType == null ? "" : dataType,
+            semanticType == null ? "" : semanticType);
     }
-
-//    @Transactional//(readOnly = true)
-//    public List<TemplateElement> generate2(String templateUid, String versionUid) {
-//        Objects.requireNonNull(templateUid, "templateUid required");
-//        Objects.requireNonNull(versionUid, "versionUid required");
-//
-//        TemplateVersion dtv = versionRepository.findByTemplateUidAndUid(templateUid, versionUid)
-//            .orElseThrow();
-//        FlatTemplateProcessor.TemplateFlatSnapshot snap = flatProcessor.process(dtv);
-//
-//        // resolver needs sectionByName map
-//        MaterializedPathResolver resolver = new MaterializedPathResolver(snap.sectionByName);
-//
-//        // produce repeat configs first (one per repeatable section)
-//        List<TemplateElement> out = new ArrayList<>(snap.fields.size() + snap.sectionByName.size());
-//        for (FormSectionConf section : snap.sectionByName.values()) {
-//            PathMetadata sectionMeta = resolver.resolveForSection(section);
-//            // create config only for repeatable sections (REPEAT elementKind)
-//            if (Boolean.TRUE.equals(section.getRepeatable())) {
-//                TemplateElement repeatCfg = elementBuilder.buildTemplateElementFromRepeat(section, sectionMeta, dtv);
-//                out.add(repeatCfg);
-//            }
-//        }
-//
-//        // produce fields
-//        Set<String> seen = new HashSet<>();
-//        // produce field configs
-//        for (FormDataElementConf f : snap.fields) {
-//            PathMetadata meta = resolver.resolveForField(f);
-//            if (!seen.add(meta.getJsonDataIdPath())) {
-//                throw new IllegalStateException("Duplicate idPath detected: " + meta.getJsonDataIdPath());
-//            }
-//            TemplateElement cfg = elementBuilder.buildTemplateElementFromField(f, meta, dtv);
-//            out.add(cfg);
-//        }
-//
-//
-//
-//        final var ceUids = out.stream().map(TemplateElement::getCanonicalElementUid).collect(Collectors.toSet());
-//
-//        final var existingCanonicalElements = canonicalElementRepository.findDistinctByCanonicalElementUidIn(ceUids);
-//
-//        // Persist (delete existing, bulk insert)
-//        final var ids = templateElementRepository.findIdsByTemplateUidAndTemplateVersionUid(templateUid, versionUid);
-//
-//        templateElementRepository.deleteAllByIdInBatch(ids);
-//        templateElementRepository.persistAll(out);
-//
-//        return out;
-//    }
 }

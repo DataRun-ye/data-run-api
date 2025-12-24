@@ -103,6 +103,10 @@ public enum ValueType {
         return this == SelectMulti;
     }
 
+    public boolean isSingleSelect() {
+        return this == SelectOne;
+    }
+
     public boolean isRepeat() {
         return this == RepeatableSection;
     }

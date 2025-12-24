@@ -3,8 +3,8 @@ package org.nmcpye.datarun.common;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 import org.springframework.format.datetime.standard.InstantFormatter;
 
 import java.time.Instant;
@@ -34,12 +34,12 @@ public class IdentifiableObjectUtils {
      * @param objects the list of IdentifiableObjects.
      * @return the joined string.
      */
-    public static String join(Collection<? extends JpaBaseIdentifiableObject> objects) {
+    public static String join(Collection<? extends TranslatableIdentifiable> objects) {
         if (objects == null || objects.isEmpty()) {
             return null;
         }
 
-        List<String> names = objects.stream().map(JpaBaseIdentifiableObject::getDisplayName).collect(Collectors.toList());
+        List<String> names = objects.stream().map(TranslatableIdentifiable::getDisplayName).collect(Collectors.toList());
 
         return StringUtils.join(names, SEPARATOR_JOIN);
     }
@@ -51,8 +51,8 @@ public class IdentifiableObjectUtils {
      * @return a list of uids.
      */
     public static <T extends JpaIdentifiableObject> List<String> getUids(Collection<T> objects) {
-        return objects != null ? objects.stream().filter(o -> o != null)
-            .map(o -> o.getUid()).collect(Collectors.toList()) : null;
+        return objects != null ? objects.stream().filter(Objects::nonNull)
+            .map(IdentifiableObject::getUid).collect(Collectors.toList()) : null;
     }
 
     /**
@@ -62,7 +62,7 @@ public class IdentifiableObjectUtils {
      * @return a list of codes.
      */
     public static <T extends JpaIdentifiableObject> List<String> getCodes(Collection<T> objects) {
-        return objects != null ? objects.stream().map(o -> o.getCode()).collect(Collectors.toList()) : null;
+        return objects != null ? objects.stream().map(IdentifiableObject::getCode).collect(Collectors.toList()) : null;
     }
 
     /**
@@ -101,7 +101,7 @@ public class IdentifiableObjectUtils {
      * @param ignoreCase          indicates whether to ignore case when filtering.
      * @return a filtered list of IdentifiableObjects.
      */
-    public static <T extends JpaBaseIdentifiableObject> List<T> filterNameByKey(List<T> identifiableObjects, String key, boolean ignoreCase) {
+    public static <T extends TranslatableIdentifiable> List<T> filterNameByKey(List<T> identifiableObjects, String key, boolean ignoreCase) {
         List<T> objects = new ArrayList<>();
         ListIterator<T> iterator = identifiableObjects.listIterator();
 
@@ -126,7 +126,7 @@ public class IdentifiableObjectUtils {
      *
      * @param list the list.
      */
-    public static <T extends JpaBaseIdentifiableObject> List<T> removeDuplicates(List<T> list) {
+    public static <T extends JpaIdentifiableObject> List<T> removeDuplicates(List<T> list) {
         final List<T> temp = new ArrayList<>(list);
         list.clear();
 
@@ -141,16 +141,16 @@ public class IdentifiableObjectUtils {
 
     /**
      * Generates a tag reflecting the date of when the most recently updated
-     * JpaBaseIdentifiableObject in the given collection was modified.
+     * JpaIdentifiableObject in the given collection was modified.
      *
      * @param objects the collection of IdentifiableObjects.
      * @return a string tag.
      */
-    public static <T extends JpaBaseIdentifiableObject> String getLastUpdatedTag(Collection<T> objects) {
+    public static <T extends JpaIdentifiableObject> String getLastUpdatedTag(Collection<T> objects) {
         Instant latest = null;
 
         if (objects != null) {
-            for (JpaBaseIdentifiableObject object : objects) {
+            for (JpaIdentifiableObject object : objects) {
                 if (
                     object != null &&
                         object.getLastModifiedDate() != null &&
@@ -161,7 +161,7 @@ public class IdentifiableObjectUtils {
             }
         }
 
-        return latest != null && objects != null ? objects.size() + SEPARATOR + (new InstantFormatter().print(latest, Locale.US)) : null;
+        return latest != null ? objects.size() + SEPARATOR + new InstantFormatter().print(latest, Locale.US) : null;
     }
 
 //    /**
@@ -170,7 +170,7 @@ public class IdentifiableObjectUtils {
 //     * @param object the identifiable object.
 //     * @return a string tag.
 //     */
-//    public static String getLastUpdatedTag(JpaBaseIdentifiableObject object) {
+//    public static String getLastUpdatedTag(JpaIdentifiableObject object) {
 //        return object != null ? LONG_DATE_FORMAT.print(new DateTime(object.getUpdated())) : null;
 //    }
 
@@ -182,8 +182,8 @@ public class IdentifiableObjectUtils {
      * @return mapping between the uid and the display name of the given
      * objects.
      */
-    public static Map<String, String> getUidNameMap(Collection<? extends JpaBaseIdentifiableObject> objects) {
-        return objects.stream().collect(Collectors.toMap(JpaBaseIdentifiableObject::getUid, JpaBaseIdentifiableObject::getDisplayName));
+    public static Map<String, String> getUidNameMap(Collection<? extends TranslatableIdentifiable> objects) {
+        return objects.stream().collect(Collectors.toMap(TranslatableIdentifiable::getUid, TranslatableIdentifiable::getDisplayName));
     }
 
     /**
@@ -194,7 +194,7 @@ public class IdentifiableObjectUtils {
      * @param property the identifiable property.
      * @return a mapping between uid and property.
      */
-    public static Map<String, String> getUidPropertyMap(Collection<? extends JpaBaseIdentifiableObject> objects, IdentifiableProperty property) {
+    public static Map<String, String> getUidPropertyMap(Collection<? extends JpaIdentifiableObject> objects, IdentifiableProperty property) {
         Map<String, String> map = Maps.newHashMap();
 
         objects.forEach(obj ->
@@ -210,7 +210,7 @@ public class IdentifiableObjectUtils {
      * @param objects the identifiable objects.
      * @return mapping between the uid and the name of the given objects.
      */
-    public static <T extends JpaBaseIdentifiableObject> Map<String, T> getUidObjectMap(Collection<T> objects) {
+    public static <T extends JpaIdentifiableObject> Map<String, T> getUidObjectMap(Collection<T> objects) {
         return objects != null ? Maps.uniqueIndex(objects, T::getUid) : Maps.newHashMap();
     }
 
@@ -222,7 +222,7 @@ public class IdentifiableObjectUtils {
      * @param idScheme the id scheme.
      * @return a map.
      */
-    public static <T extends JpaBaseIdentifiableObject> Map<String, T> getIdMap(List<T> objects, IdScheme idScheme) {
+    public static <T extends JpaIdentifiableObject> Map<String, T> getIdMap(List<T> objects, IdScheme idScheme) {
         Map<String, T> map = new HashMap<>();
 
         for (T object : objects) {
@@ -243,7 +243,7 @@ public class IdentifiableObjectUtils {
     public static String getDisplayName(Object object) {
         if (object == null) {
             return "[ object is null ]";
-        } else if (object instanceof JpaBaseIdentifiableObject identifiableObject) {
+        } else if (object instanceof TranslatableIdentifiable identifiableObject) {
 
             if (identifiableObject.getDisplayName() != null && !identifiableObject.getDisplayName().isEmpty()) {
                 return identifiableObject.getDisplayName();
@@ -297,14 +297,14 @@ public class IdentifiableObjectUtils {
     }
 
     /**
-     * Compare two {@link JpaBaseIdentifiableObject} using UID property.
+     * Compare two {@link JpaIdentifiableObject} using UID property.
      *
      * @param object object to compare.
      * @param target object to compare with.
      * @return TRUE if both objects are null or have same UID or both UIDs are
      * null. Otherwise, return FALSE.
      */
-    public static boolean equalByUID(JpaBaseIdentifiableObject object, JpaBaseIdentifiableObject target) {
+    public static boolean equalByUID(JpaIdentifiableObject object, JpaIdentifiableObject target) {
         if (ObjectUtils.allNotNull(object, target)) {
             if (ObjectUtils.allNotNull(object.getUid(), target.getUid())) {
                 return object.getUid().equals(target.getUid());

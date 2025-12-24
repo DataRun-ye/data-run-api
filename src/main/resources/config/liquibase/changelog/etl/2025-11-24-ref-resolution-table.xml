@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+
+    <changeSet id="20251124-01-create-ref-resolution" author="hamza-ye">
+        <createTable schemaName="analytics" tableName="ref_resolution">
+            <column name="ref_resolution_uid" type="varchar(26)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="raw_value" type="text"/>
+            <column name="raw_source" type="varchar(26)"/>
+            <column name="ref_type" type="varchar(50)"/>
+            <column name="resolved_uid" type="varchar(11)"/>
+            <column name="confidence" type="numeric(5,4)"/>
+            <column name="resolved_at" type="timestamp"/>
+            <column name="replaced_by" type="varchar(26)"/>
+            <column name="notes" type="text"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <createIndex schemaName="analytics" tableName="ref_resolution" indexName="idx_reference_raw_reference_type">
+            <column name="raw_value"/>
+            <column name="raw_source"/>
+            <column name="ref_type"/>
+        </createIndex>
+
+        <createIndex schemaName="analytics" tableName="ref_resolution" indexName="idx_refres_resolved_uid">
+            <column name="resolved_uid"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

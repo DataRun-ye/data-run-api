@@ -10,6 +10,7 @@ import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
+import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -61,9 +62,9 @@ public class TeamResource extends JpaBaseResource<Team> {
 
         Page<Team> processedPage = teamService.findAllManagedByUser(pageable, queryRequest);
 
-        String next = createNextPageLink(processedPage);
+        String next = PagingConfigurator.createNextPageLink(processedPage);
 
-        PagedResponse<Team> response = initPageResponse(processedPage, next);
+        PagedResponse<Team> response = PagingConfigurator.initPageResponse(processedPage, next, getName());
         return ResponseEntity.ok(response);
     }
 

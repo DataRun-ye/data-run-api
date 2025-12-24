@@ -79,6 +79,8 @@
 <!--        <javers-spring-boot-starter-sql.version>7.7.0</javers-spring-boot-starter-sql.version>-->
         <mongock-bom.version>5.5.0</mongock-bom.version>
 <!--        <version.debezium>3.1.0.Alpha1</version.debezium>-->
+        <json-flattener-version>0.18.0</json-flattener-version>
+
     </properties>
 
     <dependencyManagement>
@@ -343,6 +345,7 @@
         </dependency>
         <!-- NMC   -->
         <!-- NMC    -->
+
         <dependency>
             <groupId>io.mongock</groupId>
             <artifactId>mongock-springboot-v3</artifactId>
@@ -445,6 +448,12 @@
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq-meta</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.wnameless.json</groupId>
+            <artifactId>json-flattener</artifactId>
+            <version>${json-flattener-version}</version>
+            <!-- Newest version shows in the maven-central badge above -->
         </dependency>
         <!--  NMC end      -->
     </dependencies>

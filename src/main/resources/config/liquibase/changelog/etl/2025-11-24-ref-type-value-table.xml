@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+
+    <changeSet id="20251205-01-create-ref-type-value" author="hamza-ye">
+        <createTable schemaName="analytics" tableName="ref_type_value">
+            <column name="template_uid" type="varchar(11)"/>
+            <column name="submission_uid" type="varchar(11)"/>
+            <column name="instance_key" type="varchar(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ce_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ref_type" type="varchar(50)"/>
+            <column name="raw_value" type="text"/>
+            <column name="value_ref_uid" type="varchar(11)"/>
+            <column name="option_set_uid" type="varchar(11)"/>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="20251205-02-unique-instance-ce" author="hamza-ye">
+        <addUniqueConstraint
+            schemaName="analytics"
+            tableName="ref_type_value"
+            columnNames="instance_key, ce_id"
+            constraintName="uc_ref_type_value_instance_ce"/>
+    </changeSet>
+
+    <changeSet id="20251205-03-add-indexes" author="hamza-ye">
+        <createIndex indexName="idx_ref_type_value_submission_template_ce"
+                     schemaName="analytics"
+                     tableName="ref_type_value">
+            <column name="submission_uid"/>
+            <column name="template_uid"/>
+            <column name="ce_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_ref_type_value_value_ref_uid"
+                     schemaName="analytics"
+                     tableName="ref_type_value">
+            <column name="value_ref_uid"/>
+        </createIndex>
+
+        <createIndex indexName="idx_ref_type_value_option_set_uid"
+                     schemaName="analytics"
+                     tableName="ref_type_value">
+            <column name="option_set_uid"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

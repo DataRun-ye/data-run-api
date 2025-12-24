@@ -9,7 +9,9 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.generator.EventType;
 import org.hibernate.type.SqlTypes;
 import org.nmcpye.datarun.common.enumeration.FlowStatus;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
@@ -43,6 +45,7 @@ public class DataSubmission extends JpaSoftDeleteObject {
      * Keep insertable=false if DB default nextval() used.
      */
     @Column(name = "serial_number", nullable = false, unique = true, insertable = false, updatable = false)
+    @Generated(event = EventType.INSERT)
     private Long serialNumber;
 
     @Size(max = 11)
@@ -94,12 +97,6 @@ public class DataSubmission extends JpaSoftDeleteObject {
     @Column(name = "assignment_uid")
     private String assignment;
 
-//    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-//    @JsonSerialize(contentAs = JpaIdentifiableObject.class)
-//    @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
-//    private Assignment assignment;
-
-
     @Column(name = "start_entry_time")
     private Instant startEntryTime;
 
@@ -111,6 +108,7 @@ public class DataSubmission extends JpaSoftDeleteObject {
      */
     @Version
     @Column(name = "lock_version")
+    @JsonIgnore
     private Long lockVersion;
 
 

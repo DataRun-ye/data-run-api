@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 import org.nmcpye.datarun.jpa.etl.exception.InvalidReferenceValueException;
 import org.nmcpye.datarun.jpa.etl.model.ReferenceResolutionResult;
 import org.nmcpye.datarun.jpa.option.Option;
@@ -86,10 +86,10 @@ public class ReferenceResolver {
         return optionService.validateAndMapOptionCodes(codes, optionSetUid);
     }
 
-    private static <T extends JpaBaseIdentifiableObject> ReferenceResolutionResult resolveDomainCandidate(String candidate,
-                                                                                                          Function<String, Optional<T>> findByUid,
-                                                                                                          Function<String, Optional<T>> findById,
-                                                                                                          String kind) {
+    private static <T extends TranslatableIdentifiable> ReferenceResolutionResult resolveDomainCandidate(String candidate,
+                                                                                                         Function<String, Optional<T>> findByUid,
+                                                                                                         Function<String, Optional<T>> findById,
+                                                                                                         String kind) {
         // try by (id)
         Optional<T> byUid = findByUid.apply(candidate);
         if (byUid.isPresent()) {

@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -38,6 +40,7 @@ public class MaterializedViewRefresher {
      * IMPORTANT: these SQL queries should return a single timestamptz/timestamp or null.
      */
     private final Map<String, String> viewToSourceMaxSql = new LinkedHashMap<>();
+    private final Map<String, String> viewToSourceMaxSqlAnalytics = new LinkedHashMap<>();
 
     public MaterializedViewRefresher(JdbcTemplate jdbc, DataSource dataSource) {
         this.jdbc = jdbc;
@@ -63,6 +66,17 @@ public class MaterializedViewRefresher {
             "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.activity");
         viewToSourceMaxSql.put("analytics.dim_data_template",
             "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.data_template");
+
+        viewToSourceMaxSql.put("analytics.dim_malaria_unit_user_group",
+            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.user_group");
+
+        viewToSourceMaxSql.put("analytics.ref_value_enriched",
+            "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.ref_type_value");
+        // for each other
+        viewToSourceMaxSql.put("analytics.events_enriched",
+            "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.events");
+        viewToSourceMaxSql.put("analytics.event_ancestors",
+            "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.events");
     }
 
     @PostConstruct
@@ -186,7 +200,8 @@ public class MaterializedViewRefresher {
     /**
      * Upsert log: insert or update row for view_name in analytics.mv_refresh_log.
      */
-    private void upsertRefreshLog(String viewName, Instant lastRefresh, Instant lastSourceChange, String lastError) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void upsertRefreshLog(String viewName, Instant lastRefresh, Instant lastSourceChange, String lastError) {
         try {
             jdbc.update(
                 "INSERT INTO analytics.mv_refresh_log (view_name, last_refresh, last_source_change, last_error) " +

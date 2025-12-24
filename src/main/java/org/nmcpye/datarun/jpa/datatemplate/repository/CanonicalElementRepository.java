@@ -6,7 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * @author Hamza Assada
@@ -14,14 +13,12 @@ import java.util.Optional;
  */
 @Repository
 public interface CanonicalElementRepository extends BaseJpaRepository<CanonicalElement, String> {
-    Optional<CanonicalElement> findByCanonicalElementUid(String uid);
+    List<CanonicalElement> findByTemplateUid(String templateUid);
 
-//    @Query(value = """
-//        SELECT DISTINCT ce.*
-//        FROM canonical_element ce
-//        WHERE ce.canonical_element_uid IN :accessibleIds
-//        """, nativeQuery = true)
-//    Page<CanonicalElement> findWithAncestors(@Param("accessibleIds") List<Long> accessibleIds, Pageable pageable);
+    Collection<CanonicalElement> findByTemplateUidIn(Collection<String> templateUids);
 
-    List<CanonicalElement> findDistinctByCanonicalElementUidIn(Collection<String> uids);
+//    @Query(value = "SELECT id FROM canonical_element " +
+//        "WHERE template_uid = :templateUid ", nativeQuery = true)
+//    List<String> findUidsByTemplateUid(@Param("templateUid") String templateUid);
+
 }

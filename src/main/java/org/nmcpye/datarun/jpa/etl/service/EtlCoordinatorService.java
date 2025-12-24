@@ -1,10 +1,13 @@
 package org.nmcpye.datarun.jpa.etl.service;
 
 import lombok.RequiredArgsConstructor;
+import org.nmcpye.datarun.etl.dto.OutboxDto;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.etl.model.NormalizedSubmission;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 /**
  * Orchestrates the ETL flow for a submission:
@@ -32,14 +35,22 @@ public class EtlCoordinatorService {
 
     /**
      * Process a submission end-to-end.
-     *
+     * @deprecated use {@code processOutbox} instead
      * @param submissionId       id of the submission to process
      * @param generateMissingIds whether the Normalizer should synthesize missing repeat-instance UIDs
      */
+    @Deprecated(since = "use the new ingestion flow")
     public void processSubmission(String submissionId, boolean generateMissingIds) {
         DataSubmission submission = submissionRepo.findById(submissionId)
             .orElseThrow(() -> new IllegalStateException("Submission not found: " + submissionId));
         NormalizedSubmission ns = normalizer.normalize(submission, generateMissingIds);
+        persister.persist(ns);
+    }
+
+    public void processOutbox(OutboxDto outbox, UUID ingestId) {
+        DataSubmission submission = submissionRepo.findById(outbox.getSubmissionId())
+            .orElseThrow(() -> new IllegalStateException("Submission not found: " + outbox.getSubmissionId()));
+        NormalizedSubmission ns = normalizer.normalize(submission, true);
         persister.persist(ns);
     }
 }

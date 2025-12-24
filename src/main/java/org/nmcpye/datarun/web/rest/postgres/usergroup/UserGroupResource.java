@@ -8,6 +8,7 @@ import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
+import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -51,9 +52,9 @@ public class UserGroupResource extends JpaBaseResource<UserGroup> {
 
         Page<UserGroup> processedPage = service.findAllManagedByUser(pageable);
 
-        String next = createNextPageLink(processedPage);
+        String next = PagingConfigurator.createNextPageLink(processedPage);
 
-        PagedResponse<UserGroup> response = initPageResponse(processedPage, next);
+        PagedResponse<UserGroup> response = PagingConfigurator.initPageResponse(processedPage, next, getName());
         return ResponseEntity.ok(response);
     }
 }

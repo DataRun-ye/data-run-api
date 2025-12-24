@@ -22,11 +22,14 @@ public class FormTemplateElementGeneration implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        final var uids = List.of("YLcsWJlB7uy", "hcLU8ZtUdSd", "Ls9TW9eSlYH", "ck2pHW93sk2",
-            "rkwH5QNofRn", "KcsA3KETRbY", "woOl5yAmi8C", "BoEmHvJUEpb",
-            "W8EtCDYfp1w", "MrxGOZ6stwS", "UYBPOIfCU0a", "mpmjpJcMuas", "IP2dMtoJkO4",
-            "ONIaOpzoYAe", "LaGeMmmCEtH", "zglED4TsbTh", "M3fdtzBSpn8", "RQlMiMcukid");
+        final var uids = List.of("mpmjpJcMuas","LaGeMmmCEtH","RQlMiMcukid","zglED4TsbTh",
+            "YLcsWJlB7uy","hcLU8ZtUdSd","Ls9TW9eSlYH","ck2pHW93sk2",
+            "rkwH5QNofRn","KcsA3KETRbY","woOl5yAmi8C","BoEmHvJUEpb",
+            "W8EtCDYfp1w","MrxGOZ6stwS","UYBPOIfCU0a","IP2dMtoJkO4",
+            "ONIaOpzoYAe","M3fdtzBSpn8","iaNAoUriUg8","gGyX1CVnOaw",
+            "QIMwgBqVsqW","Eelt7ZePvz0", "yoPNCr8OR1O", "MI8KQFsxGFc");
 
+//        final var all = dataTemplateInstanceService.findAllByLastModifiedDateAfter(Instant.parse("2025-07-06T05:10:00.0Z"));
         final var all = dataTemplateInstanceService.findAllByUidIn(uids);
         all.forEach(t ->
             generatorService.generate(t.getUid(),

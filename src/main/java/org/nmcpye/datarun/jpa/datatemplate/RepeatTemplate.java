@@ -7,7 +7,7 @@
 //import org.hibernate.annotations.CacheConcurrencyStrategy;
 //import org.hibernate.annotations.JdbcTypeCode;
 //import org.hibernate.type.SqlTypes;
-//import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+//import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 //
 //import java.util.Set;
 //
@@ -27,7 +27,7 @@
 //@Builder
 //@ToString(onlyExplicitlyIncluded = true)
 //@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-//public class RepeatTemplate extends JpaBaseIdentifiableObject {
+//public class RepeatTemplate extends JpaIdentifiableObject {
 //    /// Default projection mode (derived from repeat_template.semantics)
 //    ///
 //    /// `EVENT` → append or upsert by natural_key (payload._id by default).

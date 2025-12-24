@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <!-- 011: dim_assignment (explode forms array) -->
+    <changeSet id="011-create-dim-assignment" author="hamza">
+        <sql>
+      <![CDATA[
+            CREATE MATERIALIZED VIEW analytics.dim_assignment AS
+            SELECT
+                row_number() OVER ()::bigint AS dim_assignment_id,
+                a.id AS assignment_id,
+                a.uid AS assignment_uid,
+                a.deleted::boolean AS deleted,
+                a.activity_id,
+                act.uid AS activity_uid,
+                a.start_day,
+                a.org_unit_id,
+                ou.uid AS org_unit_uid,
+                ou.code AS org_unit_code,
+                a.team_id,
+                t.uid AS team_uid,
+                t.code AS team_code,
+                COALESCE(a.forms, '[]'::jsonb) AS templates_jsonb,
+                f.form_uid AS template_uid,
+                a.allocated_resources,
+                a.status AS assignment_status,
+                a.last_submitted_by,
+                a.last_modified_by,
+                GREATEST(COALESCE(a.created_date, '1970-01-01'::timestamp),
+                         COALESCE(a.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
+            FROM public.assignment a
+                     LEFT JOIN public.org_unit ou ON ou.id = a.org_unit_id
+                     LEFT JOIN public.team t ON t.id = a.team_id
+                     LEFT JOIN public.activity act ON act.id = a.activity_id
+                     LEFT JOIN LATERAL (
+                SELECT value::text AS form_uid
+                FROM jsonb_array_elements_text(COALESCE(a.forms, '[]'::jsonb)) AS arr(value)
+                    ) f ON TRUE;
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP MATERIALIZED VIEW IF EXISTS analytics.dim_assignment;</sql>
+        </rollback>
+    </changeSet>
+
+
+    <!-- ===== dim_assignment ===== -->
+    <changeSet id="idx-022-dim_assignment-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_assignment_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_assignment_slm
+                ON analytics.dim_assignment (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_assignment_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-023-dim_assignment-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_assignment_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_assignment_form_uid_uniq
+                ON analytics.dim_assignment (assignment_uid, template_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_assignment_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-024-dim_assignment-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_assignment_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_assignment_slm_uid
+                ON analytics.dim_assignment (source_last_modified_at, assignment_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_assignment_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

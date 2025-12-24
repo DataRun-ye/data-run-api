@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.jpa.userrefreshtoken.service;
 
+import lombok.RequiredArgsConstructor;
+import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.userauthority.Authority;
 import org.nmcpye.datarun.jpa.userrefreshtoken.RefreshToken;
@@ -29,6 +31,7 @@ import static org.nmcpye.datarun.security.SecurityUtils.JWT_ALGORITHM;
  */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class TokenService {
 
     private final RefreshTokenRepository tokenRepository;
@@ -40,14 +43,6 @@ public class TokenService {
 
     @Value("${datarun.security.authentication.jwt.refresh-token-validity-in-seconds:2592000}") // 30 days
     private long refreshTokenValidity;
-
-    public TokenService(RefreshTokenRepository tokenRepository,
-                        JwtEncoder jwtEncoder,
-                        UserRepository userRepository) {
-        this.tokenRepository = tokenRepository;
-        this.jwtEncoder = jwtEncoder;
-        this.userRepository = userRepository;
-    }
 
     public Optional<RefreshTokenDto> findDtoByToken(String token) {
         return tokenRepository.findByToken(token);
@@ -74,7 +69,7 @@ public class TokenService {
     }
 
     public RefreshTokenDto createRefreshToken(String username) {
-        final var user = userRepository
+        final User user = userRepository
             .findOneWithAuthoritiesByLogin(username)
             .orElseThrow(() -> new TokenRefreshException(username, "invalid"));
         RefreshToken refreshToken = new RefreshToken();

@@ -1,16 +1,20 @@
 package org.nmcpye.datarun.jpa.project;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.jpa.activity.Activity;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -24,7 +28,7 @@ import java.util.Set;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class Project extends JpaBaseIdentifiableObject {
+public class Project extends TranslatableIdentifiable {
 //    @Id
 //    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
 //    @SequenceGenerator(name = "sequenceGenerator")
@@ -54,4 +58,9 @@ public class Project extends JpaBaseIdentifiableObject {
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"project"}, allowSetters = true)
     private Set<Activity> activities = new HashSet<>();
+
+    @Type(JsonType.class)
+    @Column(name = "properties_map", columnDefinition = "jsonb")
+    @JsonProperty
+    protected Map<String, Object> properties;
 }

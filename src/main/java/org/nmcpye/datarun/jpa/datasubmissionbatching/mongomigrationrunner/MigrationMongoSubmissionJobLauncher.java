@@ -73,7 +73,6 @@ public class MigrationMongoSubmissionJobLauncher implements CommandLineRunner {
             while (execution.isRunning() || execution.getStatus().isRunning()) {
                 log.info("Migration job is running... stepStatuses={}", execution.getStepExecutions());
                 Thread.sleep(1000L); // small sleep; tune if you want longer intervals
-//                execution = execution.getJobExecution(); // refresh pointer if needed
             }
 
             log.info("Migration job finished with status: {}, exitCode: {}, exitMessage: {}",

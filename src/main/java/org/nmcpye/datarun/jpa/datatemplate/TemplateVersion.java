@@ -15,6 +15,7 @@ import org.hibernate.type.SqlTypes;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 
 import java.util.List;
 
@@ -36,7 +37,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class TemplateVersion extends JpaIdentifiableObject {
+public class TemplateVersion extends JpaIdentifiableObject implements DataTemplateVersionInterface {
 
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true, nullable = false)
@@ -105,5 +106,17 @@ public class TemplateVersion extends JpaIdentifiableObject {
     @Override
     public String getName() {
         return null;
+    }
+
+    @Override
+    public DataTemplateVersionInterface sections(List<FormSectionConf> sections) {
+        this.sections = sections;
+        return this;
+    }
+
+    @Override
+    public DataTemplateVersionInterface fields(List<FormDataElementConf> fields) {
+        this.fields = fields;
+        return this;
     }
 }

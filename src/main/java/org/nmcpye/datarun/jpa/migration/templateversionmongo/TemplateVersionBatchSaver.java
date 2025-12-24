@@ -3,7 +3,6 @@ package org.nmcpye.datarun.jpa.migration.templateversionmongo;
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -12,7 +11,7 @@ import java.util.List;
  * Separate service to perform the transactional save. Keep transaction on this method so
  * that the migration loop can retry the whole batch if the save fails.
  */
-@Service
+//@Service
 @RequiredArgsConstructor
 class TemplateVersionBatchSaver {
     private final TemplateVersionRepository pgRepo;

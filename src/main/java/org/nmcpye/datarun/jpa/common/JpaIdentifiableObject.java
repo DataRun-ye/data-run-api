@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.nmcpye.datarun.common.IdScheme;
 import org.nmcpye.datarun.common.IdentifiableObject;
+import org.nmcpye.datarun.common.IdentifiableProperty;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -33,7 +35,7 @@ import java.util.Objects;
 @Getter
 @Setter
 public abstract class JpaIdentifiableObject
-    implements IdentifiableObject<String>, Persistable<String>, Serializable {
+    implements IdentifiableObject<String>, Persistable<String>, Serializable, Comparable<JpaIdentifiableObject> {
     /**
      * ULID id (Universally Unique Lexicographically Sortable Identifier).
      * Length: 26 characters, Base32 encoded.
@@ -99,10 +101,6 @@ public abstract class JpaIdentifiableObject
         return isPersisted;
     }
 
-    public void setPersisted(boolean persisted) {
-        isPersisted = persisted;
-    }
-
     @Transient
     @Override
     @JsonIgnore
@@ -110,17 +108,47 @@ public abstract class JpaIdentifiableObject
         return !this.isPersisted;
     }
 
-    public JpaIdentifiableObject setIsPersisted() {
+    public void setIsPersisted() {
         this.isPersisted = true;
-        return this;
     }
 
     abstract protected void setUid(String uid);
 
     @Override
     public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+
+        if (!getClass().isAssignableFrom(o.getClass())) {
+            return false;
+        }
+
         if (!(o instanceof JpaIdentifiableObject that)) return false;
         return Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public int compareTo(JpaIdentifiableObject object) {
+        if (this.getName() == null) {
+            return object.getName() == null ? 0 : 1;
+        }
+
+        return object.getName() == null ? -1
+            : this.getName().compareToIgnoreCase(object.getName());
+    }
+
+    @Override
+    public String getPropertyValue(IdScheme idScheme) {
+        if (idScheme.isNull() || idScheme.is(IdentifiableProperty.ID)) {
+            return getId();
+        } else if (idScheme.is(IdentifiableProperty.CODE)) {
+            return getCode();
+        } else if (idScheme.is(IdentifiableProperty.NAME)) {
+            return getName();
+        }
+
+        return null;
     }
 
     @Override

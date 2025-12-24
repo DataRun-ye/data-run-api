@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelementgroupset.DataElementGroupSet;
 
@@ -23,7 +23,7 @@ import java.util.Set;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataElementGroup extends JpaBaseIdentifiableObject {
+public class DataElementGroup extends TranslatableIdentifiable {
 //    @Id
 //    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
 //    @SequenceGenerator(name = "sequenceGenerator")

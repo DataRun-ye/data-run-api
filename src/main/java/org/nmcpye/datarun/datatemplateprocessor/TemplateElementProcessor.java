@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.datatemplateprocessor;
 
+import org.apache.commons.collections4.map.UnmodifiableMap;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
@@ -20,9 +21,9 @@ public class TemplateElementProcessor {
 
     public TemplateElementProcessor(DataTemplateVersionInterface formTemplate) {
         this.formTemplate = formTemplate;
-        this.sectionMap = formTemplate.getSections()
+        this.sectionMap = UnmodifiableMap.unmodifiableMap( formTemplate.getSections()
             .stream().collect(Collectors
-                .toMap(AbstractElement::getName, Function.identity()));
+                .toMap(AbstractElement::getName, Function.identity())));
     }
 
     /**
@@ -45,7 +46,7 @@ public class TemplateElementProcessor {
     private TemplateElementProcessor configureAndValidateFields(Collection<DataElement> dataTemplateElements) {
         final var dataElementMap = dataTemplateElements.stream()
             .collect(Collectors.toMap(DataElement::getUid, Function.identity()));
-        final var sectionMap = getSectionMap();
+//        final var sectionMap = getSectionMap();
         final var fields = formTemplate.getFields().stream().distinct()
             .map((f) ->
                 AbstractFormElementHandler

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+
+    <changeSet id="create-events-table" author="hamza-ye">
+        <createTable schemaName="analytics" tableName="events">
+            <column name="event_id" type="varchar(26)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="submission_serial" type="bigint"/>
+
+            <column name="event_type" type="varchar(20)"/>
+
+            <column name="submission_uid" type="varchar(11)"/>
+            <column name="submission_id" type="varchar(26)"/>
+            <column name="parent_event_id" type="varchar(26)"/>
+            <column name="event_ce_id" type="uuid"/>
+            <column name="assignment_uid" type="varchar(11)"/>
+            <column name="activity_uid" type="varchar(11)"/>
+            <column name="org_unit_uid" type="varchar(11)"/>
+            <column name="team_uid" type="varchar(11)"/>
+            <column name="template_uid" type="varchar(11)"/>
+            <column name="submission_creation_time" type="timestamp"/>
+            <column name="start_time" type="timestamp"/>
+            <column name="last_seen" type="timestamp"/>
+
+            <column name="anchor_ce_id" type="varchar(36)"/>
+            <column name="anchor_ref_uid" type="varchar(11)"/>
+            <column name="anchor_value_ref_type" type="varchar(64)"/>
+            <column name="anchor_value_text" type="text"/>
+            <column name="anchor_confidence" type="numeric(5,4)"/>
+            <column name="anchor_resolved_at" type="timestamp"/>
+
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <createIndex schemaName="analytics" tableName="events" indexName="idx_events_anchor_ce_ref_uid">
+            <column name="anchor_ce_id"/>
+            <column name="anchor_ref_uid"/>
+        </createIndex>
+
+        <createIndex schemaName="analytics" tableName="events" indexName="idx_events_anchor_ref_uid">
+            <column name="anchor_ref_uid"/>
+        </createIndex>
+
+    </changeSet>
+</databaseChangeLog>

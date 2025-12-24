@@ -89,7 +89,7 @@ public class BronzeNodeDao {
             .addValue("templateVersion", node.getTemplateVersion())
             .addValue("nodePath", node.getNodePath())
             .addValue("nodeKind", node.getNodeKind())
-            .addValue("valueType", node.getValueType())
+            .addValue("dataType", node.getValueType())
             .addValue("roleSuggestion", node.getRoleSuggestion())
             .addValue("cardinality", node.getCardinality())
             .addValue("repeatInstanceId", node.getRepeatInstanceId())

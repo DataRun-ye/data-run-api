@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1762719219391-51" author="Hamza">
+        <createTable tableName="canonical_element">
+            <column name="id" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_canonical_element"/>
+            </column>
+            <column name="template_uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="preferred_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="safe_name" type="VARCHAR(63)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_type" type="VARCHAR(64)"/>
+            <column name="semantic_type" type="VARCHAR(64)"/>
+            <column name="canonical_path" type="VARCHAR(4000)"/>
+<!--            <column name="cardinality" type="VARCHAR(2)"/>-->
+            <column name="option_set_Uid" type="VARCHAR(11)"/>
+            <column name="option_set_id" type="VARCHAR(26)"/>
+            <column defaultValueComputed="'{}'::jsonb" name="display_label" type="jsonb"/>
+            <column defaultValueComputed="'[]'::jsonb" name="json_data_paths" type="jsonb"/>
+<!--            <column name="notes" type="text"/>-->
+            <column name="parent_repeat_id" type="VARCHAR(64)"/>
+            <column name="created_date" type="DATETIME"/>
+            <column name="last_modified_date" type="timestamp" defaultValueComputed="now()"/>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

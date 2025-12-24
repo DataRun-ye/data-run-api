@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.jpa.datatemplate.repository;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import org.nmcpye.datarun.jpa.common.BaseJpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.springframework.data.jpa.repository.Query;
@@ -23,13 +22,13 @@ public interface TemplateElementRepository
     List<Long> findIdsByTemplateUidAndTemplateVersionUid(@Param("templateUid") String templateUid,
                                                          @Param("templateVersionUid") String templateVersionUid);
 
-    Optional<TemplateElement> findByUid(@Size(max = 11) String uid);
+    Optional<TemplateElement> findByUid(String uid);
 
     List<TemplateElement> findAllByTemplateUidAndTemplateVersionUid(String templateUid, String templateVersionUid);
 
-    List<TemplateElement> findAllByTemplateUidAndVersionNo(String templateUid, Integer templateVersionNo);
+    List<TemplateElement> findAllByTemplateUidAndTemplateVersionNo(String templateUid, Integer templateVersionNo);
 
-    Optional<TemplateElement> findTopByTemplateUidOrderByVersionNoDesc(@NotNull String templateId);
+    Optional<TemplateElement> findTopByTemplateUidOrderByTemplateVersionNoDesc(@NotNull String templateUid);
 
     List<TemplateElement> findByTemplateVersionUid(String templateVersionUid);
 
@@ -38,6 +37,4 @@ public interface TemplateElementRepository
 //    // load only repeat entries (cached in app)
 //    @Query("SELECT e.repeatUid, e.canonicalPath FROM TemplateElement e WHERE e.elementKind = 'REPEAT'")
 //    List<Object[]> findAllRepeats(); // returns [repeatUid, semanticPath] rows
-
-    List<TemplateElement> findBySchemaFingerprint(String schemaFingerprint);
 }

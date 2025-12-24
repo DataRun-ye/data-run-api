@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -79,7 +80,7 @@ public class FormTemplateProcessor {
      * @return a list of uids.
      */
     public static <T extends IdentifiableObject<?>> Collection<String> getUids(Collection<T> objects) {
-        return objects != null ? objects.stream().filter(o -> o != null).map(o -> o.getUid())
+        return objects != null ? objects.stream().filter(Objects::nonNull).map(o -> o.getUid())
             .collect(Collectors.toSet()) : null;
     }
 

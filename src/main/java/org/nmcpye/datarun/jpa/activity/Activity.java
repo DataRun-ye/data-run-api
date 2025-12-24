@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.jpa.activity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -8,12 +10,14 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.common.JpaBaseIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 import org.nmcpye.datarun.jpa.project.Project;
 
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -27,7 +31,7 @@ import java.util.Set;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class Activity extends JpaBaseIdentifiableObject {
+public class Activity extends TranslatableIdentifiable {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
@@ -63,6 +67,10 @@ public class Activity extends JpaBaseIdentifiableObject {
     @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Set<Assignment> assignments = new HashSet<>();
 
+    @Type(JsonType.class)
+    @Column(name = "properties_map", columnDefinition = "jsonb")
+    @JsonProperty
+    protected Map<String, Object> properties;
 
     // prettier-ignore
     @Override

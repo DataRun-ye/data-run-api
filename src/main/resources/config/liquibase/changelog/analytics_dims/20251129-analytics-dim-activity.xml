@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <!-- 012: dim_activity -->
+    <changeSet id="012-create-dim-activity" author="hamza">
+        <sql>
+      <![CDATA[
+            CREATE MATERIALIZED VIEW analytics.dim_activity AS
+            SELECT
+                row_number() OVER ()::bigint AS dim_activity_id,
+                a.id AS activity_id,
+                a.uid AS activity_uid,
+                a.code AS activity_code,
+                a.name AS activity_name,
+                a.start_date::timestamp AS start_date,
+                a.end_date::timestamp AS end_date,
+                coalesce(a.planned_duration_days, a.end_date::date - a.start_date::date) as planned_duration_days,
+                a.project_id,
+                TRIM(COALESCE(analytics.translation_value(COALESCE(a.translations, '[]'::jsonb), 'en', 'name'), a.name)) AS activity_name_en,
+                TRIM(COALESCE(analytics.translation_value(COALESCE(a.translations, '[]'::jsonb), 'ar', 'name'), a.name)) AS activity_name_ar,
+                a.last_modified_by,
+                GREATEST(COALESCE(a.created_date, '1970-01-01'::timestamp),
+                         COALESCE(a.last_modified_date, '1970-01-01'::timestamp)
+                ) AT TIME ZONE 'UTC' AS source_last_modified_at
+            FROM public.activity a;
+
+            ]]>
+    </sql>
+        <rollback>
+            <sql>
+                DROP MATERIALIZED VIEW IF EXISTS analytics.dim_activity;
+            </sql>
+        </rollback>
+    </changeSet>
+
+
+
+    <!-- ===== dim_activity ===== -->
+    <changeSet id="idx-025-dim_activity-slm" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_activity_slm"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_activity_slm
+                ON analytics.dim_activity (source_last_modified_at);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_activity_slm;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-026-dim_activity-uid-uniq" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_activity_uid_uniq"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_activity_uid_uniq
+                ON analytics.dim_activity (activity_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_activity_uid_uniq;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="idx-027-dim_activity-slm_uid" author="hamza" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_analytics_dim_activity_slm_uid"/>
+            </not>
+        </preConditions>
+        <sql>
+      <![CDATA[
+            CREATE INDEX CONCURRENTLY idx_analytics_dim_activity_slm_uid
+                ON analytics.dim_activity (source_last_modified_at, activity_uid);
+            ]]>
+    </sql>
+        <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_activity_slm_uid;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

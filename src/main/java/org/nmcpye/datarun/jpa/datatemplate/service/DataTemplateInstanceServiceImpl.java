@@ -24,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +65,10 @@ public class DataTemplateInstanceServiceImpl
                 // existing: bump version number in memory; we'll persist later
                 existing.setVersionNumber(existing.getVersionNumber() + 1);
                 existing.setVersionUid(CodeGenerator.generateUid());
+                existing.setLabel(incomingTemplate.getLabel());
+                existing.setName(incomingTemplate.getName());
+                existing.setDescription(incomingTemplate.getDescription());
+                existing.setCode(incomingTemplate.getCode());
                 return existing;
             })
             .orElseGet(() -> {
@@ -108,130 +113,28 @@ public class DataTemplateInstanceServiceImpl
         );
     }
 
-//    @Transactional
-//    public DataTemplateInstanceDto saveNewVersion(DataTemplateInstanceDto dto) {
-//        DataTemplate maybeNew = dataTemplateMapper.fromInstanceDto(dto);
-//
-//        DataTemplate template = dataTemplateRepository
-//            .findByUidForWrite(maybeNew.getUid())   // PESSIMISTIC_WRITE lock
-//            .map(existing -> {
-//                existing.setVersionNumber(existing.getVersionNumber() + 1);
-//                // keep other fields as needed
-//                return existing;
-//            })
-//            .orElseGet(() -> {
-//                maybeNew.setVersionNumber(1);
-//                return maybeNew;
-//            });
-//
-//        int newVersion = template.getVersionNumber();
-//
-//        // Build new version entity
-//        TemplateVersion versionEntity = jpaVersionMapper.fromInstanceDto(dto);
-//        versionEntity.setVersionNumber(newVersion);
-//        versionEntity.setTemplateUid(template.getUid());
-//        // generate id/id if you have a generator; keep same id semantics
-//        if (versionEntity.getId() == null) {
-//            versionEntity.setId(CodeGenerator.nextUlid());
-//        }
-//        if (versionEntity.getUid() == null) {
-//            versionEntity.setUid(CodeGenerator.generateUid());
-//        }
-//
-//        // Save version first so we ensure it has PK/id for the master row
-//        TemplateVersion savedVersion = jpaTemplateVersionRepository.save(versionEntity);
-//
-//        // update template to reference new version id and persist
-//        template.setVersionUid(savedVersion.getUid());
-//        template.setVersionNumber(newVersion);
-//        DataTemplate savedTemplate = dataTemplateService.save(template); // still within @Transactional
-//
-//        // both saved, return DTO
-//        return dataTemplateMapper.toInstanceDto(
-//            dataTemplateMapper.toDto(savedTemplate),
-//            jpaVersionMapper.toDto(savedVersion)
-//        );
-//    }
-
-//    /// Create a brand‐new version of the FormTemplate (Postgres ↔ Mongo) as a single “unit.”
-//    /// If anything fails, neither side is left half‐updated.
-//    @Transactional
-//    public DataTemplateInstanceDto saveNewVersionDeprecated(DataTemplateInstanceDto dto) {
-//        DataTemplate maybeNew = dataTemplateMapper.fromInstanceDto(dto);
-//
-//        //    We call a custom repository method findByUidForWrite(…) that uses a PESSIMISTIC_WRITE lock
-//        //    so that two concurrent callers cannot both see versionNumber = N and then both flip to N+1.
-//        // postgresql
-//        DataTemplate template = dataTemplateRepository
-//            .findByUidForWrite(maybeNew.getUid())
-//            .map(existing -> {
-//                existing.setVersionNumber(existing.getVersionNumber() + 1);
-//                return existing;
-//            })
-//            .orElseGet(() -> {
-//                // new template, versionNumber = 1
-//                maybeNew.setVersionNumber(1);
-//                return maybeNew;
-//            });
-//
-//        int newVersion = template.getVersionNumber();
-//
-//        // 3) Build the new Mongo “version document” but do NOT touch Postgres yet.
-//        DataTemplateVersion versionDoc = mongoVersionMapper.fromInstanceDto(dto)
-//            .version(newVersion)
-//            .templateUid(template.getUid());
-//
-//        DataTemplateVersion savedVersion;
-//        try {
-//            savedVersion = templateVersionMongoRepository.save(versionDoc);
-//            // If this throws (Mongo down, or constraint violation), we immediately bubble up an exception.
-//            // Because we are @Transactional on Postgres, any Postgres changes (the versionNumber bump) have not been committed yet,
-//            // so they will roll back automatically. NO need for extra compensation for a Mongo failure.
-//        } catch (RuntimeException mongoEx) {
-//            throw new RuntimeException("Failed to save FormTemplateVersion to Mongo", mongoEx);
-//        }
-//
-//        // 4) Now that Mongo has given us a new version‐UID, set these two non‐nullable fields on the Postgres entity:
-//        template.setVersionUid(savedVersion.getUid());
-//        // (versionNumber is already set, and both versionNumber & formVersionUid are @Column(nullable=false).)
-//
-//        DataTemplate savedTemplate;
-//        try {
-//            savedTemplate = dataTemplateService.save(template);
-//            // At this point, we’ve done **two** modifications to Postgres in the same @Transactional:
-//            //   • either an UPDATE that bumped versionNumber on an existing row (and now sets formVersionUid),
-//            //   • or an INSERT of a brand‐new row with (uid, versionNumber=1, formVersionUid=<new Mongo UID>).
-//            //
-//            // If this save(…) throws (e.g. a unique‐constraint violation, database schema error, etc.), we must delete the Mongo doc.
-//            // Catch that exception, delete the Mongo version, and rethrow, so that Postgres rolls back its UPDATE/INSERT.
-//        } catch (RuntimeException postgresEx) {
-//            // COMPENSATE: remove the Mongo doc we just created, because Postgres did not accept the final save.
-//            try {
-//                templateVersionMongoRepository.deleteById(savedVersion.getUid());
-//            } catch (Exception deleteEx) {
-//                // If we cannot delete the Mongo doc, log—someone may need to clean it up manually.
-//                // Either way, we still abort the entire transaction by rethrowing below.
-//                log.error(
-//                    "⚠️ Failed to delete orphaned FormTemplateVersion (UID="
-//                        + savedVersion.getUid()
-//                        + ") after Postgres save failure.",
-//                    deleteEx
-//                );
-//            }
-//            // Now rethrow so that the Postgres transaction rolls back its earlier version‐number bump/insert.
-//            throw new RuntimeException("Failed to save FormTemplate to Postgres", postgresEx);
-//        }
-//
-//        // 5) If we reach here, **both** Mongo AND Postgres succeeded. Build the response DTO:
-//        return dataTemplateMapper.toInstanceDto(
-//            dataTemplateMapper.toDto(savedTemplate),
-//            mongoVersionMapper.toDto(savedVersion)
-//        );
-//    }
-
     @Override
     public List<DataTemplateInstanceDto> findAllByUidIn(Collection<String> uids) {
         final var masters = dataTemplateRepository.findAllByUidIn(uids);
+        // batch-load versions
+        List<String> ids = masters.stream()
+            .map(DataTemplate::getVersionUid)
+            .toList();
+
+        Map<String, FormTemplateVersionDto> versions = jpaTemplateVersionRepository.findAllByUidIn(ids).stream()
+            .map(jpaVersionMapper::toDto)
+            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, Function.identity()));
+
+        return masters.stream().map(m ->
+            dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
+                Optional.ofNullable(versions.get(m.getUid())).orElseThrow(
+                    () -> new IllegalQueryException(ErrorCode.E1120, m.getUid())
+                ))).toList();
+    }
+
+    @Override
+    public List<DataTemplateInstanceDto> findAllByLastModifiedDateAfter(Instant date) {
+        final var masters = dataTemplateRepository.findAllByLastModifiedDateAfter(date);
         // batch-load versions
         List<String> ids = masters.stream()
             .map(DataTemplate::getVersionUid)
@@ -336,7 +239,12 @@ public class DataTemplateInstanceServiceImpl
         UserRepository.USER_TEAM_IDS_CACHE,
         DataTemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_CACHE,
         DataTemplateRepository.TEMPLATE_BY_UID_CACHE,
-
+        TemplateElementService.TEMPLATE_MAP_CACHE,
+        TemplateVersionRepository.TEMPLATE_UID_VERSION_UID_JPA_CACHE,
+        TemplateVersionRepository.TEMPLATE_UID_VERSION_NO_JPA_CACHE,
+        TemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_JPA_CACHE,
+        DataTemplateVersionRepository.TEMPLATE_UID_VERSION_NO_CACHE,
+        DataTemplateVersionRepository.TEMPLATE_UID_VERSION_UID_CACHE
     })
     @Override
     public DataTemplateInstanceDto save(DataTemplateInstanceDto dataTemplateInstanceDto) {

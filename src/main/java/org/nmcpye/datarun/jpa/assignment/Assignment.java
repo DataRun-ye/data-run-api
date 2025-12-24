@@ -38,8 +38,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class Assignment
-    extends JpaSoftDeleteObject {
+public class Assignment extends JpaSoftDeleteObject {
 
     private static final String PATH_SEP = ",";
 
@@ -107,6 +106,11 @@ public class Assignment
 
     @Column(name = "last_submitted_by")
     private String lastSubmittedBy;
+
+    @Type(JsonType.class)
+    @Column(name = "properties_map", columnDefinition = "jsonb")
+    @JsonProperty
+    protected Map<String, Object> properties;
 
     @JsonProperty(value = "progressStatus")
     public FlowStatus getStatus() {

@@ -10,7 +10,6 @@ import org.nmcpye.datarun.mongo.datastagesubmission.repository.DataFormSubmissio
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;
 import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
 import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -22,7 +21,7 @@ import java.util.stream.Stream;
  * @since 24/08/2025
  */
 @Slf4j
-@Service
+//@Service
 @RequiredArgsConstructor
 public class TemplateVersionMigrationService {
 
