@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="create-party-table" author="hamza-ye">
+        <createTable tableName="party">
+            <column name="id" type="VARCHAR(26)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="uid" type="VARCHAR(11)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parent_id" type="VARCHAR(26)"/>
+            <column name="tags" type="jsonb" defaultValueComputed="'[]'::jsonb"/>
+            <column name="meta" type="jsonb" defaultValueComputed="'{}'::jsonb"/>
+            <column name="created_date" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="party" baseColumnNames="parent_id"
+                                 constraintName="fk_party_parent"
+                                 referencedTableName="party" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="create-party-set-table" author="hamza-ye">
+        <createTable tableName="party_set">
+            <column name="id" type="VARCHAR(26)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="uid" type="VARCHAR(11)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="kind" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="spec" type="jsonb" defaultValueComputed="'{}'::jsonb">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="create-assignment-member-tables" author="hamza-ye">
+        <createTable tableName="assignment_member">
+            <column name="assignment_id" type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_id" type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!--    -->
+    <changeSet id="create-assignment_vocabulary" author="hamza-ye">
+        <createTable tableName="assignment_vocabulary">
+            <column name="assignment_id" type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vocabulary_id" type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="assignment_vocabulary" baseColumnNames="assignment_id"
+                                 constraintName="fk_assignment_assignment_id"
+                                 referencedTableName="assignment" referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="assignment_vocabulary" baseColumnNames="vocabulary_id"
+                                 constraintName="fk_assignment_vocabulary_id"
+                                 referencedTableName="data_template" referencedColumnNames="id"/>
+
+        <addUniqueConstraint tableName="assignment_vocabulary" columnNames="assignment_id, vocabulary_id"
+                             constraintName="ux_assignment_vocabulary_id"/>
+    </changeSet>
+
+    <changeSet id="create-binding-table" author="hamza-ye">
+        <createTable tableName="assignment_party_binding">
+            <column name="id" type="VARCHAR(26)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="assignment_id" type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vocabulary_id" type="VARCHAR(26)"/>
+            <column name="role_name" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="party_set_id" type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="assignment_party_binding" baseColumnNames="assignment_id"
+                                 constraintName="fk_bind_assign"
+                                 referencedTableName="assignment" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="assignment_party_binding" baseColumnNames="party_set_id"
+                                 constraintName="fk_bind_pset"
+                                 referencedTableName="party_set" referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="assignment_party_binding" baseColumnNames="vocabulary_id"
+                                 constraintName="fk_vocabulary_template"
+                                 referencedTableName="data_template" referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>

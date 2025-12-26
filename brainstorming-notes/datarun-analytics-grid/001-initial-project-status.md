@@ -10,9 +10,9 @@ The current system is built upon:
 * **`jOOQ` & `NamedParameterJdbcTemplate`/`JdbcTemplate`**: Available for analytical queries.
 * **Caching**: Employs Ehcache and Hibernate 2nd-level cache annotations where appropriate.
 * **Mapping and Codegen Tools**: Lombok (preferred for compactness and brevity) and MapStruct are used.
-* **Testing**: Testcontainers (Postgres), JUnit 5, and AssertJ are used for testing.
 * **User authentication**:  sending basic user's credentials and receiving Access/Refresh tokens.
 * **Spring Security & Application-level ACLs**: Integrated for security.
+* **Testing**: Testcontainers (Postgres), JUnit 5, and AssertJ are used for testing.
 
 ## Foundational Design Principles
 
