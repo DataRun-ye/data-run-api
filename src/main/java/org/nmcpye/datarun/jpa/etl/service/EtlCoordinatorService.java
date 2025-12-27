@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.etl.service;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.etl.dto.OutboxDto;
+import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.etl.model.NormalizedSubmission;

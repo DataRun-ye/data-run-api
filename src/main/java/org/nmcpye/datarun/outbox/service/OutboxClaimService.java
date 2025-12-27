@@ -1,6 +1,6 @@
-package org.nmcpye.datarun.etl.service;
+package org.nmcpye.datarun.outbox.service;
 
-import org.nmcpye.datarun.etl.dto.OutboxDto;
+import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.etl.entity.EtlRun;
 
 import java.util.List;

@@ -1,8 +1,8 @@
-package org.nmcpye.datarun.etl.repository;
+package org.nmcpye.datarun.outbox.repository;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.etl.dto.OutboxProcessingDto;
-import org.nmcpye.datarun.etl.entity.OutboxProcessing;
+import org.nmcpye.datarun.outbox.dto.OutboxProcessingDto;
+import org.nmcpye.datarun.outbox.entity.OutboxProcessing;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.RowMapper;

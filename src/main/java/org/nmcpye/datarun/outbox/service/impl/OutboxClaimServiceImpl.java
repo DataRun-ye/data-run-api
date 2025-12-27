@@ -1,9 +1,10 @@
-package org.nmcpye.datarun.etl.service.impl;
+package org.nmcpye.datarun.outbox.service.impl;
 
-import org.nmcpye.datarun.etl.dto.OutboxDto;
+import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.etl.entity.EtlRun;
-import org.nmcpye.datarun.etl.repository.OutboxJdbcRepository;
-import org.nmcpye.datarun.etl.service.OutboxClaimService;
+import org.nmcpye.datarun.outbox.dto.OutboxDto;
+import org.nmcpye.datarun.outbox.repository.OutboxClaimPort;
+import org.nmcpye.datarun.outbox.service.OutboxClaimService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -20,15 +21,12 @@ import java.util.UUID;
  * - Keep this layer thin; it may later add metrics, throttling, or claim-scoping logic.
  */
 @Service
+@RequiredArgsConstructor
 public class OutboxClaimServiceImpl implements OutboxClaimService {
 
     private static final Logger log = LoggerFactory.getLogger(OutboxClaimServiceImpl.class);
 
-    private final OutboxJdbcRepository outboxJdbcRepository;
-
-    public OutboxClaimServiceImpl(OutboxJdbcRepository outboxJdbcRepository) {
-        this.outboxJdbcRepository = outboxJdbcRepository;
-    }
+    private final OutboxClaimPort outboxJdbcRepository;
 
     /**
      * Claim a batch for the given run. Generates a new ingestId and delegates to claimBatchWithIngestId.

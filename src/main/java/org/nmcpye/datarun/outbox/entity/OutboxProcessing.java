@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.etl.entity;
+package org.nmcpye.datarun.outbox.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

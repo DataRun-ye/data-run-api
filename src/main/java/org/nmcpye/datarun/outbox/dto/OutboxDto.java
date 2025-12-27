@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.etl.dto;
+package org.nmcpye.datarun.outbox.dto;
 
 import lombok.Builder;
 import lombok.Data;

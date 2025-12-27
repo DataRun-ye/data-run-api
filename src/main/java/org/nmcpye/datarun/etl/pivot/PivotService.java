@@ -63,8 +63,6 @@ public class PivotService {
             log.info("pivot: validation passed, performing atomic swap for template={}", templateUid);
             ddl.atomicSwapTemplate(templateUid);
             log.info("pivot: atomic swap completed for template={}", templateUid);
-            log.info("pivot: start creating indexes template={}, baseFq={}, sql-length={}", templateUid, baseFq, createSql.length());
-            log.info("pivot: indexes created for template={}, baseFq={}", templateUid, baseFq);
             Duration duration = Duration.between(start, Instant.now());
             manifestRepo.completeBuild(templateUid, duration);
             return BuildResponse.success(duration.getSeconds());

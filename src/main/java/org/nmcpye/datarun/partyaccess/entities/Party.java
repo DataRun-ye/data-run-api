@@ -24,7 +24,7 @@ import java.util.Map;
 @Builder
 public class Party {
     @Id
-    @Column(name = "id", length = 26, updatable = false, nullable = false)
+    @Column(name = "id", length = 26, unique = true, updatable = false, nullable = false)
     protected String id;
 
     /**
@@ -39,9 +39,12 @@ public class Party {
     @Column(nullable = false)
     private String type;
 
+    private String code;
+
     @Column(nullable = false)
     private String name;
 
+    @Column(name = "parent_id")
     private String parentId;
 
     @Column(columnDefinition = "jsonb default '[]'::jsonb")
@@ -52,6 +55,13 @@ public class Party {
     @Type(JsonType.class)
     private Map<String, Object> meta;
 
-    @Column(name = "created_date", updatable = false)
+    @Column(columnDefinition = "jsonb default '{}'::jsonb")
+    @Type(JsonType.class)
+    private Map<String, String> label;
+
+    @Column(name = "created_date", updatable = false, nullable = false)
     private Instant createdDate;
+
+    @Column(name = "last_modified_date", nullable = false)
+    private Instant lastModifiedDate;
 }

@@ -1,13 +1,14 @@
-package org.nmcpye.datarun.etl.dto;
+package org.nmcpye.datarun.outbox.dto;
 
 import lombok.Builder;
+import org.nmcpye.datarun.outbox.entity.OutboxProcessing;
 
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
 
 /**
- * DTO for {@link org.nmcpye.datarun.etl.entity.OutboxProcessing}
+ * DTO for {@link OutboxProcessing}
  */
 @Builder
 public record OutboxProcessingDto(UUID etlRunId, Long outboxId, Long submissionSerialNumber, String submissionId,

@@ -23,8 +23,17 @@
             <column name="parent_id" type="VARCHAR(26)"/>
             <column name="tags" type="jsonb" defaultValueComputed="'[]'::jsonb"/>
             <column name="meta" type="jsonb" defaultValueComputed="'{}'::jsonb"/>
-            <column name="created_date" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="label" type="jsonb" defaultValueComputed="'{}'::jsonb"/>
+            <column name="created_date" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified_date" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
+    </changeSet>
+
+    <changeSet id="create-party-table-constraints" author="hamza-ye">
         <addForeignKeyConstraint baseTableName="party" baseColumnNames="parent_id"
                                  constraintName="fk_party_parent"
                                  referencedTableName="party" referencedColumnNames="id"/>
@@ -47,10 +56,16 @@
             <column name="spec" type="jsonb" defaultValueComputed="'{}'::jsonb">
                 <constraints nullable="false"/>
             </column>
+            <column name="created_date" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified_date" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
     </changeSet>
 
-    <changeSet id="create-assignment-member-tables" author="hamza-ye">
+    <changeSet id="create-assignment-member-table" author="hamza-ye">
         <createTable tableName="assignment_member">
             <column name="assignment_id" type="VARCHAR(26)">
                 <constraints nullable="false"/>
@@ -64,7 +79,42 @@
         </createTable>
     </changeSet>
 
+    <changeSet id="create-assignment-member-table-constraints" author="hamza-ye">
+        <addForeignKeyConstraint baseTableName="assignment_member" baseColumnNames="assignment_id"
+                                 constraintName="fk_assignment_member_assignment_id"
+                                 referencedTableName="assignment" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="assignment_member" columnNames="assignment_id, member_type, member_id"
+                             constraintName="ux_assignment_member_type_member_id"/>
+        <addPrimaryKey tableName="assignment_member" columnNames="assignment_id, member_type, member_id" />
+
+    </changeSet>
+
     <!--    -->
+    <changeSet id="create-vocabulary-mapping" author="hamza-ye">
+        <createTable tableName="vocabulary_mapping">
+            <column name="data_template_id" type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="party_set_id" type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_name" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="create-vocabulary-mapping-constraints" author="hamza-ye">
+        <addForeignKeyConstraint baseTableName="vocabulary_mapping" baseColumnNames="data_template_id"
+                                 constraintName="fk_vocabulary_mapping_data_template_id"
+                                 referencedTableName="data_template" referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="vocabulary_mapping" baseColumnNames="party_set_id"
+                                 constraintName="fk_vocabulary_mapping_party_set_id"
+                                 referencedTableName="party_set" referencedColumnNames="id"/>
+
+        <addPrimaryKey tableName="vocabulary_mapping" columnNames="data_template_id, party_set_id, role_name" />
+    </changeSet>
+
     <changeSet id="create-assignment_vocabulary" author="hamza-ye">
         <createTable tableName="assignment_vocabulary">
             <column name="assignment_id" type="VARCHAR(26)">
@@ -74,7 +124,10 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
+    </changeSet>
 
+    <!--    -->
+    <changeSet id="create-assignment_vocabulary-constraints" author="hamza-ye">
         <addForeignKeyConstraint baseTableName="assignment_vocabulary" baseColumnNames="assignment_id"
                                  constraintName="fk_assignment_assignment_id"
                                  referencedTableName="assignment" referencedColumnNames="id"/>
@@ -83,8 +136,8 @@
                                  constraintName="fk_assignment_vocabulary_id"
                                  referencedTableName="data_template" referencedColumnNames="id"/>
 
-        <addUniqueConstraint tableName="assignment_vocabulary" columnNames="assignment_id, vocabulary_id"
-                             constraintName="ux_assignment_vocabulary_id"/>
+        <addPrimaryKey tableName="assignment_vocabulary" columnNames="assignment_id, vocabulary_id" />
+
     </changeSet>
 
     <changeSet id="create-binding-table" author="hamza-ye">
@@ -96,13 +149,23 @@
                 <constraints nullable="false"/>
             </column>
             <column name="vocabulary_id" type="VARCHAR(26)"/>
+
             <column name="role_name" type="VARCHAR(64)">
                 <constraints nullable="false"/>
             </column>
             <column name="party_set_id" type="VARCHAR(26)">
                 <constraints nullable="false"/>
             </column>
+            <column name="created_date" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified_date" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
+    </changeSet>
+
+    <changeSet id="create-binding-table-constraints" author="hamza-ye">
         <addForeignKeyConstraint baseTableName="assignment_party_binding" baseColumnNames="assignment_id"
                                  constraintName="fk_bind_assign"
                                  referencedTableName="assignment" referencedColumnNames="id"/>
@@ -113,6 +176,9 @@
         <addForeignKeyConstraint baseTableName="assignment_party_binding" baseColumnNames="vocabulary_id"
                                  constraintName="fk_vocabulary_template"
                                  referencedTableName="data_template" referencedColumnNames="id"/>
+
+        <addUniqueConstraint tableName="assignment_party_binding" columnNames="assignment_id, vocabulary_id, role_name, party_set_id"
+                             constraintName="ux_assignment_party_binding_ids"/>
     </changeSet>
 
 </databaseChangeLog>

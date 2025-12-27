@@ -3,7 +3,7 @@ package org.nmcpye.datarun.etl.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.etl.dto.OutboxDto;
+import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.etl.model.TallCanonicalRow;
 import org.nmcpye.datarun.etl.service.TransformService;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;

@@ -9,6 +9,8 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "party_set")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
@@ -33,4 +35,10 @@ public class PartySet {
     @Column(columnDefinition = "jsonb default '{}'::jsonb")
     @Type(JsonType.class)
     private PartySetSpec spec;
+
+    @Column(name = "created_date", updatable = false, nullable = false)
+    private Instant createdDate;
+
+    @Column(name = "last_modified_date", nullable = false)
+    private Instant lastModifiedDate;
 }

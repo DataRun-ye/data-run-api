@@ -1,9 +1,9 @@
-package org.nmcpye.datarun.etl.mapper;
+package org.nmcpye.datarun.outbox.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
-import org.nmcpye.datarun.etl.dto.OutboxDto;
-import org.nmcpye.datarun.etl.entity.Outbox;
+import org.nmcpye.datarun.outbox.dto.OutboxDto;
+import org.nmcpye.datarun.outbox.entity.Outbox;
 
 /**
  * MapStruct mapper between Outbox entity and OutboxDto.

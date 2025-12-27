@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.etl.service;
 
-import org.nmcpye.datarun.etl.dto.OutboxDto;
+import org.nmcpye.datarun.outbox.dto.OutboxDto;
 
 import java.util.UUID;
 

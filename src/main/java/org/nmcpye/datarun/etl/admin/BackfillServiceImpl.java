@@ -3,9 +3,9 @@ package org.nmcpye.datarun.etl.admin;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.etl.repository.OutboxJdbcRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.outbox.repository.OutboxWritePort;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -16,7 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BackfillServiceImpl implements BackfillService {
     private final DataSubmissionRepository submissionRepo;
-    private final OutboxJdbcRepository outboxRepo;
+    private final OutboxWritePort outboxRepo;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -36,7 +36,7 @@ public class BackfillServiceImpl implements BackfillService {
     private int enqueueSubmissions(List<DataSubmission> submissions) {
         if (submissions == null || submissions.isEmpty()) return 0;
 
-        List<OutboxJdbcRepository.OutboxInsert> inserts = new ArrayList<>(submissions.size());
+        List<OutboxWritePort.OutboxInsert> inserts = new ArrayList<>(submissions.size());
         for (DataSubmission s : submissions) {
             if (s == null) continue;
             String submissionId = s.getId();
@@ -52,7 +52,7 @@ public class BackfillServiceImpl implements BackfillService {
             String submissionUid = s.getUid();
             String templateVersionUid = s.getFormVersion();
 
-            OutboxJdbcRepository.OutboxInsert insert = new OutboxJdbcRepository.OutboxInsert(
+            OutboxWritePort.OutboxInsert insert = new OutboxWritePort.OutboxInsert(
                 submissionId,
                 submissionUid,
                 templateVersionUid,

@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.etl.pivot;
 
 import lombok.RequiredArgsConstructor;
+import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -28,15 +29,18 @@ public class DdlExecutor {
         log.info("Executing DDL (REQUIRES_NEW) - length={} chars", sql.length());
         // single-shot execute for generated DDL; keep simple
         jdbc.execute(sql);
-        addIndexes(baseFq);
         // committed by Spring when this method returns (REQUIRES_NEW)
+        log.info("pivot: start creating indexes baseFq={}", baseFq);
+        addIndexes(baseFq);
+        log.info("pivot: indexes created for baseFq={}", baseFq);
         log.info("DDL executed and committed (REQUIRES_NEW)");
     }
 
     public void addIndexes(String tableName) {
         try {
-            jdbc.execute("CREATE UNIQUE INDEX IF NOT EXISTS " + tableName.replace('.', '_') + "_event_id_idx ON " + tableName + " (event_id)");
-            jdbc.execute("CREATE INDEX IF NOT EXISTS " + tableName.replace('.', '_') + "_updated_date_idx ON " + tableName + " (updated_at)");
+            final String random = CodeGenerator.generateCode(5);
+            jdbc.execute("CREATE UNIQUE INDEX IF NOT EXISTS " + tableName.replace('.', '_') + "_" + random + "_event_id_idx ON " + tableName + " (event_id)");
+            jdbc.execute("CREATE INDEX IF NOT EXISTS " + tableName.replace('.', '_') + "_" + random + "_updated_date_idx ON " + tableName + " (event_id, updated_at)");
         } catch (Exception e) {
             log.warn("Could not create indexes on {}: {}", tableName, e.getMessage());
         }

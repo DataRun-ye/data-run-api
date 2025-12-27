@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.etl.migration;
+package org.nmcpye.datarun.outbox.migrationbackfill;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;

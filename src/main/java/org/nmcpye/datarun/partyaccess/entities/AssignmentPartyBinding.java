@@ -9,6 +9,8 @@ import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "assignment_party_binding")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
@@ -36,4 +38,10 @@ public class AssignmentPartyBinding {
 
     @Column(name = "party_set_id")
     private String partySetId;
+
+    @Column(name = "created_date", updatable = false, nullable = false)
+    private Instant createdDate;
+
+    @Column(name = "last_modified_date", nullable = false)
+    private Instant lastModifiedDate;
 }

@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nmcpye.datarun</groupId>
     <artifactId>data-run-api</artifactId>
-    <version>6.1.3</version>
+    <version>6.2.0</version>
     <packaging>jar</packaging>
     <name>Data Run Api</name>
     <description>Description for Data Run Api</description>

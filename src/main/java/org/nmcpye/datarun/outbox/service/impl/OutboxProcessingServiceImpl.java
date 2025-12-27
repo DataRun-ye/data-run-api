@@ -1,14 +1,13 @@
-package org.nmcpye.datarun.etl.service.impl;
+package org.nmcpye.datarun.outbox.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.etl.dto.OutboxDto;
-import org.nmcpye.datarun.etl.dto.OutboxProcessingDto;
-import org.nmcpye.datarun.etl.entity.OutboxProcessing;
-import org.nmcpye.datarun.etl.repository.OutboxJdbcRepository;
-import org.nmcpye.datarun.etl.repository.OutboxProcessingJdbcRepository;
-import org.nmcpye.datarun.etl.repository.OutboxProcessingRepository;
 import org.nmcpye.datarun.etl.service.EtlRunService;
-import org.nmcpye.datarun.etl.service.OutboxProcessingService;
+import org.nmcpye.datarun.outbox.dto.OutboxDto;
+import org.nmcpye.datarun.outbox.dto.OutboxProcessingDto;
+import org.nmcpye.datarun.outbox.entity.OutboxProcessing;
+import org.nmcpye.datarun.outbox.repository.OutboxClaimPort;
+import org.nmcpye.datarun.outbox.repository.OutboxProcessingJdbcRepository;
+import org.nmcpye.datarun.outbox.service.OutboxProcessingService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,10 +26,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class OutboxProcessingServiceImpl implements OutboxProcessingService {
-
-    private final OutboxProcessingRepository processingRepository;
     private final OutboxProcessingJdbcRepository processingJdbcRepository;
-    private final OutboxJdbcRepository outboxJdbcRepository;
+    private final OutboxClaimPort outboxJdbcRepository;
     private final EtlRunService etlRunService;
 
     @Override
@@ -60,52 +57,6 @@ public class OutboxProcessingServiceImpl implements OutboxProcessingService {
      * Reasoning: inserting the processing row first gives us a durable audit entry; joining the repository
      * transaction means if markOutboxSuccess fails the TX will rollback and no partial state remains.
      */
-//    @Transactional
-//    public void recordSuccess(UUID etlRunId, OutboxDto outbox) {
-//        Optional<OutboxProcessing> existing =
-//            processingRepository.findByEtlRunIdAndOutboxId(etlRunId, outbox.getOutboxId());
-//
-//        if (existing.isPresent()) {
-//            OutboxProcessing p = existing.get();
-//            p.setStatus("success");
-//            p.setAttempt(outbox.getAttempt());
-//            p.setError(null);
-//            p.setProcessedAt(Instant.now());
-//            processingRepository.updateAndFlush(p);
-//        } else {
-//            OutboxProcessing successRecord = OutboxProcessing.builder()
-//                .etlRunId(etlRunId)
-//                .outboxId(outbox.getOutboxId())
-//                .submissionSerialNumber(outbox.getSubmissionSerialNumber())
-//                .submissionUid(outbox.getSubmissionUid())
-//                .submissionId(outbox.getSubmissionId())
-//                .status("success")
-//                .attempt(outbox.getAttempt())
-//                .error(null)
-//                .processedAt(Instant.now())
-//                .build();
-//            try {
-//                processingRepository.persistAndFlush(successRecord);
-//            } catch (DataIntegrityViolationException dive) {
-//                // concurrent insert happened — fall back to update
-//                Optional<OutboxProcessing> fallback = processingRepository.findByEtlRunIdAndOutboxId(etlRunId, outbox.getOutboxId());
-//                if (fallback.isPresent()) {
-//                    OutboxProcessing p = fallback.get();
-//                    p.setStatus("success");
-//                    p.setAttempt(outbox.getAttempt());
-//                    p.setError(null);
-//                    p.setProcessedAt(Instant.now());
-//                    processingRepository.updateAndFlush(p);
-//                } else {
-//                    throw dive; // unexpected — rethrow
-//                }
-//            }
-//        }
-//
-//        // now mark outbox success and increment counters
-//        outboxJdbcRepository.markOutboxSuccess(outbox.getOutboxId());
-//        etlRunService.incrementSuccess(etlRunId, 1);
-//    }
     @Override
     @Transactional
     public void recordSuccess(UUID etlRunId, OutboxDto outbox) {
@@ -124,7 +75,7 @@ public class OutboxProcessingServiceImpl implements OutboxProcessingService {
         processingJdbcRepository.upsertOutboxProcessing(dto);
 
         // update outbox status to 'success' (joins same transaction)
-        outboxJdbcRepository.markOutboxSuccess(outbox.getOutboxId());
+        outboxJdbcRepository.markSuccess(outbox.getOutboxId());
 
         // increment run-level success counter
         etlRunService.incrementSuccess(etlRunId, 1);

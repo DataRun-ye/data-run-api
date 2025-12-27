@@ -1,12 +1,12 @@
 package org.nmcpye.datarun.etl.orchestrator;
 
 import org.nmcpye.datarun.etl.dto.EtlRunCompletion;
-import org.nmcpye.datarun.etl.dto.OutboxDto;
+import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.etl.entity.EtlRun;
 import org.nmcpye.datarun.etl.service.EtlRunService;
 import org.nmcpye.datarun.etl.service.EventProcessorService;
-import org.nmcpye.datarun.etl.service.OutboxClaimService;
-import org.nmcpye.datarun.etl.service.OutboxProcessingService;
+import org.nmcpye.datarun.outbox.service.OutboxClaimService;
+import org.nmcpye.datarun.outbox.service.OutboxProcessingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
