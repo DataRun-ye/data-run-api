@@ -1,16 +1,16 @@
 package org.nmcpye.datarun.partyaccess.entities;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -22,46 +22,39 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Party {
-    @Id
-    @Column(name = "id", length = 26, unique = true, updatable = false, nullable = false)
-    protected String id;
-
+public class Party extends TranslatableIdentifiable {
     /**
      * 11-char Business Key
      */
-    @Column(length = 11, unique = true, nullable = false)
+    @Column(length = 11, unique = true, nullable = false, updatable = false)
     private String uid;
 
-    /**
-     * ORG_UNIT, TEAM, USER, EXTERNAL
-     */
-    @Column(nullable = false)
-    private String type;
-
-    private String code;
+    protected String code;
 
     @Column(nullable = false)
     private String name;
-
-    @Column(name = "parent_id")
-    private String parentId;
 
     @Column(columnDefinition = "jsonb default '[]'::jsonb")
     @Type(JsonType.class)
     private List<String> tags;
 
-    @Column(columnDefinition = "jsonb default '{}'::jsonb")
     @Type(JsonType.class)
-    private Map<String, Object> meta;
+    @Column(name = "properties_map", columnDefinition = "jsonb")
+    @JsonProperty
+    private Map<String, Object> properties;
 
-    @Column(columnDefinition = "jsonb default '{}'::jsonb")
-    @Type(JsonType.class)
-    private Map<String, String> label;
+    /**
+     * org_unit, team, user, external, static
+     */
+    @Column(nullable = false)
+    private String type;
 
-    @Column(name = "created_date", updatable = false, nullable = false)
-    private Instant createdDate;
+    @Column(name="source_id", length = 26)
+    private String sourceId;
 
-    @Column(name = "last_modified_date", nullable = false)
-    private Instant lastModifiedDate;
+    /**
+     * for parties with parents like orgUnits
+     */
+    @Column(name = "parent_id")
+    private String parentId;
 }
