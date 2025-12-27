@@ -7,7 +7,7 @@ The current system is built upon:
 * **Java 17+ (Spring Boot 3.4.2)**: A Maven-based project.
 * **PostgresSQL (tested with v16.x)**: Utilizes a compatible PostgresSQL JDBC driver.
 * **Liquibase (XML)**: Used for managing schema migrations.
-* **`jOOQ` & `NamedParameterJdbcTemplate`/`JdbcTemplate`**: Available for analytical queries.
+* **`JPA`, `jOOQ` & `NamedParameterJdbcTemplate`/`JdbcTemplate`**: Available for analytical queries.
 * **Caching**: Employs Ehcache and Hibernate 2nd-level cache annotations where appropriate.
 * **Mapping and Codegen Tools**: Lombok (preferred for compactness and brevity) and MapStruct are used.
 * **User authentication**:  sending basic user's credentials and receiving Access/Refresh tokens.

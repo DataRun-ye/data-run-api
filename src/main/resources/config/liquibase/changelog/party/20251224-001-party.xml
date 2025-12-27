@@ -89,32 +89,35 @@
 
     </changeSet>
 
-    <!--    -->
-    <changeSet id="create-vocabulary-mapping" author="hamza-ye">
-        <createTable tableName="vocabulary_mapping">
-            <column name="data_template_id" type="VARCHAR(26)">
-                <constraints nullable="false"/>
+    <!-- A data template vocabularies  -->
+    <changeSet id="create-vocabulary-map" author="hamza-ye">
+        <createTable tableName="vocabulary_map">
+            <column name="id" type="VARCHAR(26)">
+                <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="party_set_id" type="VARCHAR(26)">
+            <column name="data_template_id" type="VARCHAR(26)">
                 <constraints nullable="false"/>
             </column>
             <column name="role_name" type="VARCHAR(64)">
                 <constraints nullable="false"/>
             </column>
+            <column name="allowed_types" type="jsonb" defaultValueComputed="'[]'::jsonb"/>
         </createTable>
     </changeSet>
+
     <changeSet id="create-vocabulary-mapping-constraints" author="hamza-ye">
-        <addForeignKeyConstraint baseTableName="vocabulary_mapping" baseColumnNames="data_template_id"
-                                 constraintName="fk_vocabulary_mapping_data_template_id"
+        <addForeignKeyConstraint baseTableName="vocabulary_map" baseColumnNames="data_template_id"
+                                 constraintName="fk_vocabulary_map_data_template_id"
                                  referencedTableName="data_template" referencedColumnNames="id"/>
 
-        <addForeignKeyConstraint baseTableName="vocabulary_mapping" baseColumnNames="party_set_id"
-                                 constraintName="fk_vocabulary_mapping_party_set_id"
+        <addForeignKeyConstraint baseTableName="vocabulary_map" baseColumnNames="party_set_id"
+                                 constraintName="fk_vocabulary_map_party_set_id"
                                  referencedTableName="party_set" referencedColumnNames="id"/>
 
-        <addPrimaryKey tableName="vocabulary_mapping" columnNames="data_template_id, party_set_id, role_name" />
+        <addUniqueConstraint tableName="vocabulary_map" columnNames="data_template_id, party_set_id, role_name" />
     </changeSet>
 
+    <!-- Assignment -> vocabulary   -->
     <changeSet id="create-assignment_vocabulary" author="hamza-ye">
         <createTable tableName="assignment_vocabulary">
             <column name="assignment_id" type="VARCHAR(26)">
@@ -134,7 +137,7 @@
 
         <addForeignKeyConstraint baseTableName="assignment_vocabulary" baseColumnNames="vocabulary_id"
                                  constraintName="fk_assignment_vocabulary_id"
-                                 referencedTableName="data_template" referencedColumnNames="id"/>
+                                 referencedTableName="vocabulary_map" referencedColumnNames="id"/>
 
         <addPrimaryKey tableName="assignment_vocabulary" columnNames="assignment_id, vocabulary_id" />
 
