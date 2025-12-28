@@ -1,9 +1,11 @@
 package org.nmcpye.datarun.jpa.option.repository;
 
+import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.Size;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.option.Option;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -22,6 +24,24 @@ public interface OptionRepository
     extends JpaIdentifiableRepository<Option>, OptionRepositoryCustom {
     String OPTIONS_OPTION_SET_UID = "userTeamIdsByLogin";
 
+    @Query("SELECT o FROM Option o " +
+        "WHERE (o.optionSet.id = :setId OR o.optionSet.uid = :setId) " +
+        "  AND (:includeDeleted = true OR o.deletedAt IS NULL) " +
+        "ORDER BY o.sortOrder")
+    List<Option> findByOptionSetIdIncludingDeleted(@Param("setId") String setId,
+        @Param("includeDeleted") boolean includeDeleted);
+
+    @Modifying(clearAutomatically = true)
+    @Transactional
+    @Query("UPDATE Option o SET o.deletedAt = CURRENT_TIMESTAMP WHERE (o.optionSet.id = :setId OR o.optionSet.uid = :setId) AND o.deletedAt IS NULL")
+    int softDeleteOptionsByOptionSetId(@Param("setId") String setId);
+
+    @Modifying(clearAutomatically = true)
+    @Transactional
+    @Query("UPDATE Option o SET o.deletedAt = NULL WHERE (o.optionSet.id = :setId OR o.optionSet.uid = :setId) AND o.deletedAt IS NOT NULL")
+    int undeleteOptionsByOptionSetId(@Param("setId") String setId);
+
+    //------------------OLD API----------------------
     // no-op
     @Override
     default void deleteByUid(String uid) {

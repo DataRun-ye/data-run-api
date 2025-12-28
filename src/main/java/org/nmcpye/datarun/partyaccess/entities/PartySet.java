@@ -14,9 +14,10 @@ import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 import java.util.List;
 import java.util.Map;
 
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+/// @author Hamza Assada 28/12/2025
 @Entity
 @Table(name = "party_set")
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
 @NoArgsConstructor

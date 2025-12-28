@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.util.Map;
 
+/// @author Hamza Assada 28/12/2025
 @Data @Builder
 public class PartyDto {
     private String uid;

@@ -74,6 +74,10 @@
     <include file="/config/liquibase/changelog/analytics_dims/20251209-create-pivot-manifest.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20251126-events-add-created-by-modified-by-columns.xml" relativeToChangelogFile="false"/>
 
+    <include file="/config/liquibase/changelog/data-template-version/2025-12-28-template-version-options-add.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/options/2025-12-28-option-add-deleted-at.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/options/2025-12-28-option-set-add-deleted-at.xml" relativeToChangelogFile="false"/>
+
 <!--    <include file="/config/liquibase/changelog/workspace/2025-12-21-add-workspace.xml" relativeToChangelogFile="false"/>-->
 
 <!--    <include file="/config/liquibase/changelog/2025-09-15-pilot/2025-09-17-raw-repeat-payload-table.xml" relativeToChangelogFile="false"/>-->

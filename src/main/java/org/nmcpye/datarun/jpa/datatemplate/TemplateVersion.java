@@ -12,11 +12,13 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.nmcpye.datarun.datatemplateelement.DataOption;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -57,6 +59,10 @@ public class TemplateVersion extends JpaIdentifiableObject implements DataTempla
     @JdbcTypeCode(SqlTypes.JSON) // Specifies JSON mapping
     @Column(name = "sections", columnDefinition = "jsonb", nullable = false)
     private List<FormSectionConf> sections;
+
+    @JdbcTypeCode(SqlTypes.JSON) // Specifies JSON mapping
+    @Column(name = "options", columnDefinition = "jsonb")
+    private List<DataOption> options = new LinkedList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "data_template_id", nullable = false)

@@ -7,17 +7,17 @@ import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.*;
 import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.ListIndexBase;
-import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.IdScheme;
-import org.nmcpye.datarun.datatemplateelement.DataOption;
 import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
+@SQLDelete(sql = "UPDATE option_value SET deleted_at = now() WHERE id = ?")
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class OptionSet extends TranslatableIdentifiable {
     @Size(max = 11)
@@ -50,12 +51,8 @@ public class OptionSet extends TranslatableIdentifiable {
     @Column(name = "name", nullable = false, unique = true)
     protected String name;
 
-    @Type(JsonType.class)
-    @Column(name = "options", columnDefinition = "jsonb")
-    private List<DataOption> legacyOptions;
-
     @OneToMany(mappedBy = "optionSet", cascade = CascadeType.ALL,
-        orphanRemoval = true, fetch = FetchType.EAGER)
+        orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderColumn(name = "sort_order")
     @ListIndexBase(1)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
@@ -66,15 +63,32 @@ public class OptionSet extends TranslatableIdentifiable {
     @JsonProperty
     protected Map<String, Object> properties;
 
-    @JsonIgnore
-    public List<DataOption> getLegacyOptions() {
-        return legacyOptions;
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deletedAt = deleted ? Instant.now() : null;
+
+        if (this.options != null) {
+            for (Option opt : this.options) {
+                if (opt != null) {
+                    opt.setDeleted(deleted);
+                }
+            }
+        }
     }
 
     @JsonProperty(value = "options")
     @JsonSerialize(contentAs = TranslatableIdentifiable.class)
     public List<Option> getOptions() {
-        return options;
+        return options.stream()
+            .filter(Objects::nonNull)
+            .filter(o -> o.getDeletedAt() == null)   // application-level filter
+            .collect(Collectors.toList());
     }
 
     @JsonSetter(contentNulls = Nulls.SKIP)
@@ -90,27 +104,6 @@ public class OptionSet extends TranslatableIdentifiable {
         this.options.add(option);
         option.setOptionSet(this);
     }
-
-//    public void addOption(Option option) {
-//        if (option.getSortOrder() == null) {
-//            this.options.add(option);
-//        } else {
-//            boolean added = false;
-//            final int size = this.options.size();
-//            for (int i = 0; i < size; i++) {
-//                Option thisOption = this.options.get(i);
-//                if (thisOption.getSortOrder() == null || thisOption.getSortOrder() > option.getSortOrder()) {
-//                    this.options.add(i, option);
-//                    added = true;
-//                    break;
-//                }
-//            }
-//            if (!added) {
-//                this.options.add(option);
-//            }
-//        }
-//        option.setOptionSet(this);
-//    }
 
     @JsonIgnore
     public Set<String> getOptionCodesAsSet() {

@@ -6,6 +6,8 @@ import lombok.Data;
 import java.util.List;
 
 /// The "Manifest" DTO: Everything the client needs to initialize a context.
+///
+/// @author Hamza Assada 28/12/2025
 @Data
 @Builder
 public class AssignmentManifestDto {

@@ -7,6 +7,7 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import java.time.Instant;
 
+/// @author Hamza Assada 28/12/2025
 @Entity
 @Table(name = "party_set_snapshot",
     indexes = {@Index(name = "idx_pss_party_set", columnList = "party_set_id")})

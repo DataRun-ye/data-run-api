@@ -14,6 +14,7 @@ import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 import java.util.List;
 import java.util.Map;
 
+/// @author Hamza Assada 28/12/2025
 @Entity
 @Table(name = "party")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
@@ -23,9 +24,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Builder
 public class Party extends TranslatableIdentifiable {
-    /**
-     * 11-char Business Key
-     */
+    /// 11-char Business Key
     @Column(length = 11, unique = true, nullable = false, updatable = false)
     private String uid;
 
@@ -43,18 +42,14 @@ public class Party extends TranslatableIdentifiable {
     @JsonProperty
     private Map<String, Object> properties;
 
-    /**
-     * org_unit, team, user, external, static
-     */
+    /// org_unit, team, user, external, static
     @Column(nullable = false)
     private String type;
 
     @Column(name="source_id", length = 26)
     private String sourceId;
 
-    /**
-     * for parties with parents like orgUnits
-     */
+    /// for parties with parents such as orgUnits
     @Column(name = "parent_id")
     private String parentId;
 }

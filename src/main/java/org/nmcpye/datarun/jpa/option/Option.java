@@ -4,17 +4,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.*;
 import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -22,14 +23,11 @@ import java.util.Map;
  * @since 30/06/2025
  */
 @Entity
-@Table(name = "option_value", uniqueConstraints = {
-        @UniqueConstraint(name = "uc_option_option_set_name", columnNames = {"name", "option_set_id"}),
-        @UniqueConstraint(name = "uc_option_option_set_code", columnNames = {"code", "option_set_id"}),
-})
+@Table(name = "option_value")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
-@SuppressWarnings("common-java:DuplicatedBlocks")
+@SQLDelete(sql = "UPDATE option_value SET deleted_at = now() WHERE id = ?")
 public class Option extends TranslatableIdentifiable {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
@@ -57,8 +55,6 @@ public class Option extends TranslatableIdentifiable {
 
     @NotNull
     @ManyToOne
-    // prevent JPA from trying to manage this FK twice
-//    @JoinColumn(name = "option_set_id", insertable = false, updatable = false, nullable = false)
     @JoinColumn(name = "option_set_id", nullable = false, updatable = false)
     private OptionSet optionSet;
 
@@ -66,6 +62,17 @@ public class Option extends TranslatableIdentifiable {
     @Column(name = "properties_map", columnDefinition = "jsonb")
     @JsonProperty
     protected Map<String, Object> properties;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    public void setDeleted(boolean deleted) {
+        deletedAt = deleted ? Instant.now() : null;
+    }
 
     @JsonProperty
     @JsonSerialize(as = JpaIdentifiableObject.class)

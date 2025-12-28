@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.jpa.option.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.jpa.option.Option;
 import org.nmcpye.datarun.jpa.option.OptionGroup;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class DefaultOptionService implements OptionService {
 
     private final OptionRepository optionRepository;
@@ -34,21 +36,9 @@ public class DefaultOptionService implements OptionService {
 
     private final OptionGroupSetRepository optionGroupSetRepository;
 
-    public DefaultOptionService(
-            OptionSetRepository optionSetRepository,
-            OptionRepository optionRepository,
-            OptionGroupRepository optionGroupRepository,
-            OptionGroupSetRepository optionGroupSetRepository) {
-        this.optionRepository = optionRepository;
-        this.optionSetRepository = optionSetRepository;
-        this.optionGroupRepository = optionGroupRepository;
-        this.optionGroupSetRepository = optionGroupSetRepository;
-    }
-
     @Override
     @Transactional
     public OptionSet saveOptionSet(OptionSet optionSet) {
-//        validateOptionSet(optionSet);
         return optionSetRepository.save(optionSet);
     }
 
@@ -58,32 +48,6 @@ public class DefaultOptionService implements OptionService {
 //        validateOptionSet(optionSet);
         optionSetRepository.update(optionSet);
     }
-
-//    @Override
-//    public void validateOptionSet(OptionSet optionSet) throws IllegalQueryException {
-//        if (optionSet.getValueType() != ValueType.MULTI_TEXT) {
-//            return;
-//        }
-//        for (Option option : optionSet.getOptionSetOptions()) {
-//            if (option.getId() != null && option.getId() != 0L && option.getCode() == null) {
-//                option = optionRepository.get(option.getId());
-//            }
-//            ErrorMessage error = validateOption(optionSet, option);
-//            if (error != null) {
-//                throw new IllegalQueryException(error);
-//            }
-//        }
-//    }
-//
-//    @Override
-//    public ErrorMessage validateOption(OptionSet optionSet, Option option) {
-//        if (optionSet != null &&
-//            optionSet.getValueType() == ValueType.MULTI_TEXT &&
-//            option.getCode().contains(ValueType.MULTI_TEXT_SEPARATOR)) {
-//            return new ErrorMessage(ErrorCode.E1118, optionSet.getUid(), option.getCode());
-//        }
-//        return null;
-//    }
 
     @Override
     @Transactional(readOnly = true)
@@ -159,9 +123,9 @@ public class DefaultOptionService implements OptionService {
 
         // Normalize codes: trim.
         List<String> codesNormalized = optionCodes.stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .toList();
+            .filter(Objects::nonNull)
+            .map(String::trim)
+            .toList();
 
         Set<String> uniqueCodes = new LinkedHashSet<>(codesNormalized);
 
@@ -170,12 +134,12 @@ public class DefaultOptionService implements OptionService {
 
         @SuppressWarnings("DataFlowIssue") // Option::getId from db, can't be null
         Map<String, String> codeToOptionUid = found.stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toMap(Option::getCode, Option::getUid));
+            .filter(Objects::nonNull)
+            .collect(Collectors.toMap(Option::getCode, Option::getUid));
 
         List<String> missing = uniqueCodes.stream()
-                .filter(code -> !codeToOptionUid.containsKey(code))
-                .collect(Collectors.toList());
+            .filter(code -> !codeToOptionUid.containsKey(code))
+            .collect(Collectors.toList());
 
         if (!missing.isEmpty()) {
             throw new InvalidOptionCodesException(missing);

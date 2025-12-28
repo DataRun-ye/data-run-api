@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="20251228-01-add-deleted-at-and-partial-unique" author="hamza-assada">
+        <addColumn tableName="option_value">
+            <column name="deleted_at" type="timestamp"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="20251228-01-add-unique-code-index-on-deleted-at" author="hamza-assada">
+        <!-- Partial unique index to ensure uniqueness among active rows only -->
+        <sql>
+            ALTER TABLE option_value DROP CONSTRAINT IF EXISTS uc_option_option_set_code;
+            ALTER TABLE option_value DROP CONSTRAINT IF EXISTS uc_option_option_set_name;
+        </sql>
+        <sql>
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_option_set_code_active
+                ON option_value (option_set_id, code)
+                WHERE deleted_at IS NULL;
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_option_set_name_active
+                ON option_value (option_set_id, name)
+                WHERE deleted_at IS NULL;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

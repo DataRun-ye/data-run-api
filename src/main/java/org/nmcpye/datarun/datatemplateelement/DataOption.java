@@ -1,60 +1,28 @@
 package org.nmcpye.datarun.datatemplateelement;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.Size;
+import lombok.*;
 
-import java.io.Serial;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * A DataOption.
  */
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class DataOption implements Serializable {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
-
     @NotNull
-    private String listName;
+    @Size(max = 11, min = 11)
+    private String uid;
 
-    @NotNull
-    private String name;
+    @Size(max = 11)
+    private String optionSetUid;
 
-
-    private Integer order;
-
-    private Map<String, String> label;
-
-    private String filterExpression;
-
-    private Map<String, Object> properties;
-
-    public DataOption name(String name) {
-        this.setName(name);
-        return this;
-    }
-
-    public DataOption listName(String listName) {
-        this.setListName(listName);
-        return this;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        DataOption that = (DataOption) o;
-        return listName.equals(that.listName) && name.equals(that.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(listName, name);
-    }
-
+    private Map<String, Object> properties = new HashMap<>();
 }

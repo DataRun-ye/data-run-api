@@ -3,7 +3,6 @@ package org.nmcpye.datarun.web.rest.postgres.optionset;
 import org.nmcpye.datarun.common.IdScheme;
 import org.nmcpye.datarun.common.JpaIdentifiableOperationVm;
 import org.nmcpye.datarun.jpa.option.OptionSet;
-import org.nmcpye.datarun.jpa.option.repository.OptionRepository;
 import org.nmcpye.datarun.jpa.option.repository.OptionSetRepository;
 import org.nmcpye.datarun.jpa.option.service.OptionSetService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
@@ -34,14 +33,11 @@ public class OptionSetResource
     protected static final String NAME = "/optionSets";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
     protected static final String V1 = ApiVersion.API_V1 + NAME;
-    private final OptionRepository optionRepository;
     private final OptionSetRepository optionSetRepository;
 
     public OptionSetResource(OptionSetService optionSetService,
-                             OptionRepository optionRepository,
                              OptionSetRepository optionSetRepository) {
         super(optionSetService, optionSetRepository);
-        this.optionRepository = optionRepository;
         this.optionSetRepository = optionSetRepository;
     }
 
