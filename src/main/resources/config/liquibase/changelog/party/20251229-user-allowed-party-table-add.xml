@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="create-user-allowed-party" author="hamza-assada">
+        <createTable tableName="user_allowed_party">
+            <column name="user_id" type="varchar(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="party_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="permission_mask" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provenance" type="jsonb">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_updated" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="create-user-allowed-party-constraints" author="hamza-assada">
+        <addPrimaryKey tableName="user_allowed_party" columnNames="user_id,party_id"
+                       constraintName="pk_user_allowed_party"/>
+        <createIndex tableName="user_allowed_party" indexName="idx_uap_user">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex tableName="user_allowed_party" indexName="idx_uap_party">
+            <column name="party_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

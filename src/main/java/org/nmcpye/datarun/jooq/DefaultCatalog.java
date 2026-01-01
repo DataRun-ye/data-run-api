@@ -10,6 +10,8 @@ import java.util.List;
 import org.jooq.Constants;
 import org.jooq.Schema;
 import org.jooq.impl.CatalogImpl;
+import org.nmcpye.datarun.jooq.analytics.Analytics;
+import org.nmcpye.datarun.jooq.public_.Public;
 
 
 /**
@@ -26,6 +28,11 @@ public class DefaultCatalog extends CatalogImpl {
     public static final DefaultCatalog DEFAULT_CATALOG = new DefaultCatalog();
 
     /**
+     * The schema <code>analytics</code>.
+     */
+    public final Analytics ANALYTICS = Analytics.ANALYTICS;
+
+    /**
      * The schema <code>public</code>.
      */
     public final Public PUBLIC = Public.PUBLIC;
@@ -40,6 +47,7 @@ public class DefaultCatalog extends CatalogImpl {
     @Override
     public final List<Schema> getSchemas() {
         return Arrays.asList(
+            Analytics.ANALYTICS,
             Public.PUBLIC
         );
     }

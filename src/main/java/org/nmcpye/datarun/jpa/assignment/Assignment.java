@@ -21,6 +21,7 @@ import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.team.Team;
+import org.nmcpye.datarun.party.entities.PartySet;
 
 import java.time.Instant;
 import java.util.*;
@@ -111,6 +112,11 @@ public class Assignment extends JpaSoftDeleteObject {
     @Column(name = "properties_map", columnDefinition = "jsonb")
     @JsonProperty
     protected Map<String, Object> properties;
+
+    @ManyToOne
+    @JsonIgnoreProperties(value = {"createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JoinColumn(name = "default_party_set_id")
+    private PartySet defaultPartySet;
 
     @JsonProperty(value = "progressStatus")
     public FlowStatus getStatus() {

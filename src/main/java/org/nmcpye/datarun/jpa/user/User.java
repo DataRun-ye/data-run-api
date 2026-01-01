@@ -194,6 +194,17 @@ public class User extends JpaIdentifiableObject {
         return managedTeams;
     }
 
+    @JsonIgnore
+    public Set<Team> getManagedByTeams() {
+        Set<Team> managedByTeams = new HashSet<>();
+
+        for (Team team : teams) {
+            managedByTeams.addAll(team.getManagedByTeams());
+        }
+
+        return managedByTeams;
+    }
+
     public boolean hasManagedTeams() {
         for (Team team : teams) {
             if (team != null && team.getManagedTeams() != null && !team.getManagedTeams().isEmpty()) {
@@ -272,6 +283,17 @@ public class User extends JpaIdentifiableObject {
 
         return managedGroups;
     }
+
+    public Set<UserGroup> getManagedByGroups() {
+        Set<UserGroup> managedByGroups = new HashSet<>();
+
+        for (UserGroup group : userGroups) {
+            managedByGroups.addAll(group.getManagedByGroups());
+        }
+
+        return managedByGroups;
+    }
+
 
     public boolean hasManagedGroups() {
         for (UserGroup group : userGroups) {

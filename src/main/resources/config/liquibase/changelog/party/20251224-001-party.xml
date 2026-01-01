@@ -8,8 +8,8 @@
 
     <changeSet id="create-party-table" author="hamza-ye">
         <createTable tableName="party">
-            <column name="id" type="VARCHAR(26)">
-                <constraints primaryKey="true" nullable="false"/>
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="pk_party"/>
             </column>
             <column name="uid" type="VARCHAR(11)">
                 <constraints unique="true" nullable="false"/>
@@ -18,26 +18,33 @@
             <column name="name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-
-            <column name="tags" type="jsonb" defaultValueComputed="'[]'::jsonb"/>
-            <column name="type" type="VARCHAR(32)"/>
-            <column name="source_id" type="VARCHAR(26)">
-                <constraints unique="true"/>
-            </column>
-            <!--    any metadata      -->
-            <column name="properties_map" type="jsonb"/>
-            <column name="created_by" type="VARCHAR(50)">
+            <column name="type" type="VARCHAR(32)">
                 <constraints nullable="false"/>
             </column>
+            <column name="source_type" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_id" type="VARCHAR(64)">
+                <constraints unique="true"/>
+            </column>
+            <column name="tags" type="jsonb" defaultValueComputed="'[]'::jsonb"/>
+            <!--    any metadata      -->
+            <column name="properties_map" type="jsonb"/>
             <column name="created_date" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
             <column name="last_modified_date" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
-            <column name="translations" type="jsonb" defaultValueComputed="'[]'::jsonb"/>
+            <column name="last_modified_by" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
             <!--   For parties with parents i.e orgUnit         -->
-            <column name="parent_id" type="VARCHAR(26)"/>
+            <column name="parent_id" type="uuid"/>
+            <column name="translations" type="jsonb" defaultValueComputed="'[]'::jsonb"/>
         </createTable>
     </changeSet>
 
@@ -45,12 +52,13 @@
         <addForeignKeyConstraint baseTableName="party" baseColumnNames="parent_id"
                                  constraintName="fk_party_parent"
                                  referencedTableName="party" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="party" columnNames="type, source_id" constraintName="uq_party_source"/>
     </changeSet>
 
     <changeSet id="create-party-set-table" author="hamza-ye">
         <createTable tableName="party_set">
-            <column name="id" type="VARCHAR(26)">
-                <constraints primaryKey="true" nullable="false"/>
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_party_set"/>
             </column>
             <column name="uid" type="VARCHAR(11)">
                 <constraints unique="true" nullable="false"/>
@@ -68,13 +76,17 @@
             <column name="spec" type="jsonb" defaultValueComputed="'{}'::jsonb">
                 <constraints nullable="false"/>
             </column>
-            <column name="created_by" type="VARCHAR(50)">
-                <constraints nullable="false"/>
-            </column>
+            <column name="is_materialized" type="boolean" defaultValueBoolean="true"/>
             <column name="created_date" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
+            <column name="created_by" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
             <column name="last_modified_date" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified_by" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
             <column name="translations" type="jsonb" defaultValueComputed="'[]'::jsonb"/>
@@ -91,14 +103,20 @@
 
     <changeSet id="20251227-002-create-party-set-member" author="datarun-dev">
         <createTable tableName="party_set_member">
-            <column name="party_set_id" type="varchar(26)">
+            <column name="id" type="bigserial">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_party_set_member"/>
+            </column>
+            <column name="party_set_id" type="uuid">
                 <constraints nullable="false"/>
             </column>
-            <column name="party_id" type="varchar(26)">
+            <column name="party_id" type="uuid">
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="party_set_member" columnNames="party_set_id, party_id" constraintName="pk_party_set_member"/>
+    </changeSet>
+    <changeSet id="20251227-002-create-party-set-member-constraints" author="datarun-dev">
+        <addUniqueConstraint tableName="party_set_member" columnNames="party_set_id, party_id"
+                             constraintName="ux_party_set_member_party"/>
         <addForeignKeyConstraint baseTableName="party_set_member" baseColumnNames="party_set_id"
                                  referencedTableName="party_set" referencedColumnNames="id"
                                  constraintName="fk_psm_party_set"/>
@@ -111,132 +129,28 @@
         </createIndex>
     </changeSet>
 
-    <!-- 2025-12-27: Create party_set_snapshot (optional for audit / preview) -->
-    <changeSet id="20251227-004-create-party-set-snapshot" author="hamza-ye">
-        <createTable tableName="party_set_snapshot">
-            <column name="id" type="varchar(26)">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-            <column name="uid" type="varchar(11)">
-                <constraints unique="true" nullable="false"/>
-            </column>
-            <column name="party_set_id" type="varchar(26)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="snapshot" type="jsonb">
-                <constraints nullable="false"/>
-            </column>
-            <column name="created_date" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
-        </createTable>
-        <addForeignKeyConstraint baseTableName="party_set_snapshot" baseColumnNames="party_set_id"
-                                 referencedTableName="party_set" referencedColumnNames="id"
-                                 constraintName="fk_pss_party_set"/>
-        <createIndex tableName="party_set_snapshot" indexName="idx_pss_party_set">
-            <column name="party_set_id"/>
-        </createIndex>
-    </changeSet>
-
-    <changeSet id="create-assignment-member-table" author="hamza-ye">
-        <createTable tableName="assignment_member">
-            <column name="assignment_id" type="VARCHAR(26)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="member_type" type="VARCHAR(20)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="member_id" type="VARCHAR(26)">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-
-    <changeSet id="create-assignment-member-table-constraints" author="hamza-ye">
-        <addForeignKeyConstraint baseTableName="assignment_member" baseColumnNames="assignment_id"
-                                 constraintName="fk_assignment_member_assignment_id"
-                                 referencedTableName="assignment" referencedColumnNames="id"/>
-        <addPrimaryKey tableName="assignment_member" columnNames="assignment_id, member_type, member_id" />
-        <createIndex tableName="assignment_member" indexName="idx_assignment_member_assignment_id">
-            <column name="assignment_id"/>
-        </createIndex>
-        <createIndex tableName="assignment_member" indexName="idx_assignment_member_member_id">
-            <column name="member_id"/>
-        </createIndex>
-    </changeSet>
-
-    <!-- Assignment -> vocabulary   -->
-    <changeSet id="create-assignment_vocabulary" author="hamza-ye">
-        <createTable tableName="assignment_vocabulary">
-            <column name="assignment_id" type="VARCHAR(26)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="vocabulary_id" type="VARCHAR(26)">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-
-    <!--    -->
-    <changeSet id="create-assignment_vocabulary-constraints" author="hamza-ye">
-        <addForeignKeyConstraint baseTableName="assignment_vocabulary" baseColumnNames="assignment_id"
-                                 constraintName="fk_assignment_assignment_id"
-                                 referencedTableName="assignment" referencedColumnNames="id"/>
-
-        <addForeignKeyConstraint baseTableName="assignment_vocabulary" baseColumnNames="vocabulary_id"
-                                 constraintName="fk_assignment_vocabulary_id"
-                                 referencedTableName="vocabulary_map" referencedColumnNames="id"/>
-
-        <addPrimaryKey tableName="assignment_vocabulary" columnNames="assignment_id, vocabulary_id" />
-    </changeSet>
-
-    <changeSet id="create-binding-table" author="hamza-ye">
-        <createTable tableName="assignment_party_binding">
-            <column name="id" type="VARCHAR(26)">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-            <column name="uid" type="VARCHAR(11)">
-                <constraints unique="true" nullable="false"/>
-            </column>
-            <column name="name" type="VARCHAR(64)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="assignment_id" type="VARCHAR(26)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="vocabulary_id" type="VARCHAR(26)"/>
-            <column name="party_set_id" type="VARCHAR(26)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="created_by" type="VARCHAR(50)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="created_date" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
-                <constraints nullable="false"/>
-            </column>
-            <column name="last_modified_date" type="TIMESTAMP">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-
-    <changeSet id="create-binding-table-constraints" author="hamza-ye">
-        <addForeignKeyConstraint baseTableName="assignment_party_binding" baseColumnNames="assignment_id"
-                                 constraintName="fk_bind_assign"
-                                 referencedTableName="assignment" referencedColumnNames="id"/>
-        <addForeignKeyConstraint baseTableName="assignment_party_binding" baseColumnNames="party_set_id"
-                                 constraintName="fk_bind_pset"
-                                 referencedTableName="party_set" referencedColumnNames="id"/>
-
-        <addForeignKeyConstraint baseTableName="assignment_party_binding" baseColumnNames="vocabulary_id"
-                                 constraintName="fk_vocabulary_template"
-                                 referencedTableName="data_template" referencedColumnNames="id"/>
-
-        <addUniqueConstraint tableName="assignment_party_binding" columnNames="assignment_id, vocabulary_id, role_name, party_set_id"
-                             constraintName="ux_assignment_party_binding_ids"/>
-
-        <createIndex tableName="assignment_party_binding" indexName="idx_apb_assignment_vocab_role">
-            <column name="assignment_id"/>
-            <column name="vocabulary_id"/>
-            <column name="role_name"/>
-        </createIndex>
-    </changeSet>
+<!--    &lt;!&ndash;  2025-12-27: Create party_set_snapshot (optional for audit / preview)&ndash;&gt;-->
+<!--    <changeSet id="20251227-004-create-party-set-snapshot" author="hamza-ye">-->
+<!--        <createTable tableName="party_set_snapshot">-->
+<!--            <column name="id" type="bigserial">-->
+<!--                <constraints primaryKey="true" nullable="false" primaryKeyName="pk_party_set_snapshot"/>-->
+<!--            </column>-->
+<!--            <column name="uid" type="varchar(11)">-->
+<!--                <constraints unique="true" nullable="false"/>-->
+<!--            </column>-->
+<!--            <column name="party_set_id" type="uuid">-->
+<!--                <constraints nullable="false"/>-->
+<!--            </column>-->
+<!--            <column name="snapshot" type="jsonb">-->
+<!--                <constraints nullable="false"/>-->
+<!--            </column>-->
+<!--            <column name="created_date" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>-->
+<!--        </createTable>-->
+<!--        <addForeignKeyConstraint baseTableName="party_set_snapshot" baseColumnNames="party_set_id"-->
+<!--                                 referencedTableName="party_set" referencedColumnNames="id"-->
+<!--                                 constraintName="fk_pss_party_set"/>-->
+<!--        <createIndex tableName="party_set_snapshot" indexName="idx_pss_party_set">-->
+<!--            <column name="party_set_id"/>-->
+<!--        </createIndex>-->
+<!--    </changeSet>-->
 </databaseChangeLog>

@@ -152,11 +152,11 @@ public class IdSchemes {
         return isId ? uid : code;
     }
 
-    public static String getValue(IdentifiableObject identifiableObject, IdentifiableProperty identifiableProperty) {
+    public static <T> String getValue(IdentifiableObject<T> identifiableObject, IdentifiableProperty identifiableProperty) {
         return getValue(identifiableObject, IdScheme.from(identifiableProperty));
     }
 
-    public static String getValue(IdentifiableObject identifiableObject, IdScheme idScheme) {
+    public static <T> String getValue(IdentifiableObject<T> identifiableObject, IdScheme idScheme) {
         boolean isId = idScheme.is(IdentifiableProperty.ID) || idScheme.is(IdentifiableProperty.UID);
 
         if (isId) {

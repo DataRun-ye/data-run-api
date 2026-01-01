@@ -75,10 +75,10 @@
         <!--  NMC      -->
         <jooq.version>3.19.18</jooq.version>
         <!--  Override driver due to conflict with debezium -->
-<!--        <javers-spring-boot-starter-mongo.version>7.7.0</javers-spring-boot-starter-mongo.version>-->
-<!--        <javers-spring-boot-starter-sql.version>7.7.0</javers-spring-boot-starter-sql.version>-->
+        <!--        <javers-spring-boot-starter-mongo.version>7.7.0</javers-spring-boot-starter-mongo.version>-->
+        <!--        <javers-spring-boot-starter-sql.version>7.7.0</javers-spring-boot-starter-sql.version>-->
         <mongock-bom.version>5.5.0</mongock-bom.version>
-<!--        <version.debezium>3.1.0.Alpha1</version.debezium>-->
+        <!--        <version.debezium>3.1.0.Alpha1</version.debezium>-->
         <json-flattener-version>0.18.0</json-flattener-version>
 
     </properties>
@@ -379,33 +379,33 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
         <!-- debezium   -->
-<!--        <dependency>-->
-<!--            <groupId>io.debezium</groupId>-->
-<!--            <artifactId>debezium-api</artifactId>-->
-<!--            <version>${version.debezium}</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>io.debezium</groupId>-->
-<!--            <artifactId>debezium-embedded</artifactId>-->
-<!--            <version>${version.debezium}</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>io.debezium</groupId>-->
+        <!--            <artifactId>debezium-api</artifactId>-->
+        <!--            <version>${version.debezium}</version>-->
+        <!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>io.debezium</groupId>-->
+        <!--            <artifactId>debezium-embedded</artifactId>-->
+        <!--            <version>${version.debezium}</version>-->
+        <!--        </dependency>-->
         <!--        <dependency>-->
         <!--            <groupId>io.debezium</groupId>-->
         <!--            <artifactId>debezium-storage-jdbc</artifactId>-->
         <!--            <version>${version.debezium}</version>-->
-<!--        &lt;!&ndash;        </dependency>&ndash;&gt;-->
-<!--        <dependency>-->
-<!--            <groupId>io.debezium</groupId>-->
-<!--            <artifactId>debezium-connector-mongodb</artifactId>-->
-<!--            <version>${version.debezium}</version>-->
-<!--        </dependency>-->
+        <!--        &lt;!&ndash;        </dependency>&ndash;&gt;-->
+        <!--        <dependency>-->
+        <!--            <groupId>io.debezium</groupId>-->
+        <!--            <artifactId>debezium-connector-mongodb</artifactId>-->
+        <!--            <version>${version.debezium}</version>-->
+        <!--        </dependency>-->
 
         <!--   javers    -->
-<!--        <dependency>-->
-<!--            <groupId>org.javers</groupId>-->
-<!--            <artifactId>javers-spring-boot-starter-mongo</artifactId>-->
-<!--            <version>${javers-spring-boot-starter-mongo.version}</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.javers</groupId>-->
+        <!--            <artifactId>javers-spring-boot-starter-mongo</artifactId>-->
+        <!--            <version>${javers-spring-boot-starter-mongo.version}</version>-->
+        <!--        </dependency>-->
         <!--        <dependency>-->
         <!--            <groupId>org.javers</groupId>-->
         <!--            <artifactId>javers-spring-boot-starter-sql</artifactId>-->
@@ -448,6 +448,7 @@
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq-meta</artifactId>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>com.github.wnameless.json</groupId>
@@ -826,7 +827,9 @@
                         </extraDirectories>
                         <pluginExtensions>
                             <pluginExtension>
-                                <implementation>com.google.cloud.tools.jib.maven.extension.springboot.JibSpringBootExtension</implementation>
+                                <implementation>
+                                    com.google.cloud.tools.jib.maven.extension.springboot.JibSpringBootExtension
+                                </implementation>
                             </pluginExtension>
                         </pluginExtensions>
                     </configuration>
@@ -1019,39 +1022,44 @@
                         <execution>
                             <id>generate-jooq</id>
                             <phase>generate-sources</phase>
-                            <goals><goal>generate</goal></goals>
-                            <configuration>
-                                <skip>true</skip>
-                                <jdbc>
-                                    <driver>org.postgresql.Driver</driver>
-                                    <url>${liquibase-url}</url>
-<!--                                    <defaultSchemaName/>-->
-                                    <user>${liquibase-username}</user>
-                                    <password>${liquibase-password}</password>
-                                </jdbc>
-                                <generator>
-                                    <!-- Prevent generation of implicit join "Path" nested types -->
-                                    <generate>
-                                        <!-- disable convenience Path types for to-one joins -->
-                                        <implicitJoinPathsToOne>false</implicitJoinPathsToOne>
-                                        <!-- disable convenience Path types for to-many joins -->
-                                        <implicitJoinPathsToMany>false</implicitJoinPathsToMany>
-                                        <!-- disable convenience Path types for many-to-many joins -->
-<!--                                        <implicitJoinPathsManyToMany>false</implicitJoinPathsManyToMany>-->
-                                    </generate>
-                                    <database>
-                                        <name>org.jooq.meta.postgres.PostgresDatabase</name>
-                                        <inputSchema>public</inputSchema>
-                                        <excludes>databasechangelog|databasechangeloglock</excludes>
-                                    </database>
-                                    <target>
-                                        <packageName>org.nmcpye.datarun.jooq</packageName>
-                                        <directory>src/main/java/</directory>
-                                    </target>
-                                </generator>
-                            </configuration>
+                            <goals>
+                                <goal>generate</goal>
+                            </goals>
                         </execution>
                     </executions>
+                    <configuration>
+                        <!-- <skip>true</skip>-->
+                        <jdbc>
+                            <driver>org.postgresql.Driver</driver>
+                            <url>${liquibase-url}</url>
+                            <!-- <defaultSchemaName/>-->
+                            <user>${liquibase-username}</user>
+                            <password>${liquibase-password}</password>
+                        </jdbc>
+                        <generator>
+                            <!-- Prevent generation of implicit join "Path" nested types -->
+                            <generate>
+                                <!-- disable convenience Path types for to-one joins -->
+                                <implicitJoinPathsToOne>false</implicitJoinPathsToOne>
+                                <!-- disable convenience Path types for to-many joins -->
+                                <implicitJoinPathsToMany>false</implicitJoinPathsToMany>
+                                <!-- disable convenience Path types for many-to-many joins -->
+                                <!--                                 <implicitJoinPathsManyToMany>false</implicitJoinPathsManyToMany>-->
+                            </generate>
+                            <database>
+                                <name>org.jooq.meta.postgres.PostgresDatabase</name>
+<!--                                <inputSchema>analytics</inputSchema>-->
+<!--                                <inputSchema>public</inputSchema>-->
+                                <includes>tall_canonical|org_unit|user_allowed_party|team|team_user|app_user|user_group|user_group_users|party|party_set|assignment|party_set_member|assignment_party_binding|assignment_member
+                                </includes>
+<!--                                <excludes>databasechangelog|databasechangeloglock</excludes>-->
+                            </database>
+                            <target>
+                                <packageName>org.nmcpye.datarun.jooq</packageName>
+                                <directory>src/main/java/</directory>
+                            </target>
+                        </generator>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.sonarsource.scanner.maven</groupId>

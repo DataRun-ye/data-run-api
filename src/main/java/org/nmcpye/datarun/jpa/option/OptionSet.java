@@ -52,9 +52,10 @@ public class OptionSet extends TranslatableIdentifiable {
     protected String name;
 
     @OneToMany(mappedBy = "optionSet", cascade = CascadeType.ALL,
-        orphanRemoval = true, fetch = FetchType.LAZY)
+        orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderColumn(name = "sort_order")
     @ListIndexBase(1)
+    @Size(min = 1)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private List<Option> options = new ArrayList<>();
 
@@ -85,10 +86,7 @@ public class OptionSet extends TranslatableIdentifiable {
     @JsonProperty(value = "options")
     @JsonSerialize(contentAs = TranslatableIdentifiable.class)
     public List<Option> getOptions() {
-        return options.stream()
-            .filter(Objects::nonNull)
-            .filter(o -> o.getDeletedAt() == null)   // application-level filter
-            .collect(Collectors.toList());
+        return options;
     }
 
     @JsonSetter(contentNulls = Nulls.SKIP)

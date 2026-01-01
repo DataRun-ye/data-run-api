@@ -142,6 +142,7 @@ abstract public class TranslatableIdentifiable extends JpaIdentifiableObject {
             key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
     }
 
+    @Transient
     public Map<String, String> getLabel() {
         if (translations == null || translations.isEmpty()) {
             return null;

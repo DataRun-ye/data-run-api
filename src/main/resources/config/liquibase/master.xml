@@ -77,6 +77,10 @@
     <include file="/config/liquibase/changelog/data-template-version/2025-12-28-template-version-options-add.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/options/2025-12-28-option-add-deleted-at.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/options/2025-12-28-option-set-add-deleted-at.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/party/20251224-001-party.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/party/20251225-001-assignment-and-binding.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/party/20251229-002-assignment-default-party-add.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/party/20251229-user-allowed-party-table-add.xml" relativeToChangelogFile="false"/>
 
 <!--    <include file="/config/liquibase/changelog/workspace/2025-12-21-add-workspace.xml" relativeToChangelogFile="false"/>-->
 

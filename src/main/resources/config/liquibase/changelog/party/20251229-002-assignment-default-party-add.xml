@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="add-assignment-default-party-to-assignment" author="hamza-ye">
+        <addColumn tableName="assignment">
+            <column name="default_party_set_id" type="uuid"/>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="assignment" baseColumnNames="default_party_set_id"
+                                 constraintName="fk_assignment_default_party_set_id"
+                                 referencedTableName="party_set" referencedColumnNames="id"/>
+    </changeSet>
+</databaseChangeLog>

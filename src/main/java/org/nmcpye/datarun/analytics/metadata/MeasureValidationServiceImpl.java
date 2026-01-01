@@ -9,7 +9,7 @@ import org.nmcpye.datarun.analytics.QueryJooqMapper;
 import org.nmcpye.datarun.analytics.dto.*;
 import org.nmcpye.datarun.analytics.exception.InvalidMeasureException;
 import org.nmcpye.datarun.analytics.fieldresolver.MappedQueryableElement;
-import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
+import org.nmcpye.datarun.jooq.analytics.tables.TallCanonical;
 import org.springframework.stereotype.Service;
 
 import java.util.Locale;
@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.nmcpye.datarun.jooq.Tables.PIVOT_GRID_FACTS;
+import static org.nmcpye.datarun.jooq.analytics.Tables.TALL_CANONICAL;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +27,7 @@ import static org.nmcpye.datarun.jooq.Tables.PIVOT_GRID_FACTS;
 public class MeasureValidationServiceImpl implements MeasureValidationService {
     private final MetadataService metadataService;
 
-    private static final PivotGridFacts PG = PIVOT_GRID_FACTS;
+    private static final TallCanonical PG = TALL_CANONICAL;
 
     @Override
     public QueryableElementMapping validate(MeasureRequest req, String templateUid,
@@ -36,15 +36,15 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
         if (req.getFieldId() == null) throw new InvalidMeasureException("fieldId is required");
 
         Map<String, QueryableElement> fieldMap = new ConcurrentHashMap<>(metadataService
-                .getMetadataForTemplate(templateUid, templateVersionUid)
-                .getAvailableFields().stream()
-                .collect(Collectors.toMap(QueryableElement::id, Function.identity())));
+            .getMetadataForTemplate(templateUid, templateVersionUid)
+            .getAvailableFields().stream()
+            .collect(Collectors.toMap(QueryableElement::id, Function.identity())));
 
 
         // Resolve metadata (prefer template lookup)
         // STEP 1: Resolve the complete, authoritative metadata for the field.
         QueryableElement fieldDto = Optional.ofNullable(fieldMap.get(req.getFieldId()))
-                .orElseThrow(() -> new InvalidMeasureException("Field not found: " + req.getFieldId()));
+            .orElseThrow(() -> new InvalidMeasureException("Field not found: " + req.getFieldId()));
 
         // STEP 2: Validate the requested aggregation against the field's allowed modes.
         Aggregation aggEnum = validateAggregation(req, fieldDto);
@@ -56,7 +56,7 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
 
         // Handle option-scoping for multi-selects
         if (req.getOptionId() != null) {
-            condition = condition.and(PG.OPTION_UID.eq(req.getOptionId()));
+            condition = condition.and(PG.VALUE_REF_UID.eq(req.getOptionId()));
         }
 
         //Determine the correct target value field (e.g., value_num) for the aggregate function.
@@ -65,15 +65,15 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
         String alias = getAliasOrFallback(req, fieldDto, aggEnum);
 
         return QueryableElementMapping.builder()
-                .deUid(fieldDto.deUid())
-                .etcUid("etc".equals(parsedId.namespace()) ? parsedId.value() : null)
-                .aggregation(aggEnum)
-                .targetField(targetField)
-                .elementPredicate(condition)
-                .alias(alias)
-                .distinct(Boolean.TRUE.equals(req.getDistinct()))
-                .optionUid(req.getOptionId())
-                .build();
+            .deUid(fieldDto.deUid())
+            .etcUid("etc".equals(parsedId.namespace()) ? parsedId.value() : null)
+            .aggregation(aggEnum)
+            .targetField(targetField)
+            .elementPredicate(condition)
+            .alias(alias)
+            .distinct(Boolean.TRUE.equals(req.getDistinct()))
+            .optionUid(req.getOptionId())
+            .build();
     }
 
     private Aggregation validateAggregation(MeasureRequest req, QueryableElement dto) {
@@ -87,8 +87,8 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
 
         if (dto.aggregationModes() == null || !dto.aggregationModes().contains(aggEnum)) {
             throw new InvalidMeasureException(String.format(
-                    "Aggregation %s not allowed for field %s. Allowed: %s",
-                    requestedAgg, dto.id(), dto.aggregationModes()
+                "Aggregation %s not allowed for field %s. Allowed: %s",
+                requestedAgg, dto.id(), dto.aggregationModes()
             ));
         }
         return aggEnum;
@@ -106,7 +106,7 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
             case SUM, AVG -> {
                 if (!dto.dataType().equals(DataType.NUMERIC))
                     throw new InvalidMeasureException("SUM/AVG requires a NUMERIC field.");
-                yield PG.VALUE_NUM;
+                yield PG.VALUE_NUMBER;
             }
             case SUM_TRUE -> {
                 if (!dto.dataType().equals(DataType.BOOLEAN))
@@ -115,8 +115,8 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
             }
             // For MIN/MAX, the target depends on the dataType
             case MIN, MAX -> switch (dto.dataType()) {
-                case NUMERIC -> PG.VALUE_NUM;
-                case TIMESTAMP -> PG.VALUE_TS;
+                case NUMERIC -> PG.VALUE_NUMBER;
+                case TIMESTAMP -> PG.VALUE_TEXT;
                 default -> PG.VALUE_TEXT; // Default for text, refs, etc.
             };
             // For COUNT, we count the specific value column to correctly handle NULLs.
@@ -131,7 +131,7 @@ public class MeasureValidationServiceImpl implements MeasureValidationService {
 
         // Fallback to a generated alias
         return String.format("%s_%s",
-                MappedQueryableElement.from(dto.id()).value(),
-                agg.name().toLowerCase(Locale.ROOT));
+            MappedQueryableElement.from(dto.id()).value(),
+            agg.name().toLowerCase(Locale.ROOT));
     }
 }

@@ -10,7 +10,7 @@ import org.nmcpye.datarun.analytics.dto.QueryFilter;
 import org.nmcpye.datarun.analytics.dto.QuerySort;
 import org.nmcpye.datarun.analytics.dto.QueryableElementMapping;
 import org.nmcpye.datarun.analytics.fieldresolver.AnalyticsFieldResolver;
-import org.nmcpye.datarun.jooq.tables.PivotGridFacts;
+import org.nmcpye.datarun.jooq.analytics.tables.TallCanonical;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -22,7 +22,7 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.nmcpye.datarun.jooq.Tables.PIVOT_GRID_FACTS;
+import static org.nmcpye.datarun.jooq.analytics.Tables.TALL_CANONICAL;
 
 /**
  * JooqQueryBuilder builds jOOQ Select queries against the UID-native
@@ -52,7 +52,7 @@ import static org.nmcpye.datarun.jooq.Tables.PIVOT_GRID_FACTS;
 public class JooqQueryBuilder {
 
     private final DSLContext dsl;
-    private static final PivotGridFacts PG = PIVOT_GRID_FACTS;
+    private static final TallCanonical PG = TALL_CANONICAL;
     private final AnalyticsFieldResolver fieldResolver;
 
 //    private final QueryTarget target;
@@ -124,9 +124,9 @@ public class JooqQueryBuilder {
         query.addFrom(PG);
 
         // build base condition (reuse your translateFilter & coerce logic)
-        Condition cond = PG.DELETED_AT.isNull();
-        if (from != null) cond = cond.and(PG.SUBMISSION_COMPLETED_AT.ge(from));
-        if (to != null) cond = cond.and(PG.SUBMISSION_COMPLETED_AT.le(to));
+        Condition cond = PG.IS_DELETED.isNull();
+        if (from != null) cond = cond.and(PG.START_TIME.ge(from));
+        if (to != null) cond = cond.and(PG.START_TIME.le(to));
         if (allowedTeamIds != null && !allowedTeamIds.isEmpty()) cond = cond.and(PG.TEAM_UID.in(allowedTeamIds));
 
         if (filters != null) {
@@ -166,7 +166,7 @@ public class JooqQueryBuilder {
         // This is an aggregate expression and therefore legal in GROUP BY queries.
         if (!groupBy.isEmpty()) {
             // Use MIN(value_id) as stable tiebreaker per group
-            SortField<?> tie = DSL.min(PG.VALUE_ID).asc();
+            SortField<?> tie = DSL.min(PG.TALL_ID).asc();
             sortFields.add(tie);
         } else {
             // No grouping -> don't add MIN(value_id). If no explicit sort provided, we keep no ORDER BY
@@ -206,9 +206,9 @@ public class JooqQueryBuilder {
         Set<String> allowedTeamIds
     ) {
         // Build the same base condition
-        Condition cond = PG.DELETED_AT.isNull();
-        if (from != null) cond = cond.and(PG.SUBMISSION_COMPLETED_AT.ge(from));
-        if (to != null) cond = cond.and(PG.SUBMISSION_COMPLETED_AT.le(to));
+        Condition cond = PG.IS_DELETED.isNull();
+        if (from != null) cond = cond.and(PG.START_TIME.ge(from));
+        if (to != null) cond = cond.and(PG.START_TIME.le(to));
         if (allowedTeamIds != null && !allowedTeamIds.isEmpty()) cond = cond.and(PG.TEAM_UID.in(allowedTeamIds));
 
         // translate filters (no alias map necessary here)
