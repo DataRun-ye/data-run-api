@@ -2,19 +2,23 @@ package org.nmcpye.datarun.party.service;
 
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.jpa.assignment.AssignmentPartyBinding;
+import org.nmcpye.datarun.jpa.assignment.dto.AssignmentManifestDto;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentMemberRepository;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentPartyBindingRepository;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
-import org.nmcpye.datarun.party.dto.AssignmentManifestDto;
 import org.nmcpye.datarun.party.dto.AssignmentStatus;
-import org.nmcpye.datarun.party.entities.AssignmentPartyBinding;
-import org.nmcpye.datarun.party.repository.AssignmentMemberRepository;
-import org.nmcpye.datarun.party.repository.AssignmentPartyBindingRepository;
-import org.springframework.security.acls.model.NotFoundException;
+import org.nmcpye.datarun.party.dto.PagedRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,50 +33,75 @@ public class ManifestService {
     private final AssignmentPartyBindingRepository bindingRepo;
 
     // In a real app, you'd inject a "UserContext" to get the current user's ID
-    public List<AssignmentManifestDto> buildManifest(String userUid, List<String> teamUids) {
+    // You would inject a service to get user's teams/groups, or resolve them here.
+    // For now, we'll assume they are passed in.
+    @Transactional(readOnly = true)
+    public Page<AssignmentManifestDto> buildManifest(String userId, Collection<String> teamIds,
+                                                     Collection<String> userGroupIds, PagedRequest pagedRequest) {
 
-        // 1. Find active Assignment IDs for this user/team
-        List<String> assignmentIds = List.of(); // not implemented `memberRepo.findActiveAssignmentIds(userUid, teamUids)`;
+        // 1. Gather all principals for the user
+        Set<String> principalIds = new HashSet<>(teamIds);
+        principalIds.add(userId);
+        principalIds.addAll(userGroupIds);
 
+
+        // 2. Find all active Assignment IDs in a single query
+        Page<String> assignmentIds = (pagedRequest.getSince() == null)
+            ? memberRepo
+            .findActiveAssignmentIdsForPrincipalsAndTeams(principalIds, teamIds, pagedRequest.getPageable())
+            : memberRepo
+            .findActiveAssignmentIdsForPrincipalsAndTeams(principalIds, teamIds, pagedRequest.getSince(), pagedRequest.getPageable());
         if (assignmentIds.isEmpty()) {
-            return Collections.emptyList();
+            return Page.empty(pagedRequest.getPageable());
         }
 
-        // 2. Fetch the Assignment Entities
-        List<Assignment> assignments = assignmentRepo.findAllById(assignmentIds);
+        // 3. Fetch all required data in bulk to avoid N+1 queries
+        List<Assignment> assignments = assignmentRepo.findAllById(assignmentIds.getContent());
 
-        // 3. Build DTOs
-        return assignments.stream().map(assign -> {
+        List<AssignmentPartyBinding> bindings = bindingRepo.findByAssignmentIdIn(assignmentIds.getContent());
 
-            // Fetch linked Vocabularies (Form Templates)
-            List<String> vocabUids = assignmentRepo.findById(assign.getId())
-                .map(Assignment::getForms)
-                .stream()
-                .flatMap(Collection::stream).toList();
+        // Collect all unique vocabulary/template IDs from the bindings
+        Set<String> vocabularyIds = bindings.stream()
+            .map(AssignmentPartyBinding::getVocabulary)
+            .map(DataTemplate::getId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        Map<String, DataTemplate> templatesById = templateRepository.findAllById(vocabularyIds).stream()
+            .collect(Collectors.toMap(DataTemplate::getId, Function.identity()));
 
-            // Fetch Bindings (Rules)
-            // We expose these so the client can cache requests by 'partySetUid'
-            List<AssignmentPartyBinding> bindings = bindingRepo.findByAssignmentId(assign.getId());
+        // Group bindings by assignment for efficient mapping
+        Map<String, List<AssignmentPartyBinding>> bindingsByAssignmentId = bindings.stream()
+            .collect(Collectors.groupingBy(b -> b.getAssignment().getId()));
+
+        // 4. Build the final DTOs in memory
+        final var bindingsManifest = assignments.stream().map(assign -> {
+            Set<String> vocabUids = Optional.ofNullable(assign.getForms()).orElse(Collections.emptySet());
+            List<AssignmentPartyBinding> assignBindings = bindingsByAssignmentId.getOrDefault(assign.getId(), Collections.emptyList());
 
             return AssignmentManifestDto.builder()
                 .assignmentUid(assign.getUid())
-                .label(assign.getOrgUnit().getName())
+                .label(assign.getOrgUnit().getName()) // Or other meaningful label
                 .status(AssignmentStatus.getAssignmentStatus(assign.getStatus()))
                 .templateUids(vocabUids)
-                .bindings(mapBindings(bindings))
+                .bindings(mapBindings(assignBindings, templatesById))
                 .build();
-
         }).toList();
+
+
+        return new PageImpl<>(bindingsManifest, assignmentIds.getPageable(), bindingsManifest.size());
     }
 
-    private List<AssignmentManifestDto.BindingDto> mapBindings(List<AssignmentPartyBinding> source) {
-        return source.stream().map(b -> AssignmentManifestDto.BindingDto.builder()
+    private List<AssignmentManifestDto.BindingDto> mapBindings(List<AssignmentPartyBinding> source,
+                                                               Map<String, DataTemplate> templatesById) {
+        return source.stream().map(b -> {
+            DataTemplate template = (b.getVocabulary() != null) ? templatesById.get(b.getVocabulary().getId()) : null;
+            return AssignmentManifestDto.BindingDto.builder()
                 .roleName(b.getName())
-                .templateUid(templateRepository.findById(b.getVocabularyId())
-                    .orElseThrow(() -> new NotFoundException("no template with id" + b.getVocabularyId()))
-                    .getUid())
-                .partySetId(b.getPartySetId()) // Exposing ID allows client to use it as a cache key
-                .build())
-            .toList();
+                .templateUid(template != null ? template.getUid() : null) // Null for global-assignment roles
+                .partySetId(b.getPartySet().getId())
+                .combineMode(b.getCombineMode())
+                .provenance("Role Binding")
+                .build();
+        }).toList();
     }
 }

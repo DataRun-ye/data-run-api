@@ -239,8 +239,8 @@ Once a `party_set_id` is identified, the engine executes the `spec`:
 
 ## Notes on where and how to start
 
-To get an initial version working that is both maintainable and scalable, you should focus on a **Modular Monolith**
-approach. This keeps the logic in one place for now but separates concerns clearly so they can be extracted later if
+To get an initial version working that is both maintainable and scalable, we should focus on a **Modular**
+approach. This keeps the logic in one place for now but separates concerns clearly so they can be extracted later and easily expanded if
 needed.
 
 The core philosophy is: **The Assignment is the Router.** Everything flows through the Assignment to determine what the

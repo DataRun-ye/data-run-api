@@ -3,7 +3,7 @@ package org.nmcpye.datarun.jpa.datasubmission.service;
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmissionHistory;
-import org.nmcpye.datarun.jpa.datasubmission.events.SubmissionChangeType;
+import org.nmcpye.datarun.jpa.datasubmission.events.EventChangeType;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionHistoryRepository;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.springframework.data.domain.PageRequest;
@@ -32,7 +32,7 @@ public class SubmissionSnapshotAndPrunerService {
 
     // Must be transactional so persistAndFlush() works
 
-    public void createSnapshot(String submissionId, SubmissionChangeType changeType) {
+    public void createSnapshot(String submissionId, EventChangeType changeType) {
         DataSubmission committed = submissionRepo.findById(submissionId)
             .orElseThrow(() -> new IllegalStateException("Committed DataSubmission not found: " + submissionId));
 

@@ -1,9 +1,6 @@
 package org.nmcpye.datarun.party.dto;
 
 import org.nmcpye.datarun.common.enumeration.FlowStatus;
-import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
-import org.nmcpye.datarun.jpa.datatemplate.DataType;
-import org.nmcpye.datarun.jpa.datatemplate.SemanticType;
 
 public enum AssignmentStatus {
     PLANNED, // SCHEDULED
@@ -17,6 +14,16 @@ public enum AssignmentStatus {
 
     public static AssignmentStatus getAssignmentStatus(FlowStatus flowStatus) {
         for (AssignmentStatus status : AssignmentStatus.values()) {
+            if (status.name().equalsIgnoreCase(flowStatus.name())) {
+                return status;
+            }
+        }
+
+        return null;
+    }
+
+    public static FlowStatus getAssignmentStatus(AssignmentStatus flowStatus) {
+        for (FlowStatus status : FlowStatus.values()) {
             if (status.name().equalsIgnoreCase(flowStatus.name())) {
                 return status;
             }

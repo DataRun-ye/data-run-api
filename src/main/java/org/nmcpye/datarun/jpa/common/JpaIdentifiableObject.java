@@ -3,6 +3,7 @@ package org.nmcpye.datarun.jpa.common;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.common.IdScheme;
@@ -41,6 +42,7 @@ public abstract class JpaIdentifiableObject
      * Length: 26 characters, Base32 encoded.
      */
     @Id
+    @NotNull
     @Column(name = "id", length = 26, updatable = false, nullable = false)
     protected String id;
 
@@ -110,6 +112,12 @@ public abstract class JpaIdentifiableObject
 
     public void setIsPersisted() {
         this.isPersisted = true;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends JpaIdentifiableObject> T persisted() {
+        this.isPersisted = true;
+        return (T) this;
     }
 
     abstract protected void setUid(String uid);

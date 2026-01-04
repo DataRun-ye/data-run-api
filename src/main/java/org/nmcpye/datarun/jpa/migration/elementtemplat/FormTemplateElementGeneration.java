@@ -13,7 +13,7 @@ import java.util.List;
  * @author Hamza Assada
  * @since 14/05/2025
  */
-@Component
+//@Component
 @Order(1200)
 @RequiredArgsConstructor
 public class FormTemplateElementGeneration implements CommandLineRunner {

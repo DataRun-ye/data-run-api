@@ -62,6 +62,7 @@ public class TemplateVersion extends JpaIdentifiableObject implements DataTempla
 
     @JdbcTypeCode(SqlTypes.JSON) // Specifies JSON mapping
     @Column(name = "options", columnDefinition = "jsonb")
+    @Builder.Default
     private List<DataOption> options = new LinkedList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)

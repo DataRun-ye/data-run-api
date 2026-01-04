@@ -86,7 +86,7 @@ public class Assignment extends JpaSoftDeleteObject {
 
     @ManyToOne
     @JsonProperty
-    @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"defaultPartySet", "activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Assignment parent;
 
     @Type(JsonType.class)

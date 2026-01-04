@@ -12,12 +12,12 @@ import java.util.Objects;
 @Getter
 public class SubmissionSavedEvent implements Serializable {
     private final String submissionId;   // DataSubmission.id (ULID)
-    private final SubmissionChangeType changeType;
+    private final EventChangeType changeType;
     private final Long submissionVersion;
     private final Instant occurredAt;
 
     public SubmissionSavedEvent(String submissionId,
-                                SubmissionChangeType changeType,
+                                EventChangeType changeType,
                                 Long submissionVersion) {
         this.submissionId = submissionId;
         this.changeType = changeType;

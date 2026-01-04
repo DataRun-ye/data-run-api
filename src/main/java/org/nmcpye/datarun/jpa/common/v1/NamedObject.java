@@ -10,6 +10,7 @@ import lombok.Setter;
 import org.nmcpye.datarun.common.translation.Translatable;
 import org.nmcpye.datarun.common.translation.Translation;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 @Setter
 @NoArgsConstructor
 @SuppressWarnings("unused")
-abstract public class NamedObject extends TranslatableObject {
+abstract public class NamedObject extends TranslatableObject implements Serializable {
     // -------------------------------------------------------------------------
     // Setters and getters
     // -------------------------------------------------------------------------

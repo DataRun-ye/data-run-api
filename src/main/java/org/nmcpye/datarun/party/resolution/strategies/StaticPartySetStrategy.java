@@ -1,11 +1,14 @@
 package org.nmcpye.datarun.party.resolution.strategies;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.nmcpye.datarun.party.dto.PartyResolutionRequest;
 import org.nmcpye.datarun.party.dto.ResolvedParty;
 import org.nmcpye.datarun.party.entities.PartySetKind;
 import org.nmcpye.datarun.party.resolution.engine.PartySecurityFilter;
+import org.nmcpye.datarun.party.service.JooqMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -18,15 +21,13 @@ import static org.nmcpye.datarun.jooq.public_.tables.PartySetMember.PARTY_SET_ME
  * @author Hamza Assada 29/12/2025
  */
 @Component
+@RequiredArgsConstructor
 public class StaticPartySetStrategy implements PartySetStrategy {
 
     private final DSLContext dsl;
     private final PartySecurityFilter securityFilter; // Injected
-
-    public StaticPartySetStrategy(DSLContext dsl, PartySecurityFilter securityFilter) {
-        this.dsl = dsl;
-        this.securityFilter = securityFilter;
-    }
+    private final ObjectMapper objectMapper;
+    private final JooqMapper jooqMapper;
 
     @Override
     public PartySetKind getKind() {
@@ -59,11 +60,14 @@ public class StaticPartySetStrategy implements PartySetStrategy {
                 PARTY.NAME,
                 PARTY.CODE,
                 PARTY.PROPERTIES_MAP,
-                PARTY.SOURCE_TYPE // Assuming you added this to distinguish Internal vs External
+                PARTY.SOURCE_TYPE
             )
             .from(PARTY)
             .join(PARTY_SET_MEMBER).on(PARTY.ID.eq(PARTY_SET_MEMBER.PARTY_ID))
             .where(whereCondition);
+
+        // --- APPLY modified since FILTER ---
+        query = applySinceFilter(query, request.getSince());
 
         // --- APPLY SECURITY FILTER ---
         var securedQuery = securityFilter.apply(query, request.getUserId(), isMaterialized);
@@ -73,17 +77,6 @@ public class StaticPartySetStrategy implements PartySetStrategy {
             .orderBy(PARTY.NAME.asc())
             .limit(request.getLimit())
             .offset(request.getOffset())
-            .fetch(record -> new ResolvedParty(
-                record.get(PARTY.ID),
-                record.get(PARTY.UID),
-                record.get(PARTY.TYPE),
-                record.get(PARTY.NAME), // Mapping 'name' to 'label'
-                record.get(PARTY.CODE),
-                // Safely handle JSONB -> Map conversion if needed, or pass null
-                // jOOQ usually maps JSONB to a JSON object or String, depending on config.
-                // Assuming implicit conversion or a utility method here:
-                null,
-                record.get(PARTY.SOURCE_TYPE)
-            ));
+            .fetch(jooqMapper::mapPartyRecord);
     }
 }

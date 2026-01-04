@@ -32,9 +32,9 @@ import java.util.UUID;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Party extends NamedObject {
-    public enum SourceType {INTERNAL, EXTERNAL}
+    public enum PartyType {INTERNAL, EXTERNAL}
 
-    public enum PartyType {ORG_UNIT, TEAM, USER, STATIC, EXTERNAL}
+    public enum SourceType {ORG_UNIT, TEAM, USER, STATIC, EXTERNAL}
 
     @Id
     @Column(name = "id", nullable = false, updatable = false)
@@ -50,12 +50,15 @@ public class Party extends NamedObject {
     @Column(name = "name", nullable = false)
     private String name;
 
-    /// ORG_UNIT, TEAM, USER, STATIC, EXTERNAL Types
-    @Column(name = "type", nullable = false, length = 32)
-    private String type;
-
     /// INTERNAL, EXTERNAL
+    @Column(name = "type", nullable = false, length = 32)
+    @Enumerated(EnumType.STRING)
+    private PartyType type;
+
+
+    /// ORG_UNIT, TEAM, USER, STATIC, EXTERNAL Types
     @Column(name = "source_type", nullable = false, length = 32)
+    @Enumerated(EnumType.STRING)
     private SourceType sourceType;
 
     @Column(name = "source_id", length = 64, nullable = false)

@@ -12,5 +12,7 @@ import java.util.UUID;
 public interface PartyRepository extends BaseJpaRepository<Party, UUID> {
     List<Party> findAll();
 
-    Optional<Party> findBySourceId(String uuid);
+    Optional<Party> findBySourceId(String sourceId);
+
+    Optional<Party> findByUid(String uid);
 }

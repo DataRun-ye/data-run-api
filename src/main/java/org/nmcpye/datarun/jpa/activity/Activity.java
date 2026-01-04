@@ -72,6 +72,12 @@ public class Activity extends TranslatableIdentifiable {
     @JsonProperty
     protected Map<String, Object> properties;
 
+    @Column(name = "valid_from")
+    protected Instant validFrom;
+
+    @Column(name = "valid_to")
+    protected Instant validTo;
+
     // prettier-ignore
     @Override
     public String toString() {

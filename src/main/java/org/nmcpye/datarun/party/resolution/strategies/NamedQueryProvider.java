@@ -21,7 +21,7 @@ public class NamedQueryProvider {
         this.dsl = dsl;
         this.queries = Map.of(
             // Query 1: Find children of a specific Parent Org Unit
-            // Spec: { "query": "FIND_ORG_CHILDREN", "params": { "parentId": "context_region_id" } }
+            // Spec: { "sqlKey": "FIND_ORG_CHILDREN", "params": { "parentId": "context_region_id" } }
             "FIND_ORG_CHILDREN", (ctx, params) -> {
                 UUID parentId = getUuid(params, "parentId");
                 if (parentId == null) return null; // Or throw, or return empty condition
@@ -39,6 +39,17 @@ public class NamedQueryProvider {
                 return ctx.select(PARTY.asterisk())
                     .from(PARTY)
                     .where(DSL.falseCondition()); // stub
+            },
+            // Query 2: Example of finding parties of a certain type with a name like a parameter.
+            // Spec Params: { "partyType": "TEAM", "nameQuery": "search-term" }
+            "FIND_PARTIES_BY_TYPE_AND_NAME", (ctx, params) -> {
+                String partyType = getString(params, "partyType");
+                String nameQuery = getString(params, "nameQuery");
+                if (partyType == null || nameQuery == null) return null;
+
+                return dsl.selectFrom(PARTY)
+                    .where(PARTY.TYPE.eq(partyType))
+                    .and(PARTY.NAME.likeIgnoreCase("%" + nameQuery + "%"));
             }
         );
     }
@@ -50,10 +61,16 @@ public class NamedQueryProvider {
         return queries.get(queryName).apply(dsl, resolvedParams);
     }
 
+    // Helper methods to safely extract and cast parameters
     private UUID getUuid(Map<String, Object> params, String key) {
         Object val = params.get(key);
-        if (val instanceof String s) return UUID.fromString(s);
+        if (val instanceof String s && !s.isBlank()) return UUID.fromString(s);
         if (val instanceof UUID u) return u;
         return null;
+    }
+
+    private String getString(Map<String, Object> params, String key) {
+        Object val = params.get(key);
+        return (val != null) ? val.toString() : null;
     }
 }

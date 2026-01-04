@@ -11,7 +11,6 @@ public class PagingConfigurator {
     public static <T> PagedResponse<T> initPageResponse(Page<T> page, String next, String resourceName) {
         PagedResponse<T> response = new PagedResponse<>(page, resourceName, next);
         response.setNextPage(next);
-//        response.setEntityName(name);
         return response;
     }
 

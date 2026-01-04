@@ -13,4 +13,8 @@ public interface PartySetRepository extends BaseJpaRepository<PartySet, UUID> {
     List<PartySet> findAll();
 
     Optional<PartySet> findByUid(String uid);
+
+    boolean existsByUid(String uid);
+
+    void deleteByUid(String uid);
 }

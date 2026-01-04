@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import org.nmcpye.datarun.jpa.datasubmission.events.SubmissionChangeType;
+import org.nmcpye.datarun.jpa.datasubmission.events.EventChangeType;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -45,7 +45,7 @@ public class DataSubmissionHistory {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "change_type", length = 32)
-    private SubmissionChangeType changeType; // CREATE/UPDATE/DELETE/RESTORE
+    private EventChangeType changeType; // CREATE/UPDATE/DELETE/RESTORE
 
     @Column(name = "form_data", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)

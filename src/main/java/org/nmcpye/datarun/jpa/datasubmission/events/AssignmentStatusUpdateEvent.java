@@ -9,11 +9,11 @@ import java.util.Objects;
  */
 public class AssignmentStatusUpdateEvent implements Serializable {
     private final String submissionId;   // DataSubmission.id (ULID)
-    private final SubmissionChangeType changeType;
+    private final EventChangeType changeType;
     private final Integer submissionVersion;
     private final Instant occurredAt;
 
-    public AssignmentStatusUpdateEvent(String submissionId, SubmissionChangeType changeType, Integer submissionVersion) {
+    public AssignmentStatusUpdateEvent(String submissionId, EventChangeType changeType, Integer submissionVersion) {
         this.submissionId = submissionId;
         this.changeType = changeType;
         this.submissionVersion = submissionVersion;
@@ -21,7 +21,7 @@ public class AssignmentStatusUpdateEvent implements Serializable {
     }
 
     public String getSubmissionId() { return submissionId; }
-    public SubmissionChangeType getChangeType() { return changeType; }
+    public EventChangeType getChangeType() { return changeType; }
     public Integer getSubmissionVersion() { return submissionVersion; }
     public Instant getOccurredAt() { return occurredAt; }
 

@@ -28,7 +28,7 @@ public class PartySecurityFilter {
             return query;
         }
 
-        // Secure set: strict INNER JOIN to user_allowed_party
+        // Secure set: Check for existence in user_allowed_party.
         // This automatically filters out any party not present in the permission table for this user.
         return query
             .andExists(

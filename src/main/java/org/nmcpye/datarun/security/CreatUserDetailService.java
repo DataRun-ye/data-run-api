@@ -29,12 +29,14 @@ public class CreatUserDetailService {
 
         final var userTeamInfo = currentUserInfoService
             .getUserTeamInfo(user.getLogin());
+        final var userGroups = currentUserInfoService.getUserGroupIds(user.getLogin());
 
         final var userFormAccess = currentUserInfoService
             .getUserFormAccess
                 (user.getLogin(), userTeamInfo.getTeamUIDs());
 
         return CurrentUserDetailsImpl.builder()
+            .id(user.getId())
             .uid(user.getUid())
             .username(user.getLogin())
             .password(user.getPassword())
@@ -59,15 +61,18 @@ public class CreatUserDetailService {
                 .anyMatch((s) ->
                     s.equals(AuthoritiesConstants.ADMIN)))
 
+            .userTeamsIds(userTeamInfo.getTeamIds())
             .userTeamsUIDs(userTeamInfo.getTeamUIDs())
+
+            .managedTeamsIds(userTeamInfo.getManagedTeamIds())
             .managedTeamsUIDs(userTeamInfo.getManagedTeamUIDs())
 
             .activityUIDs(currentUserInfoService
                 .getUserActivityInfo(user.getLogin()).getActivityUIDs())
 
 
-            .userGroupsUIDs(currentUserInfoService
-                .getUserGroupIds(user.getLogin()).getUserGroupUIDs())
+            .userGroupsIds(userGroups.getUserGroupIds())
+            .userGroupsUIDs(userGroups.getUserGroupUIDs())
 
             .userFormsUIDs(userFormAccess.stream()
                 .map(UserFormAccess::getForm)

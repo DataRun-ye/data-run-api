@@ -3,6 +3,7 @@ package org.nmcpye.datarun.party.dto;
 import lombok.Builder;
 import lombok.Value;
 
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -11,19 +12,25 @@ import java.util.Map;
 @Value
 @Builder
 public class PartyResolutionRequest {
-    // Context
+    /// Context
     String assignmentId;
-    String userId;
-    String role;        // e.g., "sender", "receiver"
-    String vocabularyId;  // Optional, can be null
 
-    // Runtime filters
-    String searchQuery; // "q"
+    String userId;
+    /// e.g., "sender", "receiver"
+    String role;
+    /// Optional, can be null
+    String vocabularyId;
+
+    /// Runtime filters "q"
+    String searchQuery;
+
+    Instant since;
+
     int limit;
     int offset;
 
-    // Dynamic values from the form (for Dependent Selects)
-    // e.g., "region_id" -> "uuid..."
+    /// Dynamic values from the form (for Dependent Selects)
+    /// e.g., "region_id" -> "uuid..."
     @Builder.Default
     Map<String, Object> contextValues = Map.of();
 }

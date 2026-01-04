@@ -15,7 +15,9 @@ public class CurrentUserTeamInfo {
 
     String userUID;
 
+    Set<String> teamIds;
     Set<String> teamUIDs;
 
+    Set<String> managedTeamIds;
     Set<String> managedTeamUIDs;
 }

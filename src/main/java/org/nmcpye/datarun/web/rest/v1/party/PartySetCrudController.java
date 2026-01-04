@@ -30,7 +30,8 @@ public class PartySetCrudController {
 
 
     @GetMapping("/{id}")
-    public ResponseEntity<PartySet> get(@PathVariable String uid) {
-        return repo.findByUid(uid).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<PartySet> get(@PathVariable String id) {
+        return repo.findByUid(id).map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
     }
 }

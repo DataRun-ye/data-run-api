@@ -1,10 +1,17 @@
-package org.nmcpye.datarun.party.entities;
+package org.nmcpye.datarun.jpa.assignment;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.nmcpye.datarun.common.SoftDeleteObject;
+import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
+import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.party.dto.CombineMode;
+import org.nmcpye.datarun.party.entities.PartySet;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -23,9 +30,8 @@ import java.util.UUID;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class AssignmentPartyBinding {
     @Id
     @Column(name = "id", nullable = false, updatable = false)
@@ -38,19 +44,26 @@ public class AssignmentPartyBinding {
     @Column(name = "name", length = 50)
     private String name;
 
-    @Column(name = "assignment_id", length = 26, nullable = false)
-    private String assignmentId;
-
+    @ManyToOne(optional = false)
+    @NotNull
+    @JsonIgnoreProperties(value = {"defaultPartySet", "properties", "activity", "team", "forms",
+        "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate",
+        "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonSerialize(contentAs = SoftDeleteObject.class)
+    private Assignment assignment;
 
     /// Precedence Logic: The AssignmentPartyBinding entity correctly allows vocabularyId to be nullable,
     /// enabling the "Global Role" vs "Specific Form Role" logic.
     /// Adaptability: We are using vocabularyId in the DB, but we use DataTemplate in our Services/Mappers
     /// to keep it consistent with our existing code.
-    @Column(name = "vocabulary_id")
-    private String vocabularyId; // dataTemplate id (nullable)
+    @ManyToOne
+    @JoinColumn(name = "vocabulary_id", nullable = false)
+    @JsonSerialize(contentAs = SoftDeleteObject.class)
+    private DataTemplate vocabulary;
 
-    @Column(name = "party_set_id", nullable = false)
-    private UUID partySetId;
+    @ManyToOne(optional = false)
+    @NotNull
+    private PartySet partySet;
 
     @Column(name = "principal_type", length = 64)
     private String principalType;
@@ -76,4 +89,14 @@ public class AssignmentPartyBinding {
     @LastModifiedDate
     @Column(name = "last_modified_date")
     protected Instant lastModifiedDate;
+
+    public AssignmentPartyBinding() {
+        setAutoFields();
+    }
+
+    public void setAutoFields() {
+        if (getUid() == null || getUid().isEmpty()) {
+            setUid(CodeGenerator.generateUid());
+        }
+    }
 }

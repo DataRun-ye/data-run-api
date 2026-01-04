@@ -13,5 +13,6 @@ import java.util.Set;
 public class CurrentUserGroupInfo {
     String userId;
     String userUID;
+    Set<String> userGroupIds;
     Set<String> userGroupUIDs;
 }

@@ -1,9 +1,12 @@
-package org.nmcpye.datarun.party.dto;
+package org.nmcpye.datarun.jpa.assignment.dto;
 
 import lombok.Builder;
 import lombok.Data;
+import org.nmcpye.datarun.party.dto.AssignmentStatus;
+import org.nmcpye.datarun.party.dto.CombineMode;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /// The "Manifest" DTO: Everything the client needs to initialize a context.
@@ -15,7 +18,7 @@ public class AssignmentManifestDto {
     private String assignmentUid;
     private String label;
     private AssignmentStatus status; // IN_PROGRESS, DONE, EXPIRED, CANCELLED
-    private List<String> templateUids;
+    private Set<String> templateUids;
     private List<BindingDto> bindings;
 
     @Data

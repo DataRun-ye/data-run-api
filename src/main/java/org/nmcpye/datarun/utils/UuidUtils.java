@@ -23,6 +23,16 @@ public final class UuidUtils {
         throw new IllegalArgumentException("Unsupported id type: " + o.getClass());
     }
 
+    public static boolean isUuid(String s) {
+        if (s == null) return false;
+        try {
+            UUID.fromString(s);
+            return true;
+        } catch (Exception ex) {
+           return false;
+        }
+    }
+
     public static List<UUID> toUuidList(Collection<?> inputs) {
         if (inputs == null) return Collections.emptyList();
         return inputs.stream()

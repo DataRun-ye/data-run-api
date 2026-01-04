@@ -9,7 +9,7 @@ import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.common.DefaultJpaSoftDeleteService;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.events.SubmissionChangeType;
+import org.nmcpye.datarun.jpa.datasubmission.events.EventChangeType;
 import org.nmcpye.datarun.jpa.datasubmission.events.SubmissionSavedEvent;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
@@ -72,7 +72,7 @@ public class DefaultDataSubmissionService
 
     private void afterUpdate(DataSubmission result) {
         eventPublisher.publishEvent(new SubmissionSavedEvent(result.getId(),
-            SubmissionChangeType.UPDATE, result.getLockVersion()));
+            EventChangeType.UPDATE, result.getLockVersion()));
     }
 
     /**
@@ -153,7 +153,7 @@ public class DefaultDataSubmissionService
             outboxRepo.insertByEventType(outboxEvents, "SAVE");
 
             persistedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
-                SubmissionChangeType.CREATE, s.getLockVersion())));
+                EventChangeType.CREATE, s.getLockVersion())));
             summary.getCreated().addAll(persistedResults.stream().map(DataSubmission::getUid).toList());
         }
         if (!entitiesToUpdate.isEmpty()) {
@@ -164,7 +164,7 @@ public class DefaultDataSubmissionService
             outboxRepo.insertByEventType(outboxEvents, "UPDATE");
 
             updatedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
-                SubmissionChangeType.UPDATE, s.getLockVersion()))); // Apply post-update hook for each
+                EventChangeType.UPDATE, s.getLockVersion()))); // Apply post-update hook for each
             summary.getUpdated().addAll(updatedResults.stream().map(DataSubmission::getUid).toList());
         }
 

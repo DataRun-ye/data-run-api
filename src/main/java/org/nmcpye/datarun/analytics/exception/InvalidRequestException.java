@@ -1,19 +1,17 @@
 package org.nmcpye.datarun.analytics.exception;
 
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * @author Hamza Assada
  * @since 29/08/2025
  */
+@ResponseStatus(HttpStatus.CONFLICT)
 public class InvalidRequestException extends IllegalQueryException {
 
     public InvalidRequestException(String message) {
         super(message);
-    }
-
-    public InvalidRequestException(ErrorCode errorCode, Object... args) {
-        super(errorCode, args);
     }
 }

@@ -81,6 +81,7 @@
     <include file="/config/liquibase/changelog/party/20251225-001-assignment-and-binding.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/party/20251229-002-assignment-default-party-add.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/party/20251229-user-allowed-party-table-add.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/activity/20251129-add-activity-valid-from-valid-to.xml" relativeToChangelogFile="false"/>
 
 <!--    <include file="/config/liquibase/changelog/workspace/2025-12-21-add-workspace.xml" relativeToChangelogFile="false"/>-->
 

@@ -3,12 +3,14 @@ package org.nmcpye.datarun.party.resolution.strategies;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jooq.Record;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jooq.SelectConditionStep;
 import org.nmcpye.datarun.party.dto.PartyResolutionRequest;
 import org.nmcpye.datarun.party.dto.ResolvedParty;
 import org.nmcpye.datarun.party.entities.PartySetKind;
 import org.nmcpye.datarun.party.resolution.engine.PartySecurityFilter;
+import org.nmcpye.datarun.party.service.JooqMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -16,17 +18,14 @@ import java.util.*;
 import static org.nmcpye.datarun.jooq.public_.Tables.PARTY;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class QueryPartySetStrategy implements PartySetStrategy {
 
     private final NamedQueryProvider queryProvider;
     private final PartySecurityFilter securityFilter; // Injected
+    private final JooqMapper jooqMapper;
     private final ObjectMapper objectMapper;
-
-    public QueryPartySetStrategy(NamedQueryProvider queryProvider, PartySecurityFilter securityFilter, ObjectMapper objectMapper) {
-        this.queryProvider = queryProvider;
-        this.securityFilter = securityFilter;
-        this.objectMapper = objectMapper;
-    }
 
     @Override
     public PartySetKind getKind() {
@@ -74,6 +73,9 @@ public class QueryPartySetStrategy implements PartySetStrategy {
                 );
             }
 
+            // Apply Security Filter
+            baseQuery = applySinceFilter(baseQuery, request.getSince());
+
             // --- APPLY SECURITY FILTER HERE ---
             // Note: The baseQuery MUST select from PARTY (or alias it correctly) for the filter to work.
             // The NamedQueryProvider should ensure queries are rooted in PARTY.
@@ -85,23 +87,10 @@ public class QueryPartySetStrategy implements PartySetStrategy {
                 .orderBy(PARTY.NAME.asc())
                 .limit(request.getLimit())
                 .offset(request.getOffset())
-                .fetch(this::mapRecord);
+                .fetch(jooqMapper::mapPartyRecord);
 
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Invalid JSON spec for PartySet " + partySetId, e);
         }
-    }
-
-    private ResolvedParty mapRecord(Record r) {
-        // Safe mapping from the PARTY table columns in the result
-        return new ResolvedParty(
-            r.get(PARTY.ID),
-            r.get(PARTY.UID),
-            r.get(PARTY.TYPE),
-            r.get(PARTY.NAME),
-            r.get(PARTY.CODE),
-            null, // json properties
-            r.get(PARTY.SOURCE_TYPE)
-        );
     }
 }

@@ -24,5 +24,6 @@ public class DataOption implements Serializable {
     @Size(max = 11)
     private String optionSetUid;
 
+    @Builder.Default
     private Map<String, Object> properties = new HashMap<>();
 }

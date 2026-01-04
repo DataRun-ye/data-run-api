@@ -1,48 +1,63 @@
-package org.nmcpye.datarun.web.rest.v1.party;
-
-import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.party.service.ManifestService;
-import org.nmcpye.datarun.party.dto.AssignmentManifestDto;
-import org.nmcpye.datarun.party.resolution.PartyResolutionService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-
-@RestController
-@RequestMapping("/api/v1/context")
-@RequiredArgsConstructor
-public class ContextController {
-
-    private final ManifestService manifestService;
-    private final PartyResolutionService resolutionService;
-
-    /**
-     * The Bootstrap Endpoint: Called when the app launches or syncs.
-     */
-    @GetMapping("/manifest")
-    public ResponseEntity<List<AssignmentManifestDto>> getManifest(
-        @RequestHeader("X-User-Uid") String userUid, // Or get from SecurityContext
-        @RequestParam(required = false) List<String> teamUids
-    ) {
-        // Validation logic for userUid would go here
-        return ResponseEntity.ok(manifestService.buildManifest(userUid, teamUids));
-    }
-
-//    /**
-//     * The Interactive Endpoint: Called when user taps a dropdown.
-//     */
-//    @GetMapping("/parties")
-//    public ResponseEntity<List<ResolvedParty>> resolveParties(
-//        @RequestParam String assignmentUid,
-//        @RequestParam String role,
-//        @RequestParam(required = false) String vocabularyUid,
-//        @RequestParam(required = false) String q // Search query
-//    ) {
-//        // 1. Resolve UIDs to internal IDs (omitted for brevity, usually done in Service)
-//        // String assignId = idService.resolve(assignmentUid); ...
+//package org.nmcpye.datarun.web.rest.v1.party;
 //
-//        List<ResolvedParty> matches = resolutionService.resolveParties(assignmentUid, vocabularyUid, role, q);
-//        return ResponseEntity.ok(matches);
+//import lombok.RequiredArgsConstructor;
+//import org.nmcpye.datarun.jpa.assignment.dto.AssignmentManifestDto;
+//import org.nmcpye.datarun.party.dto.PagedRequest;
+//import org.nmcpye.datarun.party.resolution.PartyResolutionService;
+//import org.nmcpye.datarun.party.service.ManifestService;
+//import org.nmcpye.datarun.security.CurrentUserDetails;
+//import org.nmcpye.datarun.web.rest.common.PagedResponse;
+//import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
+//import org.springframework.data.domain.Page;
+//import org.springframework.http.ResponseEntity;
+//import org.springframework.security.core.annotation.AuthenticationPrincipal;
+//import org.springframework.web.bind.annotation.GetMapping;
+//import org.springframework.web.bind.annotation.RequestMapping;
+//import org.springframework.web.bind.annotation.RestController;
+//
+//@RestController
+//@RequestMapping("/api/v1/context")
+//@RequiredArgsConstructor
+//public class ContextController {
+//
+//    private final ManifestService manifestService;
+//    private final PartyResolutionService resolutionService;
+//
+//    /**
+//     * The Bootstrap Endpoint: Called when the app launches or syncs.
+//     */
+//    @GetMapping("/manifest")
+//    public ResponseEntity<PagedResponse<AssignmentManifestDto>> getManifest(
+//        PagedRequest pagedRequest,
+//        @AuthenticationPrincipal CurrentUserDetails user) {
+//        // Validation logic for userUid would go here
+//        try {
+//            Page<AssignmentManifestDto> processedPage = manifestService.buildManifest(user.getId(), user.getUserTeamsIds(),
+//                user.getUserGroupsIds(), pagedRequest);
+//
+//            String next = PagingConfigurator.createNextPageLink(processedPage);
+//
+//            PagedResponse<AssignmentManifestDto> response =
+//                PagingConfigurator.initPageResponse(processedPage, next, "context");
+//            return ResponseEntity.ok(response);
+//
+//        } catch (Exception e) {
+//            return ResponseEntity.badRequest().build();
+//        }
 //    }
-}
+//
+////
+////    /**
+////     * @AuthenticationPrincipal CurrentUserDetails user
+////     * The Bootstrap Endpoint: Called when the app launches or syncs.
+////     */
+////    @GetMapping("/manifest")
+////    public ResponseEntity<List<AssignmentManifestDto>> getManifest(
+////        @RequestHeader("X-User-Uid") String userUid, // Or get from SecurityContext
+////        @RequestParam(required = false) List<String> teamUids
+////    ) {
+////        // Validation logic for userUid would go here
+////        return ResponseEntity.ok(manifestService.buildManifest(userUid, teamUids));
+////    }
+//
+//}

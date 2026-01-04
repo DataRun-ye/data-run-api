@@ -49,17 +49,25 @@ public class CurrentUserInfoService {
             .filter(team -> !team.getActivity().getDisabled())
             .toList();
 
-        final var teamIds = teams
+        final var teamUids = teams
             .stream().map(Team::getUid)
+            .collect(Collectors.toSet());
+        final var teamIds = teams
+            .stream().map(Team::getId)
             .collect(Collectors.toSet());
 
         final var managedTeamUids = managedTeams
             .stream().map(Team::getUid)
             .collect(Collectors.toSet());
+        final var managedTeamIds = managedTeams
+            .stream().map(Team::getId)
+            .collect(Collectors.toSet());
 
         return CurrentUserTeamInfo
             .builder()
-            .teamUIDs(teamIds)
+            .teamIds(teamIds)
+            .teamUIDs(teamUids)
+            .managedTeamIds(managedTeamIds)
             .managedTeamUIDs(managedTeamUids)
             .userId(user.getId())
             .userUID(user.getUid())
@@ -119,12 +127,19 @@ public class CurrentUserInfoService {
         final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
             new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
 
-        final var userGroupIds = new HashSet<>(userGroupRepository.findAllByUserLogin(userLogin, false))
-            .stream().map(UserGroup::getUid)
+        final var ug = new HashSet<>(userGroupRepository.findAllByUserLogin(userLogin, false));
+        final var userGroupUids = ug
+            .stream()
+            .map(UserGroup::getUid)
+            .collect(Collectors.toSet());
+        final var userGroupIds = ug
+            .stream()
+            .map(UserGroup::getId)
             .collect(Collectors.toSet());
         return CurrentUserGroupInfo
             .builder()
-            .userGroupUIDs(userGroupIds)
+            .userGroupIds(userGroupIds)
+            .userGroupUIDs(userGroupUids)
             .userId(user.getId())
             .userUID(user.getUid())
             .build();
