@@ -36,7 +36,7 @@ public class ValidateValueTypeHandler
             );
         }
 
-        // ensure the element ends up with the source type
-        return element.type(actual);
+        // ensure the element ends up with the compatible type
+        return element.type(declared);
     }
 }
