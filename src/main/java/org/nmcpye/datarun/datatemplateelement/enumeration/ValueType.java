@@ -81,7 +81,7 @@ public enum ValueType {
     }
 
     public static List<ValueType> textualTypes() {
-        return List.of(FullName, Text, LongText, Letter);
+        return List.of(Text, LongText, Letter);
     }
 
     public boolean isNumeric() {
