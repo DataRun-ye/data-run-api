@@ -5,8 +5,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
 import org.nmcpye.datarun.jpa.assignment.AssignmentMember;
-import org.nmcpye.datarun.party.dto.PartyResolutionRequest;
-import org.nmcpye.datarun.party.dto.ResolvedParty;
 import org.nmcpye.datarun.party.entities.PartySetKind;
 import org.nmcpye.datarun.party.resolution.engine.PartyResolutionEngine;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -15,11 +13,10 @@ import org.springframework.stereotype.Service;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.nmcpye.datarun.jooq.public_.Tables.*;
 
-// TODO needs enhancement and polishing
+// TODO needs polishing to flow as the flow of access is designed
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -105,11 +102,17 @@ public class UserPermissionMaterializationService {
 
         PartySetKind kind = PartySetKind.valueOf(partySet.get(PARTY_SET.KIND));
         String spec = partySet.get(PARTY_SET.SPEC).data();
-        return partyResolutionEngine
-            .executeStrategy(kind, partySetId, spec, false,
-                PartyResolutionRequest.builder().build()).stream()
-            .map(ResolvedParty::getId)
-            .collect(Collectors.toSet());
+        return Collections.emptySet();
+
+        // commented out, shouldn't it utilize the already built other service for resolving so
+        // we keep single source of truth for how things are resolved like:
+        // ```java
+        // partyResolutionEngine
+        //            .executeStrategy(kind, partySetId, spec, false,
+        //                PartyResolutionRequest.builder().build()).stream()
+        //            .map(ResolvedParty::getId)
+        //            .collect(Collectors.toSet());
+        //```
         // For a full system-level rebuild, we only handle deterministic kinds.
         // Dynamic kinds like QUERY might depend on runtime context not available here.
 //        partyResolutionEngine.executeStrategy(kind, partySetId, );
