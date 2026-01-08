@@ -821,7 +821,7 @@ constraints are enforced at the database level.
 **What to build first:**
 
 * **The Registry:** `party` table.
-* **The Context:** `assignment`, `assignment_member`, and `assignment_vocabulary`.
+* **The Context:** `assignment`, `assignment_member`, and `assignment_data_template`.
 * **The Policy:** `party_set` and `assignment_party_binding`.
 
 > **Tip:** Use PostgreSQL's `jsonb` type for the `party_set.spec` and `party.meta` columns to allow for the flexible "
