@@ -1,0 +1,207 @@
+{
+  "name": "transfer_800",
+  "deleted": false,
+  "label": {
+    "en": "Transfer",
+    "ar": "نقل مخزون"
+  },
+  "fields": [
+    {
+      "parent": "invoice",
+      "name": "DateOnly",
+      "path": "invoice.wszolIHTuzW",
+      "code": "DateOnly",
+      "order": 2,
+      "label": {
+        "ar": "تاريخ الحركة",
+        "en": "DateOnly"
+      },
+      "rules": [],
+      "id": "wszolIHTuzW",
+      "type": "Date",
+      "mandatory": true,
+      "showInSummary": true,
+      "valueTypeRendering": "DEFAULT",
+      "aggregationType": "DEFAULT",
+      "isMeasure": true,
+      "isDimension": false,
+      "readOnly": false
+    },
+    {
+      "parent": "invoice",
+      "name": "wh_vouchernumber",
+      "path": "invoice.gwrvlWbVVY6",
+      "code": "wh_vouchernumber",
+      "order": 4,
+      "label": {
+        "ar": "رقم المستند",
+        "en": "wh_vouchernumber"
+      },
+      "rules": [],
+      "id": "gwrvlWbVVY6",
+      "type": "IntegerZeroOrPositive",
+      "mandatory": true,
+      "showInSummary": true,
+      "valueTypeRendering": "DEFAULT",
+      "aggregationType": "DEFAULT",
+      "isMeasure": false,
+      "isDimension": false,
+      "readOnly": false
+    },
+    {
+      "parent": "invoice",
+      "name": "wh_voucherdate",
+      "path": "invoice.tOvhwK0E2iT",
+      "code": "wh_voucherdate",
+      "order": 5,
+      "label": {
+        "ar": "تاريخ المستند",
+        "en": "wh_voucherdate"
+      },
+      "rules": [],
+      "id": "tOvhwK0E2iT",
+      "type": "Date",
+      "mandatory": true,
+      "showInSummary": true,
+      "valueTypeRendering": "DEFAULT",
+      "aggregationType": "DEFAULT",
+      "isMeasure": false,
+      "isDimension": false,
+      "readOnly": false
+    },
+    {
+      "parent": "invoice",
+      "name": "to_party",
+      "code": "to_party",
+      "order": 4,
+      "label": {
+        "ar": "الفريق",
+        "en": "team"
+      },
+      "rules": [],
+      "id": "oYxzWmMcIpr",
+      "type": "Team",
+      "mandatory": true,
+      "showInSummary": true,
+      "valueTypeRendering": "DEFAULT",
+      "aggregationType": "DEFAULT",
+      "isMeasure": false,
+      "isDimension": false,
+      "readOnly": false
+    },
+    {
+      "parent": "invoiceDetails",
+      "name": "wh_category",
+      "path": "invoice.invoiceDetails.NIqWvSAvJkJ",
+      "code": "wh_category",
+      "order": 15,
+      "label": {
+        "ar": "الصنف",
+        "en": "wh_category"
+      },
+      "rules": [],
+      "id": "NIqWvSAvJkJ",
+      "type": "SelectOne",
+      "mandatory": true,
+      "showInSummary": true,
+      "optionSet": "sxR7nVNE3MI",
+      "valueTypeRendering": "DEFAULT",
+      "aggregationType": "DEFAULT",
+      "isMeasure": false,
+      "isDimension": false,
+      "readOnly": false
+    },
+    {
+      "parent": "invoiceDetails",
+      "name": "wh_uom",
+      "path": "invoice.invoiceDetails.ygOlI2H1flu",
+      "code": "wh_uom",
+      "order": 16,
+      "label": {
+        "ar": "وحدة القياس",
+        "en": "wh_uom"
+      },
+      "rules": [],
+      "id": "ygOlI2H1flu",
+      "type": "SelectOne",
+      "mandatory": true,
+      "showInSummary": true,
+      "optionSet": "TY02oLDiJVj",
+      "valueTypeRendering": "DEFAULT",
+      "aggregationType": "DEFAULT",
+      "isMeasure": false,
+      "isDimension": false,
+      "readOnly": false
+    },
+    {
+      "parent": "invoiceDetails",
+      "name": "wh_quantity",
+      "path": "invoice.invoiceDetails.r8XxktPN8Lx",
+      "code": "wh_quantity",
+      "order": 18,
+      "label": {
+        "ar": "الكمية",
+        "en": "wh_quantity"
+      },
+      "rules": [],
+      "id": "r8XxktPN8Lx",
+      "type": "IntegerZeroOrPositive",
+      "mandatory": true,
+      "showInSummary": true,
+      "valueTypeRendering": "DEFAULT",
+      "aggregationType": "DEFAULT",
+      "isMeasure": false,
+      "isDimension": false,
+      "readOnly": false
+    },
+    {
+      "parent": "invoiceDetails",
+      "name": "wh_description",
+      "path": "invoice.invoiceDetails.xBFxlbMWvBD",
+      "code": "wh_description",
+      "order": 22,
+      "label": {
+        "ar": "البيان",
+        "en": "wh_description"
+      },
+      "rules": [],
+      "id": "xBFxlbMWvBD",
+      "type": "Text",
+      "mandatory": false,
+      "showInSummary": false,
+      "valueTypeRendering": "DEFAULT",
+      "aggregationType": "DEFAULT",
+      "isMeasure": false,
+      "isDimension": false,
+      "readOnly": false
+    }
+  ],
+  "sections": [
+    {
+      "name": "invoice",
+      "path": "invoice",
+      "order": 1,
+      "label": {
+        "ar": "بيانات الحركة",
+        "en": "invoice"
+      },
+      "rules": [],
+      "repeatable": false,
+      "id": "invoice"
+    },
+    {
+      "parent": "invoice",
+      "name": "invoiceDetails",
+      "path": "invoice.invoiceDetails",
+      "order": 9,
+      "label": {
+        "ar": "التفاصيل",
+        "en": "invoiceDetails"
+      },
+      "rules": [],
+      "repeatable": true,
+      "id": "invoiceDetails"
+    }
+  ],
+  "code": "transfer_800"
+}
