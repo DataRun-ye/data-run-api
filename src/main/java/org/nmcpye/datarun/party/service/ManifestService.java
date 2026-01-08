@@ -2,8 +2,10 @@ package org.nmcpye.datarun.party.service;
 
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.jpa.assignment.AssignmentMember;
 import org.nmcpye.datarun.jpa.assignment.AssignmentPartyBinding;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentManifestDto;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentDataTemplateJooqRepository;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentMemberRepository;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentPartyBindingRepository;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
@@ -31,6 +33,7 @@ public class ManifestService {
      */
     private final DataTemplateRepository templateRepository;
     private final AssignmentPartyBindingRepository bindingRepo;
+    private final AssignmentDataTemplateJooqRepository assignmentDataTemplateRepo;
 
     // In a real app, you'd inject a "UserContext" to get the current user's ID
     // You would inject a service to get user's teams/groups, or resolve them here.
@@ -66,6 +69,7 @@ public class ManifestService {
             .map(DataTemplate::getId)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
+
         Map<String, DataTemplate> templatesById = templateRepository.findAllById(vocabularyIds).stream()
             .collect(Collectors.toMap(DataTemplate::getId, Function.identity()));
 
@@ -75,8 +79,28 @@ public class ManifestService {
 
         // 4. Build the final DTOs in memory
         final var bindingsManifest = assignments.stream().map(assign -> {
-            Set<String> vocabUids = Optional.ofNullable(assign.getForms()).orElse(Collections.emptySet());
-            List<AssignmentPartyBinding> assignBindings = bindingsByAssignmentId.getOrDefault(assign.getId(), Collections.emptyList());
+            // base forms declared on the assignment
+            Set<String> assignmentFormUids = Optional.ofNullable(assign.getForms()).orElse(Collections.emptySet());
+
+            // compute user roles for this assignment from assignment_member rows
+            List<AssignmentMember> amRows = memberRepo.findByAssignmentId(assign.getId());
+            Set<String> userRoles = amRows.stream()
+                .filter(am -> principalIds.contains(am.getMemberId()) || userId.equals(am.getMemberId()))
+                .map(AssignmentMember::getRole)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+
+            // fetch allowed templates (data_template.uids) for this user/principals in this assignment
+            List<String> allowedTemplateUids = assignmentDataTemplateRepo.findAllowedTemplateUids(
+                assign.getId(), userId, principalIds, userRoles);
+
+            // intersect with assignment declared forms to keep scope
+            Set<String> vocabUids = assignmentFormUids.stream()
+                .filter(allowedTemplateUids::contains)
+                .collect(Collectors.toSet());
+
+            List<AssignmentPartyBinding> assignBindings = bindingsByAssignmentId.getOrDefault(assign.getId(),
+                Collections.emptyList());
 
             return AssignmentManifestDto.builder()
                 .assignmentUid(assign.getUid())
@@ -86,7 +110,6 @@ public class ManifestService {
                 .bindings(mapBindings(assignBindings, templatesById))
                 .build();
         }).toList();
-
 
         return new PageImpl<>(bindingsManifest, assignmentIds.getPageable(), bindingsManifest.size());
     }

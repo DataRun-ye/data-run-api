@@ -7,10 +7,7 @@ import org.nmcpye.datarun.party.dto.BindingResult;
 import org.nmcpye.datarun.party.dto.CombineMode;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.nmcpye.datarun.jooq.public_.Tables.TEAM;
@@ -180,25 +177,24 @@ public class BindingResolver {
         Set<String> principals = new java.util.HashSet<>();
         principals.add(userId);
 
-        final var p = dsl.select(TEAM_USER.TEAM_ID)
-            .from(TEAM_USER)
-            .join(TEAM).on(TEAM_USER.TEAM_ID.eq(TEAM.ID))
-            .where(TEAM_USER.USER_ID.eq(userId))
-            .fetchInto(String.class);
+
         // Add Teams
-        principals.addAll(dsl.select(TEAM_USER.TEAM_ID)
+        Set<String> teams = new HashSet<>(dsl.select(TEAM_USER.TEAM_ID)
             .from(TEAM_USER)
             .join(TEAM).on(TEAM_USER.TEAM_ID.eq(TEAM.ID))
             .where(TEAM_USER.USER_ID.eq(userId).and(TEAM.DISABLED.isFalse().or(TEAM.DISABLED.isNull())))
             .fetchInto(String.class));
+        principals.addAll(teams);
 
         // Add User Groups
-        principals.addAll(dsl.select(USER_GROUP_USERS.USER_GROUP_ID)
+        Set<String> groups = new HashSet<>(dsl.select(USER_GROUP_USERS.USER_GROUP_ID)
             .from(USER_GROUP_USERS)
             .join(USER_GROUP).on(USER_GROUP_USERS.USER_GROUP_ID.eq(USER_GROUP.ID))
             .where(USER_GROUP_USERS.USER_ID.eq(userId).and(USER_GROUP.DISABLED.isFalse()
                 .or(USER_GROUP.DISABLED.isNull())))
             .fetchInto(String.class));
+        
+        principals.addAll(groups);
 
         return principals;
     }

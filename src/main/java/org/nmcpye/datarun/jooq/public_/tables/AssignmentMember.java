@@ -100,6 +100,16 @@ public class AssignmentMember extends TableImpl<AssignmentMemberRecord> {
      */
     public final TableField<AssignmentMemberRecord, String> CREATED_BY = createField(DSL.name("created_by"), SQLDataType.VARCHAR(50).nullable(false), this, "");
 
+    /**
+     * The column <code>public.assignment_member.last_modified_date</code>.
+     */
+    public final TableField<AssignmentMemberRecord, LocalDateTime> LAST_MODIFIED_DATE = createField(DSL.name("last_modified_date"), SQLDataType.LOCALDATETIME(6).nullable(false), this, "");
+
+    /**
+     * The column <code>public.assignment_member.last_modified_by</code>.
+     */
+    public final TableField<AssignmentMemberRecord, String> LAST_MODIFIED_BY = createField(DSL.name("last_modified_by"), SQLDataType.VARCHAR(50).nullable(false), this, "");
+
     private AssignmentMember(Name alias, Table<AssignmentMemberRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

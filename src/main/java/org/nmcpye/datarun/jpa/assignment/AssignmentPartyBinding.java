@@ -65,11 +65,13 @@ public class AssignmentPartyBinding {
     @NotNull
     private PartySet partySet;
 
-    @Column(name = "principal_type", length = 64)
-    private String principalType;
-
+    /// optional for restricted access control
     @Column(name = "principal_id", length = 26)
     private String principalId;
+
+    /// USER, USER_GROUP, TEAM
+    @Column(name = "principal_type", length = 64)
+    private String principalType;
 
     @Column(name = "combine_mode", length = 32)
     private CombineMode combineMode;

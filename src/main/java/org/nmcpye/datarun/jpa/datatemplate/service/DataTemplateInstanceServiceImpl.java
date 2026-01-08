@@ -244,7 +244,7 @@ public class DataTemplateInstanceServiceImpl
         TemplateVersionRepository.TEMPLATE_UID_VERSION_NO_JPA_CACHE,
         TemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_JPA_CACHE,
         DataTemplateVersionRepository.TEMPLATE_UID_VERSION_NO_CACHE,
-        DataTemplateVersionRepository.TEMPLATE_UID_VERSION_UID_CACHE
+        DataTemplateVersionRepository.TEMPLATE_UID_VERSION_UID_CACHE,
     })
     @Override
     public DataTemplateInstanceDto save(DataTemplateInstanceDto dataTemplateInstanceDto) {

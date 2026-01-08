@@ -1,13 +1,10 @@
 package org.nmcpye.datarun.party.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.jpa.common.v1.NamedObject;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -16,8 +13,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /// @author Hamza Assada 28/12/2025
@@ -40,13 +35,15 @@ public class Party extends NamedObject {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    /// 11-char Business Key
+    /// 11-char Business Key source_uid
     @Column(name = "uid", length = 11, unique = true, nullable = false, updatable = false)
     private String uid;
 
+    /// source code
     @Column(name = "code", length = 32)
     protected String code;
 
+    /// source name
     @Column(name = "name", nullable = false)
     private String name;
 
@@ -68,17 +65,6 @@ public class Party extends NamedObject {
     ///  we use `orgUnit.id` which is the same as orgUnit's `party.source_id` of the parent org_unit
     @Column(name = "parent_id", length = 32)
     private UUID parentId;
-
-    // CREATE INDEX idx_party_tags_gin ON party USING gin (tags);
-    @Column(name = "tags", columnDefinition = "jsonb default '[]'::jsonb")
-    @Type(JsonType.class)
-    private List<String> tags;
-
-    /// small JSON containing data from domain entity (do not dump domain model here)
-    @Type(JsonType.class)
-    @Column(name = "properties_map", columnDefinition = "jsonb")
-    @JsonProperty
-    private Map<String, Object> properties;
 
     @CreatedBy
     @Column(name = "created_by", nullable = false, length = 50, updatable = false)

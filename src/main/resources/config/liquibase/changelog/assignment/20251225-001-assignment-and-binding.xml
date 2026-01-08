@@ -21,8 +21,8 @@
                 <constraints nullable="false"/>
             </column>
             <column name="role" type="VARCHAR(255)"/>
-            <column name="valid_from" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
-            <column name="valid_to" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="valid_from" type="TIMESTAMP"/>
+            <column name="valid_to" type="TIMESTAMP"/>
             <column name="created_date" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
@@ -62,8 +62,8 @@
     </changeSet>
 
     <!-- Assignment -> vocabulary   -->
-<!--    <changeSet id="create-assignment_vocabulary" author="hamza-ye">-->
-<!--        <createTable tableName="assignment_vocabulary">-->
+<!--    <changeSet id="create-assignment_data_template" author="hamza-ye">-->
+<!--        <createTable tableName="assignment_data_template">-->
 <!--            <column name="assignment_id" type="VARCHAR(26)">-->
 <!--                <constraints nullable="false"/>-->
 <!--            </column>-->
@@ -74,16 +74,16 @@
 <!--    </changeSet>-->
 
 <!--    &lt;!&ndash;    &ndash;&gt;-->
-<!--    <changeSet id="create-assignment_vocabulary-constraints" author="hamza-ye">-->
-<!--        <addForeignKeyConstraint baseTableName="assignment_vocabulary" baseColumnNames="assignment_id"-->
+<!--    <changeSet id="create-assignment_data_template-constraints" author="hamza-ye">-->
+<!--        <addForeignKeyConstraint baseTableName="assignment_data_template" baseColumnNames="assignment_id"-->
 <!--                                 constraintName="fk_assignment_assignment_id"-->
 <!--                                 referencedTableName="assignment" referencedColumnNames="id"/>-->
 
-<!--        <addForeignKeyConstraint baseTableName="assignment_vocabulary" baseColumnNames="vocabulary_id"-->
-<!--                                 constraintName="fk_assignment_vocabulary_id"-->
+<!--        <addForeignKeyConstraint baseTableName="assignment_data_template" baseColumnNames="vocabulary_id"-->
+<!--                                 constraintName="fk_assignment_data_template_id"-->
 <!--                                 referencedTableName="data_template" referencedColumnNames="id"/>-->
 
-<!--        <addPrimaryKey tableName="assignment_vocabulary" columnNames="assignment_id, vocabulary_id" />-->
+<!--        <addPrimaryKey tableName="assignment_data_template" columnNames="assignment_id, vocabulary_id" />-->
 <!--    </changeSet>-->
 
     <changeSet id="create-binding-table" author="hamza-ye">

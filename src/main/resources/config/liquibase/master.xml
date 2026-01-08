@@ -78,10 +78,12 @@
     <include file="/config/liquibase/changelog/options/2025-12-28-option-add-deleted-at.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/options/2025-12-28-option-set-add-deleted-at.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/party/20251224-001-party.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/party/20251225-001-assignment-and-binding.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/party/20251229-002-assignment-default-party-add.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/assignment/20251225-001-assignment-and-binding.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/assignment/20251229-002-assignment-add-name-and-default-party.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/party/20251229-user-allowed-party-table-add.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/activity/20251129-add-activity-valid-from-valid-to.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/party/20260106-party-add-party-tag.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/assignment/20251225-001-assignment-data-template.xml" relativeToChangelogFile="false"/>
 
 <!--    <include file="/config/liquibase/changelog/workspace/2025-12-21-add-workspace.xml" relativeToChangelogFile="false"/>-->
 

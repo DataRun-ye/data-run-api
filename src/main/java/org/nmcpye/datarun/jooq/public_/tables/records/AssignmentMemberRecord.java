@@ -145,6 +145,34 @@ public class AssignmentMemberRecord extends UpdatableRecordImpl<AssignmentMember
         return (String) get(8);
     }
 
+    /**
+     * Setter for <code>public.assignment_member.last_modified_date</code>.
+     */
+    public void setLastModifiedDate(LocalDateTime value) {
+        set(9, value);
+    }
+
+    /**
+     * Getter for <code>public.assignment_member.last_modified_date</code>.
+     */
+    public LocalDateTime getLastModifiedDate() {
+        return (LocalDateTime) get(9);
+    }
+
+    /**
+     * Setter for <code>public.assignment_member.last_modified_by</code>.
+     */
+    public void setLastModifiedBy(String value) {
+        set(10, value);
+    }
+
+    /**
+     * Getter for <code>public.assignment_member.last_modified_by</code>.
+     */
+    public String getLastModifiedBy() {
+        return (String) get(10);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -168,7 +196,7 @@ public class AssignmentMemberRecord extends UpdatableRecordImpl<AssignmentMember
     /**
      * Create a detached, initialised AssignmentMemberRecord
      */
-    public AssignmentMemberRecord(Long id, String assignmentId, String memberType, String memberId, String role, LocalDateTime validFrom, LocalDateTime validTo, LocalDateTime createdDate, String createdBy) {
+    public AssignmentMemberRecord(Long id, String assignmentId, String memberType, String memberId, String role, LocalDateTime validFrom, LocalDateTime validTo, LocalDateTime createdDate, String createdBy, LocalDateTime lastModifiedDate, String lastModifiedBy) {
         super(AssignmentMember.ASSIGNMENT_MEMBER);
 
         setId(id);
@@ -180,6 +208,8 @@ public class AssignmentMemberRecord extends UpdatableRecordImpl<AssignmentMember
         setValidTo(validTo);
         setCreatedDate(createdDate);
         setCreatedBy(createdBy);
+        setLastModifiedDate(lastModifiedDate);
+        setLastModifiedBy(lastModifiedBy);
         resetChangedOnNotNull();
     }
 }

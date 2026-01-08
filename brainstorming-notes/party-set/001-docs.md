@@ -21,8 +21,6 @@ The current system is built upon:
 ## 1. Current running entities we will enhance (short)
 
 * `org_unit` (id ULID, code, name, path, level, created_date, ...)
-* `org_unit_closure` (ancestor_id, ancestor_uid, descendant_id, descendant_uid, level_diff) maintained and updated from
-  the `org_unit` table data.
 * `org_unit_group` (id ULID, code, name, created_date, ...)
 * `org_unit_group_members` (group_id, org_unit_id)
 * `org_unit_groupset` (id ULID, uid, code, name, created_date, ...)

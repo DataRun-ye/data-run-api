@@ -43,9 +43,9 @@ public class InitPartyMigration implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         log.info("--- Starting Initial Party Migration ---");
-        processTeamsInChunks();
-        processUsersInChunks();
-//        processOrgUnitsInChunks();
+//        processTeamsInChunks();
+//        processUsersInChunks();
+        processOrgUnitsInChunks();
     }
 
     public void processTeamsInChunks() {

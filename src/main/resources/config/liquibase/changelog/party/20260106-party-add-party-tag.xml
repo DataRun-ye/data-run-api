@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="20260106-add-party-tag-table" author="hamza-assada">
+        <createTable tableName="party_tag">
+            <column name="id" type="bigserial">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_party_tag"/>
+            </column>
+            <column name="party_id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_party_set_tag"/>
+            </column>
+            <column name="tag_key" type="varchar(64)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_party_set_tag"/>
+            </column>
+            <column name="tag_value" type="varchar(100)"/>
+            <column name="meta" type="jsonb"/>
+            <column name="created_date" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="idx-party-tag-index" author="hamza-assada" runInTransaction="false">
+        <createIndex tableName="party_tag" indexName="idx_party_tag_key">
+            <column name="tag_key"/>
+        </createIndex>
+        <createIndex tableName="party_tag" indexName="idx_party_tag_key_value">
+            <column name="tag_key"/>
+            <column name="tag_value"/>
+        </createIndex>
+        <addUniqueConstraint columnNames="party_id,tag_key,tag_value" constraintName="uc_party_tag_key_value"
+                             tableName="party_tag"/>
+        <addForeignKeyConstraint baseTableName="party_tag" baseColumnNames="party_id"
+                                 referencedTableName="party" referencedColumnNames="id"
+                                 constraintName="fk_party_tag"/>
+    </changeSet>
+</databaseChangeLog>

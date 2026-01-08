@@ -13,6 +13,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * @author Hamza Assada 29/12/2025
+ */
 @Repository
 public interface AssignmentMemberRepository extends BaseJpaRepository<AssignmentMember, Long> {
 
