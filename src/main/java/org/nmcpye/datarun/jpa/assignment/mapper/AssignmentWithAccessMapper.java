@@ -5,15 +5,14 @@ import org.nmcpye.datarun.common.BaseMapper;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentWithAccessDto;
 import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,
-    componentModel = MappingConstants.ComponentModel.SPRING)
-public abstract class AssignmentWithAccessMapper
-    implements BaseMapper<AssignmentWithAccessDto, Assignment> {
+    componentModel = MappingConstants.ComponentModel.SPRING, uses = FormAccessService.class)
+public interface AssignmentWithAccessMapper
+    extends BaseMapper<AssignmentWithAccessDto, Assignment> {
 
-    @Autowired
-    public FormAccessService formAccessService;
+//    @Autowired
+//    public FormAccessService formAccessService;
 
     @Mappings({
         @Mapping(target = "id", source = "id"),
@@ -23,7 +22,7 @@ public abstract class AssignmentWithAccessMapper
         @Mapping(target = "status", source = "progressStatus"),
 //        @Mapping(source = "accessibleForms.formUid", target = "forms"),
     })
-    public abstract Assignment toEntity(AssignmentWithAccessDto dto);
+    public Assignment toEntity(AssignmentWithAccessDto dto);
 
     @Mappings({
         @Mapping(target = "activity", source = "activity.id"),
@@ -31,13 +30,11 @@ public abstract class AssignmentWithAccessMapper
         @Mapping(target = "orgUnit", source = "orgUnit.id"),
         @Mapping(target = "team", source = "team.id"),
         @Mapping(target = "progressStatus", source = "status", defaultValue = "PLANNED"),
-        @Mapping(target = "accessibleForms",
-            expression =
-                "java(formAccessService.getUserForms(entity.getForms(), entity.getUid()))"),
+        @Mapping(target = "accessibleForms", source = "assignment", qualifiedByName = "assignmentUserForms"),
     })
-    public abstract AssignmentWithAccessDto toDto(Assignment entity);
+    AssignmentWithAccessDto toDto(Assignment assignment);
 
     @InheritConfiguration(name = "toEntity")
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    public abstract Assignment partialUpdate(@MappingTarget Assignment stepType, AssignmentWithAccessDto stepTypeDto);
+    Assignment partialUpdate(@MappingTarget Assignment stepType, AssignmentWithAccessDto stepTypeDto);
 }

@@ -7,7 +7,7 @@
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
 
     <!-- 002: create helper function analytics.translation_value -->
-    <changeSet id="002-create-translation-value-fn" author="hamza">
+    <changeSet id="002-create-translation-value-fn" author="hamza" runOnChange="true">
         <sql>
       <![CDATA[
             CREATE OR REPLACE FUNCTION analytics.translation_value(translations jsonb, locale text, property text)

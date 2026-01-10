@@ -40,12 +40,13 @@ public class OutboxWriter implements OutboxWritePort {
     public int insertByEventType(List<OutboxWritePort.OutboxInsert> inserts, String eventType) {
         if (inserts == null || inserts.isEmpty()) return 0;
 
-        final String sql = ""
-            + "INSERT INTO outbox ("
-            + " submission_id, submission_serial_number, submission_uid, topic, payload, event_type, status, attempt, created_at"
-            + ") VALUES ("
-            + " :submission_id, :submission_serial_number, :submission_uid, :topic, cast(:payload AS jsonb), :event_type, 'pending', 0, :created_at"
-            + ")";
+        final String sql = """
+              INSERT INTO outbox (
+            submission_id, submission_serial_number, submission_uid, topic, payload,
+                                  event_type, status, attempt, created_at)
+            VALUES (:submission_id, :submission_serial_number, :submission_uid, :topic, cast(:payload AS jsonb),
+            :event_type, 'pending', 0, :created_at)
+            """;
 
         return batchInsert(sql, inserts, eventType);
     }

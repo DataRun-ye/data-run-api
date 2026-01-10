@@ -44,11 +44,11 @@ public class DataSubmission extends JpaSoftDeleteObject {
      * DB-generated serial (bigint sequence + unique).
      * Keep insertable=false if DB default nextval() used.
      */
-    @Column(name = "serial_number", nullable = false, unique = true, insertable = false, updatable = false)
+    @Column(name = "serial_number", unique = true, insertable = false, updatable = false)
     @Generated(event = EventType.INSERT)
     private Long serialNumber;
 
-    @Size(max = 11)
+    @Size(max = 11, message = "uid should be of size 11 max")
     @Column(name = "uid", length = 11, unique = true, nullable = false)
     private String uid;
 
@@ -66,7 +66,7 @@ public class DataSubmission extends JpaSoftDeleteObject {
     @Enumerated(EnumType.STRING)
     private FlowStatus status;
 
-    @NotNull
+    @NotNull(message = "form uid can't be null")
     @Column(name = "template_uid", nullable = false, updatable = false)
     private String form;
 

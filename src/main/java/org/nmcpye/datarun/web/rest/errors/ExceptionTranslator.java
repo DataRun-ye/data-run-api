@@ -115,9 +115,43 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     ) {
         log.error("Exception handled: {}", ex.getMessage(), ex);
 
-//        body = wrapAndCustomizeProblem(ex, (NativeWebRequest) request);
+        if (ex instanceof org.springframework.web.method.annotation.HandlerMethodValidationException hmvEx) {
+            List<Map<String,Object>> details = new ArrayList<>();
+
+            for (org.springframework.validation.method.ParameterValidationResult pvr : hmvEx.getParameterValidationResults()) {
+                for (org.springframework.context.MessageSourceResolvable msr : pvr.getResolvableErrors()) {
+                    Map<String,Object> item = new HashMap<>();
+                    item.put("param", pvr.getMethodParameter().getParameterName());
+                    item.put("argument", pvr.getArgument());
+                    item.put("resolvable", List.of(msr.getCodes(), msr.getArguments()));
+
+                    // try to unwrap the original ConstraintViolation (optional)
+                    try {
+                        jakarta.validation.ConstraintViolation<?> cv =
+                            pvr.unwrap(msr, jakarta.validation.ConstraintViolation.class);
+                        if (cv != null) {
+                            item.put("constraint", cv.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName());
+                            item.put("invalidValue", cv.getInvalidValue());
+                            item.put("path", cv.getPropertyPath().toString());
+                        }
+                    } catch (Exception ignore) { /* not always available; ignore safely */ }
+
+                    details.add(item);
+                }
+            }
+
+            log.error("Validation failed (detailed): {}", details);
+            body = Map.of("status", statusCode.toString(), "message", "Validation failure", "errors", details);
+        }
+
         body = body == null ? wrapAndCustomizeProblem(ex, (NativeWebRequest) request) : body;
         return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+
+//        log.error("Exception handled: {}", ex.getMessage(), ex);
+//
+////        body = wrapAndCustomizeProblem(ex, (NativeWebRequest) request);
+//        body = body == null ? wrapAndCustomizeProblem(ex, (NativeWebRequest) request) : body;
+//        return super.handleExceptionInternal(ex, body, headers, statusCode, request);
     }
 
     protected ProblemDetailWithCause wrapAndCustomizeProblem(Throwable ex, NativeWebRequest request) {
@@ -301,6 +335,6 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
     private boolean containsPackageName(String message) {
         // This list is for sure not complete
-        return StringUtils.containsAny(message, "org.", "java.", "net.", "jakarta.", "javax.", "com.", "io.", "de.", "org.nmcpye.datarun");
+        return StringUtils.containsAny(message, "org.", "java.", "net.", "jakarta.", "javax.", "com.", "io.", "de.", "org.nmcpye.datarun", "org.nmcpye.etl");
     }
 }

@@ -27,21 +27,9 @@ public class SqlGenerator {
         String tableNew = Naming.newName(baseFq);
 
         String dims = String.join(", ",
-            "e.submission_uid",
-            "e.submission_serial",
             "e.event_type",
             "e.event_name",
-            "e.parent_event_id",
-            "e.event_ce_id",
-            "e.event_id",
-
             "e.template_uid",
-            "e.start_time",
-            "e.submission_creation_time",
-            "e.assigned_assignment_uid",
-            "e.activity_uid",
-            "e.assigned_team_uid",
-            "e.assigned_org_unit_uid",
 
             "e.assigned_org_unit_gov",
             "e.assigned_org_unit_district",
@@ -50,29 +38,26 @@ public class SqlGenerator {
             "e.activity_name",
             "e.assigned_team_code",
             "e.planned_day",
-            "e.user_group_name",
-            "e.user_group_code",
-            "e.user_uid",
-            "e.user_mobile",
-            "e.user_first_name",
             "e.created_by_user",
             "e.assigned_users",
-
-            "e.anchor_ce_id",
-            "e.anchor_semantic_type",
-            "e.anchor_data_type",
-            "e.anchor_name",
-            "e.anchor_option_set_uid",
-            "e.anchor_value_text",
-            "e.anchor_ref_uid",
-            "e.anchor_resolved_label",
             "e.updated_at",
-            "e.created_at"
+            "e.created_at",
+            "e.submission_uid",
+            "e.submission_serial",
+            "e.parent_event_id",
+            "e.event_ce_id",
+            "e.event_id",
+            "e.start_time",
+            "e.submission_creation_time",
+            "e.assigned_assignment_uid",
+            "e.activity_uid",
+            "e.assigned_team_uid",
+            "e.assigned_org_unit_uid"
         );
 
         LinkedHashMap<String, String> exprs = new LinkedHashMap<>();
         for (CanonicalElementWithConfig c : ces) {
-            String base = Optional.ofNullable(c.getSafeName()).filter(s -> !s.isBlank()).orElse(c.getCanonicalElementId());
+            String base = Optional.ofNullable(c.getSafeNameOverride()).filter(s -> !s.isBlank()).orElse(c.getCanonicalElementId());
             String alias = wrap(base);
             exprs.put(alias, getExpression(c, alias));
         }
@@ -89,41 +74,28 @@ public class SqlGenerator {
                 CREATE TABLE %1$s AS
                 WITH events AS (
                   SELECT
-                    e.template_uid,
-                    e.submission_uid,
                     e.submission_serial,
                     e.event_type,
                     e.event_name,
-                    e.parent_event_id,
-                    e.event_id,
                     e.assigned_org_unit_gov,
                     e.assigned_org_unit_district,
                     e.assigned_org_unit_name,
                     e.activity_name,
                     e.assigned_team_code,
                     e.planned_day,
-                    e.user_group_name,
-                    e.user_first_name,
                     e.assigned_org_unit_code,
                     e.submission_creation_time,
                     e.start_time,
+                    e.template_uid,
+                    e.submission_uid,
+                    e.parent_event_id,
+                    e.event_id,
                     e.assigned_assignment_uid,
                     e.activity_uid,
                     e.assigned_team_uid,
                     e.assigned_org_unit_uid,
-                    e.user_group_code,
-                    e.user_uid,
-                    e.user_mobile,
                     e.created_by_user,
                     e.assigned_users,
-                    e.anchor_ce_id,
-                    e.anchor_semantic_type,
-                    e.anchor_data_type,
-                    e.anchor_name,
-                    e.anchor_option_set_uid,
-                    e.anchor_value_text,
-                    e.anchor_ref_uid,
-                    e.anchor_resolved_label,
                     e.event_ce_id,
                     e.updated_at,
                     e.created_at

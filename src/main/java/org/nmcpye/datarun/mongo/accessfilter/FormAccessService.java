@@ -1,7 +1,9 @@
 package org.nmcpye.datarun.mongo.accessfilter;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.mapstruct.Named;
 import org.nmcpye.datarun.common.enumeration.FormPermission;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentFormDto;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.stereotype.Service;
@@ -60,18 +62,23 @@ public class FormAccessService {
         return hasAnyOfPermissions(form, DELETE_SUBMISSIONS);
     }
 
-    public Set<AssignmentFormDto> getUserForms(Set<String> assignmentFormIds, String assignmentId) {
+    @Named("assignmentUserForms")
+    public Set<AssignmentFormDto> getUserForms(Assignment assignment) {
         if (!SecurityUtils.isAuthenticated()) {
             return Set.of();
         }
         final var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
-        return assignmentFormIds
+        if (assignment.getForms() == null) {
+            return Set.of();
+        }
+
+        return assignment.getForms()
             .stream()
             .filter((form) -> currentUser.getUserFormsUIDs()
                 .contains(form))
             .map((form) -> AssignmentFormDto.builder()
                 .form(form)
-                .assignment(assignmentId)
+                .assignment(assignment.getUid())
                 .canAddSubmissions(canAddSubmissions(form))
                 .canEditSubmissions(canEditSubmissions(form))
                 .canDeleteSubmissions(canDeleteSubmissions(form))

@@ -173,6 +173,7 @@ public class DefaultDataSubmissionService
         return combinedResults;
     }
 
+
     @Transactional
     @Override
     public void softDelete(DataSubmission object) {

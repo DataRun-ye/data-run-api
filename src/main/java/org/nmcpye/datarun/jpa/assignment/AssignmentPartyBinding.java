@@ -23,9 +23,7 @@ import java.util.UUID;
 
 /// @author Hamza Assada 28/12/2025
 @Entity
-@Table(name = "assignment_party_binding",
-    indexes = {@Index(name = "idx_apb_assignment_vocab_role",
-        columnList = "assignment_id,vocabulary_id,role_name")})
+@Table(name = "assignment_party_binding")
 @EntityListeners(AuditingEntityListener.class)
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
@@ -57,7 +55,7 @@ public class AssignmentPartyBinding {
     /// Adaptability: We are using vocabularyId in the DB, but we use DataTemplate in our Services/Mappers
     /// to keep it consistent with our existing code.
     @ManyToOne
-    @JoinColumn(name = "vocabulary_id", nullable = false)
+//    @JoinColumn(name = "vocabulary_id", nullable = false)
     @JsonSerialize(contentAs = SoftDeleteObject.class)
     private DataTemplate vocabulary;
 

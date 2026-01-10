@@ -23,9 +23,7 @@ import java.util.UUID;
 ///
 /// @author Hamza Assada 06/01/2026
 @Entity
-@Table(name = "assignment_data_template",
-    indexes = {@Index(name = "idx_apb_assignment_data_template_role",
-        columnList = "assignment_id,vocabulary_id")})
+@Table(name = "assignment_data_template")
 @EntityListeners(AuditingEntityListener.class)
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter

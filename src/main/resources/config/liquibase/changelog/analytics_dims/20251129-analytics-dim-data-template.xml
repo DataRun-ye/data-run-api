@@ -6,9 +6,10 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
 
-    <changeSet id="013-create-dim-data-template" author="hamza">
+    <changeSet id="013-create-dim-data-template" author="hamza" runOnChange="true">
         <sql>
       <![CDATA[
+            DROP MATERIALIZED VIEW IF EXISTS analytics.dim_data_template;
             CREATE MATERIALIZED VIEW analytics.dim_data_template AS
             SELECT
                 row_number() OVER ()::bigint AS dim_template_id,
@@ -36,35 +37,17 @@
 
 
 
-    <changeSet id="idx-027-dim_data_template-slm_uid" author="hamza" runInTransaction="false">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists indexName="idx_analytics_dim_data_template_slm_uid"/>
-            </not>
-        </preConditions>
+    <changeSet id="idx-027-dim_data_template-slm_uid" author="hamza" runInTransaction="false" runOnChange="true">
         <sql>
       <![CDATA[
             CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_data_template_uid_uniq
                 ON analytics.dim_data_template (template_uid);
-            ]]>
-    </sql>
-        <rollback>
-            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_data_template_uid_uniq;</sql>
-        </rollback>
-    </changeSet>
-    <changeSet id="idx-028-dim_data_template-slm_uid" author="hamza" runInTransaction="false">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists indexName="idx_analytics_dim_data_template_slm_uid"/>
-            </not>
-        </preConditions>
-        <sql>
-      <![CDATA[
             CREATE INDEX CONCURRENTLY idx_analytics_dim_data_template_slm_uid
                 ON analytics.dim_data_template (source_last_modified_at, template_uid);
             ]]>
     </sql>
         <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_data_template_uid_uniq;</sql>
             <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_data_template_slm_uid;</sql>
         </rollback>
     </changeSet>

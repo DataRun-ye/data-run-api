@@ -36,7 +36,7 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
     }
 
     @PostMapping("/bulk")
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(@Valid @RequestBody List<T> entities) {
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(@RequestBody List<@Valid T> entities) {
         log.debug("REST request to saveAll all {}", getName());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         for (T entity : entities) {

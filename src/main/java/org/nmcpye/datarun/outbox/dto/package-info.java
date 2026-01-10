@@ -9,6 +9,7 @@ package org.nmcpye.datarun.outbox.dto;
 //    // Option 2: More robust, using TypeReference for a specific Map type
 //    // This is useful for more complex or typed maps
 //    Map<String, Object> typedMap = objectMapper.convertValue(studentObj, new TypeReference<Map<String, Object>>() {});
+// //    objectMapper.convertValue(studentObj, JsonNode.class);
 //    System.out.println(typedMap);
 //
 //    //---------------------------------

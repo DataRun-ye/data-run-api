@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="add-canonical-element-config-table" author="hamza-assada">
+        <createTable schemaName="analytics" tableName="canonical_element_config">
+            <column name="canonical_element_id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_canonical_element_config"/>
+            </column>
+            <column name="template_uid" type="varchar(11)"/>
+            <column name="safe_name" type="varchar(63)"/>
+            <column name="safe_name_override" type="varchar(63)"/>
+            <column name="disabled" type="BOOLEAN" defaultValueBoolean="false"/>
+            <column name="valid_to" type="timestamp"/>
+            <column name="explode" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="anchor_allowed" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="anchor_priority" type="INT" defaultValueNumeric="10"/>
+            <column name="updated_date" type="timestamp" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="0002-canonical-element-config-initial-backfill-from-ce" author="hamza-ye" runOnChange="false">
+        <sql>
+            INSERT INTO analytics.canonical_element_config (canonical_element_id, safe_name,
+                                                            safe_name_override, template_uid, updated_date)
+            SELECT id        AS canonical_element_id,
+                   safe_name,
+                   safe_name AS safe_name_override,
+                   template_uid,
+                   now()     AS updated_date
+            FROM public.canonical_element a ON CONFLICT (canonical_element_id) DO
+            UPDATE
+                SET updated_date = EXCLUDED.updated_date;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

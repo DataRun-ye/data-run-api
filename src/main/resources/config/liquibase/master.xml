@@ -84,6 +84,7 @@
     <include file="/config/liquibase/changelog/activity/20251129-add-activity-valid-from-valid-to.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/party/20260106-party-add-party-tag.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/assignment/20251225-001-assignment-data-template.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/element-template/2026-01-09-add-ce-config.xml" relativeToChangelogFile="false"/>
 
 <!--    <include file="/config/liquibase/changelog/workspace/2025-12-21-add-workspace.xml" relativeToChangelogFile="false"/>-->
 

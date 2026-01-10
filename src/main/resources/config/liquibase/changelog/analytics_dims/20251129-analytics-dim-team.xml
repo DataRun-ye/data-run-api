@@ -7,9 +7,10 @@
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
 
     <!-- 010: dim_team and exploded team form permissions -->
-    <changeSet id="010-create-dim-team-and-permissions" author="hamza">
+    <changeSet id="010-create-dim-team" author="hamza" runOnChange="true">
         <sql>
       <![CDATA[
+            DROP MATERIALIZED VIEW IF EXISTS analytics.dim_team;
             CREATE MATERIALIZED VIEW IF NOT EXISTS analytics.dim_team AS
             SELECT
                 row_number() OVER ()::bigint AS dim_team_id,
@@ -17,6 +18,8 @@
                 t.uid AS team_uid,
                 t.code AS team_code,
                 t.name AS team_name,
+                t.description AS team_description,
+                t.properties_map AS team_properties,
                 t.activity_id,
                 act.uid AS activity_uid,
                 t.disabled,
@@ -31,7 +34,19 @@
                      LEFT JOIN public.team_user tu ON tu.team_id = t.id
                      LEFT JOIN public.app_user u ON u.id = tu.user_id
             GROUP BY t.id, act.uid;
+            ]]>
+    </sql>
+        <rollback>
+            <sql>
+                DROP MATERIALIZED VIEW IF EXISTS analytics.dim_team;
+            </sql>
+        </rollback>
+    </changeSet>
 
+    <changeSet id="010-create-dim-team-permissions" author="hamza" runOnChange="true">
+        <sql>
+      <![CDATA[
+            DROP MATERIALIZED VIEW IF EXISTS analytics.dim_team_template_permission;
             CREATE MATERIALIZED VIEW IF NOT EXISTS analytics.dim_team_template_permission AS
             SELECT
                 row_number() OVER ()::bigint AS id,
@@ -41,7 +56,7 @@
                 (fp -> 'permissions')::jsonb AS template_permissions_jsonb,
                 t.last_modified_by,
                 GREATEST(COALESCE(t.created_date, '1970-01-01'::timestamp),
-                    COALESCE(t.last_modified_date, '1970-01-01'::timestamp)
+                COALESCE(t.last_modified_date, '1970-01-01'::timestamp)
                 ) AT TIME ZONE 'UTC' AS source_last_modified_at
             FROM public.team t,
                 LATERAL jsonb_array_elements(COALESCE(t.form_permissions, '[]'::jsonb)) fp;
@@ -50,115 +65,46 @@
         <rollback>
             <sql>
                 DROP MATERIALIZED VIEW IF EXISTS analytics.dim_team_template_permission;
-                DROP MATERIALIZED VIEW IF EXISTS analytics.dim_team;
             </sql>
         </rollback>
     </changeSet>
 
 
-
     <!-- ===== dim_team ===== -->
     <changeSet id="idx-016-dim_team-slm" author="hamza" runInTransaction="false">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists indexName="idx_analytics_dim_team_slm"/>
-            </not>
-        </preConditions>
         <sql>
       <![CDATA[
             CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_team_slm
                 ON analytics.dim_team (source_last_modified_at);
-            ]]>
-    </sql>
-        <rollback>
-            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_slm;</sql>
-        </rollback>
-    </changeSet>
-
-    <changeSet id="idx-017-dim_team-uid-uniq" author="hamza" runInTransaction="false">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists indexName="idx_analytics_dim_team_uid_uniq"/>
-            </not>
-        </preConditions>
-        <sql>
-      <![CDATA[
             CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_team_uid_uniq
                 ON analytics.dim_team (team_uid);
-            ]]>
-    </sql>
-        <rollback>
-            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_uid_uniq;</sql>
-        </rollback>
-    </changeSet>
-
-    <changeSet id="idx-018-dim_team-slm_uid" author="hamza" runInTransaction="false">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists indexName="idx_analytics_dim_team_slm_uid"/>
-            </not>
-        </preConditions>
-        <sql>
-      <![CDATA[
             CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_team_slm_uid
                 ON analytics.dim_team (source_last_modified_at, team_uid);
             ]]>
     </sql>
         <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_slm;</sql>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_uid_uniq;</sql>
             <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_slm_uid;</sql>
         </rollback>
     </changeSet>
 
     <!-- ===== dim_team_template_permission ===== -->
     <changeSet id="idx-019-dim_team_template_permission-slm" author="hamza" runInTransaction="false">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists indexName="idx_analytics_dim_team_template_permission_slm"/>
-            </not>
-        </preConditions>
         <sql>
       <![CDATA[
             CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_team_template_permission_slm
                 ON analytics.dim_team_template_permission (source_last_modified_at);
-            ]]>
-    </sql>
-        <rollback>
-            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_template_permission_slm;</sql>
-        </rollback>
-    </changeSet>
-
-    <changeSet id="idx-020-dim_team_template_permission-uid-uniq" author="hamza" runInTransaction="false">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists indexName="idx_analytics_dim_team_template_permission_uid_uniq"/>
-            </not>
-        </preConditions>
-        <sql>
-      <![CDATA[
             CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_team_template_permission_uid_uniq
                 ON analytics.dim_team_template_permission (team_uid, template_uid);
-            ]]>
-    </sql>
-        <rollback>
-            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_template_permission_uid_uniq;</sql>
-        </rollback>
-    </changeSet>
-
-    <changeSet id="idx-021-dim_team_template_permission-slm_uid" author="hamza" runInTransaction="false">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists indexName="idx_analytics_dim_team_template_permission_slm_uid"/>
-            </not>
-        </preConditions>
-        <sql>
-      <![CDATA[
             CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_team_template_permission_slm_uid
                 ON analytics.dim_team_template_permission (source_last_modified_at, team_uid);
             ]]>
     </sql>
         <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_template_permission_slm;</sql>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_template_permission_uid_uniq;</sql>
             <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_team_template_permission_slm_uid;</sql>
         </rollback>
     </changeSet>
-
 </databaseChangeLog>

@@ -6,9 +6,10 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
     <!-- 012: dim_activity -->
-    <changeSet id="012-create-dim-activity" author="hamza">
+    <changeSet id="012-create-dim-activity" author="hamza" runOnChange="true">
         <sql>
       <![CDATA[
+            DROP MATERIALIZED VIEW IF EXISTS analytics.dim_activity;
             CREATE MATERIALIZED VIEW analytics.dim_activity AS
             SELECT
                 row_number() OVER ()::bigint AS dim_activity_id,
@@ -41,53 +42,21 @@
 
     <!-- ===== dim_activity ===== -->
     <changeSet id="idx-025-dim_activity-slm" author="hamza" runInTransaction="false">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists indexName="idx_analytics_dim_activity_slm"/>
-            </not>
-        </preConditions>
         <sql>
       <![CDATA[
-            CREATE INDEX CONCURRENTLY idx_analytics_dim_activity_slm
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_activity_slm
                 ON analytics.dim_activity (source_last_modified_at);
-            ]]>
-    </sql>
-        <rollback>
-            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_activity_slm;</sql>
-        </rollback>
-    </changeSet>
-
-    <changeSet id="idx-026-dim_activity-uid-uniq" author="hamza" runInTransaction="false">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists indexName="idx_analytics_dim_activity_uid_uniq"/>
-            </not>
-        </preConditions>
-        <sql>
-      <![CDATA[
-            CREATE UNIQUE INDEX CONCURRENTLY idx_analytics_dim_activity_uid_uniq
+            CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_activity_uid_uniq
                 ON analytics.dim_activity (activity_uid);
-            ]]>
-    </sql>
-        <rollback>
-            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_activity_uid_uniq;</sql>
-        </rollback>
-    </changeSet>
-
-    <changeSet id="idx-027-dim_activity-slm_uid" author="hamza" runInTransaction="false">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists indexName="idx_analytics_dim_activity_slm_uid"/>
-            </not>
-        </preConditions>
-        <sql>
-      <![CDATA[
-            CREATE INDEX CONCURRENTLY idx_analytics_dim_activity_slm_uid
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_analytics_dim_activity_slm_uid
                 ON analytics.dim_activity (source_last_modified_at, activity_uid);
             ]]>
     </sql>
         <rollback>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_activity_slm;</sql>
+            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_activity_uid_uniq;</sql>
             <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_analytics_dim_activity_slm_uid;</sql>
         </rollback>
     </changeSet>
+
 </databaseChangeLog>
