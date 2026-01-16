@@ -19,6 +19,7 @@ import org.nmcpye.datarun.jooq.public_.tables.OrgUnit;
 import org.nmcpye.datarun.jooq.public_.tables.Party;
 import org.nmcpye.datarun.jooq.public_.tables.PartySet;
 import org.nmcpye.datarun.jooq.public_.tables.PartySetMember;
+import org.nmcpye.datarun.jooq.public_.tables.PartyTag;
 import org.nmcpye.datarun.jooq.public_.tables.Team;
 import org.nmcpye.datarun.jooq.public_.tables.TeamUser;
 import org.nmcpye.datarun.jooq.public_.tables.UserAllowedParty;
@@ -80,6 +81,11 @@ public class Public extends SchemaImpl {
     public final PartySetMember PARTY_SET_MEMBER = PartySetMember.PARTY_SET_MEMBER;
 
     /**
+     * The table <code>public.party_tag</code>.
+     */
+    public final PartyTag PARTY_TAG = PartyTag.PARTY_TAG;
+
+    /**
      * The table <code>public.team</code>.
      */
     public final Team TEAM = Team.TEAM;
@@ -128,6 +134,7 @@ public class Public extends SchemaImpl {
             Party.PARTY,
             PartySet.PARTY_SET,
             PartySetMember.PARTY_SET_MEMBER,
+            PartyTag.PARTY_TAG,
             Team.TEAM,
             TeamUser.TEAM_USER,
             UserAllowedParty.USER_ALLOWED_PARTY,

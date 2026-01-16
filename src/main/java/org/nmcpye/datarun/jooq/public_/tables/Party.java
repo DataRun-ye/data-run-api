@@ -13,6 +13,7 @@ import java.util.UUID;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Index;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.PlainSQL;
@@ -28,6 +29,7 @@ import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
+import org.nmcpye.datarun.jooq.public_.Indexes;
 import org.nmcpye.datarun.jooq.public_.Keys;
 import org.nmcpye.datarun.jooq.public_.Public;
 import org.nmcpye.datarun.jooq.public_.tables.records.PartyRecord;
@@ -88,16 +90,6 @@ public class Party extends TableImpl<PartyRecord> {
      * The column <code>public.party.source_id</code>.
      */
     public final TableField<PartyRecord, String> SOURCE_ID = createField(DSL.name("source_id"), SQLDataType.VARCHAR(64), this, "");
-
-    /**
-     * The column <code>public.party.tags</code>.
-     */
-    public final TableField<PartyRecord, JSONB> TAGS = createField(DSL.name("tags"), SQLDataType.JSONB.defaultValue(DSL.field(DSL.raw("'[]'::jsonb"), SQLDataType.JSONB)), this, "");
-
-    /**
-     * The column <code>public.party.properties_map</code>.
-     */
-    public final TableField<PartyRecord, JSONB> PROPERTIES_MAP = createField(DSL.name("properties_map"), SQLDataType.JSONB, this, "");
 
     /**
      * The column <code>public.party.created_date</code>.
@@ -161,6 +153,11 @@ public class Party extends TableImpl<PartyRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.IDX_PARTY_PARENT, Indexes.IDX_PARTY_SOURCE, Indexes.IDX_PARTY_UID);
     }
 
     @Override

@@ -120,115 +120,87 @@ public class PartyRecord extends UpdatableRecordImpl<PartyRecord> {
     }
 
     /**
-     * Setter for <code>public.party.tags</code>.
-     */
-    public void setTags(JSONB value) {
-        set(7, value);
-    }
-
-    /**
-     * Getter for <code>public.party.tags</code>.
-     */
-    public JSONB getTags() {
-        return (JSONB) get(7);
-    }
-
-    /**
-     * Setter for <code>public.party.properties_map</code>.
-     */
-    public void setPropertiesMap(JSONB value) {
-        set(8, value);
-    }
-
-    /**
-     * Getter for <code>public.party.properties_map</code>.
-     */
-    public JSONB getPropertiesMap() {
-        return (JSONB) get(8);
-    }
-
-    /**
      * Setter for <code>public.party.created_date</code>.
      */
     public void setCreatedDate(LocalDateTime value) {
-        set(9, value);
+        set(7, value);
     }
 
     /**
      * Getter for <code>public.party.created_date</code>.
      */
     public LocalDateTime getCreatedDate() {
-        return (LocalDateTime) get(9);
+        return (LocalDateTime) get(7);
     }
 
     /**
      * Setter for <code>public.party.created_by</code>.
      */
     public void setCreatedBy(String value) {
-        set(10, value);
+        set(8, value);
     }
 
     /**
      * Getter for <code>public.party.created_by</code>.
      */
     public String getCreatedBy() {
-        return (String) get(10);
+        return (String) get(8);
     }
 
     /**
      * Setter for <code>public.party.last_modified_date</code>.
      */
     public void setLastModifiedDate(LocalDateTime value) {
-        set(11, value);
+        set(9, value);
     }
 
     /**
      * Getter for <code>public.party.last_modified_date</code>.
      */
     public LocalDateTime getLastModifiedDate() {
-        return (LocalDateTime) get(11);
+        return (LocalDateTime) get(9);
     }
 
     /**
      * Setter for <code>public.party.last_modified_by</code>.
      */
     public void setLastModifiedBy(String value) {
-        set(12, value);
+        set(10, value);
     }
 
     /**
      * Getter for <code>public.party.last_modified_by</code>.
      */
     public String getLastModifiedBy() {
-        return (String) get(12);
+        return (String) get(10);
     }
 
     /**
      * Setter for <code>public.party.parent_id</code>.
      */
     public void setParentId(UUID value) {
-        set(13, value);
+        set(11, value);
     }
 
     /**
      * Getter for <code>public.party.parent_id</code>.
      */
     public UUID getParentId() {
-        return (UUID) get(13);
+        return (UUID) get(11);
     }
 
     /**
      * Setter for <code>public.party.translations</code>.
      */
     public void setTranslations(JSONB value) {
-        set(14, value);
+        set(12, value);
     }
 
     /**
      * Getter for <code>public.party.translations</code>.
      */
     public JSONB getTranslations() {
-        return (JSONB) get(14);
+        return (JSONB) get(12);
     }
 
     // -------------------------------------------------------------------------
@@ -254,7 +226,7 @@ public class PartyRecord extends UpdatableRecordImpl<PartyRecord> {
     /**
      * Create a detached, initialised PartyRecord
      */
-    public PartyRecord(UUID id, String uid, String code, String name, String type, String sourceType, String sourceId, JSONB tags, JSONB propertiesMap, LocalDateTime createdDate, String createdBy, LocalDateTime lastModifiedDate, String lastModifiedBy, UUID parentId, JSONB translations) {
+    public PartyRecord(UUID id, String uid, String code, String name, String type, String sourceType, String sourceId, LocalDateTime createdDate, String createdBy, LocalDateTime lastModifiedDate, String lastModifiedBy, UUID parentId, JSONB translations) {
         super(Party.PARTY);
 
         setId(id);
@@ -264,8 +236,6 @@ public class PartyRecord extends UpdatableRecordImpl<PartyRecord> {
         setType(type);
         setSourceType(sourceType);
         setSourceId(sourceId);
-        setTags(tags);
-        setPropertiesMap(propertiesMap);
         setCreatedDate(createdDate);
         setCreatedBy(createdBy);
         setLastModifiedDate(lastModifiedDate);

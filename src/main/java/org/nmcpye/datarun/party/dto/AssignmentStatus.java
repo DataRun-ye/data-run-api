@@ -3,7 +3,7 @@ package org.nmcpye.datarun.party.dto;
 import org.nmcpye.datarun.common.enumeration.FlowStatus;
 
 public enum AssignmentStatus {
-    PLANNED, // SCHEDULED
+    PENDING, // SCHEDULED
     IN_PROGRESS,
     DONE,
     RESCHEDULED,
@@ -13,6 +13,8 @@ public enum AssignmentStatus {
     EXPIRED;
 
     public static AssignmentStatus getAssignmentStatus(FlowStatus flowStatus) {
+        if (flowStatus == FlowStatus.PLANNED) return AssignmentStatus.PENDING;
+
         for (AssignmentStatus status : AssignmentStatus.values()) {
             if (status.name().equalsIgnoreCase(flowStatus.name())) {
                 return status;
@@ -22,9 +24,11 @@ public enum AssignmentStatus {
         return null;
     }
 
-    public static FlowStatus getAssignmentStatus(AssignmentStatus flowStatus) {
+    public static FlowStatus getAssignmentStatus(AssignmentStatus assignmentStatus) {
+        if (assignmentStatus == AssignmentStatus.PENDING) return FlowStatus.PLANNED;
+
         for (FlowStatus status : FlowStatus.values()) {
-            if (status.name().equalsIgnoreCase(flowStatus.name())) {
+            if (status.name().equalsIgnoreCase(assignmentStatus.name())) {
                 return status;
             }
         }

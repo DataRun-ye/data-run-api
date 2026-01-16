@@ -87,22 +87,189 @@ up to the MU stock, damage or expired are handled similarly but clearly stated a
 
 ---
 
-## Minimal starter set (what to implement first)
 
-1. **Receipt**
-2. **Issue / Distribution**
-3. **Transfer** (internal movements)
-4. **Stock Count / Stocktake**
-5. **Adjustment / Write-off**
-6. **Consumption Report** (reporting, not a stock-moving event)
 
-Everything else (returns, campaign-specific movements) can be implemented as combinations/special cases of the above.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Clean, organized problem statement — ready to send to the team
+
+## Short summary
+
+We need a **stable, minimal mapping** from the current submission/event/tall_canonical schema into three canonical supply-chain artifacts (`inventory_ledger`, `stock_balance`, `movement_fact`) so analytics and dashboards work **now** and keep working when we later replace `team/org_unit/assignment` with a polymorphic `party` table. The mapping must be idempotent, support offline-first submissions, and preserve the existing reporting semantics for routine and campaign flows.
 
 ---
 
-## Essential fields to capture (per transaction)
+## Context (one-paragraph)
 
-Transaction ID, date/time, origin, destination, SKU, batch/lot, expiry, quantity, unit, transaction type (routine vs
-campaign), reference (delivery note), responsible person, condition on receipt, remarks/signature/photo. (logged in user
-context and his config migh be utilized to infere parts of these to make the ux best)
+Client is an Android app (Dart/Flutter + Drift). Submissions produce `events` and `tall_canonical` rows (examples below). We will ETL these into tall canonical artifacts and outbox events (Kafka outbox ignored for simplicity). For now parties are derived from `team`, `org_unit`, `assignment` tables; later a polymorphic `party` table will replace them. The goal is to design the canonical output tables and mapping rules so switching to `party` affects only the party-id lookup, not downstream reports.
 
+---
+
+## Goals / success criteria
+
+1. Produce **inventory_ledger** rows per submission line (idempotent; UNIQUE on `submission_id, submission_line_id`).
+2. Maintain **stock_balance** by aggregating ledger rows (batch or realtime).
+3. Produce **movement_fact** rows for reporting (one row per movement line, direction IN/OUT/ADJUST).
+4. Keep mappings stable so switching to a polymorphic `party` table requires little/no change to artifacts or dashboards.
+5. Handle both **routine** and **campaign** flows (receipt/issue/transfer/return/adjust/stockcount/consumption).
+6. Preserve provenance (submission, assignment, user, template binding, timestamps).
+
+---
+
+## Actors / locations (canonical)
+
+* Health Facility (HF) — `org_unit`
+* Malaria Unit (MU) warehouse
+* Regional / Main warehouse
+* Campaign warehouse (temporary)
+* Campaign team (operational distributor)
+* Logistics / Stock officer (performs counts)
+
+`party_type` currently: `wh`, `hf`, `chv` (and `team` implied from `team` table / assignment). Later becomes a row in `party`.
+
+---
+
+## Core transaction types (to detect / derive)
+
+* `Receipt` / GRN
+* `Issue` / Distribution
+* `Transfer` (modeled as Transfer Out + Receipt)
+* `Return` (reverse flow)
+* `StockCount` / Stocktake
+* `Adjustment` / Write-off
+* `Consumption` (HF usage report)
+
+---
+
+## Source data available
+
+* `events` header rows (assignment_uid, team_uid, org_unit_uid, template_uid, start_time, submission_creation_time, etc.)
+* `tall_canonical` rows (one row per element: `element_name`, `canonical_element_id`, `value_text/value_number/value_ref_uid`, `repeat_instance_id`, `repeat_index`, etc.)
+* `data_template` which links `template_uid` → template type (e.g., `hf_receipt_902`, `wh_team_return_904`, `inventory_901`), and canonical element ids for `qty`, `category`, `tx_date`, `team`, etc.
+* `assignment` dimension with assignment properties (planned counts, wh_name, party_type).
+* `canonical_element` (canonical_element_id, template_uid, name (qty, category, tx_date, team, batch, expiry), data_type, etc).
+* `template_uid/name -> transaction_type` mapping table.
+* Sample pivoted submission (shown in original message) that shows how repeats map to category + qty lines.
+
+---
+
+## Desired canonical tables (already defined)
+
+1. `inventory_ledger` — idempotent per submission-line, affects party balances; fields: `id, submission_id, submission_line_id, transaction_type, tx_date, assignment_id, from_party_id, to_party_id, party_id, sku_id, batch_id, qty_delta, unit, balance_after, provenance, created_at`.
+2. `stock_balance` — aggregated OH per `(party_id, sku_id, coalesce(batch_id, '-'))`.
+3. `movement_fact` — reporting-optimized rows: `id, submission_id, tx_date, tx_type, assignment_id, from_party_id, to_party_id, party_id, sku_id, batch_id, qty, direction, user_id, team_id, campaign_id, created_at`.
+
+---
+
+## Concrete mapping rules (proposal — apply to ETL)
+
+**A. Identify transaction type**
+
+* Use `template_uid` → `template_name` (or a mapping table) to determine `transaction_type` (Receipt|Issue|Transfer|Return|StockCount|Adjustment|Consumption).
+* If ambiguous, prefer conservative mapping (e.g., treat unknown as `Adjustment` and flag).
+
+**B. Derive party roles**
+
+* `assignment.team_id` (or `events.team_uid`) = submitting team.
+* `org_unit_uid` = the receiving/target org unit (HF/WH) present in template header.
+* Decide `from_party_id` and `to_party_id` by `transaction_type`:
+
+    * Receipt: `from_party_id` = supplier (if known) or NULL; `to_party_id` = org_unit (HF/campaign store/MU).
+    * Issue: `from_party_id` = issuing warehouse (org_unit or team-owned wh); `to_party_id` = HF or team.
+    * Transfer: create two logical sides — create ledger rows consistent with the side-of-responsibility approach (the "higher" level counts it as outgoing; the receiver creates a Receipt).
+    * Return: reverse of Issue.
+* `party_id` column in `inventory_ledger` = the party whose balance the row affects (for receipts this is `to_party_id`, for issues it is `from_party_id`).
+
+**C. Lines / submission_line_id**
+
+* Use `tall_canonical.repeat_instance_id` or `event_id` + canonical_element_id to form a deterministic `submission_line_id` (must be unique per line). This supports the `UNIQUE(submission_id, submission_line_id)` protection.
+
+**D. Quantity sign**
+
+* Set `qty_delta` positive for IN (Receipt, positive adjustments), negative for OUT (Issue), zero or signed appropriately for Consumption/StockCount/Adjustment according to `tx_type`.
+* Also set `movement_fact.direction` = IN|OUT|ADJUST.
+
+**E. SKU / category mapping**
+
+* Map `category` canonical element → `sku_id` using existing canonical element-to-sku dictionary (maintain a lookup).
+* If missing mapping, persist `value_text` as `sku_external_code` and flag for reconciliation.
+
+**F. Batch & expiry**
+
+* If `expiry_date` / `batch` fields present in template, fill `batch_id` and `expiry` in provenance or ledger row.
+
+**G. Timestamps**
+
+* `tx_date` should prefer a canonical date element (`tx_date` in tall_canonical) otherwise fallback to `start_time` then `submission_creation_time`. Always record provenance of chosen timestamp.
+
+**H. Provenance**
+
+* Populate `provenance` JSON with `{submission_uid, submission_id, event_id, template_uid, assignment_id, team_uid, org_unit_uid, user_uid, canonical_element_ids, source_raw_values}`.
+
+**I. Idempotency & ordering**
+
+* Insert ledger rows guarded by the UNIQUE key. If reprocessing, skip or update only `balance_after` if needed.
+* If `balance_after` is null on insert, compute balance via aggregation (or maintain a background job to compute snapshot).
+
+---
+
+## Edge-cases & decisions to make (list for the team)
+
+1. How to detect `from_party` for receipts when supplier is external / unknown? (NULL vs synthetic party)
+2. For transfers: do we write **two** ledger rows in the same transaction (Out on from_party, In on to_party) or write one ledger row per side only when the receiver submits? (Proposed: write both when we can — keep `provenance` so deduping is possible.)
+3. Unit normalization: templates may use different unit names — who is responsible for canonical unit mapping?
+4. Batch-less aggregation vs batch-tracked: `stock_balance` primary key uses `coalesce(batch_id, '-')`. OK?
+5. How to treat `Consumption` lines: create `inventory_ledger` rows that reduce HF balance or treat as separate reconciliation input? (Proposed: create OUT rows for HF with `transaction_type = Consumption`.)
+6. How to derive `campaign_id` — currently routine is an activity, and a campaign is another activity, we will later refactor for better modeling
+
+---
+
+## Acceptance tests (what to validate)
+
+* For the sample pivoted submission rows:
+
+    * ETL produces one ledger row per pivoted line with correct `submission_line_id`, `sku_id`, `qty_delta` (34, 12, 2, 33), proper `party_id`, `tx_date`, and `provenance`.
+    * `movement_fact` contains matching rows with correct `direction` and `team_id`.
+    * Re-running ETL for same submission does not create duplicates (UNIQUE enforced).
+    * `stock_balance` aggregated from ledger matches expected totals after applying the sample submission.
+
+---
+
+## Minimal next steps (practical)
+
+1. Create a small mapping table: `template_name -> transaction_type` and `canonical_element_id -> element_role (qty, category, tx_date, team, batch, expiry)`.
+2. Implement ETL for one template type (e.g., `hf_receipt_902`) end-to-end and run the acceptance tests above.
+3. Iterate to support other templates (hf_return, wh_team_receipt, inventory_901).
+4. Add `party` abstraction later: swap lookups `team/org_unit/assignment` → `party` mapping; downstream ETL unchanged.
+
+---
+
+## Short checklist to attach to the ticket
+
+* [ ] `template -> tx_type` mapping table created.
+* [ ] `element -> role` mapping table created (qty, category→sku, tx_date, batch, expiry).
+* [ ] Deterministic `submission_line_id` strategy implemented.
+* [ ] `inventory_ledger` inserts idempotent (UNIQUE enforced).
+* [ ] `movement_fact` generation implemented.
+* [ ] `stock_balance` aggregation validated.
+* [ ] Provenance JSON populated for every ledger row.
+* [ ] Migration path documented for future `party` table swap.

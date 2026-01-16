@@ -10,8 +10,10 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.Internal;
 import org.nmcpye.datarun.jooq.public_.tables.AssignmentMember;
 import org.nmcpye.datarun.jooq.public_.tables.AssignmentPartyBinding;
+import org.nmcpye.datarun.jooq.public_.tables.Party;
 import org.nmcpye.datarun.jooq.public_.tables.PartySet;
 import org.nmcpye.datarun.jooq.public_.tables.PartySetMember;
+import org.nmcpye.datarun.jooq.public_.tables.PartyTag;
 import org.nmcpye.datarun.jooq.public_.tables.UserAllowedParty;
 
 
@@ -31,8 +33,13 @@ public class Indexes {
     public static final Index IDX_ASSIGNMENT_MEMBER_MEMBER = Internal.createIndex(DSL.name("idx_assignment_member_member"), AssignmentMember.ASSIGNMENT_MEMBER, new OrderField[] { AssignmentMember.ASSIGNMENT_MEMBER.MEMBER_ID }, false);
     public static final Index IDX_ASSIGNMENT_MEMBER_MEMBER_TYPE = Internal.createIndex(DSL.name("idx_assignment_member_member_type"), AssignmentMember.ASSIGNMENT_MEMBER, new OrderField[] { AssignmentMember.ASSIGNMENT_MEMBER.MEMBER_TYPE, AssignmentMember.ASSIGNMENT_MEMBER.MEMBER_ID }, false);
     public static final Index IDX_ASSIGNMENT_MEMBER_VALID_TIME = Internal.createIndex(DSL.name("idx_assignment_member_valid_time"), AssignmentMember.ASSIGNMENT_MEMBER, new OrderField[] { AssignmentMember.ASSIGNMENT_MEMBER.VALID_FROM, AssignmentMember.ASSIGNMENT_MEMBER.VALID_TO }, false);
+    public static final Index IDX_PARTY_PARENT = Internal.createIndex(DSL.name("idx_party_parent"), Party.PARTY, new OrderField[] { Party.PARTY.PARENT_ID }, false);
     public static final Index IDX_PARTY_SET_KIND = Internal.createIndex(DSL.name("idx_party_set_kind"), PartySet.PARTY_SET, new OrderField[] { PartySet.PARTY_SET.KIND }, false);
     public static final Index IDX_PARTY_SET_UID = Internal.createIndex(DSL.name("idx_party_set_uid"), PartySet.PARTY_SET, new OrderField[] { PartySet.PARTY_SET.UID }, false);
+    public static final Index IDX_PARTY_SOURCE = Internal.createIndex(DSL.name("idx_party_source"), Party.PARTY, new OrderField[] { Party.PARTY.SOURCE_TYPE, Party.PARTY.SOURCE_ID }, false);
+    public static final Index IDX_PARTY_TAG_KEY = Internal.createIndex(DSL.name("idx_party_tag_key"), PartyTag.PARTY_TAG, new OrderField[] { PartyTag.PARTY_TAG.TAG_KEY }, false);
+    public static final Index IDX_PARTY_TAG_KEY_VALUE = Internal.createIndex(DSL.name("idx_party_tag_key_value"), PartyTag.PARTY_TAG, new OrderField[] { PartyTag.PARTY_TAG.TAG_KEY, PartyTag.PARTY_TAG.TAG_VALUE }, false);
+    public static final Index IDX_PARTY_UID = Internal.createIndex(DSL.name("idx_party_uid"), Party.PARTY, new OrderField[] { Party.PARTY.UID }, false);
     public static final Index IDX_PSM_PARTY_ID = Internal.createIndex(DSL.name("idx_psm_party_id"), PartySetMember.PARTY_SET_MEMBER, new OrderField[] { PartySetMember.PARTY_SET_MEMBER.PARTY_ID }, false);
     public static final Index IDX_UAP_PARTY = Internal.createIndex(DSL.name("idx_uap_party"), UserAllowedParty.USER_ALLOWED_PARTY, new OrderField[] { UserAllowedParty.USER_ALLOWED_PARTY.PARTY_ID }, false);
     public static final Index IDX_UAP_USER = Internal.createIndex(DSL.name("idx_uap_user"), UserAllowedParty.USER_ALLOWED_PARTY, new OrderField[] { UserAllowedParty.USER_ALLOWED_PARTY.USER_ID }, false);

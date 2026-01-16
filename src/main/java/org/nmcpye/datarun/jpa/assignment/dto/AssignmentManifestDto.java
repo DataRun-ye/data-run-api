@@ -1,10 +1,12 @@
 package org.nmcpye.datarun.jpa.assignment.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
 import org.nmcpye.datarun.party.dto.AssignmentStatus;
 import org.nmcpye.datarun.party.dto.CombineMode;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -15,11 +17,29 @@ import java.util.UUID;
 @Data
 @Builder(toBuilder = true)
 public class AssignmentManifestDto {
+    @NotNull
     private String assignmentUid;
     private String label;
-    private AssignmentStatus status; // IN_PROGRESS, DONE, EXPIRED, CANCELLED
-    private Set<String> templateUids;
+    @Builder.Default
+    private AssignmentStatus status = AssignmentStatus.PENDING; // IN_PROGRESS, DONE, EXPIRED, CANCELLED
+
+    /// allowedTemplateUids
+    private Set<String> allowedTemplateUids;
     private List<BindingDto> bindings;
+
+    // legacy
+    @Builder.Default
+    private Boolean deleted = false;
+    private Integer startDay;
+    private String orgUnitUid;
+    private String teamUid;
+    private String activityUid;
+    
+    // legacy All templates
+    @Builder.Default
+    private Set<String> forms = new HashSet<>();
+
+    private String defaultPartySet;
 
     @Data
     @Builder
@@ -30,9 +50,7 @@ public class AssignmentManifestDto {
         private UUID partySetId;
 
         CombineMode combineMode;
-        /**
-         * For debugging/audit: "Role Binding (Team X)", "Assignment Default", etc.
-         */
+        /// For debugging/audit: "Role Binding (Team X)", "Assignment Default", etc.
         String provenance;
     }
 }

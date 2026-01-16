@@ -106,8 +106,15 @@ public class ManifestService {
                 .assignmentUid(assign.getUid())
                 .label(assign.getOrgUnit().getName()) // Or other meaningful label
                 .status(AssignmentStatus.getAssignmentStatus(assign.getStatus()))
-                .templateUids(vocabUids)
+                .allowedTemplateUids(vocabUids)
                 .bindings(mapBindings(assignBindings, templatesById))
+                // legacy
+                .forms(assign.getForms())
+                .orgUnitUid(assign.getOrgUnit().getUid())
+                .activityUid(assign.getActivity().getUid())
+                .teamUid(assign.getTeam().getUid())
+                .deleted(assign.getDeleted())
+                .startDay(assign.getStartDay())
                 .build();
         }).toList();
 

@@ -83,12 +83,12 @@ public class AssignmentMember extends TableImpl<AssignmentMemberRecord> {
     /**
      * The column <code>public.assignment_member.valid_from</code>.
      */
-    public final TableField<AssignmentMemberRecord, LocalDateTime> VALID_FROM = createField(DSL.name("valid_from"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("now()"), SQLDataType.LOCALDATETIME)), this, "");
+    public final TableField<AssignmentMemberRecord, LocalDateTime> VALID_FROM = createField(DSL.name("valid_from"), SQLDataType.LOCALDATETIME(6), this, "");
 
     /**
      * The column <code>public.assignment_member.valid_to</code>.
      */
-    public final TableField<AssignmentMemberRecord, LocalDateTime> VALID_TO = createField(DSL.name("valid_to"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("now()"), SQLDataType.LOCALDATETIME)), this, "");
+    public final TableField<AssignmentMemberRecord, LocalDateTime> VALID_TO = createField(DSL.name("valid_to"), SQLDataType.LOCALDATETIME(6), this, "");
 
     /**
      * The column <code>public.assignment_member.created_date</code>.

@@ -1050,7 +1050,7 @@
                                 <name>org.jooq.meta.postgres.PostgresDatabase</name>
 <!--                                <inputSchema>analytics</inputSchema>-->
 <!--                                <inputSchema>public</inputSchema>-->
-                                <includes>tall_canonical|org_unit|user_allowed_party|team|team_user|app_user|user_group|user_group_users|party|party_set|assignment|party_set_member|assignment_party_binding|assignment_member
+                                <includes>tall_canonical|org_unit|user_allowed_party|team|team_user|app_user|user_group|user_group_users|party|party_set|party_tag|assignment|party_set_member|assignment_party_binding|assignment_member
                                 </includes>
 <!--                                <excludes>databasechangelog|databasechangeloglock</excludes>-->
                             </database>

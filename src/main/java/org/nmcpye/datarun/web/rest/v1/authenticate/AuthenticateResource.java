@@ -11,10 +11,12 @@ import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshRespons
 import org.nmcpye.datarun.web.rest.vm.LoginVM;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.web.bind.annotation.*;
 
 import static org.nmcpye.datarun.web.rest.v1.authenticate.AuthenticateResource.V1;
@@ -34,22 +36,35 @@ public class AuthenticateResource {
     private final TokenService tokenService;
 
     @PostMapping("/authenticate")
-    public ResponseEntity<?> authorize(@Valid @RequestBody LoginVM loginVM) {
+    public ResponseEntity<?> authorize(@Valid @RequestBody LoginVM loginVM, HttpServletRequest request) {
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
             loginVM.getUsername(),
             loginVM.getPassword()
         );
 
-        Authentication authentication = authenticationManagerBuilder.getObject()
-            .authenticate(authenticationToken);
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        // attach remote address and other web details so listeners/events can read them
+        authenticationToken.setDetails(new WebAuthenticationDetails(request));
 
-        String accessToken = tokenService.generateAccessToken(authentication.getName());
-        RefreshTokenDto refreshToken = tokenService.createRefreshToken(authentication.getName());
 
-        return ResponseEntity.ok()
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-            .body(new TokenRefreshResponse(accessToken, refreshToken.getToken()));
+        try {
+            Authentication authentication = authenticationManagerBuilder.getObject()
+                .authenticate(authenticationToken);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+
+            String accessToken = tokenService.generateAccessToken(authentication.getName());
+            RefreshTokenDto refreshToken = tokenService.createRefreshToken(authentication.getName());
+
+
+            return ResponseEntity.ok()
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .body(new TokenRefreshResponse(accessToken, refreshToken.getToken()));
+        } catch (BadCredentialsException ex) {
+            // safe logging: DO NOT log passwords or sensitive token data
+            String ip = request.getRemoteAddr();
+            log.warn("Authentication failed for username='{}' from ip='{}'", loginVM.getUsername(), ip);
+            throw ex; // preserve existing exception handling pipeline (ExceptionTranslator)
+        }
     }
 
     /**

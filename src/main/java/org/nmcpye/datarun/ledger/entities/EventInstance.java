@@ -1,4 +1,4 @@
-package org.nmcpye.etl.ledger.entities;
+package org.nmcpye.datarun.ledger.entities;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

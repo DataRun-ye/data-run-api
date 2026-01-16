@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.jpa.assignment.repository;
 
+import lombok.Data;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.springframework.data.domain.Page;
@@ -9,15 +10,23 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Repository
 //@JaversSpringDataAuditable
 public interface AssignmentRepository
     extends JpaIdentifiableRepository<Assignment>, AssignmentRepositoryWithBagRelationships {
+    @Data
+    static class AssignmentSummary {
+        String assignmentUid;
+        String activityUid;
+        String orgUnitUid;
+        String teamUid;
+        Integer startDay;
+        Boolean deleted;
+        Set<String> forms;
+
+    }
     /// ////
     @Override
     default List<Assignment> findAllByCodeIn(Collection<String> codes) {

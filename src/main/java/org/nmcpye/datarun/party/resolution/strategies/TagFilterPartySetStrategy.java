@@ -1,13 +1,9 @@
 package org.nmcpye.datarun.party.resolution.strategies;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
-import org.jooq.JSONB;
-import org.jooq.impl.DSL;
 import org.nmcpye.datarun.party.dto.PartyResolutionRequest;
 import org.nmcpye.datarun.party.dto.ResolvedParty;
 import org.nmcpye.datarun.party.entities.PartySetKind;
@@ -15,11 +11,9 @@ import org.nmcpye.datarun.party.resolution.engine.PartySecurityFilter;
 import org.nmcpye.datarun.party.service.JooqMapper;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-
-import static org.nmcpye.datarun.jooq.public_.tables.Party.PARTY;
 
 @Component
 @RequiredArgsConstructor
@@ -41,58 +35,59 @@ public class TagFilterPartySetStrategy implements PartySetStrategy {
                                        String specJson,
                                        boolean isMaterialized,
                                        PartyResolutionRequest request) {
-        try {
-            // 1. Parse Spec
-            // Expected Spec: { "tags": ["tag1", "tag2"], "types": ["ORG_UNIT", "TEAM"] }
-            JsonNode spec = objectMapper.readTree(specJson);
-
-            List<String> requiredTags = new ArrayList<>();
-            JsonNode tagsNode = spec.path("tags");
-            if (tagsNode.isArray()) {
-                tagsNode.forEach(node -> requiredTags.add(node.asText()));
-            }
-
-            List<String> requiredTypes = new ArrayList<>();
-            JsonNode typesNode = spec.path("types");
-            if (typesNode.isArray()) {
-                typesNode.forEach(node -> requiredTypes.add(node.asText()));
-            }
-
-            // 2. Build the base query
-            var query = dsl.selectFrom(PARTY)
-                // 3. Apply Tag Filter Condition
-                // This query uses the JSONB @> operator, which is highly efficient with a GIN index.
-                .where(!requiredTags.isEmpty() ? PARTY.TAGS.contains(
-                    JSONB.valueOf(objectMapper.writeValueAsString(requiredTags))) :
-                    DSL.falseCondition());
-
-            // 4. Apply Type Filter Condition (if specified)
-            if (!requiredTypes.isEmpty()) {
-                query = query.and(PARTY.SOURCE_TYPE.in(requiredTypes));
-            }
-
-            // 5. Apply Search Filter (if provided)
-            if (request.getSearchQuery() != null && !request.getSearchQuery().isBlank()) {
-                String term = "%" + request.getSearchQuery().trim() + "%";
-                query = query.and(PARTY.NAME.likeIgnoreCase(term).or(PARTY.CODE.likeIgnoreCase(term)));
-            }
-
-            // --- APPLY modified since FILTER ---
-            query = applySinceFilter(query, request.getSince());
-
-            // 6. Apply Security Filter
-            var securedQuery = securityFilter.apply(query, request.getUserId(),
-                isMaterialized);
-
-            // 7. Execute, Paginate, and Map
-            return securedQuery
-                .orderBy(PARTY.NAME.asc())
-                .limit(request.getLimit())
-                .offset(request.getOffset())
-                .fetch(jooqMapper::mapPartyRecord);
-
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Invalid JSON spec for TAG_FILTER PartySet " + partySetId, e);
-        }
+        return Collections.emptyList();
+//        try {
+//            // 1. Parse Spec
+//            // Expected Spec: { "tags": ["tag1", "tag2"], "types": ["ORG_UNIT", "TEAM"] }
+//            JsonNode spec = objectMapper.readTree(specJson);
+//
+//            List<String> requiredTags = new ArrayList<>();
+//            JsonNode tagsNode = spec.path("tags");
+//            if (tagsNode.isArray()) {
+//                tagsNode.forEach(node -> requiredTags.add(node.asText()));
+//            }
+//
+//            List<String> requiredTypes = new ArrayList<>();
+//            JsonNode typesNode = spec.path("types");
+//            if (typesNode.isArray()) {
+//                typesNode.forEach(node -> requiredTypes.add(node.asText()));
+//            }
+//
+//            // 2. Build the base query
+//            var query = dsl.selectFrom(PARTY)
+//                // 3. Apply Tag Filter Condition
+//                // This query uses the JSONB @> operator, which is highly efficient with a GIN index.
+//                .where(!requiredTags.isEmpty() ? PARTY.TAGS.contains(
+//                    JSONB.valueOf(objectMapper.writeValueAsString(requiredTags))) :
+//                    DSL.falseCondition());
+//
+//            // 4. Apply Type Filter Condition (if specified)
+//            if (!requiredTypes.isEmpty()) {
+//                query = query.and(PARTY.SOURCE_TYPE.in(requiredTypes));
+//            }
+//
+//            // 5. Apply Search Filter (if provided)
+//            if (request.getSearchQuery() != null && !request.getSearchQuery().isBlank()) {
+//                String term = "%" + request.getSearchQuery().trim() + "%";
+//                query = query.and(PARTY.NAME.likeIgnoreCase(term).or(PARTY.CODE.likeIgnoreCase(term)));
+//            }
+//
+//            // --- APPLY modified since FILTER ---
+//            query = applySinceFilter(query, request.getSince());
+//
+//            // 6. Apply Security Filter
+//            var securedQuery = securityFilter.apply(query, request.getUserId(),
+//                isMaterialized);
+//
+//            // 7. Execute, Paginate, and Map
+//            return securedQuery
+//                .orderBy(PARTY.NAME.asc())
+//                .limit(request.getLimit())
+//                .offset(request.getOffset())
+//                .fetch(jooqMapper::mapPartyRecord);
+//
+//        } catch (JsonProcessingException e) {
+//            throw new RuntimeException("Invalid JSON spec for TAG_FILTER PartySet " + partySetId, e);
+//        }
     }
 }

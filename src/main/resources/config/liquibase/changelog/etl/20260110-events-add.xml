@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+
+    <changeSet id="add-event-supply-claiming-cols" author="hamza-ye">
+        <addColumn tableName="events" schemaName="analytics">
+            <column name="ledger_claimed_by" type="varchar(64)"/>
+            <column name="ledger_claimed_at" type="timestamp"/>
+            <column name="ledger_failures_count" type="integer" defaultValueNumeric="0"/>
+            <column name="last_ledger_failure" type="timestamp"/>
+            <column name="processed_to_ledger" type="boolean" defaultValueBoolean="false"/>
+        </addColumn>
+        <createIndex indexName="idx_events_processed" tableName="events" schemaName="analytics">
+            <column name="processed_to_ledger"/>
+        </createIndex>
+        <sql>
+            CREATE TABLE IF NOT EXISTS analytics.processing_issues (
+                                                                       id bigserial PRIMARY KEY,
+                                                                       submission_uid varchar(64),
+                created_at timestamptz DEFAULT now(),
+                worker_id varchar(128),
+                error_message text,
+                details jsonb
+                );
+            CREATE INDEX IF NOT EXISTS idx_processing_issues_submission ON analytics.processing_issues (submission_uid);
+        </sql>
+    </changeSet>
+</databaseChangeLog>

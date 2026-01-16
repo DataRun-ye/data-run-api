@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.UUID;
 
+import static org.nmcpye.datarun.jooq.public_.Tables.PARTY_TAG;
 import static org.nmcpye.datarun.jooq.public_.tables.Party.PARTY;
 import static org.nmcpye.datarun.jooq.public_.tables.PartySetMember.PARTY_SET_MEMBER;
 
@@ -59,11 +60,12 @@ public class StaticPartySetStrategy implements PartySetStrategy {
                 PARTY.TYPE,
                 PARTY.NAME,
                 PARTY.CODE,
-                PARTY.PROPERTIES_MAP,
+                PARTY_TAG.META,
                 PARTY.SOURCE_TYPE
             )
             .from(PARTY)
             .join(PARTY_SET_MEMBER).on(PARTY.ID.eq(PARTY_SET_MEMBER.PARTY_ID))
+            .join(PARTY_TAG).on(PARTY.ID.eq(PARTY_TAG.PARTY_ID))
             .where(whereCondition);
 
         // --- APPLY modified since FILTER ---

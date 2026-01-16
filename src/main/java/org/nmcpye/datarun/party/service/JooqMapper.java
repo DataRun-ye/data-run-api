@@ -1,7 +1,5 @@
 package org.nmcpye.datarun.party.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,13 +19,13 @@ public class JooqMapper {
 
     public ResolvedParty mapPartyRecord(org.jooq.Record r) {
         Map<String, Object> properties = new HashMap<>();
-        try {
-            properties = objectMapper.readValue(r.get(PARTY.PROPERTIES_MAP).data(),
-                new TypeReference<Map<String, Object>>() {
-                });
-        } catch (JsonProcessingException e) {
-            log.error("error reading properties map", e);
-        }
+//        try {
+//            properties = objectMapper.readValue(r.get(PARTY.PROPERTIES_MAP).data(),
+//                new TypeReference<Map<String, Object>>() {
+//                });
+//        } catch (JsonProcessingException e) {
+//            log.error("error reading properties map", e);
+//        }
 
         return ResolvedParty.builder()
             .id(r.get(PARTY.ID))

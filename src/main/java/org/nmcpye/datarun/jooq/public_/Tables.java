@@ -12,6 +12,7 @@ import org.nmcpye.datarun.jooq.public_.tables.OrgUnit;
 import org.nmcpye.datarun.jooq.public_.tables.Party;
 import org.nmcpye.datarun.jooq.public_.tables.PartySet;
 import org.nmcpye.datarun.jooq.public_.tables.PartySetMember;
+import org.nmcpye.datarun.jooq.public_.tables.PartyTag;
 import org.nmcpye.datarun.jooq.public_.tables.Team;
 import org.nmcpye.datarun.jooq.public_.tables.TeamUser;
 import org.nmcpye.datarun.jooq.public_.tables.UserAllowedParty;
@@ -64,6 +65,11 @@ public class Tables {
      * The table <code>public.party_set_member</code>.
      */
     public static final PartySetMember PARTY_SET_MEMBER = PartySetMember.PARTY_SET_MEMBER;
+
+    /**
+     * The table <code>public.party_tag</code>.
+     */
+    public static final PartyTag PARTY_TAG = PartyTag.PARTY_TAG;
 
     /**
      * The table <code>public.team</code>.

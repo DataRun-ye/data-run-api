@@ -1,7 +1,7 @@
-package org.nmcpye.etl.ledger.repo;
+package org.nmcpye.datarun.ledger.repo;
 
 import io.hypersistence.utils.spring.repository.BaseJpaRepository;
-import org.nmcpye.etl.ledger.entities.EventInstance;
+import org.nmcpye.datarun.ledger.entities.EventInstance;
 import org.springframework.stereotype.Repository;
 
 @Repository
