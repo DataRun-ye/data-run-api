@@ -16,14 +16,9 @@ public class AuthenticationSuccessListener implements ApplicationListener<Authen
     @Override
     public void onApplicationEvent(AuthenticationSuccessEvent event) {
         Object principal = event.getAuthentication().getPrincipal();
-        String userId = extractUserId(principal); // adapt to your principal
-        lastSeenService.touch(userId, Instant.now());
-    }
 
-    private String extractUserId(Object principal) {
-        // adapt: if principal is a UserDetails with id, etc.
-        // example:
-        if (principal instanceof CurrentUserDetails p) return p.getId();
-        return null;
+        if (principal instanceof CurrentUserDetails user) {
+            lastSeenService.touch(user.getId(), Instant.now());
+        }
     }
 }

@@ -9,8 +9,6 @@ import org.nmcpye.datarun.datatemplateprocessor.validation.validators.TemplateVa
 import org.nmcpye.datarun.jpa.errorevent.service.ErrorEventService;
 import org.nmcpye.datarun.jpa.user.UsernameAlreadyUsedException;
 import org.nmcpye.datarun.jpa.userrefreshtoken.TokenRefreshException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.ConcurrencyFailureException;
@@ -30,6 +28,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import tech.jhipster.config.JHipsterConstants;
@@ -44,13 +43,12 @@ import static org.springframework.core.annotation.AnnotatedElementUtils.findMerg
 
 /**
  * Controller advice to translate the server side exceptions to client-friendly json structures.
- * The error response follows RFC7807 - Problem Details for HTTP APIs (https://tools.ietf.org/html/rfc7807).
+ * The error response follows RFC7807 - Problem Details for HTTP APIs (<a href="https://tools.ietf.org/html/rfc7807">
+ * </a>).
  */
 @ControllerAdvice
 @RequiredArgsConstructor
 public class ExceptionTranslator extends ResponseEntityExceptionHandler {
-    private static final Logger log = LoggerFactory.getLogger(ExceptionTranslator.class);
-
     private static final String FIELD_ERRORS_KEY = "fieldErrors";
     private static final String MESSAGE_KEY = "message";
     private static final String PATH_KEY = "path";
@@ -61,18 +59,6 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     private final Environment env;
 
     private final ErrorEventService errorEventService;
-
-//    @ExceptionHandler({IllegalArgumentException.class, InvalidMeasureException.class})
-//    public ResponseEntity<Map<String, Object>> handleBadRequest(Exception ex) {
-//        log.debug("Bad request: {}", ex.getMessage(), ex);
-//        Map<String, Object> body = Map.of(
-//            "type", "https://example.org/problem/invalid-request",
-//            "title", "Bad Request",
-//            "status", 400,
-//            "detail", ex.getMessage()
-//        );
-//        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
-//    }
 
     @ExceptionHandler(ErrorCodeException.class)
     public ResponseEntity<?> handleBaseException(ErrorCodeException ex) {
@@ -99,13 +85,12 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<Object> handleAnyException(Throwable ex, NativeWebRequest request) {
-        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-//        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", summary.getFailed()));
-
+        // Create the body (ProblemDetail)
         ProblemDetailWithCause pdCause = wrapAndCustomizeProblem(ex, request);
-        // non-blocking fire-and-forget
-        Map<String, Object> ctx = Map.of("requestId", UUID.randomUUID().toString(), "status", pdCause.getStatus());
-        errorEventService.persist(ex, request, HttpStatus.valueOf(pdCause.getStatus()), null, null, ctx);
+
+        // Log it (Async)
+        logErrorToDb(ex, request, pdCause.getStatus());
+
         return handleExceptionInternal((Exception) ex, pdCause, buildHeaders(ex),
             HttpStatusCode.valueOf(pdCause.getStatus()), request);
     }
@@ -113,51 +98,42 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     @Nullable
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(
-        Exception ex,
-        @Nullable Object body,
-        HttpHeaders headers,
-        HttpStatusCode statusCode,
-        WebRequest request
-    ) {
-        log.error("Exception handled: {}", ex.getMessage(), ex);
-
-        if (ex instanceof org.springframework.web.method.annotation.HandlerMethodValidationException hmvEx) {
-            List<Map<String, Object>> details = new ArrayList<>();
-
-            for (org.springframework.validation.method.ParameterValidationResult pvr : hmvEx.getParameterValidationResults()) {
-                for (org.springframework.context.MessageSourceResolvable msr : pvr.getResolvableErrors()) {
-                    Map<String, Object> item = new HashMap<>();
-                    item.put("param", pvr.getMethodParameter().getParameterName());
-                    item.put("argument", pvr.getArgument());
-                    item.put("resolvable", List.of(msr.getCodes(), msr.getArguments()));
-
-                    // try to unwrap the original ConstraintViolation (optional)
-                    try {
-                        jakarta.validation.ConstraintViolation<?> cv =
-                            pvr.unwrap(msr, jakarta.validation.ConstraintViolation.class);
-                        if (cv != null) {
-                            item.put("constraint", cv.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName());
-                            item.put("invalidValue", cv.getInvalidValue());
-                            item.put("path", cv.getPropertyPath().toString());
-                        }
-                    } catch (Exception ignore) { /* not always available; ignore safely */ }
-
-                    details.add(item);
-                }
-            }
-
-            log.error("Validation failed (detailed): {}", details);
-            body = Map.of("status", statusCode.toString(), "message", "Validation failure", "errors", details);
+        Exception ex, @Nullable Object body, HttpHeaders headers,
+        HttpStatusCode statusCode, WebRequest request) {
+        // Ensure body is built
+        if (body == null) {
+            body = wrapAndCustomizeProblem(ex, (NativeWebRequest) request);
         }
 
-        body = body == null ? wrapAndCustomizeProblem(ex, (NativeWebRequest) request) : body;
-        return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+        // Log it (Async) - Ensure we don't log twice if handleAnyException called this
+        // Simple check: most internal Spring exceptions (MethodArgumentNotValid) enter here directly
+        if (!isAlreadyLogged(request)) {
+            logErrorToDb(ex, (NativeWebRequest) request, statusCode.value());
+        }
 
-//        log.error("Exception handled: {}", ex.getMessage(), ex);
-//
-////        body = wrapAndCustomizeProblem(ex, (NativeWebRequest) request);
-//        body = body == null ? wrapAndCustomizeProblem(ex, (NativeWebRequest) request) : body;
-//        return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+        return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+    }
+
+    // --- Helper to keep code clean ---
+    private void logErrorToDb(Throwable ex, NativeWebRequest request, int status) {
+        markAsLogged(request); // prevent double logging
+        Map<String, Object> context = new HashMap<>();
+        context.put("requestId", UUID.randomUUID().toString());
+
+        // You can add extra specific details here if needed
+        if (ex instanceof MethodArgumentNotValidException) {
+            context.put("validationErrors", ((MethodArgumentNotValidException) ex).getBindingResult().getErrorCount());
+        }
+
+        errorEventService.logError(ex, request, HttpStatus.valueOf(status), context);
+    }
+
+    private void markAsLogged(NativeWebRequest request) {
+        request.setAttribute("ERROR_LOGGED", true, RequestAttributes.SCOPE_REQUEST);
+    }
+
+    private boolean isAlreadyLogged(WebRequest request) {
+        return Boolean.TRUE.equals(request.getAttribute("ERROR_LOGGED", RequestAttributes.SCOPE_REQUEST));
     }
 
     protected ProblemDetailWithCause wrapAndCustomizeProblem(Throwable ex, NativeWebRequest request) {
@@ -165,14 +141,6 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     }
 
     private ProblemDetailWithCause getProblemDetailWithCause(Throwable ex) {
-//        if (ex instanceof TemplateValidationException validationException) {
-//            summary.getFailed().put("error_code", validationException.getErrorCode().toString());
-//            summary.getFailed().put("message", validationException.getResult().toString());
-//
-//        } else {
-//            summary.getFailed().put("message", ex.getMessage());
-//        }
-
         if (
             ex instanceof RequestQueryParsingException
         ) return (ProblemDetailWithCause) new RequestQueryParsingException().getBody();

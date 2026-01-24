@@ -1,43 +1,40 @@
 package org.nmcpye.datarun.security;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.jpa.errorevent.service.ErrorEventService;
 import org.springframework.context.ApplicationListener;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
-import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class AuthenticationFailureListener
     implements ApplicationListener<AuthenticationFailureBadCredentialsEvent> {
     private final ErrorEventService errorEventService;
 
-    public AuthenticationFailureListener(ErrorEventService errorEventService) {
-        this.errorEventService = errorEventService;
-    }
-
     @Override
     public void onApplicationEvent(AuthenticationFailureBadCredentialsEvent event) {
+        // Extract the username that FAILED to login
         Object principal = event.getAuthentication().getPrincipal();
-        String username = principal instanceof String ? (String) principal : String.valueOf(principal);
+        String attemptedUsername = principal instanceof String ? (String) principal : String.valueOf(principal);
 
+        // Bridge the gap: Put this username into the Request Scope
+        // The ExceptionTranslator will pick this up in the Service via request.getAttribute()
+        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+        if (attrs != null) {
+            attrs.setAttribute(
+                ErrorEventService.ATTR_ATTEMPTED_USERNAME,
+                attemptedUsername,
+                RequestAttributes.SCOPE_REQUEST
+            );
+        }
 
-        Object details = event.getAuthentication().getDetails();
-        String ip = details instanceof WebAuthenticationDetails
-            ? ((WebAuthenticationDetails) details).getRemoteAddress()
-            : "unknown";
-
-        // log the failure; do NOT log credentials
-        log.warn("Authentication failure for user='{}' from ip='{}' - reason={}",
-            username, ip, event.getException().getMessage());
-
-        errorEventService.persist(event.getException(), null, HttpStatus.UNAUTHORIZED, username, ip, Map.of());
-
-        // Optionally: increment counters, emit metrics, or record to audit DB here
+        // We do NOT log to DB here. We let the Exception bubble to ExceptionTranslator.
+        log.warn("Login failed for user: {}", attemptedUsername);
     }
 }
