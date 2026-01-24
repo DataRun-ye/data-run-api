@@ -164,6 +164,16 @@ public class Assignment extends TableImpl<AssignmentRecord> {
      */
     public final TableField<AssignmentRecord, UUID> DEFAULT_PARTY_SET_ID = createField(DSL.name("default_party_set_id"), SQLDataType.UUID, this, "");
 
+    /**
+     * The column <code>public.assignment.code</code>.
+     */
+    public final TableField<AssignmentRecord, String> CODE = createField(DSL.name("code"), SQLDataType.VARCHAR(100), this, "");
+
+    /**
+     * The column <code>public.assignment.name</code>.
+     */
+    public final TableField<AssignmentRecord, String> NAME = createField(DSL.name("name"), SQLDataType.VARCHAR(255), this, "");
+
     private Assignment(Name alias, Table<AssignmentRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -205,7 +215,7 @@ public class Assignment extends TableImpl<AssignmentRecord> {
 
     @Override
     public List<UniqueKey<AssignmentRecord>> getUniqueKeys() {
-        return Arrays.asList(Keys.UC_ASSIGNMENT_ACTIVITY_ID, Keys.UC_ASSIGNMENT_UID);
+        return Arrays.asList(Keys.ASSIGNMENT_CODE_KEY, Keys.UC_ASSIGNMENT_ACTIVITY_ID, Keys.UC_ASSIGNMENT_UID);
     }
 
     @Override

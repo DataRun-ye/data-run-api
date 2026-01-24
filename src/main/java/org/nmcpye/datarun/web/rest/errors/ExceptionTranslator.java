@@ -1,11 +1,12 @@
 package org.nmcpye.datarun.web.rest.errors;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.nmcpye.datarun.analytics.exception.InvalidMeasureException;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.TemplateValidationException;
+import org.nmcpye.datarun.jpa.errorevent.service.ErrorEventService;
 import org.nmcpye.datarun.jpa.user.UsernameAlreadyUsedException;
 import org.nmcpye.datarun.jpa.userrefreshtoken.TokenRefreshException;
 import org.slf4j.Logger;
@@ -46,6 +47,7 @@ import static org.springframework.core.annotation.AnnotatedElementUtils.findMerg
  * The error response follows RFC7807 - Problem Details for HTTP APIs (https://tools.ietf.org/html/rfc7807).
  */
 @ControllerAdvice
+@RequiredArgsConstructor
 public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(ExceptionTranslator.class);
 
@@ -56,23 +58,21 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
     @Value("${jhipster.clientApp.name}")
     private String applicationName;
-
     private final Environment env;
 
-    public ExceptionTranslator(Environment env) {
-        this.env = env;
-    }
-    @ExceptionHandler({ IllegalArgumentException.class, InvalidMeasureException.class })
-    public ResponseEntity<Map<String, Object>> handleBadRequest(Exception ex) {
-        log.debug("Bad request: {}", ex.getMessage(), ex);
-        Map<String, Object> body = Map.of(
-            "type", "https://example.org/problem/invalid-request",
-            "title", "Bad Request",
-            "status", 400,
-            "detail", ex.getMessage()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
-    }
+    private final ErrorEventService errorEventService;
+
+//    @ExceptionHandler({IllegalArgumentException.class, InvalidMeasureException.class})
+//    public ResponseEntity<Map<String, Object>> handleBadRequest(Exception ex) {
+//        log.debug("Bad request: {}", ex.getMessage(), ex);
+//        Map<String, Object> body = Map.of(
+//            "type", "https://example.org/problem/invalid-request",
+//            "title", "Bad Request",
+//            "status", 400,
+//            "detail", ex.getMessage()
+//        );
+//        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+//    }
 
     @ExceptionHandler(ErrorCodeException.class)
     public ResponseEntity<?> handleBaseException(ErrorCodeException ex) {
@@ -99,7 +99,13 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<Object> handleAnyException(Throwable ex, NativeWebRequest request) {
+        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
+//        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", summary.getFailed()));
+
         ProblemDetailWithCause pdCause = wrapAndCustomizeProblem(ex, request);
+        // non-blocking fire-and-forget
+        Map<String, Object> ctx = Map.of("requestId", UUID.randomUUID().toString(), "status", pdCause.getStatus());
+        errorEventService.persist(ex, request, HttpStatus.valueOf(pdCause.getStatus()), null, null, ctx);
         return handleExceptionInternal((Exception) ex, pdCause, buildHeaders(ex),
             HttpStatusCode.valueOf(pdCause.getStatus()), request);
     }
@@ -116,11 +122,11 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         log.error("Exception handled: {}", ex.getMessage(), ex);
 
         if (ex instanceof org.springframework.web.method.annotation.HandlerMethodValidationException hmvEx) {
-            List<Map<String,Object>> details = new ArrayList<>();
+            List<Map<String, Object>> details = new ArrayList<>();
 
             for (org.springframework.validation.method.ParameterValidationResult pvr : hmvEx.getParameterValidationResults()) {
                 for (org.springframework.context.MessageSourceResolvable msr : pvr.getResolvableErrors()) {
-                    Map<String,Object> item = new HashMap<>();
+                    Map<String, Object> item = new HashMap<>();
                     item.put("param", pvr.getMethodParameter().getParameterName());
                     item.put("argument", pvr.getArgument());
                     item.put("resolvable", List.of(msr.getCodes(), msr.getArguments()));
@@ -159,6 +165,14 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     }
 
     private ProblemDetailWithCause getProblemDetailWithCause(Throwable ex) {
+//        if (ex instanceof TemplateValidationException validationException) {
+//            summary.getFailed().put("error_code", validationException.getErrorCode().toString());
+//            summary.getFailed().put("message", validationException.getResult().toString());
+//
+//        } else {
+//            summary.getFailed().put("message", ex.getMessage());
+//        }
+
         if (
             ex instanceof RequestQueryParsingException
         ) return (ProblemDetailWithCause) new RequestQueryParsingException().getBody();

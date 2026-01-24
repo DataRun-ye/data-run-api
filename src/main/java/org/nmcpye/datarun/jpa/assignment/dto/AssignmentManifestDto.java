@@ -34,7 +34,7 @@ public class AssignmentManifestDto {
     private String orgUnitUid;
     private String teamUid;
     private String activityUid;
-    
+
     // legacy All templates
     @Builder.Default
     private Set<String> forms = new HashSet<>();

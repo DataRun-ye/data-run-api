@@ -11,7 +11,6 @@ import org.springframework.stereotype.Repository;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author Hamza Assada 29/12/2025
@@ -38,14 +37,14 @@ public interface AssignmentMemberRepository extends BaseJpaRepository<Assignment
      * AND (valid_to   IS NULL OR valid_to   > now())
      */
     @Query(value = """
-        SELECT DISTINCT am.assignment_id
+        SELECT DISTINCT am
         FROM assignment_member am
-        WHERE am.member_id IN (:principalIds)
+        WHERE  am.member_id IN (:principalIds) AND am.assignment_id IN (:assignmentIds)
           AND (am.valid_from IS NULL OR am.valid_from <= now())
           AND (am.valid_to   IS NULL OR am.valid_to   > now())
         """, nativeQuery = true)
-    List<String> findActiveAssignmentIdsForPrincipals(@Param("principalIds") Set<String> principalIds);
-
+    List<AssignmentMember> findActiveAssignmentIdsForPrincipals(@Param("assignmentIds") Collection<String> assignmentIds,
+                                                                @Param("principalIds") Collection<String> principalIds);
 
     /**
      * Return distinct active assignment ids for the given principals.

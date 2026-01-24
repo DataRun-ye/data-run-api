@@ -55,6 +55,7 @@ public class Keys {
     public static final UniqueKey<AppUserRecord> UC_APP_USER_LOGIN = Internal.createUniqueKey(AppUser.APP_USER, DSL.name("uc_app_user_login"), new TableField[] { AppUser.APP_USER.LOGIN }, true);
     public static final UniqueKey<AppUserRecord> UC_APP_USER_MOBILE = Internal.createUniqueKey(AppUser.APP_USER, DSL.name("uc_app_user_mobile"), new TableField[] { AppUser.APP_USER.MOBILE }, true);
     public static final UniqueKey<AppUserRecord> UC_APP_USER_UID = Internal.createUniqueKey(AppUser.APP_USER, DSL.name("uc_app_user_uid"), new TableField[] { AppUser.APP_USER.UID }, true);
+    public static final UniqueKey<AssignmentRecord> ASSIGNMENT_CODE_KEY = Internal.createUniqueKey(Assignment.ASSIGNMENT, DSL.name("assignment_code_key"), new TableField[] { Assignment.ASSIGNMENT.CODE }, true);
     public static final UniqueKey<AssignmentRecord> PK_ASSIGNMENT = Internal.createUniqueKey(Assignment.ASSIGNMENT, DSL.name("pk_assignment"), new TableField[] { Assignment.ASSIGNMENT.ID }, true);
     public static final UniqueKey<AssignmentRecord> UC_ASSIGNMENT_ACTIVITY_ID = Internal.createUniqueKey(Assignment.ASSIGNMENT, DSL.name("uc_assignment_activity_id"), new TableField[] { Assignment.ASSIGNMENT.ACTIVITY_ID, Assignment.ASSIGNMENT.ORG_UNIT_ID, Assignment.ASSIGNMENT.TEAM_ID }, true);
     public static final UniqueKey<AssignmentRecord> UC_ASSIGNMENT_UID = Internal.createUniqueKey(Assignment.ASSIGNMENT, DSL.name("uc_assignment_uid"), new TableField[] { Assignment.ASSIGNMENT.UID }, true);

@@ -9,6 +9,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * @author Hamza Assada 29/12/2025
@@ -62,4 +63,19 @@ public class AssignmentMember {
     @LastModifiedBy
     @Column(name = "last_modified_by", nullable = false)
     private Instant lastModifiedBy;
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        AssignmentMember that = (AssignmentMember) o;
+        return Objects.equals(assignmentId, that.assignmentId)
+            && Objects.equals(memberType, that.memberType)
+            && Objects.equals(memberId, that.memberId)
+            && Objects.equals(role, that.role);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(assignmentId, memberType, memberId, role);
+    }
 }

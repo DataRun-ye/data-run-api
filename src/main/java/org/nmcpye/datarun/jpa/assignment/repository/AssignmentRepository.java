@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.assignment.repository;
 
-import lombok.Data;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.jpa.assignment.dto.AssignmentManifestProjection;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,48 +10,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 //@JaversSpringDataAuditable
 public interface AssignmentRepository
     extends JpaIdentifiableRepository<Assignment>, AssignmentRepositoryWithBagRelationships {
-    @Data
-    static class AssignmentSummary {
-        String assignmentUid;
-        String activityUid;
-        String orgUnitUid;
-        String teamUid;
-        Integer startDay;
-        Boolean deleted;
-        Set<String> forms;
-
-    }
-    /// ////
-    @Override
-    default List<Assignment> findAllByCodeIn(Collection<String> codes) {
-        return Collections.emptyList();
-    }
-
-    @Override
-    default Boolean existsByCode(String code) {
-        return false;
-    }
-
-
-    @Override
-    default Optional<Assignment> findFirstByCode(String code) {
-        return Optional.empty();
-    }
-
-    @Override
-    default Optional<Assignment> findFirstByName(String name) {
-        return Optional.empty();
-    }
-
-    default List<Assignment> findByNameLike(String name) {
-        return Collections.emptyList();
-    }
 
     @Query(
         "select assignment from Assignment assignment " +
@@ -143,13 +109,16 @@ public interface AssignmentRepository
 //        """, nativeQuery = true)
 //    Page<AssignmentSummary> findSummariesTeam(@Param("teamIds") Collection<String> teamIds, Pageable pageable);
 //
-//    @Query(value = """
-//        SELECT assi.*
-//        FROM assignment assi
-//        Join team t on t.id = assi.team_id
-//        WHERE t.uid IN :teamId
-//        """, nativeQuery = true)
-//    Page<AssignmentSummary> findSummariesTeam(@Param("teamId") String teamId, Pageable pageable);
+
+
+    @Query("SELECT a.id as assignmentId, a.uid as assignmentUid, a.name as label, a.activity.uid as activityUid, " +
+        "a.orgUnit.uid as orgUnitUid, " +
+        "a.team.uid as teamUid, a.deleted, a.startDay, " +
+        "a.status, a.forms, a.lastModifiedDate " +
+        "FROM Assignment a " +
+//        "LEFT JOIN a.activity LEFT JOIN a.team LEFT JOIN a.orgUnit " +
+        "WHERE a.uid IN :uids ")
+    List<AssignmentManifestProjection> findAssignmentManifestsByUids(@Param("uids") List<String> uids);
 
 //    @Query(
 //        value = "select assignment from Assignment assignment " +

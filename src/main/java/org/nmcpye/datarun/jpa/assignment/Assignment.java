@@ -118,6 +118,31 @@ public class Assignment extends JpaSoftDeleteObject {
     @JoinColumn(name = "default_party_set_id")
     private PartySet defaultPartySet;
 
+    /**
+     * The name of this object. Required and unique.
+     */
+    @Column(name = "name")
+    protected String name;
+
+    @Column(name = "code", length = 100, unique = true)
+    protected String code;
+
+    @JsonIgnore
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "assignment")
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    private Set<AssignmentDataTemplateEntity> dataTemplates = new HashSet<>();
+
+    @JsonIgnore
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "assignment")
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    private Set<AssignmentPartyBinding> bindings = new HashSet<>();
+
+    @JsonIgnore
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assignment_id")
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    private Set<AssignmentMember> members = new HashSet<>();
+
     @JsonProperty(value = "progressStatus")
     public FlowStatus getStatus() {
         return status;
@@ -352,15 +377,5 @@ public class Assignment extends JpaSoftDeleteObject {
             ", lastModifiedBy='" + getLastModifiedBy() + "'" +
             ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             "}";
-    }
-
-    @Override
-    public String getCode() {
-        return null;
-    }
-
-    @Override
-    public String getName() {
-        return null;
     }
 }

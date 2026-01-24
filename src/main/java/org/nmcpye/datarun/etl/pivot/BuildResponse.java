@@ -24,7 +24,7 @@ public class BuildResponse {
         return r;
     }
 
-    public static BuildResponse failure(Exception ex) {
+    public static BuildResponse failure(Throwable ex) {
         return failure(ex.getMessage());
     }
 

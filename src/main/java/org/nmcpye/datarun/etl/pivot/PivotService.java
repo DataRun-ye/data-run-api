@@ -8,7 +8,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +25,25 @@ public class PivotService {
     private final PivotManifestRepository manifestRepo;
     private final Naming naming;
     private final DataTemplateRepository templateRepository;
+
+    public Map<String, BuildResponse> buildTemplates(List<String> uids) {
+        if (uids == null || uids.isEmpty()) return Collections.emptyMap();
+
+        Map<String, BuildResponse> results = new LinkedHashMap<>();
+        for (String uid : uids) {
+            try {
+                // reuse existing logic which already reports to manifestRepo and logs
+                BuildResponse resp = buildTemplate(uid);
+                results.put(uid, resp);
+            } catch (Throwable t) {
+                // defensive: buildTemplate normally returns BuildResponse.failure on exceptions,
+                // but catch anything that bubbles up to ensure we always return a result for every uid.
+                log.error("pivot: unexpected failure while building template={}, reason={}", uid, t.getMessage(), t);
+                results.put(uid, BuildResponse.failure(t));
+            }
+        }
+        return results;
+    }
 
     public BuildResponse buildTemplate(String uid) {
         Instant start = Instant.now();

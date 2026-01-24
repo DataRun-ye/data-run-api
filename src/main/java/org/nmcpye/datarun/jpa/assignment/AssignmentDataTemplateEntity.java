@@ -16,6 +16,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 /// Control which `data_template` (vocabulary) a *principal* (user/team/group or a `member role`) can see/use inside
@@ -77,4 +78,16 @@ public class AssignmentDataTemplateEntity {
     @LastModifiedDate
     @Column(name = "last_modified_date")
     protected Instant lastModifiedDate;
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        AssignmentDataTemplateEntity that = (AssignmentDataTemplateEntity) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
 }

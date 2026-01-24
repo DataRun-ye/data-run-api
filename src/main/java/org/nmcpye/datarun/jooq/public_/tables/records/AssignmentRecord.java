@@ -329,6 +329,34 @@ public class AssignmentRecord extends UpdatableRecordImpl<AssignmentRecord> {
         return (UUID) get(21);
     }
 
+    /**
+     * Setter for <code>public.assignment.code</code>.
+     */
+    public void setCode(String value) {
+        set(22, value);
+    }
+
+    /**
+     * Getter for <code>public.assignment.code</code>.
+     */
+    public String getCode() {
+        return (String) get(22);
+    }
+
+    /**
+     * Setter for <code>public.assignment.name</code>.
+     */
+    public void setName(String value) {
+        set(23, value);
+    }
+
+    /**
+     * Getter for <code>public.assignment.name</code>.
+     */
+    public String getName() {
+        return (String) get(23);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -352,7 +380,7 @@ public class AssignmentRecord extends UpdatableRecordImpl<AssignmentRecord> {
     /**
      * Create a detached, initialised AssignmentRecord
      */
-    public AssignmentRecord(String id, String uid, Boolean deleted, LocalDateTime deletedAt, String activityId, Integer startDay, String orgUnitId, String teamId, String path, Integer level, String parentId, JSONB forms, JSONB allocatedResources, String status, String lastSubmittedBy, JSONB translations, String createdBy, LocalDateTime createdDate, String lastModifiedBy, LocalDateTime lastModifiedDate, JSONB propertiesMap, UUID defaultPartySetId) {
+    public AssignmentRecord(String id, String uid, Boolean deleted, LocalDateTime deletedAt, String activityId, Integer startDay, String orgUnitId, String teamId, String path, Integer level, String parentId, JSONB forms, JSONB allocatedResources, String status, String lastSubmittedBy, JSONB translations, String createdBy, LocalDateTime createdDate, String lastModifiedBy, LocalDateTime lastModifiedDate, JSONB propertiesMap, UUID defaultPartySetId, String code, String name) {
         super(Assignment.ASSIGNMENT);
 
         setId(id);
@@ -377,6 +405,8 @@ public class AssignmentRecord extends UpdatableRecordImpl<AssignmentRecord> {
         setLastModifiedDate(lastModifiedDate);
         setPropertiesMap(propertiesMap);
         setDefaultPartySetId(defaultPartySetId);
+        setCode(code);
+        setName(name);
         resetChangedOnNotNull();
     }
 }

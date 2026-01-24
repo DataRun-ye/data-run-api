@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.party.service;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.AssignmentMember;
 import org.nmcpye.datarun.jpa.assignment.AssignmentPartyBinding;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentManifestDto;
+import org.nmcpye.datarun.jpa.assignment.dto.AssignmentManifestProjection;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentDataTemplateJooqRepository;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentMemberRepository;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentPartyBindingRepository;
@@ -59,7 +59,7 @@ public class ManifestService {
         }
 
         // 3. Fetch all required data in bulk to avoid N+1 queries
-        List<Assignment> assignments = assignmentRepo.findAllById(assignmentIds.getContent());
+        List<AssignmentManifestProjection> assignments = assignmentRepo.findAssignmentManifestsByUids(assignmentIds.getContent());
 
         List<AssignmentPartyBinding> bindings = bindingRepo.findByAssignmentIdIn(assignmentIds.getContent());
 
@@ -77,13 +77,18 @@ public class ManifestService {
         Map<String, List<AssignmentPartyBinding>> bindingsByAssignmentId = bindings.stream()
             .collect(Collectors.groupingBy(b -> b.getAssignment().getId()));
 
+        // Group bindings by assignment for efficient mapping
+        Map<String, List<AssignmentMember>> principalAssignmentRolesByAssignmentId = memberRepo
+            .findActiveAssignmentIdsForPrincipals(assignmentIds.getContent(), principalIds).stream()
+            .collect(Collectors.groupingBy(AssignmentMember::getAssignmentId));
+
         // 4. Build the final DTOs in memory
         final var bindingsManifest = assignments.stream().map(assign -> {
             // base forms declared on the assignment
             Set<String> assignmentFormUids = Optional.ofNullable(assign.getForms()).orElse(Collections.emptySet());
 
             // compute user roles for this assignment from assignment_member rows
-            List<AssignmentMember> amRows = memberRepo.findByAssignmentId(assign.getId());
+            List<AssignmentMember> amRows = principalAssignmentRolesByAssignmentId.get(assign.getAssignmentId());
             Set<String> userRoles = amRows.stream()
                 .filter(am -> principalIds.contains(am.getMemberId()) || userId.equals(am.getMemberId()))
                 .map(AssignmentMember::getRole)
@@ -92,27 +97,27 @@ public class ManifestService {
 
             // fetch allowed templates (data_template.uids) for this user/principals in this assignment
             List<String> allowedTemplateUids = assignmentDataTemplateRepo.findAllowedTemplateUids(
-                assign.getId(), userId, principalIds, userRoles);
+                assign.getAssignmentId(), userId, principalIds, userRoles);
 
             // intersect with assignment declared forms to keep scope
             Set<String> vocabUids = assignmentFormUids.stream()
                 .filter(allowedTemplateUids::contains)
                 .collect(Collectors.toSet());
 
-            List<AssignmentPartyBinding> assignBindings = bindingsByAssignmentId.getOrDefault(assign.getId(),
+            List<AssignmentPartyBinding> assignBindings = bindingsByAssignmentId.getOrDefault(assign.getAssignmentId(),
                 Collections.emptyList());
 
             return AssignmentManifestDto.builder()
-                .assignmentUid(assign.getUid())
-                .label(assign.getOrgUnit().getName()) // Or other meaningful label
+                .assignmentUid(assign.getAssignmentUid())
+                .label(assign.getLabel()) // Or other meaningful label
                 .status(AssignmentStatus.getAssignmentStatus(assign.getStatus()))
                 .allowedTemplateUids(vocabUids)
                 .bindings(mapBindings(assignBindings, templatesById))
                 // legacy
                 .forms(assign.getForms())
-                .orgUnitUid(assign.getOrgUnit().getUid())
-                .activityUid(assign.getActivity().getUid())
-                .teamUid(assign.getTeam().getUid())
+                .orgUnitUid(assign.getOrgUnitUid())
+                .activityUid(assign.getActivityUid())
+                .teamUid(assign.getTeamUid())
                 .deleted(assign.getDeleted())
                 .startDay(assign.getStartDay())
                 .build();

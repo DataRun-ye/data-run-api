@@ -6,12 +6,12 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
 
-    <changeSet id="add-name-to-assignment" author="hamza-ye">
-        <addColumn tableName="assignment">
-            <column name="code" type="VARCHAR(100)">
-                <constraints unique="true"/>
+    <changeSet author="hamza-ye" id="001-add-user_last_seen-table">
+        <createTable tableName="user_last_seen">
+            <column name="user_id" type="varchar(26)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_user_last_seen"/>
             </column>
-            <column name="name" type="varchar(255)"/>
-        </addColumn>
+            <column name="last_seen" type="timestamp"/>
+        </createTable>
     </changeSet>
 </databaseChangeLog>

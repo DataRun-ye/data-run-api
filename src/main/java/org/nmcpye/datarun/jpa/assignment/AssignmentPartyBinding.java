@@ -19,6 +19,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 /// @author Hamza Assada 28/12/2025
@@ -98,5 +99,17 @@ public class AssignmentPartyBinding {
         if (getUid() == null || getUid().isEmpty()) {
             setUid(CodeGenerator.generateUid());
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        AssignmentPartyBinding that = (AssignmentPartyBinding) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
     }
 }

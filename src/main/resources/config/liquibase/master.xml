@@ -87,6 +87,8 @@
     <include file="/config/liquibase/changelog/element-template/2026-01-09-add-ce-config.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20260110-events-add.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/assignment/20260116-assignment-add-name.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/error-event/20260120-add-error-event-table.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/app-user-constraints/20260120-add-user-last-seen-table.xml" relativeToChangelogFile="false"/>
 
 <!--    <include file="/config/liquibase/changelog/workspace/2025-12-21-add-workspace.xml" relativeToChangelogFile="false"/>-->
 

@@ -1,8 +1,7 @@
 package org.nmcpye.datarun.config;
 
-import java.util.concurrent.Executor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.aop.interceptor.SimpleAsyncUncaughtExceptionHandler;
 import org.springframework.boot.autoconfigure.task.TaskExecutionProperties;
@@ -15,18 +14,38 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import tech.jhipster.async.ExceptionHandlingAsyncTaskExecutor;
 
+import java.util.concurrent.Executor;
+
 @Configuration
 @EnableAsync
 @EnableScheduling
+@RequiredArgsConstructor
+@Slf4j
 @Profile("!testdev & !testprod")
 public class AsyncConfiguration implements AsyncConfigurer {
 
-    private static final Logger log = LoggerFactory.getLogger(AsyncConfiguration.class);
-
     private final TaskExecutionProperties taskExecutionProperties;
 
-    public AsyncConfiguration(TaskExecutionProperties taskExecutionProperties) {
-        this.taskExecutionProperties = taskExecutionProperties;
+    @Bean("lastSeenExecutor")
+    public Executor lastSeenExecutor() {
+        ThreadPoolTaskExecutor t = new ThreadPoolTaskExecutor();
+        t.setCorePoolSize(2);
+        t.setMaxPoolSize(4);
+        t.setQueueCapacity(1000);
+        t.setThreadNamePrefix("lastseen-");
+        t.initialize();
+        return t;
+    }
+
+    @Bean("errorLoggingExecutor")
+    public Executor errorLoggingExecutor() {
+        ThreadPoolTaskExecutor t = new ThreadPoolTaskExecutor();
+        t.setCorePoolSize(2);
+        t.setMaxPoolSize(5);
+        t.setQueueCapacity(500);    // bounded queue
+        t.setThreadNamePrefix("err-log-");
+        t.initialize();
+        return t;
     }
 
     @Override
