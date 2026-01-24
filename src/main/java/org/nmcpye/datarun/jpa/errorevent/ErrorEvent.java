@@ -18,6 +18,7 @@ public class ErrorEvent {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(name="occurred_at")
+    @Builder.Default
     private Instant occurredAt = Instant.now();
     private String level;
     private Integer status;

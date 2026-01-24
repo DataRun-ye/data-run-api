@@ -7,9 +7,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.jpa.errorevent.ErrorEvent;
 import org.nmcpye.datarun.jpa.errorevent.repository.ErrorEventRepository;
+import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -64,6 +65,11 @@ public class ErrorEventService {
         }
     }
 
+    private String extractUsername() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        return (auth != null && auth.isAuthenticated()) ? String.valueOf(auth.getName()) : "anonymous";
+    }
+
     private String resolveUsername(HttpServletRequest request) {
         // 1. Check if the AuthenticationListener enriched the request with a failed login name
         if (request != null) {
@@ -74,12 +80,9 @@ public class ErrorEventService {
         }
 
         // 2. Check Security Context (for already logged-in users)
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-            return auth.getName();
-        }
-
-        return "anonymous";
+        return SecurityUtils.getCurrentUserDetails()
+            .map(CurrentUserDetails::getUsername)
+            .orElse("anonymous");
     }
 
     private String extractClientIp(HttpServletRequest req) {
