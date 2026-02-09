@@ -123,7 +123,7 @@ public class JooqQueryBuilder {
         query.addSelect(select.toArray(new SelectField<?>[0]));
         query.addFrom(PG);
 
-        // build base condition (reuse your translateFilter & coerce logic)
+        // build base condition (reuse translateFilter & coerce logic)
         Condition cond = PG.IS_DELETED.isNull();
         if (from != null) cond = cond.and(PG.START_TIME.ge(from));
         if (to != null) cond = cond.and(PG.START_TIME.le(to));

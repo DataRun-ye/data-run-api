@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.nmcpye.datarun.etl.dto.CanonicalElementAnchorDto;
 import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
 
 import java.io.Serializable;
@@ -30,6 +29,6 @@ public class TemplateContext implements Serializable {
     @Builder.Default
     private Map<String, CanonicalElement> repeatCanonicalElementsMap = new HashMap<>();
 
-    @Builder.Default
-    private Map<String, CanonicalElementAnchorDto> anchorsMap = new HashMap<>();
+//    @Builder.Default
+//    private Map<String, CanonicalElementAnchorDto> anchorsMap = new HashMap<>();
 }

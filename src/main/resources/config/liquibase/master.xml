@@ -89,10 +89,7 @@
     <include file="/config/liquibase/changelog/assignment/20260116-assignment-add-name.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/error-event/20260120-add-error-event-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/app-user-constraints/20260120-add-user-last-seen-table.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/etl/20260207-events-add-deleted-at-column.xml" relativeToChangelogFile="false"/>
 
-<!--    <include file="/config/liquibase/changelog/workspace/2025-12-21-add-workspace.xml" relativeToChangelogFile="false"/>-->
-
-<!--    <include file="/config/liquibase/changelog/2025-09-15-pilot/2025-09-17-raw-repeat-payload-table.xml" relativeToChangelogFile="false"/>-->
-<!--    <include file="/config/liquibase/changelog/2025-09-15-pilot/2025-09-17-proj-supply-breeding.xml" relativeToChangelogFile="false"/>-->
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

@@ -3,20 +3,19 @@ package org.nmcpye.datarun.etl.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.etl.dto.CanonicalElementAnchorDto;
-import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.etl.mapper.DataSubmissionMapper;
 import org.nmcpye.datarun.etl.model.SubmissionContext;
 import org.nmcpye.datarun.etl.model.TallCanonicalRow;
 import org.nmcpye.datarun.etl.model.TemplateContext;
-import org.nmcpye.datarun.etl.repository.CanonicalAnchorJdbcRepository;
+import org.nmcpye.datarun.etl.repository.EventEntityJdbcRepository;
 import org.nmcpye.datarun.etl.repository.TallCanonicalJdbcRepository;
 import org.nmcpye.datarun.etl.service.EventProcessorService;
-import org.nmcpye.datarun.outbox.service.OutboxProcessingService;
 import org.nmcpye.datarun.etl.util.InstanceKeyUtil;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
 import org.nmcpye.datarun.jpa.datatemplate.repository.CanonicalElementRepository;
+import org.nmcpye.datarun.outbox.dto.OutboxDto;
+import org.nmcpye.datarun.outbox.service.OutboxProcessingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -51,8 +50,8 @@ public class EventProcessorServiceImpl implements EventProcessorService {
     private final OutboxProcessingService outboxProcessingService;
     private final PlatformTransactionManager txManager;
     private final DataSubmissionMapper dataSubmissionMapper;
-    private final CanonicalAnchorJdbcRepository anchorRepository;
     private final CanonicalElementRepository canonicalElementRepository;
+    private final EventEntityJdbcRepository eventJdbcRepository;
 
     /**
      * Process a single outbox event.
@@ -73,9 +72,9 @@ public class EventProcessorServiceImpl implements EventProcessorService {
         final String eventType = outbox.getEventType() == null ? "SAVE" : outbox.getEventType().toUpperCase();
         try {
             if ("DELETE".equals(eventType)) {
-                int deleted = tallRepo.deleteBySubmissionUid(outbox.getSubmissionUid());
-                log.debug("Deleted {} tall rows for submission_uid={} (outboxId={})",
-                    deleted, outbox.getSubmissionUid(), outboxId);
+                eventJdbcRepository.markAllAsDeletedForSubmission(outbox.getSubmissionUid());
+                log.debug("Deleted events rows for submission_uid={} (outboxId={})",
+                    outbox.getSubmissionUid(), outboxId);
 
                 // record success (recordSuccess will update outbox.status and etl run counters)
                 outboxProcessingService.recordSuccess(etlRunId, outbox);
@@ -92,7 +91,6 @@ public class EventProcessorServiceImpl implements EventProcessorService {
             final SubmissionContext submissionContext = dataSubmissionMapper.toDto(submission);
 
             // 3) load CE metadata for templateVersionUid and index by canonical_element_id
-            // List<CanonicalElement> ces = canonicalElementRepository.findByTemplateUid(templateVersionUid);
             var elements = canonicalElementRepository.findByTemplateUid(submissionContext.getTemplateUid());
             var allCEsMap = elements.stream()
                 .collect(Collectors.toMap(CanonicalElement::getId, Function.identity()));
@@ -100,12 +98,12 @@ public class EventProcessorServiceImpl implements EventProcessorService {
                 .filter(CanonicalElement::isRepeatCE)
                 .collect(Collectors.toMap(CanonicalElement::getId, Function.identity()));
 
-            Set<String> uids = allCEsMap.keySet();
-            Map<String, CanonicalElementAnchorDto> anchors = anchorRepository.findByCanonicalElementIds(uids);
+//            Set<String> uids = allCEsMap.keySet();
+//            Map<String, CanonicalElementAnchorDto> anchors = anchorRepository.findByCanonicalElementIds(uids);
             TemplateContext templateContext = TemplateContext.builder().templateUid(submissionContext.getTemplateUid())
                 .allCanonicalElementsMap(allCEsMap)
                 .repeatCanonicalElementsMap(repeatEsMap)
-                .anchorsMap(anchors)
+//                .anchorsMap(anchors)
                 .build();
             //
 
@@ -143,7 +141,6 @@ public class EventProcessorServiceImpl implements EventProcessorService {
             }
 
             // idempotent upsert: unique constraint on instance_key + canonical_element_uid prevents duplicates
-//            tallRepo.upsertBatch(robustRows);
             log.debug("About to upsert {} tall rows for submissionUid={}", robustRows.size(), submissionContext.getSubmissionUid());
             tallRepo.upsertBatch(robustRows);
             log.debug("tallRepo.upsertBatch affected={}", 0);

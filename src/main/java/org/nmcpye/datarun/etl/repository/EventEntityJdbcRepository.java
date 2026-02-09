@@ -26,15 +26,17 @@ public class EventEntityJdbcRepository {
             + "event_id, event_type, submission_uid, submission_id, submission_serial, "
             + "parent_event_id, event_ce_id, assignment_uid, activity_uid, org_unit_uid, team_uid, template_uid, "
             + "submission_creation_time, start_time, last_seen, created_by, last_modified_by, "
-            + "anchor_ce_id, anchor_ref_uid, anchor_value_text, anchor_value_ref_type, anchor_confidence, anchor_resolved_at, created_at, updated_at) "
+            + "anchor_ce_id, anchor_ref_uid, anchor_value_text, anchor_value_ref_type, anchor_confidence, "
+            + "anchor_resolved_at, created_at, updated_at, deleted_at) "
             + "VALUES ("
             + ":eventId, :eventType, :submissionUid, :submissionId, :submissionSerial, "
             + ":parentEventId, :eventCeId, :assignmentUid, :activityUid, :orgUnitUid, :teamUid, :templateUid, "
             + ":submissionCreationTime, :startTime, :lastSeen,  :createdBy, :lastModifiedBy, "
-            + ":anchorCeId, :anchorRefUid, :anchorValueText, :anchorValueRefType, :anchorConfidence, :anchorResolvedAt, "
-            + "CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) "
+            + ":anchorCeId, :anchorRefUid, :anchorValueText, :anchorValueRefType, :anchorConfidence," +
+            " :anchorResolvedAt, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, :deletedAt) "
             + "ON CONFLICT (event_id) DO UPDATE SET "
             + "event_id = events.event_id, "
+            + "deleted_at = EXCLUDED.deleted_at, "
             + "event_type = COALESCE(EXCLUDED.event_type, events.event_type), "
             + "submission_uid = COALESCE(EXCLUDED.submission_uid, events.submission_uid), "
             + "submission_id = COALESCE(EXCLUDED.submission_id, events.submission_id), "
@@ -84,7 +86,8 @@ public class EventEntityJdbcRepository {
             .addValue("anchorValueText", eventDto.anchorValueText())
             .addValue("anchorValueRefType", eventDto.anchorValueRefType())
             .addValue("anchorConfidence", eventDto.anchorConfidence())
-            .addValue("anchorResolvedAt", getTimestamp(eventDto.anchorResolvedAt()));
+            .addValue("anchorResolvedAt", getTimestamp(eventDto.anchorResolvedAt()))
+            .addValue("deletedAt", getTimestamp(eventDto.deletedAt()));
 
         jdbc.update(sql, p);
     }
@@ -96,6 +99,12 @@ public class EventEntityJdbcRepository {
         List<EventDto> rows = jdbc.query(sql, p, EventDto.ROW_MAPPER);
         if (rows.isEmpty()) return Optional.empty();
         return Optional.of(rows.get(0));
+    }
+
+    public void markAllAsDeletedForSubmission(String submissionUid) {
+        String sql = "UPDATE analytics.events SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP " +
+            "WHERE submission_uid = :submissionUid AND deleted_at IS NULL";
+        jdbc.update(sql, new MapSqlParameterSource("submissionUid", submissionUid));
     }
 
     Timestamp getTimestamp(Instant instant) {
@@ -111,14 +120,16 @@ public class EventEntityJdbcRepository {
             + "event_id, event_type, submission_uid, submission_id, submission_serial, "
             + "parent_event_id, event_ce_id, assignment_uid, activity_uid, org_unit_uid, team_uid, template_uid, "
             + "submission_creation_time, start_time, last_seen, created_by, last_modified_by, "
-            + "anchor_ce_id, anchor_ref_uid, anchor_value_text, anchor_value_ref_type, anchor_confidence, anchor_resolved_at, created_at, updated_at) "
+            + "anchor_ce_id, anchor_ref_uid, anchor_value_text, anchor_value_ref_type, anchor_confidence, "
+            + "anchor_resolved_at, created_at, updated_at, deleted_at) "
             + "VALUES ("
             + ":eventId, :eventType, :submissionUid, :submissionId, :submissionSerial, "
             + ":parentEventId, :eventCeId, :assignmentUid, :activityUid, :orgUnitUid, :teamUid, :templateUid, "
             + ":submissionCreationTime, :startTime, :lastSeen, :createdBy, :lastModifiedBy, "
-            + ":anchorCeId, :anchorRefUid, :anchorValueText, :anchorValueRefType, :anchorConfidence, :anchorResolvedAt, "
-            + "CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) "
+            + ":anchorCeId, :anchorRefUid, :anchorValueText, :anchorValueRefType, :anchorConfidence, "
+            + ":anchorResolvedAt, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, :deletedAt) "
             + "ON CONFLICT (event_id) DO UPDATE SET "
+            + "deleted_at = EXCLUDED.deleted_at, "
             + "event_type = COALESCE(EXCLUDED.event_type, events.event_type), "
             + "submission_uid = COALESCE(EXCLUDED.submission_uid, events.submission_uid), "
             + "submission_id = COALESCE(EXCLUDED.submission_id, events.submission_id), "
@@ -136,36 +147,36 @@ public class EventEntityJdbcRepository {
             + "start_time = COALESCE(events.start_time, EXCLUDED.start_time), "
             + "last_seen = GREATEST(COALESCE(events.last_seen, TIMESTAMP '1970-01-01'), COALESCE(EXCLUDED.last_seen, TIMESTAMP '1970-01-01')), "
             // anchor update: only replace anchor fields when the incoming anchor is "better" or existing is null
-            + "anchor_confidence = CASE "
-            + "  WHEN EXCLUDED.anchor_confidence IS NULL AND events.anchor_confidence IS NOT NULL THEN events.anchor_confidence "
-            + "  WHEN events.anchor_confidence IS NULL THEN EXCLUDED.anchor_confidence "
-            + "  WHEN EXCLUDED.anchor_confidence >= events.anchor_confidence THEN EXCLUDED.anchor_confidence "
-            + "  ELSE events.anchor_confidence END, "
-            + "anchor_resolved_at = CASE "
-            + "  WHEN EXCLUDED.anchor_resolved_at IS NULL AND events.anchor_resolved_at IS NOT NULL THEN events.anchor_resolved_at "
-            + "  WHEN events.anchor_resolved_at IS NULL THEN EXCLUDED.anchor_resolved_at "
-            + "  WHEN EXCLUDED.anchor_resolved_at >= events.anchor_resolved_at THEN EXCLUDED.anchor_resolved_at "
-            + "  ELSE events.anchor_resolved_at END, "
-            + "anchor_ref_uid = CASE "
-            + "  WHEN EXCLUDED.anchor_confidence IS NULL AND events.anchor_confidence IS NOT NULL THEN events.anchor_ref_uid "
-            + "  WHEN events.anchor_confidence IS NULL THEN EXCLUDED.anchor_ref_uid "
-            + "  WHEN EXCLUDED.anchor_confidence >= events.anchor_confidence THEN EXCLUDED.anchor_ref_uid "
-            + "  ELSE events.anchor_ref_uid END, "
-            + "anchor_ce_id = CASE "
-            + "  WHEN EXCLUDED.anchor_confidence IS NULL AND events.anchor_confidence IS NOT NULL THEN events.anchor_ce_id "
-            + "  WHEN events.anchor_confidence IS NULL THEN EXCLUDED.anchor_ce_id "
-            + "  WHEN EXCLUDED.anchor_confidence >= events.anchor_confidence THEN EXCLUDED.anchor_ce_id "
-            + "  ELSE events.anchor_ce_id END, "
-            + "anchor_value_text = CASE "
-            + "  WHEN EXCLUDED.anchor_confidence IS NULL AND events.anchor_confidence IS NOT NULL THEN events.anchor_value_text "
-            + "  WHEN events.anchor_confidence IS NULL THEN EXCLUDED.anchor_value_text "
-            + "  WHEN EXCLUDED.anchor_confidence >= events.anchor_confidence THEN EXCLUDED.anchor_value_text "
-            + "  ELSE events.anchor_value_text END, "
-            + "anchor_value_ref_type = CASE "
-            + "  WHEN EXCLUDED.anchor_confidence IS NULL AND events.anchor_confidence IS NOT NULL THEN events.anchor_value_ref_type "
-            + "  WHEN events.anchor_confidence IS NULL THEN EXCLUDED.anchor_value_ref_type "
-            + "  WHEN EXCLUDED.anchor_confidence >= events.anchor_confidence THEN EXCLUDED.anchor_value_ref_type "
-            + "  ELSE events.anchor_value_ref_type END, "
+//            + "anchor_confidence = CASE "
+//            + "  WHEN EXCLUDED.anchor_confidence IS NULL AND events.anchor_confidence IS NOT NULL THEN events.anchor_confidence "
+//            + "  WHEN events.anchor_confidence IS NULL THEN EXCLUDED.anchor_confidence "
+//            + "  WHEN EXCLUDED.anchor_confidence >= events.anchor_confidence THEN EXCLUDED.anchor_confidence "
+//            + "  ELSE events.anchor_confidence END, "
+//            + "anchor_resolved_at = CASE "
+//            + "  WHEN EXCLUDED.anchor_resolved_at IS NULL AND events.anchor_resolved_at IS NOT NULL THEN events.anchor_resolved_at "
+//            + "  WHEN events.anchor_resolved_at IS NULL THEN EXCLUDED.anchor_resolved_at "
+//            + "  WHEN EXCLUDED.anchor_resolved_at >= events.anchor_resolved_at THEN EXCLUDED.anchor_resolved_at "
+//            + "  ELSE events.anchor_resolved_at END, "
+//            + "anchor_ref_uid = CASE "
+//            + "  WHEN EXCLUDED.anchor_confidence IS NULL AND events.anchor_confidence IS NOT NULL THEN events.anchor_ref_uid "
+//            + "  WHEN events.anchor_confidence IS NULL THEN EXCLUDED.anchor_ref_uid "
+//            + "  WHEN EXCLUDED.anchor_confidence >= events.anchor_confidence THEN EXCLUDED.anchor_ref_uid "
+//            + "  ELSE events.anchor_ref_uid END, "
+//            + "anchor_ce_id = CASE "
+//            + "  WHEN EXCLUDED.anchor_confidence IS NULL AND events.anchor_confidence IS NOT NULL THEN events.anchor_ce_id "
+//            + "  WHEN events.anchor_confidence IS NULL THEN EXCLUDED.anchor_ce_id "
+//            + "  WHEN EXCLUDED.anchor_confidence >= events.anchor_confidence THEN EXCLUDED.anchor_ce_id "
+//            + "  ELSE events.anchor_ce_id END, "
+//            + "anchor_value_text = CASE "
+//            + "  WHEN EXCLUDED.anchor_confidence IS NULL AND events.anchor_confidence IS NOT NULL THEN events.anchor_value_text "
+//            + "  WHEN events.anchor_confidence IS NULL THEN EXCLUDED.anchor_value_text "
+//            + "  WHEN EXCLUDED.anchor_confidence >= events.anchor_confidence THEN EXCLUDED.anchor_value_text "
+//            + "  ELSE events.anchor_value_text END, "
+//            + "anchor_value_ref_type = CASE "
+//            + "  WHEN EXCLUDED.anchor_confidence IS NULL AND events.anchor_confidence IS NOT NULL THEN events.anchor_value_ref_type "
+//            + "  WHEN events.anchor_confidence IS NULL THEN EXCLUDED.anchor_value_ref_type "
+//            + "  WHEN EXCLUDED.anchor_confidence >= events.anchor_confidence THEN EXCLUDED.anchor_value_ref_type "
+//            + "  ELSE events.anchor_value_ref_type END, "
             + "updated_at = CURRENT_TIMESTAMP";
 
         // prepare batch params
@@ -195,7 +206,8 @@ public class EventEntityJdbcRepository {
                 .addValue("anchorValueText", e.anchorValueText())
                 .addValue("anchorValueRefType", e.anchorValueRefType())
                 .addValue("anchorConfidence", e.anchorConfidence())
-                .addValue("anchorResolvedAt", getTimestamp(e.anchorResolvedAt()));
+                .addValue("anchorResolvedAt", getTimestamp(e.anchorResolvedAt()))
+                .addValue("deletedAt", getTimestamp(e.deletedAt()));
             batch[i++] = p;
         }
 

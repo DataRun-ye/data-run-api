@@ -82,7 +82,7 @@ public class ErrorEventService {
         // 2. Check Security Context (for already logged-in users)
         return SecurityUtils.getCurrentUserDetails()
             .map(CurrentUserDetails::getUsername)
-            .orElse("anonymous");
+            .orElse(extractUsername());
     }
 
     private String extractClientIp(HttpServletRequest req) {

@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.etl.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.etl.dto.CanonicalElementAnchorDto;
 import org.nmcpye.datarun.etl.dto.EventDto;
 import org.nmcpye.datarun.etl.dto.RefTypeValue;
 import org.nmcpye.datarun.etl.model.SubmissionContext;
@@ -16,7 +16,6 @@ import org.nmcpye.datarun.jpa.datatemplate.SemanticType;
 import org.nmcpye.datarun.utils.UuidUtils;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 
@@ -35,19 +34,12 @@ public class TransformServiceV2 {
     private final RefTypeValueRepository refTypeValueRepository;
     private final EventEntityJdbcRepository eventJdbcRepository;
 
+    @AllArgsConstructor
     public static class ResolutionCandidate {
         public final RefTypeValue refTypeValue;
         public final double confidence;
         public final Instant resolvedAt;
         public final int priority;
-
-        public ResolutionCandidate(RefTypeValue refTypeValue,
-                                   double confidence, Instant resolvedAt, int priority) {
-            this.refTypeValue = refTypeValue;
-            this.confidence = confidence;
-            this.resolvedAt = resolvedAt;
-            this.priority = priority;
-        }
     }
 
     /**
@@ -62,18 +54,6 @@ public class TransformServiceV2 {
                                             boolean flattenPrimitiveArrays,
                                             SubmissionContext submissionContext,
                                             TemplateContext templateContext) {
-
-//        String submissionUid = submissionContext.getSubmissionUid();
-//        Long submissionSerial = submissionContext.getSubmissionSerial();
-//        String submissionId = submissionContext.getSubmissionId();
-//        String templateUid = submissionContext.getTemplateUid();
-//        String templateVersionUid = submissionContext.getTemplateVersionUid();
-//        String activityUid = submissionContext.getActivityUid();
-//        String orgUnitUid = submissionContext.getOrgUnitUid();
-//        String teamUid = submissionContext.getTeamUid();
-//        String assignmentUid = submissionContext.getAssignmentUid();
-//        Instant submissionCreationTime = submissionContext.getSubmissionCreationTime();
-//        Instant startTime = submissionContext.getStartTime();
 
         log.debug("TransformV2: submissionUid={}, templateUid={}, templateVersionUid={}, payloadNull={}",
             submissionContext.getSubmissionUid(), submissionContext.getTemplateUid(),
@@ -92,7 +72,7 @@ public class TransformServiceV2 {
         }
 
         // collectors
-        Map<String, List<ResolutionCandidate>> candidatesByInstance = new HashMap<>();
+//        Map<String, List<ResolutionCandidate>> candidatesByInstance = new HashMap<>();
         Set<String> allInstanceKeys = new HashSet<>();
         Map<UUID, RefTypeValue> refTypeValues = new HashMap<>();
         Map<String, String> instanceRepeatCeMap = new HashMap<>();
@@ -122,12 +102,12 @@ public class TransformServiceV2 {
             if (explicitParent != null) parentForInstance.put(instanceKey, explicitParent);
 
             String ceId = r.getCanonicalElementId();
-            CanonicalElementAnchorDto anchorDto = templateContext.anchorsMap().get(ceId);
+//            CanonicalElementAnchorDto anchorDto = templateContext.anchorsMap().get(ceId);
             CanonicalElement ceMeta = templateContext.allCanonicalElementsMap().get(ceId);
             SemanticType semanticType = ceMeta == null ? null : ceMeta.getSemanticType();
             String optionSetUid = ceMeta == null ? null : ceMeta.getOptionSetUid();
-            boolean anchorAllowed = anchorDto != null && Boolean.TRUE.equals(anchorDto.getAnchorAllowed());
-            int anchorPriority = anchorDto == null ? 100 : anchorDto.getAnchorPriority();
+//            boolean anchorAllowed = anchorDto != null && Boolean.TRUE.equals(anchorDto.getAnchorAllowed());
+//            int anchorPriority = anchorDto == null ? 100 : anchorDto.getAnchorPriority();
 
             // record repeat CE for the instance
             if (semanticType != null && semanticType.isRepeat()) {
@@ -166,15 +146,15 @@ public class TransformServiceV2 {
                     refTypeValues.putIfAbsent(refTypeValue.getCeId(), refTypeValue);
                 }
 
-                if (anchorAllowed) {
-                    ResolutionCandidate cand = new ResolutionCandidate(
-                        refTypeValue,
-                        refTypeValue.getValueRefUid() == null ? 0.0 : 1.0,
-                        Instant.now(),
-                        anchorPriority
-                    );
-                    candidatesByInstance.computeIfAbsent(instanceKey, k -> new ArrayList<>()).add(cand);
-                }
+//                if (anchorAllowed) {
+//                    ResolutionCandidate cand = new ResolutionCandidate(
+//                        refTypeValue,
+//                        refTypeValue.getValueRefUid() == null ? 0.0 : 1.0,
+//                        Instant.now(),
+//                        anchorPriority
+//                    );
+//                    candidatesByInstance.computeIfAbsent(instanceKey, k -> new ArrayList<>()).add(cand);
+//                }
             }
         }
 
@@ -194,25 +174,25 @@ public class TransformServiceV2 {
                 submissionContext.getSubmissionUid());
 
             // pick best anchor candidate for this instance
-            List<ResolutionCandidate> candidates = candidatesByInstance.getOrDefault(instanceKey, Collections.emptyList());
-            ResolutionCandidate best = null;
-            if (!candidates.isEmpty()) {
-                candidates.sort(Comparator.comparingInt((ResolutionCandidate c) -> c.priority)
-                    .thenComparingDouble((ResolutionCandidate c) -> -c.confidence)
-                    .thenComparing((ResolutionCandidate c) -> c.resolvedAt == null ? Instant.EPOCH : c.resolvedAt, Comparator.reverseOrder())
-                    .thenComparing(c -> c.refTypeValue.getCeId() == null ? null : c.refTypeValue.getCeId().toString(), Comparator.nullsLast(Comparator.naturalOrder())));
-                best = candidates.get(0);
-            }
+//            List<ResolutionCandidate> candidates = candidatesByInstance.getOrDefault(instanceKey, Collections.emptyList());
+//            ResolutionCandidate best = null;
+//            if (!candidates.isEmpty()) {
+//                candidates.sort(Comparator.comparingInt((ResolutionCandidate c) -> c.priority)
+//                    .thenComparingDouble((ResolutionCandidate c) -> -c.confidence)
+//                    .thenComparing((ResolutionCandidate c) -> c.resolvedAt == null ? Instant.EPOCH : c.resolvedAt, Comparator.reverseOrder())
+//                    .thenComparing(c -> c.refTypeValue.getCeId() == null ? null : c.refTypeValue.getCeId().toString(), Comparator.nullsLast(Comparator.naturalOrder())));
+//                best = candidates.get(0);
+//            }
 
             String eventType = isRoot ? "root" : "repeat";
             String eventCeId = isRoot ? null : instanceRepeatCeMap.get(instanceKey);
 
-            String anchorCeId = best != null && best.refTypeValue.getCeId() != null ? best.refTypeValue.getCeId().toString() : null;
-            String anchorRefUid = best != null ? best.refTypeValue.getValueRefUid() : null;
-            String anchorRefType = best != null ? best.refTypeValue.getRefType() : null;
-            String anchorValueText = best != null ? best.refTypeValue.getRawValue() : null;
-            BigDecimal anchorConfidence = best != null ? BigDecimal.valueOf(best.confidence) : null;
-            Instant anchorResolvedAt = best != null ? best.resolvedAt : null;
+//            String anchorCeId = best != null && best.refTypeValue.getCeId() != null ? best.refTypeValue.getCeId().toString() : null;
+//            String anchorRefUid = best != null ? best.refTypeValue.getValueRefUid() : null;
+//            String anchorRefType = best != null ? best.refTypeValue.getRefType() : null;
+//            String anchorValueText = best != null ? best.refTypeValue.getRawValue() : null;
+//            BigDecimal anchorConfidence = best != null ? BigDecimal.valueOf(best.confidence) : null;
+//            Instant anchorResolvedAt = best != null ? best.resolvedAt : null;
 
             EventDto evt = EventDto.builder()
                 .eventId(instanceKey)
@@ -233,12 +213,12 @@ public class TransformServiceV2 {
                 .startTime(submissionContext.getStartTime())
                 .createdAt(now)
                 .lastSeen(now)
-                .anchorCeId(anchorCeId)
-                .anchorValueText(anchorValueText)
-                .anchorConfidence(anchorConfidence)
-                .anchorResolvedAt(anchorResolvedAt)
-                .anchorValueRefType(anchorRefType)
-                .anchorRefUid(anchorRefUid)
+//                .anchorCeId(anchorCeId)
+//                .anchorValueText(anchorValueText)
+//                .anchorConfidence(anchorConfidence)
+//                .anchorResolvedAt(anchorResolvedAt)
+//                .anchorValueRefType(anchorRefType)
+//                .anchorRefUid(anchorRefUid)
                 .build();
 
             eventsToPatchUpsert.add(evt);
