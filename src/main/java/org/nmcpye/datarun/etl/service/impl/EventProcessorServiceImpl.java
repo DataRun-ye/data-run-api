@@ -2,7 +2,6 @@ package org.nmcpye.datarun.etl.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.etl.mapper.DataSubmissionMapper;
 import org.nmcpye.datarun.etl.model.SubmissionContext;
 import org.nmcpye.datarun.etl.model.TallCanonicalRow;
@@ -10,7 +9,6 @@ import org.nmcpye.datarun.etl.model.TemplateContext;
 import org.nmcpye.datarun.etl.repository.EventEntityJdbcRepository;
 import org.nmcpye.datarun.etl.repository.TallCanonicalJdbcRepository;
 import org.nmcpye.datarun.etl.service.EventProcessorService;
-import org.nmcpye.datarun.etl.util.InstanceKeyUtil;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
 import org.nmcpye.datarun.jpa.datatemplate.repository.CanonicalElementRepository;
@@ -25,7 +23,8 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -82,10 +81,11 @@ public class EventProcessorServiceImpl implements EventProcessorService {
                 return;
             }
 
-            final var submission = submissionRepository.findByUid(outbox.getSubmissionUid())
-                .orElseThrow(() -> new IllegalQueryException("Submission" + outbox.getSubmissionUid()
-                    + "of outbox event: " + outbox.getOutboxId()));
+            final var submissionOptional = submissionRepository.findByUid(outbox.getSubmissionUid());
 
+            if(submissionOptional.isEmpty()) return;
+
+            final var submission = submissionOptional.get();
             JsonNode payload = submission.getFormData();
 
             final SubmissionContext submissionContext = dataSubmissionMapper.toDto(submission);
@@ -98,16 +98,14 @@ public class EventProcessorServiceImpl implements EventProcessorService {
                 .filter(CanonicalElement::isRepeatCE)
                 .collect(Collectors.toMap(CanonicalElement::getId, Function.identity()));
 
-//            Set<String> uids = allCEsMap.keySet();
-//            Map<String, CanonicalElementAnchorDto> anchors = anchorRepository.findByCanonicalElementIds(uids);
-            TemplateContext templateContext = TemplateContext.builder().templateUid(submissionContext.getTemplateUid())
+            TemplateContext templateContext = TemplateContext.builder()
+                .templateUid(submissionContext.getTemplateUid())
                 .allCanonicalElementsMap(allCEsMap)
                 .repeatCanonicalElementsMap(repeatEsMap)
-//                .anchorsMap(anchors)
                 .build();
-            //
 
             // SAVE / UPDATE / REPLACE / BACKFILL -> mapping + upsert
+            // JSON Traverse transform
             List<TallCanonicalRow> robustRows = transformServiceRobust.transform(payload,
                 false, submissionContext, templateContext);
 
@@ -158,31 +156,6 @@ public class EventProcessorServiceImpl implements EventProcessorService {
 
             // rethrow to let orchestrator perform outer rollback / higher-level handling
             throw ex;
-        }
-    }
-
-    private void markDeleted(List<TallCanonicalRow> rows, OutboxDto outbox) {
-        Map<String, Set<String>> keepMap = new HashMap<>();
-        for (TallCanonicalRow r : rows) {
-            String instanceKey = InstanceKeyUtil.computeInstanceKey(r);
-
-            // group by canonical_element_uid
-            String canonicalUid = r.getCanonicalElementId();
-            keepMap.computeIfAbsent(canonicalUid, k -> new HashSet<>()).add(instanceKey);
-        }
-
-        // 1) upsert the rows (idempotent)
-        tallRepo.upsertBatch(rows);
-
-        // 2) delete / mark deleted any stale instance_keys for each canonical element
-        //    Note: deleteNotIn will mark as deleted when keepKeys empty => deletes all.
-        String submissionUid = outbox.getSubmissionUid();
-        for (Map.Entry<String, Set<String>> e : keepMap.entrySet()) {
-            String canonicalUid = e.getKey();
-            Set<String> keepKeys = e.getValue();
-            // this is executed in same per-outbox TX (so upsert + delete are atomic together)
-            int affected = tallRepo.deleteNotIn(submissionUid, canonicalUid, keepKeys);
-            log.debug("Deleted/marked {} stale rows for submission={}, canonical={}", affected, submissionUid, canonicalUid);
         }
     }
 

@@ -61,6 +61,7 @@ public class EventDto {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant deletedAt;
+    private Integer version;
 
     public static final RowMapper<EventDto> ROW_MAPPER = (rs, rowNum) -> EventDto.builder()
         .eventId(rs.getString("event_id"))
@@ -93,6 +94,7 @@ public class EventDto {
         .anchorValueRefType(rs.getString("anchor_value_ref_type"))
 
         .createdAt(getInstant(rs, "created_at")).updatedAt(getInstant(rs, "updated_at"))
+        .version(rs.getInt("version"))
         .deletedAt(getInstant(rs, "deleted_at")).build();
 
     private static Instant getInstant(ResultSet rs, String column) throws SQLException {

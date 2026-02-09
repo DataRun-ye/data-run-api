@@ -28,7 +28,4 @@ public class TemplateContext implements Serializable {
 
     @Builder.Default
     private Map<String, CanonicalElement> repeatCanonicalElementsMap = new HashMap<>();
-
-//    @Builder.Default
-//    private Map<String, CanonicalElementAnchorDto> anchorsMap = new HashMap<>();
 }

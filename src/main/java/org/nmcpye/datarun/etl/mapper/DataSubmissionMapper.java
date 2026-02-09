@@ -17,7 +17,9 @@ public interface DataSubmissionMapper {
     @Mapping(source = "templateUid", target = "form")
     @Mapping(source = "submissionSerial", target = "serialNumber")
     @Mapping(source = "submissionUid", target = "uid")
+    @Mapping(source = "submissionUid", target = "uid")
     @Mapping(source = "submissionId", target = "id")
+    @Mapping(source = "version", target = "lockVersion")
     DataSubmission toEntity(SubmissionContext submissionContext);
 
     @InheritInverseConfiguration(name = "toEntity")

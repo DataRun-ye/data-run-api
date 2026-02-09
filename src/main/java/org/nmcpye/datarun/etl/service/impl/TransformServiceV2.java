@@ -71,14 +71,11 @@ public class TransformServiceV2 {
             return Collections.emptyList();
         }
 
-        // collectors
-//        Map<String, List<ResolutionCandidate>> candidatesByInstance = new HashMap<>();
         Set<String> allInstanceKeys = new HashSet<>();
         Map<UUID, RefTypeValue> refTypeValues = new HashMap<>();
         Map<String, String> instanceRepeatCeMap = new HashMap<>();
         Map<String, String> parentForInstance = new HashMap<>();
 
-        // 1) scan rows: provenance, record repeat CE, resolve refs, collect candidates, capture parent from row
         for (TallCanonicalRow r : rows) {
             // provenance
             r.setSubmissionUid(submissionContext.getSubmissionUid());
@@ -97,24 +94,18 @@ public class TransformServiceV2 {
                 submissionContext.getSubmissionUid();
             allInstanceKeys.add(instanceKey);
 
-            // If a row declares its parent instance, capture it directly
             String explicitParent = r.getParentInstanceId(); // direct call, assumed present on TallCanonicalRow
             if (explicitParent != null) parentForInstance.put(instanceKey, explicitParent);
 
             String ceId = r.getCanonicalElementId();
-//            CanonicalElementAnchorDto anchorDto = templateContext.anchorsMap().get(ceId);
             CanonicalElement ceMeta = templateContext.allCanonicalElementsMap().get(ceId);
             SemanticType semanticType = ceMeta == null ? null : ceMeta.getSemanticType();
             String optionSetUid = ceMeta == null ? null : ceMeta.getOptionSetUid();
-//            boolean anchorAllowed = anchorDto != null && Boolean.TRUE.equals(anchorDto.getAnchorAllowed());
-//            int anchorPriority = anchorDto == null ? 100 : anchorDto.getAnchorPriority();
 
-            // record repeat CE for the instance
             if (semanticType != null && semanticType.isRepeat()) {
                 instanceRepeatCeMap.putIfAbsent(instanceKey, ceId);
             }
 
-            // if ref-type, resolve and add candidate if anchorAllowed
             if (semanticType != null && semanticType.isRef()) {
                 String token = r.getValueText();
                 String refType = semanticType.name();
@@ -145,16 +136,6 @@ public class TransformServiceV2 {
                 if (refTypeValue.getCeId() != null) {
                     refTypeValues.putIfAbsent(refTypeValue.getCeId(), refTypeValue);
                 }
-
-//                if (anchorAllowed) {
-//                    ResolutionCandidate cand = new ResolutionCandidate(
-//                        refTypeValue,
-//                        refTypeValue.getValueRefUid() == null ? 0.0 : 1.0,
-//                        Instant.now(),
-//                        anchorPriority
-//                    );
-//                    candidatesByInstance.computeIfAbsent(instanceKey, k -> new ArrayList<>()).add(cand);
-//                }
             }
         }
 
@@ -173,26 +154,8 @@ public class TransformServiceV2 {
             String parentEventId = isRoot ? null : (parentInstance != null ? parentInstance :
                 submissionContext.getSubmissionUid());
 
-            // pick best anchor candidate for this instance
-//            List<ResolutionCandidate> candidates = candidatesByInstance.getOrDefault(instanceKey, Collections.emptyList());
-//            ResolutionCandidate best = null;
-//            if (!candidates.isEmpty()) {
-//                candidates.sort(Comparator.comparingInt((ResolutionCandidate c) -> c.priority)
-//                    .thenComparingDouble((ResolutionCandidate c) -> -c.confidence)
-//                    .thenComparing((ResolutionCandidate c) -> c.resolvedAt == null ? Instant.EPOCH : c.resolvedAt, Comparator.reverseOrder())
-//                    .thenComparing(c -> c.refTypeValue.getCeId() == null ? null : c.refTypeValue.getCeId().toString(), Comparator.nullsLast(Comparator.naturalOrder())));
-//                best = candidates.get(0);
-//            }
-
             String eventType = isRoot ? "root" : "repeat";
             String eventCeId = isRoot ? null : instanceRepeatCeMap.get(instanceKey);
-
-//            String anchorCeId = best != null && best.refTypeValue.getCeId() != null ? best.refTypeValue.getCeId().toString() : null;
-//            String anchorRefUid = best != null ? best.refTypeValue.getValueRefUid() : null;
-//            String anchorRefType = best != null ? best.refTypeValue.getRefType() : null;
-//            String anchorValueText = best != null ? best.refTypeValue.getRawValue() : null;
-//            BigDecimal anchorConfidence = best != null ? BigDecimal.valueOf(best.confidence) : null;
-//            Instant anchorResolvedAt = best != null ? best.resolvedAt : null;
 
             EventDto evt = EventDto.builder()
                 .eventId(instanceKey)
@@ -212,13 +175,7 @@ public class TransformServiceV2 {
                 .templateUid(submissionContext.getTemplateUid())
                 .startTime(submissionContext.getStartTime())
                 .createdAt(now)
-                .lastSeen(now)
-//                .anchorCeId(anchorCeId)
-//                .anchorValueText(anchorValueText)
-//                .anchorConfidence(anchorConfidence)
-//                .anchorResolvedAt(anchorResolvedAt)
-//                .anchorValueRefType(anchorRefType)
-//                .anchorRefUid(anchorRefUid)
+                .version(submissionContext.getVersion())
                 .build();
 
             eventsToPatchUpsert.add(evt);

@@ -16,9 +16,4 @@ public interface CanonicalElementRepository extends BaseJpaRepository<CanonicalE
     List<CanonicalElement> findByTemplateUid(String templateUid);
 
     Collection<CanonicalElement> findByTemplateUidIn(Collection<String> templateUids);
-
-//    @Query(value = "SELECT id FROM canonical_element " +
-//        "WHERE template_uid = :templateUid ", nativeQuery = true)
-//    List<String> findUidsByTemplateUid(@Param("templateUid") String templateUid);
-
 }

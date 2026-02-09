@@ -33,6 +33,9 @@ public class SubmissionContext implements Serializable {
     private String teamUid;
 
     @NotNull
+    private Integer version;
+
+    @NotNull
     @Size(max = 11)
     private String orgUnitUid;
 
