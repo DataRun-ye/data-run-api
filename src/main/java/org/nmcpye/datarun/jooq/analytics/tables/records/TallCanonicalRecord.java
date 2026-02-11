@@ -406,31 +406,17 @@ public class TallCanonicalRecord extends UpdatableRecordImpl<TallCanonicalRecord
     }
 
     /**
-     * Setter for <code>analytics.tall_canonical.is_deleted</code>.
-     */
-    public void setIsDeleted(Boolean value) {
-        set(27, value);
-    }
-
-    /**
-     * Getter for <code>analytics.tall_canonical.is_deleted</code>.
-     */
-    public Boolean getIsDeleted() {
-        return (Boolean) get(27);
-    }
-
-    /**
      * Setter for <code>analytics.tall_canonical.updated_at</code>.
      */
     public void setUpdatedAt(LocalDateTime value) {
-        set(28, value);
+        set(27, value);
     }
 
     /**
      * Getter for <code>analytics.tall_canonical.updated_at</code>.
      */
     public LocalDateTime getUpdatedAt() {
-        return (LocalDateTime) get(28);
+        return (LocalDateTime) get(27);
     }
 
     // -------------------------------------------------------------------------
@@ -456,7 +442,7 @@ public class TallCanonicalRecord extends UpdatableRecordImpl<TallCanonicalRecord
     /**
      * Create a detached, initialised TallCanonicalRecord
      */
-    public TallCanonicalRecord(Long tallId, Long outboxId, UUID ingestId, Long submissionSerialNumber, String activityUid, String orgUnitUid, String teamUid, String assignmentUid, String submissionId, String submissionUid, String templateUid, String templateVersionUid, String instanceKey, UUID canonicalElementId, String elementPath, String repeatInstanceId, String parentInstanceId, Integer repeatIndex, String valueText, BigDecimal valueNumber, Boolean valueBool, JSONB valueJson, String valueRefUid, String valueRefType, LocalDateTime submissionCreationTime, LocalDateTime startTime, LocalDateTime createdAt, Boolean isDeleted, LocalDateTime updatedAt) {
+    public TallCanonicalRecord(Long tallId, Long outboxId, UUID ingestId, Long submissionSerialNumber, String activityUid, String orgUnitUid, String teamUid, String assignmentUid, String submissionId, String submissionUid, String templateUid, String templateVersionUid, String instanceKey, UUID canonicalElementId, String elementPath, String repeatInstanceId, String parentInstanceId, Integer repeatIndex, String valueText, BigDecimal valueNumber, Boolean valueBool, JSONB valueJson, String valueRefUid, String valueRefType, LocalDateTime submissionCreationTime, LocalDateTime startTime, LocalDateTime createdAt, LocalDateTime updatedAt) {
         super(TallCanonical.TALL_CANONICAL);
 
         setTallId(tallId);
@@ -486,7 +472,6 @@ public class TallCanonicalRecord extends UpdatableRecordImpl<TallCanonicalRecord
         setSubmissionCreationTime(submissionCreationTime);
         setStartTime(startTime);
         setCreatedAt(createdAt);
-        setIsDeleted(isDeleted);
         setUpdatedAt(updatedAt);
         resetChangedOnNotNull();
     }

@@ -2,9 +2,10 @@ package org.nmcpye.datarun.etl.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.nmcpye.datarun.etl.dto.FlattenSubmission;
 import org.nmcpye.datarun.etl.mapper.DataSubmissionMapper;
 import org.nmcpye.datarun.etl.model.SubmissionContext;
-import org.nmcpye.datarun.etl.model.TallCanonicalRow;
 import org.nmcpye.datarun.etl.model.TemplateContext;
 import org.nmcpye.datarun.etl.repository.EventEntityJdbcRepository;
 import org.nmcpye.datarun.etl.repository.TallCanonicalJdbcRepository;
@@ -14,8 +15,6 @@ import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
 import org.nmcpye.datarun.jpa.datatemplate.repository.CanonicalElementRepository;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.outbox.service.OutboxProcessingService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -23,25 +22,14 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * Event processor that applies the semantics for outbox event types (SAVE/UPDATE/DELETE/BACKFILL).
- * <p>
- * Notes:
- * - This class assumes the caller (Orchestrator) executes processEvent(...) within a per-outbox transaction.
- * - On failures we persist a failure record in a separate REQUIRES_NEW transaction so the failure audit
- * is durable even if the outer TX rolls back.
- * - Idempotency is provided by the TallCanonicalJdbcRepository upsert (unique instance_key + canonical_element_uid).
- */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EventProcessorServiceImpl implements EventProcessorService {
-
-    private static final Logger log = LoggerFactory.getLogger(EventProcessorServiceImpl.class);
 
     private final DataSubmissionRepository submissionRepository;
     private final TransformServiceV2 transformServiceRobust;
@@ -83,15 +71,18 @@ public class EventProcessorServiceImpl implements EventProcessorService {
 
             final var submissionOptional = submissionRepository.findByUid(outbox.getSubmissionUid());
 
-            if(submissionOptional.isEmpty()) return;
+            if (submissionOptional.isEmpty()) return;
 
             final var submission = submissionOptional.get();
             JsonNode payload = submission.getFormData();
 
-            final SubmissionContext submissionContext = dataSubmissionMapper.toDto(submission);
+            final SubmissionContext submissionContext = dataSubmissionMapper.toDto(submission)
+                .ingestId(ingestId)
+                .outboxId(outboxId);
 
             // 3) load CE metadata for templateVersionUid and index by canonical_element_id
-            var elements = canonicalElementRepository.findByTemplateUid(submissionContext.getTemplateUid());
+            var elements = canonicalElementRepository
+                .findByTemplateUid(submission.getForm());
             var allCEsMap = elements.stream()
                 .collect(Collectors.toMap(CanonicalElement::getId, Function.identity()));
             var repeatEsMap = elements.stream()
@@ -99,48 +90,27 @@ public class EventProcessorServiceImpl implements EventProcessorService {
                 .collect(Collectors.toMap(CanonicalElement::getId, Function.identity()));
 
             TemplateContext templateContext = TemplateContext.builder()
-                .templateUid(submissionContext.getTemplateUid())
                 .allCanonicalElementsMap(allCEsMap)
                 .repeatCanonicalElementsMap(repeatEsMap)
                 .build();
 
             // SAVE / UPDATE / REPLACE / BACKFILL -> mapping + upsert
             // JSON Traverse transform
-            List<TallCanonicalRow> robustRows = transformServiceRobust.transform(payload,
-                false, submissionContext, templateContext);
+            FlattenSubmission flattenSubmission = transformServiceRobust.transform(payload,
+                false, submissionContext.submissionUid(), templateContext);
 
-            log.debug("Transform produced {} rows for outboxId={}, submission_uid={}", robustRows == null ? 0 :
-                robustRows.size(), outbox.getOutboxId(), outbox.getSubmissionUid());
 
-            if (robustRows == null || robustRows.isEmpty()) {
+            if (flattenSubmission == null) {
                 // nothing to persist -> still a successful processing
                 outboxProcessingService.recordSuccess(etlRunId, outbox);
                 return;
             }
 
-            // ensure provenance fields filled before persisting
-            for (TallCanonicalRow r : robustRows) {
-                r.setIngestId(ingestId);
-                r.setOutboxId(outboxId);
-                r.setSubmissionSerialNumber(submissionContext.getSubmissionSerial());
-                r.setSubmissionId(submissionContext.getSubmissionId());
-                r.setSubmissionUid(submissionContext.getSubmissionUid());
-                r.setSubmissionCreationTime(submissionContext.getSubmissionCreationTime());
-                r.setSubmissionStartTime(submissionContext.getStartTime());
-                r.setTemplateUid(submissionContext.getTemplateUid());
-                r.setTemplateVersionUid(submissionContext.getTemplateVersionUid());
-                r.setActivity(submissionContext.getActivityUid());
-                r.setAssignment(submissionContext.getAssignmentUid());
-                r.setOrgUnit(submissionContext.getOrgUnitUid());
-                r.setCreatedBy(submissionContext.getCreatedBy());
-                r.setLastModifiedBy(submissionContext.getLastModifiedBy());
-                r.setTeam(submissionContext.getTeamUid());
-                r.setIsDeleted(Boolean.FALSE);
-            }
-
             // idempotent upsert: unique constraint on instance_key + canonical_element_uid prevents duplicates
-            log.debug("About to upsert {} tall rows for submissionUid={}", robustRows.size(), submissionContext.getSubmissionUid());
-            tallRepo.upsertBatch(robustRows);
+            log.debug("About to upsert {} events and {} tall rows for submissionUid={}",
+                flattenSubmission.eventRows().size(), flattenSubmission.tallCanonicalRows().size(), submission.getUid());
+            tallRepo.upsertBatch(submissionContext, flattenSubmission.tallCanonicalRows());
+            eventJdbcRepository.patchUpsertEvents(submissionContext, flattenSubmission.eventRows());
             log.debug("tallRepo.upsertBatch affected={}", 0);
             // on success, record success (updates outbox and run counters)
             outboxProcessingService.recordSuccess(etlRunId, outbox);

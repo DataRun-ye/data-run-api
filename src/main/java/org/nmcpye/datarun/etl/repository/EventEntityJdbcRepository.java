@@ -2,6 +2,8 @@ package org.nmcpye.datarun.etl.repository;
 
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.etl.dto.EventDto;
+import org.nmcpye.datarun.etl.dto.EventRow;
+import org.nmcpye.datarun.etl.model.SubmissionContext;
 import org.nmcpye.datarun.utils.UuidUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -22,14 +24,12 @@ public class EventEntityJdbcRepository {
         + "event_id, event_type, submission_uid, submission_id, submission_serial, "
         + "parent_event_id, event_ce_id, assignment_uid, activity_uid, org_unit_uid, team_uid, template_uid, "
         + "submission_creation_time, start_time, created_by, last_modified_by, "
-        + "anchor_ce_id, anchor_ref_uid, anchor_value_text, anchor_value_ref_type, anchor_confidence, "
-        + "anchor_resolved_at, created_at, updated_at, deleted_at) "
+        + "created_at, updated_at, deleted_at) "
         + "VALUES ("
         + ":eventId, :eventType, :submissionUid, :submissionId, :submissionSerial, "
         + ":parentEventId, :eventCeId, :assignmentUid, :activityUid, :orgUnitUid, :teamUid, :templateUid, "
         + ":submissionCreationTime, :startTime, :createdBy, :lastModifiedBy, "
-        + ":anchorCeId, :anchorRefUid, :anchorValueText, :anchorValueRefType, :anchorConfidence, "
-        + ":anchorResolvedAt, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, :deletedAt) "
+        + "CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, :deletedAt) "
         + "ON CONFLICT (event_id) DO UPDATE SET "
         + "deleted_at = EXCLUDED.deleted_at, "
         + "event_type = COALESCE(EXCLUDED.event_type, events.event_type), "
@@ -50,7 +50,6 @@ public class EventEntityJdbcRepository {
         + "updated_at = CURRENT_TIMESTAMP";
 
     public void upsertEventEntity(EventDto eventDto) {
-        var ceId = UuidUtils.toUuidOrNull(eventDto.anchorCeId());
         MapSqlParameterSource p = new MapSqlParameterSource()
             .addValue("eventId", eventDto.eventId())
             .addValue("eventType", eventDto.eventType())
@@ -82,31 +81,30 @@ public class EventEntityJdbcRepository {
         return Optional.of(rows.get(0));
     }
 
-    public void patchUpsertEvents(List<EventDto> events) {
+    public void patchUpsertEvents(SubmissionContext context, List<EventRow> events) {
         if (events == null || events.isEmpty()) return;
-
         // prepare batch params
         MapSqlParameterSource[] batch = new MapSqlParameterSource[events.size()];
         int i = 0;
-        for (EventDto e : events) {
+        for (EventRow e : events) {
             MapSqlParameterSource p = new MapSqlParameterSource()
                 .addValue("eventId", e.eventId())
                 .addValue("eventType", e.eventType())
-                .addValue("submissionUid", e.submissionUid())
-                .addValue("submissionId", e.submissionId())
-                .addValue("assignmentUid", e.assignmentUid())
-                .addValue("submissionSerial", e.submissionSerial())
+                .addValue("submissionUid", context.submissionUid())
+                .addValue("submissionId", context.submissionId())
+                .addValue("assignmentUid", context.assignmentUid())
+                .addValue("submissionSerial", context.submissionSerial())
                 .addValue("parentEventId", e.parentEventId())
                 .addValue("eventCeId", UuidUtils.toUuidOrNull(e.eventCeId()))
-                .addValue("activityUid", e.activityUid())
-                .addValue("orgUnitUid", e.orgUnitUid())
-                .addValue("teamUid", e.teamUid())
-                .addValue("templateUid", e.templateUid())
-                .addValue("createdBy", e.createdBy())
-                .addValue("lastModifiedBy", e.lastModifiedBy())
-                .addValue("submissionCreationTime", getTimestamp(e.submissionCreationTime())) // creating time at server
-                .addValue("startTime", getTimestamp(e.startTime())) // creating time at client
-                .addValue("deletedAt", getTimestamp(e.deletedAt()));
+                .addValue("activityUid", context.activityUid())
+                .addValue("orgUnitUid", context.orgUnitUid())
+                .addValue("teamUid", context.teamUid())
+                .addValue("templateUid", context.templateUid())
+                .addValue("createdBy", context.createdBy())
+                .addValue("lastModifiedBy", context.lastModifiedBy())
+                .addValue("submissionCreationTime", getTimestamp(context.submissionCreationTime())) // creating time at server
+                .addValue("startTime", getTimestamp(context.startTime())) // creating time at client
+                .addValue("deletedAt", getTimestamp(context.deletedAt()));
             batch[i++] = p;
         }
 
@@ -120,7 +118,7 @@ public class EventEntityJdbcRepository {
     }
 
     Timestamp getTimestamp(Instant instant) {
-        if (instant != null) return Timestamp.from(instant);
-        return Timestamp.from(Instant.now());
+        if (instant == null) return null;
+        return Timestamp.from(instant);
     }
 }

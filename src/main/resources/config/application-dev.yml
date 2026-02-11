@@ -154,7 +154,7 @@ migration:
   run: true
   auto-start: true
 
-  size: 50
+  size: 300
   cron: "0 */1 * * * *"
   generate-missing-ids: true
   submissionUids: Eelt7ZePvz0, LaGeMmmCEtH, QIMwgBqVsqW, zglED4TsbTh, M3fdtzBSpn8, RQlMiMcukid, gGyX1CVnOaw, YLcsWJlB7uy, hcLU8ZtUdSd, Ls9TW9eSlYH, ck2pHW93sk2, rkwH5QNofRn, KcsA3KETRbY, woOl5yAmi8C, BoEmHvJUEpb,W8EtCDYfp1w, MrxGOZ6stwS, UYBPOIfCU0a, mpmjpJcMuas, IP2dMtoJkO4, ONIaOpzoYAe
@@ -197,9 +197,3 @@ jhipster:
       host: localhost
       port: 5000
       ring-buffer-size: 512
-# ===================================================================
-# Application specific properties
-# Add your own application properties here, see the ApplicationProperties class
-# ===================================================================
-
-# application:

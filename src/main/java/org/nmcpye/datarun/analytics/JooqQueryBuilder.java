@@ -124,7 +124,7 @@ public class JooqQueryBuilder {
         query.addFrom(PG);
 
         // build base condition (reuse translateFilter & coerce logic)
-        Condition cond = PG.IS_DELETED.isNull();
+        Condition cond = DSL.trueCondition();
         if (from != null) cond = cond.and(PG.START_TIME.ge(from));
         if (to != null) cond = cond.and(PG.START_TIME.le(to));
         if (allowedTeamIds != null && !allowedTeamIds.isEmpty()) cond = cond.and(PG.TEAM_UID.in(allowedTeamIds));
@@ -206,7 +206,7 @@ public class JooqQueryBuilder {
         Set<String> allowedTeamIds
     ) {
         // Build the same base condition
-        Condition cond = PG.IS_DELETED.isNull();
+        Condition cond = DSL.trueCondition();
         if (from != null) cond = cond.and(PG.START_TIME.ge(from));
         if (to != null) cond = cond.and(PG.START_TIME.le(to));
         if (allowedTeamIds != null && !allowedTeamIds.isEmpty()) cond = cond.and(PG.TEAM_UID.in(allowedTeamIds));

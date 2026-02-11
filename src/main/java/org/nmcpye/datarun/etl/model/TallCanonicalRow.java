@@ -25,21 +25,22 @@ public class TallCanonicalRow {
     private String submissionUid;
     private String templateUid;
     private String templateVersionUid;
+    private Instant submissionCreationTime;
+    private Instant submissionStartTime;
+    private String createdBy;
+    private String lastModifiedBy;
+
     private String canonicalElementId; // UUID string
     private String elementPath;
     private String repeatInstanceId; // nullable
     private String parentInstanceId; // nullable
-    private Integer repeatIndex; // nullable// fallback if repeatInstanceId absent
+    private Integer repeatIndex;
     private String valueText;
     private BigDecimal valueNumber;
     private Boolean valueBool;
     private String valueJson;
     private String valueRefUid;
     private String valueRefType;
-    private Instant submissionCreationTime;
-    private Instant submissionStartTime;
-    private String createdBy;
-    private String lastModifiedBy;
     private Instant createdAt;
     private Instant updatedAt;
     private Boolean isDeleted;

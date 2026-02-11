@@ -5,13 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import org.nmcpye.datarun.etl.model.TallCanonicalRow;
 import org.springframework.jdbc.core.RowMapper;
 
-import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * * events is the instance-level identity table (one row per instance_key) that represents
@@ -28,44 +30,55 @@ import java.time.Instant;
 @Accessors(fluent = true)
 public class EventDto {
     private String eventId;
-//    private String instanceKey;
     private String eventType;
     private String submissionId;
     private String submissionUid;
-
+    /// submission version
     private Long submissionSerial;
-    private String parentEventId;
-    private String eventCeId;
 
+
+    private String eventCeId;
+    private String parentEventId;
+
+    // context
     private String assignmentUid;
     private String activityUid;
     private String orgUnitUid;
     private String teamUid;
     private String templateUid;
 
-
+    /// created at server
     private Instant submissionCreationTime;
+    /// created time at client
     private Instant startTime;
-    private Instant lastSeen;
+//    private Instant lastSeen;
 
-    // anchor fields
-    private String anchorCeId;
-    private String anchorRefUid;
-    private String anchorValueText;
-    private String anchorValueRefType;
-    private BigDecimal anchorConfidence;
-    private Instant anchorResolvedAt;
+//    // anchor fields
+//    private String anchorCeId;
+//    private String anchorRefUid;
+//    private String anchorValueText;
+//    private String anchorValueRefType;
+//    private BigDecimal anchorConfidence;
+//    private Instant anchorResolvedAt;
 
+    /// submission created by
     private String createdBy;
+    /// submission created by
     private String lastModifiedBy;
+    /// event creation date
     private Instant createdAt;
+
+    /// event update date
     private Instant updatedAt;
+
+    /// event deletion time, null if not deleted
     private Instant deletedAt;
-    private Integer version;
+
+    @Builder.Default
+    private List<TallCanonicalRow> tallCanonicalRows = new ArrayList<>();
 
     public static final RowMapper<EventDto> ROW_MAPPER = (rs, rowNum) -> EventDto.builder()
         .eventId(rs.getString("event_id"))
-//        .instanceKey(rs.getString("instance_key"))
         .eventType(rs.getString("event_type"))
         .submissionUid(rs.getString("submission_uid"))
         .submissionId(rs.getString("submission_id"))
@@ -83,18 +96,17 @@ public class EventDto {
         .templateUid(rs.getString("template_uid"))
         .submissionCreationTime(getInstant(rs, "submission_creation_time"))
         .startTime(getInstant(rs, "start_time"))
-        .lastSeen(getInstant(rs, "last_seen"))
+//        .lastSeen(getInstant(rs, "last_seen"))
 
         // anchor fields
-        .anchorCeId(rs.getString("anchor_ce_id"))
-        .anchorRefUid(rs.getString("anchor_ref_uid"))
-        .anchorValueText(rs.getString("anchor_value_text"))
-        .anchorConfidence(rs.getBigDecimal("anchor_confidence"))
-        .anchorResolvedAt(getInstant(rs, "anchor_resolved_at"))
-        .anchorValueRefType(rs.getString("anchor_value_ref_type"))
+//        .anchorCeId(rs.getString("anchor_ce_id"))
+//        .anchorRefUid(rs.getString("anchor_ref_uid"))
+//        .anchorValueText(rs.getString("anchor_value_text"))
+//        .anchorConfidence(rs.getBigDecimal("anchor_confidence"))
+//        .anchorResolvedAt(getInstant(rs, "anchor_resolved_at"))
+//        .anchorValueRefType(rs.getString("anchor_value_ref_type"))
 
         .createdAt(getInstant(rs, "created_at")).updatedAt(getInstant(rs, "updated_at"))
-        .version(rs.getInt("version"))
         .deletedAt(getInstant(rs, "deleted_at")).build();
 
     private static Instant getInstant(ResultSet rs, String column) throws SQLException {

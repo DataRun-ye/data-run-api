@@ -27,6 +27,7 @@ public class SqlGenerator {
         String tableNew = Naming.newName(baseFq);
 
         String dims = String.join(", ",
+            "e.deleted_at",
             "e.event_type",
             "e.event_name",
             "e.template_uid",
@@ -74,6 +75,7 @@ public class SqlGenerator {
                 CREATE TABLE %1$s AS
                 WITH events AS (
                   SELECT
+                    e.deleted_at,
                     e.submission_serial,
                     e.event_type,
                     e.event_name,

@@ -20,8 +20,8 @@ public class RefTypeValueResolutionService {
     private final DimTeamJdbcRepository dimTeamJdbcRepo;
     public final static String REF_RESOLUTION_CACHE_NAME = "refResolutionCache";
 
-    @Cacheable(value = REF_RESOLUTION_CACHE_NAME, key = "#refType + ':' + (#activityUid==null?'':#activityUid) + ':' +(#optionSetUid==null?'':#optionSetUid) + ':' + #token")
-    public String resolve(String token, String refType, String optionSetUid, String activityUid) {
+    @Cacheable(value = REF_RESOLUTION_CACHE_NAME, key = "#refType + ':' +(#optionSetUid==null?'':#optionSetUid) + ':' + #token")
+    public String resolve(String token, String refType, String optionSetUid) {
         // 2) deterministic lookups
         String resolvedUid = null;
         if ("option".equalsIgnoreCase(refType)) {
@@ -29,7 +29,7 @@ public class RefTypeValueResolutionService {
         } else if ("org_unit".equalsIgnoreCase(refType) || "orgunit".equalsIgnoreCase(refType)) {
             resolvedUid = resolveOrgUnit(token);
         } else if ("team".equalsIgnoreCase(refType)) {
-            resolvedUid = resolveTeam(token, activityUid);
+            resolvedUid = resolveTeam(token);
         }
 
         // 3) not found — persist miss
@@ -46,18 +46,11 @@ public class RefTypeValueResolutionService {
         return (String) ou.getOrDefault("uid", null);
     }
 
-    String resolveTeam(String token, String activityUid) {
+    String resolveTeam(String token) {
         Optional<Map<String, Object>> team = dimTeamJdbcRepo.findByUidOrId(token);
         String resolvedUid = null;
         if (team.isPresent()) {
             resolvedUid = (String) team.get().getOrDefault("uid", null);
-        }
-
-        if (activityUid != null) {
-            Optional<Map<String, Object>> ou2 = dimTeamJdbcRepo.findByActivityAndCodeOrUid(activityUid, token);
-            if (ou2.isPresent()) {
-                resolvedUid = (String) ou2.get().getOrDefault("uid", null);
-            }
         }
 
         return resolvedUid;

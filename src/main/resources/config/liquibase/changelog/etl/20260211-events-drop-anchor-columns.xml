@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+
+    <changeSet id="add-event-drop-anchor-cols" author="hamza-ye">
+        <dropColumn tableName="events" schemaName="analytics">
+            <column name="anchor_ce_id"/>
+            <column name="anchor_confidence"/>
+            <column name="anchor_ref_uid"/>
+            <column name="anchor_resolved_at"/>
+            <column name="anchor_value_ref_type"/>
+            <column name="anchor_value_text"/>
+            <column name="last_seen"/>
+        </dropColumn>
+    </changeSet>
+</databaseChangeLog>

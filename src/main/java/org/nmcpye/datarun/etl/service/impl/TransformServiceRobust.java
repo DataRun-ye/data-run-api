@@ -1,10 +1,8 @@
 package org.nmcpye.datarun.etl.service.impl;
 
-// imports you probably already have
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import org.nmcpye.datarun.etl.model.TallCanonicalRow;
+import org.nmcpye.datarun.etl.dto.TallCanonicalValue;
 import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
 import org.springframework.stereotype.Service;
 
@@ -24,10 +22,10 @@ public class TransformServiceRobust {
      * If flattenPrimitiveArrays == false (default desired behavior) then arrays of primitives
      * are kept as valueJson (single row) rather than exploded into multiple rows.
      */
-    public List<TallCanonicalRow> transform(JsonNode root,
-                                            List<CanonicalElement> elements,
-                                            boolean flattenPrimitiveArrays) {
-        List<TallCanonicalRow> result = new ArrayList<>();
+    public List<TallCanonicalValue> transform(JsonNode root,
+                                              List<CanonicalElement> elements,
+                                              boolean flattenPrimitiveArrays) {
+        List<TallCanonicalValue> result = new ArrayList<>();
         Instant now = Instant.now();
         for (CanonicalElement element : elements) {
             Set<String> jsonPaths = element.getJsonDataPaths();
@@ -56,9 +54,11 @@ public class TransformServiceRobust {
 
                     // repeatIndex: prefer nearestElement._index, then node._index, then hit.arrayIndex
                     Integer repeatIndex = null;
-                    if (nearestElement != null && nearestElement.has("_index") && nearestElement.get("_index").canConvertToInt()) {
+                    if (nearestElement != null && nearestElement.has("_index")
+                        && nearestElement.get("_index").canConvertToInt()) {
                         repeatIndex = nearestElement.get("_index").intValue();
-                    } else if (node.has("_index") && node.get("_index").canConvertToInt()) {
+                    } else if (node.has("_index")
+                        && node.get("_index").canConvertToInt()) {
                         repeatIndex = node.get("_index").intValue();
                     } else {
                         repeatIndex = hit.arrayIndex;
@@ -78,15 +78,13 @@ public class TransformServiceRobust {
                         valueText = node.asText();
                     } else if (node.isTextual()) {
                         valueText = node.asText();
-                    } else if (node.isNull()) {
-                        valueText = null;
                     } else if (node.isArray() || node.isObject()) {
                         // If node is an array-of-primitives and we chose to keep it as JSON,
                         // node is the array node (resolvePathHits will have produced that).
                         String raw = node.toString();
                         if (raw.length() > VALUE_JSON_MAX) {
                             valueJson = raw.substring(0, VALUE_JSON_MAX) + "...(truncated)";
-                            valueText = raw.substring(0, Math.min(VALUE_TEXT_MAX, raw.length())) + "...(truncated)";
+                            valueText = raw.substring(0, VALUE_TEXT_MAX) + "...(truncated)";
                         } else {
                             valueJson = raw;
                         }
@@ -103,7 +101,7 @@ public class TransformServiceRobust {
                     boolean emptyJson = (valueJson == null || valueJson.isEmpty());
                     if (emptyText && emptyNumber && emptyJson) continue;
 
-                    TallCanonicalRow row = TallCanonicalRow.builder()
+                    TallCanonicalValue row = TallCanonicalValue.builder()
                         .canonicalElementId(element.getId())
                         .elementPath(hit.elementPath)
                         .repeatInstanceId(repeatInstanceId)
@@ -113,8 +111,6 @@ public class TransformServiceRobust {
                         .valueNumber(valueNumber)
                         .valueBool(valueBool)
                         .valueJson(valueJson)
-                        .createdAt(now)
-                        .updatedAt(now)
                         .build();
 
                     result.add(row);

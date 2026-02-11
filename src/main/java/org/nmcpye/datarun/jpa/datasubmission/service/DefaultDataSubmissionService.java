@@ -83,7 +83,17 @@ public class DefaultDataSubmissionService
      * @param existingEntity The entity fetched from the database (managed).
      * @param incomingEntity The entity data provided for the update (detached).
      */
-    private void updateEntityFields(DataSubmission existingEntity, DataSubmission incomingEntity) {
+    private boolean updateEntityFields(DataSubmission existingEntity, DataSubmission incomingEntity) {
+        if(Boolean.TRUE.equals(existingEntity.getDeleted()) && Boolean.TRUE.equals(incomingEntity.getDeleted())) {
+            return true;
+        }
+
+        if(Boolean.TRUE.equals(incomingEntity.getDeleted()) && Boolean.FALSE.equals(existingEntity.getDeleted())) {
+            existingEntity.setDeleted(true);
+            existingEntity.setDeletedAt(Instant.now());
+            return true;
+        }
+
         existingEntity.setFormData(incomingEntity.getFormData().deepCopy());
         existingEntity.setActivity(incomingEntity.getActivity());
         existingEntity.setAssignment(incomingEntity.getAssignment());
@@ -93,8 +103,8 @@ public class DefaultDataSubmissionService
         existingEntity.setOrgUnitCode(incomingEntity.getOrgUnitCode());
         existingEntity.setOrgUnitName(incomingEntity.getOrgUnitName());
         existingEntity.setTeamCode(incomingEntity.getTeamCode());
-        existingEntity.setDeleted(incomingEntity.getDeleted());
-        existingEntity.setDeletedAt(incomingEntity.getDeletedAt());
+
+        return false;
     }
 
     @Transactional
@@ -121,6 +131,7 @@ public class DefaultDataSubmissionService
 
         List<DataSubmission> entitiesToPersist = new ArrayList<>();
         List<DataSubmission> entitiesToUpdate = new ArrayList<>();
+        List<DataSubmission> entitiesToDelete = new ArrayList<>();
 
         for (DataSubmission incomingEntity : entities) {
             DataSubmission existingEntity = existingEntitiesMap.get(incomingEntity.getUid());
@@ -136,17 +147,18 @@ public class DefaultDataSubmissionService
                 entitiesToPersist.add(incomingEntity);
             } else {
                 beforeUpdate(existingEntity, incomingEntity);
-                updateEntityFields(existingEntity, incomingEntity);
-                entitiesToUpdate.add(existingEntity);
+                final var deleted = updateEntityFields(existingEntity, incomingEntity);
+                if (deleted) entitiesToDelete.add(existingEntity);
+                else entitiesToUpdate.add(existingEntity);
             }
         }
 
         List<DataSubmission> persistedResults = List.of();
         List<DataSubmission> updatedResults = List.of();
+        List<DataSubmission> deletedResults = List.of();
 
         if (!entitiesToPersist.isEmpty()) {
             persistedResults = jpaAuditableObjectRepository.persistAllAndFlush(entitiesToPersist);
-//            jpaAuditableObjectRepository.
             final var outboxEvents = persistedResults.stream()
                 .map(this::enqueueSubmissionsOutbox)
                 .toList();
@@ -168,8 +180,21 @@ public class DefaultDataSubmissionService
             summary.getUpdated().addAll(updatedResults.stream().map(DataSubmission::getUid).toList());
         }
 
+        if (!entitiesToDelete.isEmpty()) {
+            deletedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToUpdate);
+            final var outboxEvents = deletedResults.stream()
+                .map(this::enqueueSubmissionsOutbox)
+                .toList();
+            outboxRepo.insertByEventType(outboxEvents, "DELETE");
+
+            deletedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
+                EventChangeType.DELETE, s.getLockVersion()))); // Apply post-update hook for each
+            summary.getUpdated().addAll(deletedResults.stream().map(DataSubmission::getUid).toList());
+        }
+
         List<DataSubmission> combinedResults = new ArrayList<>(persistedResults);
         combinedResults.addAll(updatedResults);
+        combinedResults.addAll(deletedResults);
         return combinedResults;
     }
 
@@ -180,6 +205,8 @@ public class DefaultDataSubmissionService
         var outbox = enqueueSubmissionsOutbox(object);
         outboxRepo.insertByEventType(List.of(outbox), "DELETE");
         super.softDelete(object);
+        eventPublisher.publishEvent(new SubmissionSavedEvent(object.getId(),
+            EventChangeType.DELETE, object.getLockVersion()));
     }
 
     private void beforeUpdate(DataSubmission existingEntity, DataSubmission incomingEntity) {

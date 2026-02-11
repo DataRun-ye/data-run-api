@@ -7,23 +7,27 @@ import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,
     componentModel = MappingConstants.ComponentModel.SPRING)
 public interface DataSubmissionMapper {
-    @Mapping(source = "startTime", target = "startEntryTime")
-    @Mapping(source = "submissionCreationTime", target = "createdDate")
-    @Mapping(source = "assignmentUid", target = "assignment")
-    @Mapping(source = "activityUid", target = "activity")
-    @Mapping(source = "orgUnitUid", target = "orgUnit")
-    @Mapping(source = "teamUid", target = "team")
-    @Mapping(source = "templateVersionUid", target = "formVersion")
-    @Mapping(source = "templateUid", target = "form")
-    @Mapping(source = "submissionSerial", target = "serialNumber")
-    @Mapping(source = "submissionUid", target = "uid")
-    @Mapping(source = "submissionUid", target = "uid")
-    @Mapping(source = "submissionId", target = "id")
-    @Mapping(source = "version", target = "lockVersion")
-    DataSubmission toEntity(SubmissionContext submissionContext);
+    @Mapping(target = "startTime", source = "startEntryTime")
+    @Mapping(target = "submissionCreationTime", source = "createdDate")
+    @Mapping(target = "assignmentUid", source = "assignment")
+    @Mapping(target = "activityUid", source = "activity")
+    @Mapping(target = "orgUnitUid", source = "orgUnit")
+    @Mapping(target = "teamUid", source = "team")
+    @Mapping(target = "templateVersionUid", source = "formVersion")
+    @Mapping(target = "templateUid", source = "form")
+    @Mapping(target = "submissionSerial", source = "serialNumber")
+    @Mapping(target = "submissionUid", source = "uid")
+    @Mapping(target = "createdBy", source = "createdBy")
+    @Mapping(target = "lastModifiedBy", source = "lastModifiedBy")
+    @Mapping(target = "submissionId", source = "id")
+    @Mapping(target = "version", source = "lockVersion")
+    @Mapping(target = "deletedAt",
+        expression = "java(ds.getDeleted() != null && ds.getDeleted() == true ? java.time.Instant.now() : null)"
+    )
+    SubmissionContext toDto(DataSubmission ds);
 
-    @InheritInverseConfiguration(name = "toEntity")
-    SubmissionContext toDto(DataSubmission dataSubmission);
+//    @InheritInverseConfiguration(name = "toEntity")
+//    SubmissionContext toEntity(DataSubmission dataSubmission);
 
     @InheritConfiguration(name = "toEntity")
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

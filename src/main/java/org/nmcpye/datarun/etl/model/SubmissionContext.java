@@ -2,24 +2,27 @@ package org.nmcpye.datarun.etl.model;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.Accessors;
 import org.nmcpye.datarun.common.enumeration.FlowStatus;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * DTO for {@link org.nmcpye.datarun.jpa.datasubmission.DataSubmission}
  */
+@Getter
+@Setter
+@Builder
+@Accessors(chain = true, fluent = true)
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
-@Builder
-//@Accessors(fluent = true)
 public class SubmissionContext implements Serializable {
+    private Long outboxId;
+    private UUID ingestId;
+
     @NotNull
     @Size(max = 11)
     private String templateUid;
@@ -60,11 +63,12 @@ public class SubmissionContext implements Serializable {
     private FlowStatus status;
 
     private Instant startTime;
-    @Builder.Default
-    private Instant submissionCreationTime = Instant.now();
+
+    private Instant submissionCreationTime;
+
+    private Instant deletedAt;
 
     @NotNull
     private String createdBy;
     private String lastModifiedBy;
-
 }

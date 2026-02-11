@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.etl.util;
 
-import org.nmcpye.datarun.etl.model.TallCanonicalRow;
+import org.nmcpye.datarun.etl.dto.TallCanonicalValue;
 
 /**
  * Deterministic instance-key generation shared by upsert/delete logic.
@@ -18,9 +18,9 @@ public final class InstanceKeyUtil {
     private InstanceKeyUtil() {
     }
 
-    public static String computeInstanceKey(TallCanonicalRow r) {
+    public static String computeInstanceKey(String submissionUid, TallCanonicalValue r) {
         if (r == null) return "unknown|";
-        return computeInstanceKey(r.getRepeatInstanceId(), r.getElementPath(), r.getSubmissionUid());
+        return computeInstanceKey(r.getRepeatInstanceId(), r.getElementPath(), submissionUid);
     }
 
     public static String computeInstanceKey(String repeatInstanceId, String elementPath, String submissionUid) {

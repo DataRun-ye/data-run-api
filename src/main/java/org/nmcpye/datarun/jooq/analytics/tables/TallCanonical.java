@@ -196,11 +196,6 @@ public class TallCanonical extends TableImpl<TallCanonicalRecord> {
     public final TableField<TallCanonicalRecord, LocalDateTime> CREATED_AT = createField(DSL.name("created_at"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("now()"), SQLDataType.LOCALDATETIME)), this, "");
 
     /**
-     * The column <code>analytics.tall_canonical.is_deleted</code>.
-     */
-    public final TableField<TallCanonicalRecord, Boolean> IS_DELETED = createField(DSL.name("is_deleted"), SQLDataType.BOOLEAN.defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "");
-
-    /**
      * The column <code>analytics.tall_canonical.updated_at</code>.
      */
     public final TableField<TallCanonicalRecord, LocalDateTime> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.LOCALDATETIME(6), this, "");

@@ -1,7 +1,5 @@
 package org.nmcpye.datarun.etl.model;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,10 +17,6 @@ import java.util.Map;
 @Builder
 @Accessors(fluent = true)
 public class TemplateContext implements Serializable {
-    @NotNull
-    @Size(max = 11)
-    private String templateUid;
-
     @Builder.Default
     private Map<String, CanonicalElement> allCanonicalElementsMap = new HashMap<>();
 
