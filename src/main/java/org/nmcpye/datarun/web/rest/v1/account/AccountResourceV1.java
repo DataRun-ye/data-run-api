@@ -40,15 +40,4 @@ public class AccountResourceV1 extends AccountResource {
         log.debug("REST request to check if the current user is authenticated");
         return user;
     }
-//    @GetMapping("/myDetails")
-//    public ResponseEntity<PagedResponse<?>> getMyDetails(@AuthenticationPrincipal CurrentUserDetails user) {
-//        log.debug("REST request to check if the current user is authenticated");
-//
-//        Page<CurrentUserDetails> processedPage = new PageImpl<>(List.of(user));
-//
-//        String next = PagingConfigurator.createNextPageLink(processedPage);
-//
-//        PagedResponse<CurrentUserDetails> response = PagingConfigurator.initPageResponse(processedPage, next);
-//        return ResponseEntity.ok(response);
-//    }
 }
