@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserGroupRepositoryWithBagRelationships {
-    Optional<UserGroup> fetchBagRelationships(UserGroup groups);
 
     List<UserGroup> fetchBagRelationships(List<UserGroup> groups);
 

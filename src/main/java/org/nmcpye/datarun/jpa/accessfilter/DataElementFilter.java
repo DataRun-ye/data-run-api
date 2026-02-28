@@ -7,7 +7,7 @@ import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 

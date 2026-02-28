@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.datatemplateprocessor.validation.validators;
 
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
-import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
+import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateVersionInterface;
 
 import java.util.ArrayList;
 import java.util.HashSet;

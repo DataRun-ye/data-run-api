@@ -50,7 +50,6 @@ public class Outbox {
     @Column(name = "event_type", length = 128)
     private String eventType;
 
-//    @Type(JsonType.class)
     @Column(name = "payload", columnDefinition = "jsonb")
     private String payload;
 

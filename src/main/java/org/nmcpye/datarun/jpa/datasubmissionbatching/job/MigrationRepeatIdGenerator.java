@@ -17,7 +17,7 @@ import java.util.Set;
 
 /**
  * Migration helper that generates missing repeat item IDs in a submission's formData.
- * Used only in migration mode, after-mongo-migration production submissions we no longer generate,
+ * Used only in migration mode, after-migration production submissions we no longer generate,
  * we validate missing IDs earlier and reject unless explicitly in migration mode.
  * <p>
  * This variant sets nested _parentId to the actual parent repeat id

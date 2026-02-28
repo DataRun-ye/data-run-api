@@ -9,7 +9,7 @@ import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;

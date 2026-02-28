@@ -13,7 +13,6 @@ import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
-import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
 
 import java.util.List;
 import java.util.Map;

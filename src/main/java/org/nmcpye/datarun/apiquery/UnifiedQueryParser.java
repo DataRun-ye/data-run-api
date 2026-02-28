@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * represent mongo-like {@link SimpleFilter} and {@link CompoundFilter}
- * for both Jpa and Mongo entities, For example,
+ * represent {@link SimpleFilter} and {@link CompoundFilter}
+ * for both Jpa entities, For example,
  *
  * <pre>{@code
  *      {"name": {"$eq": "ANC"}}
@@ -27,14 +27,13 @@ import java.util.stream.Collectors;
  *
  * @author Hamza Assada 23/03/2025 (7amza.it@gmail.com)
  * @see JpaQueryBuilder
- * @see MongoQueryBuilder
  */
 public class UnifiedQueryParser {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * Parses a JSON string representing a Mongo-like query expression.
+     * Parses a JSON string representing a query expression.
      */
     public static FilterExpression parse(String json) throws Exception {
         Map<String, Object> rawQuery = objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
@@ -61,7 +60,7 @@ public class UnifiedQueryParser {
                         for (Map.Entry<?, ?> opEntry : opMap.entrySet()) {
                             String opKey = opEntry.getKey().toString();
                             Object opValue = opEntry.getValue();
-                            FilterOperator operator = FilterOperator.fromMongoOperator(opKey)
+                            FilterOperator operator = FilterOperator.fromOperatorStr(opKey)
                                 .orElseThrow(() -> new IllegalArgumentException("Unknown operator: " + opKey));
                             expressions.add(new SimpleFilter(field, operator, opValue));
                         }

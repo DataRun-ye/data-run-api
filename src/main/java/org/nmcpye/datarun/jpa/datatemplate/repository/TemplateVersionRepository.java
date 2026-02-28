@@ -13,7 +13,6 @@ import java.util.*;
 
 /// Spring Data jpa repository for the DataTemplate entity.
 @Repository
-//@JaversSpringDataAuditable
 public interface TemplateVersionRepository
     extends JpaIdentifiableRepository<TemplateVersion> {
     String TEMPLATE_UID_VERSION_NO_JPA_CACHE = "templateUidVersionNoCache";

@@ -14,7 +14,6 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @Repository
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
-//    Optional<RefreshToken> findByToken(String token);
 
     <T> Optional<T> findByToken(String lastname, Class<T> type);
 

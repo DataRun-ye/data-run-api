@@ -32,7 +32,6 @@ import java.util.Objects;
         @Index(name = "idx_ds_form_assignment", columnList = "template_uid, assignment_uid"),
         @Index(name = "idx_ds_serial_number", columnList = "serial_number"),
         @Index(name = "idx_ds_orgunit", columnList = "org_unit_uid"),
-        // partial index implemented in Liquibase (deleted = false)
     }
 )
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)

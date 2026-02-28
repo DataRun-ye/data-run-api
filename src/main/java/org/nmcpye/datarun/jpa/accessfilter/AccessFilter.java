@@ -2,7 +2,7 @@ package org.nmcpye.datarun.jpa.accessfilter;
 
 import org.nmcpye.datarun.common.AuditableObject;
 import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 
 /**

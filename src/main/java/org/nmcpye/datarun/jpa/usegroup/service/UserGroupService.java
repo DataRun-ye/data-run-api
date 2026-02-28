@@ -14,6 +14,4 @@ public interface UserGroupService
     extends JpaIdentifiableObjectService<UserGroup> {
 
     Page<UserGroup> findAllManagedByUser(Pageable pageable);
-
-    List<UserGroup> findAllManagedByUser();
 }

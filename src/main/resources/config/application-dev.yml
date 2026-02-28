@@ -1,24 +1,7 @@
-# ===================================================================
-# Spring Boot configuration for the "dev" profile.
-#
-# This configuration overrides the application.yml file.
-#
-# ===================================================================
-
-# ===================================================================
-# Standard Spring Boot properties.
-# Full reference is available at:
-# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
-# ===================================================================
-
 logging:
   level:
     org:
       springframework:
-#        jdbc:
-#          core: DEBUG
-#          pool: DEBUG
-#          transaction: DEBUG
         security:
           web:
             FilterChainProxy=TRACE:
@@ -26,8 +9,6 @@ logging:
     org.springframework.batch: INFO
     tech.jhipster: DEBUG
     org.nmcpye.datarun: DEBUG
-#    org.hibernate.SQL: DEBUG
-#    org.nmcpye.datarun: DEBUG
 
 spring:
   devtools:
@@ -39,22 +20,6 @@ spring:
   jackson:
     serialization:
       indent-output: true
-#  cloud:
-#    consul:
-#      config:
-#        fail-fast: false # if not in "prod" profile, do not force to use Spring Cloud Config
-#        format: yaml
-#        profile-separator: '-'
-#      discovery:
-#        prefer-ip-address: true
-#        tags:
-#          - profile=${spring.profiles.active}
-#          - version='@project.version@'
-#          - git-version=${git.commit.id.describe:}
-#          - git-commit=${git.commit.id.abbrev:}
-#          - git-branch=${git.branch:}
-#      host: localhost
-#      port: 8500
   data:
     mongodb:
       uri: mongodb://dRunUser:dRunUser@localhost:27017/dataRunApi
@@ -81,35 +46,9 @@ spring:
     cache-duration: PT1S # 1 second, see the ISO 8601 standard
   thymeleaf:
     cache: false
-#  batch:
-#    jdbc:
-#      initialize-schema: always
-#debezium:
-#  connectors:
-#    mongodb:
-#      name: submissions-cdc
-#      connector.class: MongoDbConnector
-#      tasks.max: 1
-#      database.hosts: mongodb:27017
-#      database.user: cdc_user
-#      database.password: s3cr3t
-#      database.include.list: datarun
-#      collection.include.list: datarun.submissions
-#      transforms: unwrap, flatten
-#      transforms.unwrap.type: io.debezium.transforms.ExtractNewRecordState
-#      transforms.flatten.type: org.apache.kafka.connect.transforms.Flatten$Value
-
 server:
   port: 8080
-  # From the jhipster new upgrade
-  # make sure requests the proxy uri instead of the server one
-#  forward-headers-strategy: native
 
-# ===================================================================
-# JHipster specific properties
-#
-# Full reference is available at: https://www.jhipster.tech/common-application-properties/
-# ===================================================================
 datarun:
   security:
     authentication:
@@ -152,11 +91,11 @@ migration:
   page:
     size: 100
   run: true
-  auto-start: true
+
 
   size: 200
   cron: "0 */1 * * * *"
-  generate-missing-ids: true
+
   submissionUids: Eelt7ZePvz0, LaGeMmmCEtH, QIMwgBqVsqW, zglED4TsbTh, M3fdtzBSpn8, RQlMiMcukid, gGyX1CVnOaw, YLcsWJlB7uy, hcLU8ZtUdSd, Ls9TW9eSlYH, ck2pHW93sk2, rkwH5QNofRn, KcsA3KETRbY, woOl5yAmi8C, BoEmHvJUEpb,W8EtCDYfp1w, MrxGOZ6stwS, UYBPOIfCU0a, mpmjpJcMuas, IP2dMtoJkO4, ONIaOpzoYAe
   runOutboxBackfill: true
 

@@ -21,7 +21,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -76,14 +75,6 @@ public class DefaultUserGroupService extends DefaultJpaIdentifiableService<UserG
         Specification<UserGroup> spec = UserGroupSpecifications.getManagedGroupsByUserGroups(SecurityUtils.getCurrentUserLoginOrThrow(new ErrorMessage(ErrorCode.E3004, getClass().getName()))).and(UserGroupSpecifications.isEnabled());
 
         return repository.fetchBagRelationships(repository.findAll(spec, pageable));
-    }
-
-    @Override
-    public List<UserGroup> findAllManagedByUser() {
-        Specification<UserGroup> spec = UserGroupSpecifications.getManagedGroupsByUserGroups(SecurityUtils.getCurrentUserLoginOrThrow(new ErrorMessage(ErrorCode.E3004, getClass().getName())));
-//            .and(isNotDisabled());
-
-        return repository.fetchBagRelationships(repository.findAll(spec));
     }
 
     private void clearGroupCaches(UserGroup userGroup) {

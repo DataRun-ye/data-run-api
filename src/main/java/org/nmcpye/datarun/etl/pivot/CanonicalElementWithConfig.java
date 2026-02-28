@@ -31,8 +31,6 @@ public class CanonicalElementWithConfig {
             .canonicalElementId(rs.getString("id"))
             .templateUid(rs.getString("template_uid"))
             .safeName(rs.getString("safe_name"))
-//            .disabled(rs.getBoolean("disabled"))
-//            .validTo(rs.getTimestamp("valid_to") != null ? rs.getTimestamp("valid_to").toInstant() : null)
             .dataType(rs.getString("data_type"))
             .semanticType(rs.getString("semantic_type"))
             .parentRepeatId(rs.getString("parent_repeat_id"))

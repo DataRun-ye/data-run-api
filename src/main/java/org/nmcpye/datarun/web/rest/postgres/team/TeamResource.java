@@ -8,7 +8,7 @@ import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.slf4j.Logger;
@@ -103,13 +103,5 @@ public class TeamResource extends JpaBaseResource<Team> {
             result,
             HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), team.getUid())
         );
-    }
-
-    @GetMapping("/migrate")
-    public ResponseEntity<String> updatePaths() throws Exception {
-        log.info("REST request to migrate team form permissions");
-        teamService.runFormPermissionsMigration();
-
-        return ResponseEntity.ok("Paths updated successfully");
     }
 }

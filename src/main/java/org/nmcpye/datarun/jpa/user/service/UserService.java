@@ -62,7 +62,6 @@ public class UserService
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authorityRepository = authorityRepository;
-//        this.cacheManager = cacheManager;
     }
 
     public Optional<User> activateRegistration(String key) {
@@ -122,32 +121,6 @@ public class UserService
                     throw new EmailAlreadyUsedException();
                 }
             });
-//        User newUser = new User();
-//        String encryptedPassword = passwordEncoder.encode(password);
-
-
-//        newUser.setLogin(userDTO.getLogin().toLowerCase());
-//        // new user gets initially a generated password
-//        if (userDTO.getUid() == null || userDTO.getUid().isEmpty()) {
-//            newUser.setUid(CodeGenerator.generateUid());
-//        }
-//        newUser.setPassword(encryptedPassword);
-//        newUser.setFirstName(userDTO.getFirstName());
-//        newUser.setLastName(userDTO.getLastName());
-//        if (userDTO.getEmail() != null) {
-//            newUser.setEmail(userDTO.getEmail().toLowerCase());
-//        }
-//        newUser.setImageUrl(userDTO.getImageUrl());
-//        newUser.setLangKey(userDTO.getLangKey());
-//        // new user is not active
-//        newUser.setActivated(userDTO.isActivated());
-//        // new user gets registration key
-//        newUser.setActivationKey(RandomUtil.generateActivationKey());
-//        Set<Authority> authorities = new HashSet<>();
-//        authorityRepository.findById(AuthoritiesConstants.USER).ifPresent(authorities::add);
-//        newUser.setAuthorities(authorities);
-//        userRepository.save(newUser);
-//        this.clearUserCaches(newUser);
         User user = new User();
         user.setLogin(userDTO.getLogin().toLowerCase());
         user.setFirstName(userDTO.getFirstName());
@@ -162,7 +135,6 @@ public class UserService
         } else {
             user.setLangKey(userDTO.getLangKey());
         }
-//        String encryptedPassword = passwordEncoder.encode(password);
         user.setPassword(passwordEncoder.encode(password));
         user.setResetKey(RandomUtil.generateResetKey());
         user.setResetDate(Instant.now());

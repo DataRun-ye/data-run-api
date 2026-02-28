@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.datatemplateelement.enumeration.RuleAction;
-import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -23,14 +22,11 @@ public class DataFieldRule implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @NotNull
-    @Field("expression")
     private String expression;
 
     @NotNull
-    @Field("action")
     private RuleAction action;
 
-    @Field("message")
     private Map<String, String> message;
 
     private String assignedValue;

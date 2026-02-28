@@ -14,7 +14,6 @@ import java.util.Optional;
  */
 @SuppressWarnings("unused")
 @Repository
-//@JaversSpringDataAuditable
 public interface DataElementRepository
     extends JpaIdentifiableRepository<DataElement> {
     Optional<DataElement> findByNameIgnoreCase(String name);

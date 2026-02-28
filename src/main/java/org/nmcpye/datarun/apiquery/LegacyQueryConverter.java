@@ -3,8 +3,8 @@ package org.nmcpye.datarun.apiquery;
 import org.nmcpye.datarun.apiquery.filter.*;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequestValidationException;
+import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
+import org.nmcpye.datarun.web.rest.queryrequest.QueryRequestValidationException;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -16,7 +16,6 @@ import java.util.*;
 public class LegacyQueryConverter {
     public FilterExpression convert(QueryRequest queryRequest) {
         if (queryRequest.getParsedFilter() == null || queryRequest.getParsedFilter().isEmpty()) {
-//            return new CompoundFilter(LogicalOperator.AND, List.of());
             return null;
         }
 

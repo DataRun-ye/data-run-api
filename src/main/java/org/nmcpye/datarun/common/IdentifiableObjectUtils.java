@@ -164,16 +164,6 @@ public class IdentifiableObjectUtils {
         return latest != null ? objects.size() + SEPARATOR + new InstantFormatter().print(latest, Locale.US) : null;
     }
 
-//    /**
-//     * Generates a tag reflecting the date of when the object was last updated.
-//     *
-//     * @param object the identifiable object.
-//     * @return a string tag.
-//     */
-//    public static String getLastUpdatedTag(JpaIdentifiableObject object) {
-//        return object != null ? LONG_DATE_FORMAT.print(new DateTime(object.getUpdated())) : null;
-//    }
-
     /**
      * Returns a mapping between the uid and the display name of the given
      * identifiable objects.

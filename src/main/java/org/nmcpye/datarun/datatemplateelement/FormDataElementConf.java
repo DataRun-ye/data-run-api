@@ -7,7 +7,7 @@ import lombok.Setter;
 import org.nmcpye.datarun.common.enumeration.ValueTypeRendering;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
-import org.nmcpye.datarun.mongo.domain.datafield.ScannedCodeProperties;
+import org.nmcpye.datarun.datatemplateelement.datafield.ScannedCodeProperties;
 
 import java.io.Serial;
 import java.io.Serializable;

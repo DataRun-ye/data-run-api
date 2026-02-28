@@ -6,7 +6,7 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
+import org.nmcpye.datarun.datatemplateprocessor.FormAccessService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.springframework.stereotype.Component;
 

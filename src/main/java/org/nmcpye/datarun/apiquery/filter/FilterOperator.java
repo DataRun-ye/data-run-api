@@ -8,7 +8,7 @@ import java.util.Optional;
 public enum FilterOperator {
     EQ, NE, GT, GTE, LT, LTE, IN, EXISTS, REGEX, NULL;
 
-    public static Optional<FilterOperator> fromMongoOperator(String op) {
+    public static Optional<FilterOperator> fromOperatorStr(String op) {
         return switch (op) {
             case "$eq" -> Optional.of(EQ);
             case "$ne" -> Optional.of(NE);

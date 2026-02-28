@@ -18,7 +18,6 @@ import java.util.Optional;
  */
 @SuppressWarnings("unused")
 @Repository
-//@JaversSpringDataAuditable
 public interface OrgUnitRepository
     extends OrgUnitRepositoryWithBagRelationships,
     JpaIdentifiableRepository<OrgUnit> {

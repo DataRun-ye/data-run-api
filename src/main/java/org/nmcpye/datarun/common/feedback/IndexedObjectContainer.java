@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.common.feedback;
 
+import jakarta.annotation.Nonnull;
 import org.nmcpye.datarun.common.AuditableObject;
 
-import javax.annotation.Nonnull;
 import java.util.IdentityHashMap;
 import java.util.Map;
 

@@ -9,7 +9,7 @@ import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.datatemplateprocessor.postprocessors.AbstractFormElementHandler;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
-import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
+import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateVersionInterface;
 
 import java.util.*;
 import java.util.function.Function;

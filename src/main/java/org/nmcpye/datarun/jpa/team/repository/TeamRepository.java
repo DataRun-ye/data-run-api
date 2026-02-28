@@ -19,7 +19,6 @@ import java.util.Optional;
  * @since 06/06/2023
  */
 @Repository
-//@JaversSpringDataAuditable
 public interface TeamRepository
     extends TeamRepositoryWithBagRelationships,
     JpaIdentifiableRepository<Team> {

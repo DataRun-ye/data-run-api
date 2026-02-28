@@ -6,8 +6,7 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.*;
 
 public interface IdentifiableObjectManager {
@@ -50,7 +49,7 @@ public interface IdentifiableObjectManager {
      * @param uid  the UID.
      * @return the object with the given UID.
      */
-    @CheckForNull
+//    //    @CheckForNull
     <T extends JpaIdentifiableObject> T get(@Nonnull Class<T> type, @Nonnull String uid);
 
     /**
@@ -81,10 +80,10 @@ public interface IdentifiableObjectManager {
 
     <T extends JpaIdentifiableObject> boolean exists(@Nonnull Class<T> type, @Nonnull String uid);
 
-    @CheckForNull
+    //    @CheckForNull
     <T extends JpaIdentifiableObject> T get(@Nonnull Collection<Class<? extends T>> types, @Nonnull String uid);
 
-    @CheckForNull
+    //    @CheckForNull
     <T extends JpaIdentifiableObject> T get(@Nonnull Collection<Class<? extends T>> types, @Nonnull IdScheme idScheme, @Nonnull String value);
 
     /**
@@ -95,7 +94,7 @@ public interface IdentifiableObjectManager {
      * @param code the code.
      * @return the object with the given code.
      */
-    @CheckForNull
+    //    @CheckForNull
     <T extends JpaIdentifiableObject> T getByCode(@Nonnull Class<T> type, @Nonnull String code);
 
     /**
@@ -113,7 +112,7 @@ public interface IdentifiableObjectManager {
     @Nonnull
     <T extends JpaIdentifiableObject> List<T> getByCode(@Nonnull Class<T> type, @Nonnull Collection<String> codes);
 
-    @CheckForNull
+    //    @CheckForNull
     <T extends JpaIdentifiableObject> T getByName(@Nonnull Class<T> type, @Nonnull String name);
 
     <T extends JpaIdentifiableObject> T search(Class<T> clazz, String query);
@@ -144,7 +143,7 @@ public interface IdentifiableObjectManager {
     <T extends JpaIdentifiableObject> List<T> getByUid(@Nonnull Collection<Class<? extends T>> types, @Nonnull Collection<String> uids);
 
     @Nonnull
-    <T extends JpaIdentifiableObject> List<T> loadByUid(@Nonnull Class<T> type, @CheckForNull Collection<String> uids)
+    <T extends JpaIdentifiableObject> List<T> loadByUid(@Nonnull Class<T> type, Collection<String> uids)
         throws IllegalQueryException;
 
     <T extends JpaIdentifiableObject> List<T> getById(Class<T> clazz, Collection<String> ids);

@@ -32,7 +32,6 @@ import java.util.Objects;
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @JsonIgnoreProperties(value = {"new", "createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
-//@DiffIgnore
 @Getter
 @Setter
 public abstract class JpaIdentifiableObject

@@ -18,7 +18,6 @@ import java.util.Optional;
  * Spring Data JPA repository for the {@link User} entity.
  */
 @Repository
-//public interface UserRepository extends BaseJpaIdentifiableRepository<User, Long> {
 public interface UserRepository
     extends JpaIdentifiableRepository<User> {
     String USERS_BY_LOGIN_CACHE = "usersByLogin";
@@ -29,8 +28,6 @@ public interface UserRepository
     String USER_GROUP_IDS_CACHE = "userGroupIdsByLogin";
 
     String USER_ACTIVITY_IDS_CACHE = "userActivityIdsByLogin";
-
-//    String USER_FORM_IDS_CACHE = "userFormIdsByLogin";
 
     String USER_TEAM_FORM_ACCESS_CACHE = "userFormAccessByTeamAndForm";
 

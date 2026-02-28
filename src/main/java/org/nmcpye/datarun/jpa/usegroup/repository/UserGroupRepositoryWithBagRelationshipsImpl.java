@@ -24,11 +24,6 @@ public class UserGroupRepositoryWithBagRelationshipsImpl implements UserGroupRep
     private EntityManager entityManager;
 
     @Override
-    public Optional<UserGroup> fetchBagRelationships(UserGroup userGroup) {
-        return Optional.ofNullable(userGroup).map(this::fetchUserGroups);
-    }
-
-    @Override
     public Page<UserGroup> fetchBagRelationships(Page<UserGroup> userGroups) {
         return new PageImpl<>(fetchBagRelationships(userGroups.getContent()), userGroups.getPageable(), userGroups.getTotalElements());
     }

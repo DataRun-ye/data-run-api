@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.common;
 
+import lombok.Getter;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,6 +17,7 @@ import static java.lang.Integer.parseInt;
  * <p>
  * TODO The <code>DEFAULT</code> version must be updated for each release.
  */
+@Getter
 public enum DRunApiVersion {
     ALL(-1, true),
     V1(1),
@@ -34,16 +37,8 @@ public enum DRunApiVersion {
         this.ignore = ignore;
     }
 
-    public int getVersion() {
-        return version;
-    }
-
     public String getVersionString() {
         return this == DEFAULT ? "" : String.valueOf(version);
-    }
-
-    public boolean isIgnore() {
-        return ignore;
     }
 
     /**

@@ -3,7 +3,7 @@ package org.nmcpye.datarun.common.feedback;
 
 import org.nmcpye.datarun.common.AuditableObject;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 @FunctionalInterface
 public interface ObjectIndexProvider {

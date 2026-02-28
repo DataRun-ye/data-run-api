@@ -15,7 +15,6 @@ import java.util.Optional;
  * @since 10/09/2024
  */
 @Repository
-//@JaversSpringDataAuditable
 public interface OptionSetRepository
     extends JpaIdentifiableRepository<OptionSet> {
     Optional<OptionSet> findByNameIgnoreCase(String name);

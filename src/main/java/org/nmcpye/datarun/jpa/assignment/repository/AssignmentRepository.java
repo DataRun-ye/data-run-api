@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-//@JaversSpringDataAuditable
 public interface AssignmentRepository
     extends JpaIdentifiableRepository<Assignment>, AssignmentRepositoryWithBagRelationships {
 

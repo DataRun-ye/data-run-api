@@ -74,24 +74,12 @@
 
         <!--  NMC      -->
         <jooq.version>3.19.18</jooq.version>
-        <!--  Override driver due to conflict with debezium -->
-        <!--        <javers-spring-boot-starter-mongo.version>7.7.0</javers-spring-boot-starter-mongo.version>-->
-        <!--        <javers-spring-boot-starter-sql.version>7.7.0</javers-spring-boot-starter-sql.version>-->
-        <mongock-bom.version>5.5.0</mongock-bom.version>
-        <!--        <version.debezium>3.1.0.Alpha1</version.debezium>-->
         <json-flattener-version>0.18.0</json-flattener-version>
 
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>io.mongock</groupId>
-                <artifactId>mongock-bom</artifactId>
-                <version>${mongock-bom.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -137,11 +125,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
-        </dependency>
-        <!-- <editor-fold desc="NMC ACL SECURITY"> -->
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-acl</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
@@ -333,26 +316,16 @@
             <artifactId>postgresql</artifactId>
             <scope>test</scope>
         </dependency>
-        <!--        <dependency>-->
-        <!--            <groupId>com.zaxxer</groupId>-->
-        <!--            <artifactId>HikariCP</artifactId>-->
-        <!--            <scope>test</scope>-->
-        <!--        </dependency>-->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
         <!-- NMC   -->
-        <!-- NMC    -->
-
         <dependency>
-            <groupId>io.mongock</groupId>
-            <artifactId>mongock-springboot-v3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.mongock</groupId>
-            <artifactId>mongodb-springdata-v4-driver</artifactId>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.4.8-jre</version>
         </dependency>
         <dependency>
             <groupId>io.hypersistence</groupId>
@@ -371,46 +344,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-mongodb</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
-        <!-- debezium   -->
-        <!--        <dependency>-->
-        <!--            <groupId>io.debezium</groupId>-->
-        <!--            <artifactId>debezium-api</artifactId>-->
-        <!--            <version>${version.debezium}</version>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>io.debezium</groupId>-->
-        <!--            <artifactId>debezium-embedded</artifactId>-->
-        <!--            <version>${version.debezium}</version>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>io.debezium</groupId>-->
-        <!--            <artifactId>debezium-storage-jdbc</artifactId>-->
-        <!--            <version>${version.debezium}</version>-->
-        <!--        &lt;!&ndash;        </dependency>&ndash;&gt;-->
-        <!--        <dependency>-->
-        <!--            <groupId>io.debezium</groupId>-->
-        <!--            <artifactId>debezium-connector-mongodb</artifactId>-->
-        <!--            <version>${version.debezium}</version>-->
-        <!--        </dependency>-->
-
-        <!--   javers    -->
-        <!--        <dependency>-->
-        <!--            <groupId>org.javers</groupId>-->
-        <!--            <artifactId>javers-spring-boot-starter-mongo</artifactId>-->
-        <!--            <version>${javers-spring-boot-starter-mongo.version}</version>-->
-        <!--        </dependency>-->
-        <!--        <dependency>-->
-        <!--            <groupId>org.javers</groupId>-->
-        <!--            <artifactId>javers-spring-boot-starter-sql</artifactId>-->
-        <!--            <version>${javers-spring-boot-starter-sql.version}</version>-->
-        <!--        </dependency>-->
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
@@ -1043,8 +979,6 @@
                                 <implicitJoinPathsToOne>false</implicitJoinPathsToOne>
                                 <!-- disable convenience Path types for to-many joins -->
                                 <implicitJoinPathsToMany>false</implicitJoinPathsToMany>
-                                <!-- disable convenience Path types for many-to-many joins -->
-                                <!--                                 <implicitJoinPathsManyToMany>false</implicitJoinPathsManyToMany>-->
                             </generate>
                             <database>
                                 <name>org.jooq.meta.postgres.PostgresDatabase</name>
@@ -1052,7 +986,6 @@
 <!--                                <inputSchema>public</inputSchema>-->
                                 <includes>tall_canonical|org_unit|user_allowed_party|team|team_user|app_user|user_group|user_group_users|party|party_set|party_tag|assignment|party_set_member|assignment_party_binding|assignment_member
                                 </includes>
-<!--                                <excludes>databasechangelog|databasechangeloglock</excludes>-->
                             </database>
                             <target>
                                 <packageName>org.nmcpye.datarun.jooq</packageName>

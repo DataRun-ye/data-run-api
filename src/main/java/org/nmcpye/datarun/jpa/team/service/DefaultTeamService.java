@@ -8,13 +8,12 @@ import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
 import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
-import org.nmcpye.datarun.jpa.migration.TeamFormPermissionsMigration;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
@@ -42,14 +41,14 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
 
     final private UserRepository userRepository;
     final private ActivityRepository activityRepository;
-    private final TeamFormPermissionsMigration formPermissionsMigration;
 
-    public DefaultTeamService(TeamRepository repository, UserRepository userRepository, ActivityRepository activityRepository, CacheManager cacheManager, UserAccessService userAccessService, TeamFormPermissionsMigration formPermissionsMigration) {
+    public DefaultTeamService(TeamRepository repository, UserRepository userRepository,
+                              ActivityRepository activityRepository, CacheManager cacheManager,
+                              UserAccessService userAccessService) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
-        this.formPermissionsMigration = formPermissionsMigration;
     }
 
     @Override
@@ -104,33 +103,8 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
         });
     }
 
-//    @Override
-//    public Page<Team> findAllByUser(Pageable pageable, QueryRequest queryRequest) {
-//        Specification<Team> spec = canRead();
-//        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
-//            spec = spec.and(TeamSpecifications.isEnabled());
-//        }
-//
-//        return repository.fetchBagRelationships(repository.findAll(spec, pageable));
-//    }
-//
-//    @Override
-//    public List<Team> findAllByUser(QueryRequest queryRequest) {
-//        Specification<Team> spec = canRead();
-//        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
-//            spec = spec.and(TeamSpecifications.isEnabled());
-//        }
-//
-//        return repository.fetchBagRelationships(repository.findAll(spec));
-//    }
-
     @Override
     public Page<Team> findAllManagedByUser(Pageable pageable, QueryRequest queryRequest) {
-
-//        Specification<Team> specManage = TeamSpecifications.getManagedTeamsByUserTeams(SecurityUtils.getCurrentUserLoginOrThrow(new ErrorMessage(ErrorCode.E3004, getClass().getName()))).and(TeamSpecifications.isEnabled());
-//        if (queryRequest == null || !queryRequest.isIncludeDisabled()) {
-//            specManage = Specification.where(specManage).and(TeamSpecifications.isEnabled());
-//        }
         final var managedSpec = getManagedSpecification(SecurityUtils
                 .getCurrentUserDetails().orElseThrow(() ->
                     new IllegalQueryException(new ErrorMessage(ErrorCode.E3004, getClass().getName()))),
@@ -187,11 +161,6 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
 
             return existingTeam;
         }).map(repository::save);
-    }
-
-    @Override
-    public void runFormPermissionsMigration() {
-        formPermissionsMigration.processInChunks();
     }
 
     private void clearTeamCaches(Team team) {

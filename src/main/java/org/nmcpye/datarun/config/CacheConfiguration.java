@@ -5,8 +5,6 @@ import org.ehcache.config.builders.ExpiryPolicyBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.jsr107.Eh107Configuration;
 import org.hibernate.cache.jcache.ConfigSettings;
-import org.nmcpye.datarun.analytics.metadata.MetadataServiceImpl;
-import org.nmcpye.datarun.caching.UserKeyGenerator;
 import org.nmcpye.datarun.etl.service.impl.RefTypeValueResolutionService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
@@ -35,7 +33,6 @@ import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.userauthority.Authority;
 import org.nmcpye.datarun.jpa.userole.Privilege;
 import org.nmcpye.datarun.jpa.userole.Role;
-import org.nmcpye.datarun.mongo.datatemplateversion.repository.DataTemplateVersionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
@@ -77,11 +74,6 @@ public class CacheConfiguration {
         return hibernateProperties -> hibernateProperties.put(ConfigSettings.CACHE_MANAGER, cacheManager);
     }
 
-    @Bean("userKeyGen")
-    public KeyGenerator userKeyGen() {
-        return new UserKeyGenerator();
-    }
-
     @Bean
     public JCacheManagerCustomizer cacheManagerCustomizer() {
         return cm -> {
@@ -92,11 +84,7 @@ public class CacheConfiguration {
             createCache(cm, UserRepository.USER_ACTIVITY_IDS_CACHE);
             createCache(cm, UserRepository.USER_TEAM_FORM_ACCESS_CACHE);
             createCache(cm, TemplateElementService.TEMPLATE_MAP_CACHE);
-            createCache(cm, DataTemplateVersionRepository.TEMPLATE_UID_VERSION_NO_CACHE);
-            createCache(cm, DataTemplateVersionRepository.TEMPLATE_UID_VERSION_UID_CACHE);
-            createCache(cm, DataTemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_CACHE);
             createCache(cm, DataTemplateRepository.TEMPLATE_BY_UID_CACHE);
-            createCache(cm, MetadataServiceImpl.PIVOT_CACHE_NAME);
             createCache(cm, User.class.getName());
             createCache(cm, User.class.getName());
             createCache(cm, Authority.class.getName());

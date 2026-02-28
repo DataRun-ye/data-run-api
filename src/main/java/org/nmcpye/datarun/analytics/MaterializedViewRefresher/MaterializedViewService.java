@@ -127,6 +127,7 @@ public class MaterializedViewService {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private Instant queryLastRefresh(String viewName) {
         try {
             Timestamp t = jdbc.queryForObject("SELECT last_refresh FROM analytics.mv_refresh_log WHERE view_name = ?", new Object[]{viewName}, Timestamp.class);

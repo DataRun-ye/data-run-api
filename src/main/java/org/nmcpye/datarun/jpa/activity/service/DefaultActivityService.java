@@ -6,7 +6,7 @@ import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
 import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;

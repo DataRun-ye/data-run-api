@@ -24,11 +24,6 @@ import java.util.Set;
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataElementGroup extends TranslatableIdentifiable {
-//    @Id
-//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-//    @SequenceGenerator(name = "sequenceGenerator")
-//    @Column(name = "id")
-//    protected Long id;
 
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)

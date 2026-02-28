@@ -1,7 +1,8 @@
 package org.nmcpye.datarun.jpa.common;
 
-import com.google.common.collect.Lists;
+import jakarta.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.compress.utils.Lists;
 import org.hibernate.proxy.HibernateProxy;
 import org.nmcpye.datarun.common.CollectionUtils;
 import org.nmcpye.datarun.common.IdScheme;
@@ -15,8 +16,6 @@ import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -124,7 +123,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
     }
 
     @Transactional(readOnly = true)
-    @CheckForNull
+//    //    @CheckForNull
     @Override
     public <T extends JpaIdentifiableObject> T get(@Nonnull Class<T> type, @Nonnull String uid) {
         JpaIdentifiableRepository<T> store = getIdentifiableObjectStore(type);
@@ -169,7 +168,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
         return get(type, uid) != null;
     }
 
-    @CheckForNull
+//    //    @CheckForNull
     @Override
     @Transactional(readOnly = true)
     public <T extends JpaIdentifiableObject> T get(@Nonnull Collection<Class<? extends T>> types, @Nonnull String uid) {
@@ -177,7 +176,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
             .filter(Objects::nonNull).findFirst().orElse(null);
     }
 
-    @CheckForNull
+//    //    @CheckForNull
     @Override
     @Transactional(readOnly = true)
     public <T extends JpaIdentifiableObject> T get(
@@ -201,7 +200,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
         return store.findAllByUidIn(uids);
     }
 
-    @CheckForNull
+//    //    @CheckForNull
     @Override
     @Transactional(readOnly = true)
     public <T extends JpaIdentifiableObject> T getByCode(@Nonnull Class<T> type, @Nonnull String code) {
@@ -227,7 +226,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
         return store.findFirstByCode(code).orElseThrow(() -> new IllegalQueryException(ErrorCode.E1113, type.getSimpleName(), code));
     }
 
-    @CheckForNull
+//    //    @CheckForNull
     @Override
     @Transactional(readOnly = true)
     public <T extends JpaIdentifiableObject> T getByName(@Nonnull Class<T> type, @Nonnull String name) {
@@ -240,7 +239,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
         return store.findFirstByName(name).orElseThrow();
     }
 
-    @CheckForNull
+//    //    @CheckForNull
     @Override
     @Transactional(readOnly = true)
     public <T extends JpaIdentifiableObject> T search(@Nonnull Class<T> type, @Nonnull String query) {
@@ -294,7 +293,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
             return List.of();
         }
 
-        return Lists.newArrayList(store.findAll());
+        return Lists.newArrayList(store.findAll().iterator());
     }
 
     @Nonnull
@@ -325,7 +324,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
     @Nonnull
     @Override
     @Transactional(readOnly = true)
-    public <T extends JpaIdentifiableObject> List<T> loadByUid(@Nonnull Class<T> type, @CheckForNull Collection<String> uids)
+    public <T extends JpaIdentifiableObject> List<T> loadByUid(@Nonnull Class<T> type, Collection<String> uids)
         throws IllegalQueryException {
         if (uids == null || uids.isEmpty()) {
             return List.of();

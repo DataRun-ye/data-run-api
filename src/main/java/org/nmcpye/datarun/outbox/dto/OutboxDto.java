@@ -1,19 +1,14 @@
 package org.nmcpye.datarun.outbox.dto;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Lightweight DTO used by the ETL consumer to process outbox events.
- * This is created by OutboxJdbcRepository using NamedParameterJdbcTemplate row mapping.
- * <p>
- * NOTE: payload is modeled as String (JSON). You may switch to JsonNode later.
- */
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class OutboxDto {
     private Long outboxId;
     // Reference to DataSubmission.serial_number (DB sequence value)
@@ -30,4 +25,6 @@ public class OutboxDto {
     private String claimedBy;
     private Instant claimedAt;
     private UUID ingestId;         // assigned at claim time
+    private String lastError;
+    private Instant nextAttemptAt;
 }

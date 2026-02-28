@@ -10,9 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/// Spring Data MongoDB repository for the DataFormTemplate entity.
 @Repository
-//@JaversSpringDataAuditable
 public interface TemplateElementRepository
     extends BaseJpaIdentifiableRepository<TemplateElement, Long> {
     void deleteAllByTemplateUidAndTemplateVersionUid(String templateUid, String templateVersionUid);

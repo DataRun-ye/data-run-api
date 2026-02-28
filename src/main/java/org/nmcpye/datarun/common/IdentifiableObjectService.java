@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.common;
 
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.springframework.data.domain.Page;
 
 import java.util.Optional;
@@ -18,12 +18,6 @@ public interface IdentifiableObjectService<T extends IdentifiableObject<ID>, ID>
     Optional<T> findByUid(String uid);
 
     void deleteByUid(String uid);
-//
-//    boolean existsById(ID id);
-//
-//    Optional<T> findById(ID id);
-
-//    void deleteById(ID id);
 
     Page<T> findAllByUser(QueryRequest queryRequest, String jsonQueryBody);
 
@@ -53,5 +47,4 @@ public interface IdentifiableObjectService<T extends IdentifiableObject<ID>, ID>
     Optional<T> findByIdOrUid(T entity);
 
     Optional<T> findByIdOrUid(String entity);
-//    void preSaveHook(T object);
 }

@@ -4,7 +4,7 @@ import org.mapstruct.*;
 import org.nmcpye.datarun.common.BaseMapper;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentWithAccessDto;
-import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
+import org.nmcpye.datarun.datatemplateprocessor.FormAccessService;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,
     componentModel = MappingConstants.ComponentModel.SPRING, uses = FormAccessService.class)

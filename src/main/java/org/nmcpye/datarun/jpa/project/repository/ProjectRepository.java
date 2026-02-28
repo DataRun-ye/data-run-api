@@ -11,7 +11,6 @@ import org.springframework.stereotype.Repository;
  */
 @SuppressWarnings("unused")
 @Repository
-//@JaversSpringDataAuditable
 public interface ProjectRepository
     extends JpaIdentifiableRepository<Project> {
 }

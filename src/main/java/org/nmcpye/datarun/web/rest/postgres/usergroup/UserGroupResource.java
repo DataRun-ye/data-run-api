@@ -6,7 +6,7 @@ import org.nmcpye.datarun.jpa.usegroup.service.UserGroupService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.data.domain.Page;

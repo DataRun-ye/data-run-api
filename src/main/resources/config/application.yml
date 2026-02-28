@@ -1,21 +1,4 @@
-# ===================================================================
-# Spring Boot configuration.
-#
-# This configuration will be overridden by the Spring profile you use,
-# for example application-dev.yml if you use the "dev" profile.
-#
-# More information on profiles: https://www.jhipster.tech/profiles/
-# More information on configuration properties: https://www.jhipster.tech/common-application-properties/
-# ===================================================================
-
-# ===================================================================
-# Standard Spring Boot properties.
-# Full reference is available at:
-# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
-# ===================================================================
-
 ---
-# Conditionally disable springdoc on missing api-docs profile
 spring:
   config:
     activate:
@@ -24,14 +7,6 @@ springdoc:
   api-docs:
     enabled: false
 ---
-#feign:
-#  circuitbreaker:
-#    enabled: true
-#  # client:
-#  #   config:
-#  #     default:
-#  #       connectTimeout: 5000
-#  #       readTimeout: 5000
 management:
   endpoints:
     web:
@@ -101,20 +76,9 @@ management:
 spring:
   application:
     name: datRunApi
-#  cloud:
-#    consul:
-#      discovery:
-#        healthCheckPath: /management/health
-#        instanceId: dataRunApi:${spring.application.instance-id:${random.value}}
-#        service-name: dataRunApi
-#      config:
-#        watch:
-#          enabled: false
   docker:
     compose:
       enabled: false
-#      lifecycle-management: start-only
-#      file: src/main/docker/postgresql.yml
   profiles:
     # The commented value for `active` can be replaced with valid Spring profiles to load.
     # Otherwise, it will be filled in by maven when building the JAR file
@@ -198,23 +162,9 @@ info:
   # Comma separated list of profiles that will trigger the ribbon to show
   display-ribbon-on-profiles: 'dev'
 
-# ===================================================================
-# JHipster specific properties
-#
-# Full reference is available at: https://www.jhipster.tech/common-application-properties/
-# ===================================================================
-
 jhipster:
   clientApp:
     name: 'dataRunApiApp'
-  # By default CORS is disabled. Uncomment to enable.
-  # cors:
-  #   allowed-origins: "http://localhost:8100,http://localhost:9000"
-  #   allowed-methods: "*"
-  #   allowed-headers: "*"
-  #   exposed-headers: "Authorization,Link,X-Total-Count,X-${jhipster.clientApp.name}-alert,X-${jhipster.clientApp.name}-error,X-${jhipster.clientApp.name}-params"
-  #   allow-credentials: true
-  #   max-age: 1800
   mail:
     from: dataRunApi@localhost
   api-docs:
@@ -232,53 +182,8 @@ jhipster:
   security:
 # ===================================================================
 # Application specific properties
-# Add your own application properties here, see the ApplicationProperties class
-# to have type-safe configuration, like in the JHipsterProperties above
-#
-# More documentation is available at:
-# https://www.jhipster.tech/common-application-properties/
 # ===================================================================
 analytics:
   refresh:
     # 1. Every night at 3 AM (03:00:00)
     cron: "0 30 1 * * *"
-    # 2. Weekly on Sunday at 3 AM (03:00:00)
-#    cron: "0 0 3 ? * 0"
-    # Note: Sunday is typically '0' or '7' in cron, using '0' here.
-    # Change '0' to '1' for Monday, '2' for Tuesday, etc.
-#feature:
-#  mapping-worker:
-#    enabled: false
-# application:
-#application:
-#  pivot:
-#    metadata:
-#      dimensions:
-#        - apiName: team_id
-#          displayName: Team
-#          dataType: TEXT
-#        - apiName: org_unit_id
-#          displayName: Org Unit
-#          dataType: TEXT
-#        - apiName: activity_id
-#          displayName: Activity
-#          dataType: TEXT
-#        - apiName: element_name
-#          displayName: Data Element
-#          dataType: TEXT
-#        - apiName: option_name
-#          displayName: Selected Option
-#          dataType: TEXT
-#        - apiName: category_name
-#          displayName: Repeat Category
-#          dataType: TEXT
-#        - apiName: submission_completed_at
-#          displayName: Submission Date
-#          dataType: DATETIME
-#      measures:
-#        - apiName: value_num
-#          displayName: Numeric Value
-#          aggregationModes: [SUM, AVG, MIN, MAX, COUNT]
-#        - apiName: value_id # Can be used for counting rows
-#          displayName: Count
-#          aggregationModes: [COUNT]

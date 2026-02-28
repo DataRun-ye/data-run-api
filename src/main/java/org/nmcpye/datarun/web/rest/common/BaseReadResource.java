@@ -9,7 +9,7 @@ import org.nmcpye.datarun.common.IdentifiableObjectService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,13 +121,6 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
         }
     }
 
-//    protected <E> PagedResponse<E> initPageResponse(Page<E> page, String next) {
-//        PagedResponse<E> response = new PagedResponse<>(page, getName(), next);
-//        response.setNextPage(next);
-//        response.setEntityName(getName());
-//        return response;
-//    }
-
     @PostMapping("/query")
     public ResponseEntity<PagedResponse<?>> unifiedMongoLikeQuerying(QueryRequest queryRequest,
                                                                      @RequestBody(required = false) String jsonQuery) {
@@ -143,16 +136,6 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
             return ResponseEntity.badRequest().build();
         }
     }
-
-//    protected String createNextPageLink(Page<?> page) {
-//        if (page.hasNext()) {
-//            return ServletUriComponentsBuilder.fromCurrentRequest()
-//                .queryParam("page", page.getNumber() + 1) // page is 0-based, but we display it 1-based
-//                .toUriString();
-//        } else {
-//            return null;
-//        }
-//    }
 
     private Class<T> entityClass;
 

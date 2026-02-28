@@ -4,7 +4,7 @@ import org.nmcpye.datarun.datatemplateelement.DataFieldRule;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.*;
-import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersionInterface;
+import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateVersionInterface;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
