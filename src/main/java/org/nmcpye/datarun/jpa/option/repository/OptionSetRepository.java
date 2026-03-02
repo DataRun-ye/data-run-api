@@ -17,8 +17,6 @@ import java.util.Optional;
 @Repository
 public interface OptionSetRepository
     extends JpaIdentifiableRepository<OptionSet> {
-    Optional<OptionSet> findByNameIgnoreCase(String name);
-
     @Query("SELECT os FROM OptionSet os " +
         "WHERE (:includeDeleted = true OR os.deletedAt IS NULL) " +
         "  AND (:code IS NULL OR os.code = :code)")

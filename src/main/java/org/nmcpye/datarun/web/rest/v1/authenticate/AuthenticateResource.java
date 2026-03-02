@@ -4,12 +4,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nmcpye.datarun.jpa.userrefreshtoken.TokenRefreshException;
 import org.nmcpye.datarun.jpa.userrefreshtoken.dto.RefreshTokenDto;
+import org.nmcpye.datarun.jpa.userrefreshtoken.repository.RefreshTokenRepository;
 import org.nmcpye.datarun.jpa.userrefreshtoken.service.TokenService;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
+import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshRequest;
 import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshResponse;
 import org.nmcpye.datarun.web.rest.vm.LoginVM;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -34,6 +38,7 @@ public class AuthenticateResource {
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
 
     private final TokenService tokenService;
+    private final RefreshTokenRepository tokenRepository;
 
     @PostMapping("/authenticate")
     public ResponseEntity<?> authorize(@Valid @RequestBody LoginVM loginVM, HttpServletRequest request) {
@@ -77,5 +82,31 @@ public class AuthenticateResource {
     public String isAuthenticated(HttpServletRequest request) {
         log.debug("REST request to check if the current user is authenticated");
         return request.getRemoteUser();
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@Valid @RequestBody TokenRefreshRequest request) {
+        final var refreshTokenOpt = tokenRepository.findByToken(request.getRefreshToken());
+        if (refreshTokenOpt.isEmpty() || refreshTokenOpt.get().isExpired()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired refresh token");
+        }
+
+        // Retrieve the user. How you do this depends on your user management.
+        return refreshTokenOpt
+            .map(refreshToken -> {
+                String username = refreshTokenOpt.get().getUser().getLogin();
+                // generate another valid accessToken
+                String newAccessToken = tokenService.generateAccessToken(username);
+
+                // Revoke old refresh token/tokens (optional - implement rotation)
+                // will delete all user's stored refresh tokens and create a single one
+                RefreshTokenDto newRefreshToken = tokenService.rotateRefreshToken(refreshToken);
+
+                return ResponseEntity.ok(new TokenRefreshResponse(
+                    newAccessToken,
+                    newRefreshToken.getToken()
+                ));
+            })
+            .orElseThrow(() -> new TokenRefreshException("Invalid refresh token"));
     }
 }

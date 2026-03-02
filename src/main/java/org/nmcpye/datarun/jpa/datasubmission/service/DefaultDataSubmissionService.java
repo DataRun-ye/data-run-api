@@ -53,8 +53,6 @@ public class DefaultDataSubmissionService
     @Transactional
     @Override
     public DataSubmission upsert(DataSubmission entity, CurrentUserDetails user, EntitySaveSummaryVM summary) {
-        // Absolutely minimal logic here. All actual work is delegated.
-        // upsertAll will validate for null entity or null UID within the list.
         List<DataSubmission> results = upsertAll(List.of(entity), user, summary);
 
         // This check is a safeguard for unexpected behavior from upsertAll,
@@ -65,27 +63,14 @@ public class DefaultDataSubmissionService
         return results.get(0);
     }
 
-
-    private void afterPersist(DataSubmission result) {
-
-    }
-
-    private void afterUpdate(DataSubmission result) {
-        eventPublisher.publishEvent(new SubmissionSavedEvent(result.getId(),
-            EventChangeType.UPDATE, result.getLockVersion()));
-    }
-
-    /**
-     * Abstract method to be implemented by concrete services.
-     * This method is responsible for copying mutable fields from the incoming entity
-     * onto the existing entity during an update operation.
-     *
-     * @param existingEntity The entity fetched from the database (managed).
-     * @param incomingEntity The entity data provided for the update (detached).
-     */
     private boolean updateEntityFields(DataSubmission existingEntity, DataSubmission incomingEntity) {
         if(Boolean.TRUE.equals(existingEntity.getDeleted()) && Boolean.TRUE.equals(incomingEntity.getDeleted())) {
             return true;
+        }
+        if(Boolean.TRUE.equals(existingEntity.getDeleted()) && Boolean.FALSE.equals(incomingEntity.getDeleted())) {
+            existingEntity.setDeleted(false);
+            existingEntity.setDeletedAt(null);
+            return false;
         }
 
         if(Boolean.TRUE.equals(incomingEntity.getDeleted()) && Boolean.FALSE.equals(existingEntity.getDeleted())) {
@@ -93,6 +78,8 @@ public class DefaultDataSubmissionService
             existingEntity.setDeletedAt(Instant.now());
             return true;
         }
+        existingEntity.setDeleted(incomingEntity.getDeleted());
+        existingEntity.setDeletedAt(!incomingEntity.getDeleted() && existingEntity.getDeleted() ? Instant.now() : existingEntity.getDeletedAt());
 
         existingEntity.setFormData(incomingEntity.getFormData().deepCopy());
         existingEntity.setActivity(incomingEntity.getActivity());
@@ -137,16 +124,12 @@ public class DefaultDataSubmissionService
             DataSubmission existingEntity = existingEntitiesMap.get(incomingEntity.getUid());
             boolean isNew = (existingEntity == null);
 
-            beforeUpsertChecks(incomingEntity, isNew, user); // Apply pre-upsert checks for each entity
-
             if (isNew) {
                 if (incomingEntity.getId() == null) {
                     incomingEntity.setId(CodeGenerator.nextUlid());
                 }
-                beforePersist(incomingEntity);
                 entitiesToPersist.add(incomingEntity);
             } else {
-                beforeUpdate(existingEntity, incomingEntity);
                 final var deleted = updateEntityFields(existingEntity, incomingEntity);
                 if (deleted) entitiesToDelete.add(existingEntity);
                 else entitiesToUpdate.add(existingEntity);
@@ -181,7 +164,7 @@ public class DefaultDataSubmissionService
         }
 
         if (!entitiesToDelete.isEmpty()) {
-            deletedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToUpdate);
+            deletedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToDelete);
             final var outboxEvents = deletedResults.stream()
                 .map(this::enqueueSubmissionsOutbox)
                 .toList();
@@ -207,15 +190,6 @@ public class DefaultDataSubmissionService
         super.softDelete(object);
         eventPublisher.publishEvent(new SubmissionSavedEvent(object.getId(),
             EventChangeType.DELETE, object.getLockVersion()));
-    }
-
-    private void beforeUpdate(DataSubmission existingEntity, DataSubmission incomingEntity) {
-    }
-
-    private void beforePersist(DataSubmission incomingEntity) {
-    }
-
-    private void beforeUpsertChecks(DataSubmission incomingEntity, boolean isNew, CurrentUserDetails user) {
     }
 
     private OutboxWritePort.OutboxInsert enqueueSubmissionsOutbox(DataSubmission s) {

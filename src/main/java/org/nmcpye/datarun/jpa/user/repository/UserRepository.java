@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,33 +29,6 @@ public interface UserRepository
     String USER_ACTIVITY_IDS_CACHE = "userActivityIdsByLogin";
 
     String USER_TEAM_FORM_ACCESS_CACHE = "userFormAccessByTeamAndForm";
-
-
-    /// ////
-    @Override
-    default List<User> findAllByCodeIn(Collection<String> codes) {
-        return Collections.emptyList();
-    }
-
-    @Override
-    default Boolean existsByCode(String code) {
-        return false;
-    }
-
-
-    @Override
-    default Optional<User> findFirstByCode(String code) {
-        return Optional.empty();
-    }
-
-    @Override
-    default Optional<User> findFirstByName(String name) {
-        return Optional.empty();
-    }
-
-    default List<User> findByNameLike(String name) {
-        return Collections.emptyList();
-    }
 
     /// /////
     Optional<User> findOneByActivationKey(String activationKey);

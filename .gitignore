@@ -153,3 +153,6 @@ Desktop.ini
 /coverage/
 /.nyc_output/
 .rej-backups/
+private.der
+private.pem
+public.der

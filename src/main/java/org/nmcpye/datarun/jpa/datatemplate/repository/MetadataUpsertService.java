@@ -77,7 +77,6 @@ public class MetadataUpsertService {
             batch.add(p);
         }
         // chunked execution
-//        chunkExecution(batch, CANONICAL_UPSERT_SQL);
         for (int i = 0; i < batch.size(); i += BATCH_SIZE) {
             int end = Math.min(batch.size(), i + BATCH_SIZE);
             List<SqlParameterSource> slice = batch.subList(i, end);
@@ -130,7 +129,6 @@ public class MetadataUpsertService {
             batch.add(p);
         }
 
-//        chunkExecution(batch, TEMPLATE_UPSERT_SQL);
         for (int i = 0; i < batch.size(); i += BATCH_SIZE) {
             int end = Math.min(batch.size(), i + BATCH_SIZE);
             List<SqlParameterSource> slice = batch.subList(i, end);

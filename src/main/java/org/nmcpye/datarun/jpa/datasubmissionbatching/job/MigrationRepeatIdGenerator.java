@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.etl.model.TemplateElementMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,7 +124,7 @@ public final class MigrationRepeatIdGenerator {
             String childPath = (currentPath == null || currentPath.isEmpty()) ? key : currentPath + "." + key;
             AbstractElement element = elementMap.getElementByIdPathMap().get(childPath);
 
-            if (element instanceof FormSectionConf section && Boolean.TRUE.equals(section.getRepeatable())) {
+//            if (element instanceof FormSectionConf section && Boolean.TRUE.equals(section.getRepeatable())) {
                 // If the value isn't an array, skip (no repeat instances present)
                 if (value == null || !value.isArray()) {
                     continue;
@@ -188,11 +187,11 @@ public final class MigrationRepeatIdGenerator {
                     // recurse into the item: pass thisItemId as the new currentRepeatId so nested repeats get correct _parentId
                     traverseAndGenerate(itemObj, childPath, thisItemId, submissionUid, seenIds, generated);
                 }
-                continue;
-            }
+//                continue;
+//            }
 
             // nested object -> recurse while preserving currentRepeatId (no change)
-            if (value != null && value.isObject()) {
+            if (value.isObject()) {
                 traverseAndGenerate(value, childPath, currentRepeatId, submissionUid, seenIds, generated);
             }
 

@@ -14,6 +14,4 @@ import java.util.List;
 @Repository
 public interface CanonicalElementRepository extends BaseJpaRepository<CanonicalElement, String> {
     List<CanonicalElement> findByTemplateUid(String templateUid);
-
-    Collection<CanonicalElement> findByTemplateUidIn(Collection<String> templateUids);
 }

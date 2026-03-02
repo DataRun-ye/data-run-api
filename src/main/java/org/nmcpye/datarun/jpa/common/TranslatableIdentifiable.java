@@ -32,9 +32,6 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true) // tolerate extra fields in DB
 @JsonInclude(JsonInclude.Include.NON_NULL)  // omit nulls when serializing
-//@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY,
-//    getterVisibility = JsonAutoDetect.Visibility.NONE,
-//    isGetterVisibility = JsonAutoDetect.Visibility.NONE)
 abstract public class TranslatableIdentifiable extends JpaIdentifiableObject {
 
     /**

@@ -7,14 +7,11 @@ import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
-import org.nmcpye.datarun.jpa.datatemplate.mapper.DataTemplateMapper;
-import org.nmcpye.datarun.jpa.datatemplate.mapper.FormJpaTemplateVersionMapper;
-import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
-import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.nmcpye.datarun.jpa.datatemplate.dto.FormTemplateVersionDto;
+import org.nmcpye.datarun.jpa.datatemplate.mapper.FormJpaTemplateVersionMapper;
+import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.springframework.cache.CacheManager;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,22 +39,15 @@ public class DefaultTemplateVersionService
     private final TemplateVersionRepository templateVersionRepository;
     private final FormJpaTemplateVersionMapper versionMapper;
 
-    private final DataTemplateRepository templateRepository;
-    private final DataTemplateMapper dataTemplateMapper;
-
     public DefaultTemplateVersionService(TemplateVersionRepository repository,
                                          CacheManager cacheManager,
                                          DataTemplateService dataTemplateService,
                                          UserAccessService userAccessService,
-                                         FormJpaTemplateVersionMapper versionMapper,
-                                         DataTemplateRepository templateRepository,
-                                         @Lazy DataTemplateMapper dataTemplateMapper) {
+                                         FormJpaTemplateVersionMapper versionMapper) {
         super(repository, cacheManager, userAccessService);
         this.templateVersionRepository = repository;
         this.dataTemplateService = dataTemplateService;
         this.versionMapper = versionMapper;
-        this.templateRepository = templateRepository;
-        this.dataTemplateMapper = dataTemplateMapper;
     }
 
     @Override

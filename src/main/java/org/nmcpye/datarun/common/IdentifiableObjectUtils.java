@@ -17,14 +17,6 @@ public class IdentifiableObjectUtils {
 
     public static final String SEPARATOR_JOIN = ", ";
 
-//    public static final DateTimeFormatter LONG_DATE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss");
-//
-//    public static final DateTimeFormatter MEDIUM_DATE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd");
-
-    //    public static final Map<String, String> CLASS_ALIAS = ImmutableMap.<String, String> builder()
-    //        .put( "CategoryOption", CategoryOption.class.getSimpleName() ).put( "Category", Category.class.getSimpleName() )
-    //        .put( "CategoryCombo", CategoryCombo.class.getSimpleName() ).build();
-
     /**
      * Joins the names of the IdentifiableObjects in the given list and
      * separates them with {@link IdentifiableObjectUtils#SEPARATOR_JOIN} (a

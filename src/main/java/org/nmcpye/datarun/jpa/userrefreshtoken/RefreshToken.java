@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.jpa.user.User;
 
@@ -38,7 +38,7 @@ public class RefreshToken {
     private Instant expiryDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonSerialize(contentAs = AuditableObject.class)
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnoreProperties(value = {"teams", "password", "authorities", "translations"}, allowSetters = true)
     private User user; // Your user entity

@@ -15,7 +15,6 @@ public class TemplateElementService {
     public final static String TEMPLATE_MAP_CACHE = "templateMapCacheByTemplateAndVersion";
 
     private final DataTemplateInstanceService templateInstanceService;
-//    private final TemplateElementRepository templateConfigRepository;
 
     /// create elementMap and cache it.
     ///

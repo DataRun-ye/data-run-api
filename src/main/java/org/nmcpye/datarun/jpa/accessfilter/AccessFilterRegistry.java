@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
-import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -19,10 +19,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class AccessFilterRegistry {
 
-    private final List<AccessFilter<? extends AuditableObject<?>>> filterBeans;
-    private final Map<Class<? extends AuditableObject<?>>, AccessFilter<? extends AuditableObject<?>>> filters = new ConcurrentHashMap<>();
+    private final List<AccessFilter<? extends IdentifiableObject<?>>> filterBeans;
+    private final Map<Class<? extends IdentifiableObject<?>>, AccessFilter<? extends IdentifiableObject<?>>> filters = new ConcurrentHashMap<>();
 
-    public AccessFilterRegistry(List<AccessFilter<? extends AuditableObject<?>>> filterBeans) {
+    public AccessFilterRegistry(List<AccessFilter<? extends IdentifiableObject<?>>> filterBeans) {
         this.filterBeans = filterBeans;
     }
 
@@ -41,7 +41,7 @@ public class AccessFilterRegistry {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends AuditableObject<?>> Specification<T> getSpecification(
+    public <T extends IdentifiableObject<?>> Specification<T> getSpecification(
         Class<T> entityClass, CurrentUserDetails user, QueryRequest queryRequest) {
         Specification<T> spec = Specification.where(null); // Start with empty specification
         AccessFilter<T> filter = (AccessFilter<T>) getFilter(entityClass);

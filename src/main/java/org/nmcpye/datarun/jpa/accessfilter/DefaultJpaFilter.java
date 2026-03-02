@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
-import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,7 +12,7 @@ import java.lang.reflect.ParameterizedType;
  * @since 21/03/2025
  */
 @SuppressWarnings("unchecked")
-public class DefaultJpaFilter<T extends AuditableObject<?>>
+public class DefaultJpaFilter<T extends IdentifiableObject<?>>
     implements AccessFilter<T> {
     private final Class<T> klass;
 

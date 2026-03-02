@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
-import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,12 +12,12 @@ import org.springframework.data.jpa.domain.Specification;
  * @author Hamza Assada
  * @since 21/03/2025
  */
-public interface AccessFilter<T extends AuditableObject<?>> {
+public interface AccessFilter<T extends IdentifiableObject<?>> {
     Class<T> getKlass();
 
     Specification<T> getAccessSpecification(CurrentUserDetails user, QueryRequest queryRequest);
 
-    static <E extends AuditableObject<?>> Specification<E> createDefaultSpecification(CurrentUserDetails user) {
+    static <E extends IdentifiableObject<?>> Specification<E> createDefaultSpecification(CurrentUserDetails user) {
         return (root, query, criteriaBuilder) -> {
             if (user.isSuper()) {
                 return criteriaBuilder.conjunction();

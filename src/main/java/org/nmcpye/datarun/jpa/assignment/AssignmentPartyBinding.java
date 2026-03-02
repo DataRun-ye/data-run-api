@@ -55,8 +55,8 @@ public class AssignmentPartyBinding {
     /// enabling the "Global Role" vs "Specific Form Role" logic.
     /// Adaptability: We are using vocabularyId in the DB, but we use DataTemplate in our Services/Mappers
     /// to keep it consistent with our existing code.
+    /// @see DataTemplate
     @ManyToOne
-//    @JoinColumn(name = "vocabulary_id", nullable = false)
     @JsonSerialize(contentAs = SoftDeleteObject.class)
     private DataTemplate vocabulary;
 

@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.jpa.datatemplate.service;
 
+import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
@@ -152,7 +153,7 @@ public class DataTemplateInstanceServiceImpl
 
     @Override
     public List<DataTemplateInstanceDto> findAll() {
-        final var masters = dataTemplateRepository.findAll();
+        final var masters = Lists.newArrayList(dataTemplateRepository.findAll());
         // batch-load versions
         List<String> ids = masters.stream()
             .map(DataTemplate::getVersionUid)

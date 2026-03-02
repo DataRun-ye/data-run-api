@@ -16,8 +16,6 @@ public interface IdentifiableObjectRepository<T extends IdentifiableObject<ID>, 
 
     void deleteByUid(@Size(max = 11) String uid);
 
-    void deleteAllByUidIn(Collection<String> uids);
-
     Boolean existsByUid(@Size(max = 11) String uid);
 
     Optional<T> findByUid(@Size(max = 11) String uid);

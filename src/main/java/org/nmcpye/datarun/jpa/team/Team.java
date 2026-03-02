@@ -12,7 +12,7 @@ import org.apache.commons.lang3.stream.Streams;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
-import org.nmcpye.datarun.common.NameableObject;
+import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.enumeration.EntityScope;
 import org.nmcpye.datarun.common.enumeration.FormPermission;
 import org.nmcpye.datarun.jpa.activity.Activity;
@@ -63,7 +63,7 @@ public class Team extends TranslatableIdentifiable {
 
     @ManyToOne
     @JsonIgnoreProperties(value = {"project", "translations", "assignments"}, allowSetters = true)
-    @JsonSerialize(contentAs = NameableObject.class)
+    @JsonSerialize(contentAs = IdentifiableObject.class)
     private Activity activity;
 
     @ManyToMany(fetch = FetchType.EAGER)

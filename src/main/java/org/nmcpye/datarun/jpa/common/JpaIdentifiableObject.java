@@ -71,20 +71,23 @@ public abstract class JpaIdentifiableObject
         setAutoFields();
     }
 
-    /**
-     * Lifecycle hook to generate a ULID ID before persisting.
-     */
-    @PrePersist
-    public void prePersist() {
-        if (this.id == null) {
-            setId(CodeGenerator.nextUlid());
-        }
-    }
+//    /**
+//     * Lifecycle hook to generate a ULID ID before persisting.
+//     */
+//    @PrePersist
+//    public void prePersist() {
+//        if (this.id == null) {
+//            setId(CodeGenerator.nextUlid());
+//        }
+//    }
 
     /**
      * Set auto-generated fields on save or update
      */
     public void setAutoFields() {
+        if (this.getId() == null || getUid().isEmpty()) {
+            setId(CodeGenerator.nextUlid());
+        }
         if (getUid() == null || getUid().isEmpty()) {
             setUid(CodeGenerator.generateUid());
         }

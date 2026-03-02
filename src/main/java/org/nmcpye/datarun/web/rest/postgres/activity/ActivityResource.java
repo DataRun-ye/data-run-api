@@ -6,8 +6,6 @@ import org.nmcpye.datarun.jpa.activity.service.ActivityService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,16 +24,9 @@ public class ActivityResource extends JpaBaseResource<Activity> {
     protected static final String NAME = "/activities";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
     protected static final String V1 = ApiVersion.API_V1 + NAME;
-    private final Logger log = LoggerFactory.getLogger(ActivityResource.class);
-
-    private final ActivityService activityService;
-
-    private final ActivityRepository activityRepository;
 
     public ActivityResource(ActivityService activityService, ActivityRepository activityRepository) {
         super(activityService, activityRepository);
-        this.activityRepository = activityRepository;
-        this.activityService = activityService;
     }
 
     @Override

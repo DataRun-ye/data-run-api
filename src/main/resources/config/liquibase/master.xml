@@ -92,6 +92,7 @@
     <include file="/config/liquibase/changelog/etl/20260207-events-add-deleted-at-column.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20260211-events-drop-anchor-columns.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20260211-tall-canonical-drop-is-deleted-column.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/security/2026-04-02-oauth2-authentication.xml" relativeToChangelogFile="false"/>
 
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

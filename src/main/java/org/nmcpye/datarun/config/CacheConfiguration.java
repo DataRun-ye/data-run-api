@@ -10,12 +10,11 @@ import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.auditing.EntityAuditEvent;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
-import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
-import org.nmcpye.datarun.jpa.dataelementgroupset.DataElementGroupSet;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
+import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.jpa.option.Option;
 import org.nmcpye.datarun.jpa.option.OptionGroup;
@@ -85,6 +84,9 @@ public class CacheConfiguration {
             createCache(cm, UserRepository.USER_TEAM_FORM_ACCESS_CACHE);
             createCache(cm, TemplateElementService.TEMPLATE_MAP_CACHE);
             createCache(cm, DataTemplateRepository.TEMPLATE_BY_UID_CACHE);
+            createCache(cm, TemplateVersionRepository.TEMPLATE_UID_VERSION_NO_JPA_CACHE);
+            createCache(cm, TemplateVersionRepository.TEMPLATE_UID_VERSION_UID_JPA_CACHE);
+            createCache(cm, TemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_JPA_CACHE);
             createCache(cm, User.class.getName());
             createCache(cm, User.class.getName());
             createCache(cm, Authority.class.getName());
@@ -131,11 +133,6 @@ public class CacheConfiguration {
             createCache(cm, OrgUnitGroupSet.class.getName() + ".orgUnitGroups");
             createCache(cm, DataElement.class.getName());
             createCache(cm, DataElement.class.getName() + ".dataElementGroups");
-            createCache(cm, DataElementGroup.class.getName());
-            createCache(cm, DataElementGroup.class.getName() + ".dataElements");
-            createCache(cm, DataElementGroup.class.getName() + ".dataElementGroupSets");
-            createCache(cm, DataElementGroupSet.class.getName());
-            createCache(cm, DataElementGroupSet.class.getName() + ".dataElementGroups");
             createCache(cm, DataTemplate.class.getName());
 
             createCache(cm, Option.class.getName());

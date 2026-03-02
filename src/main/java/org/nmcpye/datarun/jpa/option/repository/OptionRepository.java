@@ -10,7 +10,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,7 +20,7 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @Repository
 public interface OptionRepository
-    extends JpaIdentifiableRepository<Option>, OptionRepositoryCustom {
+    extends JpaIdentifiableRepository<Option> {
     String OPTIONS_OPTION_SET_UID = "userTeamIdsByLogin";
 
     @Query("SELECT o FROM Option o " +
@@ -40,16 +39,6 @@ public interface OptionRepository
     @Transactional
     @Query("UPDATE Option o SET o.deletedAt = NULL WHERE (o.optionSet.id = :setId OR o.optionSet.uid = :setId) AND o.deletedAt IS NOT NULL")
     int undeleteOptionsByOptionSetId(@Param("setId") String setId);
-
-    //------------------OLD API----------------------
-    // no-op
-    @Override
-    default void deleteByUid(String uid) {
-    }
-
-    @Override
-    default void deleteAllByUidIn(Collection<String> uids) {
-    }
 
     @Cacheable(cacheNames = OPTIONS_OPTION_SET_UID)
     List<Option> findAllByOptionSetUid(@Size(max = 11) String optionSetUid);

@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.acl;
 
-import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 
 /**
@@ -21,15 +21,15 @@ import org.nmcpye.datarun.security.CurrentUserDetails;
  */
 public interface AclService {
 
-    boolean canRead(AuditableObject<?> object, CurrentUserDetails userDetails);
+    boolean canRead(IdentifiableObject<?> object, CurrentUserDetails userDetails);
 
     boolean hasMinimalRights(CurrentUserDetails userDetails);
 
-    boolean canWrite(AuditableObject<?> object, CurrentUserDetails userDetails);
+    boolean canWrite(IdentifiableObject<?> object, CurrentUserDetails userDetails);
 
-    boolean canUpdate(AuditableObject<?> object, CurrentUserDetails userDetails);
+    boolean canUpdate(IdentifiableObject<?> object, CurrentUserDetails userDetails);
 
-    boolean canAddNew(AuditableObject<?> object, CurrentUserDetails userDetails);
+    boolean canAddNew(IdentifiableObject<?> object, CurrentUserDetails userDetails);
 
-    boolean canDelete(AuditableObject<?> object, CurrentUserDetails userDetails);
+    boolean canDelete(IdentifiableObject<?> object, CurrentUserDetails userDetails);
 }

@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
-import org.nmcpye.datarun.common.AuditableObject;
+import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -10,5 +10,5 @@ import org.springframework.data.jpa.domain.Specification;
  * @since 20/03/2025
  */
 public interface UserAccessService {
-    <T extends AuditableObject<?>> Specification<T> readSpec(Class<T> klass, CurrentUserDetails user, QueryRequest queryRequest);
+    <T extends IdentifiableObject<?>> Specification<T> readSpec(Class<T> klass, CurrentUserDetails user, QueryRequest queryRequest);
 }
