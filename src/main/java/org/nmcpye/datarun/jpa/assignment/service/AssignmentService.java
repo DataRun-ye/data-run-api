@@ -3,7 +3,7 @@ package org.nmcpye.datarun.jpa.assignment.service;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentWithAccessDto;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
-import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
+import org.nmcpye.datarun.web.query.QueryRequest;
 import org.springframework.data.domain.Page;
 
 public interface AssignmentService

@@ -10,7 +10,7 @@ import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.dto.FormTemplateVersionDto;
 import org.nmcpye.datarun.jpa.datatemplate.mapper.FormJpaTemplateVersionMapper;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
-import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
+import org.nmcpye.datarun.web.query.QueryRequest;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;

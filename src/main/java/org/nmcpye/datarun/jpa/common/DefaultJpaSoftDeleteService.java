@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.apiquery.filter.*;
 import org.nmcpye.datarun.common.SoftDeleteService;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
+import org.nmcpye.datarun.web.query.QueryRequest;
 import org.springframework.cache.CacheManager;
 import org.springframework.transaction.annotation.Transactional;
 

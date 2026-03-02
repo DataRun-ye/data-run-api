@@ -60,12 +60,6 @@ datarun:
         token-validity-in-seconds: 86400 # Token is valid 24 hours
         refresh-token-validity-in-seconds: 2592000 # 30 days
         token-validity-in-seconds-for-remember-me: 2592000
-        rsa-private-key: >-
-          MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCfhlAaCjQe9U7HT+MmzjKoTX8c9ZIEoHpxo7cuZ0YVFR6YW8QYVRG5zsQSeiJbS1c6lgFxZXcKMaGAfHkTXdv9jHJpQYfmlf/j998QR9667x4AtHOZUIue7VRkHmkOMBxa8/yneCOjb9bjQckirs/mxbOBKV1wvG+ko6vjjj4zWQ7aM0m9QZagWTmpE0soUp6zyZ8c5u7QdPUJmXhXRw47Cm72VzrUO4EBYFqEiFRPJdNaDpr1ZZK5Kw/MSSAA7d8cc7C4WeIKqRW2wkuyBOinmv2dD0AkNPn+3JWt2YYmsniXEeES2CSNxda5to+gSicp1H7UidHr41+cDO0MzXmFAgMBAAECggEAB4QsrjiddKxdp8URiiii0pl2kn08zr+aKIeS7ODl0iSts90P0/VFWz1gSxFhINV5O/2JMatOHN2/L86HMxmAvfIW1yaRlvsQIWqMIpHx7yavToL+6iuu4HA4DtDJMpqjg2LFz6tr9nPuRCsh2HxnHe1iKoUYVEsBcaVak7BS9iVT6RhtM/M3v1FURdD9utAbXPcQN2fQZLIkftopQ22x5W+txcH/Vex2yG94f1q7ZYQYmdfwrKQ4G8cjk/QrhJ911wiWxDoDscWljnEIcdt8TaJo3oCak7LZZowvVUftcAo/N5exLAp5E6h47gEsTqpauXjGpS1SNZApTMfwomICkwKBgQDVR2aBUWWHXwM+hB2bSWsmLEOnQbQAnp5xlMJYCKh8zrL0/+Qa2+UVV98n7HFF4IMEzilRr7OQ/8TTtSQmmwYlwQ8xjkumafhyZvIjjCwI5Ig6mgWm0fc4bwvR01JXEDWEYeJTiS02q6oP7AUYzOa/hzaB5+r/FEanZ1OGAoMySwKBgQC/enslsMa0I/ke7AyIFarthrNLILprwrfqDQPAlBR9Lwcd2mF937tMQg+EQLCh21cyXkDiuKJiKJ6nnAk0IMXrNTRYkBIizqpPWwoKrRpYyLFwr9ymYwK2NmNMxdajR+RbDBTAvJePs5H9oUXcnMQQT11au/3XXr+gE8qWV+0hbwKBgAfb9LQJOtONNcJk/e5N+0vRz8BnFGn9bltDHxI9Z3AJ8eBDWbV/quZpcYi4Fsh7aHiR3EXtUpGiSy99+lIN3mEfxx6NXs5IE2ar0npq3OiK+1YlfNXT4OdMeEQIJH2e1EoHjV6ErIzaMI8bpGhwjIQ8SE7rK+awaZYboaFLkGgXAoGBAIKO8xT5+iKuPJj2/nxzub6HkAzz3ejINjricOKIlYfd3w5d7wey27TdflMBAO777fKsDbYJir8/Tx6d6DChABKmjnCsm5EcNUgynSA2c7aB8WsSnnLdI+Y2I3MfmoBu7qeeDzBz5yvWlv7HTilkwtMUKmVJtYV6V1LA6+ujPE8FAoGAO3c7qihHPfZ3lsbyRKiVzH5Rb/xyW4dW6h16ey0MxiINi3YtMws1dnxNFTHRGJB19XBqLjvzZFxpTQG72MID5lT48njuJFapbKfF8vl/a+Qs7dfYg4THQ387lDEiU5x3xevl0RpSMWiNXn9IH6JS12cQriMgQmV9oP6O3rZNIR0=
-        rsa-public-key: >-
-          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn4ZQGgo0HvVOx0/jJs4yqE1/HPWSBKB6caO3LmdGFRUemFvEGFURuc7EEnoiW0tXOpYBcWV3CjGhgHx5E13b/YxyaUGH5pX/4/ffEEfeuu8eALRzmVCLnu1UZB5pDjAcWvP8p3gjo2/W40HJIq7P5sWzgSldcLxvpKOr444+M1kO2jNJvUGWoFk5qRNLKFKes8mfHObu0HT1CZl4V0cOOwpu9lc61DuBAWBahIhUTyXTWg6a9WWSuSsPzEkgAO3fHHOwuFniCqkVtsJLsgTop5r9nQ9AJDT5/tyVrdmGJrJ4lxHhEtgkjcXWubaPoEonKdR+1InR6+NfnAztDM15hQIDAQAB
-    client-authorization:
-      jwk-set-uri: http://localhost:8080/oauth2/jwks
 outbox:
   relay:
     poll-interval-ms: 2000   # polling delay between polls (ms)
@@ -91,18 +85,9 @@ pilot:
 
 # from mongo, do we run or not, comment all if not
 migration:
-  mongo:
-    collection: data_form_submission
-  chunk:
-    size: 150
-  page:
-    size: 100
-  run: true
-
-
   size: 200
   cron: "0 */1 * * * *"
-
+  generate-missing-ids: true
   submissionUids: Eelt7ZePvz0, LaGeMmmCEtH, QIMwgBqVsqW, zglED4TsbTh, M3fdtzBSpn8, RQlMiMcukid, gGyX1CVnOaw, YLcsWJlB7uy, hcLU8ZtUdSd, Ls9TW9eSlYH, ck2pHW93sk2, rkwH5QNofRn, KcsA3KETRbY, woOl5yAmi8C, BoEmHvJUEpb,W8EtCDYfp1w, MrxGOZ6stwS, UYBPOIfCU0a, mpmjpJcMuas, IP2dMtoJkO4, ONIaOpzoYAe
   runOutboxBackfill: true
 
@@ -134,8 +119,7 @@ jhipster:
         token-validity-in-seconds: 86400 # Token is valid 24 hours
         #        token-validity-in-seconds: 900 # Token is valid 15 minutes
         token-validity-in-seconds-for-remember-me: 2592000
-#    oauth2:
-#      audience:
+
   mail: # specific JHipster mail property, for standard properties see MailProperties
     base-url: http://127.0.0.1:8080
   logging:

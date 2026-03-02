@@ -32,7 +32,6 @@ public class DatarunProperties {
         public static class ClientAuthorization {
             private String accessTokenUri;
             private String tokenServiceId;
-            private String jwkSetUri;
             private String clientId;
             private String clientSecret;
 
@@ -41,7 +40,6 @@ public class DatarunProperties {
                 this.tokenServiceId = DatarunDefaults.Security.ClientAuthorization.tokenServiceId;
                 this.clientId = DatarunDefaults.Security.ClientAuthorization.clientId;
                 this.clientSecret = DatarunDefaults.Security.ClientAuthorization.clientSecret;
-                this.jwkSetUri = DatarunDefaults.Security.ClientAuthorization.jwkSetUri;
             }
 
         }
@@ -49,7 +47,6 @@ public class DatarunProperties {
         @Getter
         public static class Authentication {
             private final Security.Authentication.Jwt jwt = new Security.Authentication.Jwt();
-            private final String jwkSetUri = null;
 
             public Authentication() {
             }
@@ -62,9 +59,6 @@ public class DatarunProperties {
                 private long tokenValidityInSeconds;
                 private long tokenValidityInSecondsForRememberMe;
                 private long refreshTokenValidityInSeconds;
-
-                private String rsaPrivateKey; // Base64 encoded private key
-                private String rsaPublicKey;  // Base64 encoded public key
 
                 public Jwt() {
                     this.secret = DatarunDefaults.Security.Authentication.Jwt.secret;

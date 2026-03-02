@@ -3,8 +3,8 @@ package org.nmcpye.datarun.apiquery;
 import org.nmcpye.datarun.apiquery.filter.*;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
-import org.nmcpye.datarun.web.rest.queryrequest.QueryRequestValidationException;
+import org.nmcpye.datarun.web.query.QueryRequest;
+import org.nmcpye.datarun.web.query.QueryRequestValidationException;
 import org.springframework.stereotype.Component;
 
 import java.util.*;

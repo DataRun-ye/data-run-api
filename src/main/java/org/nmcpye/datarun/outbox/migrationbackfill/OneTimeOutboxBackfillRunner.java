@@ -1,160 +1,147 @@
 package org.nmcpye.datarun.outbox.migrationbackfill;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.databind.JsonNode;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * One-time migration runner that inserts backfill outbox rows for existing submissions.
- * <p>
- * Usage:
- * - Run with a dedicated Spring profile or run once and remove.
- * - Configure batchSize via constructor or environment variable if desired.
- * <p>
- * Behavior:
- * - Reads data_submission rows (id, payload, submission_uid, formVersion) in batches ordered by created_at
- * - Skips submissions which already have an outbox row (idempotent)
- * - Inserts one outbox row per submission with event_type='BACKFILL', payload set to existing submission JSON,
- * submission_uid, and template_version_uid populated from formVersion (if present)
- */
-//@Component
+@Component
+@RequiredArgsConstructor
+@Slf4j
 public class OneTimeOutboxBackfillRunner implements CommandLineRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(OneTimeOutboxBackfillRunner.class);
-
+    private final DataSubmissionRepository submissionRepository;
     private final NamedParameterJdbcTemplate jdbc;
-    private final ObjectMapper objectMapper;
-    private final int batchSize = 500; // tune as needed
+//    private final ObjectMapper objectMapper;
 
+    // Feature flag: default false for safety
     @Value("${migration.runOutboxBackfill:false}")
     private boolean enabled;
 
+    // CSV list of submission UIDs to restrict to; empty string => process all
     @Value("${migration.submissionUids:}")
     private String submissionUidsCsv;
 
-    public OneTimeOutboxBackfillRunner(NamedParameterJdbcTemplate jdbc, ObjectMapper objectMapper) {
-        this.jdbc = jdbc;
-        this.objectMapper = objectMapper;
-    }
+    @Value("${migration.size:500}")
+    private int batchSize;
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        // Safety: only run if explicitly enabled (env flag) to avoid accidental runs in prod.
+
         if (!enabled) {
-            log.info("OneTimeOutboxBackfillRunner disabled (set RUN_OUTBOX_BACKFILL=true to enable). Exiting.");
+            log.info("Backfill disabled. Exiting.");
             return;
         }
 
-        log.info("Starting one-time outbox backfill migration (batchSize={})", batchSize);
+        log.info("Starting OUTBOX backfill…");
 
-        // Count total submissions to process
-        Integer total = jdbc.queryForObject("SELECT COUNT(1) FROM data_submission", new MapSqlParameterSource(), Integer.class);
-        if (total == null || total == 0) {
-            log.info("No submissions found. Exiting.");
-            return;
-        }
-        log.info("Total submissions to scan: {}", total);
+        long lastSerial = queryRawCount();
+//        long lastSerial = 0;
+        Integer submissionsToBackfill = submissionRepository.countBySerialNumberGreaterThan(lastSerial);
+        int scanned = 0;
+        int insertedTotal = 0;
 
-
-        long offset = 0;
-        int processed = 0;
+        log.info("Max OUTBOX serial: {}", lastSerial);
+        log.info("Submissions to Back fill Count: {}", submissionsToBackfill);
         List<String> restrictUids = parseCsv(submissionUidsCsv);
-        while (true) {
-            // Fetch a batch of submissions: adjust columns to match your data_submission schema
-            String selectSql = "SELECT id, uid, template_version_uid, form_data, serial_number " +
-                "FROM data_submission " +
-                "WHERE data_submission.template_uid in (:uids) " +
-                "ORDER BY serial_number ASC " +
-                "LIMIT :limit OFFSET :offset";
 
-            MapSqlParameterSource selectParams = new MapSqlParameterSource()
-                .addValue("limit", batchSize)
-                .addValue("uids", restrictUids)
-                .addValue("offset", offset);
+        if (submissionsToBackfill > 0) {
+            while (true) {
+                Page<DataSubmission> page =
+                    submissionRepository.findBySerialNumberGreaterThanAndFormInOrderBySerialNumberAsc(
+                        lastSerial, restrictUids, PageRequest.of(0, batchSize)
+                    );
 
-            List<Map<String, Object>> submissions = jdbc.queryForList(selectSql, selectParams);
-            if (submissions.isEmpty()) break;
+                if (page.isEmpty()) break;
+                List<DataSubmission> list = page.getContent();
+                scanned += list.size();
 
-            List<MapSqlParameterSource> inserts = new ArrayList<>(submissions.size());
-            for (Map<String, Object> row : submissions) {
-                String submissionId = Objects.toString(row.get("id"), null);
-                String submissionUid = Objects.toString(row.get("uid"), null);
-                String templateVersionUid = Objects.toString(row.get("form_data"), null);
-                Long submissionSerial = Long.parseLong(Objects.toString(row.get("serial_number"), null));
-                String payload = Objects.toString(row.get("form_data"), null);
+                log.info("Scanned: {}", scanned);
+                // collect serials
+                List<Long> serials = list.stream()
+                    .map(DataSubmission::getSerialNumber)
+                    .filter(Objects::nonNull)
+                    .toList();
 
-                if (submissionId == null) continue;
-
-                // Idempotency check: skip if outbox already contains this submission_id
-                Integer existing = jdbc.queryForObject(
-                    "SELECT COUNT(1) FROM outbox WHERE submission_id = :submissionId",
-                    new MapSqlParameterSource("submissionId", submissionId),
-                    Integer.class
-                );
-                if (existing != null && existing > 0) {
-                    log.debug("Skipping submission {} - outbox row already exists", submissionId);
-                    processed++;
+                if (serials.isEmpty()) {
+                    lastSerial = list.get(list.size() - 1).getSerialNumber();
                     continue;
                 }
 
-                // Build insert param map for outbox
-                MapSqlParameterSource p = new MapSqlParameterSource();
-                p.addValue("submission_serial_number", submissionSerial);
-                p.addValue("submission_id", submissionId);
-                p.addValue("submission_uid", submissionUid);
-                p.addValue("topic", templateVersionUid); // topic optional; you may choose to set differently
-                p.addValue("payload", payload);
-                p.addValue("status", "pending");
-                p.addValue("attempt", 0);
-                p.addValue("last_error", null);
-                p.addValue("next_attempt_at", null);
-                p.addValue("ingest_id", null);
-                p.addValue("created_at", row.get("created_at"));
-                p.addValue("event_type", "BACKFILL");
+                // find which already exist
+                Set<Long> existing = new HashSet<>(
+                    jdbc.queryForList(
+                        "SELECT submission_serial_number FROM outbox WHERE submission_serial_number IN (:serials)",
+                        new MapSqlParameterSource("serials", serials),
+                        Long.class
+                    )
+                );
 
-                inserts.add(p);
-            }
+                log.info("existing: {}", existing.size());
+                List<MapSqlParameterSource> inserts = new ArrayList<>();
 
-            if (!inserts.isEmpty()) {
-                // Insert batch; adapt the SQL to match your outbox table column names exactly.
-                String insertSql = "INSERT INTO outbox (" +
-                    "submission_serial_number, submission_id, submission_uid, topic, payload, status, attempt, last_error, next_attempt_at, ingest_id, created_at, event_type" +
-                    ") VALUES (" +
-                    ":submission_serial_number, :submission_id, :submission_uid, :topic, cast(:payload AS jsonb), :status, :attempt, :last_error, :next_attempt_at, :ingest_id, :created_at, :event_type" +
-                    ") ON CONFLICT (submission_id) WHERE (event_type = 'BACKFILL') DO NOTHING";
+                for (DataSubmission s : list) {
+                    Long serial = s.getSerialNumber();
+                    if (serial == null || existing.contains(serial)) continue;
 
-                try {
-                    MapSqlParameterSource[] batchParams = inserts.toArray(new MapSqlParameterSource[0]);
-                    int[] results = jdbc.batchUpdate(insertSql, batchParams);
-                    int inserted = 0;
-                    for (int r : results) if (r >= 0) inserted++;
-                    log.info("Inserted {} outbox rows for this batch (offset={})", inserted, offset);
-                } catch (DataAccessException dae) {
-                    log.error("Batch insert failed at offset {}: {}", offset, dae.getMessage());
-                    throw dae; // let caller handle; this run should stop so you can fix issues
+                    JsonNode dataPayload = s.getFormData();
+
+//                    ObjectNode payload = objectMapper.createObjectNode();
+//                    payload.put("submissionId", saved.getId());
+//                    payload.put("submissionVersion", saved.getLockVersion());
+
+                    MapSqlParameterSource p = new MapSqlParameterSource();
+                    p.addValue("submission_serial_number", serial);
+                    p.addValue("submission_id", s.getId());
+                    p.addValue("submission_uid", s.getUid());
+                    p.addValue("topic", s.getFormVersion());
+                    p.addValue("event_type", "BACKFILL");
+                    p.addValue("payload", dataPayload == null ? null : dataPayload.toString());
+                    p.addValue("status", "pending");
+                    p.addValue("attempt", 0);
+                    p.addValue("created_at", Timestamp.from(Instant.now()));
+
+                    inserts.add(p);
                 }
-            } else {
-                log.info("No new outbox rows to insert in this batch (offset={})", offset);
+
+                if (!inserts.isEmpty()) {
+
+                    String sql = """
+                            INSERT INTO outbox
+                                (submission_serial_number, submission_id, submission_uid,
+                                 topic, event_type, payload, status, attempt, created_at, claimed_at, claimed_by)
+                            VALUES (:submission_serial_number, :submission_id, :submission_uid, :topic, :event_type,
+                                    CAST(:payload AS jsonb), :status, :attempt, :created_at, NULL, NULL)
+                            ON CONFLICT (submission_id) WHERE (event_type = 'BACKFILL') DO NOTHING
+                        """;
+
+                    jdbc.batchUpdate(sql, inserts.toArray(new MapSqlParameterSource[0]));
+                    insertedTotal += inserts.size();
+
+                    log.info("Inserted {} rows (lastSerial={})", inserts.size(),
+                        list.get(list.size() - 1).getSerialNumber());
+                }
+
+                lastSerial = list.get(list.size() - 1).getSerialNumber();
             }
-
-            processed += submissions.size();
-            offset += submissions.size();
-
-            // optional: break early for testing
-            // if (offset > 2000) break;
         }
 
-        log.info("One-time outbox backfill completed. Scanned {}, inserted into outbox where missing.", offset);
+        log.info("OUTBOX backfill done. scanned={}, inserted={}", scanned, insertedTotal);
     }
 
     private List<String> parseCsv(String csv) {
@@ -163,5 +150,16 @@ public class OneTimeOutboxBackfillRunner implements CommandLineRunner {
             .map(String::trim)
             .filter(s -> !s.isEmpty())
             .collect(Collectors.toList());
+    }
+
+    private long queryRawCount() {
+        try {
+            String sql = "SELECT MAX(submission_serial_number) FROM outbox;";
+            var n = jdbc.queryForObject(sql, new MapSqlParameterSource(), Number.class);
+            return n == null ? 0L : n.longValue();
+        } catch (Exception ex) {
+            log.warn("Error getting Max outboxed serial: {}", ex.getMessage());
+            return -1L;
+        }
     }
 }

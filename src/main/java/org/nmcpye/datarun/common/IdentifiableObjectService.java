@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.common;
 
-import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
+import org.nmcpye.datarun.web.query.QueryRequest;
 import org.springframework.data.domain.Page;
 
 import java.util.Optional;

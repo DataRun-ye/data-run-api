@@ -10,7 +10,7 @@ import org.nmcpye.datarun.party.service.ManifestService;
 import org.nmcpye.datarun.party.service.PartySetService;
 import org.nmcpye.datarun.party.service.UserPermissionSyncService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.web.rest.common.PagedResponse;
+import org.nmcpye.datarun.web.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;

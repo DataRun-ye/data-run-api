@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.web.rest.v1.paging;
 
-import org.nmcpye.datarun.web.rest.common.PagedResponse;
+import org.nmcpye.datarun.web.common.PagedResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 

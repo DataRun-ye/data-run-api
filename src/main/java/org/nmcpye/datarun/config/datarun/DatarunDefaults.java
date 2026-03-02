@@ -41,7 +41,6 @@ public interface DatarunDefaults {
         public interface ClientAuthorization {
             String accessTokenUri = null;
             String tokenServiceId = null;
-            String jwkSetUri = null;
             String clientId = null;
             String clientSecret = null;
         }

@@ -3,7 +3,7 @@ package org.nmcpye.datarun.jpa.common;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import org.nmcpye.datarun.common.IdentifiableObjectService;
-import org.nmcpye.datarun.web.rest.queryrequest.QueryRequest;
+import org.nmcpye.datarun.web.query.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;

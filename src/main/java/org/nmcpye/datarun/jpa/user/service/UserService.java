@@ -14,9 +14,9 @@ import org.nmcpye.datarun.jpa.userauthority.repository.AuthorityRepository;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.service.EmailAlreadyUsedException;
 import org.nmcpye.datarun.service.dto.UserDTO;
-import org.nmcpye.datarun.web.rest.errors.InvalidPasswordException;
-import org.nmcpye.datarun.web.rest.errors.LoginAlreadyUsedException;
-import org.nmcpye.datarun.web.rest.vm.ManagedUserVM;
+import org.nmcpye.datarun.web.errors.InvalidPasswordException;
+import org.nmcpye.datarun.web.errors.LoginAlreadyUsedException;
+import org.nmcpye.datarun.web.vm.ManagedUserVM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
@@ -397,7 +397,7 @@ public class UserService
      *
      * @param managedUserVMList the list of managed user View Models.
      * @throws InvalidPasswordException                                     if any password is incorrect.
-     * @throws org.nmcpye.datarun.web.rest.errors.EmailAlreadyUsedException if any email is already used.
+     * @throws org.nmcpye.datarun.web.errors.EmailAlreadyUsedException if any email is already used.
      * @throws LoginAlreadyUsedException                                    if any login is already used.
      */
 

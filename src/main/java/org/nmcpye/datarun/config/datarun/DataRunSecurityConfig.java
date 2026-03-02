@@ -4,7 +4,6 @@ import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.DomainUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -44,7 +43,6 @@ public class DataRunSecurityConfig {
     }
 
     @Bean
-    @Order(3)
     public SecurityFilterChain filterChain(HttpSecurity http, MvcRequestMatcher.Builder mvc)
         throws Exception {
         http
