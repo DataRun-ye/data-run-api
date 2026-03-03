@@ -8,8 +8,9 @@ import lombok.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
-import org.nmcpye.datarun.jpa.common.v1.NamedObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -18,9 +19,7 @@ import org.springframework.data.domain.Persistable;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /// @author Hamza Assada 28/12/2025
 @Entity
@@ -32,7 +31,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PartySet extends NamedObject implements Persistable<UUID> {
+public class PartySet implements TranslatableInterface, Persistable<UUID> {
 
     @Data
     @Builder
@@ -88,6 +87,10 @@ public class PartySet extends NamedObject implements Persistable<UUID> {
     @LastModifiedDate
     @Column(name = "last_modified_date", nullable = false)
     protected Instant lastModifiedDate;
+
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
     @Transient
     @JsonIgnore

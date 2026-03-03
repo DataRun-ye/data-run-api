@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.common;
 
 import org.mapstruct.MappingTarget;
-import org.nmcpye.datarun.common.uidgenerate.BaseDto;
 
 import java.util.List;
 
@@ -13,7 +12,7 @@ import java.util.List;
  * @author Hamza Assada 07/08/2024 (7amza.it@gmail.com)
  */
 
-public interface BaseMapper<DTO extends BaseDto, ENTITY> {
+public interface BaseMapper<DTO, ENTITY> {
     ENTITY toEntity(DTO dto);
 
     DTO toDto(ENTITY entity);

@@ -14,8 +14,6 @@ import java.util.Optional;
 public interface IdentifiableObjectRepository<T extends IdentifiableObject<ID>, ID>
     extends CrudRepository<T, ID> {
 
-    void deleteByUid(@Size(max = 11) String uid);
-
     Boolean existsByUid(@Size(max = 11) String uid);
 
     Optional<T> findByUid(@Size(max = 11) String uid);

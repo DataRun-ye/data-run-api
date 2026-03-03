@@ -15,7 +15,7 @@ import lombok.Setter;
 import org.hibernate.annotations.*;
 import org.hibernate.annotations.Cache;
 import org.nmcpye.datarun.common.IdScheme;
-import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 
 import java.time.Instant;
 import java.util.*;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 @Setter
 @SQLDelete(sql = "UPDATE option_value SET deleted_at = now() WHERE id = ?")
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OptionSet extends TranslatableIdentifiable {
+public class OptionSet extends JpaIdentifiableObject {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
@@ -84,7 +84,7 @@ public class OptionSet extends TranslatableIdentifiable {
     }
 
     @JsonProperty(value = "options")
-    @JsonSerialize(contentAs = TranslatableIdentifiable.class)
+    @JsonSerialize(contentAs = JpaIdentifiableObject.class)
     public List<Option> getOptions() {
         return options;
     }

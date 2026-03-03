@@ -4,7 +4,6 @@ import com.google.common.collect.Maps;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
-import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 import org.springframework.format.datetime.standard.InstantFormatter;
 
 import java.time.Instant;
@@ -26,12 +25,12 @@ public class IdentifiableObjectUtils {
      * @param objects the list of IdentifiableObjects.
      * @return the joined string.
      */
-    public static String join(Collection<? extends TranslatableIdentifiable> objects) {
+    public static String join(Collection<? extends JpaIdentifiableObject> objects) {
         if (objects == null || objects.isEmpty()) {
             return null;
         }
 
-        List<String> names = objects.stream().map(TranslatableIdentifiable::getDisplayName).collect(Collectors.toList());
+        List<String> names = objects.stream().map(JpaIdentifiableObject::getDisplayName).collect(Collectors.toList());
 
         return StringUtils.join(names, SEPARATOR_JOIN);
     }
@@ -93,7 +92,7 @@ public class IdentifiableObjectUtils {
      * @param ignoreCase          indicates whether to ignore case when filtering.
      * @return a filtered list of IdentifiableObjects.
      */
-    public static <T extends TranslatableIdentifiable> List<T> filterNameByKey(List<T> identifiableObjects, String key, boolean ignoreCase) {
+    public static <T extends JpaIdentifiableObject> List<T> filterNameByKey(List<T> identifiableObjects, String key, boolean ignoreCase) {
         List<T> objects = new ArrayList<>();
         ListIterator<T> iterator = identifiableObjects.listIterator();
 
@@ -164,8 +163,8 @@ public class IdentifiableObjectUtils {
      * @return mapping between the uid and the display name of the given
      * objects.
      */
-    public static Map<String, String> getUidNameMap(Collection<? extends TranslatableIdentifiable> objects) {
-        return objects.stream().collect(Collectors.toMap(TranslatableIdentifiable::getUid, TranslatableIdentifiable::getDisplayName));
+    public static Map<String, String> getUidNameMap(Collection<? extends JpaIdentifiableObject> objects) {
+        return objects.stream().collect(Collectors.toMap(JpaIdentifiableObject::getUid, JpaIdentifiableObject::getDisplayName));
     }
 
     /**
@@ -225,7 +224,7 @@ public class IdentifiableObjectUtils {
     public static String getDisplayName(Object object) {
         if (object == null) {
             return "[ object is null ]";
-        } else if (object instanceof TranslatableIdentifiable identifiableObject) {
+        } else if (object instanceof JpaIdentifiableObject identifiableObject) {
 
             if (identifiableObject.getDisplayName() != null && !identifiableObject.getDisplayName().isEmpty()) {
                 return identifiableObject.getDisplayName();

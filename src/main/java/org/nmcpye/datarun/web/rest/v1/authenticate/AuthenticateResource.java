@@ -40,6 +40,7 @@ public class AuthenticateResource {
     private final TokenService tokenService;
     private final RefreshTokenRepository tokenRepository;
 
+
     @PostMapping("/authenticate")
     public ResponseEntity<?> authorize(@Valid @RequestBody LoginVM loginVM, HttpServletRequest request) {
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(

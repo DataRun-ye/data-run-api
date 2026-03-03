@@ -26,7 +26,6 @@ public class OneTimeOutboxBackfillRunner implements CommandLineRunner {
 
     private final DataSubmissionRepository submissionRepository;
     private final NamedParameterJdbcTemplate jdbc;
-//    private final ObjectMapper objectMapper;
 
     // Feature flag: default false for safety
     @Value("${migration.runOutboxBackfill:false}")

@@ -32,14 +32,6 @@ public abstract class DefaultJpaSoftDeleteService
         this.jpaAuditableObjectRepository = jpaAuditableObjectRepository;
     }
 
-    @Override
-    public T save(T object) {
-        if (!object.getDeleted()) {
-            object.setDeletedAt(null);
-        }
-
-        return super.save(object);
-    }
 
     @Transactional
     @Override
@@ -58,11 +50,12 @@ public abstract class DefaultJpaSoftDeleteService
 
     @Override
     public void softDelete(T object) {
-        object.setDeleted(Boolean.TRUE);
+        if (object.getDeleted()) return;
         object.setDeletedAt(Instant.now());
         save(object);
     }
 
+    @Override
     protected FilterExpression buildCombinedFilter(QueryRequest queryRequest, String jsonQueryBody) {
         List<FilterExpression> allFilters = new ArrayList<>();
         final FilterExpression baseFilter = super.buildCombinedFilter(queryRequest, jsonQueryBody);

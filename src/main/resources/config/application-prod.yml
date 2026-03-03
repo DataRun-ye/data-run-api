@@ -20,7 +20,6 @@ spring:
       enabled: false
     livereload:
       enabled: false
-
   data:
     mongodb:
       uri: mongodb://dRunUser:dRunUser@localhost:27017/dataRunApi
@@ -43,6 +42,11 @@ spring:
     password:
   thymeleaf:
     cache: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://auth-host:8080/.well-known/jwks.json
 
 server:
   port: 8080
@@ -65,6 +69,10 @@ datarun:
         token-validity-in-seconds: 864000 # 7 days
         refresh-token-validity-in-seconds: 2592000 # 30 days
         token-validity-in-seconds-for-remember-me: 2592000
+        rsa-private-file: classpath:jwt-private-pkcs8.pem
+        rsa-public-file: classpath:jwt-public.pem
+        accepted-algorithms: HS256,RS256
+        rsa-key-id: datarun-rs256-1
 outbox:
   relay:
     poll-interval-ms: 10000   # polling delay between polls (ms)

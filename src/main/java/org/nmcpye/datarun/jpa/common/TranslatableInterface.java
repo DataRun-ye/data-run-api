@@ -1,17 +1,8 @@
-package org.nmcpye.datarun.jpa.common.v1;
+package org.nmcpye.datarun.jpa.common;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import io.hypersistence.utils.hibernate.type.json.JsonType;
-import jakarta.persistence.Column;
-import jakarta.persistence.MappedSuperclass;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -21,33 +12,22 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * @author Hamza Assada
  * @since 20/03/2025
  */
-@MappedSuperclass
-@Getter
-@Setter
-@NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true) // tolerate extra fields in DB
-@JsonInclude(JsonInclude.Include.NON_NULL)  // omit nulls when serializing
-abstract public class TranslatableObject {
-
-    /**
-     * Set of available object translation, normally filtered by locale.
-     */
-    @Type(JsonType.class)
-    @Column(name = "translations", columnDefinition = "jsonb")
-    protected Set<Translation> translations = new HashSet<>();
-
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public interface TranslatableInterface {
     /**
      * Cache for object translations, where the cache key is a combination of
      * locale and translation property, and value is the translated value.
      */
     @JsonIgnore
     @Transient
-    transient protected Map<String, String> translationCache = new ConcurrentHashMap<>();
+    Map<String, String> translationCache = new ConcurrentHashMap<>();
 
     // -------------------------------------------------------------------------
     // Constructors
@@ -57,7 +37,7 @@ abstract public class TranslatableObject {
     // -------------------------------------------------------------------------
 
     @JsonIgnore
-    public Map<String, String> getTranslationCache() {
+    default Map<String, String> getTranslationCache() {
         return translationCache;
     }
 
@@ -65,22 +45,14 @@ abstract public class TranslatableObject {
     // -------------------------------------------------------------------------
     // Setters and getters
     // -------------------------------------------------------------------------
-    public Set<Translation> getTranslations() {
-        if (translations == null) {
-            translations = new HashSet<>();
-        }
+    String getName();
+    Set<Translation> getTranslations();
 
-        return translations;
-    }
+    void setTranslations(Set<Translation> updatedTranslations);
 
-    /**
-     * Clears out cache when setting translations.
-     */
-    public void setTranslations(Set<Translation> translations) {
-        if (translations != null) {
-            this.translationCache.clear();
-            this.translations = translations;
-        }
+    @JsonGetter("displayName")
+    default String getDisplayName() {
+        return getTranslation("name", getName());
     }
 
     /**
@@ -91,28 +63,28 @@ abstract public class TranslatableObject {
      * @param defaultValue   the value to use if there are no translations.
      * @return a translated value.
      */
-    protected String getTranslation(String translationKey, String defaultValue) {
+    default String getTranslation(String translationKey, String defaultValue) {
         String localeKey = SecurityUtils.getCurrentUserDetails()
             .map(CurrentUserDetails::getLangKey)
             .orElse(null);
         final String defaultTranslation = defaultValue != null ? defaultValue.trim() : null;
 
-        if (localeKey == null || translationKey == null || CollectionUtils.isEmpty(translations)) {
+        if (localeKey == null || translationKey == null || CollectionUtils.isEmpty(getTranslations())) {
             return defaultValue;
         }
 
-        return translationCache.computeIfAbsent(Translation.getCacheKey(localeKey, translationKey),
+        return getTranslationCache().computeIfAbsent(Translation.getCacheKey(localeKey, translationKey),
             key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
     }
 
-    protected String getTranslation(String translationKey, String localeKey, String defaultValue) {
+    default String getTranslation(String translationKey, String localeKey, String defaultValue) {
         final String defaultTranslation = defaultValue != null ? defaultValue.trim() : null;
 
-        if (localeKey == null || translationKey == null || CollectionUtils.isEmpty(translations)) {
+        if (localeKey == null || translationKey == null || CollectionUtils.isEmpty(getTranslations())) {
             return defaultValue;
         }
 
-        return translationCache.computeIfAbsent(Translation.getCacheKey(localeKey, translationKey),
+        return getTranslationCache().computeIfAbsent(Translation.getCacheKey(localeKey, translationKey),
             key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
     }
 
@@ -123,7 +95,7 @@ abstract public class TranslatableObject {
      * @return Translation value if exists, otherwise return default value.
      */
     private String getTranslationValue(String locale, String translationKey, String defaultValue) {
-        for (Translation translation : translations) {
+        for (Translation translation : getTranslations()) {
             if (locale.equals(translation.getLocale()) && translationKey.equals(translation.getProperty()) &&
                 !StringUtils.isEmpty(translation.getValue())) {
                 return translation.getValue();
@@ -131,5 +103,42 @@ abstract public class TranslatableObject {
         }
 
         return defaultValue;
+    }
+
+    @JsonSetter("label")
+    default TranslatableInterface setLabel(Map<String, String> label) {
+        // Create new name translations from the input map
+        if (label != null) {
+            Set<Translation> newNameTranslations = label.entrySet().stream()
+                .map(entry -> Translation.builder()
+                    .locale(entry.getKey())
+                    .property("name")
+                    .value(entry.getValue())
+                    .build())
+                .collect(Collectors.toSet());
+            // Create updated translation set:
+            // 1. Preserve existing non-name translations
+            // 2. Add/replace name translations from new map
+            Set<Translation> updatedTranslations = getTranslations().stream()
+                .filter(t -> !"name".equals(t.getProperty())) // Keep non-name translations
+                .collect(Collectors.toCollection(HashSet::new));
+
+            updatedTranslations.addAll(newNameTranslations); // Merge new name translations
+
+            setTranslations(updatedTranslations);
+        }
+        return this;
+    }
+
+
+    @Transient
+    default Map<String, String> getLabel() {
+        if (getTranslations() == null || getTranslations().isEmpty()) {
+            return null;
+        }
+        return Map.ofEntries(
+            Map.entry("ar", getTranslation("name", "ar", getName())),
+            Map.entry("en", getTranslation("name", "en", getName()))
+        );
     }
 }

@@ -3,6 +3,7 @@ package org.nmcpye.datarun.config.datarun;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.core.io.Resource;
 
 /**
  * @author Hamza Assada 16/04/2025 (7amza.it@gmail.com)
@@ -10,7 +11,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Getter
 @ConfigurationProperties(
     prefix = "datarun",
-    ignoreUnknownFields = true,
     ignoreInvalidFields = true
 )
 public class DatarunProperties {
@@ -56,6 +56,10 @@ public class DatarunProperties {
             public static class Jwt {
                 private String secret;
                 private String base64Secret;
+                private Resource rsaPrivateFile;
+                private Resource rsaPublicFile;
+                private String[] acceptedAlgorithms;
+                private String rsaKeyId;
                 private long tokenValidityInSeconds;
                 private long tokenValidityInSecondsForRememberMe;
                 private long refreshTokenValidityInSeconds;
@@ -63,6 +67,10 @@ public class DatarunProperties {
                 public Jwt() {
                     this.secret = DatarunDefaults.Security.Authentication.Jwt.secret;
                     this.base64Secret = DatarunDefaults.Security.Authentication.Jwt.base64Secret;
+                    this.rsaPrivateFile = DatarunDefaults.Security.Authentication.Jwt.rsaPrivateFile;
+                    this.rsaPublicFile = DatarunDefaults.Security.Authentication.Jwt.rsaPublicFile;
+                    this.acceptedAlgorithms = DatarunDefaults.Security.Authentication.Jwt.acceptedAlgorithms;
+                    this.rsaKeyId = DatarunDefaults.Security.Authentication.Jwt.rsaKeyId;
                     this.tokenValidityInSeconds = 1800L;
                     this.tokenValidityInSecondsForRememberMe = 2592000L;
                     this.refreshTokenValidityInSeconds = 2592000L;

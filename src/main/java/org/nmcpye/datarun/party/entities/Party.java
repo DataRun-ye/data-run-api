@@ -1,11 +1,14 @@
 package org.nmcpye.datarun.party.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.jpa.common.v1.NamedObject;
+import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.translation.Translation;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -13,6 +16,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /// @author Hamza Assada 28/12/2025
@@ -26,7 +31,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class Party extends NamedObject {
+public class Party implements TranslatableInterface {
     public enum PartyType {INTERNAL, EXTERNAL}
 
     public enum SourceType {ORG_UNIT, TEAM, USER, STATIC, EXTERNAL}
@@ -81,4 +86,8 @@ public class Party extends NamedObject {
     @LastModifiedDate
     @Column(name = "last_modified_date")
     protected Instant lastModifiedDate;
+
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 }

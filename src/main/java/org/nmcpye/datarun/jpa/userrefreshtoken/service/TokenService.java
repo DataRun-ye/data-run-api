@@ -10,7 +10,6 @@ import org.nmcpye.datarun.jpa.userrefreshtoken.dto.RefreshTokenDto;
 import org.nmcpye.datarun.jpa.userrefreshtoken.repository.RefreshTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
@@ -24,7 +23,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.nmcpye.datarun.security.SecurityUtils.AUTHORITIES_KEY;
-import static org.nmcpye.datarun.security.SecurityUtils.JWT_ALGORITHM;
 
 /**
  * @author Hamza Assada 16/04/2025 (7amza.it@gmail.com)
@@ -43,6 +41,9 @@ public class TokenService {
 
     @Value("${datarun.security.authentication.jwt.refresh-token-validity-in-seconds:2592000}") // 30 days
     private long refreshTokenValidity;
+
+    @Value("${datarun.security.authentication.jwt.rsa-key-id:datarun-rs256-1}")
+    private String rsaKeyId;
 
     public Optional<RefreshTokenDto> findDtoByToken(String token) {
         return tokenRepository.findByToken(token);
@@ -64,8 +65,7 @@ public class TokenService {
             .subject(user.getLogin())
             .claim(AUTHORITIES_KEY, authorities)
             .build();
-        JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
-        return jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
+        return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
 
     public RefreshTokenDto createRefreshToken(String username) {

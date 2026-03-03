@@ -17,9 +17,6 @@ import javax.sql.DataSource;
  */
 @Configuration
 public class JooqConfig {
-
-    // For more info on imports and data types, click on the "Help" icon
-// These imports, and possibly others, are implied:
     @Bean
     public DSLContext dslContext(ObjectProvider<DataSource> dataSource) {
         var configuration = new DefaultConfiguration();

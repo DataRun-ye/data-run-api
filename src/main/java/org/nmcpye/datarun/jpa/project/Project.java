@@ -11,7 +11,7 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.jpa.activity.Activity;
-import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -28,7 +28,7 @@ import java.util.Set;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class Project extends TranslatableIdentifiable {
+public class Project extends JpaIdentifiableObject {
 
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)

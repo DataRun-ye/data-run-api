@@ -13,11 +13,10 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.IdentifiableObject;
-import org.nmcpye.datarun.common.enumeration.EntityScope;
 import org.nmcpye.datarun.common.enumeration.FormPermission;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.user.User;
 
 import java.util.*;
@@ -37,7 +36,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
-public class Team extends TranslatableIdentifiable {
+public class Team extends JpaIdentifiableObject {
 
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
@@ -104,9 +103,6 @@ public class Team extends TranslatableIdentifiable {
     @Column(name = "properties_map", columnDefinition = "jsonb")
     @JsonProperty
     protected Map<String, Object> properties;
-
-    @Transient
-    private EntityScope entityScope;
 
     public Set<FormPermission> getFormPermissions(String form) {
         return formPermissions.stream()

@@ -16,10 +16,8 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.IdentifiableObjectUtils;
-import org.nmcpye.datarun.common.enumeration.EntityScope;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
-import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 import org.nmcpye.datarun.jpa.orgunitgroup.OrgUnitGroup;
 
 import java.util.*;
@@ -35,7 +33,7 @@ import java.util.*;
 @Getter
 @Setter
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
-public class OrgUnit extends TranslatableIdentifiable {
+public class OrgUnit extends JpaIdentifiableObject {
 
     private static final String PATH_SEP = ",";
 
@@ -82,9 +80,6 @@ public class OrgUnit extends TranslatableIdentifiable {
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private Set<OrgUnit> children = new HashSet<>();
-
-    @Transient
-    private EntityScope entityScope;
 
     @Type(JsonType.class)
     @Column(name = "properties_map", columnDefinition = "jsonb")

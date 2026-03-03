@@ -9,7 +9,7 @@ import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.ListIndexBase;
-import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +27,7 @@ import java.util.List;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OptionGroupSet extends TranslatableIdentifiable {
+public class OptionGroupSet extends JpaIdentifiableObject {
     /**
      * The unique code for this object.
      */
@@ -63,12 +63,12 @@ public class OptionGroupSet extends TranslatableIdentifiable {
     private List<OptionGroup> optionGroups = new ArrayList<>();
 
     @JsonProperty
-    @JsonSerialize(contentAs = TranslatableIdentifiable.class)
+    @JsonSerialize(contentAs = JpaIdentifiableObject.class)
     public List<OptionGroup> getOptionGroups() {
         return optionGroups;
     }
 
-    @JsonSerialize(as = TranslatableIdentifiable.class)
+    @JsonSerialize(as = JpaIdentifiableObject.class)
     public OptionSet getOptionSet() {
         return optionSet;
     }

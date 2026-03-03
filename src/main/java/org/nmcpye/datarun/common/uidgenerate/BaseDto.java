@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.common.uidgenerate;
 
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -12,7 +11,5 @@ import java.io.Serializable;
 @Data
 @EqualsAndHashCode
 public class BaseDto implements Serializable {
-    @Size(max = 26)
-    protected String id;
-    protected String code;
+
 }

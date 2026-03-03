@@ -14,7 +14,6 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
-import org.nmcpye.datarun.jpa.common.TranslatableIdentifiable;
 
 import java.time.Instant;
 import java.util.Map;
@@ -29,7 +28,7 @@ import java.util.Map;
 @Getter
 @Setter
 @SQLDelete(sql = "UPDATE option_value SET deleted_at = now() WHERE id = ?")
-public class Option extends TranslatableIdentifiable {
+public class Option extends JpaIdentifiableObject {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;

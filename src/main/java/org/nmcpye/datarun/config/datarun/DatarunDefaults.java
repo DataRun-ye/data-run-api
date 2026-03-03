@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.config.datarun;
 
+import org.springframework.core.io.Resource;
+
 /**
  * @author Hamza Assada 16/04/2025 (7amza.it@gmail.com)
  */
@@ -32,6 +34,10 @@ public interface DatarunDefaults {
             public interface Jwt {
                 String secret = null;
                 String base64Secret = null;
+                Resource rsaPrivateFile = null;
+                Resource rsaPublicFile = null;
+                String[] acceptedAlgorithms  = null;
+                String rsaKeyId = null;
                 long tokenValidityInSeconds = 1800L;
                 long tokenValidityInSecondsForRememberMe = 2592000L;
                 long refreshTokenValidityInSeconds = 2592000L;

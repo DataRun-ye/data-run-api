@@ -52,6 +52,7 @@ public class DataRunSecurityConfig {
                 auth ->
                     // prettier-ignore
                     auth
+                        .requestMatchers("/.well-known/jwks.json").permitAll()
                         .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/v1/authenticate")).permitAll()
                         .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/v1/refresh")).permitAll()
                         .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/v1/authenticate")).permitAll()

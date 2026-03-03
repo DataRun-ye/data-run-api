@@ -11,18 +11,14 @@ import org.nmcpye.datarun.datatemplateprocessor.FormAccessService;
 public interface AssignmentWithAccessMapper
     extends BaseMapper<AssignmentWithAccessDto, Assignment> {
 
-//    @Autowired
-//    public FormAccessService formAccessService;
-
     @Mappings({
         @Mapping(target = "id", source = "id"),
         @Mapping(target = "activity.id", source = "activity"),
         @Mapping(target = "orgUnit.id", source = "orgUnit"),
         @Mapping(target = "team.id", source = "team"),
         @Mapping(target = "status", source = "progressStatus"),
-//        @Mapping(source = "accessibleForms.formUid", target = "forms"),
     })
-    public Assignment toEntity(AssignmentWithAccessDto dto);
+    Assignment toEntity(AssignmentWithAccessDto dto);
 
     @Mappings({
         @Mapping(target = "activity", source = "activity.id"),

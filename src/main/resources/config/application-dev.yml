@@ -46,6 +46,11 @@ spring:
     cache-duration: PT1S # 1 second, see the ISO 8601 standard
   thymeleaf:
     cache: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://auth-host:8080/.well-known/jwks.json
 server:
   port: 8080
   forward-headers-strategy: native
@@ -60,6 +65,10 @@ datarun:
         token-validity-in-seconds: 86400 # Token is valid 24 hours
         refresh-token-validity-in-seconds: 2592000 # 30 days
         token-validity-in-seconds-for-remember-me: 2592000
+        rsa-private-file: classpath:jwt-private-pkcs8.pem
+        rsa-public-file: classpath:jwt-public.pem
+        accepted-algorithms: HS256,RS256
+        rsa-key-id: datarun-rs256-1
 outbox:
   relay:
     poll-interval-ms: 2000   # polling delay between polls (ms)
