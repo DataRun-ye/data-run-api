@@ -1,0 +1,103 @@
+# Area C: The Immutable Event Store
+
+This table stores "Facts." Once a row is written here, it is never updated or deleted. If a mistake was made, a **REVERSAL** event is added instead.
+
+**Table Name:** `inventory_events`
+*Purpose: The permanent, append-only ledger of all stock movements.*
+
+| Column | Type | Description |
+| --- | --- | --- |
+| `id` | **UUID (PK)** | Universal unique identifier. |
+| `source_event_id` | `String` | Reference to the original submission (links to Area B/E). |
+| `node_id` | `String` | Internal ID of the facility or MU. |
+| `item_id` | `String` | Internal ID of the commodity (Shared Kernel). |
+| `transaction_type` | `Enum` | `RECEIPT`, `ISSUE`, `TRANSFER`, `ADJUSTMENT`, `STOCK_COUNT`, `REVERSAL`. |
+| `quantity` | **BigInt** | The absolute delta. Always in **Base Units** (e.g., tablets). |
+| `running_balance` | **BigInt** | Snapshot of the balance at the moment this was inserted. |
+| `occurred_at` | `Timestamp` | The "Business Time" (when it happened in the field). |
+| `created_at` | `Timestamp` | The "System Time" (when the DB wrote the row). |
+
+*(Note: `batch_id` and `expiry_date` tracking are deferred for post-MVP enhancements).*
+
+---
+
+### Area C: The Stock Projection (Read Model)
+
+Querying the `inventory_events` table to find the current balance of 500 items across 1,000 nodes would be too slow. We use a **Projection** (Materialized View) to store the pre-calculated "Current State."
+
+**Table Name:** `stock_balances`
+*Purpose: Fast lookup for current "Stock on Hand."*
+
+| Column | Type | Description |
+| --- | --- | --- |
+| `id` | **UUID (PK)** | Surrogate key. |
+| `node_id` | **String** | The location (Constrained unique with `item_id`). |
+| `item_id` | **String** | The commodity. |
+| `quantity` | **BigInt** | The running total. |
+| `version` | **Integer** | Used for Optimistic Concurrency Control. Increments on every update. |
+| `last_updated` | `Timestamp` | Last time the balance changed. |
+
+---
+
+### Preventing Race Conditions (Optimistic Concurrency Control)
+
+In a high-throughput system, it is possible for two commands affecting the *same* `node_id` and `item_id` to be processed by Area C at the exact same millisecond. If we rely on simple `UPDATE stock_balances SET quantity = quantity + 10`, we risk race conditions and dirty reads.
+
+**The Solution:** We implement **Optimistic Concurrency Control (OCC)** using the `version` column.
+
+1. **Read:** The Ledger reads the current projection for Node A / Item X (e.g., `quantity: 100`, `version: 5`).
+2. **Math:** The Ledger processes a `RECEIPT` of 10. The new target quantity is `110`. The target version is `6`.
+3. **Atomic Update:** The database executes: 
+   `UPDATE ledger_stock_balances SET quantity = 110, version = 6 WHERE node_id = 'A' AND item_id = 'X' AND version = 5;`
+4. **The Guard:** If another thread updated the row a millisecond earlier, the `version` would now be `6`. Our `UPDATE` using `WHERE version = 5` will affect **0 rows**.
+5. **The Retry:** The Ledger detects that 0 rows were updated, throwing a `StaleObjectException`. It briefly pauses, re-reads the new state (`version 6`), performs the math again, and successfully commits to `version 7`.
+
+---
+
+### The "Absolute Reset" Logic (Stock-Take)
+
+You asked how a standard system handles a `STOCK_COUNT` without knowing consumption. Here is the mathematical execution inside Area C:
+
+1. **The Input:** A command arrives: `Node: A, Item: X, Counted_Qty: 100`.
+2. **The Projection Lookup:** The Ledger checks `stock_balances`. It shows `quantity_on_hand: 120`.
+3. **The Variance Calculation:**
+The Ledger calculates the adjustment needed to reach the physical reality:
+
+
+
+In this case: 
+
+4. **The Event Generation:** The Ledger inserts an event into `inventory_events`:
+* `transaction_type: ADJUSTMENT` (or `STOCK_COUNT_ADJUSTMENT`)
+* `quantity: -20`
+
+
+5. **The Projection Update:** The `stock_balances` table is updated to `100`.
+
+---
+
+### Handling Reversals (The "Correction" Flow)
+
+If **Area B** detects an edit to a previous form (e.g., the user changed a "Receipt" from 10 to 15), Area C performs a **Symmetrical Reversal**:
+
+1. Find original Event #101 (`RECEIPT`, `+10`).
+2. Insert Event #202: `type: REVERSAL`, `qty: -10`, `linked_to: 101`.
+3. Insert Event #203: `type: RECEIPT`, `qty: +15`, `source_event_id: "Same_ID"`.
+4. Update Projection: The net result on the balance is a simple .
+
+---
+
+### Business Rules (Enforcement)
+
+During the "Commit" to Area C, the Ledger evaluates the **Configuration Hierarchy** policies we defined in Doc 0:
+
+* **Negative Stock Check:** If `policy.negative_stock.behavior = BLOCK` and an `ISSUE` would drop the balance below zero, the Ledger **rejects** the transaction and rolls back.
+* **Expiry Check:** If a `RECEIPT` has an `expiry_date` in the past, the Ledger rejects it.
+
+---
+
+### Summary of Area C Integrity
+
+* **Atomicity:** The `inventory_events` insert and the `stock_balances` update happen in a single **Database Transaction**. Either both succeed, or both fail.
+* **Auditability:** Because we store the `source_event_id`, you can trace any number in the `stock_balances` table back to the exact ODK form or MU dispatch that caused it.
+* **Simplicity:** Area C doesn't care about "Boxes" or "Packs." It only does math on `BigInt` tablets.
