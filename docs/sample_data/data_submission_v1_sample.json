@@ -1,0 +1,62 @@
+{
+    "createdBy": "775982930",
+    "lastModifiedBy": "775982930",
+    "createdDate": "2025-09-28T21:32:35.682065Z",
+    "lastModifiedDate": "2025-09-28T21:32:35.682065Z",
+    "translations": [],
+    "serialNumber": 70127,
+    "uid": "z3Ye07TDj7a",
+    "deleted": false,
+    "formData": {
+        "main": {
+            "visitdate": "2025-09-27",
+            "NotificationNumber": 2,
+            "emergency_team_type": "malaria_unit"
+        },
+        "patients": {
+            "age": "2017-09-26T21:00:00.000Z",
+            "gender": "MALE",
+            "lab_test": [
+                "الفحص السريع للملاريا"
+            ],
+            "symptoms": [
+                "حمى",
+                "قشعريرة",
+                "صداع",
+                "تعرق",
+                "قيء"
+            ],
+            "ispregnant": false,
+            "PatientName": "محمد فيصل كامل مشعل",
+            "serialNumber": 4,
+            "diagnosed_disease_type": "malaria"
+        },
+        "medicines": [
+            {
+                "_id": "01K693VTPPWQR1M23AN06B6N0D",
+                "amd": "act40_tape",
+                "_index": 1,
+                "druguom": "tablet",
+                "_parentId": "z3Ye07TDj7a",
+                "_submissionUid": "z3Ye07TDj7a",
+                "prescribeddrug": "PMQ",
+                "prescribed_quantity": 1
+            }
+        ],
+        "referrals": {
+            "cm_measures": "treatment"
+        }
+    },
+    "form": "ck2pHW93sk2",
+    "formVersion": "DxVw73TCprh",
+    "version": 2,
+    "team": "q4z4tUTH8EQ",
+    "teamCode": "2002",
+    "orgUnit": "OqcUGUYZYez",
+    "orgUnitCode": "20073310200",
+    "orgUnitName": "مشرع-مشرع",
+    "activity": "TYduVflHzfZ",
+    "assignment": "GFt3ySUVf1M",
+    "startEntryTime": "2025-09-27T19:20:42.776430Z",
+    "finishedEntryTime": "2025-09-27T19:22:21.950674Z"
+}
