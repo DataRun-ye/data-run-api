@@ -972,7 +972,7 @@
                         </execution>
                     </executions>
                     <configuration>
-                        <!-- <skip>true</skip>-->
+                        <skip>true</skip>
                         <jdbc>
                             <driver>org.postgresql.Driver</driver>
                             <url>${liquibase-url}</url>
