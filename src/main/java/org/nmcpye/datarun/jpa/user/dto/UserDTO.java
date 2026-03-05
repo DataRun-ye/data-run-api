@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.service.dto;
+package org.nmcpye.datarun.jpa.user.dto;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -59,8 +59,8 @@ public class UserDTO implements Serializable {
     @Override
     public String toString() {
         return "UserDTO{" +
-            "id='" + id + '\'' +
-            ", login='" + login + '\'' +
-            "}";
+                "id='" + id + '\'' +
+                ", login='" + login + '\'' +
+                "}";
     }
 }

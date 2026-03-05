@@ -1,0 +1,450 @@
+{
+    "id": "01K6PKXR21NJ9PG5ZNJ78MGDS1",
+    "createdBy": "admin",
+    "lastModifiedBy": "admin",
+    "createdDate": "2025-10-04T03:23:23.072822Z",
+    "lastModifiedDate": "2025-10-04T03:23:23.072822Z",
+    "uid": "zBMAkA7hzLW",
+    "versionNumber": 5,
+    "fields": [
+        {
+            "parent": "main",
+            "name": "visitdate",
+            "path": "main.LyIGccZ5mna",
+            "code": "visitdate",
+            "order": 104,
+            "label": {
+                "ar": "تاريخ الاستجابة",
+                "en": "visitdate"
+            },
+            "rules": [],
+            "id": "LyIGccZ5mna",
+            "type": "Date",
+            "mandatory": true,
+            "showInSummary": true,
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "patients",
+            "name": "serialNumber",
+            "path": "patients.w8VQRZmmz82",
+            "code": "serialNumber",
+            "order": 201,
+            "label": {
+                "ar": "الرقم التسلسلي",
+                "en": "serialNumber"
+            },
+            "rules": [],
+            "id": "w8VQRZmmz82",
+            "type": "IntegerPositive",
+            "mandatory": true,
+            "showInSummary": true,
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "patients",
+            "name": "PatientName",
+            "path": "patients.KBmP3fPjrLG",
+            "code": "PatientName",
+            "description": "cpes Patient Name",
+            "order": 202,
+            "label": {
+                "ar": "اسم المريض",
+                "en": "PatientName"
+            },
+            "rules": [],
+            "id": "KBmP3fPjrLG",
+            "type": "FullName",
+            "mandatory": true,
+            "showInSummary": true,
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "patients",
+            "name": "age",
+            "path": "patients.oFGuq5BgGSr",
+            "code": "age",
+            "description": "Age in Years and (months for age less than 1 year)",
+            "order": 203,
+            "label": {
+                "ar": "العمر",
+                "en": "age"
+            },
+            "rules": [],
+            "id": "oFGuq5BgGSr",
+            "type": "Age",
+            "mandatory": true,
+            "showInSummary": true,
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "patients",
+            "name": "gender",
+            "path": "patients.eCw9HcbcnW7",
+            "code": "gender",
+            "order": 204,
+            "label": {
+                "ar": "الجنس",
+                "en": "gender"
+            },
+            "rules": [],
+            "id": "eCw9HcbcnW7",
+            "type": "SelectOne",
+            "mandatory": true,
+            "showInSummary": true,
+            "optionSet": "Bu2LhXFDicp",
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "patients",
+            "name": "ispregnant",
+            "path": "patients.FjfKSsEWAYf",
+            "code": "de_ispregnant",
+            "order": 205,
+            "label": {
+                "ar": "حامل",
+                "en": "ispregnant"
+            },
+            "rules": [
+                {
+                    "expression": "#{gender} == 'FEMALE'",
+                    "action": "Show"
+                }
+            ],
+            "id": "FjfKSsEWAYf",
+            "type": "YesNo",
+            "mandatory": true,
+            "showInSummary": true,
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "patients",
+            "name": "pregnancy_month",
+            "path": "patients.aEjEOwZ9Mk0",
+            "code": "pregnancy_month",
+            "description": "cpes pregnancy_month",
+            "order": 206,
+            "label": {
+                "ar": "شهر الحمل",
+                "en": "pregnancy_month"
+            },
+            "rules": [
+                {
+                    "expression": "#{ispregnant} == 'true'  || #{ispregnant} == true || #{ispregnant} == 'Yes' || #{ispregnant} == 'yes'",
+                    "action": "Show"
+                }
+            ],
+            "id": "aEjEOwZ9Mk0",
+            "type": "IntegerPositive",
+            "mandatory": true,
+            "showInSummary": true,
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "patients",
+            "name": "symptoms",
+            "path": "patients.idBpaL0SQXe",
+            "code": "symptoms",
+            "order": 207,
+            "label": {
+                "ar": "الاهراض والعلامات",
+                "en": "symptoms"
+            },
+            "rules": [],
+            "id": "idBpaL0SQXe",
+            "type": "SelectMulti",
+            "mandatory": true,
+            "showInSummary": true,
+            "optionSet": "jGslJIFiVl9",
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "patients",
+            "name": "lab_test",
+            "path": "patients.GzyNDOGyNUW",
+            "code": "lab_test",
+            "order": 208,
+            "label": {
+                "ar": "الفحوصات المطلوبة",
+                "en": "lab_test"
+            },
+            "rules": [],
+            "id": "GzyNDOGyNUW",
+            "type": "SelectMulti",
+            "mandatory": true,
+            "showInSummary": true,
+            "optionSet": "AxpBXSCqnDa",
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "patients",
+            "name": "diagnosed_disease_type",
+            "path": "patients.UiM4N3o8OiG",
+            "code": "de_diagnosed_disease_type",
+            "order": 209,
+            "label": {
+                "ar": "التشخيص",
+                "en": "diagnosed_disease_typ"
+            },
+            "rules": [],
+            "id": "UiM4N3o8OiG",
+            "type": "SelectOne",
+            "mandatory": true,
+            "showInSummary": true,
+            "optionSet": "AjpOXeUAqnQ",
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "patients",
+            "name": "other_diagnosed_disease_name",
+            "path": "patients.MYZOyP37ilc",
+            "code": "de_other_diagnosed_disease_name",
+            "order": 210,
+            "label": {
+                "ar": "مرض اخر",
+                "en": "other_diagnosed_disease_name"
+            },
+            "rules": [
+                {
+                    "expression": "#{diagnosed_disease_type} == 'other'",
+                    "action": "Show"
+                }
+            ],
+            "id": "MYZOyP37ilc",
+            "type": "Text",
+            "mandatory": true,
+            "showInSummary": true,
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "medicines",
+            "name": "amd",
+            "path": "medicines.pHjMRAL4glF",
+            "code": "amd",
+            "order": 301,
+            "label": {
+                "ar": "الصنف",
+                "en": "amd"
+            },
+            "rules": [],
+            "id": "pHjMRAL4glF",
+            "type": "SelectOne",
+            "mandatory": true,
+            "showInSummary": true,
+            "optionSet": "sYiS5D2qeG8",
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "medicines",
+            "name": "druguom",
+            "path": "medicines.gjkfAEM4bwc",
+            "code": "de_druguom",
+            "order": 303,
+            "label": {
+                "ar": "وحدة القياس",
+                "en": "druguom"
+            },
+            "rules": [],
+            "id": "gjkfAEM4bwc",
+            "type": "SelectOne",
+            "mandatory": true,
+            "showInSummary": true,
+            "optionSet": "k4ZN0nvhrxq",
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "medicines",
+            "name": "prescribeddrug",
+            "path": "medicines.jnm46N3THhf",
+            "code": "de_prescribeddrug",
+            "order": 302,
+            "label": {
+                "ar": "2الصنف",
+                "en": "prescribeddrug"
+            },
+            "rules": [],
+            "id": "jnm46N3THhf",
+            "type": "SelectOne",
+            "mandatory": true,
+            "showInSummary": true,
+            "optionSet": "PVg1vCjoxfV",
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "medicines",
+            "name": "prescribed_quantity",
+            "path": "medicines.up4yxPAuqGK",
+            "code": "prescribed_quantity",
+            "order": 204,
+            "label": {
+                "ar": "الكمية",
+                "en": "prescribed_quantity"
+            },
+            "rules": [],
+            "id": "up4yxPAuqGK",
+            "type": "Number",
+            "mandatory": true,
+            "showInSummary": true,
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "referrals",
+            "name": "cm_measures",
+            "path": "referrals.W5QDhN3qanw",
+            "code": "de_cm_measures",
+            "order": 301,
+            "label": {
+                "ar": "التدابير",
+                "en": "cm_measures"
+            },
+            "rules": [],
+            "id": "W5QDhN3qanw",
+            "type": "SelectOne",
+            "mandatory": true,
+            "showInSummary": true,
+            "optionSet": "vcYOprXCzar",
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        },
+        {
+            "parent": "referrals",
+            "name": "referral_type",
+            "path": "referrals.BOGECC3MSLb",
+            "code": "de_referral_type",
+            "description": "referral_type, emergent through the team or autoreferral",
+            "order": 302,
+            "label": {
+                "ar": "إحالة",
+                "en": "referral_type"
+            },
+            "rules": [
+                {
+                    "expression": "#{cm_measures} == 'refferal'",
+                    "action": "Show"
+                }
+            ],
+            "id": "BOGECC3MSLb",
+            "type": "SelectOne",
+            "mandatory": true,
+            "showInSummary": true,
+            "optionSet": "PnCIWkhM47L",
+            "valueTypeRendering": "DEFAULT",
+            "aggregationType": "DEFAULT",
+            "isMeasure": true,
+            "isDimension": false
+        }
+    ],
+    "sections": [
+        {
+            "name": "medicines",
+            "path": "medicines",
+            "order": 300,
+            "label": {
+                "ar": "الادوية",
+                "en": "medicines"
+            },
+            "rules": [],
+            "repeatable": true,
+            "id": "medicines"
+        },
+        {
+            "name": "patients",
+            "path": "patients",
+            "order": 200,
+            "label": {
+                "ar": "الحالة",
+                "en": "patients"
+            },
+            "rules": [],
+            "repeatable": false,
+            "id": "patients"
+        },
+        {
+            "name": "referrals",
+            "path": "referrals",
+            "order": 400,
+            "label": {
+                "ar": "الاحالة",
+                "en": "referrals"
+            },
+            "rules": [],
+            "repeatable": false,
+            "id": "referrals"
+        },
+        {
+            "name": "main",
+            "path": "main",
+            "order": 100,
+            "label": {
+                "en": "main"
+            },
+            "rules": [],
+            "repeatable": false,
+            "id": "main"
+        }
+    ],
+    "dataTemplate": {
+        "createdBy": "admin",
+        "lastModifiedBy": "admin",
+        "createdDate": "2025-07-10T14:48:54.212333Z",
+        "lastModifiedDate": "2025-10-04T03:23:23.076210Z",
+        "uid": "ck2pHW93sk2",
+        "name": "emergency_investigation_and_response_physician_201",
+        "versionUid": "zBMAkA7hzLW",
+        "versionNumber": 5,
+        "deleted": false,
+        "label": {
+            "en": "Emergency Investigation and Response -Physician 201",
+            "ar": "التقصي والاستجابة الطارئة-الطبيب"
+        },
+        "displayName": "التقصي والاستجابة الطارئة-الطبيب"
+    },
+    "templateUid": "ck2pHW93sk2"
+}
