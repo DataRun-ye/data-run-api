@@ -1,95 +1,147 @@
-## The question
-I do not want to break the mobile app for now, but i will design a web frontend, and i want it to support the right contracts that the current design will eventually migrate too, so the mobile app stay running and migrate gradually to use this interface, and any new ui doesn't need to know about this, this way which will gradually change will be hidden from any new outside implementation from this point forward, what i need to do, and what the steps you suggest, we need to discuss this extensively and not necessarily in one response, so what i am building now doesn't become another wrong contract with wrong design choice that are brittle to evolve into some other idea i discover is better in the future?
+# Form Template & Submission V2 Contract — Source of Truth
 
-* [TemplateElement](/src/main/java/org/nmcpye/datarun/jpa/datatemplate/TemplateElement.java).
-* [DataTemplate](/src/main/java/org/nmcpye/datarun/jpa/datatemplate/DataTemplate.java).
-* [TemplateVersion](/src/main/java/org/nmcpye/datarun/jpa/datatemplate/TemplateVersion.java).
-* [DataSubmission](/src/main/java/org/nmcpye/datarun/jpa/datasubmission/DataSubmission.java).
-* [DataSubmission Rest V1](/src/main/java/org/nmcpye/datarun/web/rest/v1/datasubmission/DataSubmissionResource.java).
-* [DataTemplate and TemplateVersion V1 REST](/src/main/java/org/nmcpye/datarun/web/rest/v1/formtemplate/FormTemplateMergeResource.java).
-
-* A sample TemplateVersion Snapshot as received and stored in current v1 flow:
-
-* [How a Template version v1 look like as returned by the api](/docs/sample_data/template_version_v1_sample.json)
-* [How a submission look like as returned by the api, or submitted to the api](/docs/sample_data/data_submission_v1_sample.json)
+> **Status:** DRAFT — under review  
+> **Owner:** Hamza Assada  
+> **Last updated:** 2026-03-05  
+> **Audience:** Backend, Frontend, Mobile, QA
 
 ---
 
-## Goal
+## Table of Contents
 
-Keep the mobile app working unchanged while designing a web frontend api that uses a future-proof contract. New UIs don’t need to know about migration details. Migration is gradual and non-disruptive.
-
----
-
-## Current reality (what you have)
-
-* Template model: `TemplateVersion` (fields, sections) + `TemplateElement` snapshots per version.
-* Submissions: `formData` with UI-driven nesting (`main`, `patients`, `medicines[]` rows). Repeater rows include `_id` (good), `_index`, `_parentId`, etc.
-* Rules/behavior live inside template snapshots and reference UI-scoped paths (e.g., `patients.age`, `medicines[*].amd`).
-
----
-
-## Core design decision (the single right hinge)
-
-**Normalize data**: split into
-
-* `values` — flat singletons (no UI wrappers)
-* `collections` — maps keyed by stable row `_id` (object, not arrays)
-* relationships via `_parent_id` for nested repeaters
-
-This preserves row identity (idempotency), decouples data from UI, and is directly queryable and sync-safe.
+1. [Guiding Question](#1-guiding-question)
+2. [Current State (V1) — What We Have](#2-current-state-v1--what-we-have)
+3. [Design Principles & Non-Negotiables](#3-design-principles--non-negotiables)
+4. [V2 Submission Contract](#4-v2-submission-contract)
+5. [V2 Template Tree Contract](#5-v2-template-tree-contract)
+6. [Behavior Engine (AST / Logic Broker)](#6-behavior-engine-ast--logic-broker)
+7. [Anti-Corruption Layer (ACL)](#7-anti-corruption-layer-acl)
+8. [Migration Strategy — Phases](#8-migration-strategy--phases)
+9. [Open Questions & Decision Log](#9-open-questions--decision-log)
+10. [Appendix — Reference Files](#10-appendix--reference-files)
 
 ---
 
-## Template / UI contract
+## 1. Guiding Question
 
-* Keep `sections`/layout as *visual-only*; they do not determine field identity.
-* Field identity is canonical: `canonicalPath` / `canonicalElementId` (stable across versions unless intentionally changed).
-* Build a V2 *tree* for the web UI by transforming legacy `sections` + `fields` into a nested node tree using an O(N) HashMap registry in the backend (no recursive DB work).
-
----
-
-## Logic / Rules (AST) adaptation — minimal change
-
-* Keep rules expressed with array semantics but introduce **namespaces** to bridge normalized state:
-
-  * `_row` — intra-row logic (pass the single row object)
-  * `$rel.collectionName` — rows filtered by `_parent_id` relative to current context
-  * `$global.collectionName` — entire collection as flat array
-* Implement these resolvers in the frontend/state layer (memoized selectors) so rule evaluation remains simple and fast.
+> How do we build a **web frontend API** using a **future-proof contract**, while keeping the mobile app running unchanged, so that:
+>
+> - The mobile app migrates **gradually** and **non-disruptively**.
+> - Any **new UI** never knows about legacy shapes — it only talks to V2.
+> - The **translating layer** that bridges legacy ↔ V2 is hidden behind an internal boundary, not exposed to any outside consumer.
+> - The design is **resilient to future evolution**, so we don't build another brittle contract.
 
 ---
 
-## Migration & compatibility strategy (safe, incremental)
+## 2. Current State (V1) — What We Have
 
-1. **Expose V2 API alongside legacy API**. Backend adapter converts legacy submissions → normalized internal model. Mobile continues unchanged. Web uses V2.
-2. **Normalize on ingest**: ingest pipeline accepts legacy or V2, emits canonical normalized representation, stores both normalized + raw snapshot.
-3. **Batch or on-read migration** for historical submissions; conversions must be idempotent and logged.
-4. **Template Transformer**: backend module that builds web tree (HashMap registry) from template `sections` + `fields` (O(N), deterministic).
-5. **Frontend selectors** implement `$rel/$global/_row` semantics — keep logic broker unchanged otherwise.
+### 2.1 Domain Entities (JPA)
+
+| Entity | Table | Role |
+|---|---|---|
+| [`DataTemplate`](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/jpa/datatemplate/DataTemplate.java) | `data_template` | The form "type" — has a `uid`, `name`, and tracks the latest version number + uid. |
+| [`TemplateVersion`](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/jpa/datatemplate/TemplateVersion.java) | `data_template_version` | An immutable snapshot of a template at a version. Stores `fields` (JSONB `List<FormDataElementConf>`) and `sections` (JSONB `List<FormSectionConf>`), plus `options`. |
+| [`TemplateElement`](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/jpa/datatemplate/TemplateElement.java) | `template_element` | The **Canonical Element Registry** — one row per field per version. Carries `canonicalPath`, `canonicalElementId`, `jsonDataPath`, `dataType`, `semanticType`. Sections are **NOT** stored here; they are visual-only and live in the `TemplateVersion.sections` JSONB. |
+| [`DataSubmission`](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/jpa/datasubmission/DataSubmission.java) | `data_submission` | A single submission instance. Stores `formData` as an opaque JSONB blob, plus metadata (`form`, `formVersion`, `version`, `team`, `orgUnit`, `assignment`, etc.). Uses optimistic locking (`lockVersion`). |
+
+### 2.2 Template Version Snapshot POJOs (stored inside `TemplateVersion` JSONB)
+
+| POJO | Key properties |
+|---|---|
+| [`FormSectionConf`](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/datatemplateelement/FormSectionConf.java) | `name`, `path`, `order`, `label`, `rules[]`, `repeatable`, `categoryId`. **Note:** `getId()` returns `getName()`. |
+| [`FormDataElementConf`](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/datatemplateelement/FormDataElementConf.java) | `id` (unique element uid), `parent` (section name), `name`, `path`, `code`, `type`, `mandatory`, `optionSet`, `rules[]`, `validationRule`, etc. Has legacy compatibility shims for `constraint`, `constraintMessage`, `mainField`. |
+| [`AbstractElement`](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/datatemplateelement/AbstractElement.java) | Shared base: `parent`, `name`, `path`, `code`, `description`, `order`, `label`, `rules`, `properties`. |
+
+### 2.3 V1 REST Endpoints
+
+| Endpoint | Path | Purpose |
+|---|---|---|
+| [FormTemplateMergeResource](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/web/rest/v1/formtemplate/FormTemplateMergeResource.java) | `/api/v1/dataFormTemplates` | GET list/by-id, POST/PUT template+version as a merged DTO (`DataTemplateInstanceDto`). |
+| [DataSubmissionResource](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/web/rest/v1/datasubmission/DataSubmissionResource.java) | `/api/v1/dataSubmission` | GET/POST/DELETE submissions. Supports `?flatten=true`. Pre-processes by generating missing repeat row `_id`s via `MigrationRepeatIdGenerator`. |
+
+### 2.4 V1 Data Shapes (Actual Samples)
+
+**V1 Submission `formData`:**
+
+```json
+{
+  "main": { "visitdate": "2025-09-27", "NotificationNumber": 2 },
+  "patients": { "age": "2017-09-26", "gender": "MALE", "PatientName": "..." },
+  "medicines": [
+    { "_id": "01K693...", "_index": 1, "amd": "act40_tape", "prescribed_quantity": 1 }
+  ],
+  "referrals": { "cm_measures": "treatment" }
+}
+```
+
+**V1 Template Version `sections`:**
+
+```json
+[
+  { "name": "main", "repeatable": false, "order": 100 },
+  { "name": "patients", "repeatable": false, "order": 200 },
+  { "name": "medicines", "repeatable": true, "order": 300 },
+  { "name": "referrals", "repeatable": false, "order": 400 }
+]
+```
+
+**V1 Template Version `fields`:** Each field has `parent` (section name), `name`, `path` (`<parent>.<elementId>`), `code`, `id`, `type`, `rules[]`.
+
+### 2.5 What's Wrong with V1 (why we're doing V2)
+
+| Problem | Detail |
+|---|---|
+| **UI structure leaks into data** | Section names (`main`, `patients`) are embedded as JSON keys in `formData`. Moving a field to a different tab changes the data contract. |
+| **Arrays for repeaters** | `medicines` is a JSON `[]`. Array merging in offline sync is non-deterministic; requires scanning for `_id` matches. UPSERT is impossible without full-array comparison. |
+| **Rules reference UI paths** | Rule expressions like `#{gender}` rely on the field `name` being resolvable in the current section's scope. There's no formal namespace for intra-row vs. cross-collection vs. global aggregation. |
+| **No canonical identity in data** | The submission `formData` uses `name`/`code` keys that can collide across sections. There's no guaranteed stable identity for analytics over version changes. |
 
 ---
 
-### The Optimal Strategy: "Flat Singletons + Indexed Collections"
+## 3. Design Principles & Non-Negotiables
 
-Instead of forcing everything into one flat map (and losing row identity), or deeply nesting everything (and making querying a nightmare), the modern battle-tested approach—used heavily in frontend state management like Redux and robust APIs—is **Normalized State**.
+These are the invariants that **must hold** across all V2 contracts. Any future proposal that violates these must be flagged and re-evaluated.
 
-We split the submission into two distinct concepts:
+### P1. Data Shape Is Independent of UI Layout
 
-1. **Singletons:** Data that only appears once per form (your `main` and `patients` fields).
-    
-2. **Collections:** Data that repeats (your `medicines`).
-    
+> Moving a field between UI sections/tabs **MUST NOT** change any API payload key or database column.
 
-Here is what the optimal V2 Submission Contract should look like based on your actual data:
+**Consequence:** Section names (`main`, `patients`, etc.) do not appear as keys in V2 submission data.
 
-```JSON
+### P2. Repeater Data Uses Identity-Keyed Maps, Not Arrays
+
+> Every repeating collection **MUST** be an `Object<row_id, row_data>`, never a JSON `[]`.
+
+**Consequence:** Offline sync becomes UPSERT-by-key. No array merge conflicts. `O(1)` row access.
+
+### P3. Stable Canonical Identity Across Versions
+
+> Each field has a `canonicalElementId` and `canonicalPath` (from `TemplateElement`) that survive section reorganizations. Only repeater-boundary changes break canonical identity.
+
+### P4. Rules Express Intent, Not Data Shape
+
+> Rule expressions use **logical namespaces** (`_row`, `$rel`, `$global`) that are resolved at evaluation time by a frontend state manager. The rule JSON itself doesn't embed specific data paths.
+
+### P5. Anti-Corruption Layer Hides Legacy
+
+> A backend **ACL service** (in the DDD sense) translates between V1-shape and the normalized internal model. No external consumer (V2 web, analytics, future mobile) ever sees V1 shapes — they only see V2.
+
+### P6. Backward Compatibility via Dual-Write, Not Feature Flags
+
+> V1 endpoints remain operational and unchanged. V2 endpoints run alongside. Both read/write through the **same canonical internal model** (normalized submission store). The ACL translates on ingest and on egress, in both directions.
+
+---
+
+## 4. V2 Submission Contract
+
+### 4.1 Normalized Submission Shape
+
+```json
 {
   "submission_uid": "z3Ye07TDj7a",
   "template_uid": "ck2pHW93sk2",
   "version_number": 2,
-  
-  // 1. FLAT SINGLETONS (Notice: No "main" or "patients" wrappers!)
+
   "values": {
     "visitdate": "2025-09-27",
     "NotificationNumber": 2,
@@ -99,14 +151,14 @@ Here is what the optimal V2 Submission Contract should look like based on your a
     "ispregnant": false,
     "PatientName": "محمد فيصل كامل مشعل",
     "serialNumber": 4,
-    "diagnosed_disease_type": "malaria"
+    "diagnosed_disease_type": "malaria",
+    "cm_measures": "treatment"
   },
 
-  // 2. INDEXED COLLECTIONS (Preserving your exact idempotency logic)
   "collections": {
     "medicines": {
       "01K693VTPPWQR1M23AN06B6N0D": {
-        "_index": 1, // Optional: Keep for UI sorting, but NOT for data identity
+        "_index": 1,
         "amd": "act40_tape",
         "druguom": "tablet",
         "prescribeddrug": "PMQ",
@@ -117,144 +169,179 @@ Here is what the optimal V2 Submission Contract should look like based on your a
 }
 ```
 
-### Why this is the "Bulletproof" Path:
+### 4.2 Rules for `values`
 
-1. **It destroys visual nesting:** You no longer have `"main": {}` or `"patients": {}`. The keys in `values` are pure semantic data keys. If you move "age" out of the "patients" tab into a "demographics" tab in V3 of your template, this JSON payload does not change _at all_.
-    
-2. **It guarantees Idempotency:** Notice that `medicines` is no longer an Array `[]`. It is an Object `{}` keyed by your unique row `_id` (`01K69...`).
-    
-    - _Why this is genius:_ If an offline app sends an update to `01K693VTPPWQR1M23AN06B6N0D`, the backend can run an "UPSERT" (Update or Insert) instantly without scanning an array. It makes database merges mathematically perfect.
+| Rule | Rationale |
+|---|---|
+| **Flat map** — no nesting, no section wrappers. | P1: data is independent of layout. |
+| **Keys are field `name`** (stable within a version). For cross-version analytics, use `canonicalElementId`. | The `name` is the human-readable binding. |
+| Multi-select values remain arrays (`["option1", "option2"]`) — the value itself is an array, not the field structure. | This is value-level typing, not structural nesting. |
 
----
+### 4.3 Rules for `collections`
 
-### How this affects the Logic Broker (The AST)
+| Rule | Rationale |
+|---|---|
+| **Top-level key** is the repeater's section `name` (e.g., `"medicines"`). | This is the collection's namespace — stable as long as the repeat itself exists. |
+| **Row key** is the row's `_id` — a client-generated ULID/UUID. | P2: identity-keyed map. |
+| **Row object** contains only the field `name` → value pairs for that row. No `_parentId` or `_submissionUid` at this level unless nested (see §4.4). | Keep the simple case simple. |
+| `_index` is **optional, client-hint-only** — never used for identity or merge logic. | Sort order for display; the server ignores it for merge. |
 
-Because we changed the shape of the repeaters from an array to an indexed map, our AST logic from the previous step just needs a slight adjustment in how it "targets" rows.
+### 4.4 Nested Repeaters (Repeat-in-Repeat)
 
-If you have a rule that checks if _any_ medicine is a narcotic, instead of scanning an array:
+All collections are **flattened at the root** of `collections`. Parent-child linkage uses `_parent_id`.
 
-`medicines[*].amd`
-
-The engine will now evaluate the object values:
-
-`Object.values(collections.medicines).some(row => row.amd == 'Narcotic')`
-
----
-
-## the submission shape, taking into account the nesting case
-
-
-### 1. The "Section inside a Repeat" Scenario
-
-Let's tackle the easy one first.
-
-- **The Rule:** Layout nodes (Sections/Tabs) **do not exist** in the data payload.
-    
-- **The Scenario:** You have a "Medicines" repeater. Inside that repeater, you add a "Dosage Details" visual Section, and inside that Section, you put the `prescribed_quantity` field.
-    
-- **The Result:** The Section vanishes in the data. The `prescribed_quantity` simply becomes a flat property on that specific row's object.
-    
-
-```JSON
-// The Section "Dosage Details" is completely ignored by the data layer
-"medicines": {
-  "row_123": {
-    "amd": "Aspirin",
-    "prescribed_quantity": 1 
-  }
-}
-```
-
-**Why this scales:** The Admin can add ten nested Sections inside that Repeater just to make the UI look pretty. The database schema doesn't care. The data remains completely flat per row.
-
----
-
-### 2. The "Repeat inside Repeat" Scenario (The Boss Fight)
-
-Imagine a `households` repeater. Inside each household, there is a `family_members` repeater.
-
-**The RIGHT Way (Relational Normalization):**
-
-We keep **all** collections completely flat at the root of the `collections` object. We link the child to the parent using a `_parent_id` foreign key.
-
-
-
-```JSON
+```json
 {
-  "submission_uid": "z3Ye07TDj7a",
-  "values": {
-    "interviewer_name": "Dr. Smith"
-  },
+  "values": { "interviewer_name": "Dr. Smith" },
   "collections": {
     "households": {
-      "hh_001": {
-        "address": "123 Main St",
-        "roof_type": "Tin"
-      },
-      "hh_002": {
-        "address": "456 Side St"
-      }
+      "hh_001": { "address": "123 Main St", "roof_type": "Tin" },
+      "hh_002": { "address": "456 Side St" }
     },
     "family_members": {
-      "mem_001": {
-        "_parent_id": "hh_001", // Links John to Household 1
-        "name": "John",
-        "age": 45
-      },
-      "mem_002": {
-        "_parent_id": "hh_001", // Links Jane to Household 1
-        "name": "Jane",
-        "age": 42
-      },
-      "mem_003": {
-        "_parent_id": "hh_002", // Links Bob to Household 2
-        "name": "Bob",
-        "age": 20
-      }
+      "mem_001": { "_parent_id": "hh_001", "name": "John", "age": 45 },
+      "mem_002": { "_parent_id": "hh_001", "name": "Jane", "age": 42 },
+      "mem_003": { "_parent_id": "hh_002", "name": "Bob", "age": 20 }
     }
   }
 }
 ```
 
-### Why this handles all edge cases gracefully:
+| Rule | Rationale |
+|---|---|
+| Child rows include `_parent_id` referencing the parent row's `_id`. | Relational normalization. O(1) lookup. |
+| Collections are **never** nested inside other collections' row objects. | P2 + keeps JSON depth ≤ 3 always. Directly maps to relational tables. |
+| A `vaccinations` repeater inside `family_members` would just be another root-level key in `collections`, with `_parent_id` pointing to `mem_*` IDs. | Infinite nesting depth, zero JSON depth increase. |
 
-1. **O(1) Updates (Blazing Fast UI):** If the user types a new name for "Bob", the web app doesn't have to search through households. It goes directly to `collections.family_members["mem_003"].name = "New Name"`. It's instantaneous.
-    
-2. **True Idempotent Offline Syncing:** If a mobile user adds a family member while offline, they just append a new object to the flat `family_members` dictionary with a generated UUID and the parent's UUID. The backend just UPSERTs it directly into the `family_members` table. No array merging required.
-    
-3. **Infinite Scaling:** Want to add a `vaccinations` repeater _inside_ the `family_members` repeater? No problem. You just add a `"vaccinations"` object to `collections`, and give those rows a `_parent_id` pointing to the `mem_` ID. The JSON never gets deeper than two levels.
-    
-4. **Direct SQL Mapping:** This JSON structure maps 1:1 with relational database tables. You can literally write an automated parser that says: "Take everything in `collections.households` and UPSERT into the `households` table."
-    
+### 4.5 Sections Inside Repeaters
 
----
+Sections (visual groupings) **do not appear** in the data payload. If a "Dosage Details" section wraps `prescribed_quantity` inside the `medicines` repeater, the data shape is unchanged:
 
-## behavior control
+```json
+"medicines": {
+  "row_123": {
+    "amd": "Aspirin",
+    "prescribed_quantity": 1
+  }
+}
+```
 
-if we flatten the data into a Normalized Relational State, the AST (Abstract Syntax Tree) logic from our previous step breaks because it was assuming a nested array structure (`medicines[*].drug_type`).
-
-If the data is a flat dictionary of UUIDs, the logic engine can't just run a simple `some()` command anymore. It needs to know _which_ rows belong to _which_ parent before it evaluates the rule.
-
-To fix this, we don't change the JSON template heavily, but we introduce **Contextual Resolvers** to the Logic Broker. This bridges the gap between the flat DB state and the hierarchical UI.
-
-Here is how the AST rules adapt to the Normalized Relational State.
+> The section is purely a UI rendering concern. The Template Tree (§5) carries section hierarchy for rendering; the data layer ignores it.
 
 ---
 
-### 1. The Local Row (Intra-Row Logic)
+## 5. V2 Template Tree Contract
 
-- **The Scenario:** Inside the `medicines` repeater, if `amd` == 'Other', show the 'Specify' field in that exact row.
-    
-- **The Fix:** Because the data is normalized, the UI component rendering row `uuid-123` simply passes its own specific row object to the JsonLogic engine.
-    
+### 5.1 Goal
 
-```JSON
+The web frontend needs a **nested tree** of UI nodes to render the form. The backend builds this tree from the legacy flat `sections` + `fields` arrays stored in `TemplateVersion`, using an **O(N) HashMap Registry** algorithm in memory.
+
+### 5.2 Node Schema
+
+Every node in the tree has the following shape:
+
+```json
+{
+  "node_id": "pHjMRAL4glF",
+  "type": "SelectOne",
+  "binding": "amd",
+  "label": { "en": "amd", "ar": "الصنف" },
+  "mandatory": true,
+  "option_set": "sYiS5D2qeG8",
+  "rules": [],
+  "validation": null,
+  "children": []
+}
+```
+
+| Property | Source | Meaning |
+|---|---|---|
+| `node_id` | `FormDataElementConf.id` or `FormSectionConf.name` | Unique within the tree. |
+| `type` | For fields: `FormDataElementConf.type`. For sections: `"section"`. For repeaters: `"repeater"`. | Determines the UI widget or container. |
+| `binding` | For fields: `FormDataElementConf.name` (the key used in `values` or collection-row). For repeaters: section `name` (the key used in `collections`). | The data-binding key — links tree node → submission data. |
+| `label` | `AbstractElement.label` | Localized display label. |
+| `children` | Computed by the HashMap algorithm. | Ordered list of child nodes. |
+| `rules` | `AbstractElement.rules` | Behavior rules (see §6) — carried as-is from legacy for now. |
+
+### 5.3 HashMap Registry Algorithm (Template Transformer)
+
+```
+Input:  TemplateVersion.sections[] + TemplateVersion.fields[]
+Output: V2 Tree (root node with nested children)
+
+1. Create rootNode = { node_id: "root", children: [] }
+2. Create registry = HashMap<String, Node>
+
+3. FOR EACH section in sections (sorted by order):
+     node = mapSectionToNode(section)
+     registry[section.name] = node
+     rootNode.children.add(node)
+
+4. FOR EACH field in fields (sorted by order):
+     node = mapFieldToNode(field)
+     parentNode = registry[field.parent]
+     parentNode.children.add(node)
+
+5. RETURN rootNode
+```
+
+**Complexity:** O(N) time, O(N) space. No recursive DB queries. Entirely in-memory.
+
+### 5.4 Example Transformation
+
+**Legacy Input:**
+```json
+{
+  "sections": [{ "name": "medicines", "repeatable": true, "order": 300 }],
+  "fields": [{ "id": "pHjMRAL4glF", "parent": "medicines", "code": "amd", "type": "SelectOne" }]
+}
+```
+
+**V2 Tree Output:**
+```json
+{
+  "node_id": "root",
+  "children": [
+    {
+      "node_id": "medicines",
+      "type": "repeater",
+      "binding": "medicines",
+      "children": [
+        {
+          "node_id": "pHjMRAL4glF",
+          "type": "SelectOne",
+          "binding": "amd"
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## 6. Behavior Engine (AST / Logic Broker)
+
+### 6.1 The Problem
+
+V1 rules reference flat field names scoped to their section (e.g., `#{gender} == 'FEMALE'`). In the normalized V2 data model, collections are identity-keyed maps. The logic engine needs to know:
+- Which **specific row** it's evaluating (intra-row).
+- Which **child rows** belong to the current parent (relational).
+- The **entire collection** for global aggregations.
+
+### 6.2 Namespace Resolvers
+
+We introduce three **contextual namespaces** that the frontend state manager resolves before passing data into the rule evaluator:
+
+#### `_row` — Intra-Row (Local Context)
+
+```json
 {
   "rule_id": "rule_medicine_other",
-  "scope": "medicines", 
-  "triggers": ["collections.medicines.amd"], 
+  "scope": "medicines",
+  "triggers": ["collections.medicines.amd"],
   "condition": {
-    "==": [ { "var": "_row.amd" }, "other" ] // _row represents the single object
+    "==": [{ "var": "_row.amd" }, "other"]
   },
   "effects": [
     { "target_node": "MYZOyP37ilc", "action": "SHOW" }
@@ -262,29 +349,19 @@ Here is how the AST rules adapt to the Normalized Relational State.
 }
 ```
 
-- **How it evaluates:** The state machine takes `collections.medicines["uuid-123"]`, assigns it to `_row`, and runs the condition. Fast and O(1).
-    
+**Resolution:** The UI component rendering row `uuid-123` passes `collections.medicines["uuid-123"]` as `_row`. Fast, O(1).
 
----
+#### `$rel` — Relational Aggregation (Parent-Scoped)
 
-### 2. The Relational Aggregation (The "Some/All" Problem)
-
-- **The Scenario (Repeat inside Repeat):** "If _any_ family member in _this specific household_ is under 5, show the 'Provide Milk' field for this household."
-    
-- **The Problem:** `collections.family_members` is a massive flat dictionary of every person in every household.
-    
-- **The Fix: The `$rel` (Relational) Namespace.** We configure the State Machine (your web frontend) to intercept any variable starting with `$rel`. Before feeding data to the JsonLogic engine, it filters the dictionary using `_parent_id`.
-    
-
-```JSON
+```json
 {
   "rule_id": "rule_milk_supplement",
   "scope": "households",
   "triggers": ["collections.family_members.age"],
   "condition": {
     "some": [
-      { "var": "$rel.family_members" }, // The Engine intercepts this!
-      { "<": [ { "var": "age" }, 5 ] }
+      { "var": "$rel.family_members" },
+      { "<": [{ "var": "age" }, 5] }
     ]
   },
   "effects": [
@@ -293,33 +370,23 @@ Here is how the AST rules adapt to the Normalized Relational State.
 }
 ```
 
-**What the State Machine does under the hood:**
+**Resolution:**
+1. See `$rel.family_members` in a rule scoped to `households`.
+2. Get the current household (e.g., `hh_001`).
+3. Filter: `Object.values(collections.family_members).filter(m => m._parent_id === 'hh_001')`
+4. Feed the resulting array to JsonLogic `some`.
 
-1. Sees `{ "var": "$rel.family_members" }` inside a rule scoped to `households`.
-    
-2. Looks at the current household the user is interacting with (e.g., `hh_001`).
-    
-3. Runs a fast filter: `Object.values(collections.family_members).filter(m => m._parent_id === 'hh_001')`.
-    
-4. Feeds that resulting array into the JsonLogic `some` operator.
-    
+#### `$global` — Global Aggregation (All Rows)
 
-### 3. The Global Aggregation (Cross-Form Logic)
-
-- **The Scenario:** "If _any_ medicine in the entire form (across all households) is a Narcotic, show the Global Signature Pad."
-    
-- **The Fix:** We use a `$global` namespace. This tells the engine to ignore `_parent_id` completely and just return every row in the collection as a flat array.
-    
-
-```JSON
+```json
 {
   "rule_id": "rule_global_narcotic",
   "scope": "global",
   "triggers": ["collections.medicines.drug_type"],
   "condition": {
     "some": [
-      { "var": "$global.medicines" }, 
-      { "==": [ { "var": "drug_type" }, "Narcotic" ] }
+      { "var": "$global.medicines" },
+      { "==": [{ "var": "drug_type" }, "Narcotic"] }
     ]
   },
   "effects": [
@@ -328,126 +395,127 @@ Here is how the AST rules adapt to the Normalized Relational State.
 }
 ```
 
-### The Architecture Win
+**Resolution:** Ignore `_parent_id`. Return `Object.values(collections.medicines)` as a flat array.
 
-By introducing these namespaces (`_row`, `$rel`, `$global`), you completely decouple your **Logic Definition** from your **Data Shape**.
+### 6.3 Architecture Win
 
-- **The DB layer** gets to keep the highly performant, flat, normalized dictionary.
-    
-- **The AST Logic Broker** gets to write clean, understandable rules using arrays.
-    
-- **The Frontend State Manager** (like Redux or Zustand) acts as the translator, using memoized selectors to instantly map the flat dictionary into the arrays the AST expects based on the user's current context.
-    
+| Concern | Owner | Stability |
+|---|---|---|
+| **Rule definitions** (JSON AST in template) | Template author | Stable unless logic changes |
+| **Data shape** (normalized submission model) | Backend contract | Stable — P1 through P6 |
+| **Namespace resolvers** (`_row`, `$rel`, `$global`) | Frontend state manager (memoized selectors) | Implementation detail — can be optimized without contract change |
 
-This means if you ever change how the database stores data again, you don't have to rewrite a single rule in your templates. You just update the frontend's `$rel` selector.
-
-**This locks down the V2 Contract artifacts.** We have the normalized data, the tree template, and the relational AST.
-
-Are we ready to discuss the actual transition plan—how to safely build the "Template Transformer" (Phase 2) so your legacy backend can feed this exact V2 structure to your new web frontend without breaking a sweat?
----
-
-## start doing it
-You are 100% right to hold my feet to the fire here. I hear you loud and clear.
-
-Let me be completely candid about how I operate as an AI: my "memory" is a sliding window of text. When we discuss five complex architectural dimensions at once (storage, state management, AST logic, UI rendering, and legacy migrations), it is incredibly easy for me to drop a constraint from three prompts ago. That is exactly how "accidental legacy" gets built.
-
-If we want this to be bulletproof, we have to slow down. We will take this one single discrete mechanism at a time. I will not jump ahead.
-
-Let's start **Phase 2: The Template Transformer (GET)**, and we will _only_ look at the first half of it: **Building the Tree.** We will ignore the Logic Broker entirely for this step.
+> If you ever change how the database stores data, you don't rewrite a single rule. You update the frontend's selector that resolves `$rel`.
 
 ---
 
-### The Goal
+## 7. Anti-Corruption Layer (ACL)
 
-Your legacy backend currently outputs a flat array of `sections` and a flat array of `fields`, linked by a `parent` string.
+### 7.1 Purpose
 
-The new Web Frontend requires a nested `tree` structure.
+The ACL sits in the backend and **translates** between V1 shapes and the canonical normalized model. No external consumer ever sees the other side of the boundary.
 
-We need a battle-tested algorithm in your backend (Java) to transform the former into the latter in $O(N)$ time, without hardcoding anything.
-
-### The Strategy: The "HashMap Registry" Pattern
-
-Do not write recursive database queries to build this tree. It will kill your database performance. You fetch the flat arrays exactly as you do now, and construct the tree in memory using a Hash Map.
-
-Here is the exact architectural flow for the adapter:
-
-**Step 1: Initialize the Root and the Registry**
-
-Create a virtual "Root" node.
-
-Create an empty Hash Map (Dictionary) where the key is the `id` (e.g., `medicines`, `LyIGccZ5mna`) and the value is the Node object.
-
-**Step 2: Load the Containers (Sections)**
-
-Iterate through your legacy `sections` array.
-
-For each section:
-
-1. Format it into the V2 Node schema (assign `node_id`, `type: "section"`, etc.).
-    
-2. Add it to the Hash Map.
-    
-3. Because sections are top-level in your current design, push their references directly into the "Root" node's `children` array.
-    
-
-**Step 3: Load the Elements (Fields)**
-
-Iterate through your legacy `fields` array.
-
-For each field:
-
-1. Format it into the V2 Node schema. (e.g., map your `code` or `name` to the new `binding` property).
-    
-2. Look at its `parent` property (e.g., `parent: "medicines"`).
-    
-3. Look up that parent ID in the Hash Map.
-    
-4. Push this field into that parent's `children` array.
-    
-
----
-
-### The Data Transformation Reality Check
-
-Let's trace your actual data through this algorithm to ensure it doesn't break.
-
-**Your Legacy Input:**
-
-
-
-```JSON
-"sections": [ { "id": "medicines", "repeatable": true } ],
-"fields": [ { "id": "pHjMRAL4glF", "parent": "medicines", "code": "amd" } ]
+```
+Mobile (V1) ──► V1 REST ──► ACL ──► Canonical Model ──► ACL ──► V2 REST ──► Web (V2)
+                                         ▲
+                                    (single store)
 ```
 
-**The Adapter Execution:**
+### 7.2 Two Translation Directions
 
-1. Map sees Section `medicines`. It marks it as `type: "repeater"` (because `repeatable` is true). It sets `binding: "medicines"`.
-    
-2. Map sees Field `pHjMRAL4glF`. It grabs the `code` ("amd") and sets `binding: "amd"`.
-    
-3. It sees `parent: "medicines"`. It finds the `medicines` node in the Map and pushes the field into its `children`.
-    
+| Direction | When | What It Does |
+|---|---|---|
+| **V1 → Canonical** (ingest) | V1 `POST /api/v1/dataSubmission` | Takes V1 `formData` (`{ main: {…}, medicines: [{…}] }`) and normalizes into `{ values: {…}, collections: { medicines: { id: {…} } } }`. Stores the normalized form. |
+| **Canonical → V1** (egress) | V1 `GET /api/v1/dataSubmission` | Reads normalized store, denormalizes back into V1 shape for mobile consumption. Restores section wrappers, re-arrays repeaters. |
+| **V2 passthrough** (both) | V2 endpoints | V2 endpoints speak the canonical shape natively — no translation needed. |
 
-**The V2 Output (What the web frontend receives):**
+### 7.3 Key Design Constraint
 
+> [!IMPORTANT]
+> The ACL is an **internal service** — it is never exposed as an API. The V1 and V2 REST controllers call it internally. From the outside, each API version simply "speaks its own dialect."
 
-```JSON
-{
-  "node_id": "root",
-  "children": [
-    {
-      "node_id": "medicines",
-      "type": "repeater",
-      "binding": "medicines", // The collection namespace
-      "children": [
-        {
-          "node_id": "pHjMRAL4glF",
-          "type": "SelectOne",
-          "binding": "amd" // The field namespace
-        }
-      ]
-    }
-  ]
-}
-```
+### 7.4 Storage Model Decision
+
+> [!WARNING]
+> **Open decision — must resolve before coding.**
+
+**Option A: Single canonical store, translate on read for V1.**
+- Pro: Single source of truth, no dual-write.
+- Con: V1 reads require denormalization.
+
+**Option B: Dual-write (store both shapes).**
+- Pro: V1 reads are zero-cost.
+- Con: Two copies to keep in sync, risk of drift.
+
+**Option C: Store canonical + cache V1 shape (materialized view / computed column).**
+- Pro: Best of both — single source of truth + fast V1 reads.
+- Con: Slightly more complex.
+
+**Current recommendation:** Option A for simplicity. V1 read traffic is bounded (mobile offline sync is periodic), and the denormalization is O(N) in the number of fields — well within acceptable latency. Reassess if profiling shows otherwise.
+
+---
+
+## 8. Migration Strategy — Phases
+
+### Phase 0: Foundation (No User-Facing Change)
+- [ ] Write the V1→Canonical and Canonical→V1 translators as a pure service (no REST changes).
+- [ ] Cover with unit tests: round-trip `v1_input → normalize → denormalize → v1_output` must be identity.
+- [ ] Handle edge cases: empty repeaters, null values, multi-select arrays.
+
+### Phase 1: V2 Template Tree Endpoint
+- [ ] Build the HashMap Registry Template Transformer (§5.3).
+- [ ] Expose `GET /api/v2/formTemplates/{uid}` returning the V2 tree.
+- [ ] V1 template endpoint remains unchanged.
+- [ ] Web frontend starts consuming V2 tree for rendering.
+
+### Phase 2: V2 Submission Endpoints
+- [ ] Expose `POST /api/v2/dataSubmission` accepting V2 normalized shape.
+- [ ] Expose `GET /api/v2/dataSubmission/{uid}` returning V2 normalized shape.
+- [ ] V1 endpoint ingest now goes through ACL: `v1_input → normalize → store`.
+- [ ] V1 endpoint reads now go through ACL: `read_normalized → denormalize → v1_output`.
+- [ ] Web frontend uses V2 endpoints exclusively.
+
+### Phase 3: Historical Data Migration
+- [ ] Batch-migrate existing `form_data` JSONB from V1 shape to canonical normalized shape.
+- [ ] Migration must be idempotent (re-runnable).
+- [ ] Log every migration transformation for auditability.
+
+### Phase 4: Mobile Gradual Migration
+- [ ] Mobile client begins adopting V2 endpoints (coordinated release).
+- [ ] V1 endpoints receive deprecation notices in response headers.
+- [ ] Once V1 traffic drops to zero, sunset V1 endpoints.
+
+---
+
+## 9. Open Questions & Decision Log
+
+| # | Question | Status | Decision |
+|---|---|---|---|
+| Q1 | Should `values` keys be `name` or `code`? Currently `name` and `code` can differ (e.g., `name: "ispregnant"`, `code: "de_ispregnant"`). | **OPEN** | Leaning toward `name` — it's what the mobile uses today. But `code` is the semantic identifier. Need to decide. |
+| Q2 | Storage model: Option A, B, or C? (§7.4) | **OPEN** | Leaning A. |
+| Q3 | Should the V2 tree include the full `rules[]` objects, or should rules be delivered separately? | **OPEN** | Keeping them inline for now (simpler). May extract to a separate endpoint if tree payloads become too large. |
+| Q4 | Rule expression format: keep `#{fieldName}` for V1 compat, or migrate to JsonLogic AST in V2? | **OPEN** | V2 template tree should deliver rules in JsonLogic AST format. V1 legacy expression format stays in the raw `TemplateVersion.fields[].rules[]` JSONB as-is. The Template Transformer converts legacy → AST. |
+| Q5 | How to handle `_parentId` and `_submissionUid` that V1 mobile injects into repeat rows? | **OPEN** | ACL strips them on ingest. V2 shape uses `_parent_id` (for nested repeats) and never includes `_submissionUid` (it's metadata on the parent submission, not on each row). |
+| Q6 | V2 REST path prefix: `/api/v2/…` or `/api/web/…`? | **OPEN** | `/api/v2/` — it's a version, not a client type. |
+| Q7 | Validation errors: should V2 return structured field-level errors keyed by `binding`? | **OPEN** | Yes, proposed shape: `{ "errors": { "visitdate": ["required"], "collections.medicines.row_123.amd": ["invalid_option"] } }`. |
+
+---
+
+## 10. Appendix — Reference Files
+
+### Entities & POJOs
+- [DataTemplate.java](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/jpa/datatemplate/DataTemplate.java)
+- [TemplateVersion.java](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/jpa/datatemplate/TemplateVersion.java)
+- [TemplateElement.java](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/jpa/datatemplate/TemplateElement.java)
+- [DataSubmission.java](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/jpa/datasubmission/DataSubmission.java)
+- [FormDataElementConf.java](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/datatemplateelement/FormDataElementConf.java)
+- [FormSectionConf.java](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/datatemplateelement/FormSectionConf.java)
+- [AbstractElement.java](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/datatemplateelement/AbstractElement.java)
+
+### V1 REST Resources
+- [DataSubmissionResource.java](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/web/rest/v1/datasubmission/DataSubmissionResource.java)
+- [FormTemplateMergeResource.java](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/src/main/java/org/nmcpye/datarun/web/rest/v1/formtemplate/FormTemplateMergeResource.java)
+
+### Sample Data
+- [V1 Template Version Sample](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/docs/sample_data/template_version_v1_sample.json)
+- [V1 Submission Sample](file:///d:/Hamza/Learn/my-projects/jhipster-projects/data-run/datarunapi/docs/sample_data/data_submission_v1_sample.json)
