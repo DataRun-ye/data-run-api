@@ -71,11 +71,11 @@ Each folder corresponds to a **Bounded Context** (or cross-cutting concern). Whe
 ### [`frontend/`](frontend/) — Frontend Architecture
 - [LMIS SPA Architecture](frontend/spa-architecture.md) — Multi-app strategy, SSO, LMIS Angular SPA rules
 - **DatarunAPI Web Frontend:**
-  - [Overview](frontend/datarunapi-frontend/overview.md) — Architecture, modules, layers, folder layout
-  - [Form Engine Contract](frontend/datarunapi-frontend/form-engine.md) — Headless engine API, state model, rule evaluation
+  - [Overview](datarunapi/datarunapi-frontend/overview.md) — Architecture, modules, layers, folder layout
+  - [Form Engine Contract](datarunapi/datarunapi-frontend/form-engine.md) — Headless engine API, state model, rule evaluation
 
 ### V2 Contract (DatarunAPI Evolution)
-- [V2 Contract Discussion](form_template_and_submission_v2_contract_discussion.md) — Comprehensive V2 spec: submission shape, template tree, ACL, migration
+- [V2 Contract Discussion](datarunapi/form_template_and_submission_v2_contract_discussion.md) — Comprehensive V2 spec: submission shape, template tree, ACL, migration
 
 ---
 
