@@ -70,7 +70,6 @@ public class PartyEventListener {
                 .code(team.getCode())
                 .name(team.getName())
                 .sourceType(SourceType.TEAM)
-                .label(team.getLabel())
                 .tags(tags)
                 .parentId(null)
                 .meta(Map.of("description", team.getDescription()))

@@ -15,7 +15,9 @@ import lombok.Setter;
 import org.hibernate.annotations.*;
 import org.hibernate.annotations.Cache;
 import org.nmcpye.datarun.common.IdScheme;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 
 import java.time.Instant;
 import java.util.*;
@@ -34,7 +36,7 @@ import java.util.stream.Collectors;
 @Setter
 @SQLDelete(sql = "UPDATE option_value SET deleted_at = now() WHERE id = ?")
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OptionSet extends JpaIdentifiableObject {
+public class OptionSet extends JpaIdentifiableObject implements TranslatableInterface {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
@@ -66,6 +68,14 @@ public class OptionSet extends JpaIdentifiableObject {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
+
 
     public boolean isDeleted() {
         return deletedAt != null;

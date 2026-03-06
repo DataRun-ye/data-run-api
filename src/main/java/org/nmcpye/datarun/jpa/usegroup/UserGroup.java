@@ -1,12 +1,15 @@
 package org.nmcpye.datarun.jpa.usegroup;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.user.User;
 
@@ -76,6 +79,13 @@ public class UserGroup extends JpaIdentifiableObject {
         "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<UserGroup> managedByGroups = new HashSet<>();
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
     public UserGroup addMember(User user) {
         this.users.add(user);

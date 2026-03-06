@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.jpa.datatemplate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -10,9 +11,14 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 /// @author Hamza Assada
 /// @since 27/05/2025
@@ -22,7 +28,7 @@ import java.time.Instant;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataTemplate extends JpaSoftDeleteObject {
+public class DataTemplate extends JpaSoftDeleteObject implements TranslatableInterface {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
@@ -57,6 +63,13 @@ public class DataTemplate extends JpaSoftDeleteObject {
 
     @Column(name = "description", length = 2000)
     private String description;
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
 //    @OneToMany(fetch = FetchType.LAZY, mappedBy = "dataTemplate"/*, cascade = CascadeType.PERSIST*/)
 //    @JsonIgnore

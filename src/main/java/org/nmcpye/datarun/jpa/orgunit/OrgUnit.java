@@ -16,8 +16,10 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.IdentifiableObjectUtils;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 import org.nmcpye.datarun.jpa.orgunitgroup.OrgUnitGroup;
 
 import java.util.*;
@@ -33,7 +35,7 @@ import java.util.*;
 @Getter
 @Setter
 @SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
-public class OrgUnit extends JpaIdentifiableObject {
+public class OrgUnit extends JpaIdentifiableObject implements TranslatableInterface {
 
     private static final String PATH_SEP = ",";
 
@@ -80,6 +82,13 @@ public class OrgUnit extends JpaIdentifiableObject {
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
     private Set<OrgUnit> children = new HashSet<>();
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
     @Type(JsonType.class)
     @Column(name = "properties_map", columnDefinition = "jsonb")

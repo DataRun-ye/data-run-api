@@ -2,16 +2,13 @@ package org.nmcpye.datarun.jpa.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.IdScheme;
 import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.IdentifiableProperty;
-import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -23,9 +20,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Base abstract class for entities which will hold definitions for created, last modified, created by,
@@ -40,7 +35,7 @@ import java.util.Set;
 @Getter
 @Setter
 public abstract class JpaIdentifiableObject
-    implements IdentifiableObject<String>, TranslatableInterface, Persistable<String>, Serializable,
+    implements IdentifiableObject<String>, Persistable<String>, Serializable,
     Comparable<JpaIdentifiableObject> {
     /**
      * ULID id (Universally Unique Lexicographically Sortable Identifier).
@@ -69,13 +64,6 @@ public abstract class JpaIdentifiableObject
     @LastModifiedDate
     @Column(name = "last_modified_date")
     protected Instant lastModifiedDate = Instant.now();
-
-    /**
-     * Set of available object translation, normally filtered by locale.
-     */
-    @Type(JsonType.class)
-    @Column(name = "translations", columnDefinition = "jsonb")
-    protected Set<Translation> translations = new HashSet<>();
 
     @Transient
     protected boolean isPersisted;

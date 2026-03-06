@@ -11,8 +11,10 @@ import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 import org.nmcpye.datarun.jpa.project.Project;
 
 import java.time.Instant;
@@ -31,7 +33,7 @@ import java.util.Set;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class Activity extends JpaIdentifiableObject {
+public class Activity extends JpaIdentifiableObject implements TranslatableInterface {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
@@ -77,6 +79,13 @@ public class Activity extends JpaIdentifiableObject {
 
     @Column(name = "valid_to")
     protected Instant validTo;
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
     // prettier-ignore
     @Override

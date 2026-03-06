@@ -17,8 +17,10 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.IdentifiableObjectUtils;
 import org.nmcpye.datarun.common.enumeration.FlowStatus;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.party.entities.PartySet;
@@ -39,7 +41,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class Assignment extends JpaSoftDeleteObject {
+public class Assignment extends JpaSoftDeleteObject implements TranslatableInterface {
 
     private static final String PATH_SEP = ",";
 
@@ -142,6 +144,13 @@ public class Assignment extends JpaSoftDeleteObject {
     @JoinColumn(name = "assignment_id")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<AssignmentMember> members = new HashSet<>();
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
     @JsonProperty(value = "progressStatus")
     public FlowStatus getStatus() {

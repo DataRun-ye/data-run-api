@@ -10,7 +10,9 @@ import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunitgroupset.OrgUnitGroupSet;
 
@@ -27,7 +29,7 @@ import java.util.Set;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OrgUnitGroup extends JpaIdentifiableObject {
+public class OrgUnitGroup extends JpaIdentifiableObject implements TranslatableInterface {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
@@ -72,6 +74,13 @@ public class OrgUnitGroup extends JpaIdentifiableObject {
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"orgUnitGroups", "translations"}, allowSetters = true)
     private Set<OrgUnitGroupSet> orgUnitGroupSets = new HashSet<>();
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
     @JsonProperty
     public String getColor() {

@@ -3,16 +3,22 @@ package org.nmcpye.datarun.jpa.option;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.ListIndexBase;
+import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Hamza Assada
@@ -27,7 +33,7 @@ import java.util.List;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OptionGroupSet extends JpaIdentifiableObject {
+public class OptionGroupSet extends JpaIdentifiableObject implements TranslatableInterface {
     /**
      * The unique code for this object.
      */
@@ -61,6 +67,13 @@ public class OptionGroupSet extends JpaIdentifiableObject {
     @ListIndexBase(1)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private List<OptionGroup> optionGroups = new ArrayList<>();
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
     @JsonProperty
     @JsonSerialize(contentAs = JpaIdentifiableObject.class)

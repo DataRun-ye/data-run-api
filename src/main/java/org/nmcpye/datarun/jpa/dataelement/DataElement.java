@@ -2,15 +2,22 @@ package org.nmcpye.datarun.jpa.dataelement;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 import org.nmcpye.datarun.jpa.option.OptionSet;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Hamza Assada
@@ -22,7 +29,7 @@ import org.nmcpye.datarun.jpa.option.OptionSet;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataElement extends BaseDataElement {
+public class DataElement extends BaseDataElement implements TranslatableInterface {
     /**
      * Type of Value (e.g, Text, Number, Integer, OrgUnit, Entity, Team, Date, Coordinates)
      */
@@ -47,5 +54,12 @@ public class DataElement extends BaseDataElement {
     @Enumerated(EnumType.STRING)
     @Column(name = "reference_type", updatable = false)
     private ReferenceType resourceType;
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
 }
