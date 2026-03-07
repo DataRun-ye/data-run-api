@@ -31,14 +31,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import tech.jhipster.web.util.HeaderUtil;
-import tech.jhipster.web.util.PaginationUtil;
-import tech.jhipster.web.util.ResponseUtil;
+import org.nmcpye.datarun.web.rest.util.HeaderUtil;
+import org.nmcpye.datarun.web.rest.util.PaginationUtil;
+import org.nmcpye.datarun.web.rest.util.ResponseUtil;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService.buildQuerySpecification;
 
@@ -127,12 +124,6 @@ public class UserResource extends JpaBaseResource<User> {
         return ResponseEntity.ok(response);
     }
 
-//
-//    @Override
-//    protected Page<User> getList(QueryRequest queryRequest, String jsonQueryBody) {
-//        return userService.findAllByUser(queryRequest, jsonQueryBody);
-//    }
-
     /**
      * {@code GET /admin/users} : get all users with all the details - calling this are only allowed for the administrators.
      *
@@ -193,7 +184,9 @@ public class UserResource extends JpaBaseResource<User> {
         }
         final String username = login != null ? login : userDTO.getLogin();
         existingUser = userRepository.findOneByLogin(username.toLowerCase());
-        if (existingUser.isPresent() && (!existingUser.orElseThrow(() -> new UsernameNotFoundException(username)).getId().equals(userDTO.getId()))) {
+        if (existingUser.isPresent() && (!Objects.requireNonNull(
+            existingUser.orElseThrow(() -> new UsernameNotFoundException(username))
+            .getId()).equals(userDTO.getId()))) {
             throw new LoginAlreadyUsedException();
         }
 
@@ -223,3 +216,4 @@ public class UserResource extends JpaBaseResource<User> {
         return "users";
     }
 }
+

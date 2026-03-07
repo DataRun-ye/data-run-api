@@ -14,7 +14,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
-import tech.jhipster.config.JHipsterProperties;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -33,11 +32,11 @@ public class WebConfigurer implements ServletContextInitializer, WebServerFactor
 
     private final Environment env;
 
-    private final JHipsterProperties jHipsterProperties;
+    private final DataRunProperties dataRunProperties;
 
-    public WebConfigurer(Environment env, JHipsterProperties jHipsterProperties) {
+    public WebConfigurer(Environment env, DataRunProperties dataRunProperties) {
         this.env = env;
-        this.jHipsterProperties = jHipsterProperties;
+        this.dataRunProperties = dataRunProperties;
     }
 
     @Override
@@ -51,7 +50,8 @@ public class WebConfigurer implements ServletContextInitializer, WebServerFactor
 
     @Override
     public void customize(WebServerFactory server) {
-        // When running in an IDE or with ./mvnw spring-boot:run, set location of the static web assets.
+        // When running in an IDE or with ./mvnw spring-boot:run, set location of the
+        // static web assets.
         setLocationForStaticAssets(server);
     }
 
@@ -65,11 +65,13 @@ public class WebConfigurer implements ServletContextInitializer, WebServerFactor
             }
         }
     }
+
     /**
      * Resolve path prefix to static resources.
      */
     private String resolvePathPrefix() {
-        String fullExecutablePath = decode(Objects.requireNonNull(this.getClass().getResource("")).getPath(), StandardCharsets.UTF_8);
+        String fullExecutablePath = decode(Objects.requireNonNull(this.getClass().getResource("")).getPath(),
+                StandardCharsets.UTF_8);
         String rootPath = Path.of(".").toUri().normalize().getPath();
         String extractedPath = fullExecutablePath.replace(rootPath, "");
         int extractionEndIndex = extractedPath.indexOf("target/");
@@ -82,8 +84,9 @@ public class WebConfigurer implements ServletContextInitializer, WebServerFactor
     @Bean
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        CorsConfiguration config = jHipsterProperties.getCors();
-        if (!CollectionUtils.isEmpty(config.getAllowedOrigins()) || !CollectionUtils.isEmpty(config.getAllowedOriginPatterns())) {
+        CorsConfiguration config = dataRunProperties.getCors();
+        if (!CollectionUtils.isEmpty(config.getAllowedOrigins())
+                || !CollectionUtils.isEmpty(config.getAllowedOriginPatterns())) {
             log.debug("Registering CORS filter");
             source.registerCorsConfiguration("/api/**", config);
             source.registerCorsConfiguration("/management/**", config);

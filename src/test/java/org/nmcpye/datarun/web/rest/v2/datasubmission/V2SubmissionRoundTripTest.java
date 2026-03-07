@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.etl.model.TemplateElementMap;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
@@ -106,7 +107,7 @@ class V2SubmissionRoundTripTest {
 
             // Mock empty template access details to pass preProcess generators safely
             when(templateElementService.getTemplateElementMap(anyString(), anyString()))
-                        .thenReturn(mock(org.nmcpye.datarun.jpa.etl.model.TemplateElementMap.class));
+                        .thenReturn(mock(TemplateElementMap.class));
 
             try (org.mockito.MockedStatic<SecurityUtils> securityUtilsMock = org.mockito.Mockito
                         .mockStatic(SecurityUtils.class)) {

@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.server.ResponseStatusException;
-import tech.jhipster.web.util.ResponseUtil;
+import org.nmcpye.datarun.web.rest.util.ResponseUtil;
 
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
@@ -177,3 +177,4 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
 
     protected abstract String getName();
 }
+

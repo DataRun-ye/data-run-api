@@ -90,6 +90,7 @@ public class PartySet implements TranslatableInterface, Persistable<UUID> {
 
     @Type(JsonType.class)
     @Column(name = "translations", columnDefinition = "jsonb")
+    @Builder.Default
     protected Set<Translation> translations = new HashSet<>();
 
     @Transient

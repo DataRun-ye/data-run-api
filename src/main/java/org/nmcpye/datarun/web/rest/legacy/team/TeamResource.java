@@ -18,8 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import tech.jhipster.web.util.HeaderUtil;
-import tech.jhipster.web.util.ResponseUtil;
+import org.nmcpye.datarun.web.rest.util.HeaderUtil;
+import org.nmcpye.datarun.web.rest.util.ResponseUtil;
 
 import java.net.URISyntaxException;
 import java.util.Objects;
@@ -105,3 +105,4 @@ public class TeamResource extends JpaBaseResource<Team> {
         );
     }
 }
+

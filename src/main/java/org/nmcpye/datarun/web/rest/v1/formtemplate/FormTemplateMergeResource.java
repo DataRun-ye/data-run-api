@@ -22,8 +22,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import tech.jhipster.web.util.HeaderUtil;
-import tech.jhipster.web.util.ResponseUtil;
+import org.nmcpye.datarun.web.rest.util.HeaderUtil;
+import org.nmcpye.datarun.web.rest.util.ResponseUtil;
 
 import java.util.List;
 import java.util.Objects;
@@ -172,3 +172,4 @@ public class FormTemplateMergeResource {
             .processMetadata(formTemplateProcessor.validate(entity));
     }
 }
+

@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.jpa.option;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
@@ -85,13 +86,13 @@ public class OptionGroup extends JpaIdentifiableObject implements TranslatableIn
     protected Set<Translation> translations = new HashSet<>();
 
     @JsonProperty("options")
-    @JsonSerialize(contentAs = JpaIdentifiableObject.class)
+    @JsonIgnoreProperties(value = {"optionSet", "translations", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     public Set<Option> getOptions() {
         return options;
     }
 
     @JsonProperty("optionSet")
-    @JsonSerialize(as = JpaIdentifiableObject.class)
+    @JsonIgnoreProperties(value = {"options", "translations", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     public OptionSet getOptionSet() {
         return optionSet;
     }

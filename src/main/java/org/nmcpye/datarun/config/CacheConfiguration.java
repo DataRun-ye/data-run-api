@@ -32,17 +32,13 @@ import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.userauthority.Authority;
 import org.nmcpye.datarun.jpa.userole.Privilege;
 import org.nmcpye.datarun.jpa.userole.Role;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
-import org.springframework.boot.info.BuildProperties;
-import org.springframework.boot.info.GitProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import tech.jhipster.config.JHipsterProperties;
-import tech.jhipster.config.cache.PrefixedKeyGenerator;
 
 import java.time.Duration;
 
@@ -50,22 +46,19 @@ import java.time.Duration;
 @EnableCaching
 public class CacheConfiguration {
 
-    private GitProperties gitProperties;
-    private BuildProperties buildProperties;
     private final javax.cache.configuration.Configuration<Object, Object> jcacheConfiguration;
 
-    public CacheConfiguration(JHipsterProperties jHipsterProperties) {
-        JHipsterProperties.Cache.Ehcache ehcache = jHipsterProperties.getCache().getEhcache();
+    public CacheConfiguration(DataRunProperties dataRunProperties) {
+        DataRunProperties.Cache.Ehcache ehcache = dataRunProperties.getCache().getEhcache();
 
         jcacheConfiguration = Eh107Configuration.fromEhcacheCacheConfiguration(
-            CacheConfigurationBuilder.newCacheConfigurationBuilder(
-                    Object.class,
-                    Object.class,
-                    ResourcePoolsBuilder.heap(ehcache.getMaxEntries())
-                )
-                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofSeconds(ehcache.getTimeToLiveSeconds())))
-                .build()
-        );
+                CacheConfigurationBuilder.newCacheConfigurationBuilder(
+                        Object.class,
+                        Object.class,
+                        ResourcePoolsBuilder.heap(ehcache.getMaxEntries()))
+                        .withExpiry(ExpiryPolicyBuilder
+                                .timeToLiveExpiration(Duration.ofSeconds(ehcache.getTimeToLiveSeconds())))
+                        .build());
     }
 
     @Bean
@@ -119,7 +112,6 @@ public class CacheConfiguration {
             createCache(cm, Team.class.getName() + ".managedTeams");
             createCache(cm, Team.class.getName() + ".managedByTeams");
 
-
             createCache(cm, OrgUnit.class.getName());
             createCache(cm, OrgUnit.class.getName() + ".assignments");
             createCache(cm, OrgUnit.class.getName() + ".orgUnitGroups");
@@ -163,18 +155,8 @@ public class CacheConfiguration {
         }
     }
 
-    @Autowired(required = false)
-    public void setGitProperties(GitProperties gitProperties) {
-        this.gitProperties = gitProperties;
-    }
-
-    @Autowired(required = false)
-    public void setBuildProperties(BuildProperties buildProperties) {
-        this.buildProperties = buildProperties;
-    }
-
     @Bean
     public KeyGenerator keyGenerator() {
-        return new PrefixedKeyGenerator(this.gitProperties, this.buildProperties);
+        return new org.springframework.cache.interceptor.SimpleKeyGenerator();
     }
 }

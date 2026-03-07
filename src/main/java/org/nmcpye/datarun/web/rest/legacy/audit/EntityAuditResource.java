@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import tech.jhipster.web.util.PaginationUtil;
+import org.nmcpye.datarun.web.rest.util.PaginationUtil;
 
 import java.util.List;
 
@@ -112,3 +112,4 @@ public class EntityAuditResource {
         return new ResponseEntity<>(prev, HttpStatus.OK);
     }
 }
+

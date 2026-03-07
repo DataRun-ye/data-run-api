@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import tech.jhipster.web.util.HeaderUtil;
+import org.nmcpye.datarun.web.rest.util.HeaderUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -142,3 +142,4 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
         return "dataSubmission";
     }
 }
+

@@ -25,21 +25,5 @@ public final class InstanceKeyUtil {
 
     public static String computeInstanceKey(String repeatInstanceId, String elementPath, String submissionUid) {
         return repeatInstanceId != null ? repeatInstanceId : submissionUid;
-
-//        String element = elementPath == null ? "" : elementPath;
-//        String submission = (submissionUid == null || submissionUid.isBlank()) ? "unknown" : submissionUid;
-//
-//        final String raw;
-//        if (repeatInstanceId != null && !repeatInstanceId.isBlank()) {
-//            if (element.endsWith("]")) {
-//                raw = repeatInstanceId + "|" + element;
-//            } else {
-//                raw = repeatInstanceId;
-//            }
-//        } else {
-//            raw = submission + "|" + element;
-//        }
-//
-//        return raw;
     }
 }

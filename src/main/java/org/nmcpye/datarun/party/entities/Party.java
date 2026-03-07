@@ -89,5 +89,6 @@ public class Party implements TranslatableInterface {
 
     @Type(JsonType.class)
     @Column(name = "translations", columnDefinition = "jsonb")
+    @Builder.Default
     protected Set<Translation> translations = new HashSet<>();
 }

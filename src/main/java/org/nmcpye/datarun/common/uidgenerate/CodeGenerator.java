@@ -53,11 +53,6 @@ public class CodeGenerator {
     private static final Pattern CODE_PATTERN = Pattern.compile("^[a-zA-Z]{1}[a-zA-Z0-9]{10}$");
 
     /**
-     * 192 bit, must be dividable by 3 to avoid padding "=".
-     */
-    private static final int URL_RANDOM_TOKEN_LENGTH = 24;
-
-    /**
      * @author Hamza 03/06/2025
      */
     public static class ULIDGenerator {
@@ -77,7 +72,7 @@ public class CodeGenerator {
          */
         public static boolean isValidUlid(String ulid) {
             try {
-                final var validUlidValue = ULID.parseULID(ulid);
+                ULID.parseULID(ulid);
                 return true;
             } catch (Exception e) {
                 return false;

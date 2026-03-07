@@ -73,8 +73,7 @@ public interface TranslatableInterface {
             return defaultValue;
         }
 
-        return getTranslationCache().computeIfAbsent(Translation.getCacheKey(localeKey, translationKey),
-            key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
+        return getTranslationValue(localeKey, translationKey, defaultTranslation);
     }
 
     default String getTranslation(String translationKey, String localeKey, String defaultValue) {
@@ -84,8 +83,7 @@ public interface TranslatableInterface {
             return defaultValue;
         }
 
-        return getTranslationCache().computeIfAbsent(Translation.getCacheKey(localeKey, translationKey),
-            key -> getTranslationValue(localeKey, translationKey, defaultTranslation));
+        return getTranslationValue(localeKey, translationKey, defaultTranslation);
     }
 
     /**
@@ -132,6 +130,7 @@ public interface TranslatableInterface {
 
 
     @Transient
+    @JsonProperty
     default Map<String, String> getLabel() {
         if (getTranslations() == null || getTranslations().isEmpty()) {
             return null;

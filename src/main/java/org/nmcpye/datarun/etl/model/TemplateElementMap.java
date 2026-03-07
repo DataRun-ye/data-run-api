@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.etl.model;
+package org.nmcpye.datarun.etl.model;
 
 
 import lombok.Getter;

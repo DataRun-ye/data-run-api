@@ -1,10 +1,6 @@
 package org.nmcpye.datarun.jpa.option;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.annotation.Nulls;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.*;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.persistence.CascadeType;
@@ -94,7 +90,7 @@ public class OptionSet extends JpaIdentifiableObject implements TranslatableInte
     }
 
     @JsonProperty(value = "options")
-    @JsonSerialize(contentAs = JpaIdentifiableObject.class)
+    @JsonIgnoreProperties(value = {"optionSet", "translations","createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     public List<Option> getOptions() {
         return options;
     }
