@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent;
+import org.springframework.context.event.EventListener;
 
 /**
  * Background projector service that handles Phase 1 of the CQRS execution
@@ -36,8 +38,10 @@ public class UserExecutionContextProjector {
      * view.
      */
     @Async
+    @EventListener
     @Transactional
-    public void rebuildForUser(String userLogin) {
+    public void rebuildForUser(UserAccessRulesChangedEvent event) {
+        String userLogin = event.getUserLogin();
         log.info("Rebuilding CQRS User Execution Context for user: {}", userLogin);
 
         // 1. Fetch current info

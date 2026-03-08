@@ -26,13 +26,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
 @Service
 @Primary
 @Transactional
 public class DefaultAssignmentService
-    extends DefaultJpaSoftDeleteService<Assignment>
-    implements AssignmentService {
+        extends DefaultJpaSoftDeleteService<Assignment>
+        implements AssignmentService {
 
     private final AssignmentRepository repository;
     private final DataSubmissionRepository submissionRepository;
@@ -41,15 +43,18 @@ public class DefaultAssignmentService
     private final OrgUnitRepository orgUnitRepository;
     private final AssignmentMaintenanceService maintenanceService;
     private final AssignmentWithAccessMapper assignmentMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public DefaultAssignmentService(AssignmentRepository repository,
-                                    TeamRepository teamRepository,
-                                    OrgUnitRepository orgUnitRepository,
-                                    UserAccessService userAccessService,
-                                    CacheManager cacheManager,
-                                    AssignmentMaintenanceService maintenanceService,
-                                    AssignmentWithAccessMapper assignmentMapper, AssignmentRepository assignmentRepository, DataSubmissionRepository submissionRepository, ActivityRepository activityRepository) {
-        super(repository, cacheManager, userAccessService);
+            TeamRepository teamRepository,
+            OrgUnitRepository orgUnitRepository,
+            UserAccessService userAccessService,
+            CacheManager cacheManager,
+            AssignmentMaintenanceService maintenanceService,
+            AssignmentWithAccessMapper assignmentMapper, AssignmentRepository assignmentRepository,
+            DataSubmissionRepository submissionRepository, ActivityRepository activityRepository,
+            ApplicationEventPublisher applicationEventPublisher) {
+        super(repository, cacheManager, userAccessService, applicationEventPublisher);
         this.repository = repository;
         this.teamRepository = teamRepository;
         this.orgUnitRepository = orgUnitRepository;
@@ -57,6 +62,7 @@ public class DefaultAssignmentService
         this.assignmentMapper = assignmentMapper;
         this.submissionRepository = submissionRepository;
         this.activityRepository = activityRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Override
@@ -88,30 +94,45 @@ public class DefaultAssignmentService
         object.setTeam(team);
         object.setOrgUnit(orgUnit);
 
-        return save(object);
+        Assignment saved = save(object);
+
+        // Fire event for users active on this assignment's team
+        if (saved.getTeam() != null) {
+            saved.getTeam().getUsers().forEach(
+                    u -> applicationEventPublisher.publishEvent(new UserAccessRulesChangedEvent(this, u.getLogin())));
+        }
+
+        return saved;
     }
 
     private Assignment findParent(Assignment parent) {
-        return Optional.ofNullable(parent.getId()).flatMap(repository::findById).or(() -> Optional.ofNullable(parent.getUid()).flatMap(repository::findByUid)).orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
+        return Optional.ofNullable(parent.getId()).flatMap(repository::findById)
+                .or(() -> Optional.ofNullable(parent.getUid()).flatMap(repository::findByUid))
+                .orElseThrow(() -> new PropertyNotFoundException("Parent not found: " + parent));
     }
 
     private Team findTeam(Team team) {
         return Optional.ofNullable(team.getId()).flatMap(teamRepository::findById)
-            .or(() -> Optional.ofNullable(team.getUid())
-                .flatMap(teamRepository::findByUid))
-            .or(() -> Optional.ofNullable(team.getCode())
-                .flatMap((code) -> teamRepository.findByCodeAndActivityUid(code, team.getActivity().getUid()))).orElseThrow(() -> new PropertyNotFoundException("Team not found: " + team));
+                .or(() -> Optional.ofNullable(team.getUid())
+                        .flatMap(teamRepository::findByUid))
+                .or(() -> Optional.ofNullable(team.getCode())
+                        .flatMap((code) -> teamRepository.findByCodeAndActivityUid(code, team.getActivity().getUid())))
+                .orElseThrow(() -> new PropertyNotFoundException("Team not found: " + team));
     }
 
     private Activity findActivity(Activity activity) {
         return Optional.ofNullable(activity.getId())
-            .flatMap(activityRepository::findById)
-            .or(() -> Optional
-                .ofNullable(activity.getUid()).flatMap(activityRepository::findByUid))
-            .orElseThrow(() -> new PropertyNotFoundException("Activity not found: " + activity));
+                .flatMap(activityRepository::findById)
+                .or(() -> Optional
+                        .ofNullable(activity.getUid()).flatMap(activityRepository::findByUid))
+                .orElseThrow(() -> new PropertyNotFoundException("Activity not found: " + activity));
     }
+
     private OrgUnit findOrgUnit(OrgUnit orgUnit) {
-        return Optional.ofNullable(orgUnit.getId()).flatMap(orgUnitRepository::findById).or(() -> Optional.ofNullable(orgUnit.getUid()).flatMap(orgUnitRepository::findByUid)).or(() -> Optional.ofNullable(orgUnit.getCode()).flatMap(orgUnitRepository::findByCode)).orElseThrow(() -> new PropertyNotFoundException("OrgUniy not found: " + orgUnit));
+        return Optional.ofNullable(orgUnit.getId()).flatMap(orgUnitRepository::findById)
+                .or(() -> Optional.ofNullable(orgUnit.getUid()).flatMap(orgUnitRepository::findByUid))
+                .or(() -> Optional.ofNullable(orgUnit.getCode()).flatMap(orgUnitRepository::findByCode))
+                .orElseThrow(() -> new PropertyNotFoundException("OrgUniy not found: " + orgUnit));
     }
 
     @Override
@@ -131,11 +152,9 @@ public class DefaultAssignmentService
 
     @Override
     public void updateStatusForSubmission(String submissionId) {
-        final var submission =
-            submissionRepository.findById(submissionId);
+        final var submission = submissionRepository.findById(submissionId);
 
-        submission.ifPresent(dataSubmission ->
-            repository.findByUid(dataSubmission.getAssignment())
+        submission.ifPresent(dataSubmission -> repository.findByUid(dataSubmission.getAssignment())
                 .ifPresent(assignment -> {
                     assignment.setStatus(dataSubmission.getStatus());
                     assignment.setLastSubmittedBy(dataSubmission.getLastModifiedBy());
@@ -150,14 +169,16 @@ public class DefaultAssignmentService
     /**
      * Updates the paths of organization units in the system.
      * This method is scheduled to run automatically at 3:00 AM every day.
-     * It ensures that the hierarchical paths of organization units are kept up-to-date.
-     * The method is transactional to ensure data consistency during the update process.
+     * It ensures that the hierarchical paths of organization units are kept
+     * up-to-date.
+     * The method is transactional to ensure data consistency during the update
+     * process.
      */
     @Override
     @Transactional
     @Scheduled(cron = "0 0 3 * * ?")
     public void updatePaths() {
-//        repository.updatePaths();
+        // repository.updatePaths();
         maintenanceService.updateMissingPaths();
     }
 
@@ -165,6 +186,6 @@ public class DefaultAssignmentService
     @Transactional
     public void forceUpdatePaths() {
         maintenanceService.forceRecomputePaths();
-//        repository.forceUpdatePaths();
+        // repository.forceUpdatePaths();
     }
 }

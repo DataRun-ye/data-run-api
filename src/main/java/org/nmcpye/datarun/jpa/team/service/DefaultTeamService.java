@@ -28,6 +28,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static org.nmcpye.datarun.jpa.team.repository.TeamSpecifications.getManagedSpecification;
 
@@ -41,14 +43,17 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
 
     final private UserRepository userRepository;
     final private ActivityRepository activityRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public DefaultTeamService(TeamRepository repository, UserRepository userRepository,
-                              ActivityRepository activityRepository, CacheManager cacheManager,
-                              UserAccessService userAccessService) {
+            ActivityRepository activityRepository, CacheManager cacheManager,
+            UserAccessService userAccessService,
+            ApplicationEventPublisher applicationEventPublisher) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Override
@@ -77,38 +82,40 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
 
     private Activity findActivity(Activity activity) {
         return Optional.ofNullable(activity.getId()).flatMap(activityRepository::findById)
-            .or(() -> Optional.ofNullable(activity.getUid())
-                .flatMap(activityRepository::findByUid)).orElseThrow(() -> {
-                log.error("Activity not found: " + activity.getUid());
-                return new IllegalQueryException(
-                    new ErrorMessage(ErrorCode.E1004,
-                        "Activity", activity.getUid()));
-            });
+                .or(() -> Optional.ofNullable(activity.getUid())
+                        .flatMap(activityRepository::findByUid))
+                .orElseThrow(() -> {
+                    log.error("Activity not found: " + activity.getUid());
+                    return new IllegalQueryException(
+                            new ErrorMessage(ErrorCode.E1004,
+                                    "Activity", activity.getUid()));
+                });
     }
 
     private Team findTeam(Team team) {
-        return Optional.ofNullable(team.getUid()).flatMap(repository::findByUid).or(() -> Optional.ofNullable(team.getId()).flatMap(repository::findById)).or(() -> {
-            String code = team.getCode();
-            var activity = team.getActivity();
-            String activityUid;
-            if (activity != null) {
-                activityUid = activity.getUid();
-            } else {
-                activityUid = null;
-            }
-            return repository.findByCodeAndActivityUid(code, activityUid);
-        }).orElseThrow(() -> {
-            log.error("Team not found: " + team.getUid());
-            return new PropertyNotFoundException("Team not found: " + team);
-        });
+        return Optional.ofNullable(team.getUid()).flatMap(repository::findByUid)
+                .or(() -> Optional.ofNullable(team.getId()).flatMap(repository::findById)).or(() -> {
+                    String code = team.getCode();
+                    var activity = team.getActivity();
+                    String activityUid;
+                    if (activity != null) {
+                        activityUid = activity.getUid();
+                    } else {
+                        activityUid = null;
+                    }
+                    return repository.findByCodeAndActivityUid(code, activityUid);
+                }).orElseThrow(() -> {
+                    log.error("Team not found: " + team.getUid());
+                    return new PropertyNotFoundException("Team not found: " + team);
+                });
     }
 
     @Override
     public Page<Team> findAllManagedByUser(Pageable pageable, QueryRequest queryRequest) {
         final var managedSpec = getManagedSpecification(SecurityUtils
-                .getCurrentUserDetails().orElseThrow(() ->
-                    new IllegalQueryException(new ErrorMessage(ErrorCode.E3004, getClass().getName()))),
-            queryRequest);
+                .getCurrentUserDetails()
+                .orElseThrow(() -> new IllegalQueryException(new ErrorMessage(ErrorCode.E3004, getClass().getName()))),
+                queryRequest);
 
         return repository.fetchBagRelationships(repository.findAll(managedSpec, pageable));
     }
@@ -117,50 +124,53 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
     public Optional<Team> partialUpdate(Team team) {
         log.debug("Request to partially update Team : {}", team);
 
-        return repository.findByUid(team.getUid()).or(() -> repository.findById(Objects.requireNonNull(team.getId()))).map(existingTeam -> {
-            this.clearTeamCaches(existingTeam);
-            if (!team.getUsers().isEmpty()) {
-                Set<String> usersLogins = team.getUsers().stream().map(User::getLogin).collect(Collectors.toSet());
-                Set<User> users = new HashSet<>(userRepository.findByLoginIn(usersLogins));
+        return repository.findByUid(team.getUid()).or(() -> repository.findById(Objects.requireNonNull(team.getId())))
+                .map(existingTeam -> {
+                    this.clearTeamCaches(existingTeam);
+                    if (!team.getUsers().isEmpty()) {
+                        Set<String> usersLogins = team.getUsers().stream().map(User::getLogin)
+                                .collect(Collectors.toSet());
+                        Set<User> users = new HashSet<>(userRepository.findByLoginIn(usersLogins));
 
-                existingTeam.setUsers(users);
-            }
+                        existingTeam.setUsers(users);
+                    }
 
-            if (team.getActivity() != null) {
-                var activity = activityRepository.findByUid(team.getActivity().getUid()).or(() -> activityRepository.findById(team.getActivity().getId()));
-                existingTeam.setActivity(activity.get());
-            }
+                    if (team.getActivity() != null) {
+                        var activity = activityRepository.findByUid(team.getActivity().getUid())
+                                .or(() -> activityRepository.findById(team.getActivity().getId()));
+                        existingTeam.setActivity(activity.get());
+                    }
 
-            if (team.getUid() != null) {
-                existingTeam.setUid(team.getUid());
-            }
-            if (team.getCode() != null) {
-                existingTeam.setCode(team.getCode());
-            }
-            if (team.getName() != null) {
-                existingTeam.setName(team.getName());
-            }
-            if (team.getDescription() != null) {
-                existingTeam.setDescription(team.getDescription());
-            }
-            if (team.getDisabled() != null) {
-                existingTeam.setDisabled(team.getDisabled());
-            }
-            if (team.getCreatedBy() != null) {
-                existingTeam.setCreatedBy(team.getCreatedBy());
-            }
-            if (team.getCreatedDate() != null) {
-                existingTeam.setCreatedDate(team.getCreatedDate());
-            }
-            if (team.getLastModifiedBy() != null) {
-                existingTeam.setLastModifiedBy(team.getLastModifiedBy());
-            }
-            if (team.getLastModifiedDate() != null) {
-                existingTeam.setLastModifiedDate(team.getLastModifiedDate());
-            }
+                    if (team.getUid() != null) {
+                        existingTeam.setUid(team.getUid());
+                    }
+                    if (team.getCode() != null) {
+                        existingTeam.setCode(team.getCode());
+                    }
+                    if (team.getName() != null) {
+                        existingTeam.setName(team.getName());
+                    }
+                    if (team.getDescription() != null) {
+                        existingTeam.setDescription(team.getDescription());
+                    }
+                    if (team.getDisabled() != null) {
+                        existingTeam.setDisabled(team.getDisabled());
+                    }
+                    if (team.getCreatedBy() != null) {
+                        existingTeam.setCreatedBy(team.getCreatedBy());
+                    }
+                    if (team.getCreatedDate() != null) {
+                        existingTeam.setCreatedDate(team.getCreatedDate());
+                    }
+                    if (team.getLastModifiedBy() != null) {
+                        existingTeam.setLastModifiedBy(team.getLastModifiedBy());
+                    }
+                    if (team.getLastModifiedDate() != null) {
+                        existingTeam.setLastModifiedDate(team.getLastModifiedDate());
+                    }
 
-            return existingTeam;
-        }).map(repository::save);
+                    return existingTeam;
+                }).map(repository::save);
     }
 
     private void clearTeamCaches(Team team) {
@@ -171,6 +181,7 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
             this.clearCaches(UserRepository.USER_GROUP_IDS_CACHE, user.getLogin());
             this.clearCaches(UserRepository.USER_ACTIVITY_IDS_CACHE, user.getLogin());
             this.clearCaches(UserRepository.USER_TEAM_FORM_ACCESS_CACHE, user.getLogin());
+            applicationEventPublisher.publishEvent(new UserAccessRulesChangedEvent(this, user.getLogin()));
         });
     }
 }
