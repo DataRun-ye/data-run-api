@@ -58,17 +58,18 @@ public abstract class DefaultJpaSoftDeleteService<T extends JpaSoftDeleteObject>
         // Fire access rules changed event if the soft-deleted entity affects user
         // permissions
         if (applicationEventPublisher != null) {
-            if (object instanceof org.nmcpye.datarun.jpa.team.Team team) {
+            Object obj = object;
+            if (obj instanceof org.nmcpye.datarun.jpa.team.Team team) {
                 team.getUsers().forEach(u -> applicationEventPublisher.publishEvent(
                         new org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent(this, u.getLogin())));
-            } else if (object instanceof org.nmcpye.datarun.jpa.assignment.Assignment assignment) {
+            } else if (obj instanceof org.nmcpye.datarun.jpa.assignment.Assignment assignment) {
                 if (assignment.getTeam() != null) {
                     assignment.getTeam().getUsers()
                             .forEach(u -> applicationEventPublisher.publishEvent(
                                     new org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent(this,
                                             u.getLogin())));
                 }
-            } else if (object instanceof org.nmcpye.datarun.jpa.usegroup.UserGroup userGroup) {
+            } else if (obj instanceof org.nmcpye.datarun.jpa.usegroup.UserGroup userGroup) {
                 userGroup.getUsers().forEach(u -> applicationEventPublisher.publishEvent(
                         new org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent(this, u.getLogin())));
             }
