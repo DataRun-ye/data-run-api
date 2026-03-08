@@ -23,14 +23,15 @@ public class OutboxWriter implements OutboxWritePort {
     @Override
     @Transactional
     public int insertBackfillIfNotExists(List<OutboxWritePort.OutboxInsert> inserts) {
-        if (inserts == null || inserts.isEmpty()) return 0;
+        if (inserts == null || inserts.isEmpty())
+            return 0;
 
         final String sql = ""
-            + "INSERT INTO outbox ("
-            + " submission_id, submission_uid, topic, payload, event_type, status, attempt, created_at, submission_serial_number"
-            + ") VALUES ("
-            + " :submission_id, :submission_uid, :topic, cast(:payload AS jsonb), 'BACKFILL', 'pending', 0, :created_at, :submission_serial_number"
-            + ") ON CONFLICT (submission_id) WHERE (event_type = 'BACKFILL') DO NOTHING";
+                + " INSERT INTO outbox ("
+                + " submission_id, submission_uid, topic, payload, event_type, status, attempt, created_at, submission_serial_number, correlation_id, occurred_at"
+                + ") VALUES ("
+                + " :submission_id, :submission_uid, :topic, cast(:payload AS jsonb), 'BACKFILL', 'pending', 0, :created_at, :submission_serial_number, :correlation_id, :occurred_at"
+                + ") ON CONFLICT (submission_id) WHERE (event_type = 'BACKFILL') DO NOTHING";
 
         return batchInsert(sql, inserts, null);
     }
@@ -38,15 +39,16 @@ public class OutboxWriter implements OutboxWritePort {
     @Override
     @Transactional
     public int insertByEventType(List<OutboxWritePort.OutboxInsert> inserts, String eventType) {
-        if (inserts == null || inserts.isEmpty()) return 0;
+        if (inserts == null || inserts.isEmpty())
+            return 0;
 
         final String sql = """
-              INSERT INTO outbox (
-            submission_id, submission_serial_number, submission_uid, topic, payload,
-                                  event_type, status, attempt, created_at)
-            VALUES (:submission_id, :submission_serial_number, :submission_uid, :topic, cast(:payload AS jsonb),
-            :event_type, 'pending', 0, :created_at)
-            """;
+                  INSERT INTO outbox (
+                submission_id, submission_serial_number, submission_uid, topic, payload,
+                                      event_type, status, attempt, created_at, correlation_id, occurred_at)
+                VALUES (:submission_id, :submission_serial_number, :submission_uid, :topic, cast(:payload AS jsonb),
+                :event_type, 'pending', 0, :created_at, :correlation_id, :occurred_at)
+                """;
 
         return batchInsert(sql, inserts, eventType);
     }
@@ -60,7 +62,10 @@ public class OutboxWriter implements OutboxWritePort {
             p.addValue("topic", it.templateVersionUid);
             p.addValue("payload", it.payload);
             p.addValue("created_at", Timestamp.from(it.createdAt));
-            if (eventType != null) p.addValue("event_type", eventType);
+            p.addValue("correlation_id", it.correlationId);
+            p.addValue("occurred_at", it.occurredAt != null ? Timestamp.from(it.occurredAt) : null);
+            if (eventType != null)
+                p.addValue("event_type", eventType);
             return p;
         }).toArray(MapSqlParameterSource[]::new);
 

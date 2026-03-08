@@ -18,13 +18,15 @@ public class OutboxDto {
     private String submissionUid;
     private String topic;
     private String eventType;
-    private String payload;        // JSON payload as String (maps to JSONB)
+    private String correlationId;
+    private String payload; // JSON payload as String (maps to JSONB)
     private String status;
     private Integer attempt;
+    private Instant occurredAt;
     private Instant createdAt;
     private String claimedBy;
     private Instant claimedAt;
-    private UUID ingestId;         // assigned at claim time
+    private UUID ingestId; // assigned at claim time
     private String lastError;
     private Instant nextAttemptAt;
 }

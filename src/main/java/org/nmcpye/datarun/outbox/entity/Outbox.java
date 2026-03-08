@@ -8,8 +8,10 @@ import java.util.UUID;
 
 /**
  * JPA entity mapping of outbox. This entity is intentionally minimal;
- * high-throughput claim/update operations should be done via NamedParameterJdbcTemplate for
- * better control over "UPDATE ... RETURNING" queries (see OutboxJdbcRepository).
+ * high-throughput claim/update operations should be done via
+ * NamedParameterJdbcTemplate for
+ * better control over "UPDATE ... RETURNING" queries (see
+ * OutboxJdbcRepository).
  * <p>
  * Future work:
  * - add optimistic locking, if needed
@@ -37,6 +39,9 @@ public class Outbox {
 
     @Column(name = "submission_uid", nullable = false, length = 11)
     private String submissionUid;
+
+    @Column(name = "correlation_id", length = 64)
+    private String correlationId;
 
     /**
      * DataSubmission ingest
@@ -73,6 +78,9 @@ public class Outbox {
 
     @Column(name = "claimed_by")
     private String claimedBy;
+
+    @Column(name = "occurred_at")
+    private Instant occurredAt;
 
     @Column(name = "created_at")
     private Instant createdAt;
