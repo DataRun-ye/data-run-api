@@ -14,17 +14,19 @@ import java.util.Optional;
 @Repository
 public interface UserExecutionContextRepository extends BaseJpaRepository<UserExecutionContext, Long> {
 
-    List<UserExecutionContext> findByUserUid(String userUid);
+        void deleteByUserUid(String userUid);
 
-    List<UserExecutionContext> findByUserUidAndEntityType(String userUid, String entityType);
+        List<UserExecutionContext> findByUserUid(String userUid);
 
-    Optional<UserExecutionContext> findByUserUidAndEntityTypeAndEntityUid(String userUid, String entityType,
-            String entityUid);
+        List<UserExecutionContext> findByUserUidAndEntityType(String userUid, String entityType);
 
-    void deleteByUserUidAndEntityTypeAndEntityUid(String userUid, String entityType, String entityUid);
+        Optional<UserExecutionContext> findByUserUidAndEntityTypeAndEntityUid(String userUid, String entityType,
+                        String entityUid);
 
-    void deleteByUserUidAndEntityType(String userUid, String entityType);
+        void deleteByUserUidAndEntityTypeAndEntityUid(String userUid, String entityType, String entityUid);
 
-    long countByUserUidAndEntityTypeAndResolvedPermissionIn(String userUid, String entityType,
-            List<AccessLevel> permissions);
+        void deleteByUserUidAndEntityType(String userUid, String entityType);
+
+        long countByUserUidAndEntityTypeAndResolvedPermissionIn(String userUid, String entityType,
+                        List<AccessLevel> permissions);
 }
