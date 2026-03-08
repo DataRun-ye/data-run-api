@@ -22,7 +22,7 @@ V2 is not just a REST endpoint refactoring; it represents a strategic shift towa
 - `/api/v2/form-config/` — Template design, authoring, and rule configuration.
 - `/api/v2/data-capture/` — Form rendering, data collection, and processing submissions.
 - `/api/v2/operations/` — Managing users, teams, organizational units, and assignments.
-- other future contexts will be added as needed.
+- `/api/v2/gateway/` — **The Central Transformation & Delivery Engine.** Dedicated integration context for delivering data products (via Outbox events) to external consumers.
 
 ## 4. Current Implementation Focus: `data-capture`
 
@@ -31,9 +31,11 @@ At present, our implementation focus is squarely on the **`data-capture`** domai
 **Important Note on Persistence:**
 Database-level schema changes are intentionally postponed. We will first define and solidify the V2 contracts and prove them in production via the ACL. We will only tackle deep database schema migrations when existing structures become undeniable blocking bottlenecks. This mitigates the risk of "big bang" rewrites.
 
-## 5. Future Evolution: Event Boundaries
+## 5. Event Boundaries & The Gateway
 
-Future phases of the architecture will introduce **event boundaries** (e.g., Domain Events emitted upon submission completion) to dispatch data to other bounded contexts, such as analytics aggregators or a central ledger. However, these cross-context communication and eventing concerns remain strictly **outside the current scope** of stabilizing the primary API surface.
+The architecture defines strict event boundaries to dispatch data to other systems (e.g., analytics aggregators, central ledgers) without coupling the core application logic.
+- **`data-capture`** must remain completely unaware of downstream consumers. Its only responsibility is to securely record the submission and insert a "Fat Event" into the Transactional Outbox.
+- **The Application Gateway** acts as the Integration Bounded Context. It reads the Outbox, handles Configurable Idempotency, performs JSON payload mapping, and guarantees delivery (with exponential backoff) of versioned Data Contracts to the outside world.
 
 ---
 
