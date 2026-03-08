@@ -3,6 +3,9 @@ package org.nmcpye.datarun.jpa.accessfilter;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
+import org.nmcpye.datarun.jpa.accessfilter.entity.UserExecutionContext;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.team.Team;
@@ -31,19 +34,27 @@ public class AssignmentFilter extends DefaultJpaFilter<Assignment> {
 
     @Override
     public Specification<Assignment> getAccessSpecification(CurrentUserDetails user,
-                                                              QueryRequest queryRequest) {
+            QueryRequest queryRequest) {
         Specification<Assignment> spec = (root, query, cb) -> {
             if (user.isSuper()) {
                 return cb.conjunction();
             }
 
-            if (user.getUserTeamsUIDs() == null || user.getUserTeamsUIDs().isEmpty()) {
-                return cb.disjunction(); // user has no access
+            if (query == null) {
+                return cb.conjunction();
             }
 
             Join<Assignment, Team> assignmentJoin = root.join("team", JoinType.INNER);
-            return assignmentJoin.get("uid").in(user.getUserTeamsUIDs());
 
+            // Path B: CQRS Subquery against UserExecutionContext
+            Subquery<String> sq = query.subquery(String.class);
+            Root<UserExecutionContext> uec = sq.from(UserExecutionContext.class);
+
+            sq.select(uec.get("entityUid")).where(
+                    cb.equal(uec.get("userUid"), user.getUid()),
+                    cb.equal(uec.get("entityType"), "TEAM"));
+
+            return assignmentJoin.get("uid").in(sq);
         };
 
         if (queryRequest == null || !queryRequest.isIncludeDisabled()) {

@@ -1,20 +1,17 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.jpa.accessfilter.entity.UserExecutionContext;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
-import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.nmcpye.datarun.jpa.option.OptionSet;
 import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.query.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @author Hamza Assada
@@ -22,39 +19,39 @@ import java.util.stream.Collectors;
  */
 @Component
 public class OptionSetFilter extends DefaultJpaFilter<OptionSet> {
-    private final TemplateVersionRepository templateRepository;
-
-    public OptionSetFilter(TemplateVersionRepository templateRepository) {
-        this.templateRepository = templateRepository;
-    }
 
     @Override
     public Specification<OptionSet> getAccessSpecification(CurrentUserDetails user,
-                                                           QueryRequest queryRequest) {
-        Set<String> userOptionSets = getUserOptionSets();
-
+            QueryRequest queryRequest) {
         return (root, query, cb) -> {
             if (user.isSuper()) {
                 return cb.conjunction();
-            } else {
-                return root.get("uid").in(userOptionSets);
             }
+
+            if (query == null) {
+                return cb.conjunction();
+            }
+
+            // Path B: An OptionSet is accessible if it is part of a Form (TemplateVersion)
+            // that the user has access to via the CQRS UserExecutionContext.
+            // OptionSet <- FormDataElementConf -> TemplateVersion -> UserExecutionContext
+
+            Subquery<String> sqConf = query.subquery(String.class);
+            Root<FormDataElementConf> confRoot = sqConf.from(FormDataElementConf.class);
+            Join<FormDataElementConf, TemplateVersion> templateJoin = confRoot.join("templateVersion", JoinType.INNER);
+
+            Subquery<String> sqUec = sqConf.subquery(String.class);
+            Root<UserExecutionContext> uec = sqUec.from(UserExecutionContext.class);
+            sqUec.select(uec.get("entityUid")).where(
+                    cb.equal(uec.get("userUid"), user.getUid()),
+                    cb.equal(uec.get("entityType"), "DATA_TEMPLATE"));
+
+            sqConf.select(confRoot.get("optionSet"))
+                    .where(
+                            cb.isNotNull(confRoot.get("optionSet")),
+                            templateJoin.get("templateUid").in(sqUec));
+
+            return root.get("uid").in(sqConf);
         };
-    }
-
-    private Set<String> getUserOptionSets() {
-        return getUserFormsWithWritePermission()
-            .stream().flatMap(f -> f.getFields().stream())
-            .filter(f -> f.getType().isOptionsType())
-            .map(FormDataElementConf::getOptionSet)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toSet());
-    }
-
-    public Collection<TemplateVersion> getUserFormsWithWritePermission() {
-        final var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
-        List<TemplateVersion> versions = templateRepository
-            .findDistinctByTemplateUidInOrderByVersionNumberDesc(currentUser.getUserFormsUIDs());
-        return versions;
     }
 }

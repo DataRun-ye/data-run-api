@@ -1,8 +1,10 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
+import org.nmcpye.datarun.jpa.accessfilter.entity.UserExecutionContext;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.userdetail.UserFormAccess;
 import org.nmcpye.datarun.web.query.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
@@ -15,29 +17,36 @@ import org.springframework.stereotype.Component;
 public class DataSubmissionFilter extends DefaultJpaFilter<DataSubmission> {
 
     public static Specification<DataSubmission> isActive() {
-        return (root, query, criteriaBuilder) ->
-            criteriaBuilder.notEqual(root.get("deleted"), true);
+        return (root, query, criteriaBuilder) -> criteriaBuilder.notEqual(root.get("deleted"), true);
     }
 
     @Override
     public Specification<DataSubmission> getAccessSpecification(CurrentUserDetails user,
-                                                                QueryRequest queryRequest) {
+            QueryRequest queryRequest) {
         Specification<DataSubmission> spec = (root, query, cb) -> {
             if (user.isSuper()) {
                 return cb.conjunction();
             }
 
-            final var viewForms = user.getFormAccess().stream()
-                .filter(UserFormAccess::canEditSubmission)
-                .map(UserFormAccess::getForm)
-                .toList();
-
-            if (viewForms.isEmpty()) {
-                return cb.disjunction(); // user has no access
+            if (query == null) {
+                return cb.conjunction();
             }
 
-            return root.get("templateUid").in(viewForms);
+            // Path B: CQRS Subquery against UserExecutionContext for Form Access
+            // We only need to know if they have Form Access (which translates to Submission
+            // access)
+            Subquery<String> sq = query.subquery(String.class);
+            Root<UserExecutionContext> uec = sq.from(UserExecutionContext.class);
 
+            sq.select(uec.get("entityUid")).where(
+                    cb.equal(uec.get("userUid"), user.getUid()),
+                    cb.equal(uec.get("entityType"), "DATA_TEMPLATE")
+            // By default ANY access to the form implies SOME access to submissions
+            // If specific UPDATE/DELETE filtering is needed, it would filter by
+            // resolvedPermission here.
+            );
+
+            return root.get("templateUid").in(sq);
         };
 
         if (queryRequest == null || !queryRequest.isIncludeDeleted()) {
