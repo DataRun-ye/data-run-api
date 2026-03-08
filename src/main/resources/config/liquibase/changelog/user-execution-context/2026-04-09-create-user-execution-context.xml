@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260409-01-create-user-execution-context" author="datarunapi">
+        <!-- The user_execution_context table acts as our fast, flat CQRS view for access control filtering -->
+        <createTable tableName="user_execution_context">
+            <column name="id" type="bigserial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            
+            <column name="user_uid" type="varchar(11)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <!-- Type of the entity (e.g., ORG_UNIT, DATA_TEMPLATE, ASSIGNMENT, ACTIVITY) -->
+            <column name="entity_type" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <!-- The unique UID identifier of the target entity -->
+            <column name="entity_uid" type="varchar(11)">
+                <constraints nullable="false"/>
+            </column>
+            
+            <!-- The highest resolved permission (READ, UPDATE, DELETE, ALL) -->
+            <column name="resolved_permission" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="created_date" type="timestamp(6)" defaultValueComputed="now()"/>
+        </createTable>
+
+        <!-- A user can only have ONE resolved highest permission per distinct entity -->
+        <addUniqueConstraint tableName="user_execution_context"
+                             columnNames="user_uid, entity_type, entity_uid"
+                             constraintName="uk_uec_user_entity"/>
+
+        <!-- Index to quickly find users linked to an entity -->
+        <createIndex indexName="idx_uec_entity" tableName="user_execution_context">
+            <column name="entity_type"/>
+            <column name="entity_uid"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

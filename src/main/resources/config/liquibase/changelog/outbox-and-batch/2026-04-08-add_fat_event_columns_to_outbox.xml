@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+     <changeSet id="add_bitemporal_correlation_to_outbox" author="datarunapi">
+        <!-- 1. Add correlation_id for enterprise edge-tracing -->
+        <addColumn tableName="outbox">
+            <column name="correlation_id" type="varchar(64)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <!-- 2. Add occurred_at to track when the event happened on the offline mobile device -->
+        <addColumn tableName="outbox">
+            <column name="occurred_at" type="timestamp(6)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <!-- Optional but recommended: Add an index on correlation_id for fast DLQ/tracing lookups -->
+        <createIndex indexName="idx_outbox_correlation_id" tableName="outbox">
+            <column name="correlation_id"/>
+        </createIndex>
+    </changeSet>
+</changeSet>
+</databaseChangeLog>

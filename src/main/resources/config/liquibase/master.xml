@@ -93,5 +93,8 @@
     <include file="/config/liquibase/changelog/etl/20260211-events-drop-anchor-columns.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20260211-tall-canonical-drop-is-deleted-column.xml" relativeToChangelogFile="false"/>
 
+    <!-- user execution context CQRS view -->
+    <include file="/config/liquibase/changelog/user-execution-context/2026-04-09-create-user-execution-context.xml" relativeToChangelogFile="false"/>
+
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>
