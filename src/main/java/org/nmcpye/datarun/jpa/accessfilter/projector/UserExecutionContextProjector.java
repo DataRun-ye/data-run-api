@@ -13,9 +13,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.jpa.assignment.AssignmentPartyBinding;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentMemberRepository;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentPartyBindingRepository;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.party.dto.PartyResolutionRequest;
+import org.nmcpye.datarun.party.dto.ResolvedParty;
+import org.nmcpye.datarun.party.resolution.engine.PartyResolutionEngine;
 import org.springframework.context.event.EventListener;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Background projector service that handles Phase 1 of the CQRS execution
@@ -31,6 +44,11 @@ public class UserExecutionContextProjector {
 
     private final UserExecutionContextRepository executionContextRepository;
     private final CurrentUserInfoService currentUserInfoService;
+    private final AssignmentMemberRepository assignmentMemberRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final AssignmentPartyBindingRepository assignmentPartyBindingRepository;
+    private final PartyResolutionEngine partyResolutionEngine;
+    private final ObjectMapper objectMapper;
 
     /**
      * Rebuilds the flattened execution context for a single user.
@@ -83,7 +101,82 @@ public class UserExecutionContextProjector {
             appendOrUpgrade(contextMap, userUid, "DATA_TEMPLATE", formUid, highestFormLevel);
         }
 
-        // 6. Delete old context and insert new context
+        // 6. Process Assignments (Legacy + New Bindings)
+        Set<String> principalIds = new HashSet<>();
+        principalIds.add(userUid);
+        principalIds.addAll(teamInfo.getTeamUIDs());
+        principalIds.addAll(groupInfo.getUserGroupUIDs());
+
+        List<String> activeAssignmentIds = assignmentMemberRepository.findActiveAssignmentIdsForPrincipalsAndTeams(
+                principalIds, teamInfo.getTeamUIDs());
+
+        if (!activeAssignmentIds.isEmpty()) {
+            List<Assignment> assignments = assignmentRepository.findAllById(activeAssignmentIds);
+
+            List<AssignmentPartyBinding> bindings = assignmentPartyBindingRepository
+                    .findByAssignmentIdIn(activeAssignmentIds);
+            Map<String, List<AssignmentPartyBinding>> bindingsByAssignment = bindings.stream()
+                    .collect(Collectors.groupingBy(b -> String.valueOf(b.getAssignment().getId())));
+
+            for (Assignment assignment : assignments) {
+                String assignmentIdStr = String.valueOf(assignment.getId());
+
+                // Legacy Path (if still present)
+                if (assignment.getTeam() != null) {
+                    appendOrUpgrade(contextMap, userUid, "TEAM", assignment.getTeam().getUid(), AccessLevel.READ);
+                }
+                if (assignment.getOrgUnit() != null) {
+                    appendOrUpgrade(contextMap, userUid, "ORG_UNIT", assignment.getOrgUnit().getUid(),
+                            AccessLevel.READ);
+                }
+
+                // New Bindings Path
+                List<AssignmentPartyBinding> assignmentBindings = bindingsByAssignment.getOrDefault(assignmentIdStr,
+                        List.of());
+                for (AssignmentPartyBinding binding : assignmentBindings) {
+                    // Only process bindings that apply to our principal (or are global/null
+                    // principal)
+                    boolean appliesToUser = binding.getPrincipalId() == null
+                            || principalIds.contains(binding.getPrincipalId());
+                    if (!appliesToUser) {
+                        continue;
+                    }
+
+                    PartyResolutionRequest resolutionRequest = PartyResolutionRequest.builder()
+                            .assignmentId(assignmentIdStr)
+                            .userId(userUid)
+                            .limit(1000000)
+                            .offset(0)
+                            .build();
+
+                    String specJson = null;
+                    try {
+                        specJson = objectMapper.writeValueAsString(binding.getPartySet().getSpec());
+                    } catch (Exception e) {
+                        log.error("Failed to serialize PartySetSpec", e);
+                    }
+
+                    // Bypass security (isMaterialized = false) because we are currently BUILDING
+                    // the security context
+                    List<ResolvedParty> resolvedParties = partyResolutionEngine.executeStrategy(
+                            binding.getPartySet().getKind(),
+                            binding.getPartySet().getId(),
+                            specJson,
+                            false,
+                            resolutionRequest);
+                    for (ResolvedParty rp : resolvedParties) {
+                        appendOrUpgrade(contextMap, userUid, rp.getSource(), rp.getUid(), AccessLevel.READ);
+                    }
+
+                    if (binding.getVocabulary() != null) {
+                        appendOrUpgrade(contextMap, userUid, "DATA_TEMPLATE", binding.getVocabulary().getUid(),
+                                AccessLevel.READ);
+                    }
+                }
+            }
+        }
+
+        // 7. Delete old context and insert new context
         executionContextRepository.deleteByUserUid(userUid);
         executionContextRepository.persistAllAndFlush(contextMap.values());
         log.debug("Successfully rebuilt {} context rows for user {}", contextMap.size(), userUid);

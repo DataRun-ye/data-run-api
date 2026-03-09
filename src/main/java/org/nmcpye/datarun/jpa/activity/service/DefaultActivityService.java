@@ -21,16 +21,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Primary
 @Transactional
 public class DefaultActivityService
-    extends DefaultJpaIdentifiableService<Activity>
-    implements ActivityService {
+        extends DefaultJpaIdentifiableService<Activity>
+        implements ActivityService {
 
     private final ActivityRepository repository;
-
+    private final org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
 
     public DefaultActivityService(ActivityRepository repository, CacheManager cacheManager,
-                                  UserAccessService userAccessService) {
+            UserAccessService userAccessService,
+            org.springframework.context.ApplicationEventPublisher applicationEventPublisher) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Override
@@ -43,12 +45,19 @@ public class DefaultActivityService
         return repository.findAllByUser(pageable);
     }
 
+    @Override
+    public Activity save(Activity activity) {
+        Activity saved = super.save(activity);
+        applicationEventPublisher.publishEvent(new org.nmcpye.datarun.party.events.ActivitySavedEvent(saved));
+        return saved;
+    }
+
     private void clearCaches(Activity activity) {
-//        team.getUsers().forEach(user -> {
-//            this.clearCaches(UserRepository.USERS_BY_LOGIN_CACHE, user.getLogin());
-//            this.clearCaches(UserRepository.USERS_BY_EMAIL_CACHE, user.getEmail());
-//            this.clearCaches(UserRepository.USER_TEAM_IDS_CACHE, user.getLogin());
-//            this.clearCaches(UserRepository.USER_GROUP_IDS_CACHE, user.getLogin());
-//        });
+        // team.getUsers().forEach(user -> {
+        // this.clearCaches(UserRepository.USERS_BY_LOGIN_CACHE, user.getLogin());
+        // this.clearCaches(UserRepository.USERS_BY_EMAIL_CACHE, user.getEmail());
+        // this.clearCaches(UserRepository.USER_TEAM_IDS_CACHE, user.getLogin());
+        // this.clearCaches(UserRepository.USER_GROUP_IDS_CACHE, user.getLogin());
+        // });
     }
 }

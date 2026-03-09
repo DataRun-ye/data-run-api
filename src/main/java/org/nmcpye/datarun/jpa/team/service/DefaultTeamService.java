@@ -57,6 +57,13 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
     }
 
     @Override
+    public Team save(Team team) {
+        Team savedTeam = super.save(team);
+        applicationEventPublisher.publishEvent(new org.nmcpye.datarun.party.events.TeamSavedEvent(savedTeam));
+        return savedTeam;
+    }
+
+    @Override
     public Team saveWithRelations(Team team) {
         Activity activity = null;
 

@@ -34,10 +34,10 @@ import java.util.stream.Collectors;
  */
 @Entity
 @Table(name = "assignment", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_assignment_activity_id", columnNames = {"activity_id", "org_unit_id", "team_id"})
+        @UniqueConstraint(name = "uc_assignment_activity_id", columnNames = { "activity_id", "org_unit_id", "team_id" })
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-@JsonIgnoreProperties(value = {"new"})
+@JsonIgnoreProperties(value = { "new" })
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
@@ -56,27 +56,28 @@ public class Assignment extends JpaSoftDeleteObject implements TranslatableInter
     private Instant deletedAt;
 
     @NotNull
-    @ManyToOne//(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"project", "translations", "assignments"}, allowSetters = true)
+    @ManyToOne // (fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = { "project", "translations", "assignments" }, allowSetters = true)
     private Activity activity;
 
     @Column(name = "start_day")
     private Integer startDay;
 
-    @ManyToOne//(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments",
-        "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
+    @ManyToOne // (fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = { "parent", "children", "orgUnitGroups", "assignments",
+            "hierarchyLevel", "ancestors", "translations" }, allowSetters = true)
     private OrgUnit orgUnit;
 
-    @ManyToOne(optional = false)
-    @NotNull
-    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
-        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
+    @ManyToOne
+    @JsonIgnoreProperties(value = { "managedTeams", "managedByTeams", "users", "assignments",
+            "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses",
+            "formPermissions" }, allowSetters = true)
     private Team team;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "activity", "team", "orgUnit", "parent", "children", "ancestors", "level",
+            "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy" }, allowSetters = true)
     private Set<Assignment> children = new HashSet<>();
 
     @Column(name = "path")
@@ -88,7 +89,8 @@ public class Assignment extends JpaSoftDeleteObject implements TranslatableInter
 
     @ManyToOne
     @JsonProperty
-    @JsonIgnoreProperties(value = {"defaultPartySet", "activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "defaultPartySet", "activity", "team", "orgUnit", "parent", "children", "ancestors",
+            "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy" }, allowSetters = true)
     private Assignment parent;
 
     @Type(JsonType.class)
@@ -99,10 +101,10 @@ public class Assignment extends JpaSoftDeleteObject implements TranslatableInter
     @Column(name = "allocated_resources", columnDefinition = "jsonb")
     private Map<String, Object> allocatedResources = new HashMap<>();
 
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "assignment")
-//    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-//    @JsonIgnoreProperties(value = {"assignment"}, allowSetters = true)
-//    private Set<AssignmentHistory> assignmentHistory = new HashSet<>();
+    // @OneToMany(fetch = FetchType.LAZY, mappedBy = "assignment")
+    // @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    // @JsonIgnoreProperties(value = {"assignment"}, allowSetters = true)
+    // private Set<AssignmentHistory> assignmentHistory = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     private FlowStatus status;
@@ -116,7 +118,8 @@ public class Assignment extends JpaSoftDeleteObject implements TranslatableInter
     protected Map<String, Object> properties;
 
     @ManyToOne
-    @JsonIgnoreProperties(value = {"createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "createdBy", "createdDate", "lastModifiedDate",
+            "lastModifiedBy" }, allowSetters = true)
     @JoinColumn(name = "default_party_set_id")
     private PartySet defaultPartySet;
 
@@ -197,7 +200,8 @@ public class Assignment extends JpaSoftDeleteObject implements TranslatableInter
      * @param roots the root activities, if null using real roots.
      */
     public String getParentGraph(Collection<Assignment> roots) {
-        Set<String> rootUids = roots != null ? Sets.newHashSet(String.valueOf(IdentifiableObjectUtils.getUids(roots))) : null;
+        Set<String> rootUids = roots != null ? Sets.newHashSet(String.valueOf(IdentifiableObjectUtils.getUids(roots)))
+                : null;
         List<String> ancestors = getAncestorUids(rootUids);
         return StringUtils.join(ancestors, PATH_SEP);
     }
@@ -225,7 +229,7 @@ public class Assignment extends JpaSoftDeleteObject implements TranslatableInter
 
     // for Hibernate
     public void setLevel(Integer ouLevel) {
-        //this.level = ouLevel;
+        // this.level = ouLevel;
     }
 
     /**
@@ -263,8 +267,8 @@ public class Assignment extends JpaSoftDeleteObject implements TranslatableInter
      * @throws IllegalStateException if circular parent relationships is detected.
      */
     @JsonIgnore
-//    @JsonProperty("ancestors")
-//    @JsonSerialize(contentAs = Identifiable.class)
+    // @JsonProperty("ancestors")
+    // @JsonSerialize(contentAs = Identifiable.class)
     public List<Assignment> getAncestors() {
         List<Assignment> activities = new ArrayList<>();
         Set<Assignment> visitedActivities = new HashSet<>();
@@ -274,8 +278,7 @@ public class Assignment extends JpaSoftDeleteObject implements TranslatableInter
         while (assignment != null) {
             if (!visitedActivities.add(assignment)) {
                 throw new IllegalStateException(
-                    "Assignment '" + this.toString() + "' has circular parent relationships: '" + assignment + "'"
-                );
+                        "Assignment '" + this.toString() + "' has circular parent relationships: '" + assignment + "'");
             }
 
             activities.add(assignment);
@@ -311,9 +314,9 @@ public class Assignment extends JpaSoftDeleteObject implements TranslatableInter
         return assignments;
     }
 
-    //    public String getPath() {
-//        return path;
-//    }
+    // public String getPath() {
+    // return path;
+    // }
     public String getPath() {
         List<String> pathList = new ArrayList<>();
         Set<String> visitedSet = new HashSet<>();
@@ -379,12 +382,12 @@ public class Assignment extends JpaSoftDeleteObject implements TranslatableInter
     @Override
     public String toString() {
         return "Assignment{" +
-            "id=" + getId() +
-            ", uid='" + getUid() + "'" +
-            ", createdBy='" + getCreatedBy() + "'" +
-            ", createdDate='" + getCreatedDate() + "'" +
-            ", lastModifiedBy='" + getLastModifiedBy() + "'" +
-            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
-            "}";
+                "id=" + getId() +
+                ", uid='" + getUid() + "'" +
+                ", createdBy='" + getCreatedBy() + "'" +
+                ", createdDate='" + getCreatedDate() + "'" +
+                ", lastModifiedBy='" + getLastModifiedBy() + "'" +
+                ", lastModifiedDate='" + getLastModifiedDate() + "'" +
+                "}";
     }
 }

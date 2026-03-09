@@ -52,6 +52,13 @@ public class UserExecutionContext {
     @Column(name = "created_date", updatable = false)
     private Instant createdDate;
 
+    /// Provenance: track why a user has access
+    /// e.g. `[{source:'assignment_party_binding', bindingId, principalType,
+    /// principalId}, ...]`
+    @org.hibernate.annotations.Type(io.hypersistence.utils.hibernate.type.json.JsonType.class)
+    @Column(name = "provenance", columnDefinition = "jsonb")
+    private java.util.Map<String, Object> provenance;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)

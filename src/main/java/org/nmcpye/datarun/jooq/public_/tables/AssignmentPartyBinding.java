@@ -174,7 +174,7 @@ public class AssignmentPartyBinding extends TableImpl<AssignmentPartyBindingReco
 
     @Override
     public List<ForeignKey<AssignmentPartyBindingRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.ASSIGNMENT_PARTY_BINDING__FK_BIND_ASSIGN, Keys.ASSIGNMENT_PARTY_BINDING__FK_BIND_PSET);
+        return Arrays.asList(Keys.ASSIGNMENT_PARTY_BINDING__FK_BIND_ASSIGN, Keys.ASSIGNMENT_PARTY_BINDING__FK_BIND_PSET, Keys.ASSIGNMENT_PARTY_BINDING__FK_VOCABULARY_TEMPLATE);
     }
 
     @Override

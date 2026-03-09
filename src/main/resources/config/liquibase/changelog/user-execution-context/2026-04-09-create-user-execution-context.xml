@@ -31,6 +31,9 @@
             </column>
 
             <column name="created_date" type="timestamp(6)" defaultValueComputed="now()"/>
+
+            <!-- Provenance JSON tracing the rules that granted this permission -->
+            <column name="provenance" type="jsonb"/>
         </createTable>
 
         <!-- A user can only have ONE resolved highest permission per distinct entity -->

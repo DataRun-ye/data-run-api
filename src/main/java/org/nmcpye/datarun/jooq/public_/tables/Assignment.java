@@ -92,7 +92,7 @@ public class Assignment extends TableImpl<AssignmentRecord> {
     /**
      * The column <code>public.assignment.team_id</code>.
      */
-    public final TableField<AssignmentRecord, String> TEAM_ID = createField(DSL.name("team_id"), SQLDataType.VARCHAR(26).nullable(false), this, "");
+    public final TableField<AssignmentRecord, String> TEAM_ID = createField(DSL.name("team_id"), SQLDataType.VARCHAR(26), this, "");
 
     /**
      * The column <code>public.assignment.path</code>.
@@ -220,7 +220,7 @@ public class Assignment extends TableImpl<AssignmentRecord> {
 
     @Override
     public List<ForeignKey<AssignmentRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.ASSIGNMENT__FK_ASSIGNMENT_DEFAULT_PARTY_SET_ID, Keys.ASSIGNMENT__FK_ASSIGNMENT_ON_ORGUNIT, Keys.ASSIGNMENT__FK_ASSIGNMENT_ON_PARENT, Keys.ASSIGNMENT__FK_ASSIGNMENT_ON_TEAM);
+        return Arrays.asList(Keys.ASSIGNMENT__FK_ASSIGNMENT_DEFAULT_PARTY_SET_ID, Keys.ASSIGNMENT__FK_ASSIGNMENT_ON_ACTIVITY, Keys.ASSIGNMENT__FK_ASSIGNMENT_ON_ORGUNIT, Keys.ASSIGNMENT__FK_ASSIGNMENT_ON_PARENT, Keys.ASSIGNMENT__FK_ASSIGNMENT_ON_TEAM);
     }
 
     @Override

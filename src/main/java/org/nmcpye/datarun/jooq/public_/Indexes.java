@@ -10,11 +10,12 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.Internal;
 import org.nmcpye.datarun.jooq.public_.tables.AssignmentMember;
 import org.nmcpye.datarun.jooq.public_.tables.AssignmentPartyBinding;
+import org.nmcpye.datarun.jooq.public_.tables.DataTemplateVersion;
 import org.nmcpye.datarun.jooq.public_.tables.Party;
 import org.nmcpye.datarun.jooq.public_.tables.PartySet;
 import org.nmcpye.datarun.jooq.public_.tables.PartySetMember;
 import org.nmcpye.datarun.jooq.public_.tables.PartyTag;
-import org.nmcpye.datarun.jooq.public_.tables.UserAllowedParty;
+import org.nmcpye.datarun.jooq.public_.tables.UserExecutionContext;
 
 
 /**
@@ -41,6 +42,8 @@ public class Indexes {
     public static final Index IDX_PARTY_TAG_KEY_VALUE = Internal.createIndex(DSL.name("idx_party_tag_key_value"), PartyTag.PARTY_TAG, new OrderField[] { PartyTag.PARTY_TAG.TAG_KEY, PartyTag.PARTY_TAG.TAG_VALUE }, false);
     public static final Index IDX_PARTY_UID = Internal.createIndex(DSL.name("idx_party_uid"), Party.PARTY, new OrderField[] { Party.PARTY.UID }, false);
     public static final Index IDX_PSM_PARTY_ID = Internal.createIndex(DSL.name("idx_psm_party_id"), PartySetMember.PARTY_SET_MEMBER, new OrderField[] { PartySetMember.PARTY_SET_MEMBER.PARTY_ID }, false);
-    public static final Index IDX_UAP_PARTY = Internal.createIndex(DSL.name("idx_uap_party"), UserAllowedParty.USER_ALLOWED_PARTY, new OrderField[] { UserAllowedParty.USER_ALLOWED_PARTY.PARTY_ID }, false);
-    public static final Index IDX_UAP_USER = Internal.createIndex(DSL.name("idx_uap_user"), UserAllowedParty.USER_ALLOWED_PARTY, new OrderField[] { UserAllowedParty.USER_ALLOWED_PARTY.USER_ID }, false);
+    public static final Index IDX_TV_TEMPLATE_UID = Internal.createIndex(DSL.name("idx_tv_template_uid"), DataTemplateVersion.DATA_TEMPLATE_VERSION, new OrderField[] { DataTemplateVersion.DATA_TEMPLATE_VERSION.TEMPLATE_UID }, false);
+    public static final Index IDX_TV_TEMPLATE_UID_VERSION_DESC = Internal.createIndex(DSL.name("idx_tv_template_uid_version_desc"), DataTemplateVersion.DATA_TEMPLATE_VERSION, new OrderField[] { DataTemplateVersion.DATA_TEMPLATE_VERSION.TEMPLATE_UID, DataTemplateVersion.DATA_TEMPLATE_VERSION.VERSION_NUMBER }, false);
+    public static final Index IDX_TV_VERSION_NO = Internal.createIndex(DSL.name("idx_tv_version_no"), DataTemplateVersion.DATA_TEMPLATE_VERSION, new OrderField[] { DataTemplateVersion.DATA_TEMPLATE_VERSION.VERSION_NUMBER }, false);
+    public static final Index IDX_UEC_ENTITY = Internal.createIndex(DSL.name("idx_uec_entity"), UserExecutionContext.USER_EXECUTION_CONTEXT, new OrderField[] { UserExecutionContext.USER_EXECUTION_CONTEXT.ENTITY_TYPE, UserExecutionContext.USER_EXECUTION_CONTEXT.ENTITY_UID }, false);
 }

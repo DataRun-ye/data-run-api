@@ -13,7 +13,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Service to find active assignment ids for principals/teams with optional filters.
+ * Service to find active assignment ids for principals/teams with optional
+ * filters.
  * Uses jOOQ DSL with plain table/field names (no codegen).
  */
 @Service
@@ -37,14 +38,16 @@ public class AssignmentQueryService {
     }
 
     /**
-     * Main pageable method. If pageable.isUnpaged(), it delegates to list variant to avoid COUNT.
+     * Main pageable method. If pageable.isUnpaged(), it delegates to list variant
+     * to avoid COUNT.
      */
     public Page<String> findActiveAssignmentIds(Set<String> principalKeys,
-                                                Set<String> teamIds,
-                                                AssignmentFilters filters,
-                                                Pageable pageable) {
+            Set<String> teamIds,
+            AssignmentFilters filters,
+            Pageable pageable) {
 
-        if (pageable == null) pageable = Pageable.unpaged();
+        if (pageable == null)
+            pageable = Pageable.unpaged();
         if (pageable.isUnpaged()) {
             List<String> list = findActiveAssignmentIdsList(principalKeys, teamIds, filters);
             return new PageImpl<>(list, Pageable.unpaged(), list.size());
@@ -71,11 +74,11 @@ public class AssignmentQueryService {
         int pageSize = pageable.getPageSize();
         long offset = pageable.getOffset();
         List<String> ids = dsl.selectDistinct(aId)
-            .from(a)
-            .where(cond)
-            .limit(pageSize)
-            .offset((int) offset)
-            .fetch(aId);
+                .from(a)
+                .where(cond)
+                .limit(pageSize)
+                .offset((int) offset)
+                .fetch(aId);
 
         return new PageImpl<>(ids, pageable, total);
     }
@@ -84,8 +87,8 @@ public class AssignmentQueryService {
      * List variant (no COUNT) used when pageable.unpaged()
      */
     public List<String> findActiveAssignmentIdsList(Set<String> principalKeys,
-                                                    Set<String> teamIds,
-                                                    AssignmentFilters filters) {
+            Set<String> teamIds,
+            AssignmentFilters filters) {
 
         Table<?> a = DSL.table(DSL.name("assignment"));
         Field<String> aId = DSL.field(DSL.name("assignment", "id"), String.class);
@@ -99,18 +102,21 @@ public class AssignmentQueryService {
         return base.where(cond).fetch(aId);
     }
 
-    /* -------------------------
-       Helper builders
-       ------------------------- */
+    /*
+     * -------------------------
+     * Helper builders
+     * -------------------------
+     */
 
     /**
      * Build the main WHERE condition:
-     *  EXISTS (assignment_member matching principalKeys)
-     *  OR (NOT EXISTS (assignment_member) AND assignment.team_id IN teamIds AND team/activity enabled & valid)
+     * EXISTS (assignment_member matching principalKeys)
+     * OR (NOT EXISTS (assignment_member) AND assignment.team_id IN teamIds AND
+     * team/activity enabled & valid)
      */
     private Condition buildAssignmentCondition(Set<String> principalKeys,
-                                               Set<String> teamIds,
-                                               AssignmentFilters filters) {
+            Set<String> teamIds,
+            AssignmentFilters filters) {
 
         Table<?> am = DSL.table(DSL.name("assignment_member"));
         Field<String> amAssignmentId = DSL.field(DSL.name("assignment_member", "assignment_id"), String.class);
@@ -127,24 +133,24 @@ public class AssignmentQueryService {
             // impossible condition if no principals provided
             principalMatch = DSL.falseCondition();
         } else {
-            Field<String> principalExpr = amMemberType.concat(DSL.inline(":" )).concat(amMemberId);
+            Field<String> principalExpr = amMemberType.concat(DSL.inline(":")).concat(amMemberId);
             principalMatch = principalExpr.in(principalKeys);
         }
 
         // optional member validity checks (kept here but can be removed if not desired)
         Condition memberValidity = amValidFrom.isNull().or(amValidFrom.le(now))
-            .and(amValidTo.isNull().or(amValidTo.gt(now)));
+                .and(amValidTo.isNull().or(amValidTo.gt(now)));
 
         // exists subquery
         Condition existsMembers = DSL.exists(
-            DSL.selectOne()
-                .from(am)
-                .where(amAssignmentId.eq(DSL.field(DSL.name("assignment", "id"), String.class)))
-                .and(principalMatch)
-                .and(memberValidity)
-        );
+                DSL.selectOne()
+                        .from(am)
+                        .where(amAssignmentId.eq(DSL.field(DSL.name("assignment", "id"), String.class)))
+                        .and(principalMatch)
+                        .and(memberValidity));
 
-        // second branch: no members exist and fallback to assignment.team_id in teamIds and team/activity enabled
+        // second branch: no members exist and fallback to assignment.team_id in teamIds
+        // and team/activity enabled
         Table<?> t = DSL.table(DSL.name("team"));
         Table<?> act = DSL.table(DSL.name("activity"));
 
@@ -152,12 +158,12 @@ public class AssignmentQueryService {
         Field<String> aActivityId = DSL.field(DSL.name("assignment", "activity_id"), String.class);
 
         Condition noMembers = DSL.notExists(
-            DSL.selectOne().from(am).where(amAssignmentId.eq(DSL.field(DSL.name("assignment", "id"), String.class)))
-        );
+                DSL.selectOne().from(am)
+                        .where(amAssignmentId.eq(DSL.field(DSL.name("assignment", "id"), String.class))));
 
         Condition teamIn = (teamIds == null || teamIds.isEmpty())
-            ? DSL.falseCondition()
-            : aTeamId.in(teamIds);
+                ? DSL.falseCondition()
+                : aTeamId.in(teamIds);
 
         Field<Boolean> tDisabled = DSL.field(DSL.name("team", "disabled"), Boolean.class);
         Field<Boolean> actDisabled = DSL.field(DSL.name("activity", "disabled"), Boolean.class);
@@ -167,7 +173,7 @@ public class AssignmentQueryService {
         Condition teamEnabled = tDisabled.isNull().or(tDisabled.eq(false));
         Condition activityEnabled = actDisabled.isNull().or(actDisabled.eq(false));
         Condition activityValid = actValidFrom.isNull().or(actValidFrom.le(DSL.currentTimestamp()))
-            .and(actValidTo.isNull().or(actValidTo.gt(DSL.currentTimestamp())));
+                .and(actValidTo.isNull().or(actValidTo.gt(DSL.currentTimestamp())));
 
         Condition fallback = noMembers.and(teamIn).and(teamEnabled).and(activityEnabled).and(activityValid);
 
@@ -181,10 +187,12 @@ public class AssignmentQueryService {
     }
 
     /**
-     * Apply optional filters that require joining other tables (team.uid, activity.uid, org_unit.uid)
+     * Apply optional filters that require joining other tables (team.uid,
+     * activity.uid, org_unit.uid)
      */
     private Condition applyOptionalFilters(Condition base, AssignmentFilters filters) {
-        if (filters == null) return base;
+        if (filters == null)
+            return base;
         Condition extra = DSL.trueCondition();
 
         if (filters.teamUid != null) {
@@ -201,19 +209,25 @@ public class AssignmentQueryService {
     }
 
     /**
-     * Adds joins in the SELECT if filters by UID are present (so those fields exist in FROM).
+     * Adds joins in the SELECT if filters by UID are present (so those fields exist
+     * in FROM).
      */
-    private SelectJoinStep<Record1<String>> applyJoinsIfNeeded(SelectJoinStep<Record1<String>> select, AssignmentFilters filters) {
+    private SelectJoinStep<Record1<String>> applyJoinsIfNeeded(SelectJoinStep<Record1<String>> select,
+            AssignmentFilters filters) {
         Table<?> a = DSL.table(DSL.name("assignment"));
-        if (filters == null) return select;
+        if (filters == null)
+            return select;
         if (filters.teamUid != null) {
-            select = select.leftJoin(DSL.table(DSL.name("team"))).on(DSL.field(DSL.name("team", "id")).eq(DSL.field(DSL.name("assignment", "team_id"))));
+            select = select.leftJoin(DSL.table(DSL.name("team")))
+                    .on(DSL.field(DSL.name("team", "id")).eq(DSL.field(DSL.name("assignment", "team_id"))));
         }
         if (filters.activityUid != null) {
-            select = select.leftJoin(DSL.table(DSL.name("activity"))).on(DSL.field(DSL.name("activity", "id")).eq(DSL.field(DSL.name("assignment", "activity_id"))));
+            select = select.leftJoin(DSL.table(DSL.name("activity")))
+                    .on(DSL.field(DSL.name("activity", "id")).eq(DSL.field(DSL.name("assignment", "activity_id"))));
         }
         if (filters.orgUnitUid != null) {
-            select = select.leftJoin(DSL.table(DSL.name("org_unit"))).on(DSL.field(DSL.name("org_unit", "id")).eq(DSL.field(DSL.name("assignment", "org_unit_id"))));
+            select = select.leftJoin(DSL.table(DSL.name("org_unit")))
+                    .on(DSL.field(DSL.name("org_unit", "id")).eq(DSL.field(DSL.name("assignment", "org_unit_id"))));
         }
         return select;
     }

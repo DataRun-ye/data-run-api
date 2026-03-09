@@ -32,9 +32,13 @@ import java.util.UUID;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Party implements TranslatableInterface {
-    public enum PartyType {INTERNAL, EXTERNAL}
+    public enum PartyType {
+        INTERNAL, EXTERNAL
+    }
 
-    public enum SourceType {ORG_UNIT, TEAM, USER, STATIC, EXTERNAL}
+    public enum SourceType {
+        ORG_UNIT, ACTIVITY, TEAM, USER, STATIC, EXTERNAL
+    }
 
     @Id
     @Column(name = "id", nullable = false, updatable = false)
@@ -57,7 +61,6 @@ public class Party implements TranslatableInterface {
     @Enumerated(EnumType.STRING)
     private PartyType type;
 
-
     /// ORG_UNIT, TEAM, USER, STATIC, EXTERNAL Types
     @Column(name = "source_type", nullable = false, length = 32)
     @Enumerated(EnumType.STRING)
@@ -67,7 +70,8 @@ public class Party implements TranslatableInterface {
     private String sourceId;
 
     /// for parties with parents such as orgUnits,
-    ///  we use `orgUnit.id` which is the same as orgUnit's `party.source_id` of the parent org_unit
+    /// we use `orgUnit.id` which is the same as orgUnit's `party.source_id` of the
+    /// parent org_unit
     @Column(name = "parent_id", length = 32)
     private UUID parentId;
 

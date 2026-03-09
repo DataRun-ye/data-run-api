@@ -5,7 +5,8 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
-     <changeSet id="add_bitemporal_correlation_to_outbox" author="datarunapi">
+
+    <changeSet id="add_bitemporal_correlation_to_outbox" author="datarunapi">
         <!-- 1. Add correlation_id for enterprise edge-tracing -->
         <addColumn tableName="outbox">
             <column name="correlation_id" type="varchar(64)">
@@ -23,5 +24,4 @@
             <column name="correlation_id"/>
         </createIndex>
     </changeSet>
-</changeSet>
 </databaseChangeLog>

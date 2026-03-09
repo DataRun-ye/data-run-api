@@ -36,7 +36,7 @@ import java.util.Set;
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 @Getter
 @Setter
-@SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
+@SuppressWarnings({ "common-java:DuplicatedBlocks", "unused" })
 public class User extends JpaIdentifiableObject {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
@@ -98,34 +98,31 @@ public class User extends JpaIdentifiableObject {
 
     @JsonIgnore
     @ManyToMany
-    @JoinTable(
-        name = "app_user_authority",
-        joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
-        inverseJoinColumns = {@JoinColumn(name = "authority_name", referencedColumnName = "name")}
-    )
+    @JoinTable(name = "app_user_authority", joinColumns = {
+            @JoinColumn(name = "user_id", referencedColumnName = "id") }, inverseJoinColumns = {
+                    @JoinColumn(name = "authority_name", referencedColumnName = "name") })
     @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
     @BatchSize(size = 20)
     private Set<Authority> authorities = new HashSet<>();
 
     @JsonIgnore
     @ManyToMany
-    @JoinTable(
-        name = "app_user_role_members",
-        joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
-        inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")}
-    )
+    @JoinTable(name = "app_user_role_members", joinColumns = {
+            @JoinColumn(name = "user_id", referencedColumnName = "id") }, inverseJoinColumns = {
+                    @JoinColumn(name = "role_id", referencedColumnName = "id") })
     @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
     Set<Role> roles;
 
     @ManyToMany(mappedBy = "users")
-    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
-        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "managedTeams", "managedByTeams", "users", "assignments",
+            "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses",
+            "formPermissions" }, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<Team> teams = new LinkedHashSet<>();
 
     @ManyToMany(mappedBy = "users", fetch = FetchType.EAGER)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"users", "managedGroups", "managedByGroups"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "users", "managedGroups", "managedByGroups" }, allowSetters = true)
     private Set<UserGroup> userGroups = new HashSet<>();
 
     @JsonIgnore
@@ -158,6 +155,14 @@ public class User extends JpaIdentifiableObject {
             userGroups.forEach(i -> i.addMember(this));
         }
         this.userGroups = userGroups;
+    }
+
+    public Set<Team> getTeams() {
+        return this.teams;
+    }
+
+    public Set<UserGroup> getUserGroups() {
+        return this.userGroups;
     }
 
     public User groups(Set<UserGroup> userGroups) {
@@ -215,7 +220,7 @@ public class User extends JpaIdentifiableObject {
      *
      * @param team the user group to test.
      * @return true if the given user group can be managed by this user, false
-     * if not.
+     *         if not.
      */
     public boolean canManage(Team team) {
         return team != null && CollectionUtils.containsAny(teams, team.getManagedByTeams());
@@ -226,7 +231,7 @@ public class User extends JpaIdentifiableObject {
      *
      * @param team the user group to test.
      * @return true if the given user group is managed by this user, false if
-     * not.
+     *         not.
      */
     public boolean isManagedBy(Team team) {
         return team != null && CollectionUtils.containsAny(teams, team.getManagedTeams());
@@ -263,7 +268,7 @@ public class User extends JpaIdentifiableObject {
      *
      * @param userGroup the user group to test.
      * @return true if the given user group is managed by this user, false if
-     * not.
+     *         not.
      */
     public boolean isManagedBy(UserGroup userGroup) {
         return userGroup != null && CollectionUtils.containsAny(userGroups, userGroup.getManagedGroups());
@@ -307,7 +312,7 @@ public class User extends JpaIdentifiableObject {
      *
      * @param userGroup the user group to test.
      * @return true if the given user group can be managed by this user, false
-     * if not.
+     *         if not.
      */
     public boolean canManage(UserGroup userGroup) {
         return userGroup != null && CollectionUtils.containsAny(userGroups, userGroup.getManagedByGroups());
@@ -342,14 +347,14 @@ public class User extends JpaIdentifiableObject {
     @Override
     public String toString() {
         return "User{" +
-            "login='" + login + '\'' +
-            ", firstName='" + firstName + '\'' +
-            ", lastName='" + lastName + '\'' +
-            ", email='" + email + '\'' +
-            ", imageUrl='" + imageUrl + '\'' +
-            ", activated='" + activated + '\'' +
-            ", langKey='" + langKey + '\'' +
-            ", activationKey='" + activationKey + '\'' +
-            "}";
+                "login='" + login + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", email='" + email + '\'' +
+                ", imageUrl='" + imageUrl + '\'' +
+                ", activated='" + activated + '\'' +
+                ", langKey='" + langKey + '\'' +
+                ", activationKey='" + activationKey + '\'' +
+                "}";
     }
 }

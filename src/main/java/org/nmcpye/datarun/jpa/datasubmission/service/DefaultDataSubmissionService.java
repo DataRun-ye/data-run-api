@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
  */
 @Service
 @Primary
-@Slf4j
 public class DefaultDataSubmissionService
         extends DefaultJpaSoftDeleteService<DataSubmission>
         implements DataSubmissionService {
@@ -44,7 +43,7 @@ public class DefaultDataSubmissionService
             UserAccessService userAccessService,
             ApplicationEventPublisher eventPublisher,
             ObjectMapper objectMapper, OutboxWritePort outboxRepo) {
-        super(repository, cacheManager, userAccessService);
+        super(repository, cacheManager, userAccessService, eventPublisher);
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
         this.outboxRepo = outboxRepo;

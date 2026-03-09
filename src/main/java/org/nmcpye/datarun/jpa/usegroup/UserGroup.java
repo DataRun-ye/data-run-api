@@ -24,7 +24,7 @@ import java.util.Set;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
-@SuppressWarnings({"common-java:DuplicatedBlocks", "unused", "UnusedReturnValue"})
+@SuppressWarnings({ "common-java:DuplicatedBlocks", "unused", "UnusedReturnValue" })
 public class UserGroup extends JpaIdentifiableObject {
 
     @Size(max = 11)
@@ -53,30 +53,23 @@ public class UserGroup extends JpaIdentifiableObject {
     private boolean isPersisted;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_group_users",
-        joinColumns = @JoinColumn(name = "user_group_id"),
-        inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
-    @JsonIgnoreProperties(value = {"teams", "password", "authorities", "userGroups", "managedGroups", "managedByGroups"}, allowSetters = true)
+    @JoinTable(name = "user_group_users", joinColumns = @JoinColumn(name = "user_group_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @JsonIgnoreProperties(value = { "teams", "password", "authorities", "userGroups", "managedGroups",
+            "managedByGroups" }, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<User> users = new HashSet<>();
 
     /// //
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_group_managed_groups",
-        joinColumns = @JoinColumn(name = "user_group_id"),
-        inverseJoinColumns = @JoinColumn(name = "managed_group_id")
-    )
-    @JsonIgnoreProperties(value = {"managedGroups", "managedByGroups", "users",
-        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JoinTable(name = "user_group_managed_groups", joinColumns = @JoinColumn(name = "user_group_id"), inverseJoinColumns = @JoinColumn(name = "managed_group_id"))
+    @JsonIgnoreProperties(value = { "managedGroups", "managedByGroups", "users",
+            "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy" }, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<UserGroup> managedGroups = new HashSet<>();
 
     @ManyToMany(mappedBy = "managedGroups")
-    @JsonIgnoreProperties(value = {"managedGroups", "managedByGroups", "users",
-        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "managedGroups", "managedByGroups", "users",
+            "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy" }, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<UserGroup> managedByGroups = new HashSet<>();
 
@@ -91,6 +84,14 @@ public class UserGroup extends JpaIdentifiableObject {
         this.users.add(user);
         user.getUserGroups().add(this);
         return this;
+    }
+
+    public Set<UserGroup> getManagedGroups() {
+        return this.managedGroups;
+    }
+
+    public Set<UserGroup> getManagedByGroups() {
+        return this.managedByGroups;
     }
 
     public UserGroup removeMember(User user) {
