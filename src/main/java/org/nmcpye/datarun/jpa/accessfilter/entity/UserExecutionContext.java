@@ -53,7 +53,7 @@ public class UserExecutionContext {
     private Instant createdDate;
 
     /// Provenance: track why a user has access
-    /// e.g. `[{source:'assignment_party_binding', bindingId, principalType,
+    /// e.g. `[{source:'ASSIGNMENT_ROLE_PARTY_POLICY', bindingId, principalType,
     /// principalId}, ...]`
     @org.hibernate.annotations.Type(io.hypersistence.utils.hibernate.type.json.JsonType.class)
     @Column(name = "provenance", columnDefinition = "jsonb")

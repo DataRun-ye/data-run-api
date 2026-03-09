@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -108,9 +107,7 @@ public class PartyEventListener {
         // permissionService.rebuildForAssignment(event.member().getAssignmentId());
 
         // Option 2 (More Targeted): Re-calculate for just the affected member
-        permissionService.rebuildForAssignmentBinding(event.binding().getAssignment().getId(),
-                event.binding().getPrincipalType(),
-                event.binding().getPrincipalId());
+        permissionService.rebuild();
     }
 
     //

@@ -8,24 +8,26 @@ import org.springframework.stereotype.Component;
 public class AssignmentMemberMapper {
 
     public AssignmentMemberDto toDto(AssignmentMember entity) {
-        if (entity == null) return null;
-        return AssignmentMemberDto.builder()
-            .id(entity.getId())
-            .assignmentId(entity.getAssignmentId())
-            .memberType(entity.getMemberType())
-            .memberId(entity.getMemberId())
-            .role(entity.getRole())
-            .build();
+        if (entity == null)
+            return null;
+        AssignmentMemberDto dto = new AssignmentMemberDto();
+        dto.setId(entity.getId());
+        dto.setAssignmentId(entity.getAssignmentId());
+        dto.setMemberType(entity.getMemberType());
+        dto.setMemberId(entity.getMemberId());
+        dto.setRole(entity.getRole());
+        return dto;
     }
 
     public AssignmentMember toEntity(AssignmentMemberDto dto) {
-        if (dto == null) return null;
-        return AssignmentMember.builder()
-            .id(dto.getId())
-            .assignmentId(dto.getAssignmentId())
-            .memberType(dto.getMemberType())
-            .memberId(dto.getMemberId())
-            .role(dto.getRole())
-            .build();
+        if (dto == null)
+            return null;
+        AssignmentMember entity = new AssignmentMember();
+        entity.setId(dto.getId());
+        entity.setAssignmentId(dto.getAssignmentId());
+        entity.setMemberType(dto.getMemberType());
+        entity.setMemberId(dto.getMemberId());
+        entity.setRole(dto.getRole());
+        return entity;
     }
 }

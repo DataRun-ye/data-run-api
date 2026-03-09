@@ -105,21 +105,22 @@ public class Team extends JpaIdentifiableObject {
 
     public Set<FormPermission> getFormPermissions(String form) {
         return formPermissions.stream()
-                .filter(p -> p.getForm().equals(form)).map(TeamFormPermissions::getPermissions)
-                .flatMap(Streams::of).collect(Collectors.toSet());
+                .filter(p -> p.getForm().equals(form))
+                .flatMap(p -> p.getPermissions().stream())
+                .collect(Collectors.toSet());
     }
 
     public Set<String> getFormWithPermission(FormPermission permission) {
         return formPermissions.stream()
                 .filter(p -> p.getPermissions().contains(permission))
-                .map(TeamFormPermissions::getForm)
+                .map(p -> p.getForm())
                 .collect(Collectors.toSet());
     }
 
     public Set<String> getFormWithAnyPermission(List<FormPermission> permissionList) {
         return formPermissions.stream()
-                .filter(fp -> fp.getPermissions().stream().anyMatch((permissionList::contains)))
-                .map(TeamFormPermissions::getForm)
+                .filter(fp -> fp.getPermissions().stream().anyMatch(permissionList::contains))
+                .map(fp -> fp.getForm())
                 .collect(Collectors.toSet());
     }
 
@@ -141,7 +142,7 @@ public class Team extends JpaIdentifiableObject {
         if (this.formPermissions != null) {
             return this.formPermissions.stream()
                     .filter(entry -> entry.getPermissions().contains(permission))
-                    .map(TeamFormPermissions::getForm)
+                    .map(entry -> entry.getForm())
                     .collect(Collectors.toSet());
         }
         return Collections.emptySet();

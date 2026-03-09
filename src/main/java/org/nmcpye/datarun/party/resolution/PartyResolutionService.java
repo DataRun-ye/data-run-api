@@ -29,14 +29,15 @@ public class PartyResolutionService {
     public List<ResolvedParty> resolveParties(PartyResolutionRequest request) {
 
         // 1. Resolve Bindings (The "Brain")
-        // Note: You might need to look up templateFallbackPartySetId from the Vocabulary ID first.
+        // Note: You might need to look up templateFallbackPartySetId from the
+        // Vocabulary ID first.
         // For MVP, passing null for fallback.
         List<BindingResult> bindings = bindingResolver.resolveBindings(
-            request.getAssignmentId(),
-            request.getVocabularyId(),
-            request.getRole(),
-            request.getUserId(),
-            null // TODO: Look up data_template.party_set_ref if needed later
+                request.getAssignmentId(),
+                request.getVocabularyId(),
+                request.getRole(),
+                request.getUserId(),
+                null // TODO: Look up data_template.party_set_ref if needed later
         );
 
         if (bindings.isEmpty()) {
@@ -52,11 +53,12 @@ public class PartyResolutionService {
             // A. Fetch Config (Kind + Spec)
             // In a real app, cache this lookup.
             var config = dsl.select(PARTY_SET.KIND, PARTY_SET.SPEC, PARTY_SET.IS_MATERIALIZED)
-                .from(PARTY_SET)
-                .where(PARTY_SET.ID.eq(binding.getPartySetId()))
-                .fetchOne();
+                    .from(PARTY_SET)
+                    .where(PARTY_SET.ID.eq(UUID.fromString(binding.getPartySetId())))
+                    .fetchOne();
 
-            if (config == null) continue; // Should not happen given referential integrity
+            if (config == null)
+                continue; // Should not happen given referential integrity
 
             PartySetKind kind = PartySetKind.valueOf(config.value1()); // Enum mapping
             String spec = config.value2().data(); // JSONB string
@@ -66,12 +68,11 @@ public class PartyResolutionService {
 
             // B. Execute Strategy
             List<ResolvedParty> currentSetParties = engine.executeStrategy(
-                kind,
-                binding.getPartySetId(),
-                spec,
-                isMaterialized,
-                request
-            );
+                    kind,
+                    binding.getPartySetId(),
+                    spec,
+                    isMaterialized,
+                    request);
 
             // C. Combine (Union / Intersect)
             if (firstPass) {
@@ -79,10 +80,9 @@ public class PartyResolutionService {
                 firstPass = false;
             } else {
                 accumulatedParties = applyCombination(
-                    accumulatedParties,
-                    currentSetParties,
-                    binding.getCombineMode()
-                );
+                        accumulatedParties,
+                        currentSetParties,
+                        binding.getCombineMode());
             }
         }
 
@@ -93,21 +93,20 @@ public class PartyResolutionService {
     }
 
     private List<ResolvedParty> applyCombination(
-        List<ResolvedParty> existing,
-        List<ResolvedParty> newParties,
-        CombineMode mode
-    ) {
+            List<ResolvedParty> existing,
+            List<ResolvedParty> newParties,
+            CombineMode mode) {
         if (mode == CombineMode.INTERSECT) {
             // Only keep parties present in both lists
             // O(N*M) naive, but lists are usually page-sized (small).
             // Optimizable with Sets if lists are large.
             Set<UUID> newIds = newParties.stream()
-                .map(ResolvedParty::getId)
-                .collect(Collectors.toSet());
+                    .map(ResolvedParty::getId)
+                    .collect(Collectors.toSet());
 
             return existing.stream()
-                .filter(p -> newIds.contains(p.getId()))
-                .collect(Collectors.toList());
+                    .filter(p -> newIds.contains(p.getId()))
+                    .collect(Collectors.toList());
         }
 
         // Default: UNION

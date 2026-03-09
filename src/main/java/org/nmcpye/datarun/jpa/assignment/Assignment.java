@@ -135,12 +135,12 @@ public class Assignment extends JpaSoftDeleteObject implements TranslatableInter
     @JsonIgnore
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "assignment")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    private Set<AssignmentDataTemplateEntity> dataTemplates = new HashSet<>();
+    private Set<AssignmentRoleDataPolicy> dataTemplates = new HashSet<>();
 
     @JsonIgnore
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "assignment")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    private Set<AssignmentPartyBinding> bindings = new HashSet<>();
+    private Set<AssignmentRolePartyPolicy> bindings = new HashSet<>();
 
     @JsonIgnore
     @OneToMany(fetch = FetchType.LAZY)

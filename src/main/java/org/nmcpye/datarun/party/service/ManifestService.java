@@ -2,12 +2,12 @@ package org.nmcpye.datarun.party.service;
 
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.assignment.AssignmentMember;
-import org.nmcpye.datarun.jpa.assignment.AssignmentPartyBinding;
+import org.nmcpye.datarun.jpa.assignment.AssignmentRolePartyPolicy;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentManifestDto;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentManifestProjection;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentDataTemplateJooqRepository;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRoleDataPolicyJooqRepository;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentMemberRepository;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentPartyBindingRepository;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRolePartyPolicyRepository;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
@@ -32,8 +32,8 @@ public class ManifestService {
      * vocabRepo
      */
     private final DataTemplateRepository templateRepository;
-    private final AssignmentPartyBindingRepository bindingRepo;
-    private final AssignmentDataTemplateJooqRepository assignmentDataTemplateRepo;
+    private final AssignmentRolePartyPolicyRepository bindingRepo;
+    private final AssignmentRoleDataPolicyJooqRepository assignmentRoleDataPolicyRepo;
 
     // In a real app, you'd inject a "UserContext" to get the current user's ID
     // You would inject a service to get user's teams/groups, or resolve them here.
@@ -61,11 +61,11 @@ public class ManifestService {
         // 3. Fetch all required data in bulk to avoid N+1 queries
         List<AssignmentManifestProjection> assignments = assignmentRepo.findAssignmentManifestsByUids(assignmentIds.getContent());
 
-        List<AssignmentPartyBinding> bindings = bindingRepo.findByAssignmentIdIn(assignmentIds.getContent());
+        List<AssignmentRolePartyPolicy> bindings = bindingRepo.findByAssignmentIdIn(assignmentIds.getContent());
 
         // Collect all unique vocabulary/template IDs from the bindings
         Set<String> vocabularyIds = bindings.stream()
-            .map(AssignmentPartyBinding::getVocabulary)
+            .map(AssignmentRolePartyPolicy::getVocabulary)
             .map(DataTemplate::getId)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
@@ -74,7 +74,7 @@ public class ManifestService {
             .collect(Collectors.toMap(DataTemplate::getId, Function.identity()));
 
         // Group bindings by assignment for efficient mapping
-        Map<String, List<AssignmentPartyBinding>> bindingsByAssignmentId = bindings.stream()
+        Map<String, List<AssignmentRolePartyPolicy>> bindingsByAssignmentId = bindings.stream()
             .collect(Collectors.groupingBy(b -> b.getAssignment().getId()));
 
         // Group bindings by assignment for efficient mapping
@@ -96,7 +96,7 @@ public class ManifestService {
                 .collect(Collectors.toSet());
 
             // fetch allowed templates (data_template.uids) for this user/principals in this assignment
-            List<String> allowedTemplateUids = assignmentDataTemplateRepo.findAllowedTemplateUids(
+            List<String> allowedTemplateUids = assignmentRoleDataPolicyRepo.findAllowedTemplateUids(
                 assign.getAssignmentId(), userId, principalIds, userRoles);
 
             // intersect with assignment declared forms to keep scope
@@ -104,7 +104,7 @@ public class ManifestService {
                 .filter(allowedTemplateUids::contains)
                 .collect(Collectors.toSet());
 
-            List<AssignmentPartyBinding> assignBindings = bindingsByAssignmentId.getOrDefault(assign.getAssignmentId(),
+            List<AssignmentRolePartyPolicy> assignBindings = bindingsByAssignmentId.getOrDefault(assign.getAssignmentId(),
                 Collections.emptyList());
 
             return AssignmentManifestDto.builder()
@@ -126,7 +126,7 @@ public class ManifestService {
         return new PageImpl<>(bindingsManifest, assignmentIds.getPageable(), bindingsManifest.size());
     }
 
-    private List<AssignmentManifestDto.BindingDto> mapBindings(List<AssignmentPartyBinding> source,
+    private List<AssignmentManifestDto.BindingDto> mapBindings(List<AssignmentRolePartyPolicy> source,
                                                                Map<String, DataTemplate> templatesById) {
         return source.stream().map(b -> {
             DataTemplate template = (b.getVocabulary() != null) ? templatesById.get(b.getVocabulary().getId()) : null;

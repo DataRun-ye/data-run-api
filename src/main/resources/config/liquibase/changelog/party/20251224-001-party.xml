@@ -8,7 +8,7 @@
 
     <changeSet id="create-party-table" author="hamza-ye">
         <createTable tableName="party">
-            <column name="id" type="uuid">
+            <column name="id" type="VARCHAR(26)">
                 <constraints primaryKey="true" nullable="false" primaryKeyName="pk_party"/>
             </column>
             <column name="uid" type="VARCHAR(11)">
@@ -40,7 +40,7 @@
                 <constraints nullable="false"/>
             </column>
             <!--   For parties with parents i.e orgUnit         -->
-            <column name="parent_id" type="uuid"/>
+            <column name="parent_id" type="VARCHAR(26)"/>
             <column name="translations" type="jsonb" defaultValueComputed="'[]'::jsonb"/>
         </createTable>
     </changeSet>
@@ -64,7 +64,7 @@
 
     <changeSet id="create-party-set-table" author="hamza-ye">
         <createTable tableName="party_set">
-            <column name="id" type="uuid">
+            <column name="id" type="VARCHAR(26)">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="pk_party_set"/>
             </column>
             <column name="uid" type="VARCHAR(11)">
@@ -113,10 +113,10 @@
             <column name="id" type="bigserial">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="pk_party_set_member"/>
             </column>
-            <column name="party_set_id" type="uuid">
+            <column name="party_set_id" type="VARCHAR(26)">
                 <constraints nullable="false"/>
             </column>
-            <column name="party_id" type="uuid">
+            <column name="party_id" type="VARCHAR(26)">
                 <constraints nullable="false"/>
             </column>
         </createTable>

@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/partySets")
@@ -26,11 +25,11 @@ public class PartySetResource {
         }
         PartySetDto result = partySetService.save(partySetDto);
         return ResponseEntity.created(new URI("/api/admin/partySets/" + result.getId()))
-            .body(result);
+                .body(result);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PartySetDto> updatePartySet(@PathVariable UUID id, @RequestBody PartySetDto partySetDto) {
+    public ResponseEntity<PartySetDto> updatePartySet(@PathVariable String id, @RequestBody PartySetDto partySetDto) {
         partySetDto.setId(id);
         PartySetDto result = partySetService.save(partySetDto);
         return ResponseEntity.ok(result);
@@ -43,12 +42,11 @@ public class PartySetResource {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PartySetDto> getPartySet(@PathVariable UUID id) {
+    public ResponseEntity<PartySetDto> getPartySet(@PathVariable String id) {
         return partySetService.findOne(id)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
-
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePartySet(@PathVariable String id) {
@@ -56,4 +54,3 @@ public class PartySetResource {
         return ResponseEntity.noContent().build();
     }
 }
-

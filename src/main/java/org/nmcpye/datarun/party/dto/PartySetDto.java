@@ -6,12 +6,11 @@ import lombok.Data;
 import org.nmcpye.datarun.party.entities.PartySetKind;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Data
 @Builder
 public class PartySetDto {
-    private UUID id;
+    private String id;
     private String uid;
     private String name;
     private String code;

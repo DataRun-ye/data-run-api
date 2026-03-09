@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.assignment.repository;
 
 import io.hypersistence.utils.spring.repository.BaseJpaRepository;
-import org.nmcpye.datarun.jpa.assignment.AssignmentDataTemplateEntity;
+import org.nmcpye.datarun.jpa.assignment.AssignmentRoleDataPolicy;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -10,16 +10,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-/// Spring Data JPA repository for the AssignmentPartyBinding entity.
+/// Spring Data JPA repository for the AssignmentRolePartyPolicy entity.
 ///
 /// @author Hamza Assada 28/12/2025
 @Repository
-public interface AssignmentDataTemplateRepository
-    extends BaseJpaRepository<AssignmentDataTemplateEntity, UUID> {
+public interface AssignmentRoleDataPolicyRepository
+    extends BaseJpaRepository<AssignmentRoleDataPolicy, UUID> {
 
-    List<AssignmentDataTemplateEntity> findByAssignmentIdIn(Collection<String> assignmentIds);
+    List<AssignmentRoleDataPolicy> findByAssignmentIdIn(Collection<String> assignmentIds);
 
-    Collection<AssignmentDataTemplateEntity> findByAssignmentId(String assignmentId);
+    Collection<AssignmentRoleDataPolicy> findByAssignmentId(String assignmentId);
 
     @Query(value = """
         WITH user_principals AS (

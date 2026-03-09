@@ -9,7 +9,6 @@ import org.nmcpye.datarun.party.dto.CombineMode;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 /// The "Manifest" DTO: Everything the client needs to initialize a context.
 ///
@@ -47,7 +46,7 @@ public class AssignmentManifestDto {
         /// `Null` if global for assignment
         private String templateUid;
         private String roleName;
-        private UUID partySetId;
+        private String partySetId;
 
         CombineMode combineMode;
         /// For debugging/audit: "Role Binding (Team X)", "Assignment Default", etc.

@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
-public class AssignmentDataTemplateJooqRepository {
+public class AssignmentRoleDataPolicyJooqRepository {
 
     private final DSLContext dsl;
 

@@ -3,10 +3,15 @@ package org.nmcpye.datarun.jpa.assignment.dto;
 import lombok.Builder;
 import lombok.Data;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AssignmentMemberDto {
-    private Long id;
+    private String id;
     private String assignmentId;
     private String memberType; // USER | TEAM | USER_GROUP
     private String memberId;

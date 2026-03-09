@@ -2,7 +2,7 @@ package org.nmcpye.datarun.party.service;
 
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.analytics.exception.InvalidRequestException;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentPartyBindingRepository;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRolePartyPolicyRepository;
 import org.nmcpye.datarun.party.dto.PagedRequest;
 import org.nmcpye.datarun.party.dto.PartyResolutionRequest;
 import org.nmcpye.datarun.party.dto.PartySetDto;
@@ -23,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,7 +33,7 @@ public class PartySetService {
     private final PartySetRepository partySetRepository;
     private final PartyResolutionEngine engine;
     private final PartySetMapper partySetMapper;
-    private final AssignmentPartyBindingRepository bindingRepository;
+    private final AssignmentRolePartyPolicyRepository bindingRepository;
 
     public PartySetDto save(PartySetDto partySetDto) {
         PartySet partySet = partySetMapper.toEntity(partySetDto);
@@ -46,31 +45,33 @@ public class PartySetService {
     @Transactional(readOnly = true)
     public List<PartySetDto> findAll() {
         return partySetRepository.findAll().stream()
-            .map(partySetMapper::toDto)
-            .collect(Collectors.toList());
+                .map(partySetMapper::toDto)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public Optional<PartySetDto> findOne(UUID id) {
+    public Optional<PartySetDto> findOne(String id) {
         return partySetRepository.findById(id).map(partySetMapper::toDto);
     }
 
     @Transactional(readOnly = true)
     public Page<ResolvedParty> findPartiesBySetId(String optionSetId, PagedRequest pagedRequest,
-                                                  CurrentUserDetails user) {
+            CurrentUserDetails user) {
         final var pageable = pagedRequest.getPageable();
         final var partySet = partySetRepository.findByUid(optionSetId)
-            .orElseThrow(() -> new NotFoundObjectException("PartySet with optionSetId: " + optionSetId + " not found"));
+                .orElseThrow(
+                        () -> new NotFoundObjectException("PartySet with optionSetId: " + optionSetId + " not found"));
 
         final List<ResolvedParty> parties;
         try {
             parties = engine.executeStrategy(partySet.getKind(), partySet.getId(),
-                partySet.getSpec() != null ? PagedRequest.specToString(partySet.getSpec()) : null, true, PartyResolutionRequest.builder()
-                    .userId(user.getId())
-                    .limit(pagedRequest.getSize())
-                    .offset(pagedRequest.getPage() * pagedRequest.getSize())
-                    .since(pagedRequest.getSince())
-                    .build());
+                    partySet.getSpec() != null ? PagedRequest.specToString(partySet.getSpec()) : null, true,
+                    PartyResolutionRequest.builder()
+                            .userId(user.getId())
+                            .limit(pagedRequest.getSize())
+                            .offset(pagedRequest.getPage() * pagedRequest.getSize())
+                            .since(pagedRequest.getSince())
+                            .build());
         } catch (IOException e) {
             throw new InvalidRequestException("invalid PartySet specs:\n" + e.getMessage());
         }
@@ -79,19 +80,18 @@ public class PartySetService {
     }
 
     public void delete(String id) {
-        boolean isUUid = UuidUtils.isUuid(id);
+        boolean isUid = id != null && id.length() == 11;
         // **VALIDATION STEP**
         // Check if any bindings are currently using this PartySet.
-        if (bindingRepository.existsByPartySetUid(id) || (isUUid &&
-            bindingRepository.existsByPartySetId(UuidUtils.toUuid(id)))) {
+        if (bindingRepository.existsByPartySetUid(id) || (!isUid &&
+                bindingRepository.existsByPartySetId(id))) {
             throw new DeletionConflictException(
-                "Cannot delete PartySet with ID " + id + ". It is currently in use by one or more bindings."
-            );
+                    "Cannot delete PartySet with ID " + id + ". It is currently in use by one or more bindings.");
         }
 
         // If the check passes, proceed with the deletion.
-        if (isUUid) {
-            partySetRepository.deleteById(UuidUtils.toUuid(id));
+        if (!isUid) {
+            partySetRepository.deleteById(id);
         } else {
             partySetRepository.deleteByUid(id);
         }

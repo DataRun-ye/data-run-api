@@ -10,7 +10,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.UUID;
 
 @Entity
 @Table(name = "party_tag")
@@ -26,7 +25,7 @@ public class PartyTag {
     private Long id;
 
     @Column(name = "party_id", nullable = false)
-    private UUID partyId;
+    private String partyId;
 
     @Column(name = "tag_key", length = 64)
     private String tagKey;

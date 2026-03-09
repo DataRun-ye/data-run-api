@@ -20,9 +20,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.AssignmentPartyBinding;
+import org.nmcpye.datarun.jpa.assignment.AssignmentMember;
+import org.nmcpye.datarun.jpa.assignment.AssignmentRolePartyPolicy;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentMemberRepository;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentPartyBindingRepository;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRolePartyPolicyRepository;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.party.dto.PartyResolutionRequest;
 import org.nmcpye.datarun.party.dto.ResolvedParty;
@@ -46,7 +47,7 @@ public class UserExecutionContextProjector {
     private final CurrentUserInfoService currentUserInfoService;
     private final AssignmentMemberRepository assignmentMemberRepository;
     private final AssignmentRepository assignmentRepository;
-    private final AssignmentPartyBindingRepository assignmentPartyBindingRepository;
+    private final AssignmentRolePartyPolicyRepository AssignmentRolePartyPolicyRepository;
     private final PartyResolutionEngine partyResolutionEngine;
     private final ObjectMapper objectMapper;
 
@@ -113,10 +114,16 @@ public class UserExecutionContextProjector {
         if (!activeAssignmentIds.isEmpty()) {
             List<Assignment> assignments = assignmentRepository.findAllById(activeAssignmentIds);
 
-            List<AssignmentPartyBinding> bindings = assignmentPartyBindingRepository
+            List<AssignmentRolePartyPolicy> bindings = AssignmentRolePartyPolicyRepository
                     .findByAssignmentIdIn(activeAssignmentIds);
-            Map<String, List<AssignmentPartyBinding>> bindingsByAssignment = bindings.stream()
+            Map<String, List<AssignmentRolePartyPolicy>> bindingsByAssignment = bindings.stream()
                     .collect(Collectors.groupingBy(b -> String.valueOf(b.getAssignment().getId())));
+
+            // Fetch explicit members for role lookup
+            List<AssignmentMember> members = assignmentMemberRepository
+                    .findActiveAssignmentIdsForPrincipals(activeAssignmentIds, principalIds);
+            Map<String, List<AssignmentMember>> membersByAssignment = members.stream()
+                    .collect(Collectors.groupingBy(m -> String.valueOf(m.getAssignmentId())));
 
             for (Assignment assignment : assignments) {
                 String assignmentIdStr = String.valueOf(assignment.getId());
@@ -131,13 +138,24 @@ public class UserExecutionContextProjector {
                 }
 
                 // New Bindings Path
-                List<AssignmentPartyBinding> assignmentBindings = bindingsByAssignment.getOrDefault(assignmentIdStr,
+                List<AssignmentRolePartyPolicy> assignmentBindings = bindingsByAssignment.getOrDefault(assignmentIdStr,
                         List.of());
-                for (AssignmentPartyBinding binding : assignmentBindings) {
-                    // Only process bindings that apply to our principal (or are global/null
-                    // principal)
-                    boolean appliesToUser = binding.getPrincipalId() == null
-                            || principalIds.contains(binding.getPrincipalId());
+
+                Set<String> userRolesInAssignment = membersByAssignment.getOrDefault(assignmentIdStr, List.of())
+                        .stream()
+                        .map(AssignmentMember::getRole)
+                        .collect(Collectors.toSet());
+
+                // If the user has an implicit assignment (through team without member row), we
+                // assume a generic role.
+                // Assuming "MEMBER" or "DEFAULT" applies for any general member policy if
+                // needed, or we just rely on wildcard policies.
+                userRolesInAssignment.add("MEMBER");
+
+                for (AssignmentRolePartyPolicy binding : assignmentBindings) {
+                    boolean appliesToUser = userRolesInAssignment.contains(binding.getRole())
+                            || "ANY".equalsIgnoreCase(binding.getRole());
+
                     if (!appliesToUser) {
                         continue;
                     }

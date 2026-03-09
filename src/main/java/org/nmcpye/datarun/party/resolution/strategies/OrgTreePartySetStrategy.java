@@ -35,10 +35,10 @@ public class OrgTreePartySetStrategy implements PartySetStrategy {
     }
 
     @Override
-    public List<ResolvedParty> resolve(UUID partySetId,
-                                       String specJson,
-                                       boolean isMaterialized,
-                                       PartyResolutionRequest request) {
+    public List<ResolvedParty> resolve(String partySetId,
+            String specJson,
+            boolean isMaterialized,
+            PartyResolutionRequest request) {
         // 1. Parse Spec
         // Expected Spec: { "rootId": "uuid-of-root", "depth": 5, "includeSelf": true }
         JsonNode spec = null;
@@ -62,8 +62,8 @@ public class OrgTreePartySetStrategy implements PartySetStrategy {
 
         // 3. Get all IDs from the hierarchy first
         Set<UUID> partyIdsInTree = dsl.select(hierarchyIdField)
-            .from(hierarchy)
-            .fetchSet(hierarchyIdField);
+                .from(hierarchy)
+                .fetchSet(hierarchyIdField);
 
         if (!includeSelf) {
             partyIdsInTree.remove(rootId);
@@ -75,7 +75,7 @@ public class OrgTreePartySetStrategy implements PartySetStrategy {
 
         // 4. Build the final query against the PARTY table
         var query = dsl.selectFrom(PARTY)
-            .where(PARTY.ID.in(partyIdsInTree));
+                .where(PARTY.ID.in(partyIdsInTree));
 
         // 5. Apply Search Filter (if provided)
         if (request.getSearchQuery() != null && !request.getSearchQuery().isBlank()) {
@@ -91,30 +91,28 @@ public class OrgTreePartySetStrategy implements PartySetStrategy {
 
         // 8. Execute, Paginate, and Map
         return securedQuery
-            .orderBy(PARTY.NAME.asc())
-            .limit(request.getLimit())
-            .offset(request.getOffset())
-            .fetch(jooqMapper::mapPartyRecord);
+                .orderBy(PARTY.NAME.asc())
+                .limit(request.getLimit())
+                .offset(request.getOffset())
+                .fetch(jooqMapper::mapPartyRecord);
 
     }
 
     private Table<?> buildHierarchyCte(UUID rootId, int depth) {
         return DSL.table(
-            DSL.sql(
-                """
-                    WITH RECURSIVE hierarchy(id, parent_id, level) AS (
-                      SELECT id, parent_id, 1 FROM party WHERE id = ?
-                      UNION ALL
-                      SELECT p.id, p.parent_id, h.level + 1
-                      FROM party p
-                      JOIN hierarchy h ON p.parent_id = h.id
-                      WHERE h.level < ?
-                    )
-                    SELECT id FROM hierarchy
-                    """,
-                rootId,
-                depth
-            )
-        );
+                DSL.sql(
+                        """
+                                WITH RECURSIVE hierarchy(id, parent_id, level) AS (
+                                  SELECT id, parent_id, 1 FROM party WHERE id = ?
+                                  UNION ALL
+                                  SELECT p.id, p.parent_id, h.level + 1
+                                  FROM party p
+                                  JOIN hierarchy h ON p.parent_id = h.id
+                                  WHERE h.level < ?
+                                )
+                                SELECT id FROM hierarchy
+                                """,
+                        rootId,
+                        depth));
     }
 }

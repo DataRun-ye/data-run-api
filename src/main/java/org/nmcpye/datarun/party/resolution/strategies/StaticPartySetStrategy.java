@@ -36,22 +36,21 @@ public class StaticPartySetStrategy implements PartySetStrategy {
     }
 
     @Override
-    public List<ResolvedParty> resolve(UUID partySetId,
-                                       String spec,
-                                       boolean isMaterialized,
-                                       PartyResolutionRequest request) {
+    public List<ResolvedParty> resolve(String partySetId,
+            String spec,
+            boolean isMaterialized,
+            PartyResolutionRequest request) {
 
         // 1. Base Condition: Must belong to this specific set
-        Condition whereCondition = PARTY_SET_MEMBER.PARTY_SET_ID.eq(partySetId);
+        Condition whereCondition = PARTY_SET_MEMBER.PARTY_SET_ID.eq(UUID.fromString(partySetId));
 
         // 2. Apply Search (if provided)
         // We check name or code via case-insensitive search
         if (request.getSearchQuery() != null && !request.getSearchQuery().isBlank()) {
             String term = "%" + request.getSearchQuery().trim() + "%";
             whereCondition = whereCondition.and(
-                PARTY.NAME.likeIgnoreCase(term)
-                    .or(PARTY.CODE.likeIgnoreCase(term))
-            );
+                    PARTY.NAME.likeIgnoreCase(term)
+                            .or(PARTY.CODE.likeIgnoreCase(term)));
         }
 
         var query = dsl.select(
@@ -61,12 +60,11 @@ public class StaticPartySetStrategy implements PartySetStrategy {
                 PARTY.NAME,
                 PARTY.CODE,
                 PARTY_TAG.META,
-                PARTY.SOURCE_TYPE
-            )
-            .from(PARTY)
-            .join(PARTY_SET_MEMBER).on(PARTY.ID.eq(PARTY_SET_MEMBER.PARTY_ID))
-            .join(PARTY_TAG).on(PARTY.ID.eq(PARTY_TAG.PARTY_ID))
-            .where(whereCondition);
+                PARTY.SOURCE_TYPE)
+                .from(PARTY)
+                .join(PARTY_SET_MEMBER).on(PARTY.ID.eq(PARTY_SET_MEMBER.PARTY_ID))
+                .join(PARTY_TAG).on(PARTY.ID.eq(PARTY_TAG.PARTY_ID))
+                .where(whereCondition);
 
         // --- APPLY modified since FILTER ---
         query = applySinceFilter(query, request.getSince());
@@ -76,9 +74,9 @@ public class StaticPartySetStrategy implements PartySetStrategy {
 
         // 3. Execute Query
         return securedQuery
-            .orderBy(PARTY.NAME.asc())
-            .limit(request.getLimit())
-            .offset(request.getOffset())
-            .fetch(jooqMapper::mapPartyRecord);
+                .orderBy(PARTY.NAME.asc())
+                .limit(request.getLimit())
+                .offset(request.getOffset())
+                .fetch(jooqMapper::mapPartyRecord);
     }
 }
