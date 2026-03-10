@@ -8,7 +8,8 @@ import org.nmcpye.datarun.common.SoftDeleteObject;
 import java.util.Objects;
 
 /**
- * Base abstract class for entities which will hold definitions for created, last modified, created by,
+ * Base abstract class for entities which will hold definitions for created,
+ * last modified, created by,
  * last modified by attributes.
  *
  * @author Hamza Assada

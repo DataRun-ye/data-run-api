@@ -25,9 +25,11 @@ import java.util.Set;
  * to, and you cannot change this association later. This means option
  * groups are not unique across the entire system, but are unique within the
  * context of their assigned option set. The main purpose is to group and
- * classify options within a particular option set, allowing for easier management
+ * classify options within a particular option set, allowing for easier
+ * management
  * and filtering of large sets of options. Option group sets also operate within
- * the context of a single option set and cannot span multiple option sets Manage
+ * the context of a single option set and cannot span multiple option sets
+ * Manage
  * option sets.
  *
  * @author Hamza Assada
@@ -35,8 +37,8 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "option_group", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_group_option_set_name", columnNames = {"name", "option_set_id"}),
-    @UniqueConstraint(name = "uc_group_option_set_code", columnNames = {"code", "option_set_id"}),
+        @UniqueConstraint(name = "uc_group_option_set_name", columnNames = { "name", "option_set_id" }),
+        @UniqueConstraint(name = "uc_group_option_set_code", columnNames = { "code", "option_set_id" }),
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
@@ -69,12 +71,8 @@ public class OptionGroup extends JpaIdentifiableObject implements TranslatableIn
     @JoinColumn(name = "option_set_id", updatable = false, nullable = false)
     private OptionSet optionSet;
 
-    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
-    @JoinTable(
-        name = "option_group__options",
-        joinColumns = @JoinColumn(name = "option_group_id"),
-        inverseJoinColumns = @JoinColumn(name = "option_id")
-    )
+    @ManyToMany(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
+    @JoinTable(name = "option_group__options", joinColumns = @JoinColumn(name = "option_group_id"), inverseJoinColumns = @JoinColumn(name = "option_id"))
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<Option> options = new HashSet<>();
 
@@ -86,13 +84,15 @@ public class OptionGroup extends JpaIdentifiableObject implements TranslatableIn
     protected Set<Translation> translations = new HashSet<>();
 
     @JsonProperty("options")
-    @JsonIgnoreProperties(value = {"optionSet", "translations", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "optionSet", "translations", "createdBy", "createdDate", "lastModifiedDate",
+            "lastModifiedBy" }, allowSetters = true)
     public Set<Option> getOptions() {
         return options;
     }
 
     @JsonProperty("optionSet")
-    @JsonIgnoreProperties(value = {"options", "translations", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "options", "translations", "createdBy", "createdDate", "lastModifiedDate",
+            "lastModifiedBy" }, allowSetters = true)
     public OptionSet getOptionSet() {
         return optionSet;
     }

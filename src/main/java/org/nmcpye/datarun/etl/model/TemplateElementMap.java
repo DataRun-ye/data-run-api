@@ -3,7 +3,7 @@ package org.nmcpye.datarun.etl.model;
 
 import lombok.Getter;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 
@@ -35,7 +35,7 @@ public class TemplateElementMap {
 
     private final Map<String, AbstractElement> elementByIdPathMap;
 
-    private final Map<String, AbstractElement> elementByJsonDataPathMap;
+//    private final Map<String, AbstractElement> elementByJsonDataPathMap;
 
     /**
      * jsonDataPath -> TemplateElement
@@ -44,15 +44,10 @@ public class TemplateElementMap {
      */
     private final Map<String, TemplateElement> elementConfigByNamePathMap;
 
-//    /**
-//     * repeat_uid -> semantic_path
-//     */
-//    private final Map<String, String> repeatCanonicalPathMap;
-
     /**
      * elementId->path reverse map, for getting path by an elementId for retrieving categoryElement's path by its id
      */
-    private final Map<String, FormDataElementConf> fieldElementReverseIdPathMap;
+    private final Map<String, FieldTemplateElementDto> fieldElementReverseIdPathMap;
 
     /**
      * top-level fields mapping: relativePath -> elementId
@@ -75,19 +70,15 @@ public class TemplateElementMap {
         this.elementByIdPathMap = Map.copyOf(dto.getAllElementPathMap() == null ? Map.of() : dto.getAllElementPathMap());
         this.fieldElementReverseIdPathMap = Map.copyOf(elementByIdPathMap.values()
             .stream()
-            .filter(FormDataElementConf.class::isInstance)
-            .map(FormDataElementConf.class::cast)
-            .collect(Collectors.toMap(FormDataElementConf::getId, Function.identity())));
-        this.elementByJsonDataPathMap = this.elementByIdPathMap.entrySet().stream()
-            .collect(Collectors.toMap(
-                entry -> entry.getKey()
-                    .replaceFirst(entry.getValue()
-                        .getId(), entry.getValue().getName()),
-                Map.Entry::getValue));
+            .filter(FieldTemplateElementDto.class::isInstance)
+            .map(FieldTemplateElementDto.class::cast)
+            .collect(Collectors.toMap(FieldTemplateElementDto::getId, Function.identity())));
+//        this.elementByJsonDataPathMap = this.elementByIdPathMap.entrySet().stream()
+//            .collect(Collectors.toMap(
+//                entry -> entry.getKey()
+//                    .replaceFirst(entry.getValue()
+//                        .getId(), entry.getValue().getName()),
+//                Map.Entry::getValue));
         this.elementConfigByNamePathMap = elementConfigByJsonDataPathMap;
-//        this.repeatCanonicalPathMap = elementConfigByJsonDataPathMap.values()
-//            .stream()
-//            .filter(TemplateElement::isRepeat).collect(Collectors
-//                .toMap(TemplateElement::getRepeatUid, TemplateElement::getIdPath));
     }
 }

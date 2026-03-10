@@ -53,7 +53,7 @@ public class Project extends JpaIdentifiableObject implements TranslatableInterf
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "project")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"project"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "project" }, allowSetters = true)
     private Set<Activity> activities = new HashSet<>();
 
     @Type(JsonType.class)

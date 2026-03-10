@@ -4,8 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.datatemplateelement.DataFieldRule;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.nmcpye.datarun.datatemplateelement.enumeration.RuleAction;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.web.rest.v2.dto.TemplateTreeNode;
@@ -20,16 +20,16 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class TemplateTreeTransformerTest {
 
-    private List<FormSectionConf> sections;
-    private List<FormDataElementConf> fields;
+    private List<SectionTemplateElementDto> sections;
+    private List<FieldTemplateElementDto> fields;
 
     @BeforeEach
     void setUp() {
         // Build sections matching the V1 sample
-        FormSectionConf main = buildSection("main", 100, false);
-        FormSectionConf patients = buildSection("patients", 200, false);
-        FormSectionConf medicines = buildSection("medicines", 300, true);
-        FormSectionConf referrals = buildSection("referrals", 400, false);
+        SectionTemplateElementDto main = buildSection("main", 100, false);
+        SectionTemplateElementDto patients = buildSection("patients", 200, false);
+        SectionTemplateElementDto medicines = buildSection("medicines", 300, true);
+        SectionTemplateElementDto referrals = buildSection("referrals", 400, false);
 
         sections = List.of(main, patients, medicines, referrals);
 
@@ -157,13 +157,13 @@ class TemplateTreeTransformerTest {
     @DisplayName("T7: Nested section (repeater inside section) produces correct hierarchy")
     void nestedSectionTransform() {
         // parent section → child repeater inside it
-        FormSectionConf parent = buildSection("parent_section", 100, false);
-        FormSectionConf childRepeater = buildSection("child_repeater", 200, true);
+        SectionTemplateElementDto parent = buildSection("parent_section", 100, false);
+        SectionTemplateElementDto childRepeater = buildSection("child_repeater", 200, true);
         childRepeater.setParent("parent_section");
 
-        FormDataElementConf parentField = buildField("field_a", "FA001", "parent_section",
+        FieldTemplateElementDto parentField = buildField("field_a", "FA001", "parent_section",
                 ValueType.Text, 101, false, null);
-        FormDataElementConf childField = buildField("item_name", "CF001", "child_repeater",
+        FieldTemplateElementDto childField = buildField("item_name", "CF001", "child_repeater",
                 ValueType.Text, 201, true, null);
 
         TemplateTreeNode root = TemplateTreeTransformer.transform(
@@ -196,9 +196,9 @@ class TemplateTreeTransformerTest {
     @Test
     @DisplayName("T8: Validation rule carried through to V2 tree node")
     void validationCarriedThrough() {
-        FormSectionConf section = buildSection("main", 100, false);
+        SectionTemplateElementDto section = buildSection("main", 100, false);
 
-        FormDataElementConf field = buildField("age", "AGE001", "main",
+        FieldTemplateElementDto field = buildField("age", "AGE001", "main",
                 ValueType.Integer, 101, true, null);
         // Set a validation rule
         org.nmcpye.datarun.datatemplateelement.ElementValidationRule validationRule = new org.nmcpye.datarun.datatemplateelement.ElementValidationRule();
@@ -219,8 +219,8 @@ class TemplateTreeTransformerTest {
         assertNotNull(validation.get("message"));
     }
 
-    private FormSectionConf buildSection(String name, int order, boolean repeatable) {
-        FormSectionConf section = new FormSectionConf();
+    private SectionTemplateElementDto buildSection(String name, int order, boolean repeatable) {
+        SectionTemplateElementDto section = new SectionTemplateElementDto();
         section.setName(name);
         section.setOrder(order);
         section.setRepeatable(repeatable);
@@ -228,10 +228,10 @@ class TemplateTreeTransformerTest {
         return section;
     }
 
-    private FormDataElementConf buildField(String name, String id, String parent,
-            ValueType type, int order,
-            boolean mandatory, String optionSet) {
-        FormDataElementConf field = new FormDataElementConf();
+    private FieldTemplateElementDto buildField(String name, String id, String parent,
+                                               ValueType type, int order,
+                                               boolean mandatory, String optionSet) {
+        FieldTemplateElementDto field = new FieldTemplateElementDto();
         field.setName(name);
         field.setId(id);
         field.setParent(parent);
@@ -243,11 +243,11 @@ class TemplateTreeTransformerTest {
         return field;
     }
 
-    private FormDataElementConf buildFieldWithRule(String name, String id, String parent,
-            ValueType type, int order,
-            boolean mandatory,
-            String ruleExpr, RuleAction ruleAction) {
-        FormDataElementConf field = buildField(name, id, parent, type, order, mandatory, null);
+    private FieldTemplateElementDto buildFieldWithRule(String name, String id, String parent,
+                                                       ValueType type, int order,
+                                                       boolean mandatory,
+                                                       String ruleExpr, RuleAction ruleAction) {
+        FieldTemplateElementDto field = buildField(name, id, parent, type, order, mandatory, null);
         DataFieldRule rule = new DataFieldRule();
         rule.setExpression(ruleExpr);
         rule.setAction(ruleAction);

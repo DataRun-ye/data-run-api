@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.service.acl;
 
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,14 +69,14 @@ public final class FieldResolver {
     /**
      * Build a FieldResolver from the template's sections and fields.
      */
-    public static FieldResolver build(List<FormSectionConf> sections,
-            List<FormDataElementConf> fields) {
+    public static FieldResolver build(List<SectionTemplateElementDto> sections,
+            List<FieldTemplateElementDto> fields) {
         Map<String, String> fieldOwnerMap = new HashMap<>();
         Map<String, String> sectionParentMap = new HashMap<>();
         Map<String, Boolean> sectionRepeatableMap = new HashMap<>();
 
         if (sections != null) {
-            for (FormSectionConf section : sections) {
+            for (SectionTemplateElementDto section : sections) {
                 sectionParentMap.put(section.getName(), section.getParent());
                 sectionRepeatableMap.put(
                         section.getName(),
@@ -85,7 +85,7 @@ public final class FieldResolver {
         }
 
         if (fields != null) {
-            for (FormDataElementConf field : fields) {
+            for (FieldTemplateElementDto field : fields) {
                 if (field.getName() != null && field.getParent() != null) {
                     fieldOwnerMap.put(field.getName(), field.getParent());
                 }

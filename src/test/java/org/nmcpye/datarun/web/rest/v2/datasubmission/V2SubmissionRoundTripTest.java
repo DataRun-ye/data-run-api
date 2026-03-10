@@ -6,7 +6,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.nmcpye.datarun.etl.model.TemplateElementMap;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
@@ -88,17 +89,17 @@ class V2SubmissionRoundTripTest {
             TemplateVersion version = new TemplateVersion();
             version.setUid("ver01");
 
-            FormSectionConf mainSection = new FormSectionConf();
+            SectionTemplateElementDto mainSection = new SectionTemplateElementDto();
             mainSection.setName("main");
             mainSection.setRepeatable(false);
 
-            FormSectionConf repeatSection = new FormSectionConf();
+            SectionTemplateElementDto repeatSection = new SectionTemplateElementDto();
             repeatSection.setName("medicines");
             repeatSection.setRepeatable(true);
 
             version.setSections(List.of(mainSection, repeatSection));
 
-            org.nmcpye.datarun.datatemplateelement.FormDataElementConf visitdateField = new org.nmcpye.datarun.datatemplateelement.FormDataElementConf();
+            FieldTemplateElementDto visitdateField = new FieldTemplateElementDto();
             visitdateField.setName("visitdate");
             visitdateField.setParent("main");
             version.setFields(List.of(visitdateField));

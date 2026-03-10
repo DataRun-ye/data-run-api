@@ -8,13 +8,12 @@ import java.io.Serializable;
 
 @Getter
 @Setter
-public class FormSectionConf extends AbstractElement implements Serializable {
+public class SectionTemplateElementDto extends AbstractElement implements Serializable {
 
     private Boolean repeatable = false;
     private String categoryId;
 
     @JsonProperty
-//    @JsonIgnore
     public String getId() {
         return getName();
     }
@@ -34,12 +33,12 @@ public class FormSectionConf extends AbstractElement implements Serializable {
     }
 
     @Override
-    public FormSectionConf path(String path) {
+    public SectionTemplateElementDto path(String path) {
         this.setPath(path);
         return this;
     }
 
-    public FormSectionConf name(String name) {
+    public SectionTemplateElementDto name(String name) {
         this.setName(name);
         return this;
     }

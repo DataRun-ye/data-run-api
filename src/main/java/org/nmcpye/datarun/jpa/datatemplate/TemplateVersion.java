@@ -13,8 +13,8 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.nmcpye.datarun.datatemplateelement.DataOption;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateVersionInterface;
 
@@ -26,12 +26,12 @@ import java.util.List;
  */
 @Entity
 @Table(name = "data_template_version", uniqueConstraints = {
-    @UniqueConstraint(name = "ux_tv_id_data_template_id", columnNames = {"id", "data_template_id"}),
-    @UniqueConstraint(name = "ux_tv_no_data_template_id", columnNames = {"version_number", "data_template_id"})
+        @UniqueConstraint(name = "ux_tv_id_data_template_id", columnNames = { "id", "data_template_id" }),
+        @UniqueConstraint(name = "ux_tv_no_data_template_id", columnNames = { "version_number", "data_template_id" })
 }, indexes = {
-    @Index(name = "idx_tv_template_uid", columnList = "template_uid"),
-    @Index(name = "idx_tv_version_no", columnList = "version_number"),
-    @Index(name = "idx_tv_template_uid_version_desc", columnList = "template_uid, version_number"),
+        @Index(name = "idx_tv_template_uid", columnList = "template_uid"),
+        @Index(name = "idx_tv_version_no", columnList = "version_number"),
+        @Index(name = "idx_tv_template_uid_version_desc", columnList = "template_uid, version_number"),
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
@@ -54,11 +54,11 @@ public class TemplateVersion extends JpaIdentifiableObject implements DataTempla
 
     @JdbcTypeCode(SqlTypes.JSON) // Specifies JSON mapping
     @Column(name = "fields", columnDefinition = "jsonb", nullable = false)
-    private List<FormDataElementConf> fields;
+    private List<FieldTemplateElementDto> fields;
 
     @JdbcTypeCode(SqlTypes.JSON) // Specifies JSON mapping
     @Column(name = "sections", columnDefinition = "jsonb", nullable = false)
-    private List<FormSectionConf> sections;
+    private List<SectionTemplateElementDto> sections;
 
     @JdbcTypeCode(SqlTypes.JSON) // Specifies JSON mapping
     @Column(name = "options", columnDefinition = "jsonb")
@@ -116,13 +116,13 @@ public class TemplateVersion extends JpaIdentifiableObject implements DataTempla
     }
 
     @Override
-    public DataTemplateVersionInterface sections(List<FormSectionConf> sections) {
+    public DataTemplateVersionInterface sections(List<SectionTemplateElementDto> sections) {
         this.sections = sections;
         return this;
     }
 
     @Override
-    public DataTemplateVersionInterface fields(List<FormDataElementConf> fields) {
+    public DataTemplateVersionInterface fields(List<FieldTemplateElementDto> fields) {
         this.fields = fields;
         return this;
     }

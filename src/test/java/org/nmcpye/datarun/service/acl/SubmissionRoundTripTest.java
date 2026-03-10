@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 
 import java.util.List;
 
@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class SubmissionRoundTripTest {
 
     private ObjectMapper mapper;
-    private List<FormSectionConf> sections;
-    private List<FormDataElementConf> fields;
+    private List<SectionTemplateElementDto> sections;
+    private List<FieldTemplateElementDto> fields;
     private static final String SUBMISSION_UID = "z3Ye07TDj7a";
 
     @BeforeEach
@@ -31,22 +31,22 @@ class SubmissionRoundTripTest {
         mapper = new ObjectMapper();
 
         // Sections
-        FormSectionConf main = new FormSectionConf();
+        SectionTemplateElementDto main = new SectionTemplateElementDto();
         main.setName("main");
         main.setRepeatable(false);
         main.setOrder(100);
 
-        FormSectionConf patients = new FormSectionConf();
+        SectionTemplateElementDto patients = new SectionTemplateElementDto();
         patients.setName("patients");
         patients.setRepeatable(false);
         patients.setOrder(200);
 
-        FormSectionConf medicines = new FormSectionConf();
+        SectionTemplateElementDto medicines = new SectionTemplateElementDto();
         medicines.setName("medicines");
         medicines.setRepeatable(true);
         medicines.setOrder(300);
 
-        FormSectionConf referrals = new FormSectionConf();
+        SectionTemplateElementDto referrals = new SectionTemplateElementDto();
         referrals.setName("referrals");
         referrals.setRepeatable(false);
         referrals.setOrder(400);
@@ -69,8 +69,8 @@ class SubmissionRoundTripTest {
                 buildField("cm_measures", "referrals"));
     }
 
-    private FormDataElementConf buildField(String name, String parent) {
-        FormDataElementConf field = new FormDataElementConf();
+    private FieldTemplateElementDto buildField(String name, String parent) {
+        FieldTemplateElementDto field = new FieldTemplateElementDto();
         field.setName(name);
         field.setParent(parent);
         return field;
@@ -201,17 +201,17 @@ class SubmissionRoundTripTest {
     @Test
     @DisplayName("Round-trip: nested repeaters preserve parent linkage")
     void nestedRepeatersRoundTrip() throws Exception {
-        FormSectionConf households = new FormSectionConf();
+        SectionTemplateElementDto households = new SectionTemplateElementDto();
         households.setName("households");
         households.setRepeatable(true);
         households.setOrder(100);
 
-        FormSectionConf members = new FormSectionConf();
+        SectionTemplateElementDto members = new SectionTemplateElementDto();
         members.setName("family_members");
         members.setRepeatable(true);
         members.setOrder(200);
 
-        List<FormSectionConf> nestedSections = List.of(households, members);
+        List<SectionTemplateElementDto> nestedSections = List.of(households, members);
 
         String v1Json = """
                 {

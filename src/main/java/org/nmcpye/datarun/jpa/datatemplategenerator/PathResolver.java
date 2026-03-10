@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.jpa.datatemplategenerator;
 
 
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 
 /**
  * Resolve path metadata for a field given section definitions map.
@@ -11,6 +11,6 @@ import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
  * @since 09/09/2025
  */
 public interface PathResolver {
-    PathMetadata resolveForField(FormDataElementConf field);
-    PathMetadata resolveForSection(FormSectionConf section);
+    PathMetadata resolveForField(FieldTemplateElementDto field);
+    PathMetadata resolveForSection(SectionTemplateElementDto section);
 }

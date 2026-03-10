@@ -5,8 +5,8 @@ import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 /**
  * @author Hamza Assada 18/03/2025 (7amza.it@gmail.com)
  */
-public interface FormElementHandler<T extends AbstractElement> {
-    FormElementHandler<T> linkWith(FormElementHandler<T> next);
+public interface TemplateElementHandler<T extends AbstractElement> {
+    TemplateElementHandler<T> linkWith(TemplateElementHandler<T> next);
 
     T process(T element);
 }

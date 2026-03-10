@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
@@ -13,6 +14,7 @@ import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 import org.nmcpye.datarun.jpa.option.OptionSet;
 
@@ -29,9 +31,34 @@ import java.util.Set;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataElement extends BaseDataElement implements TranslatableInterface {
+public class DataElement extends JpaIdentifiableObject implements TranslatableInterface {
+    @Size(max = 11)
+    @Column(name = "uid", length = 11, updatable = false, unique = true)
+    protected String uid;
     /**
-     * Type of Value (e.g, Text, Number, Integer, OrgUnit, Entity, Team, Date, Coordinates)
+     * The code for this Element.
+     * unique, but not required
+     */
+    @Column(name = "code", unique = true)
+    protected String code;
+
+    /**
+     * The name of this data element.
+     * Required and unique with no spaces.
+     */
+    @Column(name = "name", nullable = false, unique = true)
+    protected String name;
+
+    @Column(name = "short_name", length = 50)
+    protected String shortName;
+
+    @Size(max = 2000)
+    @Column(name = "description")
+    protected String description;
+
+    /**
+     * Type of Value (e.g, Text, Number, Integer, OrgUnit, Entity, Team, Date,
+     * Coordinates)
      */
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -44,7 +71,7 @@ public class DataElement extends BaseDataElement implements TranslatableInterfac
      * the dataType is of type `Select` or =null otherwise.
      */
     @ManyToOne
-    @JsonIgnoreProperties(value = {"options"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "options" }, allowSetters = true)
     @JoinColumn(updatable = false)
     protected OptionSet optionSet;
 

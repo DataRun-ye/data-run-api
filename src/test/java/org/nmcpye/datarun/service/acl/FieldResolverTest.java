@@ -3,8 +3,8 @@ package org.nmcpye.datarun.service.acl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,14 +21,14 @@ class FieldResolverTest {
     @BeforeEach
     void setUp() {
         // Template: main (section) → patients (section) → medicines (repeater)
-        FormSectionConf main = buildSection("main", null, false);
-        FormSectionConf patients = buildSection("patients", null, false);
-        FormSectionConf medicines = buildSection("medicines", null, true);
+        SectionTemplateElementDto main = buildSection("main", null, false);
+        SectionTemplateElementDto patients = buildSection("patients", null, false);
+        SectionTemplateElementDto medicines = buildSection("medicines", null, true);
 
-        FormDataElementConf visitdate = buildField("visitdate", "LyIGccZ5mna", "main");
-        FormDataElementConf gender = buildField("gender", "eCw9HcbcnW7", "patients");
-        FormDataElementConf amd = buildField("amd", "pHjMRAL4glF", "medicines");
-        FormDataElementConf druguom = buildField("druguom", "gjkfAEM4bwc", "medicines");
+        FieldTemplateElementDto visitdate = buildField("visitdate", "LyIGccZ5mna", "main");
+        FieldTemplateElementDto gender = buildField("gender", "eCw9HcbcnW7", "patients");
+        FieldTemplateElementDto amd = buildField("amd", "pHjMRAL4glF", "medicines");
+        FieldTemplateElementDto druguom = buildField("druguom", "gjkfAEM4bwc", "medicines");
 
         resolver = FieldResolver.build(
                 List.of(main, patients, medicines),
@@ -101,16 +101,16 @@ class FieldResolverTest {
         assertFalse(resolver.isRepeater("nonexistent"));
     }
 
-    private FormSectionConf buildSection(String name, String parent, boolean repeatable) {
-        FormSectionConf section = new FormSectionConf();
+    private SectionTemplateElementDto buildSection(String name, String parent, boolean repeatable) {
+        SectionTemplateElementDto section = new SectionTemplateElementDto();
         section.setName(name);
         section.setParent(parent);
         section.setRepeatable(repeatable);
         return section;
     }
 
-    private FormDataElementConf buildField(String name, String id, String parent) {
-        FormDataElementConf field = new FormDataElementConf();
+    private FieldTemplateElementDto buildField(String name, String id, String parent) {
+        FieldTemplateElementDto field = new FieldTemplateElementDto();
         field.setName(name);
         field.setId(id);
         field.setParent(parent);

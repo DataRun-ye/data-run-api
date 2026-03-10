@@ -2,8 +2,8 @@ package org.nmcpye.datarun.jpa.datatemplategenerator;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.nmcpye.datarun.jpa.datatemplate.DataType;
 import org.nmcpye.datarun.jpa.datatemplate.SemanticType;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
@@ -27,7 +27,7 @@ import java.util.Objects;
 public class TemplateElementBuilderImpl implements TemplateElementBuilder {
 
     @Override
-    public TemplateElement buildTemplateElementFromField(FormDataElementConf f,
+    public TemplateElement buildTemplateElementFromField(FieldTemplateElementDto f,
                                                          PathMetadata meta,
                                                          TemplateVersion templateVersion) {
         Objects.requireNonNull(f);
@@ -60,7 +60,7 @@ public class TemplateElementBuilderImpl implements TemplateElementBuilder {
     }
 
     @Override
-    public TemplateElement buildTemplateElementFromRepeat(FormSectionConf section,
+    public TemplateElement buildTemplateElementFromRepeat(SectionTemplateElementDto section,
                                                           PathMetadata meta,
                                                           TemplateVersion templateVersion) {
         Objects.requireNonNull(section);

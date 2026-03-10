@@ -17,7 +17,7 @@ import java.util.Objects;
 
 @Getter
 @Setter
-public class FormDataElementConf extends AbstractElement implements Serializable {
+public class FieldTemplateElementDto extends AbstractElement implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -139,12 +139,12 @@ public class FormDataElementConf extends AbstractElement implements Serializable
     // public Boolean getMainFieldLegacy() { return this.showInSummary; }
 
     @Override
-    public FormDataElementConf path(String path) {
+    public FieldTemplateElementDto path(String path) {
         this.setPath(path);
         return this;
     }
 
-    public FormDataElementConf type(ValueType type) {
+    public FieldTemplateElementDto type(ValueType type) {
         this.setType(type);
         return this;
     }
@@ -152,7 +152,7 @@ public class FormDataElementConf extends AbstractElement implements Serializable
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof FormDataElementConf that)) return false;
+        if (!(o instanceof FieldTemplateElementDto that)) return false;
         return Objects.equals(getId(), that.getId());
     }
 

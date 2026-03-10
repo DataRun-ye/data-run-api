@@ -37,7 +37,6 @@ public class AssignmentResource {
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private final AssignmentV1Service v1Service;
-    private final AssignmentService assignmentService; // Still needed for path updates until we decouple further
 
     @GetMapping("")
     public ResponseEntity<PagedResponse<AssignmentV1Dto>> getAll(QueryRequest queryRequest) {
@@ -58,22 +57,5 @@ public class AssignmentResource {
             @RequestBody(required = false) String jsonQuery) {
         log.debug("REST request to get Assignments with forms/access");
         return ResponseEntity.ok(v1Service.getAllWithAccess(queryRequest, jsonQuery));
-    }
-
-    @GetMapping("/updatePaths")
-    public ResponseEntity<String> updatePaths(
-            @RequestParam(name = "forceUpdate", required = false, defaultValue = "false") boolean forceUpdate) {
-        log.debug("REST request to update orgUnit Paths");
-        try {
-            if (forceUpdate) {
-                assignmentService.forceUpdatePaths();
-            } else {
-                assignmentService.updatePaths();
-            }
-            return ResponseEntity.ok("Paths updated successfully");
-        } catch (Exception e) {
-            log.error("Error occurred while updating paths", e);
-            throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1003, e.getMessage()));
-        }
     }
 }

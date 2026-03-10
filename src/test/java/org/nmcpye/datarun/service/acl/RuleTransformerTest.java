@@ -4,8 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.datatemplateelement.DataFieldRule;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.nmcpye.datarun.datatemplateelement.enumeration.RuleAction;
 import org.nmcpye.datarun.web.rest.v2.dto.V2Rule;
 
@@ -23,18 +23,18 @@ class RuleTransformerTest {
 
     @BeforeEach
     void setUp() {
-        FormSectionConf main = buildSection("main", false);
-        FormSectionConf patients = buildSection("patients", false);
-        FormSectionConf medicines = buildSection("medicines", true);
+        SectionTemplateElementDto main = buildSection("main", false);
+        SectionTemplateElementDto patients = buildSection("patients", false);
+        SectionTemplateElementDto medicines = buildSection("medicines", true);
 
-        FormDataElementConf visitdate = buildField("visitdate", "LyIGccZ5mna", "main");
-        FormDataElementConf gender = buildField("gender", "eCw9HcbcnW7", "patients");
-        FormDataElementConf ispregnant = buildField("ispregnant", "FjfKSsEWAYf", "patients");
-        FormDataElementConf diagnosed = buildField("diagnosed_disease_type", "UiM4N3o8OiG", "patients");
-        FormDataElementConf cm_measures = buildField("cm_measures", "W5QDhN3qanw", "referrals");
-        FormDataElementConf amd = buildField("amd", "pHjMRAL4glF", "medicines");
+        FieldTemplateElementDto visitdate = buildField("visitdate", "LyIGccZ5mna", "main");
+        FieldTemplateElementDto gender = buildField("gender", "eCw9HcbcnW7", "patients");
+        FieldTemplateElementDto ispregnant = buildField("ispregnant", "FjfKSsEWAYf", "patients");
+        FieldTemplateElementDto diagnosed = buildField("diagnosed_disease_type", "UiM4N3o8OiG", "patients");
+        FieldTemplateElementDto cm_measures = buildField("cm_measures", "W5QDhN3qanw", "referrals");
+        FieldTemplateElementDto amd = buildField("amd", "pHjMRAL4glF", "medicines");
 
-        FormSectionConf referrals = buildSection("referrals", false);
+        SectionTemplateElementDto referrals = buildSection("referrals", false);
 
         resolver = FieldResolver.build(
                 List.of(main, patients, medicines, referrals),
@@ -191,15 +191,15 @@ class RuleTransformerTest {
         assertEquals("FILTER", RuleTransformer.mapAction(RuleAction.Filter));
     }
 
-    private FormSectionConf buildSection(String name, boolean repeatable) {
-        FormSectionConf section = new FormSectionConf();
+    private SectionTemplateElementDto buildSection(String name, boolean repeatable) {
+        SectionTemplateElementDto section = new SectionTemplateElementDto();
         section.setName(name);
         section.setRepeatable(repeatable);
         return section;
     }
 
-    private FormDataElementConf buildField(String name, String id, String parent) {
-        FormDataElementConf field = new FormDataElementConf();
+    private FieldTemplateElementDto buildField(String name, String id, String parent) {
+        FieldTemplateElementDto field = new FieldTemplateElementDto();
         field.setName(name);
         field.setId(id);
         field.setParent(parent);

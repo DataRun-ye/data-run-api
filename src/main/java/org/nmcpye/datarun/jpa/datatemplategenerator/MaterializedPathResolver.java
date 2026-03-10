@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.datatemplategenerator;
 
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,19 +23,19 @@ import java.util.stream.Collectors;
 /// @since 09/09/2025
 public class MaterializedPathResolver implements PathResolver {
 
-    private final Map<String, FormSectionConf> sectionByName;
+    private final Map<String, SectionTemplateElementDto> sectionByName;
 
     /**
      * @param sectionByName map keyed by section.getName() - can be empty but must not be null
      */
-    public MaterializedPathResolver(Map<String, FormSectionConf> sectionByName) {
+    public MaterializedPathResolver(Map<String, SectionTemplateElementDto> sectionByName) {
         this.sectionByName = sectionByName == null ? Collections.emptyMap() : sectionByName;
     }
 
     // ------------------- PUBLIC API -------------------
 
     @Override
-    public PathMetadata resolveForField(FormDataElementConf field) {
+    public PathMetadata resolveForField(FieldTemplateElementDto field) {
         Objects.requireNonNull(field, "field required");
 
         // authoritative raw path (may be "DE1" or "household.children.DE1")
@@ -80,7 +80,7 @@ public class MaterializedPathResolver implements PathResolver {
     }
 
     @Override
-    public PathMetadata resolveForSection(FormSectionConf section) {
+    public PathMetadata resolveForSection(SectionTemplateElementDto section) {
         Objects.requireNonNull(section, "section required");
 
         // authoritative raw path (sections also have materialized paths)
@@ -164,7 +164,7 @@ public class MaterializedPathResolver implements PathResolver {
         // examine segments up to lastIndexExclusive (exclusive)
         for (int i = 0; i < Math.max(0, Math.min(lastIndexExclusive, segments.size())); i++) {
             String seg = segments.get(i);
-            FormSectionConf s = sectionByName.get(seg);
+            SectionTemplateElementDto s = sectionByName.get(seg);
             if (s != null && Boolean.TRUE.equals(s.getRepeatable())) {
                 repeatableSegments.add(seg);
                 // nearestParentRepeatFullPath should become the most recent repeatable ancestor's full path
@@ -181,7 +181,7 @@ public class MaterializedPathResolver implements PathResolver {
     private String findNearestRepeatAncestorAbove(List<String> segments) {
         for (int i = segments.size() - 1; i >= 0; i--) {
             String seg = segments.get(i);
-            FormSectionConf s = sectionByName.get(seg);
+            SectionTemplateElementDto s = sectionByName.get(seg);
             if (s != null && Boolean.TRUE.equals(s.getRepeatable())) {
                 // if this is the final segment and equals the current section name, skip because that's the section itself
                 // the caller will use this method when they need an ancestor above

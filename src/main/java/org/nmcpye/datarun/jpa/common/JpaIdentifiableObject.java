@@ -23,7 +23,8 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Base abstract class for entities which will hold definitions for created, last modified, created by,
+ * Base abstract class for entities which will hold definitions for created,
+ * last modified, created by,
  * last modified by attributes.
  *
  * @author Hamza Assada
@@ -31,12 +32,13 @@ import java.util.Objects;
  */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
-@JsonIgnoreProperties(value = {"new", "createdBy", "createdDate", "lastModifiedBy", "lastModifiedDate"}, allowGetters = true)
+@JsonIgnoreProperties(value = { "new", "createdBy", "createdDate", "lastModifiedBy",
+        "lastModifiedDate" }, allowGetters = true)
 @Getter
 @Setter
 public abstract class JpaIdentifiableObject
-    implements IdentifiableObject<String>, Persistable<String>, Serializable,
-    Comparable<JpaIdentifiableObject> {
+        implements IdentifiableObject<String>, Persistable<String>, Serializable,
+        Comparable<JpaIdentifiableObject> {
     /**
      * ULID id (Universally Unique Lexicographically Sortable Identifier).
      * Length: 26 characters, Base32 encoded.
@@ -84,7 +86,6 @@ public abstract class JpaIdentifiableObject
         }
     }
 
-
     @PostLoad
     @PostPersist
     protected void updateEntityState() {
@@ -125,7 +126,8 @@ public abstract class JpaIdentifiableObject
             return false;
         }
 
-        if (!(o instanceof JpaIdentifiableObject that)) return false;
+        if (!(o instanceof JpaIdentifiableObject that))
+            return false;
         return Objects.equals(getId(), that.getId());
     }
 
@@ -136,7 +138,7 @@ public abstract class JpaIdentifiableObject
         }
 
         return object.getName() == null ? -1
-            : this.getName().compareToIgnoreCase(object.getName());
+                : this.getName().compareToIgnoreCase(object.getName());
     }
 
     @Override

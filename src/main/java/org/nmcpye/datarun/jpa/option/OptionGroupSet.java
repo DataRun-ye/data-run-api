@@ -26,8 +26,8 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "option_group_set", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_group_set_option_set_name", columnNames = {"name", "option_set_id"}),
-    @UniqueConstraint(name = "uc_group_set_option_set_code", columnNames = {"code", "option_set_id"}),
+        @UniqueConstraint(name = "uc_group_set_option_set_name", columnNames = { "name", "option_set_id" }),
+        @UniqueConstraint(name = "uc_group_set_option_set_code", columnNames = { "code", "option_set_id" }),
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
@@ -46,7 +46,6 @@ public class OptionGroupSet extends JpaIdentifiableObject implements Translatabl
     @Column(name = "name", nullable = false)
     private String name;
 
-
     @Column(name = "description")
     private String description;
 
@@ -58,11 +57,7 @@ public class OptionGroupSet extends JpaIdentifiableObject implements Translatabl
     private OptionSet optionSet;
 
     @ManyToMany
-    @JoinTable(
-        name = "option_groupset__option_group",
-        joinColumns = @JoinColumn(name = "groupset_id"),
-        inverseJoinColumns = @JoinColumn(name = "option_group_id")
-    )
+    @JoinTable(name = "option_groupset__option_group", joinColumns = @JoinColumn(name = "groupset_id"), inverseJoinColumns = @JoinColumn(name = "option_group_id"))
     @OrderColumn(name = "sort_order")
     @ListIndexBase(1)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)

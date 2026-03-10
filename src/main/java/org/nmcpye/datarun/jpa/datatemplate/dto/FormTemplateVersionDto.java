@@ -3,8 +3,8 @@ package org.nmcpye.datarun.jpa.datatemplate.dto;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Value;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 
 import java.io.Serializable;
 import java.util.List;
@@ -20,6 +20,6 @@ public class FormTemplateVersionDto implements Serializable {
     @NotNull
     String templateUid;
     Integer versionNumber;
-    List<FormDataElementConf> fields;
-    List<FormSectionConf> sections;
+    List<FieldTemplateElementDto> fields;
+    List<SectionTemplateElementDto> sections;
 }

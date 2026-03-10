@@ -1,22 +1,22 @@
 package org.nmcpye.datarun.datatemplateprocessor.postprocessors;
 
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.springframework.lang.Nullable;
 
 /**
  * @author Hamza Assada 18/03/2025 (7amza.it@gmail.com)
  */
-public abstract class AbstractFormElementHandler<T extends AbstractElement>
-    implements FormElementHandler<T> {
+public abstract class AbstractTemplateElementHandler<T extends AbstractElement>
+    implements TemplateElementHandler<T> {
 
-    private FormElementHandler<T> next;
+    private TemplateElementHandler<T> next;
 
-    public static FormDataElementConf processElement(FormDataElementConf element, @Nullable DataElement source) {
+    public static FieldTemplateElementDto processElement(FieldTemplateElementDto element, @Nullable DataElement source) {
 
-        FormElementHandler<FormDataElementConf> handlerChain = new ValidateValueTypeHandler(source);
+        TemplateElementHandler<FieldTemplateElementDto> handlerChain = new ValidateValueTypeHandler(source);
         handlerChain
             .linkWith(new CopyMainPropertiesHandler(source))
             .linkWith(new ValidateReferenceTypeHandler(source))
@@ -25,14 +25,14 @@ public abstract class AbstractFormElementHandler<T extends AbstractElement>
         return handlerChain.process(element);
     }
 
-    public static FormSectionConf processSection(FormSectionConf element) {
+    public static SectionTemplateElementDto processSection(SectionTemplateElementDto element) {
 
-        FormElementHandler<FormSectionConf> handlerChain = new ValidateSectionNameNotNull();
+        TemplateElementHandler<SectionTemplateElementDto> handlerChain = new ValidateSectionNameNotNull();
         return handlerChain.process(element);
     }
 
     @Override
-    public FormElementHandler<T> linkWith(FormElementHandler<T> next) {
+    public TemplateElementHandler<T> linkWith(TemplateElementHandler<T> next) {
         this.next = next;
         return next;
     }

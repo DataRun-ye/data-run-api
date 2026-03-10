@@ -4,7 +4,7 @@ import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
 import org.nmcpye.datarun.jpa.accessfilter.entity.UserExecutionContext;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
@@ -43,8 +43,8 @@ public class DataElementFilter extends DefaultJpaFilter<DataElement> {
             // UserExecutionContext.entityUid
 
             Subquery<Long> sqConf = query.subquery(Long.class);
-            Root<FormDataElementConf> confRoot = sqConf.from(FormDataElementConf.class);
-            Join<FormDataElementConf, TemplateVersion> templateJoin = confRoot.join("templateVersion", JoinType.INNER);
+            Root<FieldTemplateElementDto> confRoot = sqConf.from(FieldTemplateElementDto.class);
+            Join<FieldTemplateElementDto, TemplateVersion> templateJoin = confRoot.join("templateVersion", JoinType.INNER);
 
             Subquery<String> sqUec = sqConf.subquery(String.class);
             Root<UserExecutionContext> uec = sqUec.from(UserExecutionContext.class);

@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.datatemplateprocessor.validation;
 
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.ElementGeneralValidationError;
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.FormValidationError;
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.TemplateValidationResult;
@@ -33,7 +33,7 @@ public class DuplicateElementValidator implements TemplateValidator {
         // Validate fields by ID
         final var fieldErrors = validateNoDuplicates(
             template.getFields(),
-            FormDataElementConf::getId,
+            FieldTemplateElementDto::getId,
             template.getUid(),
             "field"
         );

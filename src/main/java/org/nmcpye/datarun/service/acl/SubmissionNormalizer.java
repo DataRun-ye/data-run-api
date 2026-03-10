@@ -3,7 +3,7 @@ package org.nmcpye.datarun.service.acl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * canonical shape.
  * <p>
  * V1 shape: section-wrapped JSON with arrays for repeaters.
- * 
+ *
  * <pre>{@code
  * {
  *   "main":      { "visitdate": "2025-09-27", "gender": "MALE" },
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * <p>
  * Canonical (V2) shape: flat {@code values} + identity-keyed
  * {@code collections}.
- * 
+ *
  * <pre>{@code
  * {
  *   "values":      { "visitdate": "2025-09-27", "gender": "MALE" },
@@ -65,7 +65,7 @@ public final class SubmissionNormalizer {
      * @return canonical JsonNode with "values" and "collections" top-level keys
      */
     public static JsonNode normalize(JsonNode v1FormData,
-            List<FormSectionConf> sections,
+            List<SectionTemplateElementDto> sections,
             ObjectMapper mapper) {
         ObjectNode root = mapper.createObjectNode();
         ObjectNode values = mapper.createObjectNode();
@@ -82,7 +82,7 @@ public final class SubmissionNormalizer {
         Set<String> repeaterNames = sections == null ? Collections.emptySet()
                 : sections.stream()
                         .filter(s -> Boolean.TRUE.equals(s.getRepeatable()))
-                        .map(FormSectionConf::getName)
+                        .map(SectionTemplateElementDto::getName)
                         .collect(Collectors.toSet());
 
         Iterator<Map.Entry<String, JsonNode>> fields = v1FormData.fields();

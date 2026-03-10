@@ -61,18 +61,15 @@ public class OrgUnitGroup extends JpaIdentifiableObject implements TranslatableI
     protected Map<String, Object> properties;
 
     @ManyToMany
-    @JoinTable(
-        name = "org_unit_group_members",
-        joinColumns = @JoinColumn(name = "group_id"),
-        inverseJoinColumns = @JoinColumn(name = "org_unit_id")
-    )
+    @JoinTable(name = "org_unit_group_members", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "org_unit_id"))
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors", "translations", "path"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors",
+            "translations", "path" }, allowSetters = true)
     private Set<OrgUnit> orgUnits = new HashSet<>();
 
     @ManyToMany(mappedBy = "orgUnitGroups")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"orgUnitGroups", "translations"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "orgUnitGroups", "translations" }, allowSetters = true)
     private Set<OrgUnitGroupSet> orgUnitGroupSets = new HashSet<>();
 
     /**

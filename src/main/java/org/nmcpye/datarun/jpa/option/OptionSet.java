@@ -49,8 +49,7 @@ public class OptionSet extends JpaIdentifiableObject implements TranslatableInte
     @Column(name = "name", nullable = false, unique = true)
     protected String name;
 
-    @OneToMany(mappedBy = "optionSet", cascade = CascadeType.ALL,
-        orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "optionSet", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderColumn(name = "sort_order")
     @ListIndexBase(1)
     @Size(min = 1)
@@ -72,7 +71,6 @@ public class OptionSet extends JpaIdentifiableObject implements TranslatableInte
     @Column(name = "translations", columnDefinition = "jsonb")
     protected Set<Translation> translations = new HashSet<>();
 
-
     public boolean isDeleted() {
         return deletedAt != null;
     }
@@ -90,7 +88,8 @@ public class OptionSet extends JpaIdentifiableObject implements TranslatableInte
     }
 
     @JsonProperty(value = "options")
-    @JsonIgnoreProperties(value = {"optionSet", "translations","createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "optionSet", "translations", "createdBy", "createdDate", "lastModifiedDate",
+            "lastModifiedBy" }, allowSetters = true)
     public List<Option> getOptions() {
         return options;
     }

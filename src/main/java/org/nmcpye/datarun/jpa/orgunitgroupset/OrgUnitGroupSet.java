@@ -26,7 +26,7 @@ import java.util.Set;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
-@SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
+@SuppressWarnings({ "common-java:DuplicatedBlocks", "unused" })
 public class OrgUnitGroupSet extends JpaIdentifiableObject implements TranslatableInterface {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
@@ -45,13 +45,9 @@ public class OrgUnitGroupSet extends JpaIdentifiableObject implements Translatab
     protected String name;
 
     @ManyToMany
-    @JoinTable(
-        name = "org_unit_groupset_org_unit_group",
-        joinColumns = @JoinColumn(name = "groupset_id"),
-        inverseJoinColumns = @JoinColumn(name = "org_unit_group_id")
-    )
+    @JoinTable(name = "org_unit_groupset_org_unit_group", joinColumns = @JoinColumn(name = "groupset_id"), inverseJoinColumns = @JoinColumn(name = "org_unit_group_id"))
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"orgUnitGroupSets", "orgUnits"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "orgUnitGroupSets", "orgUnits" }, allowSetters = true)
     private Set<OrgUnitGroup> orgUnitGroups = new HashSet<>();
 
     /**

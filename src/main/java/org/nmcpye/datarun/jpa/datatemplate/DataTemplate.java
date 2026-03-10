@@ -71,10 +71,10 @@ public class DataTemplate extends JpaSoftDeleteObject implements TranslatableInt
     @Column(name = "translations", columnDefinition = "jsonb")
     protected Set<Translation> translations = new HashSet<>();
 
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "dataTemplate"/*, cascade = CascadeType.PERSIST*/)
-//    @JsonIgnore
-//    private List<TemplateVersion> templateVersions = new LinkedList<>();
-
+    // @OneToMany(fetch = FetchType.LAZY, mappedBy = "dataTemplate"/*, cascade =
+    // CascadeType.PERSIST*/)
+    // @JsonIgnore
+    // private List<TemplateVersion> templateVersions = new LinkedList<>();
 
     @JsonIgnore
     @Override
@@ -107,50 +107,53 @@ public class DataTemplate extends JpaSoftDeleteObject implements TranslatableInt
         return this;
     }
 
-//    @JsonSetter(contentNulls = Nulls.SKIP)
-//    public void setTemplateVersions(List<TemplateVersion> templateVersions) {
-//        getTemplateVersions().clear();
-//        getTemplateVersions().addAll(templateVersions);
-//        for (TemplateVersion templateVersion : templateVersions) {
-//            templateVersion.setDataTemplate(this);
-//        }
-//    }
+    // @JsonSetter(contentNulls = Nulls.SKIP)
+    // public void setTemplateVersions(List<TemplateVersion> templateVersions) {
+    // getTemplateVersions().clear();
+    // getTemplateVersions().addAll(templateVersions);
+    // for (TemplateVersion templateVersion : templateVersions) {
+    // templateVersion.setDataTemplate(this);
+    // }
+    // }
 
-//    @JsonIgnore
-//    public Set<String> getVersionUidsAsSet() {
-//        return templateVersions.stream()
-//            .filter(Objects::nonNull)
-//            .map(TemplateVersion::getUid)
-//            .collect(Collectors.toSet());
-//    }
-//
-//    public TemplateVersion getLatestVersion() {
-//        return templateVersions.stream()
-//            .max(Comparator.comparing(TemplateVersion::getVersionNumber))
-//            .orElseThrow();
-//    }
-//
-//    public Map<String, String> getByUidVersionPropertyMap(IdScheme idScheme) {
-//        return templateVersions.stream().collect(Collectors.toMap(TemplateVersion::getUid, o -> o.getPropertyValue(idScheme)));
-//    }
-//
-//    public TemplateVersion getVersionByUid(String uid) {
-//        for (TemplateVersion templateVersion : templateVersions) {
-//            if (templateVersion != null && templateVersion.getUid().equals(uid)) {
-//                return templateVersion;
-//            }
-//        }
-//
-//        return null;
-//    }
-//
-//    public TemplateVersion getVersionByNo(Integer versionNumber) {
-//        for (TemplateVersion templateVersion : templateVersions) {
-//            if (templateVersion != null && templateVersion.getVersionNumber().equals(versionNumber)) {
-//                return templateVersion;
-//            }
-//        }
-//
-//        return null;
-//    }
+    // @JsonIgnore
+    // public Set<String> getVersionUidsAsSet() {
+    // return templateVersions.stream()
+    // .filter(Objects::nonNull)
+    // .map(TemplateVersion::getUid)
+    // .collect(Collectors.toSet());
+    // }
+    //
+    // public TemplateVersion getLatestVersion() {
+    // return templateVersions.stream()
+    // .max(Comparator.comparing(TemplateVersion::getVersionNumber))
+    // .orElseThrow();
+    // }
+    //
+    // public Map<String, String> getByUidVersionPropertyMap(IdScheme idScheme) {
+    // return
+    // templateVersions.stream().collect(Collectors.toMap(TemplateVersion::getUid, o
+    // -> o.getPropertyValue(idScheme)));
+    // }
+    //
+    // public TemplateVersion getVersionByUid(String uid) {
+    // for (TemplateVersion templateVersion : templateVersions) {
+    // if (templateVersion != null && templateVersion.getUid().equals(uid)) {
+    // return templateVersion;
+    // }
+    // }
+    //
+    // return null;
+    // }
+    //
+    // public TemplateVersion getVersionByNo(Integer versionNumber) {
+    // for (TemplateVersion templateVersion : templateVersions) {
+    // if (templateVersion != null &&
+    // templateVersion.getVersionNumber().equals(versionNumber)) {
+    // return templateVersion;
+    // }
+    // }
+    //
+    // return null;
+    // }
 }

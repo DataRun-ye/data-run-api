@@ -9,8 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 
 import java.util.List;
@@ -63,8 +63,8 @@ public class DataTemplateInstanceDto implements DataTemplateVersionInterface {
     /**
      * the only versioned parts of a form template are fields, and sections (form version)
      */
-    private List<FormDataElementConf> fields;
-    private List<FormSectionConf> sections;
+    private List<FieldTemplateElementDto> fields;
+    private List<SectionTemplateElementDto> sections;
 
     @JsonIgnore
     public String getId() {
@@ -72,13 +72,13 @@ public class DataTemplateInstanceDto implements DataTemplateVersionInterface {
     }
 
     @Override
-    public DataTemplateInstanceDto sections(List<FormSectionConf> sections) {
+    public DataTemplateInstanceDto sections(List<SectionTemplateElementDto> sections) {
         this.setSections(sections);
         return this;
     }
 
     @Override
-    public DataTemplateInstanceDto fields(List<FormDataElementConf> fields) {
+    public DataTemplateInstanceDto fields(List<FieldTemplateElementDto> fields) {
         this.setFields(fields);
         return this;
     }
@@ -94,7 +94,7 @@ public class DataTemplateInstanceDto implements DataTemplateVersionInterface {
             return Map.of();
         }
         return sections.stream()
-            .filter(FormSectionConf::getRepeatable)
+            .filter(SectionTemplateElementDto::getRepeatable)
             .collect(Collectors.toMap(AbstractElement::getPath, (s) ->
                 getChildrenRelativePathMap(s.getPath())));
     }
@@ -104,7 +104,7 @@ public class DataTemplateInstanceDto implements DataTemplateVersionInterface {
      * @return list of children of certain path
      */
     @JsonIgnore
-    public List<FormDataElementConf> getChildrenOfPath(String path) {
+    public List<FieldTemplateElementDto> getChildrenOfPath(String path) {
         if (fields == null) {
             return List.of();
         }
@@ -125,21 +125,6 @@ public class DataTemplateInstanceDto implements DataTemplateVersionInterface {
     }
 
     /**
-     * elementId->path reverse map. elements Paths keyed by their ids.
-     * Useful for retrieving categoryElement's path by its id
-     *
-     * @return reverse map
-     */
-    @JsonIgnore
-    public Map<String, String> getFieldElementReversePathMap() {
-        return getAllElementPathMap().entrySet()
-            .stream()
-            .filter(FormDataElementConf.class::isInstance)
-            .collect(Collectors.toMap(entry ->
-                entry.getValue().getId(), Map.Entry::getKey));
-    }
-
-    /**
      * @param path an ancestor Path
      * @return path → childPath relative to the ancestor
      */
@@ -153,9 +138,8 @@ public class DataTemplateInstanceDto implements DataTemplateVersionInterface {
         return getFields().stream()
             .filter(f -> f.getPath() != null && f.getPath().startsWith(path + "."))
             .collect(Collectors.toMap(
-//                f -> f.getPath().substring((path + ".").length()), // relative path
                 f -> f.getPath().substring((path + ".").length()), // relative path
-                FormDataElementConf::getId
+                FieldTemplateElementDto::getId
             ));
     }
 
@@ -168,10 +152,10 @@ public class DataTemplateInstanceDto implements DataTemplateVersionInterface {
             return Map.of();
         }
         return sections.stream()
-            .filter(FormSectionConf::getRepeatable)
+            .filter(SectionTemplateElementDto::getRepeatable)
             .filter(r -> r.getCategoryId() != null)
             .collect(Collectors.toMap(AbstractElement::getPath,
-                FormSectionConf::getCategoryId));
+                SectionTemplateElementDto::getCategoryId));
     }
 
 
@@ -183,7 +167,7 @@ public class DataTemplateInstanceDto implements DataTemplateVersionInterface {
         if (sections == null) return List.of();
         return sections.stream()
             .filter(s -> Boolean.TRUE.equals(s.getRepeatable()))
-            .map(FormSectionConf::getPath)
+            .map(SectionTemplateElementDto::getPath)
             .collect(Collectors.toList());
     }
 
@@ -193,12 +177,12 @@ public class DataTemplateInstanceDto implements DataTemplateVersionInterface {
     @JsonIgnore
     public Map<String, String> getTopLevelFieldPathToElementId() {
         if (fields == null) return Map.of();
-        List<FormSectionConf> sectionList = sections == null ? List.of() : sections;
+        List<SectionTemplateElementDto> sectionList = sections == null ? List.of() : sections;
         return getFields().stream()
             .filter(f -> {
                 String p = f.getPath();
                 return p != null && sectionList.stream().noneMatch(s -> p.startsWith(s.getPath() + "."));
             })
-            .collect(Collectors.toMap(FormDataElementConf::getPath, FormDataElementConf::getId));
+            .collect(Collectors.toMap(FieldTemplateElementDto::getPath, FieldTemplateElementDto::getId));
     }
 }

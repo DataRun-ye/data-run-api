@@ -3,8 +3,13 @@ package org.nmcpye.datarun.jpa.assignment.mapper;
 import org.mapstruct.*;
 import org.nmcpye.datarun.common.BaseMapper;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.jpa.assignment.dto.AssignmentFormDto;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentWithAccessDto;
 import org.nmcpye.datarun.datatemplateprocessor.FormAccessService;
+import org.nmcpye.datarun.security.SecurityUtils;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING, uses = FormAccessService.class)
 public interface AssignmentWithAccessMapper
