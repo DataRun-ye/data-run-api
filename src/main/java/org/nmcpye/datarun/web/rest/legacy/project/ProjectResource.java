@@ -13,18 +13,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import static org.nmcpye.datarun.web.rest.legacy.project.ProjectResource.CUSTOM;
-import static org.nmcpye.datarun.web.rest.legacy.project.ProjectResource.V1;
 
 /**
- * REST controller for managing {@link Project}.
+ * Legacy REST controller for managing {@link Project}.
+ * Admin/CUSTOM path only — the V1 mobile path is now served by
+ * {@link org.nmcpye.datarun.web.rest.v1.project.ProjectResource}.
  */
 @RestController
-@RequestMapping(value = {CUSTOM, V1})
+@RequestMapping(value = { CUSTOM })
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class ProjectResource extends JpaBaseResource<Project> {
     protected static final String NAME = "/projects";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
-    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private final Logger log = LoggerFactory.getLogger(ProjectResource.class);
 
@@ -33,7 +33,7 @@ public class ProjectResource extends JpaBaseResource<Project> {
     private final ProjectRepository projectRepository;
 
     public ProjectResource(ProjectService projectService,
-                           ProjectRepository projectRepository) {
+            ProjectRepository projectRepository) {
         super(projectService, projectRepository);
         this.projectService = projectService;
         this.projectRepository = projectRepository;
@@ -44,27 +44,28 @@ public class ProjectResource extends JpaBaseResource<Project> {
         return "projects";
     }
 
-//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    @Override
-//    public ResponseEntity<Project> updateEntity(String uid, Project entity) throws URISyntaxException {
-//        return super.updateEntity(uid, entity);
-//    }
-//
-//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    @Override
-//    public ResponseEntity<?> saveReturnSaved(Project entity) {
-//        return super.saveReturnSaved(entity);
-//    }
-//
-//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    @Override
-//    public ResponseEntity<EntitySaveSummaryVM> saveOne(Project entity) {
-//        return super.saveOne(entity);
-//    }
-//
-//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    @Override
-//    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<Project> entities) {
-//        return super.saveAll(entities);
-//    }
+    // @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    // @Override
+    // public ResponseEntity<Project> updateEntity(String uid, Project entity)
+    // throws URISyntaxException {
+    // return super.updateEntity(uid, entity);
+    // }
+    //
+    // @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    // @Override
+    // public ResponseEntity<?> saveReturnSaved(Project entity) {
+    // return super.saveReturnSaved(entity);
+    // }
+    //
+    // @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    // @Override
+    // public ResponseEntity<EntitySaveSummaryVM> saveOne(Project entity) {
+    // return super.saveOne(entity);
+    // }
+    //
+    // @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    // @Override
+    // public ResponseEntity<EntitySaveSummaryVM> saveAll(List<Project> entities) {
+    // return super.saveAll(entities);
+    // }
 }
