@@ -2,7 +2,8 @@ package org.nmcpye.datarun.web.rest.v1.party;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.jpa.assignment.dto.AssignmentManifestDto;
+
+import org.nmcpye.datarun.party.dto.AssignmentManifestDto;
 import org.nmcpye.datarun.party.dto.PagedRequest;
 import org.nmcpye.datarun.party.dto.ResolvedParty;
 import org.nmcpye.datarun.party.service.ManifestService;

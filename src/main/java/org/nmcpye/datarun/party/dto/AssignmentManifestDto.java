@@ -1,10 +1,8 @@
-package org.nmcpye.datarun.jpa.assignment.dto;
+package org.nmcpye.datarun.party.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
-import org.nmcpye.datarun.party.dto.AssignmentStatus;
-import org.nmcpye.datarun.party.dto.CombineMode;
 
 import java.util.HashSet;
 import java.util.List;

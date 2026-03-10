@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.assignment;
+package org.nmcpye.datarun.party.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.*;

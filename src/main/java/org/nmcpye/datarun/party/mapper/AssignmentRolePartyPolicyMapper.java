@@ -1,8 +1,9 @@
-package org.nmcpye.datarun.jpa.assignment.mapper;
+package org.nmcpye.datarun.party.mapper;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.jpa.assignment.dto.AssignmentRolePartyPolicyDto;
-import org.nmcpye.datarun.jpa.assignment.AssignmentRolePartyPolicy;
+
+import org.nmcpye.datarun.party.dto.AssignmentRolePartyPolicyDto;
+import org.nmcpye.datarun.party.entities.AssignmentRolePartyPolicy;
 import org.nmcpye.datarun.party.service.BindingValidationService;
 import org.springframework.stereotype.Component;
 

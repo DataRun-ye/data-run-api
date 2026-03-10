@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.assignment;
+package org.nmcpye.datarun.party.entities;
 
 import jakarta.persistence.*;
 import lombok.*;

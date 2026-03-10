@@ -23,6 +23,9 @@ import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
 import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.team.Team;
+import org.nmcpye.datarun.party.entities.AssignmentMember;
+import org.nmcpye.datarun.party.entities.AssignmentRoleDataPolicy;
+import org.nmcpye.datarun.party.entities.AssignmentRolePartyPolicy;
 import org.nmcpye.datarun.party.entities.PartySet;
 
 import java.time.Instant;

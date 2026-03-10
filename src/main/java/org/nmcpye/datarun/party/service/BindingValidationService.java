@@ -3,12 +3,12 @@ package org.nmcpye.datarun.party.service;
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.AssignmentRolePartyPolicy;
-import org.nmcpye.datarun.jpa.assignment.dto.AssignmentRolePartyPolicyDto;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
+import org.nmcpye.datarun.party.dto.AssignmentRolePartyPolicyDto;
+import org.nmcpye.datarun.party.entities.AssignmentRolePartyPolicy;
 import org.nmcpye.datarun.party.entities.PartySet;
 import org.nmcpye.datarun.party.exceptions.InvalidBindingException;
 import org.nmcpye.datarun.party.exceptions.NotFoundObjectException;

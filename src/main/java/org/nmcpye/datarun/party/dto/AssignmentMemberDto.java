@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.assignment.dto;
+package org.nmcpye.datarun.party.dto;
 
 import lombok.Builder;
 import lombok.Data;

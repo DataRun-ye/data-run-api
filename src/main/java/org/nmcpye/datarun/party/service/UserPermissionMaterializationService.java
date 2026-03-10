@@ -4,7 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
-import org.nmcpye.datarun.jpa.assignment.AssignmentMember;
+import org.nmcpye.datarun.party.entities.AssignmentMember;
 import org.nmcpye.datarun.party.entities.PartySetKind;
 import org.nmcpye.datarun.party.resolution.engine.PartyResolutionEngine;
 import org.springframework.jdbc.core.JdbcTemplate;

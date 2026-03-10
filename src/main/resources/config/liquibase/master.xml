@@ -78,11 +78,11 @@
     <include file="/config/liquibase/changelog/options/2025-12-28-option-add-deleted-at.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/options/2025-12-28-option-set-add-deleted-at.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/party/20251224-001-party.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/assignment/20251225-001-assignment-and-binding.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/assignment/20251225-001-assignment-role-party-policy.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/assignment/20251229-002-assignment-add-name-and-default-party.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/activity/20251129-add-activity-valid-from-valid-to.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/party/20260106-party-add-party-tag.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/assignment/20251225-001-assignment-data-template.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/assignment/20251225-001-assignment-role-data-policy.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/element-template/2026-01-09-add-ce-config.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20260110-events-add.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/assignment/20260116-assignment-add-name.xml" relativeToChangelogFile="false"/>

@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.assignment.service;
+package org.nmcpye.datarun.party.repository;
 
 import lombok.RequiredArgsConstructor;
 import org.jooq.*;

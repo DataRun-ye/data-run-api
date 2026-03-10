@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.assignment;
+package org.nmcpye.datarun.party.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -9,6 +9,7 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.common.SoftDeleteObject;
 import org.nmcpye.datarun.common.enumeration.AccessLevel;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -39,8 +40,7 @@ public class AssignmentRoleDataPolicy extends JpaIdentifiableObject {
 
     @ManyToOne(optional = false)
     @NotNull
-    @JsonIgnoreProperties(value = { "defaultPartySet", "properties", "activity", "team", "forms",
-            "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate",
+    @JsonIgnoreProperties(value = { "defaultPartySet", "createdBy", "createdDate",
             "lastModifiedDate", "lastModifiedBy" }, allowSetters = true)
     @JsonSerialize(contentAs = SoftDeleteObject.class)
     private Assignment assignment;

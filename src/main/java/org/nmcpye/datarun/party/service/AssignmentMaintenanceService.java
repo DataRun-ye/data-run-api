@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.assignment.service;
+package org.nmcpye.datarun.party.service;
 
 import jakarta.persistence.EntityManager;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
@@ -22,8 +22,8 @@ public class AssignmentMaintenanceService {
     private final PlatformTransactionManager txm;
 
     public AssignmentMaintenanceService(AssignmentRepository repository,
-                                        EntityManager em,
-                                        PlatformTransactionManager txm) {
+            EntityManager em,
+            PlatformTransactionManager txm) {
         this.repository = repository;
         this.em = em;
         this.txm = txm;
@@ -43,8 +43,8 @@ public class AssignmentMaintenanceService {
         do {
             Pageable pg = PageRequest.of(page, CHUNK_SIZE);
             chunk = force
-                ? repository.findAll(pg)
-                : repository.findAllByPathIsNull(pg);
+                    ? repository.findAll(pg)
+                    : repository.findAllByPathIsNull(pg);
 
             if (!chunk.isEmpty()) {
                 // run each chunk in its own transaction to keep EM small

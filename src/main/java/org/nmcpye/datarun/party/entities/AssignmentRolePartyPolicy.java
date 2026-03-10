@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.assignment;
+package org.nmcpye.datarun.party.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -11,7 +11,7 @@ import org.nmcpye.datarun.common.SoftDeleteObject;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.party.dto.CombineMode;
-import org.nmcpye.datarun.party.entities.PartySet;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 
 /// @author Hamza Assada 28/12/2025
@@ -36,8 +36,7 @@ public class AssignmentRolePartyPolicy extends JpaIdentifiableObject {
 
     @ManyToOne(optional = false)
     @NotNull
-    @JsonIgnoreProperties(value = { "defaultPartySet", "properties", "activity", "team", "forms",
-            "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate",
+    @JsonIgnoreProperties(value = { "defaultPartySet", "createdBy", "createdDate",
             "lastModifiedDate", "lastModifiedBy" }, allowSetters = true)
     @JsonSerialize(contentAs = SoftDeleteObject.class)
     private Assignment assignment;

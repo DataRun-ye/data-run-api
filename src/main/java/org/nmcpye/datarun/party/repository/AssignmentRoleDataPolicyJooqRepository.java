@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.assignment.repository;
+package org.nmcpye.datarun.party.repository;
 
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
@@ -18,17 +18,20 @@ public class AssignmentRoleDataPolicyJooqRepository {
     private final DSLContext dsl;
 
     /**
-     * Returns data_template.uids allowed for the given user/principals in an assignment.
+     * Returns data_template.uids allowed for the given user/principals in an
+     * assignment.
      *
      * @param assignmentId assignment.id (string)
      * @param userId       current user id
-     * @param principalIds set of principal ids (team ids, usergroup ids, etc). May be empty.
-     * @param userRoles    set of roles from assignment_member for this user/principals. May be empty.
+     * @param principalIds set of principal ids (team ids, usergroup ids, etc). May
+     *                     be empty.
+     * @param userRoles    set of roles from assignment_member for this
+     *                     user/principals. May be empty.
      */
     public List<String> findAllowedTemplateUids(String assignmentId,
-                                                String userId,
-                                                Set<String> principalIds,
-                                                Set<String> userRoles) {
+            String userId,
+            Set<String> principalIds,
+            Set<String> userRoles) {
 
         var ADT = DSL.table(DSL.name("assignment_data_template"));
         var DT = DSL.table(DSL.name("data_template"));
@@ -44,26 +47,27 @@ public class AssignmentRoleDataPolicyJooqRepository {
 
         var condPrincipalExact = ADT_principalId.eq(userId);
         var condPrincipalSet = (principalIds == null || principalIds.isEmpty())
-            ? DSL.falseCondition()
-            : ADT_principalId.in(principalIds);
+                ? DSL.falseCondition()
+                : ADT_principalId.in(principalIds);
         var condRole = (userRoles == null || userRoles.isEmpty())
-            ? DSL.falseCondition()
-            : ADT_principalRole.in(userRoles);
+                ? DSL.falseCondition()
+                : ADT_principalRole.in(userRoles);
 
         var condGlobal = ADT_principalId.isNull()
-            .and(ADT_principalRole.isNull())
-            .and(ADT_principalType.isNull());
+                .and(ADT_principalRole.isNull())
+                .and(ADT_principalType.isNull());
 
         var finalCond = ADT_assignment.eq(assignmentId)
-            .and(condPrincipalExact.or(condPrincipalSet).or(condRole).or(condGlobal));
+                .and(condPrincipalExact.or(condPrincipalSet).or(condRole).or(condGlobal));
 
         List<Record1<String>> recs = dsl.selectDistinct(DT_uid)
-            .from(ADT)
-            .join(DT).on(DT_id.eq(ADT_dtId))
-            .where(finalCond)
-            .fetch();
+                .from(ADT)
+                .join(DT).on(DT_id.eq(ADT_dtId))
+                .where(finalCond)
+                .fetch();
 
-        if (recs.isEmpty()) return Collections.emptyList();
+        if (recs.isEmpty())
+            return Collections.emptyList();
 
         return recs.stream().map(Record1::value1).collect(Collectors.toList());
     }

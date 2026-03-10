@@ -1,7 +1,7 @@
-package org.nmcpye.datarun.jpa.assignment.mapper;
+package org.nmcpye.datarun.party.mapper;
 
-import org.nmcpye.datarun.jpa.assignment.dto.AssignmentMemberDto;
-import org.nmcpye.datarun.jpa.assignment.AssignmentMember;
+import org.nmcpye.datarun.party.dto.AssignmentMemberDto;
+import org.nmcpye.datarun.party.entities.AssignmentMember;
 import org.springframework.stereotype.Component;
 
 @Component

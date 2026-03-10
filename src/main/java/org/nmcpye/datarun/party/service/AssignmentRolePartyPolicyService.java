@@ -1,12 +1,13 @@
-package org.nmcpye.datarun.jpa.assignment.service;
+package org.nmcpye.datarun.party.service;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.jpa.assignment.AssignmentRolePartyPolicy;
-import org.nmcpye.datarun.jpa.assignment.dto.AssignmentRolePartyPolicyDto;
-import org.nmcpye.datarun.jpa.assignment.mapper.AssignmentRolePartyPolicyMapper;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRolePartyPolicyRepository;
+
 import org.nmcpye.datarun.jpa.datasubmission.events.EventChangeType;
+import org.nmcpye.datarun.party.dto.AssignmentRolePartyPolicyDto;
+import org.nmcpye.datarun.party.entities.AssignmentRolePartyPolicy;
 import org.nmcpye.datarun.party.events.AssignmentBindingChangedEvent;
+import org.nmcpye.datarun.party.mapper.AssignmentRolePartyPolicyMapper;
+import org.nmcpye.datarun.party.repository.AssignmentRolePartyPolicyRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

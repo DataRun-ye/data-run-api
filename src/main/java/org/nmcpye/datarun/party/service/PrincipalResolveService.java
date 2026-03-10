@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.jpa.assignment.service;
+package org.nmcpye.datarun.party.service;
 
 import lombok.*;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
@@ -27,26 +27,26 @@ public class PrincipalResolveService {
     }
 
     public Optional<ResolvedPrincipal> resolvePrincipal(String principalType, String principalId) {
-        if(principalType == null || principalId == null) {
+        if (principalType == null || principalId == null) {
             return Optional.empty();
         }
 
         return switch (principalType) {
             case "User" -> userRepository.findById(principalId).map(p -> ResolvedPrincipal.builder()
-                .principalUid(p.getUid())
-                .principalId(p.getId())
-                .principalType("User")
-                .build());
+                    .principalUid(p.getUid())
+                    .principalId(p.getId())
+                    .principalType("User")
+                    .build());
             case "Team" -> teamRepository.findById(principalId).map(p -> ResolvedPrincipal.builder()
-                .principalUid(p.getUid())
-                .principalId(p.getId())
-                .principalType("User")
-                .build());
+                    .principalUid(p.getUid())
+                    .principalId(p.getId())
+                    .principalType("User")
+                    .build());
             case "UserGroup" -> userGroupRepository.findById(principalId).map(p -> ResolvedPrincipal.builder()
-                .principalUid(p.getUid())
-                .principalId(p.getId())
-                .principalType("User")
-                .build());
+                    .principalUid(p.getUid())
+                    .principalId(p.getId())
+                    .principalType("User")
+                    .build());
             default -> throw new IllegalStateException("Unexpected principalType: " + principalType);
         };
     }
