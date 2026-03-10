@@ -1,0 +1,24 @@
+package org.nmcpye.datarun.web.rest.v1.assignment.dto;
+
+import lombok.Getter;
+import lombok.Setter;
+import org.nmcpye.datarun.common.enumeration.FlowStatus;
+
+import java.io.Serializable;
+import java.util.Set;
+
+/**
+ * Frozen DTO for the /assignments/forms endpoint.
+ */
+@Getter
+@Setter
+public class AssignmentWithAccessV1Dto implements Serializable {
+    private String id; // This is the ULID or UID depending on legacy behavior. AssignmentWithAccessDto
+                       // uses 'id'.
+    private String code;
+    private String activity;
+    private String team;
+    private String orgUnit;
+    private FlowStatus progressStatus;
+    private Set<AssignmentFormV1Dto> accessibleForms;
+}
