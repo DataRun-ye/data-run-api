@@ -3,12 +3,12 @@ package org.nmcpye.datarun.web.rest.v1.dataelement.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
+import org.nmcpye.datarun.web.rest.v1.common.IdentifiableEntityDto;
 
 import java.time.Instant;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * Frozen DTO representing the v1 DataElement structure as consumed by the
@@ -35,11 +35,12 @@ public class DataElementV1Dto {
     private ValueType valueType;
 
     @JsonProperty("optionSet")
-    private String optionSetUid;
+    private IdentifiableEntityDto optionSet;
 
     private ReferenceType resourceType;
 
-    private Set<Translation> translations;
+    // extracted from translations
+    private Map<String, String> label;
 
     private String createdBy;
 

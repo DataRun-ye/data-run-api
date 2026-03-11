@@ -570,7 +570,7 @@
                     <configuration>
                         <rules>
                             <requireMavenVersion>
-                                <message>You are running an older version of Maven. JHipster requires at least Maven
+                                <message>You are running an older version of Maven. Datarun requires at least Maven
                                     ${maven.version}
                                 </message>
                                 <version>[${maven.version},)</version>

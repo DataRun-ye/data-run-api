@@ -16,7 +16,7 @@ import static org.nmcpye.datarun.web.rest.legacy.activity.ActivityResource.V1;
 /**
  * REST Extended controller for managing {@link Activity}.
  */
-@RestController
+@RestController("activityResourceLegacy")
 @RequestMapping(value = {CUSTOM, V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class ActivityResource extends JpaBaseResource<Activity> {

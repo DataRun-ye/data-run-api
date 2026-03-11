@@ -7,7 +7,6 @@ import org.nmcpye.datarun.jpa.team.TeamFormPermissions;
 
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -34,9 +33,6 @@ public class TeamV1Dto {
     private String activityUid;
 
     private Set<TeamFormPermissions> formPermissions = new HashSet<>();
-
-    @JsonProperty("properties")
-    private Map<String, Object> properties;
 
     private String createdBy;
 

@@ -3,11 +3,10 @@ package org.nmcpye.datarun.web.rest.v1.orgunit.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.translation.Translation;
+import org.nmcpye.datarun.web.rest.v1.common.IdentifiableEntityDto;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Frozen DTO representing the v1 OrgUnit structure as consumed by the mobile
@@ -29,12 +28,10 @@ public class OrgUnitV1Dto {
     private String path;
 
     @JsonProperty("parent")
-    private OrgUnitRefDto parent;
+    private IdentifiableEntityDto parent;
 
-    @JsonProperty("properties")
-    private Map<String, Object> properties;
-
-    private Set<Translation> translations;
+    // extracted from translations
+    private Map<String, String> label;
 
     private String createdBy;
 
@@ -43,17 +40,4 @@ public class OrgUnitV1Dto {
     private String lastModifiedBy;
 
     private Instant lastModifiedDate;
-
-    /**
-     * Minimal reference for parent/child to avoid recursive serialization.
-     */
-    @Getter
-    @Setter
-    public static class OrgUnitRefDto {
-        private String id;
-        private String uid;
-        private String code;
-        private String name;
-        private String path;
-    }
 }

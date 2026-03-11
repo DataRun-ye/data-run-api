@@ -17,7 +17,7 @@ import static org.nmcpye.datarun.web.rest.legacy.optionset.OptionSetResource.CUS
  * Admin/CUSTOM path only — the V1 mobile path is now served by
  * {@link org.nmcpye.datarun.web.rest.v1.optionset.OptionSetResource}.
  */
-@RestController
+@RestController("optionSetResourceLegacy")
 @RequestMapping(value = { CUSTOM })
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class OptionSetResource

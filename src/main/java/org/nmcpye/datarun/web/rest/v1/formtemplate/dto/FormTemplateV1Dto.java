@@ -2,10 +2,9 @@ package org.nmcpye.datarun.web.rest.v1.formtemplate.dto;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.translation.Translation;
 
 import java.time.Instant;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * Frozen DTO representing the v1 FormTemplate (DataTemplate) structure
@@ -29,7 +28,8 @@ public class FormTemplateV1Dto {
 
     private String description;
 
-    private Set<Translation> translations;
+    // extracted from translations
+    private Map<String, String> label;
 
     private String createdBy;
 

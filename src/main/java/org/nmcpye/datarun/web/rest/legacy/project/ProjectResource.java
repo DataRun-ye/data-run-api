@@ -19,7 +19,7 @@ import static org.nmcpye.datarun.web.rest.legacy.project.ProjectResource.CUSTOM;
  * Admin/CUSTOM path only — the V1 mobile path is now served by
  * {@link org.nmcpye.datarun.web.rest.v1.project.ProjectResource}.
  */
-@RestController
+@RestController("projectResourceLegacy")
 @RequestMapping(value = { CUSTOM })
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class ProjectResource extends JpaBaseResource<Project> {

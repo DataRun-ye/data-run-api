@@ -30,7 +30,7 @@ import java.util.Optional;
  * Admin/CUSTOM path only — the V1 mobile path is now served by
  * {@link org.nmcpye.datarun.web.rest.v1.team.TeamResource}.
  */
-@RestController
+@RestController("teamResourceLegacy")
 @RequestMapping(value = { TeamResource.CUSTOM })
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class TeamResource extends JpaBaseResource<Team> {

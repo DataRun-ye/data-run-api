@@ -25,7 +25,7 @@ import static org.nmcpye.datarun.web.rest.legacy.orgunit.OrgUnitResource.CUSTOM;
  * Admin/CUSTOM path only — the V1 mobile path is now served by
  * {@link org.nmcpye.datarun.web.rest.v1.orgunit.OrgUnitResource}.
  */
-@RestController
+@RestController("orgUnitResourceLegacy")
 @RequestMapping(value = { CUSTOM })
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class OrgUnitResource extends JpaBaseResource<OrgUnit> {

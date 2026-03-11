@@ -1,13 +1,10 @@
 package org.nmcpye.datarun.web.rest.v1.project.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.translation.Translation;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Frozen DTO representing the v1 Project structure as consumed by the mobile
@@ -29,10 +26,8 @@ public class ProjectV1Dto {
 
     private Boolean disabled;
 
-    @JsonProperty("properties")
-    private Map<String, Object> properties;
-
-    private Set<Translation> translations;
+    // extracted from translations
+    private Map<String, String> label;
 
     private String createdBy;
 

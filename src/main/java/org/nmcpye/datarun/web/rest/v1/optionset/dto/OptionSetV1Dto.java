@@ -3,13 +3,11 @@ package org.nmcpye.datarun.web.rest.v1.optionset.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.translation.Translation;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Frozen DTO representing the v1 OptionSet structure as consumed by the mobile
@@ -31,10 +29,8 @@ public class OptionSetV1Dto {
     @JsonProperty("options")
     private List<OptionV1Dto> options = new ArrayList<>();
 
-    @JsonProperty("properties")
-    private Map<String, Object> properties;
-
-    private Set<Translation> translations;
+    // extracted from translations
+    private Map<String, String> label;
 
     private String createdBy;
 
@@ -56,8 +52,6 @@ public class OptionSetV1Dto {
         private String name;
         private String description;
         private Integer sortOrder;
-        @JsonProperty("properties")
-        private Map<String, Object> properties;
-        private Set<Translation> translations;
+        private Map<String, String> label;
     }
 }
