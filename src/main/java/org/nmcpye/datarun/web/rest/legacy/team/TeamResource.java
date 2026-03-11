@@ -25,17 +25,17 @@ import java.net.URISyntaxException;
 import java.util.Objects;
 import java.util.Optional;
 
-
 /**
- * REST controller for managing {@link Team}.
+ * Legacy REST controller for managing {@link Team}.
+ * Admin/CUSTOM path only — the V1 mobile path is now served by
+ * {@link org.nmcpye.datarun.web.rest.v1.team.TeamResource}.
  */
 @RestController
-@RequestMapping(value = {TeamResource.CUSTOM, TeamResource.V1})
+@RequestMapping(value = { TeamResource.CUSTOM })
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class TeamResource extends JpaBaseResource<Team> {
     protected static final String NAME = "/teams";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
-    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private final Logger log = LoggerFactory.getLogger(TeamResource.class);
 
@@ -44,7 +44,7 @@ public class TeamResource extends JpaBaseResource<Team> {
     private final TeamRepository teamRepository;
 
     public TeamResource(TeamService teamService,
-                        TeamRepository teamRepository) {
+            TeamRepository teamRepository) {
         super(teamService, teamRepository);
         this.teamService = teamService;
         this.teamRepository = teamRepository;
@@ -57,7 +57,7 @@ public class TeamResource extends JpaBaseResource<Team> {
 
     @GetMapping("managed")
     protected ResponseEntity<PagedResponse<?>> getAllManaged(
-        QueryRequest queryRequest) {
+            QueryRequest queryRequest) {
         Pageable pageable = queryRequest.getPageable();
 
         Page<Team> processedPage = teamService.findAllManagedByUser(pageable, queryRequest);
@@ -69,21 +69,23 @@ public class TeamResource extends JpaBaseResource<Team> {
     }
 
     /**
-     * {@code PATCH  /teams/:id} : Partial updates given fields of an existing team, field will ignore if it is null
+     * {@code PATCH  /teams/:id} : Partial updates given fields of an existing team,
+     * field will ignore if it is null
      *
      * @param uid  the id of the team to save.
      * @param team the team to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated team,
-     * or with status {@code 400 (Bad Request)} if the team is not valid,
-     * or with status {@code 404 (Not Found)} if the team is not found,
-     * or with status {@code 500 (Internal Server Error)} if the team couldn't be updated.
+     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
+     *         the updated team,
+     *         or with status {@code 400 (Bad Request)} if the team is not valid,
+     *         or with status {@code 404 (Not Found)} if the team is not found,
+     *         or with status {@code 500 (Internal Server Error)} if the team
+     *         couldn't be updated.
      * @throws URISyntaxException if the Location URI syntax is incorrect.
      */
-    @PatchMapping(value = "/teams/{uid}", consumes = {"application/json", "application/merge-patch+json"})
+    @PatchMapping(value = "/teams/{uid}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<Team> partialUpdateTeam(
-        @PathVariable(value = "uid", required = false) final String uid,
-        @NotNull @RequestBody Team team
-    ) throws URISyntaxException {
+            @PathVariable(value = "uid", required = false) final String uid,
+            @NotNull @RequestBody Team team) throws URISyntaxException {
         log.debug("REST request to partial update Team partially : {}, {}", uid, team);
         if (team.getUid() == null) {
             throw new BadRequestAlertException("Invalid uid", getName(), "idnull");
@@ -100,9 +102,7 @@ public class TeamResource extends JpaBaseResource<Team> {
         Optional<Team> result = teamService.partialUpdate(team);
 
         return ResponseUtil.wrapOrNotFound(
-            result,
-            HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), team.getUid())
-        );
+                result,
+                HeaderUtil.createEntityUpdateAlert(applicationName, true, getName(), team.getUid()));
     }
 }
-
