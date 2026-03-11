@@ -8,7 +8,7 @@
 
     <changeSet id="add-assignment-default-party-to-assignment" author="hamza-ye">
         <addColumn tableName="assignment">
-            <column name="default_party_set_id" type="uuid"/>
+            <column name="default_party_set_id" type="varchar(64)"/>
         </addColumn>
         <addForeignKeyConstraint baseTableName="assignment" baseColumnNames="default_party_set_id"
                                  constraintName="fk_assignment_default_party_set_id"
