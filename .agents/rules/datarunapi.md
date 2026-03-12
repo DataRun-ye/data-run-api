@@ -1,5 +1,5 @@
 ---
-trigger: always_on
+trigger: model_decision
 ---
 
 ## Frontend Architecture Considerations
@@ -19,5 +19,3 @@ The architecture and design decisions for this frontend should:
 * Be aligned with Domain-Driven Design (DDD) principles.
 * Be built with scalability and long-term maintainability in mind.
 * Avoid becoming future technical debt or legacy.
-
-I want to start at the correct architectural level from the beginning — even if the initial implementation is simple — but structured in a way that naturally scales over time.
