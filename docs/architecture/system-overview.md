@@ -61,7 +61,7 @@ Each domain owns its DB, UI, roles, and invariants. Domains consume events produ
 
 - **Not an iPaaS.** We don't integrate arbitrary third-party systems. The Adapter translates from one known upstream (DatarunAPI).
 - **Not a replacement for DatarunAPI.** DatarunAPI remains the data-collection platform. LMIS adds domain intelligence (inventory accounting, case management) on top.
-- **Not multi-tenant.** Single deployment per health programme.
+- **Not multi-tenant (yet).** Currently single deployment per health programme. The architecture is evolving toward **configuration isolation** — where multiple functional domains (e.g., LMIS, Case Management) can coexist on the same engine without code changes. See [ADR-010: Evolutionary Architecture](../adrs/010-evolutionary-architecture.md).
 
 ## Related Docs
 

@@ -1,8 +1,11 @@
-# Datarun Health LMIS — Documentation Index
+# Datarun Platform — Documentation Index
+
+> **Ground Truth:** The `datarunapi` codebase is the single source of truth.
+> All documentation below is **living, disposable guidance** — it can be rewritten when the code reality changes.
 
 ## How to Use These Docs
 
-Each folder corresponds to a **Bounded Context** (or cross-cutting concern). When working on a specific part of the system with AI, reference **only** the relevant folder to keep context windows small.
+Each folder corresponds to a **Bounded Context**, cross-cutting concern, or governance process. When working with AI, reference **only** the relevant folder to keep context windows small.
 
 ---
 
@@ -10,6 +13,11 @@ Each folder corresponds to a **Bounded Context** (or cross-cutting concern). Whe
 
 | Working On | Load These Docs |
 | --- | --- |
+| **Strategic direction / North Star** | `architecture/strategic-blueprint.md` |
+| **System diagrams (C4)** | `architecture/c4-model.md` |
+| **Process rules, templates** | `governance/` |
+| **Why a decision was made** | `adrs/` |
+| **Proposing a big change** | `rfcs/` + `governance/rfc-process.md` |
 | **Adapter mapping/ingestion** | `adapter/` |
 | **Ledger accounting/events** | `ledger/` |
 | **Registries, nodes, commodities** | `kernel/` |
@@ -21,7 +29,15 @@ Each folder corresponds to a **Bounded Context** (or cross-cutting concern). Whe
 
 ## Folder Structure
 
+### [`governance/`](governance/) — Documentation Governance
+- [Living Architecture Charter](governance/README.md) — Principles, fitness functions, ADR/RFC process rules
+- [ADR Template](governance/adr-template.md) — Standardized format for decision records
+- [RFC Template](governance/rfc-template.md) — Format for architectural proposals
+- [RFC Process](governance/rfc-process.md) — RFC lifecycle and when to use RFCs vs ADRs
+
 ### [`architecture/`](architecture/) — Cross-Cutting Concerns
+- [Strategic Blueprint](architecture/strategic-blueprint.md) — North Star vision, phased transition, business capability map
+- [C4 Model](architecture/c4-model.md) — System Context, Container, and Component diagrams
 - [System Overview](architecture/system-overview.md) — Vision, bounded context map, deployment model
 - [Context Map](architecture/context-map.md) — DDD strategic relationships between all BCs
 - [Integration Contract — DatarunAPI](architecture/integration-contract-datarunapi.md) — OHS boundary, auth channels, versioning, V2 Published Language
@@ -39,6 +55,11 @@ Each folder corresponds to a **Bounded Context** (or cross-cutting concern). Whe
 - [ADR-006: 3-Layer Adapter Pipeline](adrs/006-three-layer-adapter-pipeline.md)
 - [ADR-007: API Composition Strategy](adrs/007-api-composition-strategy.md)
 - [ADR-008: Auth Phased Strategy](adrs/008-auth-phased-strategy.md)
+- [ADR-009: Feature Flags — Deferred](adrs/009-feature-flags-deferred.md)
+- [ADR-010: Evolutionary Architecture](adrs/010-evolutionary-architecture.md)
+
+### [`rfcs/`](rfcs/) — Requests for Comments
+- No RFCs yet. See [RFC Process](governance/rfc-process.md).
 
 ### [`adapter/`](adapter/) — Adapter Bounded Context (ACL)
 - [Adapter Overview](adapter/adapter-overview.md) — Constitution, 3-layer pipeline, decoupling
