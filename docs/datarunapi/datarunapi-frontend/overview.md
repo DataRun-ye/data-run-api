@@ -186,7 +186,7 @@ The Form Engine is designed as a pure state machine with no infrastructure depen
 | Topic | Document | When to Read |
 |---|---|---|
 | **Form Engine contract** | [Form Engine](form-engine.md) | When building the Data Capture module |
-| **V2 data contracts** | [V2 Contract](../../form_template_and_submission_v2_contract_discussion.md) | When you need the full V2 spec (submission shape, template tree, rules, migration) |
+| **V2 data contracts** | [V2 Contract](../../_ideas/datarunapi/form_template_and_submission_v2_contract_discussion.md) | When you need the full V2 spec (submission shape, template tree, rules, migration). ⚠️ Exploratory — not operational. |
 | **Auth & SSO** | [Auth & Authorization](../../architecture/auth-and-authorization.md) | When implementing login and guards |
 | **System context** | [Context Map](../../architecture/context-map.md) | When you need to understand how this app relates to LMIS |
 | **Integration boundary** | [Integration Contract](../../architecture/integration-contract-datarunapi.md) | When you need to understand V1/V2 coexistence |

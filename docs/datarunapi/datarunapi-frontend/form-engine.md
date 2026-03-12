@@ -403,5 +403,5 @@ Validation runs automatically on every `setValue` / `setRowValue`. The `isValid(
 | Topic | Document |
 |---|---|
 | **Frontend architecture** (layers, modules, folder layout) | [Overview](overview.md) |
-| **Full V2 contract** (migration, ACL, history, all edge cases) | [V2 Contract](../form_template_and_submission_v2_contract_discussion.md) |
+| **Full V2 contract** (migration, ACL, history, all edge cases) | [V2 Contract](../_ideas/datarunapi/form_template_and_submission_v2_contract_discussion.md) ⚠️ Exploratory |
 | **Integration boundary** (how V2 relates to V1, downstream BCs) | [Integration Contract](../../architecture/integration-contract-datarunapi.md) |
