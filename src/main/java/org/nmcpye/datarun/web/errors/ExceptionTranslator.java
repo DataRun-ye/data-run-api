@@ -31,10 +31,9 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-import tech.jhipster.config.JHipsterConstants;
-import tech.jhipster.web.rest.errors.ProblemDetailWithCause;
-import tech.jhipster.web.rest.errors.ProblemDetailWithCause.ProblemDetailWithCauseBuilder;
-import tech.jhipster.web.util.HeaderUtil;
+import org.nmcpye.datarun.web.rest.errors.ProblemDetailWithCause;
+import org.nmcpye.datarun.web.rest.errors.ProblemDetailWithCause.ProblemDetailWithCauseBuilder;
+import org.nmcpye.datarun.web.rest.util.HeaderUtil;
 
 import java.net.URI;
 import java.util.*;
@@ -42,8 +41,10 @@ import java.util.*;
 import static org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation;
 
 /**
- * Controller advice to translate the server side exceptions to client-friendly json structures.
- * The error response follows RFC7807 - Problem Details for HTTP APIs (<a href="https://tools.ietf.org/html/rfc7807">
+ * Controller advice to translate the server side exceptions to client-friendly
+ * json structures.
+ * The error response follows RFC7807 - Problem Details for HTTP APIs
+ * (<a href="https://tools.ietf.org/html/rfc7807">
  * </a>).
  */
 @ControllerAdvice
@@ -92,21 +93,22 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         logErrorToDb(ex, request, pdCause.getStatus());
 
         return handleExceptionInternal((Exception) ex, pdCause, buildHeaders(ex),
-            HttpStatusCode.valueOf(pdCause.getStatus()), request);
+                HttpStatusCode.valueOf(pdCause.getStatus()), request);
     }
 
     @Nullable
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(
-        Exception ex, @Nullable Object body, HttpHeaders headers,
-        HttpStatusCode statusCode, WebRequest request) {
+            Exception ex, @Nullable Object body, HttpHeaders headers,
+            HttpStatusCode statusCode, WebRequest request) {
         // Ensure body is built
         if (body == null) {
             body = wrapAndCustomizeProblem(ex, (NativeWebRequest) request);
         }
 
         // Log it (Async) - Ensure we don't log twice if handleAnyException called this
-        // Simple check: most internal Spring exceptions (MethodArgumentNotValid) enter here directly
+        // Simple check: most internal Spring exceptions (MethodArgumentNotValid) enter
+        // here directly
         if (!isAlreadyLogged(request)) {
             logErrorToDb(ex, (NativeWebRequest) request, statusCode.value());
         }
@@ -141,31 +143,28 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     }
 
     private ProblemDetailWithCause getProblemDetailWithCause(Throwable ex) {
-        if (
-            ex instanceof RequestQueryParsingException
-        ) return (ProblemDetailWithCause) new RequestQueryParsingException().getBody();
-        if (
-            ex instanceof ErrorCodeException
-        ) return (ProblemDetailWithCause) new RequestQueryParsingException().getBody();
-        if (
-            ex instanceof UsernameAlreadyUsedException
-        ) return (ProblemDetailWithCause) new LoginAlreadyUsedException().getBody();
-        if (
-            ex instanceof EmailAlreadyUsedException
-        ) return (ProblemDetailWithCause) new EmailAlreadyUsedException().getBody();
-        if (
-            ex instanceof InvalidPasswordException
-        ) return (ProblemDetailWithCause) new InvalidPasswordException().getBody();
+        if (ex instanceof RequestQueryParsingException)
+            return (ProblemDetailWithCause) new RequestQueryParsingException().getBody();
+        if (ex instanceof ErrorCodeException)
+            return (ProblemDetailWithCause) new RequestQueryParsingException().getBody();
+        if (ex instanceof UsernameAlreadyUsedException)
+            return (ProblemDetailWithCause) new LoginAlreadyUsedException().getBody();
+        if (ex instanceof EmailAlreadyUsedException)
+            return (ProblemDetailWithCause) new EmailAlreadyUsedException().getBody();
+        if (ex instanceof InvalidPasswordException)
+            return (ProblemDetailWithCause) new InvalidPasswordException().getBody();
 
-        if (
-            ex instanceof ErrorResponseException exp && exp.getBody() instanceof ProblemDetailWithCause problemDetailWithCause
-        ) return problemDetailWithCause;
+        if (ex instanceof ErrorResponseException exp
+                && exp.getBody() instanceof ProblemDetailWithCause problemDetailWithCause)
+            return problemDetailWithCause;
 
-        return ProblemDetailWithCauseBuilder.instance().withStatus(toStatus(ex).value()).build();
+        return ProblemDetailWithCauseBuilder.instance().withType(URI.create("about:blank")).withStatus(toStatus(ex).value()).build();
     }
 
-    protected ProblemDetailWithCause customizeProblem(ProblemDetailWithCause problem, Throwable err, NativeWebRequest request) {
-        if (problem.getStatus() <= 0) problem.setStatus(toStatus(err));
+    protected ProblemDetailWithCause customizeProblem(ProblemDetailWithCause problem, Throwable err,
+            NativeWebRequest request) {
+        if (problem.getStatus() <= 0)
+            problem.setStatus(toStatus(err));
 
         if (problem.getType() == null || problem.getType().equals(URI.create("about:blank")))
             problem.setType(getMappedType(err));
@@ -183,18 +182,17 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         }
 
         Map<String, Object> problemProperties = problem.getProperties();
-        if (problemProperties == null || !problemProperties.containsKey(MESSAGE_KEY)) problem.setProperty(
-            MESSAGE_KEY,
-            getMappedMessageKey(err) != null ? getMappedMessageKey(err) : "error.http." + problem.getStatus()
-        );
+        if (problemProperties == null || !problemProperties.containsKey(MESSAGE_KEY))
+            problem.setProperty(
+                    MESSAGE_KEY,
+                    getMappedMessageKey(err) != null ? getMappedMessageKey(err) : "error.http." + problem.getStatus());
 
         if (problemProperties == null || !problemProperties.containsKey(PATH_KEY))
             problem.setProperty(PATH_KEY, getPathValue(request));
 
-        if (
-            (err instanceof MethodArgumentNotValidException fieldException) &&
-                (problemProperties == null || !problemProperties.containsKey(FIELD_ERRORS_KEY))
-        ) problem.setProperty(FIELD_ERRORS_KEY, getFieldErrors(fieldException));
+        if ((err instanceof MethodArgumentNotValidException fieldException) &&
+                (problemProperties == null || !problemProperties.containsKey(FIELD_ERRORS_KEY)))
+            problem.setProperty(FIELD_ERRORS_KEY, getFieldErrors(fieldException));
 
         problem.setCause(buildCause(err.getCause(), request).orElse(null));
 
@@ -202,23 +200,21 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     }
 
     private String extractTitle(Throwable err, int statusCode) {
-        return getCustomizedTitle(err) != null ? getCustomizedTitle(err) : extractTitleForResponseStatus(err, statusCode);
+        return getCustomizedTitle(err) != null ? getCustomizedTitle(err)
+                : extractTitleForResponseStatus(err, statusCode);
     }
 
     private List<FieldErrorVM> getFieldErrors(MethodArgumentNotValidException ex) {
         return ex
-            .getBindingResult()
-            .getFieldErrors()
-            .stream()
-            .map(
-                f ->
-                    new FieldErrorVM(
-                        f.getObjectName().replaceFirst("DTO$", ""),
-                        f.getField(),
-                        StringUtils.isNotBlank(f.getDefaultMessage()) ? f.getDefaultMessage() : f.getCode()
-                    )
-            )
-            .toList();
+                .getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(
+                        f -> new FieldErrorVM(
+                                f.getObjectName().replaceFirst("DTO$", ""),
+                                f.getField(),
+                                StringUtils.isNotBlank(f.getDefaultMessage()) ? f.getDefaultMessage() : f.getCode()))
+                .toList();
     }
 
     private String extractTitleForResponseStatus(Throwable err, int statusCode) {
@@ -233,11 +229,12 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
     private HttpStatus toStatus(final Throwable throwable) {
         // Let the ErrorResponse take this responsibility
-        if (throwable instanceof ErrorResponse err) return HttpStatus.valueOf(err.getBody().getStatus());
+        if (throwable instanceof ErrorResponse err)
+            return HttpStatus.valueOf(err.getBody().getStatus());
 
         return Optional.ofNullable(getMappedStatus(throwable)).orElse(
-            Optional.ofNullable(resolveResponseStatus(throwable)).map(ResponseStatus::value).orElse(HttpStatus.INTERNAL_SERVER_ERROR)
-        );
+                Optional.ofNullable(resolveResponseStatus(throwable)).map(ResponseStatus::value)
+                        .orElse(HttpStatus.INTERNAL_SERVER_ERROR));
     }
 
     private ResponseStatus extractResponseStatus(final Throwable throwable) {
@@ -250,57 +247,66 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     }
 
     private URI getMappedType(Throwable err) {
-        if (err instanceof MethodArgumentNotValidException) return ErrorConstants.CONSTRAINT_VIOLATION_TYPE;
+        if (err instanceof MethodArgumentNotValidException)
+            return ErrorConstants.CONSTRAINT_VIOLATION_TYPE;
         return ErrorConstants.DEFAULT_TYPE;
     }
 
     private String getMappedMessageKey(Throwable err) {
         if (err instanceof MethodArgumentNotValidException) {
             return ErrorConstants.ERR_VALIDATION;
-        } else if (err instanceof ConcurrencyFailureException || err.getCause() instanceof ConcurrencyFailureException) {
+        } else if (err instanceof ConcurrencyFailureException
+                || err.getCause() instanceof ConcurrencyFailureException) {
             return ErrorConstants.ERR_CONCURRENCY_FAILURE;
         }
         return null;
     }
 
     private String getCustomizedTitle(Throwable err) {
-        if (err instanceof MethodArgumentNotValidException) return "Method argument not valid";
+        if (err instanceof MethodArgumentNotValidException)
+            return "Method argument not valid";
         return null;
     }
 
     private String getCustomizedErrorDetails(Throwable err) {
         Collection<String> activeProfiles = Arrays.asList(env.getActiveProfiles());
-        if (activeProfiles.contains(JHipsterConstants.SPRING_PROFILE_PRODUCTION)) {
-            if (err instanceof HttpMessageConversionException) return "Unable to convert http message";
-            if (err instanceof DataAccessException) return "Failure during data access";
-            if (containsPackageName(err.getMessage())) return "Unexpected runtime exception";
+        if (activeProfiles.contains("prod")) {
+            if (err instanceof HttpMessageConversionException)
+                return "Unable to convert http message";
+            if (err instanceof DataAccessException)
+                return "Failure during data access";
+            if (containsPackageName(err.getMessage()))
+                return "Unexpected runtime exception";
         }
         return err.getCause() != null ? err.getCause().getMessage() : err.getMessage();
     }
 
     private HttpStatus getMappedStatus(Throwable err) {
         // Where we disagree with Spring defaults
-        if (err instanceof AccessDeniedException) return HttpStatus.FORBIDDEN;
-        if (err instanceof ConcurrencyFailureException) return HttpStatus.CONFLICT;
-        if (err instanceof BadCredentialsException) return HttpStatus.UNAUTHORIZED;
+        if (err instanceof AccessDeniedException)
+            return HttpStatus.FORBIDDEN;
+        if (err instanceof ConcurrencyFailureException)
+            return HttpStatus.CONFLICT;
+        if (err instanceof BadCredentialsException)
+            return HttpStatus.UNAUTHORIZED;
         return null;
     }
 
     private URI getPathValue(NativeWebRequest request) {
-        if (request == null) return URI.create("about:blank");
+        if (request == null)
+            return URI.create("about:blank");
         return URI.create(extractURI(request));
     }
 
     private HttpHeaders buildHeaders(Throwable err) {
         return err instanceof BadRequestAlertException badRequestAlertException
-            ? HeaderUtil.createFailureAlert(
-            applicationName,
-            true,
-            badRequestAlertException.getEntityName(),
-            badRequestAlertException.getErrorKey(),
-            badRequestAlertException.getMessage()
-        )
-            : null;
+                ? HeaderUtil.createFailureAlert(
+                        applicationName,
+                        true,
+                        badRequestAlertException.getEntityName(),
+                        badRequestAlertException.getErrorKey(),
+                        badRequestAlertException.getMessage())
+                : null;
     }
 
     public Optional<ProblemDetailWithCause> buildCause(final Throwable throwable, NativeWebRequest request) {
@@ -317,6 +323,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
     private boolean containsPackageName(String message) {
         // This list is for sure not complete
-        return StringUtils.containsAny(message, "org.", "java.", "net.", "jakarta.", "javax.", "com.", "io.", "de.", "org.nmcpye.datarun", "org.nmcpye.etl");
+        return StringUtils.containsAny(message, "org.", "java.", "net.", "jakarta.", "javax.", "com.", "io.", "de.",
+                "org.nmcpye.datarun", "org.nmcpye.etl");
     }
 }

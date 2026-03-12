@@ -9,32 +9,40 @@ import org.jooq.TableField;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.Internal;
+import org.nmcpye.datarun.jooq.public_.tables.Activity;
 import org.nmcpye.datarun.jooq.public_.tables.AppUser;
 import org.nmcpye.datarun.jooq.public_.tables.Assignment;
 import org.nmcpye.datarun.jooq.public_.tables.AssignmentMember;
 import org.nmcpye.datarun.jooq.public_.tables.AssignmentPartyBinding;
+import org.nmcpye.datarun.jooq.public_.tables.DataTemplate;
+import org.nmcpye.datarun.jooq.public_.tables.DataTemplateVersion;
 import org.nmcpye.datarun.jooq.public_.tables.OrgUnit;
 import org.nmcpye.datarun.jooq.public_.tables.Party;
 import org.nmcpye.datarun.jooq.public_.tables.PartySet;
 import org.nmcpye.datarun.jooq.public_.tables.PartySetMember;
 import org.nmcpye.datarun.jooq.public_.tables.PartyTag;
+import org.nmcpye.datarun.jooq.public_.tables.Project;
 import org.nmcpye.datarun.jooq.public_.tables.Team;
 import org.nmcpye.datarun.jooq.public_.tables.TeamUser;
-import org.nmcpye.datarun.jooq.public_.tables.UserAllowedParty;
+import org.nmcpye.datarun.jooq.public_.tables.UserExecutionContext;
 import org.nmcpye.datarun.jooq.public_.tables.UserGroup;
 import org.nmcpye.datarun.jooq.public_.tables.UserGroupUsers;
+import org.nmcpye.datarun.jooq.public_.tables.records.ActivityRecord;
 import org.nmcpye.datarun.jooq.public_.tables.records.AppUserRecord;
 import org.nmcpye.datarun.jooq.public_.tables.records.AssignmentMemberRecord;
 import org.nmcpye.datarun.jooq.public_.tables.records.AssignmentPartyBindingRecord;
 import org.nmcpye.datarun.jooq.public_.tables.records.AssignmentRecord;
+import org.nmcpye.datarun.jooq.public_.tables.records.DataTemplateRecord;
+import org.nmcpye.datarun.jooq.public_.tables.records.DataTemplateVersionRecord;
 import org.nmcpye.datarun.jooq.public_.tables.records.OrgUnitRecord;
 import org.nmcpye.datarun.jooq.public_.tables.records.PartyRecord;
 import org.nmcpye.datarun.jooq.public_.tables.records.PartySetMemberRecord;
 import org.nmcpye.datarun.jooq.public_.tables.records.PartySetRecord;
 import org.nmcpye.datarun.jooq.public_.tables.records.PartyTagRecord;
+import org.nmcpye.datarun.jooq.public_.tables.records.ProjectRecord;
 import org.nmcpye.datarun.jooq.public_.tables.records.TeamRecord;
 import org.nmcpye.datarun.jooq.public_.tables.records.TeamUserRecord;
-import org.nmcpye.datarun.jooq.public_.tables.records.UserAllowedPartyRecord;
+import org.nmcpye.datarun.jooq.public_.tables.records.UserExecutionContextRecord;
 import org.nmcpye.datarun.jooq.public_.tables.records.UserGroupRecord;
 import org.nmcpye.datarun.jooq.public_.tables.records.UserGroupUsersRecord;
 
@@ -50,6 +58,10 @@ public class Keys {
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final UniqueKey<ActivityRecord> PK_ACTIVITY = Internal.createUniqueKey(Activity.ACTIVITY, DSL.name("pk_activity"), new TableField[] { Activity.ACTIVITY.ID }, true);
+    public static final UniqueKey<ActivityRecord> UC_ACTIVITY_CODE = Internal.createUniqueKey(Activity.ACTIVITY, DSL.name("uc_activity_code"), new TableField[] { Activity.ACTIVITY.CODE }, true);
+    public static final UniqueKey<ActivityRecord> UC_ACTIVITY_NAME = Internal.createUniqueKey(Activity.ACTIVITY, DSL.name("uc_activity_name"), new TableField[] { Activity.ACTIVITY.NAME }, true);
+    public static final UniqueKey<ActivityRecord> UC_ACTIVITY_UID = Internal.createUniqueKey(Activity.ACTIVITY, DSL.name("uc_activity_uid"), new TableField[] { Activity.ACTIVITY.UID }, true);
     public static final UniqueKey<AppUserRecord> PK_APP_USER = Internal.createUniqueKey(AppUser.APP_USER, DSL.name("pk_app_user"), new TableField[] { AppUser.APP_USER.ID }, true);
     public static final UniqueKey<AppUserRecord> UC_APP_USER_EMAIL = Internal.createUniqueKey(AppUser.APP_USER, DSL.name("uc_app_user_email"), new TableField[] { AppUser.APP_USER.EMAIL }, true);
     public static final UniqueKey<AppUserRecord> UC_APP_USER_LOGIN = Internal.createUniqueKey(AppUser.APP_USER, DSL.name("uc_app_user_login"), new TableField[] { AppUser.APP_USER.LOGIN }, true);
@@ -64,6 +76,15 @@ public class Keys {
     public static final UniqueKey<AssignmentPartyBindingRecord> ASSIGNMENT_PARTY_BINDING_UID_KEY = Internal.createUniqueKey(AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING, DSL.name("assignment_party_binding_uid_key"), new TableField[] { AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING.UID }, true);
     public static final UniqueKey<AssignmentPartyBindingRecord> PK_ASSIGNMENT_PARTY_BINDING = Internal.createUniqueKey(AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING, DSL.name("pk_assignment_party_binding"), new TableField[] { AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING.ID }, true);
     public static final UniqueKey<AssignmentPartyBindingRecord> UX_ASSIGNMENT_PARTY_BINDING_IDS = Internal.createUniqueKey(AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING, DSL.name("ux_assignment_party_binding_ids"), new TableField[] { AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING.ASSIGNMENT_ID, AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING.VOCABULARY_ID, AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING.NAME, AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING.PARTY_SET_ID }, true);
+    public static final UniqueKey<DataTemplateRecord> PK_DATA_TEMPLATE = Internal.createUniqueKey(DataTemplate.DATA_TEMPLATE, DSL.name("pk_data_template"), new TableField[] { DataTemplate.DATA_TEMPLATE.ID }, true);
+    public static final UniqueKey<DataTemplateRecord> UC_DATA_TEMPLATE_CODE = Internal.createUniqueKey(DataTemplate.DATA_TEMPLATE, DSL.name("uc_data_template_code"), new TableField[] { DataTemplate.DATA_TEMPLATE.CODE }, true);
+    public static final UniqueKey<DataTemplateRecord> UC_DATA_TEMPLATE_NAME = Internal.createUniqueKey(DataTemplate.DATA_TEMPLATE, DSL.name("uc_data_template_name"), new TableField[] { DataTemplate.DATA_TEMPLATE.NAME }, true);
+    public static final UniqueKey<DataTemplateRecord> UC_DATA_TEMPLATE_UID = Internal.createUniqueKey(DataTemplate.DATA_TEMPLATE, DSL.name("uc_data_template_uid"), new TableField[] { DataTemplate.DATA_TEMPLATE.UID }, true);
+    public static final UniqueKey<DataTemplateRecord> UC_DATA_TEMPLATE_VERSION_UID = Internal.createUniqueKey(DataTemplate.DATA_TEMPLATE, DSL.name("uc_data_template_version_uid"), new TableField[] { DataTemplate.DATA_TEMPLATE.VERSION_UID }, true);
+    public static final UniqueKey<DataTemplateVersionRecord> PK_DATA_TEMPLATE_VERSION = Internal.createUniqueKey(DataTemplateVersion.DATA_TEMPLATE_VERSION, DSL.name("pk_data_template_version"), new TableField[] { DataTemplateVersion.DATA_TEMPLATE_VERSION.ID }, true);
+    public static final UniqueKey<DataTemplateVersionRecord> UC_TEMPLATE_VERSION_UID = Internal.createUniqueKey(DataTemplateVersion.DATA_TEMPLATE_VERSION, DSL.name("uc_template_version_uid"), new TableField[] { DataTemplateVersion.DATA_TEMPLATE_VERSION.UID }, true);
+    public static final UniqueKey<DataTemplateVersionRecord> UX_TV_ID_DATA_TEMPLATE_ID = Internal.createUniqueKey(DataTemplateVersion.DATA_TEMPLATE_VERSION, DSL.name("ux_tv_id_data_template_id"), new TableField[] { DataTemplateVersion.DATA_TEMPLATE_VERSION.ID, DataTemplateVersion.DATA_TEMPLATE_VERSION.DATA_TEMPLATE_ID }, true);
+    public static final UniqueKey<DataTemplateVersionRecord> UX_TV_NO_DATA_TEMPLATE_ID = Internal.createUniqueKey(DataTemplateVersion.DATA_TEMPLATE_VERSION, DSL.name("ux_tv_no_data_template_id"), new TableField[] { DataTemplateVersion.DATA_TEMPLATE_VERSION.VERSION_NUMBER, DataTemplateVersion.DATA_TEMPLATE_VERSION.DATA_TEMPLATE_ID }, true);
     public static final UniqueKey<OrgUnitRecord> PK_ORG_UNIT = Internal.createUniqueKey(OrgUnit.ORG_UNIT, DSL.name("pk_org_unit"), new TableField[] { OrgUnit.ORG_UNIT.ID }, true);
     public static final UniqueKey<OrgUnitRecord> UC_ORG_UNIT_CODE = Internal.createUniqueKey(OrgUnit.ORG_UNIT, DSL.name("uc_org_unit_code"), new TableField[] { OrgUnit.ORG_UNIT.CODE }, true);
     public static final UniqueKey<OrgUnitRecord> UC_ORG_UNIT_UID = Internal.createUniqueKey(OrgUnit.ORG_UNIT, DSL.name("uc_org_unit_uid"), new TableField[] { OrgUnit.ORG_UNIT.UID }, true);
@@ -78,11 +99,16 @@ public class Keys {
     public static final UniqueKey<PartySetMemberRecord> UX_PARTY_SET_MEMBER_PARTY = Internal.createUniqueKey(PartySetMember.PARTY_SET_MEMBER, DSL.name("ux_party_set_member_party"), new TableField[] { PartySetMember.PARTY_SET_MEMBER.PARTY_SET_ID, PartySetMember.PARTY_SET_MEMBER.PARTY_ID }, true);
     public static final UniqueKey<PartyTagRecord> PK_PARTY_TAG = Internal.createUniqueKey(PartyTag.PARTY_TAG, DSL.name("pk_party_tag"), new TableField[] { PartyTag.PARTY_TAG.ID, PartyTag.PARTY_TAG.PARTY_ID, PartyTag.PARTY_TAG.TAG_KEY }, true);
     public static final UniqueKey<PartyTagRecord> UC_PARTY_TAG_KEY_VALUE = Internal.createUniqueKey(PartyTag.PARTY_TAG, DSL.name("uc_party_tag_key_value"), new TableField[] { PartyTag.PARTY_TAG.PARTY_ID, PartyTag.PARTY_TAG.TAG_KEY, PartyTag.PARTY_TAG.TAG_VALUE }, true);
+    public static final UniqueKey<ProjectRecord> PK_PROJECT = Internal.createUniqueKey(Project.PROJECT, DSL.name("pk_project"), new TableField[] { Project.PROJECT.ID }, true);
+    public static final UniqueKey<ProjectRecord> UC_PROJECT_CODE = Internal.createUniqueKey(Project.PROJECT, DSL.name("uc_project_code"), new TableField[] { Project.PROJECT.CODE }, true);
+    public static final UniqueKey<ProjectRecord> UC_PROJECT_NAME = Internal.createUniqueKey(Project.PROJECT, DSL.name("uc_project_name"), new TableField[] { Project.PROJECT.NAME }, true);
+    public static final UniqueKey<ProjectRecord> UC_PROJECT_UID = Internal.createUniqueKey(Project.PROJECT, DSL.name("uc_project_uid"), new TableField[] { Project.PROJECT.UID }, true);
     public static final UniqueKey<TeamRecord> PK_TEAM = Internal.createUniqueKey(Team.TEAM, DSL.name("pk_team"), new TableField[] { Team.TEAM.ID }, true);
     public static final UniqueKey<TeamRecord> UC_TEAM_CODE_ACTIVITY_ID = Internal.createUniqueKey(Team.TEAM, DSL.name("uc_team_code_activity_id"), new TableField[] { Team.TEAM.CODE, Team.TEAM.ACTIVITY_ID }, true);
     public static final UniqueKey<TeamRecord> UC_TEAM_UID = Internal.createUniqueKey(Team.TEAM, DSL.name("uc_team_uid"), new TableField[] { Team.TEAM.UID }, true);
     public static final UniqueKey<TeamUserRecord> PK_TEAM_USER = Internal.createUniqueKey(TeamUser.TEAM_USER, DSL.name("pk_team_user"), new TableField[] { TeamUser.TEAM_USER.TEAM_ID, TeamUser.TEAM_USER.USER_ID }, true);
-    public static final UniqueKey<UserAllowedPartyRecord> PK_USER_ALLOWED_PARTY = Internal.createUniqueKey(UserAllowedParty.USER_ALLOWED_PARTY, DSL.name("pk_user_allowed_party"), new TableField[] { UserAllowedParty.USER_ALLOWED_PARTY.USER_ID, UserAllowedParty.USER_ALLOWED_PARTY.PARTY_ID }, true);
+    public static final UniqueKey<UserExecutionContextRecord> UK_UEC_USER_ENTITY = Internal.createUniqueKey(UserExecutionContext.USER_EXECUTION_CONTEXT, DSL.name("uk_uec_user_entity"), new TableField[] { UserExecutionContext.USER_EXECUTION_CONTEXT.USER_UID, UserExecutionContext.USER_EXECUTION_CONTEXT.ENTITY_TYPE, UserExecutionContext.USER_EXECUTION_CONTEXT.ENTITY_UID }, true);
+    public static final UniqueKey<UserExecutionContextRecord> USER_EXECUTION_CONTEXT_PKEY = Internal.createUniqueKey(UserExecutionContext.USER_EXECUTION_CONTEXT, DSL.name("user_execution_context_pkey"), new TableField[] { UserExecutionContext.USER_EXECUTION_CONTEXT.ID }, true);
     public static final UniqueKey<UserGroupRecord> PK_USER_GROUP = Internal.createUniqueKey(UserGroup.USER_GROUP, DSL.name("pk_user_group"), new TableField[] { UserGroup.USER_GROUP.ID }, true);
     public static final UniqueKey<UserGroupRecord> UC_USER_GROUP_CODE = Internal.createUniqueKey(UserGroup.USER_GROUP, DSL.name("uc_user_group_code"), new TableField[] { UserGroup.USER_GROUP.CODE }, true);
     public static final UniqueKey<UserGroupRecord> UC_USER_GROUP_NAME = Internal.createUniqueKey(UserGroup.USER_GROUP, DSL.name("uc_user_group_name"), new TableField[] { UserGroup.USER_GROUP.NAME }, true);
@@ -93,18 +119,23 @@ public class Keys {
     // FOREIGN KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final ForeignKey<ActivityRecord, ProjectRecord> ACTIVITY__FK_ACTIVITY_ON_PROJECT = Internal.createForeignKey(Activity.ACTIVITY, DSL.name("fk_activity_on_project"), new TableField[] { Activity.ACTIVITY.PROJECT_ID }, Keys.PK_PROJECT, new TableField[] { Project.PROJECT.ID }, true);
     public static final ForeignKey<AssignmentRecord, PartySetRecord> ASSIGNMENT__FK_ASSIGNMENT_DEFAULT_PARTY_SET_ID = Internal.createForeignKey(Assignment.ASSIGNMENT, DSL.name("fk_assignment_default_party_set_id"), new TableField[] { Assignment.ASSIGNMENT.DEFAULT_PARTY_SET_ID }, Keys.PK_PARTY_SET, new TableField[] { PartySet.PARTY_SET.ID }, true);
+    public static final ForeignKey<AssignmentRecord, ActivityRecord> ASSIGNMENT__FK_ASSIGNMENT_ON_ACTIVITY = Internal.createForeignKey(Assignment.ASSIGNMENT, DSL.name("fk_assignment_on_activity"), new TableField[] { Assignment.ASSIGNMENT.ACTIVITY_ID }, Keys.PK_ACTIVITY, new TableField[] { Activity.ACTIVITY.ID }, true);
     public static final ForeignKey<AssignmentRecord, OrgUnitRecord> ASSIGNMENT__FK_ASSIGNMENT_ON_ORGUNIT = Internal.createForeignKey(Assignment.ASSIGNMENT, DSL.name("fk_assignment_on_orgunit"), new TableField[] { Assignment.ASSIGNMENT.ORG_UNIT_ID }, Keys.PK_ORG_UNIT, new TableField[] { OrgUnit.ORG_UNIT.ID }, true);
     public static final ForeignKey<AssignmentRecord, AssignmentRecord> ASSIGNMENT__FK_ASSIGNMENT_ON_PARENT = Internal.createForeignKey(Assignment.ASSIGNMENT, DSL.name("fk_assignment_on_parent"), new TableField[] { Assignment.ASSIGNMENT.PARENT_ID }, Keys.PK_ASSIGNMENT, new TableField[] { Assignment.ASSIGNMENT.ID }, true);
     public static final ForeignKey<AssignmentRecord, TeamRecord> ASSIGNMENT__FK_ASSIGNMENT_ON_TEAM = Internal.createForeignKey(Assignment.ASSIGNMENT, DSL.name("fk_assignment_on_team"), new TableField[] { Assignment.ASSIGNMENT.TEAM_ID }, Keys.PK_TEAM, new TableField[] { Team.TEAM.ID }, true);
     public static final ForeignKey<AssignmentMemberRecord, AssignmentRecord> ASSIGNMENT_MEMBER__FK_ASSIGNMENT_MEMBER_ASSIGNMENT_ID = Internal.createForeignKey(AssignmentMember.ASSIGNMENT_MEMBER, DSL.name("fk_assignment_member_assignment_id"), new TableField[] { AssignmentMember.ASSIGNMENT_MEMBER.ASSIGNMENT_ID }, Keys.PK_ASSIGNMENT, new TableField[] { Assignment.ASSIGNMENT.ID }, true);
     public static final ForeignKey<AssignmentPartyBindingRecord, AssignmentRecord> ASSIGNMENT_PARTY_BINDING__FK_BIND_ASSIGN = Internal.createForeignKey(AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING, DSL.name("fk_bind_assign"), new TableField[] { AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING.ASSIGNMENT_ID }, Keys.PK_ASSIGNMENT, new TableField[] { Assignment.ASSIGNMENT.ID }, true);
     public static final ForeignKey<AssignmentPartyBindingRecord, PartySetRecord> ASSIGNMENT_PARTY_BINDING__FK_BIND_PSET = Internal.createForeignKey(AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING, DSL.name("fk_bind_pset"), new TableField[] { AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING.PARTY_SET_ID }, Keys.PK_PARTY_SET, new TableField[] { PartySet.PARTY_SET.ID }, true);
+    public static final ForeignKey<AssignmentPartyBindingRecord, DataTemplateRecord> ASSIGNMENT_PARTY_BINDING__FK_VOCABULARY_TEMPLATE = Internal.createForeignKey(AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING, DSL.name("fk_vocabulary_template"), new TableField[] { AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING.VOCABULARY_ID }, Keys.PK_DATA_TEMPLATE, new TableField[] { DataTemplate.DATA_TEMPLATE.ID }, true);
+    public static final ForeignKey<DataTemplateVersionRecord, DataTemplateRecord> DATA_TEMPLATE_VERSION__FK_DATA_TEMPLATE_VERSION_ON_DATA_TEMPLATE = Internal.createForeignKey(DataTemplateVersion.DATA_TEMPLATE_VERSION, DSL.name("fk_data_template_version_on_data_template"), new TableField[] { DataTemplateVersion.DATA_TEMPLATE_VERSION.DATA_TEMPLATE_ID }, Keys.PK_DATA_TEMPLATE, new TableField[] { DataTemplate.DATA_TEMPLATE.ID }, true);
     public static final ForeignKey<OrgUnitRecord, OrgUnitRecord> ORG_UNIT__FK_ORG_UNIT_ON_PARENT = Internal.createForeignKey(OrgUnit.ORG_UNIT, DSL.name("fk_org_unit_on_parent"), new TableField[] { OrgUnit.ORG_UNIT.PARENT_ID }, Keys.PK_ORG_UNIT, new TableField[] { OrgUnit.ORG_UNIT.ID }, true);
     public static final ForeignKey<PartyRecord, PartyRecord> PARTY__FK_PARTY_PARENT = Internal.createForeignKey(Party.PARTY, DSL.name("fk_party_parent"), new TableField[] { Party.PARTY.PARENT_ID }, Keys.PK_PARTY, new TableField[] { Party.PARTY.ID }, true);
     public static final ForeignKey<PartySetMemberRecord, PartyRecord> PARTY_SET_MEMBER__FK_PSM_PARTY = Internal.createForeignKey(PartySetMember.PARTY_SET_MEMBER, DSL.name("fk_psm_party"), new TableField[] { PartySetMember.PARTY_SET_MEMBER.PARTY_ID }, Keys.PK_PARTY, new TableField[] { Party.PARTY.ID }, true);
     public static final ForeignKey<PartySetMemberRecord, PartySetRecord> PARTY_SET_MEMBER__FK_PSM_PARTY_SET = Internal.createForeignKey(PartySetMember.PARTY_SET_MEMBER, DSL.name("fk_psm_party_set"), new TableField[] { PartySetMember.PARTY_SET_MEMBER.PARTY_SET_ID }, Keys.PK_PARTY_SET, new TableField[] { PartySet.PARTY_SET.ID }, true);
     public static final ForeignKey<PartyTagRecord, PartyRecord> PARTY_TAG__FK_PARTY_TAG = Internal.createForeignKey(PartyTag.PARTY_TAG, DSL.name("fk_party_tag"), new TableField[] { PartyTag.PARTY_TAG.PARTY_ID }, Keys.PK_PARTY, new TableField[] { Party.PARTY.ID }, true);
+    public static final ForeignKey<TeamRecord, ActivityRecord> TEAM__FK_TEAM_ON_ACTIVITY = Internal.createForeignKey(Team.TEAM, DSL.name("fk_team_on_activity"), new TableField[] { Team.TEAM.ACTIVITY_ID }, Keys.PK_ACTIVITY, new TableField[] { Activity.ACTIVITY.ID }, true);
     public static final ForeignKey<TeamUserRecord, TeamRecord> TEAM_USER__FK_TEAM_USER_ON_TEAM = Internal.createForeignKey(TeamUser.TEAM_USER, DSL.name("fk_team_user_on_team"), new TableField[] { TeamUser.TEAM_USER.TEAM_ID }, Keys.PK_TEAM, new TableField[] { Team.TEAM.ID }, true);
     public static final ForeignKey<TeamUserRecord, AppUserRecord> TEAM_USER__FK_TEAM_USER_ON_USER = Internal.createForeignKey(TeamUser.TEAM_USER, DSL.name("fk_team_user_on_user"), new TableField[] { TeamUser.TEAM_USER.USER_ID }, Keys.PK_APP_USER, new TableField[] { AppUser.APP_USER.ID }, true);
     public static final ForeignKey<UserGroupUsersRecord, AppUserRecord> USER_GROUP_USERS__FK_USEGROUSE_ON_USER = Internal.createForeignKey(UserGroupUsers.USER_GROUP_USERS, DSL.name("fk_usegrouse_on_user"), new TableField[] { UserGroupUsers.USER_GROUP_USERS.USER_ID }, Keys.PK_APP_USER, new TableField[] { AppUser.APP_USER.ID }, true);

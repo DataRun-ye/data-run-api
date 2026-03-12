@@ -15,7 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import tech.jhipster.web.util.HeaderUtil;
+import org.nmcpye.datarun.web.rest.util.HeaderUtil;
 
 import java.io.Serializable;
 import java.net.URISyntaxException;
@@ -137,3 +137,4 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
             .body(entity);
     }
 }
+

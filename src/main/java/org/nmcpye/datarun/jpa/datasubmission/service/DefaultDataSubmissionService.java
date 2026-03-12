@@ -30,21 +30,20 @@ import java.util.stream.Collectors;
  */
 @Service
 @Primary
-@Slf4j
 public class DefaultDataSubmissionService
-    extends DefaultJpaSoftDeleteService<DataSubmission>
-    implements DataSubmissionService {
+        extends DefaultJpaSoftDeleteService<DataSubmission>
+        implements DataSubmissionService {
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
     private final OutboxWritePort outboxRepo;
 
     public DefaultDataSubmissionService(
-        DataSubmissionRepository repository,
-        CacheManager cacheManager,
-        UserAccessService userAccessService,
-        ApplicationEventPublisher eventPublisher,
-        ObjectMapper objectMapper, OutboxWritePort outboxRepo) {
-        super(repository, cacheManager, userAccessService);
+            DataSubmissionRepository repository,
+            CacheManager cacheManager,
+            UserAccessService userAccessService,
+            ApplicationEventPublisher eventPublisher,
+            ObjectMapper objectMapper, OutboxWritePort outboxRepo) {
+        super(repository, cacheManager, userAccessService, eventPublisher);
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
         this.outboxRepo = outboxRepo;
@@ -58,28 +57,30 @@ public class DefaultDataSubmissionService
         // This check is a safeguard for unexpected behavior from upsertAll,
         // rather than input validation.
         if (results.isEmpty()) {
-            throw new IllegalStateException("UpsertAll returned an empty list when processing a single entity. This indicates an internal logic error.");
+            throw new IllegalStateException(
+                    "UpsertAll returned an empty list when processing a single entity. This indicates an internal logic error.");
         }
         return results.get(0);
     }
 
     private boolean updateEntityFields(DataSubmission existingEntity, DataSubmission incomingEntity) {
-        if(Boolean.TRUE.equals(existingEntity.getDeleted()) && Boolean.TRUE.equals(incomingEntity.getDeleted())) {
+        if (Boolean.TRUE.equals(existingEntity.getDeleted()) && Boolean.TRUE.equals(incomingEntity.getDeleted())) {
             return true;
         }
-        if(Boolean.TRUE.equals(existingEntity.getDeleted()) && Boolean.FALSE.equals(incomingEntity.getDeleted())) {
+        if (Boolean.TRUE.equals(existingEntity.getDeleted()) && Boolean.FALSE.equals(incomingEntity.getDeleted())) {
             existingEntity.setDeleted(false);
             existingEntity.setDeletedAt(null);
             return false;
         }
 
-        if(Boolean.TRUE.equals(incomingEntity.getDeleted()) && Boolean.FALSE.equals(existingEntity.getDeleted())) {
+        if (Boolean.TRUE.equals(incomingEntity.getDeleted()) && Boolean.FALSE.equals(existingEntity.getDeleted())) {
             existingEntity.setDeleted(true);
             existingEntity.setDeletedAt(Instant.now());
             return true;
         }
         existingEntity.setDeleted(incomingEntity.getDeleted());
-        existingEntity.setDeletedAt(!incomingEntity.getDeleted() && existingEntity.getDeleted() ? Instant.now() : existingEntity.getDeletedAt());
+        existingEntity.setDeletedAt(!incomingEntity.getDeleted() && existingEntity.getDeleted() ? Instant.now()
+                : existingEntity.getDeletedAt());
 
         existingEntity.setFormData(incomingEntity.getFormData().deepCopy());
         existingEntity.setActivity(incomingEntity.getActivity());
@@ -97,24 +98,27 @@ public class DefaultDataSubmissionService
     @Transactional
     @Override
     public List<DataSubmission> upsertAll(Collection<DataSubmission> entities,
-                                          CurrentUserDetails user, EntitySaveSummaryVM summary) {
+            CurrentUserDetails user, EntitySaveSummaryVM summary) {
         if (entities == null || entities.isEmpty()) {
             return List.of();
         }
 
         Set<String> incomingUids = entities.stream()
-            .map(entity -> {
-                if (entity.getUid() == null) {
-                    summary.getFailed().put("NULL UID", "Entity in bulk operation must have a UID for upsert operation.");
-                    throw new IllegalArgumentException("Entity in bulk operation must have a UID for upsert operation.");
-                }
-                return entity.getUid();
-            })
-            .collect(Collectors.toSet());
+                .map(entity -> {
+                    if (entity.getUid() == null) {
+                        summary.getFailed().put("NULL UID",
+                                "Entity in bulk operation must have a UID for upsert operation.");
+                        throw new IllegalArgumentException(
+                                "Entity in bulk operation must have a UID for upsert operation.");
+                    }
+                    return entity.getUid();
+                })
+                .collect(Collectors.toSet());
 
-        List<DataSubmission> existingEntitiesFromDb = jpaAuditableObjectRepository.findAllByUidIn(new ArrayList<>(incomingUids));
+        List<DataSubmission> existingEntitiesFromDb = jpaAuditableObjectRepository
+                .findAllByUidIn(new ArrayList<>(incomingUids));
         Map<String, DataSubmission> existingEntitiesMap = existingEntitiesFromDb.stream()
-            .collect(Collectors.toMap(JpaSoftDeleteObject::getUid, Function.identity()));
+                .collect(Collectors.toMap(JpaSoftDeleteObject::getUid, Function.identity()));
 
         List<DataSubmission> entitiesToPersist = new ArrayList<>();
         List<DataSubmission> entitiesToUpdate = new ArrayList<>();
@@ -131,8 +135,10 @@ public class DefaultDataSubmissionService
                 entitiesToPersist.add(incomingEntity);
             } else {
                 final var deleted = updateEntityFields(existingEntity, incomingEntity);
-                if (deleted) entitiesToDelete.add(existingEntity);
-                else entitiesToUpdate.add(existingEntity);
+                if (deleted)
+                    entitiesToDelete.add(existingEntity);
+                else
+                    entitiesToUpdate.add(existingEntity);
             }
         }
 
@@ -143,35 +149,35 @@ public class DefaultDataSubmissionService
         if (!entitiesToPersist.isEmpty()) {
             persistedResults = jpaAuditableObjectRepository.persistAllAndFlush(entitiesToPersist);
             final var outboxEvents = persistedResults.stream()
-                .map(this::enqueueSubmissionsOutbox)
-                .toList();
+                    .map(this::enqueueSubmissionsOutbox)
+                    .toList();
             outboxRepo.insertByEventType(outboxEvents, "SAVE");
 
             persistedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
-                EventChangeType.CREATE, s.getLockVersion())));
+                    EventChangeType.CREATE, s.getLockVersion())));
             summary.getCreated().addAll(persistedResults.stream().map(DataSubmission::getUid).toList());
         }
         if (!entitiesToUpdate.isEmpty()) {
             updatedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToUpdate);
             final var outboxEvents = updatedResults.stream()
-                .map(this::enqueueSubmissionsOutbox)
-                .toList();
+                    .map(this::enqueueSubmissionsOutbox)
+                    .toList();
             outboxRepo.insertByEventType(outboxEvents, "UPDATE");
 
             updatedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
-                EventChangeType.UPDATE, s.getLockVersion()))); // Apply post-update hook for each
+                    EventChangeType.UPDATE, s.getLockVersion()))); // Apply post-update hook for each
             summary.getUpdated().addAll(updatedResults.stream().map(DataSubmission::getUid).toList());
         }
 
         if (!entitiesToDelete.isEmpty()) {
             deletedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToDelete);
             final var outboxEvents = deletedResults.stream()
-                .map(this::enqueueSubmissionsOutbox)
-                .toList();
+                    .map(this::enqueueSubmissionsOutbox)
+                    .toList();
             outboxRepo.insertByEventType(outboxEvents, "DELETE");
 
             deletedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
-                EventChangeType.DELETE, s.getLockVersion()))); // Apply post-update hook for each
+                    EventChangeType.DELETE, s.getLockVersion()))); // Apply post-update hook for each
             summary.getUpdated().addAll(deletedResults.stream().map(DataSubmission::getUid).toList());
         }
 
@@ -181,7 +187,6 @@ public class DefaultDataSubmissionService
         return combinedResults;
     }
 
-
     @Transactional
     @Override
     public void softDelete(DataSubmission object) {
@@ -189,24 +194,38 @@ public class DefaultDataSubmissionService
         outboxRepo.insertByEventType(List.of(outbox), "DELETE");
         super.softDelete(object);
         eventPublisher.publishEvent(new SubmissionSavedEvent(object.getId(),
-            EventChangeType.DELETE, object.getLockVersion()));
+                EventChangeType.DELETE, object.getLockVersion()));
     }
 
     private OutboxWritePort.OutboxInsert enqueueSubmissionsOutbox(DataSubmission s) {
         String payload;
         try {
-            payload = objectMapper.writeValueAsString(s.getFormData());
+            Map<String, Object> fatEvent = new HashMap<>();
+            fatEvent.put("aggregate_id", s.getUid());
+            fatEvent.put("aggregate_type", "Submission");
+            fatEvent.put("correlation_id", s.getId());
+            fatEvent.put("occurred_at",
+                    s.getFinishedEntryTime() != null ? s.getFinishedEntryTime().toString() : Instant.now().toString());
+            fatEvent.put("recorded_at", Instant.now().toString());
+            fatEvent.put("template_uid", s.getForm());
+            fatEvent.put("org_unit_uid", s.getOrgUnit());
+            fatEvent.put("team_uid", s.getTeam());
+            fatEvent.put("data", s.getFormData());
+
+            payload = objectMapper.writeValueAsString(fatEvent);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to stringify fat event payload", e);
         }
 
         return new OutboxWritePort.OutboxInsert(
-            s.getId(),
-            s.getUid(),
-            s.getFormVersion(),
-            payload,
-            Instant.now(),
-            s.getSerialNumber()
+                s.getId(),
+                s.getUid(),
+                s.getFormVersion(),
+                payload,
+                Instant.now(),
+                s.getSerialNumber(),
+                s.getId(), // correlation_id
+                s.getFinishedEntryTime() != null ? s.getFinishedEntryTime() : Instant.now() // occurred_at
         );
     }
 }

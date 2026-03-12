@@ -33,13 +33,14 @@ public class QueryPartySetStrategy implements PartySetStrategy {
     }
 
     @Override
-    public List<ResolvedParty> resolve(UUID partySetId,
-                                       String specJson,
-                                       boolean isMaterialized,
-                                       PartyResolutionRequest request) {
+    public List<ResolvedParty> resolve(String partySetId,
+            String specJson,
+            boolean isMaterialized,
+            PartyResolutionRequest request) {
         try {
             // 1. Parse Spec
-            // Expected Spec: { "query": "FIND_ORG_CHILDREN", "params": { "parentId": "region_id" } }
+            // Expected Spec: { "query": "FIND_ORG_CHILDREN", "params": { "parentId":
+            // "region_id" } }
             JsonNode spec = objectMapper.readTree(specJson);
             String queryName = spec.path("sqlKey").asText();
             JsonNode paramMapping = spec.path("params");
@@ -51,7 +52,8 @@ public class QueryPartySetStrategy implements PartySetStrategy {
                     String sqlParamName = entry.getKey();
                     String contextKey = entry.getValue().asText();
 
-                    // Look up value in the Request Context (e.g. what the user selected in dropdown A)
+                    // Look up value in the Request Context (e.g. what the user selected in dropdown
+                    // A)
                     Object contextValue = request.getContextValues().get(contextKey);
                     resolvedParams.put(sqlParamName, contextValue);
                 });
@@ -69,25 +71,25 @@ public class QueryPartySetStrategy implements PartySetStrategy {
             if (request.getSearchQuery() != null && !request.getSearchQuery().isBlank()) {
                 String term = "%" + request.getSearchQuery().trim() + "%";
                 baseQuery.and(
-                    PARTY.NAME.likeIgnoreCase(term).or(PARTY.CODE.likeIgnoreCase(term))
-                );
+                        PARTY.NAME.likeIgnoreCase(term).or(PARTY.CODE.likeIgnoreCase(term)));
             }
 
             // Apply Security Filter
             baseQuery = applySinceFilter(baseQuery, request.getSince());
 
             // --- APPLY SECURITY FILTER HERE ---
-            // Note: The baseQuery MUST select from PARTY (or alias it correctly) for the filter to work.
+            // Note: The baseQuery MUST select from PARTY (or alias it correctly) for the
+            // filter to work.
             // The NamedQueryProvider should ensure queries are rooted in PARTY.
             var securedQuery = securityFilter.apply(baseQuery, request.getUserId(), isMaterialized);
 
             // 5. Execute & Map
             // Note: baseQuery is selecting *, so we can fetch into ResolvedParty manually
             return securedQuery
-                .orderBy(PARTY.NAME.asc())
-                .limit(request.getLimit())
-                .offset(request.getOffset())
-                .fetch(jooqMapper::mapPartyRecord);
+                    .orderBy(PARTY.NAME.asc())
+                    .limit(request.getLimit())
+                    .offset(request.getOffset())
+                    .fetch(jooqMapper::mapPartyRecord);
 
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Invalid JSON spec for PartySet " + partySetId, e);

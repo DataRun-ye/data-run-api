@@ -19,7 +19,7 @@ import java.util.Objects;
 @Entity
 @Table(name = "app_authority")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-@JsonIgnoreProperties(value = {"new", "id"})
+@JsonIgnoreProperties(value = { "new", "id" })
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
@@ -32,6 +32,14 @@ public class Authority implements Serializable, Persistable<String> {
     @Id
     @Column(name = "name", length = 50, nullable = false)
     private String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 
     @Transient
     private boolean isPersisted;
@@ -83,7 +91,7 @@ public class Authority implements Serializable, Persistable<String> {
     @Override
     public String toString() {
         return "Authority{" +
-            "name=" + getName() +
-            "}";
+                "name=" + getName() +
+                "}";
     }
 }

@@ -2,8 +2,8 @@ package org.nmcpye.datarun.web.errors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.ErrorResponseException;
-import tech.jhipster.web.rest.errors.ProblemDetailWithCause;
-import tech.jhipster.web.rest.errors.ProblemDetailWithCause.ProblemDetailWithCauseBuilder;
+import org.nmcpye.datarun.web.rest.errors.ProblemDetailWithCause;
+import org.nmcpye.datarun.web.rest.errors.ProblemDetailWithCause.ProblemDetailWithCauseBuilder;
 
 import java.net.URI;
 
@@ -48,3 +48,4 @@ public class BadRequestAlertException extends ErrorResponseException {
         return (ProblemDetailWithCause) this.getBody();
     }
 }
+

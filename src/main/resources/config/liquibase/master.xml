@@ -78,20 +78,26 @@
     <include file="/config/liquibase/changelog/options/2025-12-28-option-add-deleted-at.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/options/2025-12-28-option-set-add-deleted-at.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/party/20251224-001-party.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/assignment/20251225-001-assignment-and-binding.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/assignment/20251225-001-assignment-role-party-policy.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/assignment/20251229-002-assignment-add-name-and-default-party.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/party/20251229-user-allowed-party-table-add.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/activity/20251129-add-activity-valid-from-valid-to.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/party/20260106-party-add-party-tag.xml" relativeToChangelogFile="false"/>
-    <include file="/config/liquibase/changelog/assignment/20251225-001-assignment-data-template.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/assignment/20251225-001-assignment-role-data-policy.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/element-template/2026-01-09-add-ce-config.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20260110-events-add.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/assignment/20260116-assignment-add-name.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/assignment/20260409-assignment-make-team-id-nullable.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/error-event/20260120-add-error-event-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/app-user-constraints/20260120-add-user-last-seen-table.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20260207-events-add-deleted-at-column.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20260211-events-drop-anchor-columns.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20260211-tall-canonical-drop-is-deleted-column.xml" relativeToChangelogFile="false"/>
+
+    <!-- user execution context CQRS view -->
+    <include file="/config/liquibase/changelog/user-execution-context/2026-04-09-create-user-execution-context.xml" relativeToChangelogFile="false"/>
+
+    <!-- making legacy assignment.team_id nullable -->
+    <include file="/config/liquibase/changelog/outbox-and-batch/2026-04-08-add_fat_event_columns_to_outbox.xml" relativeToChangelogFile="false"/>
 
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

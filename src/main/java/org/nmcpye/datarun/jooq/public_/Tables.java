@@ -4,18 +4,22 @@
 package org.nmcpye.datarun.jooq.public_;
 
 
+import org.nmcpye.datarun.jooq.public_.tables.Activity;
 import org.nmcpye.datarun.jooq.public_.tables.AppUser;
 import org.nmcpye.datarun.jooq.public_.tables.Assignment;
 import org.nmcpye.datarun.jooq.public_.tables.AssignmentMember;
 import org.nmcpye.datarun.jooq.public_.tables.AssignmentPartyBinding;
+import org.nmcpye.datarun.jooq.public_.tables.DataTemplate;
+import org.nmcpye.datarun.jooq.public_.tables.DataTemplateVersion;
 import org.nmcpye.datarun.jooq.public_.tables.OrgUnit;
 import org.nmcpye.datarun.jooq.public_.tables.Party;
 import org.nmcpye.datarun.jooq.public_.tables.PartySet;
 import org.nmcpye.datarun.jooq.public_.tables.PartySetMember;
 import org.nmcpye.datarun.jooq.public_.tables.PartyTag;
+import org.nmcpye.datarun.jooq.public_.tables.Project;
 import org.nmcpye.datarun.jooq.public_.tables.Team;
 import org.nmcpye.datarun.jooq.public_.tables.TeamUser;
-import org.nmcpye.datarun.jooq.public_.tables.UserAllowedParty;
+import org.nmcpye.datarun.jooq.public_.tables.UserExecutionContext;
 import org.nmcpye.datarun.jooq.public_.tables.UserGroup;
 import org.nmcpye.datarun.jooq.public_.tables.UserGroupUsers;
 
@@ -25,6 +29,11 @@ import org.nmcpye.datarun.jooq.public_.tables.UserGroupUsers;
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Tables {
+
+    /**
+     * The table <code>public.activity</code>.
+     */
+    public static final Activity ACTIVITY = Activity.ACTIVITY;
 
     /**
      * The table <code>public.app_user</code>.
@@ -45,6 +54,16 @@ public class Tables {
      * The table <code>public.assignment_party_binding</code>.
      */
     public static final AssignmentPartyBinding ASSIGNMENT_PARTY_BINDING = AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING;
+
+    /**
+     * The table <code>public.data_template</code>.
+     */
+    public static final DataTemplate DATA_TEMPLATE = DataTemplate.DATA_TEMPLATE;
+
+    /**
+     * The table <code>public.data_template_version</code>.
+     */
+    public static final DataTemplateVersion DATA_TEMPLATE_VERSION = DataTemplateVersion.DATA_TEMPLATE_VERSION;
 
     /**
      * The table <code>public.org_unit</code>.
@@ -72,6 +91,11 @@ public class Tables {
     public static final PartyTag PARTY_TAG = PartyTag.PARTY_TAG;
 
     /**
+     * The table <code>public.project</code>.
+     */
+    public static final Project PROJECT = Project.PROJECT;
+
+    /**
      * The table <code>public.team</code>.
      */
     public static final Team TEAM = Team.TEAM;
@@ -82,9 +106,9 @@ public class Tables {
     public static final TeamUser TEAM_USER = TeamUser.TEAM_USER;
 
     /**
-     * The table <code>public.user_allowed_party</code>.
+     * The table <code>public.user_execution_context</code>.
      */
-    public static final UserAllowedParty USER_ALLOWED_PARTY = UserAllowedParty.USER_ALLOWED_PARTY;
+    public static final UserExecutionContext USER_EXECUTION_CONTEXT = UserExecutionContext.USER_EXECUTION_CONTEXT;
 
     /**
      * The table <code>public.user_group</code>.

@@ -5,9 +5,9 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
-import org.nmcpye.datarun.datatemplateprocessor.postprocessors.AbstractFormElementHandler;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
+import org.nmcpye.datarun.datatemplateprocessor.postprocessors.AbstractTemplateElementHandler;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateVersionInterface;
 
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 public class TemplateElementProcessor {
     private final DataTemplateVersionInterface formTemplate;
-    final private Map<String, FormSectionConf> sectionMap;
+    final private Map<String, SectionTemplateElementDto> sectionMap;
 
     public TemplateElementProcessor(DataTemplateVersionInterface formTemplate) {
         this.formTemplate = formTemplate;
@@ -32,7 +32,7 @@ public class TemplateElementProcessor {
     private TemplateElementProcessor configureAndValidateSections() {
         final var formSections = new HashSet<>(formTemplate.getSections());
         final var sections = formSections.stream()
-            .map(AbstractFormElementHandler::processSection)
+            .map(AbstractTemplateElementHandler::processSection)
             .peek(s -> s.path(buildPath(s, sectionMap))).toList();
 
         formTemplate.sections(sections);
@@ -46,10 +46,9 @@ public class TemplateElementProcessor {
     private TemplateElementProcessor configureAndValidateFields(Collection<DataElement> dataTemplateElements) {
         final var dataElementMap = dataTemplateElements.stream()
             .collect(Collectors.toMap(DataElement::getUid, Function.identity()));
-//        final var sectionMap = getSectionMap();
         final var fields = formTemplate.getFields().stream().distinct()
             .map((f) ->
-                AbstractFormElementHandler
+                AbstractTemplateElementHandler
                     .processElement(f,
                         Optional.ofNullable(dataElementMap.get(f.getId()))
                             .orElseThrow(() -> new IllegalQueryException(ErrorCode.E1100, formTemplate.getUid(),
@@ -77,7 +76,7 @@ public class TemplateElementProcessor {
      * @param sectionMap The Map of all sections.
      * @return The computed path (e.g., "mainSection.householdnames.P1D5FiaiHFP").
      */
-    private <T extends AbstractElement> String buildPath(T element, Map<String, FormSectionConf> sectionMap) {
+    private <T extends AbstractElement> String buildPath(T element, Map<String, SectionTemplateElementDto> sectionMap) {
         Deque<String> pathParts = new ArrayDeque<>();
         pathParts.push(getKey(element));
 
@@ -91,7 +90,7 @@ public class TemplateElementProcessor {
 
             }
 
-            FormSectionConf parentSection = sectionMap.get(parentId);
+            SectionTemplateElementDto parentSection = sectionMap.get(parentId);
             if (parentSection == null) {
                 throw new IllegalQueryException(new ErrorMessage(ErrorCode.E1101,
                     formTemplate.getUid(), getKey(element), parentId));
@@ -105,7 +104,7 @@ public class TemplateElementProcessor {
     }
 
     private String getKey(AbstractElement element) {
-        if (element instanceof FormDataElementConf elementConf) {
+        if (element instanceof FieldTemplateElementDto elementConf) {
             return elementConf.getId();
         } else {
             // is section
@@ -113,7 +112,7 @@ public class TemplateElementProcessor {
         }
     }
 
-    private Map<String, FormSectionConf> getSectionMap() {
+    private Map<String, SectionTemplateElementDto> getSectionMap() {
         return formTemplate.getSections()
             .stream().collect(Collectors.toMap(AbstractElement::getName, Function.identity()));
     }

@@ -3,8 +3,8 @@ package org.nmcpye.datarun.jpa.datatemplategenerator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
 import org.nmcpye.datarun.jpa.datatemplate.DataType;
 import org.nmcpye.datarun.jpa.datatemplate.SemanticType;
@@ -48,7 +48,7 @@ public class TemplateElementGeneratorService {
         // optionSetUid -> optionSetId (bulk lookup)
         Map<String, String> optionSetIdByUidMap = optionSetRepository.findAllByUidIn(
             snap.fields.stream()
-                .map(FormDataElementConf::getOptionSet)
+                .map(FieldTemplateElementDto::getOptionSet)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet())
         ).stream().collect(Collectors.toMap(OptionSet::getUid, OptionSet::getId));
@@ -63,7 +63,7 @@ public class TemplateElementGeneratorService {
         // 1) Build repeat configs and their canonical elements (one per repeatable section)
         List<TemplateElement> out = new ArrayList<>(snap.fields.size() + snap.sectionByName.size());
 
-        for (FormSectionConf section : snap.sectionByName.values()) {
+        for (SectionTemplateElementDto section : snap.sectionByName.values()) {
             PathMetadata sectionMeta = resolver.resolveForSection(section);
             if (!Boolean.TRUE.equals(section.getRepeatable())) continue;
 
@@ -108,7 +108,7 @@ public class TemplateElementGeneratorService {
 
         // 2) Build field configs and their canonical elements
         Set<String> seenIdPath = new HashSet<>();
-        for (FormDataElementConf f : snap.fields) {
+        for (FieldTemplateElementDto f : snap.fields) {
             PathMetadata meta = resolver.resolveForField(f);
 
             if (!seenIdPath.add(meta.getJsonDataIdPath())) {

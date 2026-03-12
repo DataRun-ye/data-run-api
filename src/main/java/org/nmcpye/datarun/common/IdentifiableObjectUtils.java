@@ -30,7 +30,7 @@ public class IdentifiableObjectUtils {
             return null;
         }
 
-        List<String> names = objects.stream().map(JpaIdentifiableObject::getDisplayName).collect(Collectors.toList());
+        List<String> names = objects.stream().map(JpaIdentifiableObject::getName).collect(Collectors.toList());
 
         return StringUtils.join(names, SEPARATOR_JOIN);
     }
@@ -102,7 +102,7 @@ public class IdentifiableObjectUtils {
 
         while (iterator.hasNext()) {
             T object = iterator.next();
-            String name = ignoreCase ? object.getDisplayName().toLowerCase() : object.getDisplayName();
+            String name = ignoreCase ? object.getName().toLowerCase() : object.getName();
 
             if (name.contains(key)) {
                 objects.add(object);
@@ -164,7 +164,7 @@ public class IdentifiableObjectUtils {
      * objects.
      */
     public static Map<String, String> getUidNameMap(Collection<? extends JpaIdentifiableObject> objects) {
-        return objects.stream().collect(Collectors.toMap(JpaIdentifiableObject::getUid, JpaIdentifiableObject::getDisplayName));
+        return objects.stream().collect(Collectors.toMap(JpaIdentifiableObject::getUid, JpaIdentifiableObject::getName));
     }
 
     /**
@@ -226,8 +226,8 @@ public class IdentifiableObjectUtils {
             return "[ object is null ]";
         } else if (object instanceof JpaIdentifiableObject identifiableObject) {
 
-            if (identifiableObject.getDisplayName() != null && !identifiableObject.getDisplayName().isEmpty()) {
-                return identifiableObject.getDisplayName();
+            if (identifiableObject.getName() != null && !identifiableObject.getName().isEmpty()) {
+                return identifiableObject.getName();
             } else if (identifiableObject.getUid() != null && !identifiableObject.getUid().isEmpty()) {
                 return identifiableObject.getUid();
             } else if (identifiableObject.getCode() != null && !identifiableObject.getCode().isEmpty()) {

@@ -11,7 +11,7 @@
             <column name="id" type="bigserial">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="pk_party_tag"/>
             </column>
-            <column name="party_id" type="uuid">
+            <column name="party_id" type="VARCHAR(26)">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="pk_party_set_tag"/>
             </column>
             <column name="tag_key" type="varchar(64)">

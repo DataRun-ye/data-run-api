@@ -1,8 +1,7 @@
 package org.nmcpye.datarun.party.events;
 
-import org.nmcpye.datarun.jpa.assignment.AssignmentPartyBinding;
 import org.nmcpye.datarun.jpa.datasubmission.events.EventChangeType;
+import org.nmcpye.datarun.party.entities.AssignmentRolePartyPolicy;
 
-public record AssignmentBindingChangedEvent(AssignmentPartyBinding binding, EventChangeType type) {
+public record AssignmentBindingChangedEvent(AssignmentRolePartyPolicy binding, EventChangeType type) {
 }
-

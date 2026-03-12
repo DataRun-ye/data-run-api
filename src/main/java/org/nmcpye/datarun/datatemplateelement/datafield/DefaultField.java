@@ -19,6 +19,8 @@ public class DefaultField extends AbstractField {
     private boolean mainField;
 
     public Map<String, String> getConstraintMessage() {
-        return constraint != null ? Objects.requireNonNullElseGet(this.constraintMessage, () -> Map.of("en", "Field with error, check")) : null;
+        return constraint != null
+                ? Objects.requireNonNullElseGet(this.constraintMessage, () -> Map.of("en", "Field with error, check"))
+                : null;
     }
 }

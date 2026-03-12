@@ -13,10 +13,14 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Hamza Assada
@@ -28,7 +32,7 @@ import java.util.Map;
 @Getter
 @Setter
 @SQLDelete(sql = "UPDATE option_value SET deleted_at = now() WHERE id = ?")
-public class Option extends JpaIdentifiableObject {
+public class Option extends JpaIdentifiableObject implements TranslatableInterface {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
@@ -65,6 +69,13 @@ public class Option extends JpaIdentifiableObject {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
     public boolean isDeleted() {
         return deletedAt != null;

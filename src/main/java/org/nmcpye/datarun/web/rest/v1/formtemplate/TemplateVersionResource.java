@@ -1,43 +1,49 @@
 package org.nmcpye.datarun.web.rest.v1.formtemplate;
 
-import org.nmcpye.datarun.common.EntitySaveSummaryVM;
-import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
-import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.common.ApiVersion;
-import org.nmcpye.datarun.datatemplateprocessor.FormTemplateProcessor;
-import org.nmcpye.datarun.web.rest.legacy.JpaBaseResource;
+import org.nmcpye.datarun.web.common.PagedResponse;
+import org.nmcpye.datarun.web.query.QueryRequest;
+import org.nmcpye.datarun.web.rest.util.ResponseUtil;
+import org.nmcpye.datarun.web.rest.v1.formtemplate.dto.TemplateVersionV1Dto;
+import org.nmcpye.datarun.web.rest.v1.formtemplate.service.TemplateVersionV1Service;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Optional;
+
 /**
- * REST controller for managing {@link TemplateVersion}.
+ * V1 REST controller for managing TemplateVersions.
+ * Standalone / no JpaBaseResource inheritance.
+ * Read-only for mobile app consumption.
  */
 @RestController
 @RequestMapping(value = { TemplateVersionResource.V1 })
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
-public class TemplateVersionResource extends JpaBaseResource<TemplateVersion> {
+@RequiredArgsConstructor
+@Slf4j
+public class TemplateVersionResource {
     protected static final String NAME = "/formTemplateVersions";
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
-    protected final FormTemplateProcessor formTemplateProcessor;
+    private final TemplateVersionV1Service v1Service;
 
-    protected TemplateVersionResource(TemplateVersionService service,
-            TemplateVersionRepository repository,
-            FormTemplateProcessor formTemplateProcessor) {
-        super(service, repository);
-        this.formTemplateProcessor = formTemplateProcessor;
+    @GetMapping("")
+    public ResponseEntity<PagedResponse<TemplateVersionV1Dto>> getAll(QueryRequest queryRequest) {
+        log.debug("REST request to get all TemplateVersions");
+        return ResponseEntity.ok(v1Service.getAll(queryRequest));
     }
 
-    @Override
-    protected void saveEntity(TemplateVersion payLoadEntity, EntitySaveSummaryVM summary) {
-        // super.saveEntity(payLoadEntity, summary);
-    }
-
-    @Override
-    protected String getName() {
-        return "formTemplateVersions";
+    @GetMapping("/{id}")
+    public ResponseEntity<TemplateVersionV1Dto> getById(@PathVariable("id") String id) {
+        log.debug("REST request to get TemplateVersion : {}", id);
+        Optional<TemplateVersionV1Dto> dto = v1Service.getById(id);
+        return ResponseUtil.wrapOrNotFound(dto);
     }
 }

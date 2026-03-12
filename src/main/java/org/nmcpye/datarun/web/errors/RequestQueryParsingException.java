@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.errors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.ErrorResponseException;
-import tech.jhipster.web.rest.errors.ProblemDetailWithCause.ProblemDetailWithCauseBuilder;
+import org.nmcpye.datarun.web.rest.errors.ProblemDetailWithCause.ProblemDetailWithCauseBuilder;
 
 @SuppressWarnings("java:S110") // Inheritance tree of classes should not be too deep
 public class RequestQueryParsingException extends ErrorResponseException {
@@ -21,3 +21,4 @@ public class RequestQueryParsingException extends ErrorResponseException {
         );
     }
 }
+

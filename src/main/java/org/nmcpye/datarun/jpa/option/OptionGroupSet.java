@@ -3,16 +3,22 @@ package org.nmcpye.datarun.jpa.option;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.ListIndexBase;
+import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Hamza Assada
@@ -20,14 +26,14 @@ import java.util.List;
  */
 @Entity
 @Table(name = "option_group_set", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_group_set_option_set_name", columnNames = {"name", "option_set_id"}),
-    @UniqueConstraint(name = "uc_group_set_option_set_code", columnNames = {"code", "option_set_id"}),
+        @UniqueConstraint(name = "uc_group_set_option_set_name", columnNames = { "name", "option_set_id" }),
+        @UniqueConstraint(name = "uc_group_set_option_set_code", columnNames = { "code", "option_set_id" }),
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OptionGroupSet extends JpaIdentifiableObject {
+public class OptionGroupSet extends JpaIdentifiableObject implements TranslatableInterface {
     /**
      * The unique code for this object.
      */
@@ -40,7 +46,6 @@ public class OptionGroupSet extends JpaIdentifiableObject {
     @Column(name = "name", nullable = false)
     private String name;
 
-
     @Column(name = "description")
     private String description;
 
@@ -52,15 +57,18 @@ public class OptionGroupSet extends JpaIdentifiableObject {
     private OptionSet optionSet;
 
     @ManyToMany
-    @JoinTable(
-        name = "option_groupset__option_group",
-        joinColumns = @JoinColumn(name = "groupset_id"),
-        inverseJoinColumns = @JoinColumn(name = "option_group_id")
-    )
+    @JoinTable(name = "option_groupset__option_group", joinColumns = @JoinColumn(name = "groupset_id"), inverseJoinColumns = @JoinColumn(name = "option_group_id"))
     @OrderColumn(name = "sort_order")
     @ListIndexBase(1)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private List<OptionGroup> optionGroups = new ArrayList<>();
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
     @JsonProperty
     @JsonSerialize(contentAs = JpaIdentifiableObject.class)

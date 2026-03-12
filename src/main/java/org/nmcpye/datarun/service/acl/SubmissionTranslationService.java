@@ -2,8 +2,8 @@ package org.nmcpye.datarun.service.acl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.slf4j.Logger;
@@ -61,7 +61,7 @@ public class SubmissionTranslationService {
      * @return canonical JsonNode with "values" and "collections"
      */
     public JsonNode normalizeV1ToCanonical(JsonNode v1FormData,
-            List<FormSectionConf> sections) {
+            List<SectionTemplateElementDto> sections) {
         return SubmissionNormalizer.normalize(v1FormData, sections, objectMapper);
     }
 
@@ -99,8 +99,8 @@ public class SubmissionTranslationService {
      * @return V1-shaped formData JsonNode
      */
     public JsonNode denormalizeCanonicalToV1(JsonNode canonical,
-            List<FormSectionConf> sections,
-            List<FormDataElementConf> fields,
+            List<SectionTemplateElementDto> sections,
+            List<FieldTemplateElementDto> fields,
             String submissionUid) {
         return SubmissionDenormalizer.denormalize(
                 canonical, sections, fields, submissionUid, objectMapper);

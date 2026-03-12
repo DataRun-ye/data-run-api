@@ -3,7 +3,7 @@ package org.nmcpye.datarun.datatemplateprocessor.postprocessors;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 
@@ -11,7 +11,7 @@ import org.nmcpye.datarun.jpa.dataelement.DataElement;
  * @author Hamza Assada 18/03/2025 (7amza.it@gmail.com)
  */
 public class ValidateValueTypeHandler
-    extends AbstractFormElementHandler<FormDataElementConf> {
+    extends AbstractTemplateElementHandler<FieldTemplateElementDto> {
 
     private final DataElement source;
 
@@ -20,7 +20,7 @@ public class ValidateValueTypeHandler
     }
 
     @Override
-    protected FormDataElementConf handle(FormDataElementConf element) {
+    protected FieldTemplateElementDto handle(FieldTemplateElementDto element) {
         ValueType declared = element.getType();
         ValueType actual   = source.getValueType();
 

@@ -11,22 +11,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import static org.nmcpye.datarun.web.rest.legacy.dataelement.DataElementResource.CUSTOM;
-import static org.nmcpye.datarun.web.rest.legacy.dataelement.DataElementResource.V1;
 
 /**
- * REST controller for managing {@link DataElement}.
+ * Legacy REST controller for managing {@link DataElement}.
+ * Admin/CUSTOM path only — the V1 mobile path is now served by
+ * {@link org.nmcpye.datarun.web.rest.v1.dataelement.DataElementResource}.
  */
-@RestController
-@RequestMapping(value = {CUSTOM, V1})
+@RestController("dataElementResourceLegacy")
+@RequestMapping(value = { CUSTOM })
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class DataElementResource
-    extends JpaBaseResource<DataElement> {
+        extends JpaBaseResource<DataElement> {
     protected static final String NAME = "/dataElements";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
-    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     public DataElementResource(DataElementService metadataSubmissionService,
-                               DataElementRepository metadataSchemaRepository) {
+            DataElementRepository metadataSchemaRepository) {
         super(metadataSubmissionService, metadataSchemaRepository);
     }
 

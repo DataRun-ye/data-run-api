@@ -1,144 +1,63 @@
 package org.nmcpye.datarun.web.rest.v1.datasubmission;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.repository.DeleteAccessDeniedException;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
-import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
-import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
-import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidator;
-import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.utils.FormSubmissionDataUtil;
 import org.nmcpye.datarun.web.common.ApiVersion;
-import org.nmcpye.datarun.web.rest.legacy.JpaBaseResource;
+import org.nmcpye.datarun.web.common.PagedResponse;
 import org.nmcpye.datarun.web.query.QueryRequest;
+import org.nmcpye.datarun.web.rest.util.ResponseUtil;
+import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionV1Dto;
+import org.nmcpye.datarun.web.rest.v1.datasubmission.service.DataSubmissionV1Service;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import tech.jhipster.web.util.HeaderUtil;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 /**
  * REST controller for managing {@link DataSubmission}.
+ * Refactored to use DTOs for API Surface Stabilization (Strangler Fig Phase 0).
  */
 @RestController
-@RequestMapping(value = {DataSubmissionResource.CUSTOM, DataSubmissionResource.V1})
+@RequestMapping(value = { DataSubmissionResource.CUSTOM, DataSubmissionResource.V1 })
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
+@RequiredArgsConstructor
 @Slf4j
-public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
+public class DataSubmissionResource {
     protected static final String NAME = "/dataSubmission";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
     protected static final String V1 = ApiVersion.API_V1 + NAME;
-    private final ObjectMapper objectMapper;
-    final private DataSubmissionService submissionService;
-    private final CompositeSubmissionValidator compositeValidator;
-    private final SubmissionAccessValidator submissionAccessValidator;
-    private final TemplateElementService templateElementService;
 
-    public DataSubmissionResource(DataSubmissionService submissionService,
-                                  DataSubmissionRepository submissionRepository,
-                                  ObjectMapper objectMapper, CompositeSubmissionValidator compositeValidator,
-                                  SubmissionAccessValidator submissionAccessValidator,
-                                  TemplateElementService templateElementService) {
-        super(submissionService, submissionRepository);
-        this.submissionService = submissionService;
-        this.objectMapper = objectMapper;
-        this.compositeValidator = compositeValidator;
-        this.submissionAccessValidator = submissionAccessValidator;
-        this.templateElementService = templateElementService;
+    private final DataSubmissionV1Service v1Service;
+
+    @GetMapping("")
+    public ResponseEntity<PagedResponse<DataSubmissionV1Dto>> getAll(QueryRequest queryRequest) {
+        log.debug("REST request to get all DataSubmissions");
+        return ResponseEntity.ok(v1Service.getAll(queryRequest));
     }
 
-    @Override
-    protected DataSubmission postProcess(DataSubmission submission,
-                                         QueryRequest queryRequest,
-                                         String jsonQuery) {
-        if (queryRequest.isFlatten()) {
-            Map<String, Object> formData =
-                objectMapper.convertValue(submission.getFormData(), new TypeReference<>() {
-                });
-            formData = FormSubmissionDataUtil.flatten(formData, false, true);
-            submission
-                .setFormData(objectMapper.convertValue(formData,
-                    objectMapper.getTypeFactory().constructType(JsonNode.class)));
-        }
-
-        return submission;
+    @GetMapping("/{id}")
+    public ResponseEntity<DataSubmissionV1Dto> getById(@PathVariable("id") String id) {
+        log.debug("REST request to get DataSubmission : {}", id);
+        Optional<DataSubmissionV1Dto> dto = v1Service.getById(id);
+        return ResponseUtil.wrapOrNotFound(dto);
     }
 
-    @Override
-    protected void saveEntity(DataSubmission payLoadEntity, EntitySaveSummaryVM summary) {
-        hasMinimalRightsOrThrow(SecurityUtils.getCurrentUserDetailsOrThrow());
-        var processedEntity = preProcess(List.of(payLoadEntity))
-            .stream().findFirst().orElseThrow(() -> new IllegalQueryException("processing: " + payLoadEntity.getUid() + " swallowed submission"));
-        submissionService.upsert(processedEntity,
-            SecurityUtils.getCurrentUserDetailsOrThrow(), summary);
-
+    @PostMapping("/bulk")
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(@RequestBody List<DataSubmissionV1Dto> dtoList) {
+        log.debug("REST request to save {} DataSubmissions", dtoList.size());
+        EntitySaveSummaryVM summary = v1Service.upsertAll(dtoList);
+        return ResponseEntity.ok(summary);
     }
 
-    @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<DataSubmission> entities) {
-        hasMinimalRightsOrThrow(SecurityUtils.getCurrentUserDetailsOrThrow());
-        EntitySaveSummaryVM summaryVM = new EntitySaveSummaryVM();
-        submissionService.upsertAll(preProcess(entities), SecurityUtils.getCurrentUserDetailsOrThrow(), summaryVM);
-        return ResponseEntity.ok(summaryVM);
-    }
-
-    @Override
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
-    public ResponseEntity<Void> deleteByIdUid(@PathVariable("id") String id,
-                                              @AuthenticationPrincipal CurrentUserDetails user) {
-        hasMinimalRightsOrThrow(user);
-        log.debug("REST request to delete from {}: {}", getName(), id);
-        final var entity = identifiableObjectService.findByUid(id).orElseThrow();
-        if (aclService.canDelete(entity, user)) {
-            identifiableObjectService.delete(entity);
-        } else {
-            throw new DeleteAccessDeniedException("");
-        }
-
-        return ResponseEntity
-            .noContent()
-            .headers(HeaderUtil
-                .createEntityDeletionAlert(applicationName, true, getName(), id)).build();
-    }
-
-    @Override
-    protected List<DataSubmission> preProcess(List<DataSubmission> payLoadEntities) {
-        return payLoadEntities.stream()
-            .peek(payLoadEntity -> {
-                ObjectNode root = (ObjectNode) (payLoadEntity.getFormData() == null ? objectMapper.createObjectNode() : payLoadEntity.getFormData().deepCopy());
-                final var migrationRepeatIdGenerator = new MigrationRepeatIdGenerator(templateElementService.getTemplateElementMap(payLoadEntity.getForm(), payLoadEntity.getFormVersion()));
-                int generated = migrationRepeatIdGenerator
-                    .generateMissingIdsForMigration(root, payLoadEntity.getUid());
-                if (generated > 0) {
-                    payLoadEntity.setFormData(root);
-                }
-
-                compositeValidator.validateAndEnrich(submissionAccessValidator.validateAccess(payLoadEntity,
-                    SecurityUtils.getCurrentUserDetailsOrThrow()));
-            }).collect(Collectors.toList());
-    }
-
-    @Override
-    protected String getName() {
-        return "dataSubmission";
+    @PostMapping("")
+    public ResponseEntity<EntitySaveSummaryVM> saveOne(@RequestBody DataSubmissionV1Dto submission) {
+        log.debug("REST request to save {} DataSubmission", submission.getUid());
+        EntitySaveSummaryVM summary = v1Service.upsertAll(List.of(submission));
+        return ResponseEntity.ok(summary);
     }
 }

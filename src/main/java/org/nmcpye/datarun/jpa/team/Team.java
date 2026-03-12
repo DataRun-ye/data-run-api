@@ -30,12 +30,12 @@ import java.util.stream.Collectors;
  */
 @Entity
 @Table(name = "team", uniqueConstraints = {
-    @UniqueConstraint(name = "uc_team_code_activity_id", columnNames = {"code", "activity_id"})
+        @UniqueConstraint(name = "uc_team_code_activity_id", columnNames = { "code", "activity_id" })
 })
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
-@SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
+@SuppressWarnings({ "common-java:DuplicatedBlocks", "unused" })
 public class Team extends JpaIdentifiableObject {
 
     @Size(max = 11)
@@ -61,38 +61,37 @@ public class Team extends JpaIdentifiableObject {
     private Boolean disabled = false;
 
     @ManyToOne
-    @JsonIgnoreProperties(value = {"project", "translations", "assignments"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "project", "translations", "assignments" }, allowSetters = true)
     @JsonSerialize(contentAs = IdentifiableObject.class)
     private Activity activity;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "team_user", joinColumns = @JoinColumn(name = "team_id"),
-        inverseJoinColumns = @JoinColumn(name = "user_id"))
-    @JsonIgnoreProperties(value = {"teams", "password", "authorities", "userGroups", "managedGroups", "managedByGroups"}, allowSetters = true)
+    @JoinTable(name = "team_user", joinColumns = @JoinColumn(name = "team_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @JsonIgnoreProperties(value = { "teams", "password", "authorities", "userGroups", "managedGroups",
+            "managedByGroups" }, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<User> users = new HashSet<>();
 
     /// //
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "team_managed_teams",
-        joinColumns = @JoinColumn(name = "team_id"),
-        inverseJoinColumns = @JoinColumn(name = "managed_team_id")
-    )
-    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
-        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
+    @JoinTable(name = "team_managed_teams", joinColumns = @JoinColumn(name = "team_id"), inverseJoinColumns = @JoinColumn(name = "managed_team_id"))
+    @JsonIgnoreProperties(value = { "managedTeams", "managedByTeams", "users", "assignments",
+            "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses",
+            "formPermissions" }, allowSetters = true)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<Team> managedTeams = new HashSet<>();
 
     @ManyToMany(mappedBy = "managedTeams")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",
-        "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses", "formPermissions"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "managedTeams", "managedByTeams", "users", "assignments",
+            "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy", "activity", "teamFormAccesses",
+            "formPermissions" }, allowSetters = true)
     private Set<Team> managedByTeams = new HashSet<>();
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "team")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "activity", "team", "orgUnit", "parent", "children", "ancestors", "level",
+            "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy" }, allowSetters = true)
     private Set<Assignment> assignments = new HashSet<>();
 
     @Type(JsonType.class)
@@ -106,44 +105,45 @@ public class Team extends JpaIdentifiableObject {
 
     public Set<FormPermission> getFormPermissions(String form) {
         return formPermissions.stream()
-            .filter(p -> p.getForm().equals(form)).map(TeamFormPermissions::getPermissions)
-            .flatMap(Streams::of).collect(Collectors.toSet());
+                .filter(p -> p.getForm().equals(form))
+                .flatMap(p -> p.getPermissions().stream())
+                .collect(Collectors.toSet());
     }
 
     public Set<String> getFormWithPermission(FormPermission permission) {
         return formPermissions.stream()
-            .filter(p -> p.getPermissions().contains(permission))
-            .map(TeamFormPermissions::getForm)
-            .collect(Collectors.toSet());
+                .filter(p -> p.getPermissions().contains(permission))
+                .map(p -> p.getForm())
+                .collect(Collectors.toSet());
     }
 
     public Set<String> getFormWithAnyPermission(List<FormPermission> permissionList) {
         return formPermissions.stream()
-            .filter(fp -> fp.getPermissions().stream().anyMatch((permissionList::contains)))
-            .map(TeamFormPermissions::getForm)
-            .collect(Collectors.toSet());
+                .filter(fp -> fp.getPermissions().stream().anyMatch(permissionList::contains))
+                .map(fp -> fp.getForm())
+                .collect(Collectors.toSet());
     }
 
     public boolean hasFormPermission(String formId, FormPermission permission) {
-        var permissions = this.formPermissions.stream().filter(teamFormPermissions ->
-            Objects.equals(teamFormPermissions.getForm(), formId)).findFirst();
+        var permissions = this.formPermissions.stream()
+                .filter(teamFormPermissions -> Objects.equals(teamFormPermissions.getForm(), formId)).findFirst();
         return permissions.isPresent() && permissions.get().getPermissions().contains(permission);
     }
 
     public boolean hasAnyOfFormPermission(String formId, List<FormPermission> permissionsList) {
-        var permissions = this.formPermissions.stream().filter(teamFormPermissions ->
-            Objects.equals(teamFormPermissions.getForm(), formId)).findFirst();
+        var permissions = this.formPermissions.stream()
+                .filter(teamFormPermissions -> Objects.equals(teamFormPermissions.getForm(), formId)).findFirst();
         return permissions.isPresent() && permissions.get().getPermissions()
-            .stream().anyMatch(permissionsList::contains);
+                .stream().anyMatch(permissionsList::contains);
     }
 
     public Set<String> getFormsWithPermission(FormPermission permission) {
         // for old saved and not migrated teams, who have formPermissions == null
         if (this.formPermissions != null) {
             return this.formPermissions.stream()
-                .filter(entry -> entry.getPermissions().contains(permission))
-                .map(TeamFormPermissions::getForm)
-                .collect(Collectors.toSet());
+                    .filter(entry -> entry.getPermissions().contains(permission))
+                    .map(entry -> entry.getForm())
+                    .collect(Collectors.toSet());
         }
         return Collections.emptySet();
     }

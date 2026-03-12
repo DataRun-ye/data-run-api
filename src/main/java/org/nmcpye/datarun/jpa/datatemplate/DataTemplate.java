@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.jpa.datatemplate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -10,9 +11,14 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 /// @author Hamza Assada
 /// @since 27/05/2025
@@ -22,7 +28,7 @@ import java.time.Instant;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class DataTemplate extends JpaSoftDeleteObject {
+public class DataTemplate extends JpaSoftDeleteObject implements TranslatableInterface {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
@@ -58,10 +64,17 @@ public class DataTemplate extends JpaSoftDeleteObject {
     @Column(name = "description", length = 2000)
     private String description;
 
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "dataTemplate"/*, cascade = CascadeType.PERSIST*/)
-//    @JsonIgnore
-//    private List<TemplateVersion> templateVersions = new LinkedList<>();
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
+    // @OneToMany(fetch = FetchType.LAZY, mappedBy = "dataTemplate"/*, cascade =
+    // CascadeType.PERSIST*/)
+    // @JsonIgnore
+    // private List<TemplateVersion> templateVersions = new LinkedList<>();
 
     @JsonIgnore
     @Override
@@ -94,50 +107,53 @@ public class DataTemplate extends JpaSoftDeleteObject {
         return this;
     }
 
-//    @JsonSetter(contentNulls = Nulls.SKIP)
-//    public void setTemplateVersions(List<TemplateVersion> templateVersions) {
-//        getTemplateVersions().clear();
-//        getTemplateVersions().addAll(templateVersions);
-//        for (TemplateVersion templateVersion : templateVersions) {
-//            templateVersion.setDataTemplate(this);
-//        }
-//    }
+    // @JsonSetter(contentNulls = Nulls.SKIP)
+    // public void setTemplateVersions(List<TemplateVersion> templateVersions) {
+    // getTemplateVersions().clear();
+    // getTemplateVersions().addAll(templateVersions);
+    // for (TemplateVersion templateVersion : templateVersions) {
+    // templateVersion.setDataTemplate(this);
+    // }
+    // }
 
-//    @JsonIgnore
-//    public Set<String> getVersionUidsAsSet() {
-//        return templateVersions.stream()
-//            .filter(Objects::nonNull)
-//            .map(TemplateVersion::getUid)
-//            .collect(Collectors.toSet());
-//    }
-//
-//    public TemplateVersion getLatestVersion() {
-//        return templateVersions.stream()
-//            .max(Comparator.comparing(TemplateVersion::getVersionNumber))
-//            .orElseThrow();
-//    }
-//
-//    public Map<String, String> getByUidVersionPropertyMap(IdScheme idScheme) {
-//        return templateVersions.stream().collect(Collectors.toMap(TemplateVersion::getUid, o -> o.getPropertyValue(idScheme)));
-//    }
-//
-//    public TemplateVersion getVersionByUid(String uid) {
-//        for (TemplateVersion templateVersion : templateVersions) {
-//            if (templateVersion != null && templateVersion.getUid().equals(uid)) {
-//                return templateVersion;
-//            }
-//        }
-//
-//        return null;
-//    }
-//
-//    public TemplateVersion getVersionByNo(Integer versionNumber) {
-//        for (TemplateVersion templateVersion : templateVersions) {
-//            if (templateVersion != null && templateVersion.getVersionNumber().equals(versionNumber)) {
-//                return templateVersion;
-//            }
-//        }
-//
-//        return null;
-//    }
+    // @JsonIgnore
+    // public Set<String> getVersionUidsAsSet() {
+    // return templateVersions.stream()
+    // .filter(Objects::nonNull)
+    // .map(TemplateVersion::getUid)
+    // .collect(Collectors.toSet());
+    // }
+    //
+    // public TemplateVersion getLatestVersion() {
+    // return templateVersions.stream()
+    // .max(Comparator.comparing(TemplateVersion::getVersionNumber))
+    // .orElseThrow();
+    // }
+    //
+    // public Map<String, String> getByUidVersionPropertyMap(IdScheme idScheme) {
+    // return
+    // templateVersions.stream().collect(Collectors.toMap(TemplateVersion::getUid, o
+    // -> o.getPropertyValue(idScheme)));
+    // }
+    //
+    // public TemplateVersion getVersionByUid(String uid) {
+    // for (TemplateVersion templateVersion : templateVersions) {
+    // if (templateVersion != null && templateVersion.getUid().equals(uid)) {
+    // return templateVersion;
+    // }
+    // }
+    //
+    // return null;
+    // }
+    //
+    // public TemplateVersion getVersionByNo(Integer versionNumber) {
+    // for (TemplateVersion templateVersion : templateVersions) {
+    // if (templateVersion != null &&
+    // templateVersion.getVersionNumber().equals(versionNumber)) {
+    // return templateVersion;
+    // }
+    // }
+    //
+    // return null;
+    // }
 }

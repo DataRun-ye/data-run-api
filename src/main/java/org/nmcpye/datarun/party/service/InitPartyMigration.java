@@ -74,7 +74,6 @@ public class InitPartyMigration implements CommandLineRunner {
                                 .uid(t.getUid())
                                 .code(t.getCode())
                                 .name(t.getName())
-                                .label(t.getLabel())
                                 .sourceType(SourceType.TEAM)
                                 .parentId(null)
                                 .meta(Map.of("activity", teamActivity))

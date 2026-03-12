@@ -1,5 +1,7 @@
 # ADR-007: API Composition Strategy (Backend-for-Frontend)
 
+> **⚠️ LMIS Platform ADR:** This decision was written for a planned downstream LMIS platform (Python/FastAPI) that has not been implemented. It may inform future architecture but does **not** constrain the current `datarunapi` (Java/Spring Boot) codebase.
+
 ## Status
 Proposed
 

@@ -1,20 +1,18 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.jpa.accessfilter.entity.UserExecutionContext;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
-import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.query.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @author Hamza Assada
@@ -22,11 +20,6 @@ import java.util.stream.Collectors;
  */
 @Component
 public class DataElementFilter extends DefaultJpaFilter<DataElement> {
-    private final TemplateVersionRepository templateRepository;
-
-    public DataElementFilter(TemplateVersionRepository templateRepository) {
-        this.templateRepository = templateRepository;
-    }
 
     public static Specification<Activity> isEnabled() {
         return (root, query, criteriaBuilder) -> criteriaBuilder.isFalse(root.get("disabled"));
@@ -34,27 +27,35 @@ public class DataElementFilter extends DefaultJpaFilter<DataElement> {
 
     @Override
     public Specification<DataElement> getAccessSpecification(CurrentUserDetails user,
-                                                             QueryRequest queryRequest) {
-        Collection<TemplateVersion> forms = getUserFormsWithWritePermission();
-
-        Set<String> userDataElements = forms
-            .stream()
-            .flatMap((form) -> form.getFields().stream())
-            .map(FormDataElementConf::getId).collect(Collectors.toSet());
-
+            QueryRequest queryRequest) {
         return (root, query, cb) -> {
             if (user.isSuper()) {
                 return cb.conjunction();
-            } else {
-                return root.get("uid").in(userDataElements);
             }
-        };
-    }
 
-    public Collection<TemplateVersion> getUserFormsWithWritePermission() {
-        final var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
-        List<TemplateVersion> versions = templateRepository
-            .findDistinctByTemplateUidInOrderByVersionNumberDesc(currentUser.getUserFormsUIDs());
-        return versions;
+            if (query == null) {
+                return cb.conjunction();
+            }
+
+            // Path B: A DataElement is accessible if it is part of a Form (TemplateVersion)
+            // that the user has access to via the CQRS UserExecutionContext.
+            // DataElement -> FormDataElementConf -> TemplateVersion -> uid maps to
+            // UserExecutionContext.entityUid
+
+            Subquery<Long> sqConf = query.subquery(Long.class);
+            Root<FieldTemplateElementDto> confRoot = sqConf.from(FieldTemplateElementDto.class);
+            Join<FieldTemplateElementDto, TemplateVersion> templateJoin = confRoot.join("templateVersion", JoinType.INNER);
+
+            Subquery<String> sqUec = sqConf.subquery(String.class);
+            Root<UserExecutionContext> uec = sqUec.from(UserExecutionContext.class);
+            sqUec.select(uec.get("entityUid")).where(
+                    cb.equal(uec.get("userUid"), user.getUid()),
+                    cb.equal(uec.get("entityType"), "DATA_TEMPLATE"));
+
+            sqConf.select(confRoot.join("dataElement").get("id"))
+                    .where(templateJoin.get("templateUid").in(sqUec));
+
+            return root.get("id").in(sqConf);
+        };
     }
 }

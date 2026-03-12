@@ -11,6 +11,7 @@ import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.ForeignKey;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.PlainSQL;
@@ -164,6 +165,11 @@ public class Team extends TableImpl<TeamRecord> {
     @Override
     public List<UniqueKey<TeamRecord>> getUniqueKeys() {
         return Arrays.asList(Keys.UC_TEAM_CODE_ACTIVITY_ID, Keys.UC_TEAM_UID);
+    }
+
+    @Override
+    public List<ForeignKey<TeamRecord, ?>> getReferences() {
+        return Arrays.asList(Keys.TEAM__FK_TEAM_ON_ACTIVITY);
     }
 
     @Override

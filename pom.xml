@@ -37,7 +37,6 @@
         <git-commit-id-maven-plugin.version>9.0.1</git-commit-id-maven-plugin.version>
         <jackson-databind-nullable.version>0.2.6</jackson-databind-nullable.version>
         <jacoco-maven-plugin.version>0.8.13</jacoco-maven-plugin.version>
-        <jhipster-framework.version>8.11.0</jhipster-framework.version>
         <jib-maven-plugin.architecture>amd64</jib-maven-plugin.architecture>
         <jib-maven-plugin.image>eclipse-temurin:17-jre-focal</jib-maven-plugin.image>
         <jib-maven-plugin.version>3.4.5</jib-maven-plugin.version>
@@ -74,21 +73,21 @@
 
         <!--  NMC      -->
         <jooq.version>3.19.18</jooq.version>
-        <json-flattener-version>0.18.0</json-flattener-version>
 
     </properties>
 
-    <dependencyManagement>
+    <!-- <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>checker-qual</artifactId>
+                <version>3.48.3</version>
+            </dependency>
         </dependencies>
-    </dependencyManagement>
+    </dependencyManagement> -->
 
     <dependencies>
-        <dependency>
-            <groupId>tech.jhipster</groupId>
-            <artifactId>jhipster-framework</artifactId>
-            <version>${jhipster-framework.version}</version>
-        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
@@ -368,9 +367,9 @@
             <version>8.3.0</version>
         </dependency>
         <dependency>
-            <groupId>com.aventrix.jnanoid</groupId>
-            <artifactId>jnanoid</artifactId>
-            <version>2.0.0</version>
+            <groupId>com.github.f4b6a3</groupId>
+            <artifactId>ulid-creator</artifactId>
+            <version>5.2.4</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -393,12 +392,6 @@
             <groupId>org.jooq</groupId>
             <artifactId>jooq-meta</artifactId>
             <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.wnameless.json</groupId>
-            <artifactId>json-flattener</artifactId>
-            <version>${json-flattener-version}</version>
-            <!-- Newest version shows in the maven-central badge above -->
         </dependency>
         <!--  NMC end      -->
     </dependencies>
@@ -534,27 +527,18 @@
                                 <artifactId>spring-boot-configuration-processor</artifactId>
                             </path>
                             <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </path>
+                            <path>
                                 <groupId>org.mapstruct</groupId>
                                 <artifactId>mapstruct-processor</artifactId>
                                 <version>${mapstruct.version}</version>
                             </path>
                             <path>
-                                <groupId>org.hibernate.orm</groupId>
-                                <artifactId>hibernate-jpamodelgen</artifactId>
-                            </path>
-                            <path>
-                                <groupId>org.projectlombok</groupId>
-                                <artifactId>lombok</artifactId>
-                                <version>1.18.32</version>
-                            </path>
-                            <path>
                                 <groupId>org.projectlombok</groupId>
                                 <artifactId>lombok-mapstruct-binding</artifactId>
                                 <version>0.2.0</version>
-                            </path>
-                            <path>
-                                <groupId>org.glassfish.jaxb</groupId>
-                                <artifactId>jaxb-runtime</artifactId>
                             </path>
                         </annotationProcessorPaths>
                     </configuration>
@@ -586,7 +570,7 @@
                     <configuration>
                         <rules>
                             <requireMavenVersion>
-                                <message>You are running an older version of Maven. JHipster requires at least Maven
+                                <message>You are running an older version of Maven. Datarun requires at least Maven
                                     ${maven.version}
                                 </message>
                                 <version>[${maven.version},)</version>
@@ -972,7 +956,7 @@
                         </execution>
                     </executions>
                     <configuration>
-                        <!-- <skip>true</skip>-->
+                        <skip>true</skip>
                         <jdbc>
                             <driver>org.postgresql.Driver</driver>
                             <url>${liquibase-url}</url>

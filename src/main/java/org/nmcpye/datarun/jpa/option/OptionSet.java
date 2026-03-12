@@ -1,10 +1,6 @@
 package org.nmcpye.datarun.jpa.option;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.annotation.Nulls;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.*;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.persistence.CascadeType;
@@ -15,7 +11,9 @@ import lombok.Setter;
 import org.hibernate.annotations.*;
 import org.hibernate.annotations.Cache;
 import org.nmcpye.datarun.common.IdScheme;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 
 import java.time.Instant;
 import java.util.*;
@@ -34,7 +32,7 @@ import java.util.stream.Collectors;
 @Setter
 @SQLDelete(sql = "UPDATE option_value SET deleted_at = now() WHERE id = ?")
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class OptionSet extends JpaIdentifiableObject {
+public class OptionSet extends JpaIdentifiableObject implements TranslatableInterface {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
@@ -51,8 +49,7 @@ public class OptionSet extends JpaIdentifiableObject {
     @Column(name = "name", nullable = false, unique = true)
     protected String name;
 
-    @OneToMany(mappedBy = "optionSet", cascade = CascadeType.ALL,
-        orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "optionSet", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderColumn(name = "sort_order")
     @ListIndexBase(1)
     @Size(min = 1)
@@ -66,6 +63,13 @@ public class OptionSet extends JpaIdentifiableObject {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
     public boolean isDeleted() {
         return deletedAt != null;
@@ -84,7 +88,8 @@ public class OptionSet extends JpaIdentifiableObject {
     }
 
     @JsonProperty(value = "options")
-    @JsonSerialize(contentAs = JpaIdentifiableObject.class)
+    @JsonIgnoreProperties(value = { "optionSet", "translations", "createdBy", "createdDate", "lastModifiedDate",
+            "lastModifiedBy" }, allowSetters = true)
     public List<Option> getOptions() {
         return options;
     }

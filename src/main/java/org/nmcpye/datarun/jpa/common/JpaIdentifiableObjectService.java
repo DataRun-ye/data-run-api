@@ -15,7 +15,7 @@ import java.util.List;
  */
 public interface JpaIdentifiableObjectService<T extends JpaIdentifiableObject>
     extends IdentifiableObjectService<T, String> {
-    @Deprecated(since = "v 6 use mongo like json query")
+//    @Deprecated(since = "v 6 use mongo like json query")
     static <E extends JpaIdentifiableObject> Specification<E> buildQuerySpecification(QueryRequest queryRequest) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();

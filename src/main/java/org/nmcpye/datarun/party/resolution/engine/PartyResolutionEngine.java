@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -22,14 +22,14 @@ public class PartyResolutionEngine {
 
     public PartyResolutionEngine(List<PartySetStrategy> strategyList) {
         this.strategies = strategyList.stream()
-            .collect(Collectors.toMap(PartySetStrategy::getKind, Function.identity()));
+                .collect(Collectors.toMap(PartySetStrategy::getKind, Function.identity()));
     }
 
     public List<ResolvedParty> executeStrategy(PartySetKind kind,
-                                               UUID partySetId,
-                                               String spec,
-                                               boolean isMaterialized,
-                                               PartyResolutionRequest request) {
+            String partySetId,
+            String spec,
+            boolean isMaterialized,
+            PartyResolutionRequest request) {
         PartySetStrategy strategy = strategies.get(kind);
 
         if (strategy == null) {

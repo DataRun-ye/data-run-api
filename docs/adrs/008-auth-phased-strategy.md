@@ -1,5 +1,7 @@
 # ADR-008: Authentication — Phased Strategy
 
+> **⚠️ LMIS Platform ADR:** This decision was written for a planned LMIS platform (Python/FastAPI) that has not been implemented. The **identity vs. authorization split** and **JWKS-based SSO** concepts are broadly applicable and inform `datarunapi`'s auth strategy. LMIS-specific details (`lmis_user_permissions`, `ActorContext`) are conceptual only.
+
 **Status:** Accepted (Revised)
 **Date:** 2026-03-03
 **Revised:** 2026-03-03

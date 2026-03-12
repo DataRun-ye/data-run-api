@@ -1,16 +1,16 @@
 package org.nmcpye.datarun.datatemplateprocessor.postprocessors;
 
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 
 /**
  * @author Hamza Assada 18/03/2025 (7amza.it@gmail.com)
  */
 public class ValidateSectionNameNotNull
-    extends AbstractFormElementHandler<FormSectionConf> {
+    extends AbstractTemplateElementHandler<SectionTemplateElementDto> {
 
     @Override
-    protected FormSectionConf handle(FormSectionConf element) {
+    protected SectionTemplateElementDto handle(SectionTemplateElementDto element) {
         if (element.getName() == null) {
             throw new IllegalQueryException("Section name must not be null");
         }

@@ -1,13 +1,17 @@
 package org.nmcpye.datarun.jpa.orgunitgroupset;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunitgroup.OrgUnitGroup;
 
@@ -22,8 +26,8 @@ import java.util.Set;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
-@SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
-public class OrgUnitGroupSet extends JpaIdentifiableObject {
+@SuppressWarnings({ "common-java:DuplicatedBlocks", "unused" })
+public class OrgUnitGroupSet extends JpaIdentifiableObject implements TranslatableInterface {
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
     protected String uid;
@@ -41,14 +45,17 @@ public class OrgUnitGroupSet extends JpaIdentifiableObject {
     protected String name;
 
     @ManyToMany
-    @JoinTable(
-        name = "org_unit_groupset_org_unit_group",
-        joinColumns = @JoinColumn(name = "groupset_id"),
-        inverseJoinColumns = @JoinColumn(name = "org_unit_group_id")
-    )
+    @JoinTable(name = "org_unit_groupset_org_unit_group", joinColumns = @JoinColumn(name = "groupset_id"), inverseJoinColumns = @JoinColumn(name = "org_unit_group_id"))
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"orgUnitGroupSets", "orgUnits"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "orgUnitGroupSets", "orgUnits" }, allowSetters = true)
     private Set<OrgUnitGroup> orgUnitGroups = new HashSet<>();
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
     public boolean hasOrgUnitGroups() {
         return orgUnitGroups != null && !orgUnitGroups.isEmpty();

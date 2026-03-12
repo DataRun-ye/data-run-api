@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.datatemplate.dto;
 
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 
 import java.util.List;
 
@@ -11,11 +11,11 @@ import java.util.List;
 public interface DataTemplateVersionInterface {
     String getUid();
 
-    List<FormDataElementConf> getFields();
+    List<FieldTemplateElementDto> getFields();
 
-    List<FormSectionConf> getSections();
+    List<SectionTemplateElementDto> getSections();
 
-    DataTemplateVersionInterface sections(List<FormSectionConf> sections);
+    DataTemplateVersionInterface sections(List<SectionTemplateElementDto> sections);
 
-    DataTemplateVersionInterface fields(List<FormDataElementConf> fields);
+    DataTemplateVersionInterface fields(List<FieldTemplateElementDto> fields);
 }

@@ -23,7 +23,7 @@ import java.util.Objects;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY,
         getterVisibility = JsonAutoDetect.Visibility.NONE,
         isGetterVisibility = JsonAutoDetect.Visibility.NONE)
-public abstract class AbstractElement implements ElementInterface, Serializable {
+public abstract class AbstractElement implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -39,16 +39,18 @@ public abstract class AbstractElement implements ElementInterface, Serializable 
     private List<DataFieldRule> rules = new ArrayList<>();
     private Map<String, Object> properties;
 
+//    public abstract String getId();
+
     public AbstractElement path(String path) {
         setPath(path);
         return this;
     }
 
     /**
-     * only {@link FormDataElementConf} can define a type
+     * only {@link FieldTemplateElementDto} can define a type
      * defined here to provide a uniform iteration over elements without needing knowledge about certain type
      *
-     * @return {@link FormDataElementConf#getType()} or null for {@link FormSectionConf}
+     * @return {@link FieldTemplateElementDto#getType()} or null for {@link SectionTemplateElementDto}
      */
     public ValueType getType() {
         return null;
@@ -57,7 +59,7 @@ public abstract class AbstractElement implements ElementInterface, Serializable 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof FormSectionConf that)) return false;
+        if (!(o instanceof SectionTemplateElementDto that)) return false;
         return Objects.equals(getName(), that.getName());
     }
 

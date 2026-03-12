@@ -9,21 +9,15 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.common.TranslatableInterface;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
+
+import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 
 /// @author Hamza Assada 28/12/2025
 @Entity
 @Table(name = "party")
-@EntityListeners(AuditingEntityListener.class)
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
@@ -31,32 +25,28 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class Party implements TranslatableInterface {
-    public enum PartyType {INTERNAL, EXTERNAL}
+public class Party extends JpaIdentifiableObject implements TranslatableInterface {
+    public enum PartyType {
+        INTERNAL, EXTERNAL
+    }
 
-    public enum SourceType {ORG_UNIT, TEAM, USER, STATIC, EXTERNAL}
+    public enum SourceType {
+        ORG_UNIT, ACTIVITY, TEAM, USER, STATIC, EXTERNAL
+    }
 
-    @Id
-    @Column(name = "id", nullable = false, updatable = false)
-    private UUID id;
-
-    /// 11-char Business Key source_uid
     @Column(name = "uid", length = 11, unique = true, nullable = false, updatable = false)
-    private String uid;
+    protected String uid;
 
-    /// source code
     @Column(name = "code", length = 32)
     protected String code;
 
-    /// source name
     @Column(name = "name", nullable = false)
-    private String name;
+    protected String name;
 
     /// INTERNAL, EXTERNAL
     @Column(name = "type", nullable = false, length = 32)
     @Enumerated(EnumType.STRING)
     private PartyType type;
-
 
     /// ORG_UNIT, TEAM, USER, STATIC, EXTERNAL Types
     @Column(name = "source_type", nullable = false, length = 32)
@@ -67,27 +57,13 @@ public class Party implements TranslatableInterface {
     private String sourceId;
 
     /// for parties with parents such as orgUnits,
-    ///  we use `orgUnit.id` which is the same as orgUnit's `party.source_id` of the parent org_unit
-    @Column(name = "parent_id", length = 32)
-    private UUID parentId;
-
-    @CreatedBy
-    @Column(name = "created_by", nullable = false, length = 50, updatable = false)
-    protected String createdBy;
-
-    @LastModifiedBy
-    @Column(name = "last_modified_by", length = 50)
-    protected String lastModifiedBy;
-
-    @CreatedDate
-    @Column(name = "created_date", updatable = false, nullable = false)
-    protected Instant createdDate;
-
-    @LastModifiedDate
-    @Column(name = "last_modified_date")
-    protected Instant lastModifiedDate;
+    /// we use `orgUnit.id` which is the same as orgUnit's `party.source_id` of the
+    /// parent org_unit
+    @Column(name = "parent_id", length = 26)
+    private String parentId;
 
     @Type(JsonType.class)
     @Column(name = "translations", columnDefinition = "jsonb")
+    @Builder.Default
     protected Set<Translation> translations = new HashSet<>();
 }

@@ -24,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
 @Service
 @Primary
@@ -34,11 +36,15 @@ public class DefaultUserGroupService extends DefaultJpaIdentifiableService<UserG
     final private UserGroupRepository repository;
 
     final private UserRepository userRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
-    public DefaultUserGroupService(UserGroupRepository repository, UserRepository userRepository, CacheManager cacheManager, UserAccessService userAccessService) {
+    public DefaultUserGroupService(UserGroupRepository repository, UserRepository userRepository,
+            CacheManager cacheManager, UserAccessService userAccessService,
+            ApplicationEventPublisher applicationEventPublisher) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.userRepository = userRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Override
@@ -57,22 +63,29 @@ public class DefaultUserGroupService extends DefaultJpaIdentifiableService<UserG
     }
 
     private UserGroup findUserGroup(UserGroup userGroup) {
-        return Optional.ofNullable(userGroup.getUid()).flatMap(repository::findByUid).or(() -> Optional.ofNullable(userGroup.getId()).flatMap(repository::findById)).or(() -> Optional.ofNullable(userGroup.getCode()).flatMap(repository::findByCode)).orElseThrow(() -> {
-            log.error("UserGroup not found: " + userGroup.getUid());
-            return new PropertyNotFoundException("UserGroup not found: " + userGroup);
-        });
+        return Optional.ofNullable(userGroup.getUid()).flatMap(repository::findByUid)
+                .or(() -> Optional.ofNullable(userGroup.getId()).flatMap(repository::findById))
+                .or(() -> Optional.ofNullable(userGroup.getCode()).flatMap(repository::findByCode)).orElseThrow(() -> {
+                    log.error("UserGroup not found: " + userGroup.getUid());
+                    return new PropertyNotFoundException("UserGroup not found: " + userGroup);
+                });
     }
 
     private User findUser(User user) {
-        return Optional.ofNullable(user.getUid()).flatMap(userRepository::findByUid).or(() -> Optional.ofNullable(user.getLogin()).flatMap(userRepository::findOneByLogin)).or(() -> Optional.ofNullable(user.getId()).flatMap(userRepository::findById)).orElseThrow(() -> {
-            log.error("User not found: " + user.getUid());
-            return new PropertyNotFoundException("UserGroup not found: " + user);
-        });
+        return Optional.ofNullable(user.getUid()).flatMap(userRepository::findByUid)
+                .or(() -> Optional.ofNullable(user.getLogin()).flatMap(userRepository::findOneByLogin))
+                .or(() -> Optional.ofNullable(user.getId()).flatMap(userRepository::findById)).orElseThrow(() -> {
+                    log.error("User not found: " + user.getUid());
+                    return new PropertyNotFoundException("UserGroup not found: " + user);
+                });
     }
 
     @Override
     public Page<UserGroup> findAllManagedByUser(Pageable pageable) {
-        Specification<UserGroup> spec = UserGroupSpecifications.getManagedGroupsByUserGroups(SecurityUtils.getCurrentUserLoginOrThrow(new ErrorMessage(ErrorCode.E3004, getClass().getName()))).and(UserGroupSpecifications.isEnabled());
+        Specification<UserGroup> spec = UserGroupSpecifications
+                .getManagedGroupsByUserGroups(SecurityUtils
+                        .getCurrentUserLoginOrThrow(new ErrorMessage(ErrorCode.E3004, getClass().getName())))
+                .and(UserGroupSpecifications.isEnabled());
 
         return repository.fetchBagRelationships(repository.findAll(spec, pageable));
     }
@@ -83,6 +96,7 @@ public class DefaultUserGroupService extends DefaultJpaIdentifiableService<UserG
             this.clearCaches(UserRepository.USERS_BY_EMAIL_CACHE, user.getEmail());
             this.clearCaches(UserRepository.USER_TEAM_IDS_CACHE, user.getLogin());
             this.clearCaches(UserRepository.USER_GROUP_IDS_CACHE, user.getLogin());
+            applicationEventPublisher.publishEvent(new UserAccessRulesChangedEvent(this, user.getLogin()));
         });
     }
 }

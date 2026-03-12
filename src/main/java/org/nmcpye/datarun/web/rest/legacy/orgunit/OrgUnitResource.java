@@ -19,18 +19,18 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import static org.nmcpye.datarun.web.rest.legacy.orgunit.OrgUnitResource.CUSTOM;
-import static org.nmcpye.datarun.web.rest.legacy.orgunit.OrgUnitResource.V1;
 
 /**
- * REST Extended controller for managing {@link OrgUnit}.
+ * Legacy REST controller for managing {@link OrgUnit}.
+ * Admin/CUSTOM path only — the V1 mobile path is now served by
+ * {@link org.nmcpye.datarun.web.rest.v1.orgunit.OrgUnitResource}.
  */
-@RestController
-@RequestMapping(value = {CUSTOM, V1})
+@RestController("orgUnitResourceLegacy")
+@RequestMapping(value = { CUSTOM })
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class OrgUnitResource extends JpaBaseResource<OrgUnit> {
     protected static final String NAME = "/orgUnits";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
-    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private final Logger log = LoggerFactory.getLogger(OrgUnitResource.class);
 
@@ -56,7 +56,7 @@ public class OrgUnitResource extends JpaBaseResource<OrgUnit> {
      */
     @GetMapping("/updatePaths")
     public ResponseEntity<String> updateTeam(
-        @RequestParam(name = "forceUpdate", required = false, defaultValue = "false") boolean forceUpdate) {
+            @RequestParam(name = "forceUpdate", required = false, defaultValue = "false") boolean forceUpdate) {
         log.debug("REST request to update orgUnit Paths");
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
         hasMinimalRightsOrThrow(user);
@@ -79,27 +79,28 @@ public class OrgUnitResource extends JpaBaseResource<OrgUnit> {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
     }
 
-//    @Override
-//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    public ResponseEntity<OrgUnit> updateEntity(String uid, OrgUnit entity) throws URISyntaxException {
-//        return super.updateEntity(uid, entity);
-//    }
-//
-//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    @Override
-//    public ResponseEntity<?> saveReturnSaved(OrgUnit entity) {
-//        return super.saveReturnSaved(entity);
-//    }
-//
-//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    @Override
-//    public ResponseEntity<EntitySaveSummaryVM> saveOne(OrgUnit entity) {
-//        return super.saveOne(entity);
-//    }
-//
-//    @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-//    @Override
-//    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<OrgUnit> entities) {
-//        return super.saveAll(entities);
-//    }
+    // @Override
+    // @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    // public ResponseEntity<OrgUnit> updateEntity(String uid, OrgUnit entity)
+    // throws URISyntaxException {
+    // return super.updateEntity(uid, entity);
+    // }
+    //
+    // @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    // @Override
+    // public ResponseEntity<?> saveReturnSaved(OrgUnit entity) {
+    // return super.saveReturnSaved(entity);
+    // }
+    //
+    // @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    // @Override
+    // public ResponseEntity<EntitySaveSummaryVM> saveOne(OrgUnit entity) {
+    // return super.saveOne(entity);
+    // }
+    //
+    // @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    // @Override
+    // public ResponseEntity<EntitySaveSummaryVM> saveAll(List<OrgUnit> entities) {
+    // return super.saveAll(entities);
+    // }
 }

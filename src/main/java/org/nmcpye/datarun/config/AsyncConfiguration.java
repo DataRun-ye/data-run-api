@@ -12,7 +12,6 @@ import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import tech.jhipster.async.ExceptionHandlingAsyncTaskExecutor;
 
 import java.util.concurrent.Executor;
 
@@ -42,7 +41,7 @@ public class AsyncConfiguration implements AsyncConfigurer {
         ThreadPoolTaskExecutor t = new ThreadPoolTaskExecutor();
         t.setCorePoolSize(2);
         t.setMaxPoolSize(5);
-        t.setQueueCapacity(500);    // bounded queue
+        t.setQueueCapacity(500); // bounded queue
         t.setThreadNamePrefix("err-log-");
         t.initialize();
         return t;
@@ -57,7 +56,8 @@ public class AsyncConfiguration implements AsyncConfigurer {
         executor.setMaxPoolSize(taskExecutionProperties.getPool().getMaxSize());
         executor.setQueueCapacity(taskExecutionProperties.getPool().getQueueCapacity());
         executor.setThreadNamePrefix(taskExecutionProperties.getThreadNamePrefix());
-        return new ExceptionHandlingAsyncTaskExecutor(executor);
+        executor.initialize();
+        return executor;
     }
 
     @Override

@@ -16,8 +16,10 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.IdentifiableObjectUtils;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 import org.nmcpye.datarun.jpa.orgunitgroup.OrgUnitGroup;
 
 import java.util.*;
@@ -32,8 +34,8 @@ import java.util.*;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
-@SuppressWarnings({"common-java:DuplicatedBlocks", "unused"})
-public class OrgUnit extends JpaIdentifiableObject {
+@SuppressWarnings({ "common-java:DuplicatedBlocks", "unused" })
+public class OrgUnit extends JpaIdentifiableObject implements TranslatableInterface {
 
     private static final String PATH_SEP = ",";
 
@@ -63,23 +65,33 @@ public class OrgUnit extends JpaIdentifiableObject {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "orgUnit")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonSerialize(contentAs = JpaIdentifiableObject.class)
-    @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "activity", "team", "orgUnit", "parent", "children", "ancestors", "level",
+            "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy" }, allowSetters = true)
     private Set<Assignment> assignments = new HashSet<>();
 
-    @ManyToOne//(fetch = FetchType.LAZY)
+    @ManyToOne // (fetch = FetchType.LAZY)
     @JsonProperty
-    @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors",
+            "translations" }, allowSetters = true)
     private OrgUnit parent;
 
     @ManyToMany(mappedBy = "orgUnits")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"orgUnitGroupSets", "orgUnits", "translations"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "orgUnitGroupSets", "orgUnits", "translations" }, allowSetters = true)
     private Set<OrgUnitGroup> orgUnitGroups = new HashSet<>();
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "parent")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors", "translations"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "parent", "children", "orgUnitGroups", "assignments", "hierarchyLevel", "ancestors",
+            "translations" }, allowSetters = true)
     private Set<OrgUnit> children = new HashSet<>();
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
 
     @Type(JsonType.class)
     @Column(name = "properties_map", columnDefinition = "jsonb")
@@ -118,7 +130,6 @@ public class OrgUnit extends JpaIdentifiableObject {
 
         newParent.getChildren().add(this);
     }
-
 
     public OrgUnit children(Set<OrgUnit> organisationUnits) {
         this.setChildren(organisationUnits);
@@ -208,7 +219,8 @@ public class OrgUnit extends JpaIdentifiableObject {
      * @param roots the root organisation units, if null using real roots.
      */
     public String getParentGraph(Collection<OrgUnit> roots) {
-        Set<String> rootUids = roots != null ? Sets.newHashSet(String.valueOf(IdentifiableObjectUtils.getUids(roots))) : null;
+        Set<String> rootUids = roots != null ? Sets.newHashSet(String.valueOf(IdentifiableObjectUtils.getUids(roots)))
+                : null;
         List<String> ancestors = getAncestorUids(rootUids);
         return StringUtils.join(ancestors, PATH_SEP);
     }
@@ -252,14 +264,14 @@ public class OrgUnit extends JpaIdentifiableObject {
         return map;
     }
 
-    //    @JsonProperty(value = "level", access = JsonProperty.Access.READ_ONLY)
+    // @JsonProperty(value = "level", access = JsonProperty.Access.READ_ONLY)
     public Integer getLevel() {
         return StringUtils.countMatches(path, PATH_SEP);
     }
 
     // for Hibernate
     public void setLevel(Integer ouLevel) {
-        //this.level = ouLevel;
+        // this.level = ouLevel;
     }
 
     /**
@@ -291,7 +303,8 @@ public class OrgUnit extends JpaIdentifiableObject {
      *
      * @throws IllegalStateException if circular parent relationships is detected.
      */
-    @JsonIgnoreProperties(value = {"parent", "children", "ancestors", "orgUnitGroups", "assignments", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "parent", "children", "ancestors", "orgUnitGroups", "assignments", "createdBy",
+            "createdDate", "lastModifiedDate", "lastModifiedBy" }, allowSetters = true)
     public List<OrgUnit> getAncestors() {
         List<OrgUnit> units = new ArrayList<>();
         Set<OrgUnit> visitedUnits = new HashSet<>();
@@ -301,8 +314,7 @@ public class OrgUnit extends JpaIdentifiableObject {
         while (unit != null) {
             if (!visitedUnits.add(unit)) {
                 throw new IllegalStateException(
-                    "Organisation unit '" + this + "' has circular parent relationships: '" + unit + "'"
-                );
+                        "Organisation unit '" + this + "' has circular parent relationships: '" + unit + "'");
             }
 
             units.add(unit);
@@ -312,7 +324,6 @@ public class OrgUnit extends JpaIdentifiableObject {
         Collections.reverse(units);
         return units;
     }
-
 
     /**
      * Returns the list of ancestor organisation units up to any of the given roots
@@ -348,11 +359,11 @@ public class OrgUnit extends JpaIdentifiableObject {
     @Override
     public String toString() {
         return "OrgUnit{" +
-            "id=" + getId() +
-            ", id='" + getUid() + "'" +
-            ", code='" + getCode() + "'" +
-            ", name='" + getName() + "'" +
-            ", ouPath='" + getPath() + "'" +
-            "}";
+                "id=" + getId() +
+                ", id='" + getUid() + "'" +
+                ", code='" + getCode() + "'" +
+                ", name='" + getName() + "'" +
+                ", ouPath='" + getPath() + "'" +
+                "}";
     }
 }

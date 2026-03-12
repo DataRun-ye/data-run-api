@@ -11,27 +11,29 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * @author Hamza Assada
  * @since 20/03/2025
  */
 @Slf4j
-public abstract class DefaultJpaSoftDeleteService
-    <T extends JpaSoftDeleteObject>
-    extends DefaultJpaIdentifiableService<T>
-    implements SoftDeleteService<T, String> {
+public abstract class DefaultJpaSoftDeleteService<T extends JpaSoftDeleteObject>
+        extends DefaultJpaIdentifiableService<T>
+        implements SoftDeleteService<T, String> {
 
     protected final UserAccessService userAccessService;
     protected final JpaIdentifiableRepository<T> jpaAuditableObjectRepository;
+    protected final ApplicationEventPublisher applicationEventPublisher;
 
     public DefaultJpaSoftDeleteService(JpaIdentifiableRepository<T> jpaAuditableObjectRepository,
-                                       CacheManager cacheManager, UserAccessService userAccessService) {
+            CacheManager cacheManager, UserAccessService userAccessService,
+            ApplicationEventPublisher applicationEventPublisher) {
         super(jpaAuditableObjectRepository, cacheManager, userAccessService);
         this.userAccessService = userAccessService;
         this.jpaAuditableObjectRepository = jpaAuditableObjectRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
-
 
     @Transactional
     @Override
@@ -39,7 +41,6 @@ public abstract class DefaultJpaSoftDeleteService
         log.debug("Request soft delete service to soft delete {}:`{}`", getClazz().getSimpleName(), uid);
         findByIdOrUid(uid).ifPresent(this::softDelete);
     }
-
 
     @Transactional
     @Override
@@ -50,8 +51,30 @@ public abstract class DefaultJpaSoftDeleteService
 
     @Override
     public void softDelete(T object) {
-        if (object.getDeleted()) return;
+        if (object.getDeleted())
+            return;
         object.setDeletedAt(Instant.now());
+
+        // Fire access rules changed event if the soft-deleted entity affects user
+        // permissions
+        if (applicationEventPublisher != null) {
+            Object obj = object;
+            if (obj instanceof org.nmcpye.datarun.jpa.team.Team team) {
+                team.getUsers().forEach(u -> applicationEventPublisher.publishEvent(
+                        new org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent(this, u.getLogin())));
+            } else if (obj instanceof org.nmcpye.datarun.jpa.assignment.Assignment assignment) {
+                if (assignment.getTeam() != null) {
+                    assignment.getTeam().getUsers()
+                            .forEach(u -> applicationEventPublisher.publishEvent(
+                                    new org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent(this,
+                                            u.getLogin())));
+                }
+            } else if (obj instanceof org.nmcpye.datarun.jpa.usegroup.UserGroup userGroup) {
+                userGroup.getUsers().forEach(u -> applicationEventPublisher.publishEvent(
+                        new org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent(this, u.getLogin())));
+            }
+        }
+
         save(object);
     }
 
@@ -70,8 +93,10 @@ public abstract class DefaultJpaSoftDeleteService
         }
         //
 
-        if (allFilters.isEmpty()) return null;
-        if (allFilters.size() == 1) return allFilters.get(0);
+        if (allFilters.isEmpty())
+            return null;
+        if (allFilters.size() == 1)
+            return allFilters.get(0);
 
         return new CompoundFilter(LogicalOperator.AND, allFilters);
     }

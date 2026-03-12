@@ -2,7 +2,7 @@ package org.nmcpye.datarun;
 
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
-import tech.jhipster.config.DefaultProfileUtil;
+import org.nmcpye.datarun.config.DefaultProfileUtil;
 
 /**
  * This is a helper Java class that provides an alternative to creating a {@code web.xml}.
@@ -17,3 +17,4 @@ public class ApplicationWebXml extends SpringBootServletInitializer {
         return application.sources(DataRunApiApp.class);
     }
 }
+

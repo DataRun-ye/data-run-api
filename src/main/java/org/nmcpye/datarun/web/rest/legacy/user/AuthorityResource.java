@@ -12,8 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import tech.jhipster.web.util.HeaderUtil;
-import tech.jhipster.web.util.ResponseUtil;
+import org.nmcpye.datarun.web.rest.util.HeaderUtil;
+import org.nmcpye.datarun.web.rest.util.ResponseUtil;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -104,3 +104,4 @@ public class AuthorityResource {
         return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, true, ENTITY_NAME, id)).build();
     }
 }
+

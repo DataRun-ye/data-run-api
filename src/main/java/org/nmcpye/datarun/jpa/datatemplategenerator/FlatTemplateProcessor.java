@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.datatemplategenerator;
 
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.springframework.stereotype.Component;
 
@@ -18,11 +18,11 @@ import java.util.stream.Collectors;
 public class FlatTemplateProcessor {
 
     public static class TemplateFlatSnapshot {
-        public final Map<String, FormSectionConf> sectionByName;
-        public final List<FormDataElementConf> fields;
+        public final Map<String, SectionTemplateElementDto> sectionByName;
+        public final List<FieldTemplateElementDto> fields;
 
-        public TemplateFlatSnapshot(Map<String, FormSectionConf> sectionByName,
-                                    List<FormDataElementConf> fields) {
+        public TemplateFlatSnapshot(Map<String, SectionTemplateElementDto> sectionByName,
+                                    List<FieldTemplateElementDto> fields) {
             this.sectionByName = Collections.unmodifiableMap(sectionByName);
             this.fields = Collections.unmodifiableList(fields);
         }
@@ -30,12 +30,12 @@ public class FlatTemplateProcessor {
 
     public TemplateFlatSnapshot process(TemplateVersion dtv) {
         Objects.requireNonNull(dtv, "DataTemplateVersion required");
-        List<FormSectionConf> sections = Optional.ofNullable(dtv.getSections()).orElse(Collections.emptyList());
-        Map<String, FormSectionConf> sectionByName = sections.stream()
+        List<SectionTemplateElementDto> sections = Optional.ofNullable(dtv.getSections()).orElse(Collections.emptyList());
+        Map<String, SectionTemplateElementDto> sectionByName = sections.stream()
             .filter(s -> s.getName() != null && !s.getName().isEmpty())
-            .collect(Collectors.toMap(FormSectionConf::getName, s -> s, (a, b) -> a, LinkedHashMap::new));
+            .collect(Collectors.toMap(SectionTemplateElementDto::getName, s -> s, (a, b) -> a, LinkedHashMap::new));
 
-        List<FormDataElementConf> fields = Optional.ofNullable(dtv.getFields()).orElse(Collections.emptyList());
+        List<FieldTemplateElementDto> fields = Optional.ofNullable(dtv.getFields()).orElse(Collections.emptyList());
 
         return new TemplateFlatSnapshot(sectionByName, fields);
     }

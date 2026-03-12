@@ -289,7 +289,8 @@ public class DataTemplateInstanceServiceImpl
     @Override
     public Optional<DataTemplateInstanceDto> findLatestByTemplate(String templateUid) {
         final var template = dataTemplateService.findByUid(templateUid).map(dataTemplateMapper::toDto);
-        final var version = jpaTemplateVersionRepository.findTopByTemplateUidOrderByVersionNumberDesc(templateUid)
+        final var versionOp = jpaTemplateVersionRepository.findTopByTemplateUidOrderByVersionNumberDesc(templateUid);
+        final var version = versionOp
             .map(jpaVersionMapper::toDto);
         if (template.isEmpty() || version.isEmpty()) {
             return Optional.empty();

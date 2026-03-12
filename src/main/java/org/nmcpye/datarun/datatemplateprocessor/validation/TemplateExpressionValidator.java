@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.datatemplateprocessor.validation;
 
 import org.nmcpye.datarun.datatemplateelement.DataFieldRule;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.*;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateVersionInterface;
 import org.springframework.stereotype.Component;
@@ -30,7 +30,7 @@ public class TemplateExpressionValidator
         List<FormValidationError> errors = new ArrayList<>();
 
         // Validate rule expressions in fields.
-        for (FormDataElementConf field : template.getFields()) {
+        for (FieldTemplateElementDto field : template.getFields()) {
             if (field.getRules() != null) {
                 for (DataFieldRule rule : field.getRules()) {
                     String expression = rule.getExpression();
@@ -64,7 +64,7 @@ public class TemplateExpressionValidator
         }
 
         // Similarly, validate rules in sections
-        for (FormSectionConf section : template.getSections()) {
+        for (SectionTemplateElementDto section : template.getSections()) {
             if (section.getRules() != null) {
                 for (DataFieldRule rule : section.getRules()) {
                     String expression = rule.getExpression();

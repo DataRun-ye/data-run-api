@@ -60,6 +60,10 @@ public class IdSchemes {
         return getScheme(dataFormIdScheme);
     }
 
+    public IdScheme getDataFormTemplateIdScheme() {
+        return getScheme(dataFormTemplateIdScheme);
+    }
+
     public IdScheme getDataElementIdScheme() {
         return getScheme(dataElementIdScheme);
     }
@@ -92,6 +96,11 @@ public class IdSchemes {
         return this;
     }
 
+    public IdSchemes setDataFormTemplateIdScheme(String idScheme) {
+        this.dataFormTemplateIdScheme = IdScheme.from(idScheme);
+        return this;
+    }
+
     public IdScheme getDataSubmissionIdScheme() {
         return getScheme(dataSubmissionIdScheme);
     }
@@ -100,7 +109,6 @@ public class IdSchemes {
         this.dataSubmissionIdScheme = IdScheme.from(idScheme);
         return this;
     }
-
 
     public IdScheme getProjectIdScheme() {
         return getScheme(projectIdScheme);
@@ -152,7 +160,8 @@ public class IdSchemes {
         return isId ? uid : code;
     }
 
-    public static <T> String getValue(IdentifiableObject<T> identifiableObject, IdentifiableProperty identifiableProperty) {
+    public static <T> String getValue(IdentifiableObject<T> identifiableObject,
+            IdentifiableProperty identifiableProperty) {
         return getValue(identifiableObject, IdScheme.from(identifiableProperty));
     }
 
@@ -173,14 +182,15 @@ public class IdSchemes {
     @Override
     public String toString() {
         return MoreObjects
-            .toStringHelper(this)
-            .add("idScheme", idScheme)
-            .add("dataElementIdScheme", dataFormIdScheme)
-            .add("dataElementGroupIdScheme", dataSubmissionIdScheme)
-            .add("orgUnitIdScheme", orgUnitIdScheme)
-            .add("projrctIdScheme", projectIdScheme)
-            .add("activityIdScheme", activityIdScheme)
-            .add("orgUnitGroupIdScheme", orgUnitGroupIdScheme)
-            .toString();
+                .toStringHelper(this)
+                .add("idScheme", idScheme)
+                .add("dataElementIdScheme", dataFormIdScheme)
+                .add("dataFormTemplateIdScheme", dataFormTemplateIdScheme)
+                .add("dataElementGroupIdScheme", dataSubmissionIdScheme)
+                .add("orgUnitIdScheme", orgUnitIdScheme)
+                .add("projrctIdScheme", projectIdScheme)
+                .add("activityIdScheme", activityIdScheme)
+                .add("orgUnitGroupIdScheme", orgUnitGroupIdScheme)
+                .toString();
     }
 }

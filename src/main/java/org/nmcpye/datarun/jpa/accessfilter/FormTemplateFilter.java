@@ -1,5 +1,8 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
+import org.nmcpye.datarun.jpa.accessfilter.entity.UserExecutionContext;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.query.QueryRequest;
@@ -14,29 +17,35 @@ import org.springframework.stereotype.Component;
 public class FormTemplateFilter extends DefaultJpaFilter<DataTemplate> {
 
     public static Specification<DataTemplate> isDeleted() {
-        return (root, query, criteriaBuilder) ->
-            criteriaBuilder.isTrue(root.get("deleted"));
+        return (root, query, criteriaBuilder) -> criteriaBuilder.isTrue(root.get("deleted"));
     }
 
     public static Specification<DataTemplate> isActive() {
-        return (root, query, criteriaBuilder) ->
-            criteriaBuilder.notEqual(root.get("deleted"), true);
+        return (root, query, criteriaBuilder) -> criteriaBuilder.notEqual(root.get("deleted"), true);
     }
 
     @Override
     public Specification<DataTemplate> getAccessSpecification(CurrentUserDetails user,
-                                                              QueryRequest queryRequest) {
+            QueryRequest queryRequest) {
         Specification<DataTemplate> spec = (root, query, cb) -> {
             if (user.isSuper()) {
                 return cb.conjunction();
             }
 
-            if (user.getUserFormsUIDs() == null || user.getUserTeamsUIDs().isEmpty()) {
-                return cb.disjunction(); // user has no access
+            if (query == null) {
+                return cb.conjunction();
             }
 
-            return root.get("uid").in(user.getUserFormsUIDs());
+            // Path B: CQRS Subquery against UserExecutionContext
+            Subquery<String> sq = query.subquery(String.class);
+            Root<UserExecutionContext> uec = sq.from(UserExecutionContext.class);
 
+            sq.select(uec.get("entityUid")).where(
+                    cb.equal(uec.get("userUid"), user.getUid()),
+                    cb.equal(uec.get("entityType"), "DATA_TEMPLATE") // 'FormTemplate' implies DataTemplate access
+            );
+
+            return root.get("uid").in(sq);
         };
 
         if (queryRequest == null || !queryRequest.isIncludeDeleted()) {

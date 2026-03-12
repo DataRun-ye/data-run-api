@@ -21,19 +21,25 @@ public interface OutboxWritePort {
         public final String payload;
         public final Instant createdAt;
         public final Long submissionSerialNumber;
+        public final String correlationId;
+        public final Instant occurredAt;
 
         public OutboxInsert(String submissionId,
-                            String submissionUid,
-                            String templateVersionUid,
-                            String payload,
-                            Instant createdAt,
-                            Long submissionSerialNumber) {
+                String submissionUid,
+                String templateVersionUid,
+                String payload,
+                Instant createdAt,
+                Long submissionSerialNumber,
+                String correlationId,
+                Instant occurredAt) {
             this.submissionId = submissionId;
             this.submissionUid = submissionUid;
             this.templateVersionUid = templateVersionUid;
             this.payload = payload;
             this.createdAt = createdAt;
             this.submissionSerialNumber = submissionSerialNumber;
+            this.correlationId = correlationId;
+            this.occurredAt = occurredAt;
         }
     }
 }

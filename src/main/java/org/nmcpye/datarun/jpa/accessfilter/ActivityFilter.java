@@ -1,5 +1,8 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
+import org.nmcpye.datarun.jpa.accessfilter.entity.UserExecutionContext;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.query.QueryRequest;
@@ -18,23 +21,28 @@ public class ActivityFilter extends DefaultJpaFilter<Activity> {
 
     @Override
     public Specification<Activity> getAccessSpecification(CurrentUserDetails user,
-                                                          QueryRequest queryRequest) {
+            QueryRequest queryRequest) {
 
         Specification<Activity> spec = (root, query, cb) -> {
             if (user.isSuper()) {
                 return cb.conjunction();
             }
 
-            if (user.getActivityUIDs() == null || user.getActivityUIDs().isEmpty()) {
-                return cb.disjunction(); // user has no access
+            if (query == null) {
+                return cb.conjunction();
             }
-//                Join<Activity, Assignment> assignmentJoin = root.join("assignments", JoinType.INNER);
-//                Join<Assignment, Team> teamJoin = assignmentJoin.join("team", JoinType.INNER);
-//                Join<Team, User> userJoin = teamJoin.join("users", JoinType.INNER);
-//
-//                return criteriaBuilder.equal(userJoin.get("login"), user.getUsername());
-            return root.get("uid").in(user.getActivityUIDs());
 
+            // Path B: CQRS Subquery against UserExecutionContext
+            // SELECT entity_uid FROM user_execution_context WHERE user_uid = ? AND
+            // entity_type = 'ACTIVITY'
+            Subquery<String> sq = query.subquery(String.class);
+            Root<UserExecutionContext> uec = sq.from(UserExecutionContext.class);
+
+            sq.select(uec.get("entityUid")).where(
+                    cb.equal(uec.get("userUid"), user.getUid()),
+                    cb.equal(uec.get("entityType"), "ACTIVITY"));
+
+            return root.get("uid").in(sq);
         };
 
         if (queryRequest == null || !queryRequest.isIncludeDisabled()) {

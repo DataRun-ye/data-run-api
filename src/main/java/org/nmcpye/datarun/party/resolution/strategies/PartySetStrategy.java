@@ -9,7 +9,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.UUID;
 
 import static org.nmcpye.datarun.jooq.public_.Tables.PARTY;
 
@@ -31,10 +30,10 @@ public interface PartySetStrategy {
      * @param request    The user's request context
      * @return A list of resolved parties
      */
-    List<ResolvedParty> resolve(UUID partySetId,
-                                String spec,
-                                boolean isMaterialized,
-                                PartyResolutionRequest request);
+    List<ResolvedParty> resolve(String partySetId,
+            String spec,
+            boolean isMaterialized,
+            PartyResolutionRequest request);
 
     /**
      * Applies the since filter to an ongoing query.
@@ -44,12 +43,12 @@ public interface PartySetStrategy {
      * @return The query with the since filter applied
      */
     default <R extends org.jooq.Record> SelectConditionStep<R> applySinceFilter(SelectConditionStep<R> query,
-                                                                                Instant since) {
+            Instant since) {
         if (since == null) {
             return query;
         }
 
         return query
-            .and(PARTY.LAST_MODIFIED_DATE.greaterThan(LocalDateTime.ofInstant(since, ZoneId.systemDefault())));
+                .and(PARTY.LAST_MODIFIED_DATE.greaterThan(LocalDateTime.ofInstant(since, ZoneId.systemDefault())));
     }
 }

@@ -10,8 +10,10 @@ import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
+import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.jpa.common.TranslatableInterface;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -28,7 +30,7 @@ import java.util.Set;
 @Getter
 @Setter
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class Project extends JpaIdentifiableObject {
+public class Project extends JpaIdentifiableObject implements TranslatableInterface {
 
     @Size(max = 11)
     @Column(name = "uid", length = 11, updatable = false, unique = true)
@@ -51,11 +53,19 @@ public class Project extends JpaIdentifiableObject {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "project")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"project"}, allowSetters = true)
+    @JsonIgnoreProperties(value = { "project" }, allowSetters = true)
     private Set<Activity> activities = new HashSet<>();
 
     @Type(JsonType.class)
     @Column(name = "properties_map", columnDefinition = "jsonb")
     @JsonProperty
     protected Map<String, Object> properties;
+
+    /**
+     * Set of available object translation, normally filtered by locale.
+     */
+    @Type(JsonType.class)
+    @Column(name = "translations", columnDefinition = "jsonb")
+    protected Set<Translation> translations = new HashSet<>();
+
 }

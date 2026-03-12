@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="create-assignment-member-table" author="hamza-ye">
+        <createTable tableName="assignment_member">
+            <column name="id" type="bigserial">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_assignment_member"/>
+            </column>
+            <column name="assignment_id" type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_id" type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="VARCHAR(255)"/>
+            <column name="valid_from" type="TIMESTAMP"/>
+            <column name="valid_to" type="TIMESTAMP"/>
+            <column name="created_date" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified_date" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified_by" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="create-assignment-member-table-constraints" author="hamza-ye">
+        <addForeignKeyConstraint baseTableName="assignment_member" baseColumnNames="assignment_id"
+                                 constraintName="fk_assignment_member_assignment_id"
+                                 referencedTableName="assignment" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="assignment_member" constraintName="uc_assignment_member"
+                             columnNames="assignment_id,member_type,member_id"/>
+
+        <createIndex tableName="assignment_member" indexName="idx_assignment_member_assignment_id">
+            <column name="assignment_id"/>
+        </createIndex>
+        <createIndex tableName="assignment_member" indexName="idx_assignment_member_member_type">
+            <column name="member_type"/>
+            <column name="member_id"/>
+        </createIndex>
+        <createIndex tableName="assignment_member" indexName="idx_assignment_member_member">
+            <column name="member_id"/>
+        </createIndex>
+        <createIndex tableName="assignment_member" indexName="idx_assignment_member_valid_time">
+            <column name="valid_from"/>
+            <column name="valid_to"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Assignment -> vocabulary   -->
+<!--    <changeSet id="create-assignment_data_template" author="hamza-ye">-->
+<!--        <createTable tableName="assignment_data_template">-->
+<!--            <column name="assignment_id" type="VARCHAR(26)">-->
+<!--                <constraints nullable="false"/>-->
+<!--            </column>-->
+<!--            <column name="vocabulary_id" type="VARCHAR(26)">-->
+<!--                <constraints nullable="false"/>-->
+<!--            </column>-->
+<!--        </createTable>-->
+<!--    </changeSet>-->
+
+<!--    &lt;!&ndash;    &ndash;&gt;-->
+<!--    <changeSet id="create-assignment_data_template-constraints" author="hamza-ye">-->
+<!--        <addForeignKeyConstraint baseTableName="assignment_data_template" baseColumnNames="assignment_id"-->
+<!--                                 constraintName="fk_assignment_assignment_id"-->
+<!--                                 referencedTableName="assignment" referencedColumnNames="id"/>-->
+
+<!--        <addForeignKeyConstraint baseTableName="assignment_data_template" baseColumnNames="vocabulary_id"-->
+<!--                                 constraintName="fk_assignment_data_template_id"-->
+<!--                                 referencedTableName="data_template" referencedColumnNames="id"/>-->
+
+<!--        <addPrimaryKey tableName="assignment_data_template" columnNames="assignment_id, vocabulary_id" />-->
+<!--    </changeSet>-->
+
+    <changeSet id="create-binding-table" author="hamza-ye">
+        <createTable tableName="assignment_role_party_policy">
+            <column name="id" type="VARCHAR(26)">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="pk_assignment_role_party_policy"/>
+            </column>
+            <column name="uid" type="VARCHAR(11)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(32)">
+                <constraints unique="true"/>
+            </column>
+            <column name="name" type="VARCHAR(50)">
+            </column>
+            <column name="assignment_id" type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vocabulary_id" type="VARCHAR(26)"/>
+            <column name="party_set_id" type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="combine_mode" type="varchar(32)"/> <!-- 'UNION' default; optional 'INTERSECT' -->
+
+            <column name="created_date" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified_date" type="TIMESTAMP">
+            </column>
+            <column name="last_modified_by" type="VARCHAR(50)">
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="create-binding-table-constraints" author="hamza-ye">
+        <addForeignKeyConstraint baseTableName="assignment_role_party_policy" baseColumnNames="assignment_id"
+                                 constraintName="fk_arpp_assign"
+                                 referencedTableName="assignment" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="assignment_role_party_policy" baseColumnNames="party_set_id"
+                                 constraintName="fk_arpp_pset"
+                                 referencedTableName="party_set" referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="assignment_role_party_policy" baseColumnNames="vocabulary_id"
+                                 constraintName="fk_arpp_vocabulary_template"
+                                 referencedTableName="data_template" referencedColumnNames="id"/>
+
+        <addUniqueConstraint tableName="assignment_role_party_policy" columnNames="assignment_id, role, vocabulary_id, party_set_id"
+                             constraintName="ux_assign_role_party_policy_ids"/>
+
+        <createIndex tableName="assignment_role_party_policy" indexName="idx_arpp_assignment_vocab_role">
+            <column name="assignment_id"/>
+            <column name="role"/>
+            <column name="vocabulary_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

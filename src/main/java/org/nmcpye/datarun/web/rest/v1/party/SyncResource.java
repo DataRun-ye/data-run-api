@@ -2,13 +2,12 @@ package org.nmcpye.datarun.web.rest.v1.party;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.jpa.assignment.dto.AssignmentManifestDto;
+
+import org.nmcpye.datarun.party.dto.AssignmentManifestDto;
 import org.nmcpye.datarun.party.dto.PagedRequest;
 import org.nmcpye.datarun.party.dto.ResolvedParty;
-import org.nmcpye.datarun.party.dto.UserAllowedPartyDto;
 import org.nmcpye.datarun.party.service.ManifestService;
 import org.nmcpye.datarun.party.service.PartySetService;
-import org.nmcpye.datarun.party.service.UserPermissionSyncService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
@@ -26,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class SyncResource {
 
     private final PartySetService partySetService;
-    private final UserPermissionSyncService permissionSyncService;
     private final ManifestService manifestService;
 
     /**
@@ -35,17 +33,18 @@ public class SyncResource {
     @Schema(description = "The Bootstrap Endpoint: Called when the app launches or syncs.")
     @GetMapping("/manifest")
     public ResponseEntity<PagedResponse<AssignmentManifestDto>> getManifest(
-        PagedRequest pagedRequest,
-        @AuthenticationPrincipal CurrentUserDetails user) {
+            PagedRequest pagedRequest,
+            @AuthenticationPrincipal CurrentUserDetails user) {
         // Validation logic for userUid would go here
         try {
-            Page<AssignmentManifestDto> processedPage = manifestService.buildManifest(user.getId(), user.getUserTeamsIds(),
-                user.getUserGroupsIds(), pagedRequest);
+            Page<AssignmentManifestDto> processedPage = manifestService.buildManifest(user.getId(),
+                    user.getUserTeamsIds(),
+                    user.getUserGroupsIds(), pagedRequest);
 
             String next = PagingConfigurator.createNextPageLink(processedPage);
 
-            PagedResponse<AssignmentManifestDto> response =
-                PagingConfigurator.initPageResponse(processedPage, next, "context");
+            PagedResponse<AssignmentManifestDto> response = PagingConfigurator.initPageResponse(processedPage, next,
+                    "context");
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
@@ -55,36 +54,15 @@ public class SyncResource {
 
     @GetMapping("/partySets/{id}/parties")
     public ResponseEntity<PagedResponse<ResolvedParty>> getPartySetMembers(
-        @PathVariable String id, PagedRequest pagedRequest,
-        @AuthenticationPrincipal CurrentUserDetails user) {
+            @PathVariable String id, PagedRequest pagedRequest,
+            @AuthenticationPrincipal CurrentUserDetails user) {
         try {
             Page<ResolvedParty> processedPage = partySetService
-                .findPartiesBySetId(id, pagedRequest, user);
+                    .findPartiesBySetId(id, pagedRequest, user);
 
             String next = PagingConfigurator.createNextPageLink(processedPage);
 
-            PagedResponse<ResolvedParty> response =
-                PagingConfigurator.initPageResponse(processedPage, next, "sync");
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @GetMapping("/userAllowedParty")
-    public ResponseEntity<PagedResponse<UserAllowedPartyDto>> getAllowedParties(
-        PagedRequest pagedRequest,
-        @AuthenticationPrincipal CurrentUserDetails user) {
-        try {
-            String userId = user.getId(); // Or however you get the user ID
-            Page<UserAllowedPartyDto> processedPage = permissionSyncService
-                .getAllowedPartiesForUser(userId, pagedRequest);
-
-            String next = PagingConfigurator.createNextPageLink(processedPage);
-
-            PagedResponse<UserAllowedPartyDto> response =
-                PagingConfigurator.initPageResponse(processedPage, next, "sync");
+            PagedResponse<ResolvedParty> response = PagingConfigurator.initPageResponse(processedPage, next, "sync");
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {

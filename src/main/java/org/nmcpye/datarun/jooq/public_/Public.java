@@ -11,18 +11,22 @@ import org.jooq.Catalog;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
 import org.nmcpye.datarun.jooq.DefaultCatalog;
+import org.nmcpye.datarun.jooq.public_.tables.Activity;
 import org.nmcpye.datarun.jooq.public_.tables.AppUser;
 import org.nmcpye.datarun.jooq.public_.tables.Assignment;
 import org.nmcpye.datarun.jooq.public_.tables.AssignmentMember;
 import org.nmcpye.datarun.jooq.public_.tables.AssignmentPartyBinding;
+import org.nmcpye.datarun.jooq.public_.tables.DataTemplate;
+import org.nmcpye.datarun.jooq.public_.tables.DataTemplateVersion;
 import org.nmcpye.datarun.jooq.public_.tables.OrgUnit;
 import org.nmcpye.datarun.jooq.public_.tables.Party;
 import org.nmcpye.datarun.jooq.public_.tables.PartySet;
 import org.nmcpye.datarun.jooq.public_.tables.PartySetMember;
 import org.nmcpye.datarun.jooq.public_.tables.PartyTag;
+import org.nmcpye.datarun.jooq.public_.tables.Project;
 import org.nmcpye.datarun.jooq.public_.tables.Team;
 import org.nmcpye.datarun.jooq.public_.tables.TeamUser;
-import org.nmcpye.datarun.jooq.public_.tables.UserAllowedParty;
+import org.nmcpye.datarun.jooq.public_.tables.UserExecutionContext;
 import org.nmcpye.datarun.jooq.public_.tables.UserGroup;
 import org.nmcpye.datarun.jooq.public_.tables.UserGroupUsers;
 
@@ -39,6 +43,11 @@ public class Public extends SchemaImpl {
      * The reference instance of <code>public</code>
      */
     public static final Public PUBLIC = new Public();
+
+    /**
+     * The table <code>public.activity</code>.
+     */
+    public final Activity ACTIVITY = Activity.ACTIVITY;
 
     /**
      * The table <code>public.app_user</code>.
@@ -59,6 +68,16 @@ public class Public extends SchemaImpl {
      * The table <code>public.assignment_party_binding</code>.
      */
     public final AssignmentPartyBinding ASSIGNMENT_PARTY_BINDING = AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING;
+
+    /**
+     * The table <code>public.data_template</code>.
+     */
+    public final DataTemplate DATA_TEMPLATE = DataTemplate.DATA_TEMPLATE;
+
+    /**
+     * The table <code>public.data_template_version</code>.
+     */
+    public final DataTemplateVersion DATA_TEMPLATE_VERSION = DataTemplateVersion.DATA_TEMPLATE_VERSION;
 
     /**
      * The table <code>public.org_unit</code>.
@@ -86,6 +105,11 @@ public class Public extends SchemaImpl {
     public final PartyTag PARTY_TAG = PartyTag.PARTY_TAG;
 
     /**
+     * The table <code>public.project</code>.
+     */
+    public final Project PROJECT = Project.PROJECT;
+
+    /**
      * The table <code>public.team</code>.
      */
     public final Team TEAM = Team.TEAM;
@@ -96,9 +120,9 @@ public class Public extends SchemaImpl {
     public final TeamUser TEAM_USER = TeamUser.TEAM_USER;
 
     /**
-     * The table <code>public.user_allowed_party</code>.
+     * The table <code>public.user_execution_context</code>.
      */
-    public final UserAllowedParty USER_ALLOWED_PARTY = UserAllowedParty.USER_ALLOWED_PARTY;
+    public final UserExecutionContext USER_EXECUTION_CONTEXT = UserExecutionContext.USER_EXECUTION_CONTEXT;
 
     /**
      * The table <code>public.user_group</code>.
@@ -126,18 +150,22 @@ public class Public extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
+            Activity.ACTIVITY,
             AppUser.APP_USER,
             Assignment.ASSIGNMENT,
             AssignmentMember.ASSIGNMENT_MEMBER,
             AssignmentPartyBinding.ASSIGNMENT_PARTY_BINDING,
+            DataTemplate.DATA_TEMPLATE,
+            DataTemplateVersion.DATA_TEMPLATE_VERSION,
             OrgUnit.ORG_UNIT,
             Party.PARTY,
             PartySet.PARTY_SET,
             PartySetMember.PARTY_SET_MEMBER,
             PartyTag.PARTY_TAG,
+            Project.PROJECT,
             Team.TEAM,
             TeamUser.TEAM_USER,
-            UserAllowedParty.USER_ALLOWED_PARTY,
+            UserExecutionContext.USER_EXECUTION_CONTEXT,
             UserGroup.USER_GROUP,
             UserGroupUsers.USER_GROUP_USERS
         );

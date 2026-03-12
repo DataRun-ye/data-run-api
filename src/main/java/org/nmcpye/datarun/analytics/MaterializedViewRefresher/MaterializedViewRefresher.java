@@ -34,55 +34,58 @@ public class MaterializedViewRefresher {
     private String cron;
 
     /**
-     * map of materialized view name -> SQL that returns the last source modification timestamp (timestamptz).
+     * map of materialized view name -> SQL that returns the last source
+     * modification timestamp (timestamptz).
      * You can extend/replace this map to match your actual sources.
      *
-     * IMPORTANT: these SQL queries should return a single timestamptz/timestamp or null.
+     * IMPORTANT: these SQL queries should return a single timestamptz/timestamp or
+     * null.
      */
     private final Map<String, String> viewToSourceMaxSql = new LinkedHashMap<>();
-    private final Map<String, String> viewToSourceMaxSqlAnalytics = new LinkedHashMap<>();
 
     public MaterializedViewRefresher(JdbcTemplate jdbc, DataSource dataSource) {
         this.jdbc = jdbc;
         this.dataSource = dataSource;
-        // Default mappings — update these if your table names or timestamp columns differ.
+        // Default mappings — update these if your table names or timestamp columns
+        // differ.
         viewToSourceMaxSql.put("analytics.dim_option_set",
-            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.option_set");
+                "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.option_set");
         viewToSourceMaxSql.put("analytics.dim_option",
-            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.option_value");
+                "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.option_value");
         viewToSourceMaxSql.put("analytics.dim_org_unit",
-            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.org_unit");
+                "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.org_unit");
         viewToSourceMaxSql.put("analytics.dim_org_unit_group",
-            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.org_unit_group");
+                "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.org_unit_group");
         viewToSourceMaxSql.put("analytics.dim_org_unit_group_member",
-            "SELECT GREATEST(MAX(NULLIF((SELECT NULL),NULL)), NULL)"); // fallback — will always be null (no-op)
+                "SELECT GREATEST(MAX(NULLIF((SELECT NULL),NULL)), NULL)"); // fallback — will always be null (no-op)
         viewToSourceMaxSql.put("analytics.dim_team",
-            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.team");
+                "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.team");
         viewToSourceMaxSql.put("analytics.dim_team_form_permission",
-            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.team");
+                "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.team");
         viewToSourceMaxSql.put("analytics.dim_assignment",
-            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.assignment");
+                "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.assignment");
         viewToSourceMaxSql.put("analytics.dim_activity",
-            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.activity");
+                "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.activity");
         viewToSourceMaxSql.put("analytics.dim_data_template",
-            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.data_template");
+                "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.data_template");
 
         viewToSourceMaxSql.put("analytics.dim_malaria_unit_user_group",
-            "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.user_group");
+                "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.user_group");
 
         viewToSourceMaxSql.put("analytics.ref_value_enriched",
-            "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.ref_type_value");
+                "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.ref_type_value");
         // for each other
         viewToSourceMaxSql.put("analytics.events_enriched",
-            "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.events");
+                "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.events");
         viewToSourceMaxSql.put("analytics.event_ancestors",
-            "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.events");
+                "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.events");
     }
 
     @PostConstruct
     public void init() {
         log.info("MaterializedViewRefresher initialized. Cron: {}", cron);
-        // You can modify viewToSourceMaxSql programmatically here (e.g., load from properties)
+        // You can modify viewToSourceMaxSql programmatically here (e.g., load from
+        // properties)
     }
 
     /**
@@ -117,7 +120,8 @@ public class MaterializedViewRefresher {
             shouldRefresh = true;
         } else if (lastSourceChange == null) {
             // no source change info — we conservatively skip refresh
-            log.info("No source-change timestamp available for {}, skipping refresh (no reliable source check).", viewName);
+            log.info("No source-change timestamp available for {}, skipping refresh (no reliable source check).",
+                    viewName);
             shouldRefresh = false;
         } else {
             shouldRefresh = lastRefresh == null || lastSourceChange.isAfter(lastRefresh);
@@ -161,10 +165,9 @@ public class MaterializedViewRefresher {
     private Instant queryLastRefresh(String viewName) {
         try {
             Timestamp t = jdbc.queryForObject(
-                "SELECT last_refresh FROM analytics.mv_refresh_log WHERE view_name = ?",
-                new Object[]{viewName},
-                Timestamp.class
-            );
+                    "SELECT last_refresh FROM analytics.mv_refresh_log WHERE view_name = ?",
+                    new Object[] { viewName },
+                    Timestamp.class);
             return t == null ? null : t.toInstant();
         } catch (Exception ex) {
             // table may not have an entry yet or table not present — return null
@@ -175,16 +178,17 @@ public class MaterializedViewRefresher {
 
     /**
      * Try to refresh the materialized view. If concurrent=true, use CONCURRENTLY.
-     * Must be executed outside transaction. We get a raw connection and setAutoCommit(true).
+     * Must be executed outside transaction. We get a raw connection and
+     * setAutoCommit(true).
      *
      * Returns true if refresh succeeded.
      */
     private boolean tryRefresh(String viewName, boolean concurrent) {
         String sql = concurrent
-            ? String.format("REFRESH MATERIALIZED VIEW CONCURRENTLY %s", viewName)
-            : String.format("REFRESH MATERIALIZED VIEW %s", viewName);
+                ? String.format("REFRESH MATERIALIZED VIEW CONCURRENTLY %s", viewName)
+                : String.format("REFRESH MATERIALIZED VIEW %s", viewName);
         try (Connection conn = dataSource.getConnection();
-             Statement stmt = conn.createStatement()) {
+                Statement stmt = conn.createStatement()) {
             // Ensure not inside a transaction block
             if (!conn.getAutoCommit()) {
                 conn.setAutoCommit(true);
@@ -205,14 +209,13 @@ public class MaterializedViewRefresher {
     public void upsertRefreshLog(String viewName, Instant lastRefresh, Instant lastSourceChange, String lastError) {
         try {
             jdbc.update(
-                "INSERT INTO analytics.mv_refresh_log (view_name, last_refresh, last_source_change, last_error) " +
-                    "VALUES (?, ?, ?, ?) " +
-                    "ON CONFLICT (view_name) DO UPDATE SET last_refresh = EXCLUDED.last_refresh, last_source_change = EXCLUDED.last_source_change, last_error = EXCLUDED.last_error",
-                viewName,
-                lastRefresh == null ? null : Timestamp.from(lastRefresh),
-                lastSourceChange == null ? null : Timestamp.from(lastSourceChange),
-                lastError
-            );
+                    "INSERT INTO analytics.mv_refresh_log (view_name, last_refresh, last_source_change, last_error) " +
+                            "VALUES (?, ?, ?, ?) " +
+                            "ON CONFLICT (view_name) DO UPDATE SET last_refresh = EXCLUDED.last_refresh, last_source_change = EXCLUDED.last_source_change, last_error = EXCLUDED.last_error",
+                    viewName,
+                    lastRefresh == null ? null : Timestamp.from(lastRefresh),
+                    lastSourceChange == null ? null : Timestamp.from(lastSourceChange),
+                    lastError);
         } catch (Exception ex) {
             log.error("Failed to upsert refresh log for {}: {}", viewName, ex.getMessage(), ex);
         }
@@ -223,7 +226,8 @@ public class MaterializedViewRefresher {
         log.info("Manual full refresh requested.");
         for (String view : Collections.unmodifiableSet(viewToSourceMaxSql.keySet())) {
             boolean refreshed = tryRefresh(view, true);
-            if (!refreshed) tryRefresh(view, false);
+            if (!refreshed)
+                tryRefresh(view, false);
             upsertRefreshLog(view, refreshed ? Instant.now() : null, null, refreshed ? null : "manual_refresh_failed");
         }
     }

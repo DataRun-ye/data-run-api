@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.service.acl;
 
 import org.nmcpye.datarun.datatemplateelement.ElementValidationRule;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.nmcpye.datarun.web.rest.v2.dto.TemplateTreeNode;
 import org.nmcpye.datarun.web.rest.v2.dto.V2Rule;
 import org.slf4j.Logger;
@@ -35,19 +35,19 @@ public final class TemplateTreeTransformer {
          * @param fields   field definitions from TemplateVersion
          * @return root TemplateTreeNode with nested children
          */
-        public static TemplateTreeNode transform(List<FormSectionConf> sections,
-                        List<FormDataElementConf> fields) {
+        public static TemplateTreeNode transform(List<SectionTemplateElementDto> sections,
+                        List<FieldTemplateElementDto> fields) {
                 // Build the FieldResolver for rule transformation
                 FieldResolver fieldResolver = FieldResolver.build(sections, fields);
 
                 // Sort inputs by order
-                List<FormSectionConf> sortedSections = sections == null ? List.of()
+                List<SectionTemplateElementDto> sortedSections = sections == null ? List.of()
                                 : sections.stream()
                                                 .sorted(Comparator.comparingInt(
                                                                 s -> s.getOrder() != null ? s.getOrder() : 0))
                                                 .toList();
 
-                List<FormDataElementConf> sortedFields = fields == null ? List.of()
+                List<FieldTemplateElementDto> sortedFields = fields == null ? List.of()
                                 : fields.stream()
                                                 .sorted(Comparator.comparingInt(
                                                                 f -> f.getOrder() != null ? f.getOrder() : 0))
@@ -57,11 +57,11 @@ public final class TemplateTreeTransformer {
                 // sectionName → mutable list of child nodes (fields + nested sections)
                 Map<String, List<TemplateTreeNode>> childrenCollector = new LinkedHashMap<>();
                 // sectionName → section config (for parent lookup and building)
-                Map<String, FormSectionConf> sectionConfigMap = new LinkedHashMap<>();
+                Map<String, SectionTemplateElementDto> sectionConfigMap = new LinkedHashMap<>();
                 // sectionName → transformed rules
                 Map<String, List<V2Rule>> sectionRulesMap = new LinkedHashMap<>();
 
-                for (FormSectionConf section : sortedSections) {
+                for (SectionTemplateElementDto section : sortedSections) {
                         String sectionName = section.getName();
                         childrenCollector.put(sectionName, new ArrayList<>());
                         sectionConfigMap.put(sectionName, section);
@@ -72,7 +72,7 @@ public final class TemplateTreeTransformer {
 
                 // Attach fields to their parent sections
                 List<TemplateTreeNode> orphanFields = new ArrayList<>();
-                for (FormDataElementConf field : sortedFields) {
+                for (FieldTemplateElementDto field : sortedFields) {
                         String parentName = field.getParent();
 
                         List<V2Rule> fieldRules = RuleTransformer.transformRules(
@@ -106,7 +106,7 @@ public final class TemplateTreeTransformer {
                 Set<String> builtSections = new HashSet<>();
                 List<TemplateTreeNode> rootChildren = new ArrayList<>(orphanFields);
 
-                for (FormSectionConf section : sortedSections) {
+                for (SectionTemplateElementDto section : sortedSections) {
                         String sectionName = section.getName();
                         if (!builtSections.contains(sectionName)) {
                                 TemplateTreeNode sectionNode = buildSectionNode(
@@ -139,14 +139,14 @@ public final class TemplateTreeTransformer {
          */
         private static TemplateTreeNode buildSectionNode(
                         String sectionName,
-                        Map<String, FormSectionConf> sectionConfigMap,
+                        Map<String, SectionTemplateElementDto> sectionConfigMap,
                         Map<String, List<TemplateTreeNode>> childrenCollector,
                         Map<String, List<V2Rule>> sectionRulesMap,
-                        List<FormSectionConf> allSections,
+                        List<SectionTemplateElementDto> allSections,
                         Set<String> builtSections) {
 
                 // First, build any child sections that haven't been built yet
-                for (FormSectionConf childSection : allSections) {
+                for (SectionTemplateElementDto childSection : allSections) {
                         String childParent = childSection.getParent();
                         if (sectionName.equals(childParent) && !builtSections.contains(childSection.getName())) {
                                 TemplateTreeNode childNode = buildSectionNode(
@@ -157,7 +157,7 @@ public final class TemplateTreeTransformer {
                         }
                 }
 
-                FormSectionConf config = sectionConfigMap.get(sectionName);
+                SectionTemplateElementDto config = sectionConfigMap.get(sectionName);
                 boolean isRepeater = Boolean.TRUE.equals(config.getRepeatable());
                 List<V2Rule> rules = sectionRulesMap.get(sectionName);
                 List<TemplateTreeNode> children = childrenCollector.get(sectionName);

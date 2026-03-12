@@ -12,33 +12,32 @@ public class PartySetMapper {
     private final ObjectMapper objectMapper;
 
     public PartySetDto toDto(PartySet entity) {
-        if (entity == null) return null;
+        if (entity == null)
+            return null;
         return PartySetDto.builder()
-            .id(entity.getId())
-            .uid(entity.getUid())
-            .name(entity.getName())
-            .code(entity.getCode())
-            .kind(entity.getKind())
-            .spec(objectMapper.valueToTree(entity.getSpec())) // Convert spec object to JsonNode
-            .isMaterialized(entity.getIsMaterialized())
-            .createdBy(entity.getCreatedBy())
-            .createdDate(entity.getCreatedDate())
-            .lastModifiedBy(entity.getLastModifiedBy())
-            .lastModifiedDate(entity.getLastModifiedDate())
-            .build();
+                .id(entity.getId())
+                .uid(entity.getUid())
+                .name(entity.getName())
+                .code(entity.getCode())
+                .kind(entity.getKind())
+                .spec(objectMapper.valueToTree(entity.getSpec())) // Convert spec object to JsonNode
+                .isMaterialized(entity.getIsMaterialized())
+                .build();
     }
 
     public PartySet toEntity(PartySetDto dto) {
-        if (dto == null) return null;
+        if (dto == null)
+            return null;
         PartySet.PartySetSpec specObject = objectMapper.convertValue(dto.getSpec(), PartySet.PartySetSpec.class);
-        return PartySet.builder()
-            .id(dto.getId())
-            .uid(dto.getUid())
-            .name(dto.getName())
-            .code(dto.getCode())
-            .kind(dto.getKind())
-            .spec(specObject) // Convert JsonNode back to spec object
-            .isMaterialized(dto.getIsMaterialized())
-            .build();
+        PartySet entity = PartySet.builder()
+                .name(dto.getName())
+                .code(dto.getCode())
+                .kind(dto.getKind())
+                .spec(specObject) // Convert JsonNode back to spec object
+                .isMaterialized(dto.getIsMaterialized())
+                .build();
+        entity.setId(dto.getId());
+        entity.setUid(dto.getUid());
+        return entity;
     }
 }

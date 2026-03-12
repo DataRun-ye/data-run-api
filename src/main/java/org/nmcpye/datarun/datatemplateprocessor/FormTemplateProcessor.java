@@ -5,7 +5,7 @@ import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
 import org.nmcpye.datarun.datatemplateprocessor.validation.DefaultTemplateValidator;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
@@ -49,7 +49,7 @@ public class FormTemplateProcessor {
         log.debug("start processing form template's metadata {}", formTemplate.getUid());
 
         final var fieldUids = formTemplate.getFields().stream()
-            .map(FormDataElementConf::getId).toList();
+            .map(FieldTemplateElementDto::getId).toList();
         final var dataElements = dataElementRepository.findAllByUidIn(fieldUids);
         validateElementsDataElement(formTemplate, dataElements);
 
@@ -59,7 +59,7 @@ public class FormTemplateProcessor {
 
     private <T extends DataTemplateVersionInterface> void validateElementsDataElement(T formTemplate, Collection<DataElement> dataTemplateElements) {
         final var fieldUids = formTemplate.getFields().stream()
-            .map(FormDataElementConf::getId).toList();
+            .map(FieldTemplateElementDto::getId).toList();
         final var dataElementUids = getUids(dataTemplateElements);
         final var notFoundElementUids = fieldUids.stream()
             .filter(f -> !dataElementUids.contains(f))

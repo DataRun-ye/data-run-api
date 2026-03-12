@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 
 import java.util.List;
 
@@ -19,29 +19,29 @@ import static org.junit.jupiter.api.Assertions.*;
 class SubmissionNormalizerTest {
 
   private ObjectMapper mapper;
-  private List<FormSectionConf> sections;
+  private List<SectionTemplateElementDto> sections;
 
   @BeforeEach
   void setUp() {
     mapper = new ObjectMapper();
 
     // Build sections matching the V1 sample
-    FormSectionConf main = new FormSectionConf();
+    SectionTemplateElementDto main = new SectionTemplateElementDto();
     main.setName("main");
     main.setRepeatable(false);
     main.setOrder(100);
 
-    FormSectionConf patients = new FormSectionConf();
+    SectionTemplateElementDto patients = new SectionTemplateElementDto();
     patients.setName("patients");
     patients.setRepeatable(false);
     patients.setOrder(200);
 
-    FormSectionConf medicines = new FormSectionConf();
+    SectionTemplateElementDto medicines = new SectionTemplateElementDto();
     medicines.setName("medicines");
     medicines.setRepeatable(true);
     medicines.setOrder(300);
 
-    FormSectionConf referrals = new FormSectionConf();
+    SectionTemplateElementDto referrals = new SectionTemplateElementDto();
     referrals.setName("referrals");
     referrals.setRepeatable(false);
     referrals.setOrder(400);
@@ -64,7 +64,7 @@ class SubmissionNormalizerTest {
     v1.set("patients", patientsSection);
 
     // Use only non-repeater sections
-    List<FormSectionConf> nonRepeatSections = sections.stream()
+    List<SectionTemplateElementDto> nonRepeatSections = sections.stream()
         .filter(s -> !Boolean.TRUE.equals(s.getRepeatable()))
         .toList();
 
@@ -159,17 +159,17 @@ class SubmissionNormalizerTest {
   @DisplayName("T4: Nested repeater preserves _parent_id linking child to parent row")
   void nestedRepeater() throws Exception {
     // Synthetic: households → family_members
-    FormSectionConf households = new FormSectionConf();
+    SectionTemplateElementDto households = new SectionTemplateElementDto();
     households.setName("households");
     households.setRepeatable(true);
     households.setOrder(100);
 
-    FormSectionConf members = new FormSectionConf();
+    SectionTemplateElementDto members = new SectionTemplateElementDto();
     members.setName("family_members");
     members.setRepeatable(true);
     members.setOrder(200);
 
-    List<FormSectionConf> nestedSections = List.of(households, members);
+    List<SectionTemplateElementDto> nestedSections = List.of(households, members);
 
     String v1Json = """
         {

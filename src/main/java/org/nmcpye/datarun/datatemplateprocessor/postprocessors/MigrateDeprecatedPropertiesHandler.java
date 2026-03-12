@@ -2,7 +2,7 @@ package org.nmcpye.datarun.datatemplateprocessor.postprocessors;
 
 import org.nmcpye.datarun.common.enumeration.ValueTypeRendering;
 import org.nmcpye.datarun.datatemplateelement.ElementValidationRule;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
 import org.nmcpye.datarun.datatemplateelement.enumeration.RuleAction;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
@@ -13,7 +13,7 @@ import java.util.Optional;
  * @author Hamza Assada 18/03/2025 (7amza.it@gmail.com)
  */
 public class MigrateDeprecatedPropertiesHandler
-    extends AbstractFormElementHandler<FormDataElementConf> {
+    extends AbstractTemplateElementHandler<FieldTemplateElementDto> {
     private final DataElement source;
 
     public MigrateDeprecatedPropertiesHandler(DataElement source) {
@@ -21,7 +21,7 @@ public class MigrateDeprecatedPropertiesHandler
     }
 
     @Override
-    protected FormDataElementConf handle(FormDataElementConf element) {
+    protected FieldTemplateElementDto handle(FieldTemplateElementDto element) {
         final var errorRule = element.getRules().stream()
             .filter(r -> r.getAction() == RuleAction.Error)
             .findAny();

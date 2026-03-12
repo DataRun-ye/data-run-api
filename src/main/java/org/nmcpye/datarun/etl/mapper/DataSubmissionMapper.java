@@ -4,8 +4,7 @@ import org.mapstruct.*;
 import org.nmcpye.datarun.etl.model.SubmissionContext;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 
-@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,
-    componentModel = MappingConstants.ComponentModel.SPRING)
+@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING)
 public interface DataSubmissionMapper {
     @Mapping(target = "startTime", source = "startEntryTime")
     @Mapping(target = "submissionCreationTime", source = "createdDate")
@@ -21,13 +20,11 @@ public interface DataSubmissionMapper {
     @Mapping(target = "lastModifiedBy", source = "lastModifiedBy")
     @Mapping(target = "submissionId", source = "id")
     @Mapping(target = "version", source = "lockVersion")
-    @Mapping(target = "deletedAt",
-        expression = "java(ds.getDeleted() != null && ds.getDeleted() == true ? java.time.Instant.now() : null)"
-    )
+    @Mapping(target = "deletedAt", expression = "java(ds.getDeleted() != null && ds.getDeleted() == true ? java.time.Instant.now() : null)")
     SubmissionContext toDto(DataSubmission ds);
 
-//    @InheritInverseConfiguration(name = "toEntity")
-//    SubmissionContext toEntity(DataSubmission dataSubmission);
+    // @InheritInverseConfiguration(name = "toEntity")
+    // SubmissionContext toEntity(DataSubmission dataSubmission);
 
     @InheritConfiguration(name = "toEntity")
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

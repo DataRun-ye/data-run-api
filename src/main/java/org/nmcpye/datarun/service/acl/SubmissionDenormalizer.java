@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.nmcpye.datarun.datatemplateelement.FormDataElementConf;
-import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
+import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * the V1 shape.
  * <p>
  * Canonical (V2) shape:
- * 
+ *
  * <pre>{@code
  * {
  *   "values":      { "visitdate": "2025-09-27", "gender": "MALE" },
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  * }</pre>
  * <p>
  * V1 shape:
- * 
+ *
  * <pre>{@code
  * {
  *   "main":      { "visitdate": "2025-09-27" },
@@ -69,8 +69,8 @@ public final class SubmissionDenormalizer {
      * @return V1-shaped formData JsonNode
      */
     public static JsonNode denormalize(JsonNode canonical,
-            List<FormSectionConf> sections,
-            List<FormDataElementConf> fields,
+            List<SectionTemplateElementDto> sections,
+            List<FieldTemplateElementDto> fields,
             String submissionUid,
             ObjectMapper mapper) {
         ObjectNode result = mapper.createObjectNode();
@@ -86,12 +86,12 @@ public final class SubmissionDenormalizer {
         Map<String, String> fieldToSection = buildFieldToSectionMap(fields);
 
         // Build section order for consistent output
-        List<FormSectionConf> orderedSections = sections == null ? Collections.emptyList()
+        List<SectionTemplateElementDto> orderedSections = sections == null ? Collections.emptyList()
                 : sections.stream()
                         .sorted(Comparator.comparingInt(s -> s.getOrder() != null ? s.getOrder() : 0))
                         .toList();
 
-        for (FormSectionConf section : orderedSections) {
+        for (SectionTemplateElementDto section : orderedSections) {
             String sectionName = section.getName();
 
             if (Boolean.TRUE.equals(section.getRepeatable())) {
@@ -226,7 +226,7 @@ public final class SubmissionDenormalizer {
      * This uses the field's {@code parent} property which references the section
      * name.
      */
-    private static Map<String, String> buildFieldToSectionMap(List<FormDataElementConf> fields) {
+    private static Map<String, String> buildFieldToSectionMap(List<FieldTemplateElementDto> fields) {
         if (fields == null) {
             return Collections.emptyMap();
         }
@@ -234,8 +234,8 @@ public final class SubmissionDenormalizer {
         return fields.stream()
                 .filter(f -> f.getName() != null && f.getParent() != null)
                 .collect(Collectors.toMap(
-                        FormDataElementConf::getName,
-                        FormDataElementConf::getParent,
+                        FieldTemplateElementDto::getName,
+                        FieldTemplateElementDto::getParent,
                         (existing, replacement) -> {
                             log.warn("Duplicate field name '{}' across sections — using first occurrence", existing);
                             return existing;

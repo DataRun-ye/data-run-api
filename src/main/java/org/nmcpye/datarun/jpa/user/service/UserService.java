@@ -12,6 +12,7 @@ import org.nmcpye.datarun.jpa.user.dto.UserDTO;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.userauthority.Authority;
 import org.nmcpye.datarun.jpa.userauthority.repository.AuthorityRepository;
+import org.nmcpye.datarun.security.RandomUtil;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.service.EmailAlreadyUsedException;
 import org.nmcpye.datarun.web.errors.InvalidPasswordException;
@@ -26,7 +27,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tech.jhipster.security.RandomUtil;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -51,16 +51,20 @@ public class UserService
 
     private final AuthorityRepository authorityRepository;
 
+    private final org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
+
     public UserService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             AuthorityRepository authorityRepository,
             CacheManager cacheManager,
-            UserAccessService userAccessService) {
+            UserAccessService userAccessService,
+            org.springframework.context.ApplicationEventPublisher applicationEventPublisher) {
         super(userRepository, cacheManager, userAccessService);
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authorityRepository = authorityRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     public Optional<User> activateRegistration(String key) {
@@ -149,6 +153,7 @@ public class UserService
             user.setAuthorities(authorities);
         }
         userRepository.save(user);
+        applicationEventPublisher.publishEvent(new org.nmcpye.datarun.party.events.UserSavedEvent(user));
         this.clearUserCaches(user);
         log.debug("Created Information for User: {}", user);
         return user;
@@ -179,6 +184,7 @@ public class UserService
         } else {
             user.setLangKey(userDTO.getLangKey());
         }
+
         String encryptedPassword = passwordEncoder.encode(RandomUtil.generatePassword());
         user.setPassword(encryptedPassword);
         user.setResetKey(RandomUtil.generateResetKey());
@@ -195,6 +201,7 @@ public class UserService
             user.setAuthorities(authorities);
         }
         userRepository.save(user);
+        applicationEventPublisher.publishEvent(new org.nmcpye.datarun.party.events.UserSavedEvent(user));
         this.clearUserCaches(user);
         log.debug("Created Information for User: {}", user);
         return user;
@@ -231,6 +238,7 @@ public class UserService
                             .map(Optional::get)
                             .forEach(managedAuthorities::add);
                     userRepository.save(user);
+                    applicationEventPublisher.publishEvent(new org.nmcpye.datarun.party.events.UserSavedEvent(user));
                     this.clearUserCaches(user);
                     log.debug("Changed Information for User: {}", user);
                     return user;
@@ -274,6 +282,7 @@ public class UserService
                             .map(Optional::get)
                             .forEach(managedAuthorities::add);
                     userRepository.save(user);
+                    applicationEventPublisher.publishEvent(new org.nmcpye.datarun.party.events.UserSavedEvent(user));
                     this.clearUserCaches(user);
                     log.debug("Changed Information for User: {}", user);
                     return user;
@@ -313,6 +322,7 @@ public class UserService
                     user.setLangKey(langKey);
                     user.setImageUrl(imageUrl);
                     userRepository.save(user);
+                    applicationEventPublisher.publishEvent(new org.nmcpye.datarun.party.events.UserSavedEvent(user));
                     this.clearUserCaches(user);
                     log.debug("Changed Information for User: {}", user);
                 });

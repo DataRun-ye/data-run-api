@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.datatemplate.service;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.jpa.etl.model.TemplateElementMap;
+import org.nmcpye.datarun.etl.model.TemplateElementMap;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 

@@ -20,11 +20,12 @@ public interface ElementInterface {
 
     String getDescription();
 
+    Integer getOrder();
+
     Map<String, String> getLabel();
 
     List<DataFieldRule> getRules();
 
-    Integer getOrder();
 
     ElementInterface path(String path);
 

@@ -1,45 +1,14 @@
-/*
- * Copyright (c) 2004-2022, University of Oslo
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- * Neither the name of the HISP project nor the names of its contributors may
- * be used to endorse or promote products derived from this software without
- * specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 package org.nmcpye.datarun.common.uidgenerate;
 
-import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
-import de.huxhorn.sulky.ulid.ULID;
+import com.github.f4b6a3.ulid.Ulid;
+import com.github.f4b6a3.ulid.UlidCreator;
 
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 
-/**
- * Adapted from DHIS2 Code base (https://github.com/dhis2/dhis2-core):
- *
- * @author bobj
- */
 public class CodeGenerator {
 
     public static final String letters = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -53,15 +22,12 @@ public class CodeGenerator {
     private static final Pattern CODE_PATTERN = Pattern.compile("^[a-zA-Z]{1}[a-zA-Z0-9]{10}$");
 
     /**
-     * 192 bit, must be dividable by 3 to avoid padding "=".
-     */
-    private static final int URL_RANDOM_TOKEN_LENGTH = 24;
-
-    /**
      * @author Hamza 03/06/2025
      */
     public static class ULIDGenerator {
-        private static final ULID ulid = new ULID();
+
+        private static final String ULID_REGEX = "^[0-9A-HJKMNP-TV-Z]{26}$";
+        private static final String UUID_REGEX = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$";
 
         /**
          * Generate a ULID (Universally Unique Lexicographically Sortable Identifier).
@@ -69,39 +35,43 @@ public class CodeGenerator {
          * Ideal for distributed systems requiring monotonicity.
          */
         public static String nextString() {
-            return ulid.nextValue().toString();
+            return UlidCreator.getUlid().toString();
+            // return ulid.nextValue().toString();
+        }
+
+        public static UUID resolveToUuid(String input) {
+            if (input == null)
+                return null;
+
+            // 1. If it's already a UUID string, parse it directly
+            if (input.length() == 36) {
+                return UUID.fromString(input);
+            }
+
+            // 2. If it's a ULID (26 chars), convert it
+            if (input.length() == 26 && input.matches(ULID_REGEX)) {
+                return convertUlidToUuid(input);
+            }
+
+            throw new IllegalArgumentException("Invalid identifier format");
+        }
+
+        private static UUID convertUlidToUuid(String ulid) {
+            // manual decoding logic here to get the 128-bit bits
+            // and return new UUID(mostSigBits, leastSigBits);
+            return Ulid.from(ulid).toUuid();
         }
 
         /**
          * validate a String is valid ULID or not.
          */
         public static boolean isValidUlid(String ulid) {
-            try {
-                final var validUlidValue = ULID.parseULID(ulid);
-                return true;
-            } catch (Exception e) {
-                return false;
-            }
+            return Ulid.isValid(ulid);
         }
+    }
 
-        /**
-         * Generate a NanoID (smaller, URL-safe, customizable alphabet).
-         * Default length: 21 characters, default alphabet.
-         * Ideal for compact, collision-resistant IDs.
-         */
-        public static String generateNanoID() {
-            return NanoIdUtils.randomNanoId();
-        }
-
-        /**
-         * Generate a custom NanoID with given size and alphabet.
-         *
-         * @param size     length of the ID
-         * @param alphabet characters to use
-         */
-        public static String generateNanoID(int size, char[] alphabet) {
-            return NanoIdUtils.randomNanoId(NanoIdUtils.DEFAULT_NUMBER_GENERATOR, alphabet, size);
-        }
+    public static UUID resolveToUuid(String id) {
+        return ULIDGenerator.resolveToUuid(id);
     }
 
     public static String nextUlid() {
