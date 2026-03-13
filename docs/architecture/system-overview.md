@@ -1,66 +1,85 @@
 # System Overview — Datarun Platform
 
-> **Status:** Draft — Living Document
-> **Ground Truth:** The `datarunapi` codebase (Java/Spring Boot) is the single operational system.
+> **Status:** Active — Living Document
+> **Scope:** Architecture Component Model (L2)
+> **Ground Truth:** The `datarunapi` codebase is the single source of truth.
 
-## Vision
+## Quick Reference
+| Component | Responsibility | Pattern |
+| :--- | :--- | :--- |
+| **Backbone** | Maintaining raw Registry Identities/Nodes. | Domain-Agnostic Store |
+| **Projector** | Animating Backbone via Scenario Metadata. | Orchestration Engine |
+| **Policies** | Enforcing "Physics" of Contextual Action. | Bounded Permission Model |
+| **Adapter** | Bridging Legacy Sync Channels (V1/V2). | ACL / Anti-Corruption Layer |
 
-**DatarunAPI** is a general-purpose data-collection platform. It manages templates, submissions, assignments, parties, and organizational hierarchies. It is **domain-agnostic** — it does not know about inventory, stock, malaria, case management, or any specific business domain. Business meaning is assigned externally through configuration and downstream interpretation.
+---
 
-The platform is evolving toward a **Configuration-Isolated Orchestration Platform** — where multiple functional domains can coexist on the same engine via metadata configuration rather than code changes. See [Strategic Blueprint](strategic-blueprint.md) and [ADR-010](../adrs/010-evolutionary-architecture.md).
+## 1. Vision: The Contextual Projection Engine
 
-## Architecture Pattern
+Datarun is a **stateless orchestration engine** that projects business meaning onto a generic backbone. It does not "hold" business logic; it "executes" configuration.
 
-DatarunAPI operates as an **Open-Host Service (OHS)** with a **Published Language** (V1 REST API; V2 is exploratory):
+### The Component Model (Level 1 Context)
+```mermaid
+graph TD
+    %% Users/Identities
+    subgraph "Identities (Users & Systems)"
+        Human["Identity [UID]"]
+    end
 
+    %% The Platform
+    subgraph "Datarun Platform (The Core)"
+        Engine["PROJECTION ENGINE"]
+        Backbone["GENERIC BACKBONE <br/>(Identities/Nodes)"]
+        Projector["SCENARIO PROJECTOR <br/>(Metadata)"]
+    end
+
+    %% External Domains
+    subgraph "Functional Domains"
+        LMIS["LMIS (Accounting)"]
+        Analytics["Reporting (DHIS2)"]
+    end
+
+    Human -- "Action Request" --> Engine
+    Projector -- "Lens" --> Backbone
+    Backbone -- "Contextual Data" --> Engine
+    Engine -- "Events" --> LMIS
 ```
-  Flutter Mobile App ──► V1 REST API ──► Canonical Store (PostgreSQL)
-                                                 ▲
-  Web Frontend (future) ──► V2 REST API ─────────┘
-                                                 ▼
-                                         Event Gateway (future)
-                                                 ▼
-                                        Downstream Consumers
-```
 
-Key patterns in use:
-- **API versioning** (V1 stable for mobile, V2 exploratory)
-- **Internal ACL** translator for V1↔V2 canonical store bridging
-- **Transactional Outbox** (planned) for reliable event delivery to downstream systems
+---
 
-## Core Entities
+## 2. Core Architectural Abstractions
 
-| Entity | Purpose |
-|--------|---------|
-| `data_template` | Form definition — fields, repeat blocks, validation rules |
-| `submission` | Collected data instance (a filled form) |
-| `activity` | Collection context (e.g., a campaign or programme round) |
-| `assignment` | Links template + team + org_unit + period |
-| `party` | Actor/location registry |
-| `org_unit` | Organizational hierarchy |
+### A. The Backbone (Stable Universe)
+A universe of raw **Identities** (People/Systems) and **Nodes** (Locations/Groups). They have zero business meaning. They are globally unique references (11-char UIDs).
 
-## External Systems
+### B. The Scenario (The Lens)
+A metadata bundle that defines a "Reality." It maps UIDs to Roles (e.g., "Pharmacist") and Nodes to Meanings (e.g., "Supply Hub").
 
-| System | Relationship | Status |
-|--------|-------------|--------|
-| **Flutter Mobile App** (Dart) | V1 API consumer, offline-first | ✅ Operational |
-| **Web Frontend** (Angular) | V2 API consumer | 📋 Architecture defined, not yet built |
-| **Downstream Consumers** (LMIS, Analytics, etc.) | Receive events via Gateway | 💡 Conceptual — see [_ideas/](_ideas/) |
+### C. Contextual Projection (The Binding)
+The dynamic act of manifesting an Identity as a **Party** (e.g., "Supervisor") in a specific Scenario. This is the **Behavioral Layer** of the system.
 
-## What This System Is NOT
+---
 
-- **Not a domain-specific system.** DatarunAPI does not contain business logic for inventory, stock accounting, case management, or any vertical domain. It is a generic data-collection backbone.
-- **Not multi-tenant (yet).** Currently single deployment per health programme. Evolving toward configuration isolation. See [ADR-010](../adrs/010-evolutionary-architecture.md).
+## 3. What This System Is NOT
+
+- **Not a domain-specific system.** Datarun never contains business logic for stock, medicine, or cases.
+- **Not a hard-coded hierarchy.** Hierarchies are just "Relational Metadata" projected onto the Backbone.
+
+---
+
+## Appendix: Legacy Mappings (Adapter Layer)
+
+To maintain operational continuity, the following legacy entities are currently mapped to the Backbone:
+
+| Legacy Entity | Registry Mapping | Note |
+| :--- | :--- | :--- |
+| `team` | **Registry Party** | Temporary container for user groups. |
+| `org_unit` | **Registry Node** | Static hierarchy representation. |
+| `assignment` | **Policy Binding (Proxy)** | Links Template to Context. |
+
+---
 
 ## Related Docs
-
-| Topic | Document |
-|-------|----------|
-| North Star Vision | [Strategic Blueprint](strategic-blueprint.md) |
-| C4 Diagrams | [C4 Model](c4-model.md) |
-| DatarunAPI V2 Strategy | [DatarunAPI README](../datarunapi/README.md) |
-| Integration Contract | [Integration Contract](integration-contract-datarunapi.md) |
-| Authentication & SSO | [Auth & Authorization](auth-and-authorization.md) |
-| ADRs | [All ADRs](../adrs/) |
-| Governance | [Living Architecture Charter](../governance/README.md) |
-| Conceptual Ideas (non-operational) | [_ideas/](../_ideas/) |
+- [Strategic Blueprint](strategic-blueprint.md) (L1 Strategy)
+- [Context Map](context-map.md) (DDD Relationships)
+- [Living Architecture Charter](../governance/README.md) (Governance)
