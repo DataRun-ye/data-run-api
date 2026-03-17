@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.config.datarun;
 
-import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.security.DomainUserDetailsService;
+import org.nmcpye.datarun.iam.security.CurrentUserDetails;
+import org.nmcpye.datarun.iam.security.DomainUserDetailsService;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

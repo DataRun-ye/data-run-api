@@ -2,8 +2,8 @@ package org.nmcpye.datarun.sharedkernal;
 
 import org.nmcpye.datarun.acl.AclService;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.iam.security.CurrentUserDetails;
+import org.nmcpye.datarun.iam.security.SecurityUtils;
 import org.nmcpye.datarun.sharedkernal.apiquery.JpaQueryBuilder;
 import org.nmcpye.datarun.sharedkernal.apiquery.LegacyQueryConverter;
 import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;

@@ -2,7 +2,7 @@ package org.nmcpye.datarun.party.service;
 
 import lombok.RequiredArgsConstructor;
 
-import org.nmcpye.datarun.jpa.datasubmission.events.EventChangeType;
+import org.nmcpye.datarun.datacapture.datasubmission.events.EventChangeType;
 import org.nmcpye.datarun.party.dto.AssignmentRolePartyPolicyDto;
 import org.nmcpye.datarun.party.entities.AssignmentRolePartyPolicy;
 import org.nmcpye.datarun.party.events.AssignmentBindingChangedEvent;

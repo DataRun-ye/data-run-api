@@ -3,8 +3,8 @@ package org.nmcpye.datarun.web.rest.v1.dataelement.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
-import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
+import org.nmcpye.datarun.template.datatemplateelement.enumeration.ReferenceType;
+import org.nmcpye.datarun.template.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.web.rest.v1.common.IdentifiableEntityDto;
 
 import java.time.Instant;

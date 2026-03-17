@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.web.rest.v1.etl;
 
-import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
+import org.nmcpye.datarun.analytics.etl.orchestrator.EtlOrchestrator;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

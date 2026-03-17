@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.party.service;
 
 import lombok.*;
-import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
-import org.nmcpye.datarun.jpa.usegroup.repository.UserGroupRepository;
-import org.nmcpye.datarun.jpa.user.repository.UserRepository;
+import org.nmcpye.datarun.iam.team.repository.TeamRepository;
+import org.nmcpye.datarun.iam.usegroup.repository.UserGroupRepository;
+import org.nmcpye.datarun.iam.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;

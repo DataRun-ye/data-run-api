@@ -3,13 +3,8 @@ package org.nmcpye.datarun.web.rest.v1.assignment;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.iam.security.AuthoritiesConstants;
 import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
-import org.nmcpye.datarun.sharedkernal.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.sharedkernal.feedback.ErrorCode;
-import org.nmcpye.datarun.sharedkernal.feedback.ErrorMessage;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.util.ResponseUtil;
@@ -18,7 +13,6 @@ import org.nmcpye.datarun.web.rest.v1.assignment.dto.AssignmentWithAccessV1Dto;
 import org.nmcpye.datarun.web.rest.v1.assignment.service.AssignmentV1Service;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;

@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.rest.legacy.metadataschema;
 
 import lombok.Data;
 
-import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.iam.security.AuthoritiesConstants;
 import org.nmcpye.datarun.sharedkernal.IdentifiableObject;
 import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.common.ApiVersion;

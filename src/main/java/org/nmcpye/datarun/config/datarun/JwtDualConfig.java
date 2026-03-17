@@ -8,7 +8,7 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.SignedJWT;
-import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.iam.security.SecurityUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,7 +27,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
-import static org.nmcpye.datarun.security.SecurityUtils.JWT_ALGORITHM;
+import static org.nmcpye.datarun.iam.security.SecurityUtils.JWT_ALGORITHM;
 
 /**
  * @author Hamza Assada 03/03/2026 (7amza.it@gmail.com)

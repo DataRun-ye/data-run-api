@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
-import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
-import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.template.datatemplate.TemplateVersion;
+import org.nmcpye.datarun.iam.security.CurrentUserDetails;
 import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;

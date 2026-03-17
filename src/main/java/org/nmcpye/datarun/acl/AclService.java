@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.acl;
 
-import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.iam.security.CurrentUserDetails;
 import org.nmcpye.datarun.sharedkernal.IdentifiableObject;
 
 /**

@@ -3,7 +3,7 @@ package org.nmcpye.datarun.web.rest.v1.team.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.jpa.team.TeamFormPermissions;
+import org.nmcpye.datarun.iam.team.TeamFormPermissions;
 
 import java.time.Instant;
 import java.util.HashSet;

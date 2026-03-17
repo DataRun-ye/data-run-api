@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.legacy.user;
 
 import jakarta.validation.Valid;
-import org.nmcpye.datarun.jpa.userauthority.Authority;
-import org.nmcpye.datarun.jpa.userauthority.repository.AuthorityRepository;
+import org.nmcpye.datarun.iam.userauthority.Authority;
+import org.nmcpye.datarun.iam.userauthority.repository.AuthorityRepository;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.errors.BadRequestAlertException;
 import org.slf4j.Logger;

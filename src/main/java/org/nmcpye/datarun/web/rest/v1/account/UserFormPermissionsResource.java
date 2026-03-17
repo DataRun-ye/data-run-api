@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.web.rest.v1.account;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.userdetail.UserFormAccess;
+import org.nmcpye.datarun.iam.security.AuthoritiesConstants;
+import org.nmcpye.datarun.iam.security.CurrentUserDetails;
+import org.nmcpye.datarun.iam.security.SecurityUtils;
+import org.nmcpye.datarun.iam.userdetail.UserFormAccess;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;

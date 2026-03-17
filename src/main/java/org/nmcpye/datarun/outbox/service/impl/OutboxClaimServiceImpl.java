@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.outbox.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.etl.entity.EtlRun;
+import org.nmcpye.datarun.analytics.etl.entity.EtlRun;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.outbox.repository.OutboxClaimPort;
 import org.nmcpye.datarun.outbox.service.OutboxClaimService;

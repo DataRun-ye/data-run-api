@@ -4,7 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.ReportingPolicy;
-import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.datacapture.datasubmission.DataSubmission;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionV1Dto;
 
 import java.util.List;

@@ -3,7 +3,7 @@ package org.nmcpye.datarun.web.rest.legacy.orgunit;
 import org.nmcpye.datarun.jpa.orgunit.OuLevel;
 import org.nmcpye.datarun.jpa.orgunit.repository.OuLevelRepository;
 import org.nmcpye.datarun.jpa.orgunit.service.OuLevelService;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.iam.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.legacy.JpaBaseResource;
 import org.springframework.security.access.prepost.PreAuthorize;

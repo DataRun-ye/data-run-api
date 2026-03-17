@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.acl;
 
-import org.nmcpye.datarun.datatemplateprocessor.FormAccessService;
-import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.template.datatemplateprocessor.FormAccessService;
+import org.nmcpye.datarun.datacapture.datasubmission.DataSubmission;
+import org.nmcpye.datarun.iam.security.CurrentUserDetails;
 import org.nmcpye.datarun.sharedkernal.IdentifiableObject;
 import org.springframework.stereotype.Service;
 

@@ -3,11 +3,13 @@ package org.nmcpye.datarun.service.acl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.datatemplateelement.DataFieldRule;
-import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
-import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
-import org.nmcpye.datarun.datatemplateelement.enumeration.RuleAction;
+import org.nmcpye.datarun.template.datatemplateelement.DataFieldRule;
+import org.nmcpye.datarun.template.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.template.datatemplateelement.SectionTemplateElementDto;
+import org.nmcpye.datarun.template.datatemplateelement.enumeration.RuleAction;
 import org.nmcpye.datarun.web.rest.v2.dto.V2Rule;
+import org.nmcpye.datarun.web.rest.v2.formtemplate.service.FieldResolver;
+import org.nmcpye.datarun.web.rest.v2.formtemplate.service.RuleTransformer;
 
 import java.util.List;
 import java.util.Map;

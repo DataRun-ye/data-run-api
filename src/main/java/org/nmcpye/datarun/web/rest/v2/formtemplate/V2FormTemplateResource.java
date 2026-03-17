@@ -1,12 +1,12 @@
 package org.nmcpye.datarun.web.rest.v2.formtemplate;
 
 import org.nmcpye.datarun.acl.AclService;
-import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
-import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceService;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.service.acl.TemplateTreeTransformer;
+import org.nmcpye.datarun.template.datatemplate.dto.DataTemplateInstanceDto;
+import org.nmcpye.datarun.template.datatemplate.service.DataTemplateInstanceService;
+import org.nmcpye.datarun.iam.security.AuthoritiesConstants;
+import org.nmcpye.datarun.iam.security.CurrentUserDetails;
+import org.nmcpye.datarun.iam.security.SecurityUtils;
+import org.nmcpye.datarun.web.rest.v2.formtemplate.service.TemplateTreeTransformer;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.v2.dto.TemplateTreeNode;
 import org.nmcpye.datarun.web.rest.v2.dto.V2TemplateTreeDto;

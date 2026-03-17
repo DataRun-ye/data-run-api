@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.web.rest.legacy.project;
 
-import org.nmcpye.datarun.jpa.project.Project;
-import org.nmcpye.datarun.jpa.project.repository.ProjectRepository;
-import org.nmcpye.datarun.jpa.project.service.ProjectService;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.assignment.project.Project;
+import org.nmcpye.datarun.assignment.project.repository.ProjectRepository;
+import org.nmcpye.datarun.assignment.project.service.ProjectService;
+import org.nmcpye.datarun.iam.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.legacy.JpaBaseResource;
 import org.slf4j.Logger;

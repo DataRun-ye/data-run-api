@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.v1;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.etl.pivot.BuildResponse;
-import org.nmcpye.datarun.etl.pivot.PivotService;
+import org.nmcpye.datarun.analytics.etl.pivot.BuildResponse;
+import org.nmcpye.datarun.analytics.etl.pivot.PivotService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

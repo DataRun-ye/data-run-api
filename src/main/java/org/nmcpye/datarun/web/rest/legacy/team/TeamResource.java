@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.web.rest.legacy.team;
 
 import jakarta.validation.constraints.NotNull;
-import org.nmcpye.datarun.jpa.team.Team;
-import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
-import org.nmcpye.datarun.jpa.team.service.TeamService;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.iam.team.Team;
+import org.nmcpye.datarun.iam.team.repository.TeamRepository;
+import org.nmcpye.datarun.iam.team.service.TeamService;
+import org.nmcpye.datarun.iam.security.AuthoritiesConstants;
 import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.common.PagedResponse;

@@ -3,8 +3,9 @@ package org.nmcpye.datarun.service.acl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
-import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
+import org.nmcpye.datarun.template.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.template.datatemplateelement.SectionTemplateElementDto;
+import org.nmcpye.datarun.web.rest.v2.formtemplate.service.FieldResolver;
 
 import java.util.List;
 import java.util.Optional;

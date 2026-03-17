@@ -7,12 +7,11 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
+import org.nmcpye.datarun.template.datatemplate.DataTemplate;
 import org.nmcpye.datarun.party.dto.CombineMode;
 import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObject;
 import org.nmcpye.datarun.sharedkernal.SoftDeleteObject;
-import org.nmcpye.datarun.sharedkernal.uidgenerate.CodeGenerator;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.assignment.assignment.Assignment;
 
 /// @author Hamza Assada 28/12/2025
 @Entity

@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.v1.activity.service;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.jpa.activity.Activity;
-import org.nmcpye.datarun.jpa.activity.service.ActivityService;
+import org.nmcpye.datarun.assignment.activity.Activity;
+import org.nmcpye.datarun.assignment.activity.service.ActivityService;
 import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.v1.activity.dto.ActivityV1Dto;

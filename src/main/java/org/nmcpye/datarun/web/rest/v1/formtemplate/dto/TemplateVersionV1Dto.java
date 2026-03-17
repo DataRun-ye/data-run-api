@@ -3,9 +3,9 @@ package org.nmcpye.datarun.web.rest.v1.formtemplate.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.datatemplateelement.DataOption;
-import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
-import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
+import org.nmcpye.datarun.template.datatemplateelement.DataOption;
+import org.nmcpye.datarun.template.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.template.datatemplateelement.SectionTemplateElementDto;
 
 import java.time.Instant;
 import java.util.List;

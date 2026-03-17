@@ -3,8 +3,8 @@ package org.nmcpye.datarun.web.common;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
-import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.iam.security.CurrentUserDetails;
+import org.nmcpye.datarun.iam.security.SecurityUtils;
 import org.nmcpye.datarun.sharedkernal.*;
 import org.nmcpye.datarun.sharedkernal.repository.CreateAccessDeniedException;
 import org.nmcpye.datarun.sharedkernal.repository.DeleteAccessDeniedException;

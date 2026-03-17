@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.v1.team.service;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.jpa.team.Team;
-import org.nmcpye.datarun.jpa.team.service.TeamService;
+import org.nmcpye.datarun.iam.team.Team;
+import org.nmcpye.datarun.iam.team.service.TeamService;
 import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;

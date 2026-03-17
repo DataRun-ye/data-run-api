@@ -4,7 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.ReportingPolicy;
-import org.nmcpye.datarun.jpa.team.Team;
+import org.nmcpye.datarun.iam.team.Team;
 import org.nmcpye.datarun.web.rest.v1.team.dto.TeamV1Dto;
 
 import java.util.List;

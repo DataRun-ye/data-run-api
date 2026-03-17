@@ -3,7 +3,7 @@ package org.nmcpye.datarun.web.rest.legacy.optionset;
 import org.nmcpye.datarun.jpa.option.OptionSet;
 import org.nmcpye.datarun.jpa.option.repository.OptionSetRepository;
 import org.nmcpye.datarun.jpa.option.service.OptionSetService;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.iam.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.legacy.JpaBaseResource;
 import org.springframework.security.access.prepost.PreAuthorize;

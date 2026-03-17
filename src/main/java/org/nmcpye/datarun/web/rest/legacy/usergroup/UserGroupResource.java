@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.web.rest.legacy.usergroup;
 
-import org.nmcpye.datarun.jpa.usegroup.UserGroup;
-import org.nmcpye.datarun.jpa.usegroup.repository.UserGroupRepository;
-import org.nmcpye.datarun.jpa.usegroup.service.UserGroupService;
-import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.iam.usegroup.UserGroup;
+import org.nmcpye.datarun.iam.usegroup.repository.UserGroupRepository;
+import org.nmcpye.datarun.iam.usegroup.service.UserGroupService;
+import org.nmcpye.datarun.iam.security.AuthoritiesConstants;
 import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.common.PagedResponse;

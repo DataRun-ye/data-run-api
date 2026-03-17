@@ -2,12 +2,12 @@ package org.nmcpye.datarun.web.rest.legacy.user;
 
 import jakarta.validation.Valid;
 import org.apache.commons.lang3.StringUtils;
-import org.nmcpye.datarun.jpa.user.repository.UserRepository;
-import org.nmcpye.datarun.jpa.user.User;
-import org.nmcpye.datarun.jpa.user.service.UserService;
-import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
-import org.nmcpye.datarun.jpa.user.dto.PasswordChangeDTO;
+import org.nmcpye.datarun.iam.user.repository.UserRepository;
+import org.nmcpye.datarun.iam.user.User;
+import org.nmcpye.datarun.iam.user.service.UserService;
+import org.nmcpye.datarun.iam.security.SecurityUtils;
+import org.nmcpye.datarun.iam.user.dto.AdminUserDTO;
+import org.nmcpye.datarun.iam.user.dto.PasswordChangeDTO;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.errors.EmailAlreadyUsedException;
 import org.nmcpye.datarun.web.errors.InvalidPasswordException;

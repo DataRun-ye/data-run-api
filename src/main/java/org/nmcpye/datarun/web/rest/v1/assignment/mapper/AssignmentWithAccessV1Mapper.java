@@ -1,11 +1,10 @@
 package org.nmcpye.datarun.web.rest.v1.assignment.mapper;
 
-import lombok.RequiredArgsConstructor;
 import org.mapstruct.*;
-import org.nmcpye.datarun.datatemplateprocessor.FormAccessService;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.dto.AssignmentFormDto;
-import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.template.datatemplateprocessor.FormAccessService;
+import org.nmcpye.datarun.assignment.assignment.Assignment;
+import org.nmcpye.datarun.assignment.assignment.dto.AssignmentFormDto;
+import org.nmcpye.datarun.iam.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.v1.assignment.dto.AssignmentFormV1Dto;
 import org.nmcpye.datarun.web.rest.v1.assignment.dto.AssignmentWithAccessV1Dto;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +28,7 @@ public abstract class AssignmentWithAccessV1Mapper {
     })
     public abstract AssignmentWithAccessV1Dto toDto(Assignment assignment);
 
-    public AssignmentFormV1Dto toV1Dto(org.nmcpye.datarun.jpa.assignment.dto.AssignmentFormDto dto) {
+    public AssignmentFormV1Dto toV1Dto(AssignmentFormDto dto) {
         if (dto == null) {
             return null;
         }

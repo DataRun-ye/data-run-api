@@ -13,7 +13,7 @@ import org.nmcpye.datarun.party.mapper.PartySetMapper;
 import org.nmcpye.datarun.party.repository.AssignmentRolePartyPolicyRepository;
 import org.nmcpye.datarun.party.repository.PartySetRepository;
 import org.nmcpye.datarun.party.resolution.engine.PartyResolutionEngine;
-import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.iam.security.CurrentUserDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;

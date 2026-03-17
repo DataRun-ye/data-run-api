@@ -6,7 +6,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
+import org.nmcpye.datarun.template.datatemplateelement.SectionTemplateElementDto;
+import org.nmcpye.datarun.web.rest.v2.datasubmission.service.SubmissionNormalizer;
 
 import java.util.List;
 

@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.party.service;
 
 import jakarta.persistence.EntityManager;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.assignment.assignment.Assignment;
+import org.nmcpye.datarun.assignment.assignment.repository.AssignmentRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

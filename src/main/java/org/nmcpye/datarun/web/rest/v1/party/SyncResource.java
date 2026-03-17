@@ -8,7 +8,7 @@ import org.nmcpye.datarun.party.dto.PagedRequest;
 import org.nmcpye.datarun.party.dto.ResolvedParty;
 import org.nmcpye.datarun.party.service.ManifestService;
 import org.nmcpye.datarun.party.service.PartySetService;
-import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.iam.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.data.domain.Page;

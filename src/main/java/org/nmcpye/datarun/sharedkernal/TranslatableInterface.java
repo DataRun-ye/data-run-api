@@ -3,8 +3,8 @@ package org.nmcpye.datarun.sharedkernal;
 import com.fasterxml.jackson.annotation.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.iam.security.CurrentUserDetails;
+import org.nmcpye.datarun.iam.security.SecurityUtils;
 import org.nmcpye.datarun.sharedkernal.translation.Translation;
 import org.springframework.data.annotation.Transient;
 

@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.orgunit.service;
 
 import jakarta.persistence.EntityManager;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.assignment.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.springframework.data.domain.Page;

@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.vm;
 
 import jakarta.validation.constraints.Size;
-import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
+import org.nmcpye.datarun.iam.user.dto.AdminUserDTO;
 
 /**
  * View Model extending the AdminUserDTO, which is meant to be used in the user management UI.

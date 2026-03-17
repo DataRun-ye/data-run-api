@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.v1.account;
 
-import org.nmcpye.datarun.jpa.user.repository.UserRepository;
-import org.nmcpye.datarun.jpa.user.service.UserService;
-import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.iam.user.repository.UserRepository;
+import org.nmcpye.datarun.iam.user.service.UserService;
+import org.nmcpye.datarun.iam.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.legacy.user.AccountResource;
 import org.slf4j.Logger;

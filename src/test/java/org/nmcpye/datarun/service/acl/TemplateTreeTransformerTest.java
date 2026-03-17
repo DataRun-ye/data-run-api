@@ -3,12 +3,14 @@ package org.nmcpye.datarun.service.acl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.datatemplateelement.DataFieldRule;
-import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
-import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
-import org.nmcpye.datarun.datatemplateelement.enumeration.RuleAction;
-import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
+import org.nmcpye.datarun.template.datatemplateelement.DataFieldRule;
+import org.nmcpye.datarun.template.datatemplateelement.FieldTemplateElementDto;
+import org.nmcpye.datarun.template.datatemplateelement.SectionTemplateElementDto;
+import org.nmcpye.datarun.template.datatemplateelement.ElementValidationRule;
+import org.nmcpye.datarun.template.datatemplateelement.enumeration.RuleAction;
+import org.nmcpye.datarun.template.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.web.rest.v2.dto.TemplateTreeNode;
+import org.nmcpye.datarun.web.rest.v2.formtemplate.service.TemplateTreeTransformer;
 
 import java.util.List;
 import java.util.Map;
@@ -201,7 +203,7 @@ class TemplateTreeTransformerTest {
         FieldTemplateElementDto field = buildField("age", "AGE001", "main",
                 ValueType.Integer, 101, true, null);
         // Set a validation rule
-        org.nmcpye.datarun.datatemplateelement.ElementValidationRule validationRule = new org.nmcpye.datarun.datatemplateelement.ElementValidationRule();
+        ElementValidationRule validationRule = new ElementValidationRule();
         validationRule.setExpression(". > 0 && . < 150");
         validationRule.setValidationMessage(Map.of("en", "Age must be between 1 and 149"));
         field.setValidationRule(validationRule);

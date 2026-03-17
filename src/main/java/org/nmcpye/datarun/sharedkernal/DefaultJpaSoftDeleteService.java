@@ -2,6 +2,9 @@ package org.nmcpye.datarun.sharedkernal;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.nmcpye.datarun.assignment.assignment.Assignment;
+import org.nmcpye.datarun.iam.team.Team;
+import org.nmcpye.datarun.iam.usegroup.UserGroup;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.sharedkernal.apiquery.filter.*;
@@ -59,17 +62,17 @@ public abstract class DefaultJpaSoftDeleteService<T extends JpaSoftDeleteObject>
         // permissions
         if (applicationEventPublisher != null) {
             Object obj = object;
-            if (obj instanceof org.nmcpye.datarun.jpa.team.Team team) {
+            if (obj instanceof Team team) {
                 team.getUsers().forEach(u -> applicationEventPublisher.publishEvent(
                         new org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent(this, u.getLogin())));
-            } else if (obj instanceof org.nmcpye.datarun.jpa.assignment.Assignment assignment) {
+            } else if (obj instanceof Assignment assignment) {
                 if (assignment.getTeam() != null) {
                     assignment.getTeam().getUsers()
                             .forEach(u -> applicationEventPublisher.publishEvent(
                                     new org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent(this,
                                             u.getLogin())));
                 }
-            } else if (obj instanceof org.nmcpye.datarun.jpa.usegroup.UserGroup userGroup) {
+            } else if (obj instanceof UserGroup userGroup) {
                 userGroup.getUsers().forEach(u -> applicationEventPublisher.publishEvent(
                         new org.nmcpye.datarun.jpa.accessfilter.event.UserAccessRulesChangedEvent(this, u.getLogin())));
             }

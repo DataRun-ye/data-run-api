@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest.v1.etl;
 
 import jakarta.annotation.PreDestroy;
-import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
+import org.nmcpye.datarun.analytics.etl.orchestrator.EtlOrchestrator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;

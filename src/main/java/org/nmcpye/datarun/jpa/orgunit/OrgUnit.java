@@ -15,7 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.assignment.assignment.Assignment;
 import org.nmcpye.datarun.sharedkernal.IdentifiableObjectUtils;
 import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObject;
 import org.nmcpye.datarun.sharedkernal.TranslatableInterface;

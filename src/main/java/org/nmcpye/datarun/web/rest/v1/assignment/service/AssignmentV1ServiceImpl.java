@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.v1.assignment.service;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
+import org.nmcpye.datarun.assignment.assignment.Assignment;
+import org.nmcpye.datarun.assignment.assignment.service.AssignmentService;
 import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.v1.assignment.dto.AssignmentV1Dto;

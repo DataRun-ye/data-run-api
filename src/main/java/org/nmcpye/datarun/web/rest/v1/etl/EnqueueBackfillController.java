@@ -2,7 +2,7 @@ package org.nmcpye.datarun.web.rest.v1.etl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.etl.admin.BackfillService;
+import org.nmcpye.datarun.analytics.etl.admin.BackfillService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

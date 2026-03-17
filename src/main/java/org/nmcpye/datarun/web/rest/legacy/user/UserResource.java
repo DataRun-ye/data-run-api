@@ -4,10 +4,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 
 import org.nmcpye.datarun.config.Constants;
-import org.nmcpye.datarun.jpa.user.User;
-import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
-import org.nmcpye.datarun.jpa.user.repository.UserRepository;
-import org.nmcpye.datarun.jpa.user.service.UserService;
+import org.nmcpye.datarun.iam.user.User;
+import org.nmcpye.datarun.iam.user.dto.AdminUserDTO;
+import org.nmcpye.datarun.iam.user.repository.UserRepository;
+import org.nmcpye.datarun.iam.user.service.UserService;
 import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.sharedkernal.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.sharedkernal.feedback.ErrorCode;

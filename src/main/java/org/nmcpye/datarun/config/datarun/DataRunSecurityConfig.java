@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.config.datarun;
 
-import org.nmcpye.datarun.security.AuthoritiesConstants;
-import org.nmcpye.datarun.security.DomainUserDetailsService;
+import org.nmcpye.datarun.iam.security.AuthoritiesConstants;
+import org.nmcpye.datarun.iam.security.DomainUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;

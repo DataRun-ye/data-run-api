@@ -1,10 +1,7 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
-import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.Subquery;
-import org.nmcpye.datarun.jpa.accessfilter.entity.UserExecutionContext;
-import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.datacapture.datasubmission.DataSubmission;
+import org.nmcpye.datarun.iam.security.CurrentUserDetails;
 import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;

@@ -4,7 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.ReportingPolicy;
-import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.template.dataelement.DataElement;
 import org.nmcpye.datarun.web.rest.v1.common.LabelTranslationGetter;
 import org.nmcpye.datarun.web.rest.v1.dataelement.dto.DataElementV1Dto;
 

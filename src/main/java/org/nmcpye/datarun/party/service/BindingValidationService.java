@@ -2,11 +2,11 @@ package org.nmcpye.datarun.party.service;
 
 import lombok.RequiredArgsConstructor;
 
-import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.assignment.assignment.Assignment;
+import org.nmcpye.datarun.assignment.assignment.repository.AssignmentRepository;
 
-import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
-import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
+import org.nmcpye.datarun.template.datatemplate.DataTemplate;
+import org.nmcpye.datarun.template.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.party.dto.AssignmentRolePartyPolicyDto;
 import org.nmcpye.datarun.party.entities.AssignmentRolePartyPolicy;
 import org.nmcpye.datarun.party.entities.PartySet;

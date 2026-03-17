@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.v1.formtemplate.service;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
-import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateService;
+import org.nmcpye.datarun.template.datatemplate.DataTemplate;
+import org.nmcpye.datarun.template.datatemplate.service.DataTemplateService;
 import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.v1.formtemplate.dto.FormTemplateV1Dto;
