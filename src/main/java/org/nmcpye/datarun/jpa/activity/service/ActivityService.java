@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.activity.service;
 
 import org.nmcpye.datarun.jpa.activity.Activity;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObjectService;
 
 /**
  * Service Interface for managing {@link Activity}.

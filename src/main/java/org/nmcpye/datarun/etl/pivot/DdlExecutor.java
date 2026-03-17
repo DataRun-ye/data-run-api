@@ -1,7 +1,8 @@
 package org.nmcpye.datarun.etl.pivot;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
+
+import org.nmcpye.datarun.sharedkernal.uidgenerate.CodeGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessResourceFailureException;

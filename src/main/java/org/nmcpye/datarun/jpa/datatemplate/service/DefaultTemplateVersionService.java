@@ -1,16 +1,17 @@
 package org.nmcpye.datarun.jpa.datatemplate.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
+
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.dto.FormTemplateVersionDto;
 import org.nmcpye.datarun.jpa.datatemplate.mapper.FormJpaTemplateVersionMapper;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
-import org.nmcpye.datarun.web.query.QueryRequest;
+import org.nmcpye.datarun.sharedkernal.DefaultJpaIdentifiableService;
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
+import org.nmcpye.datarun.sharedkernal.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorCode;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;

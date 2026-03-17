@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.datatemplateprocessor.postprocessors;
 
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
+import org.nmcpye.datarun.sharedkernal.exceptions.IllegalQueryException;
 
 /**
  * @author Hamza Assada 18/03/2025 (7amza.it@gmail.com)

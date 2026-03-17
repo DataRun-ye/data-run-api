@@ -7,11 +7,11 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.common.SoftDeleteObject;
-import org.nmcpye.datarun.common.enumeration.AccessLevel;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.SoftDeleteObject;
+import org.nmcpye.datarun.sharedkernal.enumeration.AccessLevel;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.Objects;

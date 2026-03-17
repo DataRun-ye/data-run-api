@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mapstruct.Named;
-import org.nmcpye.datarun.common.translation.Translation;
+import org.nmcpye.datarun.sharedkernal.translation.Translation;
 
 import java.util.HashMap;
 import java.util.Map;

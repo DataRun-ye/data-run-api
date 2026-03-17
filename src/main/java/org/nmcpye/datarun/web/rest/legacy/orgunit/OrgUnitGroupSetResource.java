@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.legacy.orgunit;
 
-import org.nmcpye.datarun.jpa.orgunitgroupset.OrgUnitGroupSet;
-import org.nmcpye.datarun.jpa.orgunitgroupset.repository.OrgUnitGroupSetRepository;
-import org.nmcpye.datarun.jpa.orgunitgroupset.service.OrgUnitGroupSetService;
+import org.nmcpye.datarun.jpa.orgunit.OrgUnitGroupSet;
+import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitGroupSetRepository;
+import org.nmcpye.datarun.jpa.orgunit.service.OrgUnitGroupSetService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.legacy.JpaBaseResource;

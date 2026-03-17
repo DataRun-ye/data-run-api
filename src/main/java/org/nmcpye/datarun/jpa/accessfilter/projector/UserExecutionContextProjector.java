@@ -2,11 +2,12 @@ package org.nmcpye.datarun.jpa.accessfilter.projector;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.common.enumeration.AccessLevel;
-import org.nmcpye.datarun.common.enumeration.FormPermission;
+
 import org.nmcpye.datarun.jpa.accessfilter.entity.UserExecutionContext;
 import org.nmcpye.datarun.jpa.accessfilter.repository.UserExecutionContextRepository;
 import org.nmcpye.datarun.security.CurrentUserInfoService;
+import org.nmcpye.datarun.sharedkernal.enumeration.AccessLevel;
+import org.nmcpye.datarun.sharedkernal.enumeration.FormPermission;
 import org.nmcpye.datarun.userdetail.UserFormAccess;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;

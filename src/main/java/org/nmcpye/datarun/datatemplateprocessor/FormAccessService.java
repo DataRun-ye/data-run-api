@@ -2,18 +2,18 @@ package org.nmcpye.datarun.datatemplateprocessor;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.mapstruct.Named;
-import org.nmcpye.datarun.common.enumeration.FormPermission;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentFormDto;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.sharedkernal.enumeration.FormPermission;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.nmcpye.datarun.sharedkernal.enumeration.FormPermission.*;
 
 import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static org.nmcpye.datarun.common.enumeration.FormPermission.*;
 
 /**
  * @author Hamza Assada 25/04/2025 (7amza.it@gmail.com)

@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.jpa.datatemplate.service;
 
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.dto.FormTemplateVersionDto;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObjectService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

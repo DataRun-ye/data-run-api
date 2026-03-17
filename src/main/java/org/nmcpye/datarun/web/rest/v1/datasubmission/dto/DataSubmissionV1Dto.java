@@ -4,9 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.enumeration.FlowStatus;
 
 import java.time.Instant;
+
+import org.nmcpye.datarun.sharedkernal.enumeration.FlowStatus;
 
 /**
  * Frozen DTO representing the v1 DataSubmission shape expected by the mobile

@@ -1,15 +1,15 @@
 package org.nmcpye.datarun.datatemplateprocessor;
 
 
-import org.nmcpye.datarun.common.IdentifiableObject;
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
 import org.nmcpye.datarun.datatemplateprocessor.validation.DefaultTemplateValidator;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.dataelement.repository.DataElementRepository;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateVersionInterface;
+import org.nmcpye.datarun.sharedkernal.IdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorCode;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

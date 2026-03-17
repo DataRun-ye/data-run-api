@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.dataelement.repository;
 
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;

@@ -2,13 +2,14 @@ package org.nmcpye.datarun.jpa.activity.repository;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
+
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorCode;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorMessage;
 import org.springframework.data.jpa.domain.Specification;
 
 /**

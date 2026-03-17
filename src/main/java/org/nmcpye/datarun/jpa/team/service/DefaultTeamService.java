@@ -1,19 +1,20 @@
 package org.nmcpye.datarun.jpa.team.service;
 
 import jakarta.el.PropertyNotFoundException;
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
+
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
-import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.web.query.QueryRequest;
+import org.nmcpye.datarun.sharedkernal.DefaultJpaIdentifiableService;
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
+import org.nmcpye.datarun.sharedkernal.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorCode;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;

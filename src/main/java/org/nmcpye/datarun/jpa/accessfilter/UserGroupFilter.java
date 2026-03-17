@@ -6,7 +6,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.nmcpye.datarun.jpa.usegroup.UserGroup;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.web.query.QueryRequest;
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 

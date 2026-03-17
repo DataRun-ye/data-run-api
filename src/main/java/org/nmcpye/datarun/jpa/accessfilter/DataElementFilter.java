@@ -10,7 +10,7 @@ import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.web.query.QueryRequest;
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 

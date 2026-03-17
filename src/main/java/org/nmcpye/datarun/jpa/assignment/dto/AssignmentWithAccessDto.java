@@ -5,10 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.nmcpye.datarun.common.enumeration.FlowStatus;
 
 import java.io.Serializable;
 import java.util.Set;
+
+import org.nmcpye.datarun.sharedkernal.enumeration.FlowStatus;
 
 /**
  * @author Hamza Assada

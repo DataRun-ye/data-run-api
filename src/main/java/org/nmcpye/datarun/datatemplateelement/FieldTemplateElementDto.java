@@ -4,9 +4,10 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.enumeration.ValueTypeRendering;
+
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
+import org.nmcpye.datarun.sharedkernal.enumeration.ValueTypeRendering;
 import org.nmcpye.datarun.datatemplateelement.datafield.ScannedCodeProperties;
 
 import java.io.Serial;

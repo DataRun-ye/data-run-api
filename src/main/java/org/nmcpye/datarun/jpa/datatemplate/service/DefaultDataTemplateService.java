@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.jpa.datatemplate.service;
 
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.jpa.common.DefaultJpaSoftDeleteService;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
+import org.nmcpye.datarun.sharedkernal.DefaultJpaSoftDeleteService;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Primary;

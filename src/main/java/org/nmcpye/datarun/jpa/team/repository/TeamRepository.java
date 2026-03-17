@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.team.repository;
 
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.team.Team;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;

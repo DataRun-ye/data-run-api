@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.party.dto;
 
+import org.nmcpye.datarun.sharedkernal.enumeration.AccessLevel;
+
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-
-import org.nmcpye.datarun.common.enumeration.AccessLevel;
 
 /// Control which `data_template` (vocabulary) a *principal* (user/team/group or a `member role`) can see/use inside
 /// a specific assignment. e.g. preventing HF users from seeing `Issue` while letting MU officers see it — without hacks.

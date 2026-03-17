@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.analytics.exception;
 
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.sharedkernal.exceptions.IllegalQueryException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 

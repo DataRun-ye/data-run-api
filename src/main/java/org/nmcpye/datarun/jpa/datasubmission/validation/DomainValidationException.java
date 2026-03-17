@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.datasubmission.validation;
 
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.sharedkernal.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorCode;
 
 /**
  * @author Hamza Assada 15/08/2025 (7amza.it@gmail.com)

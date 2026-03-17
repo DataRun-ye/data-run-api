@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.config;
 
-import org.nmcpye.datarun.common.uidgenerate.FlexibleUuidConverter;
+import org.nmcpye.datarun.sharedkernal.uidgenerate.FlexibleUuidConverter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;

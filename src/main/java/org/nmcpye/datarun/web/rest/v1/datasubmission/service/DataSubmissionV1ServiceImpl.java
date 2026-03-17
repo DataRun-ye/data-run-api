@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.common.EntitySaveSummaryVM;
+
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
@@ -13,9 +13,10 @@ import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidato
 import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.sharedkernal.EntitySaveSummaryVM;
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.utils.FormSubmissionDataUtil;
 import org.nmcpye.datarun.web.common.PagedResponse;
-import org.nmcpye.datarun.web.query.QueryRequest;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionV1Dto;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.mapper.DataSubmissionV1Mapper;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;

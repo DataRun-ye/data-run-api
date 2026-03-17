@@ -1,9 +1,9 @@
 package org.nmcpye.datarun.jpa.datasubmission.service;
 
-import org.nmcpye.datarun.common.EntitySaveSummaryVM;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.sharedkernal.EntitySaveSummaryVM;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObjectService;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;

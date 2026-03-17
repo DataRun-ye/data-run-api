@@ -1,11 +1,12 @@
 package org.nmcpye.datarun.web.rest.legacy.metadataschema;
 
 import lombok.Data;
-import org.nmcpye.datarun.common.IdentifiableObject;
+
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.sharedkernal.IdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.common.PagedResponse;
-import org.nmcpye.datarun.web.query.QueryRequest;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;

@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.orgunit.service;
 
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObjectService;
 
 /**
  * Service Interface for managing {@link OrgUnit}.

@@ -15,12 +15,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
-import org.nmcpye.datarun.common.IdentifiableObjectUtils;
-import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
-import org.nmcpye.datarun.jpa.common.TranslatableInterface;
-import org.nmcpye.datarun.jpa.orgunitgroup.OrgUnitGroup;
+import org.nmcpye.datarun.sharedkernal.IdentifiableObjectUtils;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.TranslatableInterface;
+import org.nmcpye.datarun.sharedkernal.translation.Translation;
 
 import java.util.*;
 

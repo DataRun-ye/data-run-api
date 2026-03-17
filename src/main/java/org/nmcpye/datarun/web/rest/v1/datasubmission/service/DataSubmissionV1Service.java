@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.web.rest.v1.datasubmission.service;
 
-import org.nmcpye.datarun.common.EntitySaveSummaryVM;
+import org.nmcpye.datarun.sharedkernal.EntitySaveSummaryVM;
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.common.PagedResponse;
-import org.nmcpye.datarun.web.query.QueryRequest;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionV1Dto;
 
 import java.util.List;

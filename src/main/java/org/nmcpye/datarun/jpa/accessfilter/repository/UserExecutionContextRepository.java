@@ -1,8 +1,9 @@
 package org.nmcpye.datarun.jpa.accessfilter.repository;
 
 import io.hypersistence.utils.spring.repository.BaseJpaRepository;
-import org.nmcpye.datarun.common.enumeration.AccessLevel;
+
 import org.nmcpye.datarun.jpa.accessfilter.entity.UserExecutionContext;
+import org.nmcpye.datarun.sharedkernal.enumeration.AccessLevel;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;

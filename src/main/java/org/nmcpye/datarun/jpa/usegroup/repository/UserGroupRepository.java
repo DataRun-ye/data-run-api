@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.usegroup.repository;
 
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.usegroup.UserGroup;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;

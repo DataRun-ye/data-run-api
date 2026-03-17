@@ -1,11 +1,11 @@
 package org.nmcpye.datarun.datatemplateprocessor.postprocessors;
 
-import org.nmcpye.datarun.common.enumeration.ValueTypeRendering;
 import org.nmcpye.datarun.datatemplateelement.ElementValidationRule;
 import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
 import org.nmcpye.datarun.datatemplateelement.enumeration.RuleAction;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
+import org.nmcpye.datarun.sharedkernal.enumeration.ValueTypeRendering;
 
 import java.util.Optional;
 

@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest.v1.project.service;
 
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.common.PagedResponse;
-import org.nmcpye.datarun.web.query.QueryRequest;
 import org.nmcpye.datarun.web.rest.v1.project.dto.ProjectV1Dto;
 
 import java.util.Optional;

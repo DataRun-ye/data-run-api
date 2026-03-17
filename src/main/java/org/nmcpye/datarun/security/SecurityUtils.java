@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.security;
 
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorMessage;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

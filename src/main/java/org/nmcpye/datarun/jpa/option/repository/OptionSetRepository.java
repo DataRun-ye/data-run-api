@@ -1,8 +1,9 @@
 package org.nmcpye.datarun.jpa.option.repository;
 
 import jakarta.transaction.Transactional;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
+
 import org.nmcpye.datarun.jpa.option.OptionSet;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

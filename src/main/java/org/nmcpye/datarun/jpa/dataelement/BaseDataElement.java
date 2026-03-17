@@ -1,12 +1,13 @@
 package org.nmcpye.datarun.jpa.dataelement;
 
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObject;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 
 /**
  * A DataElement, a configuration definition of a data element

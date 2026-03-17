@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.jpa.team.service;
 
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
 import org.nmcpye.datarun.jpa.team.Team;
-import org.nmcpye.datarun.web.query.QueryRequest;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObjectService;
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

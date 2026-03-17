@@ -2,12 +2,13 @@ package org.nmcpye.datarun.userdetail;
 
 import lombok.Builder;
 import lombok.Value;
-import org.nmcpye.datarun.common.enumeration.FormPermission;
+
+import static org.nmcpye.datarun.sharedkernal.enumeration.FormPermission.*;
 
 import java.time.Instant;
 import java.util.Set;
 
-import static org.nmcpye.datarun.common.enumeration.FormPermission.*;
+import org.nmcpye.datarun.sharedkernal.enumeration.FormPermission;
 
 /**
  * @author Hamza Assada 24/04/2025 (7amza.it@gmail.com)

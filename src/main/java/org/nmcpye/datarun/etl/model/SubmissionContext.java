@@ -4,11 +4,12 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.nmcpye.datarun.common.enumeration.FlowStatus;
 
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
+
+import org.nmcpye.datarun.sharedkernal.enumeration.FlowStatus;
 
 /**
  * DTO for {@link org.nmcpye.datarun.jpa.datasubmission.DataSubmission}

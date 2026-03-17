@@ -6,8 +6,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.user.User;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObject;
 
 import java.util.Collection;
 

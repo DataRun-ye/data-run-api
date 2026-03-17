@@ -3,11 +3,12 @@ package org.nmcpye.datarun.web.rest.v1.assignment.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.enumeration.FlowStatus;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.nmcpye.datarun.sharedkernal.enumeration.FlowStatus;
 
 /**
  * Frozen DTO representing the v1 Assignment structure.

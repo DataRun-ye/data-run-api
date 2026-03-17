@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.web.rest.v1.assignment.service;
 
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.common.PagedResponse;
-import org.nmcpye.datarun.web.query.QueryRequest;
 import org.nmcpye.datarun.web.rest.v1.assignment.dto.AssignmentV1Dto;
 import org.nmcpye.datarun.web.rest.v1.assignment.dto.AssignmentWithAccessV1Dto;
 

@@ -5,7 +5,7 @@ import lombok.*;
 import java.time.Instant;
 import java.util.Objects;
 
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObject;
 
 /**
  * @author Hamza Assada 29/12/2025

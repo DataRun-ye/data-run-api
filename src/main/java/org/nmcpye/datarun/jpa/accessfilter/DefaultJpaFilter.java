@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
-import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.web.query.QueryRequest;
+import org.nmcpye.datarun.sharedkernal.IdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.lang.reflect.ParameterizedType;

@@ -15,8 +15,8 @@ import org.hibernate.type.SqlTypes;
 import org.nmcpye.datarun.datatemplateelement.DataOption;
 import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
 import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateVersionInterface;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObject;
 
 import java.util.LinkedList;
 import java.util.List;

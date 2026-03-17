@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.party.dto;
 
-import org.nmcpye.datarun.common.enumeration.FlowStatus;
+import org.nmcpye.datarun.sharedkernal.enumeration.FlowStatus;
 
 public enum AssignmentStatus {
     PENDING, // SCHEDULED

@@ -8,9 +8,10 @@ import lombok.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
-import org.nmcpye.datarun.common.translation.Translation;
-import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
-import org.nmcpye.datarun.jpa.common.TranslatableInterface;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.TranslatableInterface;
+import org.nmcpye.datarun.sharedkernal.translation.Translation;
+import org.nmcpye.datarun.sharedkernal.uidgenerate.CodeGenerator;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -20,8 +21,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 import java.util.*;
-
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 
 /// @author Hamza Assada 28/12/2025
 @Entity

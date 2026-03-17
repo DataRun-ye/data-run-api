@@ -5,9 +5,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.IdentifiableObject;
-import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
+
 import org.nmcpye.datarun.jpa.user.User;
+import org.nmcpye.datarun.sharedkernal.IdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.uidgenerate.CodeGenerator;
 
 import java.time.Instant;
 import java.util.Objects;

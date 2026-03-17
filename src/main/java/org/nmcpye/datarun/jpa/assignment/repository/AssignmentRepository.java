@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.jpa.assignment.repository;
 
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.party.dto.AssignmentManifestProjection;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;

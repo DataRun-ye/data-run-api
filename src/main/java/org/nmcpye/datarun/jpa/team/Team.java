@@ -12,12 +12,12 @@ import org.apache.commons.lang3.stream.Streams;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
-import org.nmcpye.datarun.common.IdentifiableObject;
-import org.nmcpye.datarun.common.enumeration.FormPermission;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.user.User;
+import org.nmcpye.datarun.sharedkernal.IdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.enumeration.FormPermission;
 
 import java.util.*;
 import java.util.stream.Collectors;

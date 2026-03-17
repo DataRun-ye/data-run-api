@@ -1,13 +1,13 @@
 package org.nmcpye.datarun.web.rest.legacy.orgunit;
 
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.jpa.orgunit.service.OrgUnitService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.sharedkernal.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorCode;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorMessage;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.errors.PathUpdateException;
 import org.nmcpye.datarun.web.rest.legacy.JpaBaseResource;

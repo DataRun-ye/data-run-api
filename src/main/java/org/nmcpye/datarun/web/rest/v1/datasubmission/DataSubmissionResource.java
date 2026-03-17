@@ -2,12 +2,13 @@ package org.nmcpye.datarun.web.rest.v1.datasubmission;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.common.EntitySaveSummaryVM;
+
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.sharedkernal.EntitySaveSummaryVM;
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.common.PagedResponse;
-import org.nmcpye.datarun.web.query.QueryRequest;
 import org.nmcpye.datarun.web.rest.util.ResponseUtil;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionV1Dto;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.service.DataSubmissionV1Service;

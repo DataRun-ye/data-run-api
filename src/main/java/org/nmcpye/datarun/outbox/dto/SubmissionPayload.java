@@ -6,10 +6,11 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.nmcpye.datarun.common.enumeration.FlowStatus;
 
 import java.io.Serializable;
 import java.time.Instant;
+
+import org.nmcpye.datarun.sharedkernal.enumeration.FlowStatus;
 
 @Data
 @AllArgsConstructor

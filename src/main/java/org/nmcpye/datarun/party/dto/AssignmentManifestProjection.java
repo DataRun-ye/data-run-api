@@ -2,10 +2,11 @@ package org.nmcpye.datarun.party.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.nmcpye.datarun.common.enumeration.FlowStatus;
 
 import java.time.Instant;
 import java.util.Set;
+
+import org.nmcpye.datarun.sharedkernal.enumeration.FlowStatus;
 
 @Data
 @AllArgsConstructor

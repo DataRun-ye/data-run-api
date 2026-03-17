@@ -1,10 +1,10 @@
 package org.nmcpye.datarun.jpa.datatemplate.mapper;
 
 import org.mapstruct.*;
-import org.nmcpye.datarun.common.BaseMapper;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.jpa.datatemplate.dto.FormTemplateVersionDto;
+import org.nmcpye.datarun.sharedkernal.BaseMapper;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING)
 public interface FormJpaTemplateVersionMapper

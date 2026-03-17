@@ -4,9 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.nmcpye.datarun.common.enumeration.FormPermission;
 
 import java.util.Set;
+
+import org.nmcpye.datarun.sharedkernal.enumeration.FormPermission;
 
 @AllArgsConstructor
 @Getter

@@ -1,8 +1,9 @@
 package org.nmcpye.datarun.jpa.datatemplate.repository;
 
 import jakarta.persistence.LockModeType;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
+
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;

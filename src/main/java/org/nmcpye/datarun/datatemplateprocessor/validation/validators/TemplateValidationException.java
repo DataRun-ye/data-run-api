@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.datatemplateprocessor.validation.validators;
 
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
+import org.nmcpye.datarun.sharedkernal.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorCode;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorMessage;
 
 /**
  * @author Hamza Assada 26/03/2025 (7amza.it@gmail.com)

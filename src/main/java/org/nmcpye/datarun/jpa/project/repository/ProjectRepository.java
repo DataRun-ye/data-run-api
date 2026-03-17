@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.project.repository;
 
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.project.Project;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableRepository;
 import org.springframework.stereotype.Repository;
 
 /**

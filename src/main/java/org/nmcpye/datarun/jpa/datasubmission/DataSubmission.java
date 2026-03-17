@@ -13,8 +13,8 @@ import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.generator.EventType;
 import org.hibernate.type.SqlTypes;
-import org.nmcpye.datarun.common.enumeration.FlowStatus;
-import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
+import org.nmcpye.datarun.sharedkernal.JpaSoftDeleteObject;
+import org.nmcpye.datarun.sharedkernal.enumeration.FlowStatus;
 
 import java.time.Instant;
 import java.util.Objects;

@@ -4,11 +4,12 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
+
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.userauthority.Authority;
+import org.nmcpye.datarun.sharedkernal.uidgenerate.CodeGenerator;
 
 import java.io.Serializable;
 import java.time.Instant;

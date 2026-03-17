@@ -10,10 +10,10 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.*;
 import org.hibernate.annotations.Cache;
-import org.nmcpye.datarun.common.IdScheme;
-import org.nmcpye.datarun.common.translation.Translation;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
-import org.nmcpye.datarun.jpa.common.TranslatableInterface;
+import org.nmcpye.datarun.sharedkernal.IdScheme;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.TranslatableInterface;
+import org.nmcpye.datarun.sharedkernal.translation.Translation;
 
 import java.time.Instant;
 import java.util.*;

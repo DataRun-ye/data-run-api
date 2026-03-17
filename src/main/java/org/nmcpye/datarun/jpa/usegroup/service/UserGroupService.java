@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.jpa.usegroup.service;
 
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
 import org.nmcpye.datarun.jpa.usegroup.UserGroup;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObjectService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

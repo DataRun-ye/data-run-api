@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.web.mvc.annotation;
 
-import org.nmcpye.datarun.common.DRunApiVersion;
+import org.nmcpye.datarun.sharedkernal.DRunApiVersion;
 import org.springframework.core.annotation.AliasFor;
 
 import java.lang.annotation.ElementType;

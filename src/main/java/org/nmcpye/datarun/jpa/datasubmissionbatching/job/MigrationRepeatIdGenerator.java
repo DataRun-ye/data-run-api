@@ -3,9 +3,10 @@ package org.nmcpye.datarun.jpa.datasubmissionbatching.job;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
+
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.etl.model.TemplateElementMap;
+import org.nmcpye.datarun.sharedkernal.uidgenerate.CodeGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

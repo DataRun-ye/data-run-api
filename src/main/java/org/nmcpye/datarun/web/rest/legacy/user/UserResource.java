@@ -2,19 +2,20 @@ package org.nmcpye.datarun.web.rest.legacy.user;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.common.feedback.ErrorMessage;
+
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.user.dto.AdminUserDTO;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.user.service.UserService;
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
+import org.nmcpye.datarun.sharedkernal.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorCode;
+import org.nmcpye.datarun.sharedkernal.feedback.ErrorMessage;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.common.PagedResponse;
 import org.nmcpye.datarun.web.errors.EmailAlreadyUsedException;
 import org.nmcpye.datarun.web.errors.LoginAlreadyUsedException;
-import org.nmcpye.datarun.web.query.QueryRequest;
 import org.nmcpye.datarun.web.rest.legacy.JpaBaseResource;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.nmcpye.datarun.web.vm.ManagedUserVM;
@@ -35,9 +36,9 @@ import org.nmcpye.datarun.web.rest.util.HeaderUtil;
 import org.nmcpye.datarun.web.rest.util.PaginationUtil;
 import org.nmcpye.datarun.web.rest.util.ResponseUtil;
 
-import java.util.*;
+import static org.nmcpye.datarun.sharedkernal.JpaIdentifiableObjectService.buildQuerySpecification;
 
-import static org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService.buildQuerySpecification;
+import java.util.*;
 
 /**
  * REST controller for managing users.

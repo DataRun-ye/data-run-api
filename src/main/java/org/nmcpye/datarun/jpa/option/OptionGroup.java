@@ -12,9 +12,9 @@ import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
-import org.nmcpye.datarun.common.translation.Translation;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
-import org.nmcpye.datarun.jpa.common.TranslatableInterface;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.TranslatableInterface;
+import org.nmcpye.datarun.sharedkernal.translation.Translation;
 
 import java.util.HashSet;
 import java.util.Set;

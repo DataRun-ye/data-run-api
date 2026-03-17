@@ -6,12 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.outbox.repository.OutboxWritePort;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.sharedkernal.EntitySaveSummaryVM;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationEventPublisher;
 

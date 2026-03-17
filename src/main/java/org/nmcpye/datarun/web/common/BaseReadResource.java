@@ -1,14 +1,14 @@
 package org.nmcpye.datarun.web.common;
 
 import org.nmcpye.datarun.acl.AclService;
-import org.nmcpye.datarun.common.DRunApiVersion;
-import org.nmcpye.datarun.common.IdentifiableObject;
-import org.nmcpye.datarun.common.IdentifiableObjectRepository;
-import org.nmcpye.datarun.common.IdentifiableObjectService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.sharedkernal.DRunApiVersion;
+import org.nmcpye.datarun.sharedkernal.IdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.IdentifiableObjectRepository;
+import org.nmcpye.datarun.sharedkernal.IdentifiableObjectService;
+import org.nmcpye.datarun.sharedkernal.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
-import org.nmcpye.datarun.web.query.QueryRequest;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

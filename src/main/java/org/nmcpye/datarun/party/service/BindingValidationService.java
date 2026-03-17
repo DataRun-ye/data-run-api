@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.party.service;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
+
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 
@@ -13,6 +13,7 @@ import org.nmcpye.datarun.party.entities.PartySet;
 import org.nmcpye.datarun.party.exceptions.InvalidBindingException;
 import org.nmcpye.datarun.party.exceptions.NotFoundObjectException;
 import org.nmcpye.datarun.party.repository.PartySetRepository;
+import org.nmcpye.datarun.sharedkernal.uidgenerate.CodeGenerator;
 import org.springframework.stereotype.Service;
 
 @Service

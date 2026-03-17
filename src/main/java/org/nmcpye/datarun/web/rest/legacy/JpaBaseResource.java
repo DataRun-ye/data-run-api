@@ -1,9 +1,10 @@
 package org.nmcpye.datarun.web.rest.legacy;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
-import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
+
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObject;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableObjectService;
+import org.nmcpye.datarun.sharedkernal.JpaIdentifiableRepository;
 import org.nmcpye.datarun.web.common.BaseReadWriteResource;
 
 @Slf4j
