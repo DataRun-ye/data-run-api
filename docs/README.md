@@ -17,13 +17,9 @@ Each folder corresponds to a concern area or governance process. When working wi
 | Working On | Load These Docs |
 |------------|----------------|
 | **Strategic direction / North Star** | `architecture/strategic-blueprint.md` |
-| **System diagrams (C4)** | `architecture/c4-model.md` |
-| **Process rules, templates** | `governance/` |
 | **Why a decision was made** | `adrs/` |
 | **Proposing a big change** | `rfcs/` + `governance/rfc-process.md` |
-| **DatarunAPI integration / V1/V2 contract** | `architecture/integration-contract-datarunapi.md` |
 | **Authentication / SSO** | `architecture/auth-and-authorization.md` |
-| **DatarunAPI frontend architecture** | `datarunapi/datarunapi-frontend/` |
 
 ---
 
