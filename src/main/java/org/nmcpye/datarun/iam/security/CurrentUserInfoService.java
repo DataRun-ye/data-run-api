@@ -36,7 +36,7 @@ public class CurrentUserInfoService {
         this.userGroupRepository = userGroupRepository;
     }
 
-    @Cacheable(cacheNames = USER_TEAM_IDS_CACHE, key = "#userLogin")
+    @Cacheable(cacheNames = UserRepository.USER_TEAM_IDS_CACHE, key = "#userLogin")
     public CurrentUserTeamInfo getUserTeamInfo(String userLogin) {
         final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
             new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
@@ -72,7 +72,7 @@ public class CurrentUserInfoService {
             .build();
     }
 
-    @Cacheable(cacheNames = USER_ACTIVITY_IDS_CACHE, key = "#userLogin")
+    @Cacheable(cacheNames = UserRepository.USER_ACTIVITY_IDS_CACHE, key = "#userLogin")
     public CurrentUserActivityInfo getUserActivityInfo(String userLogin) {
         final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
             new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
@@ -94,7 +94,7 @@ public class CurrentUserInfoService {
             .build();
     }
 
-    @Cacheable(cacheNames = USER_TEAM_FORM_ACCESS_CACHE, key = "#userLogin")
+    @Cacheable(cacheNames = UserRepository.USER_TEAM_FORM_ACCESS_CACHE, key = "#userLogin")
     public List<UserFormAccess> getUserFormAccess(String userLogin, Collection<String> teamUIDs) {
         final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
             new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));
@@ -120,7 +120,7 @@ public class CurrentUserInfoService {
         return formAccesses;
     }
 
-    @Cacheable(cacheNames = USER_GROUP_IDS_CACHE, key = "#userLogin")
+    @Cacheable(cacheNames = UserRepository.USER_GROUP_IDS_CACHE, key = "#userLogin")
     public CurrentUserGroupInfo getUserGroupIds(String userLogin) {
         final var user = userRepository.findOneWithAuthoritiesByLogin(userLogin).orElseThrow(() ->
             new UsernameNotFoundException("User with login " + userLogin + " was not found in the database"));

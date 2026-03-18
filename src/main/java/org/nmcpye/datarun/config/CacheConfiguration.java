@@ -9,7 +9,6 @@ import org.nmcpye.datarun.analytics.etl.service.impl.RefTypeValueResolutionServi
 import org.nmcpye.datarun.datacapture.datasubmission.DataSubmission;
 import org.nmcpye.datarun.assignment.activity.Activity;
 import org.nmcpye.datarun.assignment.assignment.Assignment;
-import org.nmcpye.datarun.jpa.auditing.EntityAuditEvent;
 import org.nmcpye.datarun.template.dataelement.DataElement;
 import org.nmcpye.datarun.template.datatemplate.DataTemplate;
 import org.nmcpye.datarun.template.datatemplate.TemplateElement;
@@ -98,7 +97,6 @@ public class CacheConfiguration {
             createCache(cm, UserGroup.class.getName() + ".managedByGroups");
             createCache(cm, UserGroup.class.getName() + ".managedGroups");
 
-            createCache(cm, EntityAuditEvent.class.getName());
             createCache(cm, Project.class.getName());
             createCache(cm, Project.class.getName() + ".activities");
             createCache(cm, Activity.class.getName());
