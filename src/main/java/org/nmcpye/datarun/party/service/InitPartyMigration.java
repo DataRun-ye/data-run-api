@@ -114,8 +114,6 @@ public class InitPartyMigration implements CommandLineRunner {
                         u.getManagedByTeams().forEach(ug -> userTags.add("managed_by_team:" + ug.getUid()));
                         u.getManagedByGroups().forEach(ug -> userTags.add("managed_by_group:" + ug.getUid()));
                         u.getTeams().forEach(t -> userTags.add("team:" + t.getUid()));
-                        u.getRoles().forEach(t -> userTags.add("user_role:" + t.getName()));
-
 
                         syncService.syncParty(
                             ToSyncParty.builder()

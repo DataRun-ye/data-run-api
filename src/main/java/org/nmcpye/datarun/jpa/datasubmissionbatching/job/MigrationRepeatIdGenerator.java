@@ -3,11 +3,8 @@ package org.nmcpye.datarun.jpa.datasubmissionbatching.job;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
-import org.nmcpye.datarun.datatemplateelement.AbstractElement;
-import org.nmcpye.datarun.etl.model.TemplateElementMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -36,19 +33,12 @@ import java.util.Set;
  *
  * @author Hamza Assada 15/08/2025 (7amza.it@gmail.com)
  */
+@Slf4j
 public final class MigrationRepeatIdGenerator {
-
-    private static final Logger log = LoggerFactory.getLogger(MigrationRepeatIdGenerator.class);
     private static final String UID_FIELD = "_id";         // client-side id field
     private static final String PARENT_FIELD = "_parentId";
     private static final String SUBMISSION_UID_FIELD = "_submissionUid";
     private static final String INDEX_FIELD = "_index";
-
-    private final TemplateElementMap elementMap;
-
-    public MigrationRepeatIdGenerator(TemplateElementMap elementMap) {
-        this.elementMap = elementMap;
-    }
 
     /**
      * Walks the provided root (must be an ObjectNode or converted to one).
@@ -58,7 +48,7 @@ public final class MigrationRepeatIdGenerator {
      * @param submissionUid The submission UID to set as fallback _submissionUid / parent
      * @return number of generated IDs (0 if none), and the mutated rootCopy is modified in-place.
      */
-    public int generateMissingIdsForMigration(ObjectNode rootCopy, String submissionUid) {
+    public static int generateMissingIdsForMigration(ObjectNode rootCopy, String submissionUid) {
         if (rootCopy == null) return 0;
         // collect existing ids to avoid collisions (within this submission)
         final Set<String> seenIds = new HashSet<>();
@@ -87,7 +77,7 @@ public final class MigrationRepeatIdGenerator {
      * @param seenIds       set to track generated & existing ids
      * @param generated     counter holder (mutated in place)
      */
-    private void traverseAndGenerate(JsonNode node,
+    private static void traverseAndGenerate(JsonNode node,
                                      String currentPath,
                                      String submissionUid,
                                      Set<String> seenIds,
@@ -105,7 +95,7 @@ public final class MigrationRepeatIdGenerator {
      * @param generated       counter holder (mutated in place)
      */
     // helper overload to carry explicit currentRepeatId
-    private void traverseAndGenerate(JsonNode node,
+    private static void traverseAndGenerate(JsonNode node,
                                      String currentPath,
                                      String currentRepeatId,
                                      String submissionUid,
@@ -122,10 +112,6 @@ public final class MigrationRepeatIdGenerator {
             String key = entry.getKey();
             JsonNode value = entry.getValue();
             String childPath = (currentPath == null || currentPath.isEmpty()) ? key : currentPath + "." + key;
-            AbstractElement element = elementMap.getElementByIdPathMap().get(childPath);
-
-//            if (element instanceof FormSectionConf section && Boolean.TRUE.equals(section.getRepeatable())) {
-                // If the value isn't an array, skip (no repeat instances present)
                 if (value == null || !value.isArray()) {
                     continue;
                 }
@@ -187,8 +173,6 @@ public final class MigrationRepeatIdGenerator {
                     // recurse into the item: pass thisItemId as the new currentRepeatId so nested repeats get correct _parentId
                     traverseAndGenerate(itemObj, childPath, thisItemId, submissionUid, seenIds, generated);
                 }
-//                continue;
-//            }
 
             // nested object -> recurse while preserving currentRepeatId (no change)
             if (value.isObject()) {
@@ -201,14 +185,14 @@ public final class MigrationRepeatIdGenerator {
 
     // best-effort to discover current repeat id from node if available; used only if caller didn't pass explicit parent
     // (not strictly necessary but provides some safety for initial call path).
-    private String currentRepeatIdOf(JsonNode node, String currentPath) {
+    private static String currentRepeatIdOf(JsonNode node, String currentPath) {
         // This helper is intentionally simple and returns null.
         // The primary recursion entrypoint passes explicit parent ids during recursion.
         return null;
     }
 
     // Collect any existing ids in the form payload so we avoid collisions
-    private void collectExistingIds(JsonNode node, Set<String> seen) {
+    private static void collectExistingIds(JsonNode node, Set<String> seen) {
         if (node == null || node.isNull()) return;
         if (node.isObject()) {
             Iterator<Map.Entry<String, JsonNode>> it = node.fields();

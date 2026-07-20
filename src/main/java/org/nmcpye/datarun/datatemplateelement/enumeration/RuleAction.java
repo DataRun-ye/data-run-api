@@ -10,17 +10,9 @@ public enum RuleAction {
     Warning,
     Filter,
     // Expression must be logical (true, false)
+    // make mandatory
     Mandatory,
     // Expression result must be a compatible Value with the Field type
     // i.e for default Value
     Assign,
-
-    ErrorOnComplete, // deprecated, use Constraint
-    WarningOnComplete, // deprecated, use Constraint
-    DisplayText,
-    DisplayKeyValuePair,
-
-    HideOption,
-    HideOptionGroup,
-    ShowOptionGroup,
 }

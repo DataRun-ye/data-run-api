@@ -11,7 +11,6 @@ import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
 import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidator;
 import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.utils.FormSubmissionDataUtil;
 import org.nmcpye.datarun.web.common.PagedResponse;
@@ -36,7 +35,6 @@ public class DataSubmissionV1ServiceImpl implements DataSubmissionV1Service {
     private final ObjectMapper objectMapper;
     private final CompositeSubmissionValidator compositeValidator;
     private final SubmissionAccessValidator submissionAccessValidator;
-    private final TemplateElementService templateElementService;
 
     @Override
     public PagedResponse<DataSubmissionV1Dto> getAll(QueryRequest queryRequest) {
@@ -75,10 +73,7 @@ public class DataSubmissionV1ServiceImpl implements DataSubmissionV1Service {
                 ObjectNode root = (ObjectNode) (payLoadEntity.getFormData() == null
                     ? objectMapper.createObjectNode()
                     : payLoadEntity.getFormData().deepCopy());
-                final var migrationRepeatIdGenerator = new MigrationRepeatIdGenerator(
-                    templateElementService.getTemplateElementMap(payLoadEntity.getForm(),
-                        payLoadEntity.getFormVersion()));
-                int generated = migrationRepeatIdGenerator
+                int generated = MigrationRepeatIdGenerator
                     .generateMissingIdsForMigration(root, payLoadEntity.getUid());
                 if (generated > 0) {
                     payLoadEntity.setFormData(root);

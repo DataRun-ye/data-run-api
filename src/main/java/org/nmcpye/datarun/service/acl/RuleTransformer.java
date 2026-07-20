@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  * V1 format: {@code "#{gender} == 'FEMALE'"} with action {@code Show}
  * <p>
  * V2 format: JsonLogic AST with resolved namespaces:
- * 
+ *
  * <pre>{@code
  * {
  *   "condition": {"==": [{"var": "values.gender"}, "FEMALE"]},
@@ -276,16 +276,11 @@ public final class RuleTransformer {
         return switch (action) {
             case Show -> "SHOW";
             case Hide -> "HIDE";
-            case Error, ErrorOnComplete -> "ERROR";
-            case Warning, WarningOnComplete -> "WARNING";
+            case Error -> "ERROR";
+            case Warning -> "WARNING";
             case Filter -> "FILTER";
             case Mandatory -> "SET_REQUIRED";
             case Assign -> "ASSIGN";
-            case DisplayText -> "DISPLAY_TEXT";
-            case DisplayKeyValuePair -> "DISPLAY_KEY_VALUE";
-            case HideOption -> "HIDE_OPTION";
-            case HideOptionGroup -> "HIDE_OPTION_GROUP";
-            case ShowOptionGroup -> "SHOW_OPTION_GROUP";
         };
     }
 

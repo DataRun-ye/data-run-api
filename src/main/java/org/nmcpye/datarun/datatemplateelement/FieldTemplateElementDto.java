@@ -7,13 +7,10 @@ import lombok.Setter;
 import org.nmcpye.datarun.common.enumeration.ValueTypeRendering;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
-import org.nmcpye.datarun.datatemplateelement.datafield.ScannedCodeProperties;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Getter
 @Setter
@@ -47,19 +44,32 @@ public class FieldTemplateElementDto extends AbstractElement implements Serializ
 
     private Boolean gs1Enabled;
 
+    @Setter
+    @Getter
+    public static class ScannedCodeProperties {
+        private List<String> allowedItemTypes = new ArrayList<String>();
+        private List<String> gtin = new ArrayList<String>();
+        private String batchLot;
+        private Map<String, String> productionDate = new HashMap<String, String>();
+    }
+
     private ScannedCodeProperties scannedCodeProperties;
+
     /**
      * resourceType for ReferenceField type
      */
+    @Deprecated
     private ReferenceType resourceType;
     /**
      * resourceMetadataSchema for ReferenceField type
      */
+    @Deprecated
     private String resourceMetadataSchema;
+
     private ValueTypeRendering valueTypeRendering = ValueTypeRendering.DEFAULT;
-    private AggregationType aggregationType = AggregationType.DEFAULT;
-    private Boolean isMeasure = Boolean.TRUE;
-    private Boolean isDimension = Boolean.FALSE;
+//    private AggregationType aggregationType = AggregationType.DEFAULT;
+//    private Boolean isMeasure = Boolean.TRUE;
+//    private Boolean isDimension = Boolean.FALSE;
 
     public Boolean isMultiSelect() {
         return this.type != null && this.type.isOptionsType() ? this.type == ValueType.SelectMulti : null;

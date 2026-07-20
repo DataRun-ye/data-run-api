@@ -35,8 +35,6 @@ public class TemplateElementMap {
 
     private final Map<String, AbstractElement> elementByIdPathMap;
 
-//    private final Map<String, AbstractElement> elementByJsonDataPathMap;
-
     /**
      * jsonDataPath -> TemplateElement
      * (NEW) source template_element, used in normalization for each
@@ -73,12 +71,6 @@ public class TemplateElementMap {
             .filter(FieldTemplateElementDto.class::isInstance)
             .map(FieldTemplateElementDto.class::cast)
             .collect(Collectors.toMap(FieldTemplateElementDto::getId, Function.identity())));
-//        this.elementByJsonDataPathMap = this.elementByIdPathMap.entrySet().stream()
-//            .collect(Collectors.toMap(
-//                entry -> entry.getKey()
-//                    .replaceFirst(entry.getValue()
-//                        .getId(), entry.getValue().getName()),
-//                Map.Entry::getValue));
         this.elementConfigByNamePathMap = elementConfigByJsonDataPathMap;
     }
 }

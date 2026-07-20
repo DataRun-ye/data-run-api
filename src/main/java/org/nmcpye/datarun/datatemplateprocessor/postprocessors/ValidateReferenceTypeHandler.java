@@ -9,6 +9,7 @@ import org.nmcpye.datarun.jpa.dataelement.DataElement;
 /**
  * @author Hamza Assada 18/03/2025 (7amza.it@gmail.com)
  */
+@Deprecated
 public class ValidateReferenceTypeHandler
     extends AbstractTemplateElementHandler<FieldTemplateElementDto> {
     private final DataElement source;

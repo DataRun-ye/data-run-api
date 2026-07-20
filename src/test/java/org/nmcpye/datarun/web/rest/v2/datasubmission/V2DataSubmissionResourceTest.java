@@ -11,7 +11,6 @@ import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
 import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidator;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.service.acl.SubmissionTranslationService;
 import org.nmcpye.datarun.web.rest.v2.dto.V2SubmissionDto;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +18,8 @@ import org.springframework.http.ResponseEntity;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -34,7 +34,6 @@ class V2DataSubmissionResourceTest {
     private SubmissionTranslationService translationService;
     private CompositeSubmissionValidator compositeValidator;
     private SubmissionAccessValidator submissionAccessValidator;
-    private TemplateElementService templateElementService;
 
     private V2DataSubmissionResource resource;
 
@@ -44,15 +43,13 @@ class V2DataSubmissionResourceTest {
         translationService = mock(SubmissionTranslationService.class);
         compositeValidator = mock(CompositeSubmissionValidator.class);
         submissionAccessValidator = mock(SubmissionAccessValidator.class);
-        templateElementService = mock(TemplateElementService.class);
 
         resource = new V2DataSubmissionResource(
                 submissionService,
                 translationService,
                 objectMapper,
                 compositeValidator,
-                submissionAccessValidator,
-                templateElementService);
+                submissionAccessValidator);
     }
 
     @Test

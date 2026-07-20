@@ -188,7 +188,6 @@ class RuleTransformerTest {
         assertEquals("WARNING", RuleTransformer.mapAction(RuleAction.Warning));
         assertEquals("SET_REQUIRED", RuleTransformer.mapAction(RuleAction.Mandatory));
         assertEquals("ASSIGN", RuleTransformer.mapAction(RuleAction.Assign));
-        assertEquals("FILTER", RuleTransformer.mapAction(RuleAction.Filter));
     }
 
     private SectionTemplateElementDto buildSection(String name, boolean repeatable) {

@@ -8,14 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.nmcpye.datarun.datatemplateelement.FieldTemplateElementDto;
 import org.nmcpye.datarun.datatemplateelement.SectionTemplateElementDto;
-import org.nmcpye.datarun.etl.model.TemplateElementMap;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
 import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidator;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.service.acl.SubmissionTranslationService;
@@ -29,7 +27,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -53,7 +50,6 @@ class V2SubmissionRoundTripTest {
       private TemplateVersionRepository templateVersionRepository;
       private CompositeSubmissionValidator compositeValidator;
       private SubmissionAccessValidator submissionAccessValidator;
-      private TemplateElementService templateElementService;
 
       @BeforeEach
       void setUp() {
@@ -61,7 +57,6 @@ class V2SubmissionRoundTripTest {
             templateVersionRepository = mock(TemplateVersionRepository.class);
             compositeValidator = mock(CompositeSubmissionValidator.class);
             submissionAccessValidator = mock(SubmissionAccessValidator.class);
-            templateElementService = mock(TemplateElementService.class);
 
             // Wire real ACL service
             SubmissionTranslationService translationService = new SubmissionTranslationService(
@@ -73,8 +68,7 @@ class V2SubmissionRoundTripTest {
                         translationService,
                         objectMapper,
                         compositeValidator,
-                        submissionAccessValidator,
-                        templateElementService);
+                        submissionAccessValidator);
 
             mockMvc = MockMvcBuilders.standaloneSetup(controller)
                         .setValidator(mock(org.springframework.validation.Validator.class))
@@ -105,10 +99,6 @@ class V2SubmissionRoundTripTest {
             version.setFields(List.of(visitdateField));
 
             when(templateVersionRepository.findByUid("ver01")).thenReturn(Optional.of(version));
-
-            // Mock empty template access details to pass preProcess generators safely
-            when(templateElementService.getTemplateElementMap(anyString(), anyString()))
-                        .thenReturn(mock(TemplateElementMap.class));
 
             try (org.mockito.MockedStatic<SecurityUtils> securityUtilsMock = org.mockito.Mockito
                         .mockStatic(SecurityUtils.class)) {

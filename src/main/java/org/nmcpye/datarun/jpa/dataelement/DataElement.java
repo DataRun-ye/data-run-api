@@ -30,6 +30,7 @@ import java.util.Set;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Getter
 @Setter
+@Deprecated
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataElement extends JpaIdentifiableObject implements TranslatableInterface {
     @Size(max = 11)

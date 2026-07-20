@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.enumeration.FlowStatus;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
@@ -11,15 +13,12 @@ import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
 import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidator;
 import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.service.acl.SubmissionTranslationService;
 import org.nmcpye.datarun.web.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.v2.dto.V2SubmissionCreateRequest;
 import org.nmcpye.datarun.web.rest.v2.dto.V2SubmissionDto;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,30 +36,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping(ApiVersion.API_V2 + "/dataSubmission")
 @PreAuthorize("hasAnyAuthority('" + AuthoritiesConstants.ADMIN + "', '" + AuthoritiesConstants.USER + "')")
+@Slf4j
+@AllArgsConstructor
 public class V2DataSubmissionResource {
-
-    private static final Logger log = LoggerFactory.getLogger(V2DataSubmissionResource.class);
 
     private final DataSubmissionService submissionService;
     private final SubmissionTranslationService translationService;
     private final ObjectMapper objectMapper;
     private final CompositeSubmissionValidator compositeValidator;
     private final SubmissionAccessValidator submissionAccessValidator;
-    private final TemplateElementService templateElementService;
-
-    public V2DataSubmissionResource(DataSubmissionService submissionService,
-            SubmissionTranslationService translationService,
-            ObjectMapper objectMapper,
-            CompositeSubmissionValidator compositeValidator,
-            SubmissionAccessValidator submissionAccessValidator,
-            TemplateElementService templateElementService) {
-        this.submissionService = submissionService;
-        this.translationService = translationService;
-        this.objectMapper = objectMapper;
-        this.compositeValidator = compositeValidator;
-        this.submissionAccessValidator = submissionAccessValidator;
-        this.templateElementService = templateElementService;
-    }
 
     /**
      * {@code GET /api/v2/dataSubmission/:uid} — Get a submission in V2 canonical
@@ -111,9 +95,8 @@ public class V2DataSubmissionResource {
         ObjectNode root = (ObjectNode) (entity.getFormData() == null
                 ? objectMapper.createObjectNode()
                 : entity.getFormData().deepCopy());
-        MigrationRepeatIdGenerator idGen = new MigrationRepeatIdGenerator(
-                templateElementService.getTemplateElementMap(entity.getForm(), entity.getFormVersion()));
-        int generated = idGen.generateMissingIdsForMigration(root, entity.getUid());
+
+        int generated = MigrationRepeatIdGenerator.generateMissingIdsForMigration(root, entity.getUid());
         if (generated > 0) {
             entity.setFormData(root);
         }
