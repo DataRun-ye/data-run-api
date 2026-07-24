@@ -2,6 +2,7 @@ package org.nmcpye.datarun.jpa.assignment.service;
 
 import jakarta.el.PropertyNotFoundException;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
+import org.nmcpye.datarun.datatemplateprocessor.ReferenceAssignmentScopeGuard;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
@@ -16,9 +17,11 @@ import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
 import org.nmcpye.datarun.party.service.AssignmentMaintenanceService;
 import org.nmcpye.datarun.web.query.QueryRequest;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +48,7 @@ public class DefaultAssignmentService
     private final AssignmentMaintenanceService maintenanceService;
     private final AssignmentWithAccessMapper assignmentMapper;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final ReferenceAssignmentScopeGuard referenceAssignmentScopeGuard;
 
     public DefaultAssignmentService(AssignmentRepository repository,
             TeamRepository teamRepository,
@@ -54,7 +58,8 @@ public class DefaultAssignmentService
             AssignmentMaintenanceService maintenanceService,
             AssignmentWithAccessMapper assignmentMapper, AssignmentRepository assignmentRepository,
             DataSubmissionRepository submissionRepository, ActivityRepository activityRepository,
-            ApplicationEventPublisher applicationEventPublisher) {
+            ApplicationEventPublisher applicationEventPublisher,
+            ReferenceAssignmentScopeGuard referenceAssignmentScopeGuard) {
         super(repository, cacheManager, userAccessService, applicationEventPublisher);
         this.repository = repository;
         this.teamRepository = teamRepository;
@@ -64,11 +69,12 @@ public class DefaultAssignmentService
         this.submissionRepository = submissionRepository;
         this.activityRepository = activityRepository;
         this.applicationEventPublisher = applicationEventPublisher;
+        this.referenceAssignmentScopeGuard = referenceAssignmentScopeGuard;
     }
 
     @Override
     public Assignment saveWithRelations(Assignment object) {
-
+        Assignment existing = findExisting(object).orElse(null);
         Team team = null;
         Activity activity = null;
         OrgUnit orgUnit = null;
@@ -84,6 +90,8 @@ public class DefaultAssignmentService
         if (object.getOrgUnit() != null) {
             orgUnit = findOrgUnit(object.getOrgUnit());
         }
+
+        referenceAssignmentScopeGuard.validateScopeUpdate(existing, activity, orgUnit, object.getForms());
 
         Assignment parent = object.getParent();
         if (parent != null) {
@@ -104,6 +112,26 @@ public class DefaultAssignmentService
         }
 
         return saved;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Assignment> findAccessibleByIdOrUid(String idOrUid) {
+        QueryRequest queryRequest = new QueryRequest();
+        Specification<Assignment> identity = (root, query, cb) -> cb.or(
+                cb.equal(root.get("id"), idOrUid),
+                cb.equal(root.get("uid"), idOrUid));
+        Specification<Assignment> access = baseAccessSpecification(
+                SecurityUtils.getCurrentUserDetailsOrThrow(),
+                queryRequest,
+                null);
+        return repository.findOne(access.and(identity));
+    }
+
+    private Optional<Assignment> findExisting(Assignment assignment) {
+        return Optional.ofNullable(assignment.getId())
+                .flatMap(repository::findById)
+                .or(() -> Optional.ofNullable(assignment.getUid()).flatMap(repository::findByUid));
     }
 
     private Assignment findParent(Assignment parent) {

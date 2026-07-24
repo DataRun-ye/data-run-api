@@ -99,5 +99,8 @@
     <!-- making legacy assignment.team_id nullable -->
     <include file="/config/liquibase/changelog/outbox-and-batch/2026-04-08-add_fat_event_columns_to_outbox.xml" relativeToChangelogFile="false"/>
 
+    <!-- bounded org-unit Reference catalog -->
+    <include file="/config/liquibase/changelog/reference-entry/20260725-create-reference-entry.xml" relativeToChangelogFile="false"/>
+
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

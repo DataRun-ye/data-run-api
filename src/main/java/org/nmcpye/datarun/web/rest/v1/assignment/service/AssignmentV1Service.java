@@ -10,7 +10,10 @@ import java.util.Optional;
 public interface AssignmentV1Service {
     PagedResponse<AssignmentV1Dto> getAll(QueryRequest queryRequest);
 
-    PagedResponse<AssignmentWithAccessV1Dto> getAllWithAccess(QueryRequest queryRequest, String jsonQuery);
+    PagedResponse<AssignmentWithAccessV1Dto> getAllWithAccess(
+            QueryRequest queryRequest,
+            String jsonQuery,
+            int referenceVersion);
 
     Optional<AssignmentV1Dto> getById(String id);
 }

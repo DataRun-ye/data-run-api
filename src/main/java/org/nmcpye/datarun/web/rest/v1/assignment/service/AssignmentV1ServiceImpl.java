@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.web.rest.v1.assignment.service;
 
 import lombok.RequiredArgsConstructor;
+import org.nmcpye.datarun.datatemplateprocessor.ReferenceTemplateCapabilityService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
 import org.nmcpye.datarun.web.common.PagedResponse;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -24,6 +27,7 @@ public class AssignmentV1ServiceImpl implements AssignmentV1Service {
     private final AssignmentService assignmentService;
     private final AssignmentV1Mapper assignmentMapper;
     private final AssignmentWithAccessV1Mapper assignmentWithAccessMapper;
+    private final ReferenceTemplateCapabilityService referenceTemplateCapabilityService;
 
     @Override
     public PagedResponse<AssignmentV1Dto> getAll(QueryRequest queryRequest) {
@@ -34,10 +38,26 @@ public class AssignmentV1ServiceImpl implements AssignmentV1Service {
     }
 
     @Override
-    public PagedResponse<AssignmentWithAccessV1Dto> getAllWithAccess(QueryRequest queryRequest, String jsonQuery) {
-        // We bypass the old DTO-returning service method to use our V1 mapper
+    public PagedResponse<AssignmentWithAccessV1Dto> getAllWithAccess(
+            QueryRequest queryRequest,
+            String jsonQuery,
+            int referenceVersion) {
         Page<Assignment> page = assignmentService.findAllByUser(queryRequest, jsonQuery);
+        Set<String> referenceForms = referenceVersion >= 1
+                ? Set.of()
+                : referenceTemplateCapabilityService.findReferenceTemplateUids(
+                        page.getContent().stream()
+                                .flatMap(assignment -> Optional.ofNullable(assignment.getForms())
+                                        .orElse(Set.of())
+                                        .stream())
+                                .collect(Collectors.toSet()));
+
         Page<AssignmentWithAccessV1Dto> dtoPage = page.map(assignmentWithAccessMapper::toDto);
+        if (!referenceForms.isEmpty()) {
+            dtoPage.forEach(dto -> Optional.ofNullable(dto.getAccessibleForms())
+                    .ifPresent(forms -> forms.removeIf(form -> referenceForms.contains(form.getForm()))));
+        }
+
         String next = PagingConfigurator.createNextPageLink(dtoPage);
         return PagingConfigurator.initPageResponse(dtoPage, next, "assignments");
     }

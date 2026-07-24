@@ -54,8 +54,9 @@ public class AssignmentResource {
     @RequestMapping(value = "forms", method = { RequestMethod.GET, RequestMethod.POST })
     public ResponseEntity<PagedResponse<AssignmentWithAccessV1Dto>> getAllWithAccess(
             QueryRequest queryRequest,
-            @RequestBody(required = false) String jsonQuery) {
+            @RequestBody(required = false) String jsonQuery,
+            @RequestParam(name = "referenceVersion", required = false, defaultValue = "0") int referenceVersion) {
         log.debug("REST request to get Assignments with forms/access");
-        return ResponseEntity.ok(v1Service.getAllWithAccess(queryRequest, jsonQuery));
+        return ResponseEntity.ok(v1Service.getAllWithAccess(queryRequest, jsonQuery, referenceVersion));
     }
 }
