@@ -121,12 +121,6 @@ public class Assignment extends JpaSoftDeleteObject {
     @Column(name = "code", length = 100, unique = true)
     protected String code;
 
-    @JsonIgnore
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assignment_id")
-    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    private Set<AssignmentMember> members = new HashSet<>();
-
     @JsonProperty(value = "progressStatus")
     public FlowStatus getStatus() {
         return status;
