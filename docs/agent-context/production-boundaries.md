@@ -34,9 +34,11 @@ When evidence conflicts:
 - HTTP payload authority belongs to server DTOs, request handling, and
   contract tests. Mobile assumptions must be characterized in mobile tests
   rather than copied here.
-- PostgreSQL/JPA/Liquibase are active production boundaries. Mongo remains a
-  separate legacy surface to investigate and retire in its own bounded work;
-  do not remove it as incidental cleanup.
+- PostgreSQL/JPA/Liquibase are active production boundaries. Mongo persistence
+  and runtime ownership were removed from `develop` after all eight production
+  collections were confirmed empty and the candidate passed against the
+  production clone with Mongo stopped. The currently deployed production
+  Compose still owns the empty Mongo service until that candidate is promoted.
 - The old jOOQ/analytics-query, Party, and assignment-member implementations
   were removed from `develop`. The restored 2026-07-25 production clone
   confirmed that the legacy Party/assignment tables left by those attempts
@@ -50,6 +52,8 @@ When evidence conflicts:
 - Never edit or reorder a changeset already applied to production.
 - Add a new changeset for every schema transition and include an intentional
   rollback when safe.
+- `public.generate_uid()` is an application-owned 11-character UID function,
+  now defined by Liquibase. It is not supplied by PostgreSQL or `pg_idkit`.
 - Before deployment, inspect production `databasechangelog`, restore or use
   the production clone, and prove the migration from that exact state.
 - Treat database access through `docker exec` and database access through

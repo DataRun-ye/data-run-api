@@ -18,6 +18,13 @@ deployment authority.
 - `v6.4.0`: the immutable server image, additive Reference migration, external
   JWT-key ownership, and existing login/configuration behavior were verified
   in production without activating the new Reference workflow.
+- `caee970e`: inactive Mongo persistence, endpoints, dependencies,
+  configuration, and Compose ownership were removed from `develop`; ordinary
+  configuration reads and submission upload passed against the production
+  clone with Mongo stopped.
+- `90281457`: the test runtime was aligned with the local Docker API, the
+  app-owned `generate_uid()` function entered Liquibase ownership, and focused
+  JWT tests were aligned with the active V1 endpoint.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

@@ -7,15 +7,10 @@ or deployment authority.
 
 ## Now
 
-- Retire MongoDB through one bounded slice. Production inventory found all
-  eight collections empty; separate active template/query contracts from the
-  misleading `mongo` package, then remove Mongo persistence, configuration,
-  dependencies, and Compose ownership. Prove the candidate locally against
-  the production clone.
-- Before promoting the Mongo-retired image, establish one isolated staging
-  environment with its own database, secrets, Compose project, and URL. Smoke
-  the same immutable image there, then remove the empty production Mongo
-  container and volume only after production verification.
+- Establish one isolated staging environment with its own database, secrets,
+  Compose project, and URL. Smoke the Mongo-retired candidate there before
+  promoting it to production. Remove the empty production Mongo container and
+  volume only after the replacement API is verified.
 
 Reference activation remains parked in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while
@@ -27,6 +22,12 @@ the server runtime surface is cleaned.
   development surface for active ownership, obsolete registrations,
   duplicated persistence/configuration, and deployment smells. Convert only
   proven findings into focused removal or consolidation work.
+- Repair fresh-database bootstrap in one bounded Liquibase slice. The current
+  chain reaches obsolete analytics changelogs that assume an `analytics`
+  schema; remove or supersede that dead path without mixing it into staging.
+- Determine whether the production `pg_idkit` PostgreSQL image provides any
+  active extension before replacing it with the stock PostgreSQL 16 image.
+  The active `generate_uid()` function is application-owned.
 - After the production path and staging boundary are stable, keep one concise
   deployment playbook covering verification, image publication, staging smoke,
   production promotion, health checks, and rollback.
