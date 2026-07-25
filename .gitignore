@@ -117,7 +117,10 @@ Desktop.ini
 # Directories
 ######################
 /bin/
-/deploy/
+/deploy/*
+!/deploy/production/
+!/deploy/production/compose.yml
+!/deploy/production/.env.example
 
 ######################
 # Logs

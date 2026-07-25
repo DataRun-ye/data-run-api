@@ -222,7 +222,7 @@ jhipster:
     management-include-pattern: /management/**
     title: Data Run Api API
     description: Data Run Api API documentation
-    version: 0.0.1
+    version: '@project.version@'
     terms-of-service-url:
     contact-name:
     contact-url:

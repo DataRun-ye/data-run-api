@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nmcpye.datarun</groupId>
     <artifactId>data-run-api</artifactId>
-    <version>6.3.1</version>
+    <version>6.4.0</version>
     <packaging>jar</packaging>
     <name>Data Run Api</name>
     <description>Description for Data Run Api</description>
@@ -18,7 +18,7 @@
     </parent>
 
     <properties>
-        <maven.version>3.2.5</maven.version>
+        <maven.version>3.9.6</maven.version>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -39,7 +39,8 @@
         <jacoco-maven-plugin.version>0.8.13</jacoco-maven-plugin.version>
         <jhipster-framework.version>8.11.0</jhipster-framework.version>
         <jib-maven-plugin.architecture>amd64</jib-maven-plugin.architecture>
-        <jib-maven-plugin.image>eclipse-temurin:17-jre-focal</jib-maven-plugin.image>
+        <jib-maven-plugin.image>eclipse-temurin:17-jre-focal@sha256:4b65dc03c8f221944e4cf5d964660c5e443fd04e0007f9b63489ddb833fe5c7e</jib-maven-plugin.image>
+        <jib-maven-plugin.target-image>kaswarah/datarunapi:local</jib-maven-plugin.target-image>
         <jib-maven-plugin.version>3.4.5</jib-maven-plugin.version>
         <lifecycle-mapping.version>1.0.0</lifecycle-mapping.version>
 
@@ -90,6 +91,27 @@
                 <version>${mongock-bom.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Preserve the versions Maven already selected while making transitive paths converge. -->
+            <dependency>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>checker-qual</artifactId>
+                <version>3.48.3</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.xml.bind</groupId>
+                <artifactId>jaxb-api</artifactId>
+                <version>2.2.12</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_annotations</artifactId>
+                <version>2.27.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-text</artifactId>
+                <version>1.12.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -728,13 +750,6 @@
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>repackage</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                     <configuration>
                         <mainClass>${start-class}</mainClass>
                         <!--
@@ -757,7 +772,7 @@
                             <id>spotless</id>
                             <phase>process-sources</phase>
                             <goals>
-                                <goal>apply</goal>
+                                <goal>check</goal>
                             </goals>
                         </execution>
                     </executions>
@@ -777,13 +792,7 @@
                             </platforms>
                         </from>
                         <to>
-                            <image>kaswarah/datarunapi</image>
-                            <tags>
-                                <!-- exact project version, e.g. "1.2.3" -->
-                                <tag>${project.version}</tag>
-                                <!-- optional alias -->
-                                <tag>latest</tag>
-                            </tags>
+                            <image>${jib-maven-plugin.target-image}</image>
                         </to>
                         <container>
                             <entrypoint>
@@ -798,7 +807,13 @@
                                 <SPRING_OUTPUT_ANSI_ENABLED>ALWAYS</SPRING_OUTPUT_ANSI_ENABLED>
                                 <JHIPSTER_SLEEP>0</JHIPSTER_SLEEP>
                             </environment>
-                            <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
+                            <creationTime>EPOCH</creationTime>
+                            <labels>
+                                <org.opencontainers.image.title>DataRun API</org.opencontainers.image.title>
+                                <org.opencontainers.image.version>${project.version}</org.opencontainers.image.version>
+                                <org.opencontainers.image.revision>${git.commit.id.full}</org.opencontainers.image.revision>
+                                <org.opencontainers.image.source>https://github.com/DataRun-ye/data-run-api</org.opencontainers.image.source>
+                            </labels>
                             <user>1000</user>
                         </container>
                         <extraDirectories>
@@ -840,10 +855,12 @@
                     <configuration>
                         <failOnNoGitDirectory>false</failOnNoGitDirectory>
                         <failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
+                        <commitIdGenerationMode>full</commitIdGenerationMode>
                         <generateGitPropertiesFile>true</generateGitPropertiesFile>
                         <includeOnlyProperties>
                             <includeOnlyProperty>^git.commit.id.abbrev$</includeOnlyProperty>
                             <includeOnlyProperty>^git.commit.id.describe$</includeOnlyProperty>
+                            <includeOnlyProperty>^git.commit.id.full$</includeOnlyProperty>
                             <includeOnlyProperty>^git.branch$</includeOnlyProperty>
                         </includeOnlyProperties>
                     </configuration>
@@ -939,8 +956,6 @@
                         <referenceUrl>
                             hibernate:spring:org.nmcpye.datarun?dialect=org.hibernate.dialect.PostgreSQLDialect&amp;hibernate.physical_naming_strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy&amp;hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
                         </referenceUrl>
-                        <verbose>true</verbose>
-                        <logging>debug</logging>
                         <contexts>!test</contexts>
                     </configuration>
                     <dependencies>

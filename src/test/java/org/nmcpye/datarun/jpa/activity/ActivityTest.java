@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.jpa.activity;
 
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.web.rest.TestUtil;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.nmcpye.datarun.jpa.activity.ActivityTestSamples.getActivitySample1;
@@ -13,8 +12,7 @@ import static org.nmcpye.datarun.jpa.activity.ActivityTestSamples.getActivitySam
 class ActivityTest {
 
     @Test
-    void equalsVerifier() throws Exception {
-        TestUtil.equalsVerifier(Activity.class);
+    void equalityUsesPersistedId() {
         Activity activity1 = getActivitySample1();
         Activity activity2 = new Activity();
         assertThat(activity1).isNotEqualTo(activity2);

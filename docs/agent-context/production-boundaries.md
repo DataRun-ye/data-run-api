@@ -4,17 +4,12 @@ Role: current server production and working boundary
 
 Status: LIVING
 
-Validated: 2026-07-25
+## Repository State
 
-## Repository Baselines
-
-- Production `main`: `e8bee6b4`, reconstructed from the deployed server image
-  and validated against its packaged Liquibase history.
-- Current `develop`: `0d83c580`.
-- `develop` contains the bounded Reference implementation and source-only dead
-  surface cleanup. Those commits are not yet production-deployed.
-- Shared Reference activation status:
-  [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34).
+- `main` is the production branch; `develop` is integration.
+- Merging to either branch does not deploy the server.
+- Record exact deployed commits and image digests in the corresponding release,
+  not in this living document.
 
 Commit dates and branch names alone are not production evidence. Before a
 deployment, identify the exact source commit, built image, database migration
@@ -88,17 +83,8 @@ that environment explicitly; do not describe an unavailable check as passed.
 
 ## Deployment Gate
 
-No deployment is implied by merging to `develop`.
-
-Before changing production:
-
-1. review the exact diff from the deployed commit;
-2. validate migrations against the production clone;
-3. prove old-client compatibility and existing payload behavior;
-4. build from a clean, identifiable commit;
-5. separate additive deployment from feature/configuration activation;
-6. record the deployed revision and rollback point;
-7. run focused authenticated smoke checks after deployment.
+Use `release-boundary.md` for the executable build, image, deployment, and
+rollback path. Feature deployment and feature activation remain separate.
 
 Changes affecting both repositories use one GitHub parent issue for shared
 sequence and compatibility state, with one repository-owned task per repo.

@@ -112,8 +112,6 @@ datarun:
   security:
     authentication:
       jwt:
-        # This token must be encoded using Base64 and be at least 256 bits long (you can type `openssl rand -base64 64` on your command line to generate a 512 bits one)
-        base64-secret: MjJmNDA2ZjQwMzg5NWE0ZDFiZmZmY2IzYzk2NmQ0MmI4OTM0NWU1MDBjYmU1N2VkYmNjOWM2ZmI2OGVlZWVmYTI0NDM0Y2JhY2ZhMWI2Nzg2ZGY2YWNhZjNmMTViYTcyZTNmMjMwNmFjZTRkMTAzOTVhYjlkNDRhOWZhNDJhY2I=
         #        token-validity-in-seconds: 900 # Token is valid 15 minutes
         token-validity-in-seconds: 86400 # Token is valid 24 hours
         refresh-token-validity-in-seconds: 2592000 # 30 days
@@ -179,8 +177,8 @@ jhipster:
   security:
     authentication:
       jwt:
-        # This token must be encoded using Base64 and be at least 256 bits long (you can type `openssl rand -base64 64` on your command line to generate a 512 bits one)
-        base64-secret: MjJmNDA2ZjQwMzg5NWE0ZDFiZmZmY2IzYzk2NmQ0MmI4OTM0NWU1MDBjYmU1N2VkYmNjOWM2ZmI2OGVlZWVmYTI0NDM0Y2JhY2ZhMWI2Nzg2ZGY2YWNhZjNmMTViYTcyZTNmMjMwNmFjZTRkMTAzOTVhYjlkNDRhOWZhNDJhY2I=
+        # Public development fallback; production requires DATARUN_JWT_BASE64_SECRET.
+        base64-secret: ${DATARUN_DEV_JWT_BASE64_SECRET:RGF0YVJ1bi1kZXZlbG9wbWVudC1vbmx5LUpXVC1rZXktbm90LWZvci1wcm9kdWN0aW9uLTIwMjYtMDctMjY=}
         # Token is valid 24 hours
         token-validity-in-seconds: 86400 # Token is valid 24 hours
         #        token-validity-in-seconds: 900 # Token is valid 15 minutes

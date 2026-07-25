@@ -1,0 +1,112 @@
+name: datarun
+
+services:
+  app:
+    image: "${DATARUN_API_IMAGE:?Set DATARUN_API_IMAGE to an immutable DataRun API image}"
+    restart: always
+    container_name: datarunapi
+    mem_limit: 2500m
+    environment:
+      - _JAVA_OPTIONS=-Xms1g -Xmx1700m -XX:MaxMetaspaceSize=256m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/heapdump.hprof
+      - SPRING_PROFILES_ACTIVE=prod,api-docs
+      - MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED=true
+      - SPRING_DATASOURCE_USERNAME=nmcpdb
+      - SPRING_DATASOURCE_PASSWORD=${NMCPDB_PASSWORD:?Set NMCPDB_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/nmcpdb
+      - SPRING_LIQUIBASE_URL=jdbc:postgresql://postgresql:5432/nmcpdb
+      - SPRING_LIQUIBASE_USER=nmcpdb
+      - SPRING_LIQUIBASE_PASSWORD=${NMCPDB_PASSWORD:?Set NMCPDB_PASSWORD}
+      - SPRING_DATA_MONGODB_USERNAME=drunuser
+      - SPRING_DATA_MONGODB_PASSWORD=${MONGO_APP_PASSWORD:?Set MONGO_APP_PASSWORD}
+      - SPRING_DATA_MONGODB_URI=${MONGO_APP_URI:?Set MONGO_APP_URI}
+      - DATARUN_JWT_BASE64_SECRET=${DATARUN_JWT_BASE64_SECRET:?Set DATARUN_JWT_BASE64_SECRET}
+    ports:
+      - 8080:8080
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:8080/management/health
+      interval: 5s
+      timeout: 5s
+      retries: 40
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+
+  postgresql:
+    image: "ghcr.io/vadosware/pg_idkit:0.2.3-pg16.2-alpine3.18-amd64"
+    restart: always
+    container_name: nmcp-db
+    shm_size: 1gb
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+      - ./postgis-entrypoint/init-user-db.sh:/docker-entrypoint-initdb.d/init-user-db.sh
+    environment:
+      - POSTGRES_USER=nmcpdb
+      - POSTGRES_PASSWORD=${NMCPDB_PASSWORD:?Set NMCPDB_PASSWORD}
+      - POSTGRES_DB=nmcpdb
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo:7.0.6
+    restart: always
+    container_name: mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=dRunMongoDb
+      - MONGO_INITDB_USER=drunuser
+      - MONGO_INITDB_PWD=${MONGO_APP_PASSWORD:?Set MONGO_APP_PASSWORD}
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb_data:/data/db/
+      - ./mongo-entrypoint/:/docker-entrypoint-initdb.d/
+    command: mongod
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'mongosh --quiet --username "$${MONGO_INITDB_ROOT_USERNAME}" --password "$${MONGO_INITDB_ROOT_PASSWORD}" --authenticationDatabase admin --eval "quit(db.runCommand({ ping: 1 }).ok ? 0 : 2)" >/dev/null',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  nginx:
+    image: nginx
+    restart: always
+    container_name: datarun-nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/certbot:/etc/letsencrypt
+      - ./nginx/www:/var/www/certbot
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      app:
+        condition: service_healthy
+
+  letsencrypt:
+    image: certbot/certbot
+    volumes:
+      - ./nginx/certbot:/etc/letsencrypt
+      - ./nginx/www:/var/www/certbot
+    command: ["certonly", "--dns-google", "--dns-google-credentials", "/etc/google/credentials.json", "-d", "api.nmcpye.org"]
+    depends_on:
+      - nginx
+
+volumes:
+  mongodb_data:
+  postgis_data:

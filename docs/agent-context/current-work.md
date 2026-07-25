@@ -1,6 +1,6 @@
 # Current Work
 
-Updated: 2026-07-25
+Updated: 2026-07-26
 
 Purpose: accepted server work only. This file is not code, API, architecture,
 or deployment authority.
@@ -15,6 +15,13 @@ or deployment authority.
 The server task closes before catalog import or a Reference form is assigned.
 Detailed implementation evidence belongs in `reference-boundary.md`; mutable
 status belongs in the issues.
+
+## Next
+
+- After Reference activation, characterize and consolidate JWT/token ownership
+  across server login, refresh, and mobile offline re-entry. Keep one active
+  signing-secret owner and one intentional lifetime policy; do not rotate the
+  production secret or change reauthentication behavior inside that cleanup.
 
 ## Maintenance
 

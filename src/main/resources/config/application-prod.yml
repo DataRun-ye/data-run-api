@@ -49,13 +49,13 @@ spring:
 #      port: 8500
   data:
     mongodb:
-      uri: mongodb://dRunUser:dRunUser@localhost:27017/dataRunApi
+      uri: ${SPRING_DATA_MONGODB_URI}
       auto-index-creation: true
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:postgresql://localhost:5432/dataRunApiStages
-    username: dataRunApi
-    password: dataRunApi
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     hikari:
       poolName: Hikari
       auto-commit: false
@@ -110,8 +110,6 @@ datarun:
   security:
     authentication:
       jwt:
-        # This token must be encoded using Base64 and be at least 256 bits long (you can type `openssl rand -base64 64` on your command line to generate a 512 bits one)
-        base64-secret: MjJmNDA2ZjQwMzg5NWE0ZDFiZmZmY2IzYzk2NmQ0MmI4OTM0NWU1MDBjYmU1N2VkYmNjOWM2ZmI2OGVlZWVmYTI0NDM0Y2JhY2ZhMWI2Nzg2ZGY2YWNhZjNmMTViYTcyZTNmMjMwNmFjZTRkMTAzOTVhYjlkNDRhOWZhNDJhY2I=
         # Token is valid 24 hours
         token-validity-in-seconds: 864000 # 7 days
 #        token-validity-in-seconds: 86400 # 24 hours
@@ -154,12 +152,7 @@ jhipster:
   security:
     authentication:
       jwt:
-        # This token must be encoded using Base64 and be at least 256 bits long (you can type `openssl rand -base64 64` on your command line to generate a 512 bits one)
-        # As this is the PRODUCTION configuration, you MUST change the default key, and store it securely:
-        # - In the Consul configserver
-        # - In a separate `application-prod.yml` file, in the same folder as your executable JAR file
-        # - In the `JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET` environment variable
-        base64-secret: MjJmNDA2ZjQwMzg5NWE0ZDFiZmZmY2IzYzk2NmQ0MmI4OTM0NWU1MDBjYmU1N2VkYmNjOWM2ZmI2OGVlZWVmYTI0NDM0Y2JhY2ZhMWI2Nzg2ZGY2YWNhZjNmMTViYTcyZTNmMjMwNmFjZTRkMTAzOTVhYjlkNDRhOWZhNDJhY2I=
+        base64-secret: ${DATARUN_JWT_BASE64_SECRET}
         token-validity-in-seconds: 86400 # Token is valid 24 hours
         token-validity-in-seconds-for-remember-me: 2592000
   mail: # specific JHipster mail property, for standard properties see MailProperties
