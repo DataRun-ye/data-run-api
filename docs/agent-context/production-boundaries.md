@@ -57,6 +57,16 @@ When evidence conflicts:
   rollback when safe.
 - Before deployment, inspect production `databasechangelog`, restore or use
   the production clone, and prove the migration from that exact state.
+- Treat database access through `docker exec` and database access through
+  Maven/Liquibase over TCP as separate credential paths. An existing
+  PostgreSQL volume can retain role passwords that do not match the
+  container's current `POSTGRES_PASSWORD`; never infer usable Liquibase
+  credentials from that environment variable.
+- For migration proof, use an isolated restored clone and a disposable,
+  clone-only database role. Generate its secret outside the repository, pass
+  it through a temporary environment/settings file without printing it, and
+  remove the role, secret, settings file, and disposable database after the
+  evidence is captured. Never substitute production credentials.
 - Source removal and table removal are separate slices. A dormant table is not
   permission to drop production data.
 - Never point tests, local startup, or migration tooling at production
