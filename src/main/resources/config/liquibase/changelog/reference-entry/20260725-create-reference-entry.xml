@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260725-01-create-reference-entry" author="datarunapi">
+        <createTable tableName="reference_entry">
+            <column name="id" type="varchar(26)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="uid" type="varchar(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="display_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="org_unit_id" type="varchar(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="first_registered_activity_id" type="varchar(26)"/>
+            <column name="created_by" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="created_date" type="timestamp(6)"/>
+            <column name="last_modified_date" type="timestamp(6)"/>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="reference_entry"
+            columnNames="uid"
+            constraintName="uc_reference_entry_uid"/>
+
+        <sql dbms="postgresql">
+            ALTER TABLE reference_entry
+            ADD CONSTRAINT ck_reference_entry_uid
+            CHECK (uid ~ '^[a-zA-Z][a-zA-Z0-9]{10}$')
+        </sql>
+
+        <addForeignKeyConstraint
+            baseTableName="reference_entry"
+            baseColumnNames="org_unit_id"
+            referencedTableName="org_unit"
+            referencedColumnNames="id"
+            constraintName="fk_reference_entry_org_unit"/>
+
+        <addForeignKeyConstraint
+            baseTableName="reference_entry"
+            baseColumnNames="first_registered_activity_id"
+            referencedTableName="activity"
+            referencedColumnNames="id"
+            constraintName="fk_reference_entry_first_activity"/>
+
+        <createIndex
+            indexName="idx_reference_entry_org_unit_uid"
+            tableName="reference_entry">
+            <column name="org_unit_id"/>
+            <column name="uid"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="reference_entry"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

@@ -39,6 +39,7 @@ public enum ErrorCode {
     E1120("Inconsistent state: FormTemplate `{0}` have no Version in the system"),
     E1121("selected Choices {0} in multi select element do not exist"),
     E1122("element: `{0}`,`{1}` is not a Categorical complex reference type"),
+    E1123("Reference-enabled assignment `{0}` cannot change scope or remove its Reference form"),
     E1199("System configuration Error: `{0}`"),
 
     /* Query */

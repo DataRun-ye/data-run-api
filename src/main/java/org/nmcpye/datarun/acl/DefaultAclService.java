@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.acl;
 
 import org.nmcpye.datarun.common.AuditableObject;
-import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
+import org.nmcpye.datarun.jpa.accessfilter.FormAccessService;
 import org.nmcpye.datarun.mongo.domain.DataFormSubmission;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.springframework.security.acls.domain.CumulativePermission;

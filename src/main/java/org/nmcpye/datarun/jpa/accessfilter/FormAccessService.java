@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.mongo.accessfilter;
+package org.nmcpye.datarun.jpa.accessfilter;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.mapstruct.Named;

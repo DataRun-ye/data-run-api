@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.jpa.assignment.service;
 
 import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.datatemplateprocessor.ReferenceAssignmentFormGate;
+import org.nmcpye.datarun.datatemplateprocessor.ReferenceAssignmentScopeGuard;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
@@ -14,10 +16,12 @@ import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +45,8 @@ public class DefaultAssignmentService
     private final OrgUnitRepository orgUnitRepository;
     private final AssignmentMaintenanceService maintenanceService;
     private final AssignmentWithAccessMapper assignmentMapper;
+    private final ReferenceAssignmentFormGate referenceAssignmentFormGate;
+    private final ReferenceAssignmentScopeGuard referenceAssignmentScopeGuard;
 
     public DefaultAssignmentService(AssignmentRepository repository,
                                     TeamRepository teamRepository,
@@ -48,7 +54,12 @@ public class DefaultAssignmentService
                                     UserAccessService userAccessService,
                                     CacheManager cacheManager,
                                     AssignmentMaintenanceService maintenanceService,
-                                    AssignmentWithAccessMapper assignmentMapper, AssignmentRepository assignmentRepository, DataSubmissionRepository submissionRepository, ActivityRepository activityRepository) {
+                                    AssignmentWithAccessMapper assignmentMapper,
+                                    AssignmentRepository assignmentRepository,
+                                    DataSubmissionRepository submissionRepository,
+                                    ActivityRepository activityRepository,
+                                    ReferenceAssignmentFormGate referenceAssignmentFormGate,
+                                    ReferenceAssignmentScopeGuard referenceAssignmentScopeGuard) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.teamRepository = teamRepository;
@@ -57,10 +68,13 @@ public class DefaultAssignmentService
         this.assignmentMapper = assignmentMapper;
         this.submissionRepository = submissionRepository;
         this.activityRepository = activityRepository;
+        this.referenceAssignmentFormGate = referenceAssignmentFormGate;
+        this.referenceAssignmentScopeGuard = referenceAssignmentScopeGuard;
     }
 
     @Override
     public Assignment saveWithRelations(Assignment object) {
+        Assignment existing = findExisting(object).orElse(null);
 
         Team team = null;
         Activity activity = null;
@@ -77,6 +91,12 @@ public class DefaultAssignmentService
         if (object.getOrgUnit() != null) {
             orgUnit = findOrgUnit(object.getOrgUnit());
         }
+
+        referenceAssignmentScopeGuard.validateScopeUpdate(
+            existing,
+            activity,
+            orgUnit,
+            object.getForms());
 
         Assignment parent = object.getParent();
         if (parent != null) {
@@ -114,11 +134,40 @@ public class DefaultAssignmentService
         return Optional.ofNullable(orgUnit.getId()).flatMap(orgUnitRepository::findById).or(() -> Optional.ofNullable(orgUnit.getUid()).flatMap(orgUnitRepository::findByUid)).or(() -> Optional.ofNullable(orgUnit.getCode()).flatMap(orgUnitRepository::findByCode)).orElseThrow(() -> new PropertyNotFoundException("OrgUniy not found: " + orgUnit));
     }
 
+    private Optional<Assignment> findExisting(Assignment assignment) {
+        return Optional.ofNullable(assignment.getId())
+            .flatMap(repository::findById)
+            .or(() -> Optional.ofNullable(assignment.getUid())
+                .flatMap(repository::findByUid));
+    }
+
     @Override
     @Transactional(readOnly = true)
-    public Page<AssignmentWithAccessDto> getAllUserAccessibleDto(QueryRequest queryRequest, String jsonQueryBody) {
+    public Page<AssignmentWithAccessDto> getAllUserAccessibleDto(
+        QueryRequest queryRequest,
+        String jsonQueryBody,
+        int referenceVersion) {
         Page<Assignment> assignedPage = findAllByUser(queryRequest, jsonQueryBody);
-        return assignedPage.map(assignmentMapper::toDto);
+        Page<AssignmentWithAccessDto> response = assignedPage.map(assignmentMapper::toDto);
+        referenceAssignmentFormGate.filterUnsupportedForms(
+            assignedPage.getContent(),
+            response.getContent(),
+            referenceVersion);
+        return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Assignment> findAccessibleByIdOrUid(String idOrUid) {
+        QueryRequest queryRequest = new QueryRequest();
+        Specification<Assignment> identity = (root, query, cb) -> cb.or(
+            cb.equal(root.get("id"), idOrUid),
+            cb.equal(root.get("uid"), idOrUid));
+        Specification<Assignment> access = baseAccessSpecification(
+            SecurityUtils.getCurrentUserDetailsOrThrow(),
+            queryRequest,
+            null);
+        return repository.findOne(access.and(identity));
     }
 
     List<Assignment> getAssignmentsWithChildren(Collection<String> uids) {

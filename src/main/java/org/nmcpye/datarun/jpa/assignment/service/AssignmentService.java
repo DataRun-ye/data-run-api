@@ -6,6 +6,8 @@ import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.springframework.data.domain.Page;
 
+import java.util.Optional;
+
 public interface AssignmentService
     extends JpaIdentifiableObjectService<Assignment> {
 
@@ -21,5 +23,10 @@ public interface AssignmentService
 
     void forceUpdatePaths();
 
-    Page<AssignmentWithAccessDto> getAllUserAccessibleDto(QueryRequest queryRequest, String jsonQueryBody);
+    Page<AssignmentWithAccessDto> getAllUserAccessibleDto(
+        QueryRequest queryRequest,
+        String jsonQueryBody,
+        int referenceVersion);
+
+    Optional<Assignment> findAccessibleByIdOrUid(String idOrUid);
 }

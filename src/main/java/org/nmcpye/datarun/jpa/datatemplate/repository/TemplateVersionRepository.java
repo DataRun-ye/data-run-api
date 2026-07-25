@@ -7,6 +7,8 @@ import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -43,6 +45,19 @@ public interface TemplateVersionRepository
     Set<TemplateVersion> findAllByTemplateUidInOrderByVersionNumberDesc(Collection<String> uids);
 
     List<TemplateVersion> findDistinctByTemplateUidInOrderByVersionNumberDesc(Collection<String> uids);
+
+    @Query("""
+        select tv
+        from TemplateVersion tv
+        where tv.templateUid in :templateUids
+          and tv.versionNumber = (
+              select max(candidate.versionNumber)
+              from TemplateVersion candidate
+              where candidate.templateUid = tv.templateUid
+          )
+        """)
+    List<TemplateVersion> findLatestByTemplateUidIn(
+        @Param("templateUids") Collection<String> templateUids);
 
     @Override
     default List<TemplateVersion> findAllByCodeIn(Collection<String> codes) {

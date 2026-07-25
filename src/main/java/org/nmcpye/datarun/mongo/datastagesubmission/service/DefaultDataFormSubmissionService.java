@@ -6,7 +6,7 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
-import org.nmcpye.datarun.mongo.accessfilter.FormAccessService;
+import org.nmcpye.datarun.jpa.accessfilter.FormAccessService;
 import org.nmcpye.datarun.mongo.common.DefaultMongoSoftDeleteService;
 import org.nmcpye.datarun.mongo.datastagesubmission.repository.DataFormSubmissionRepository;
 import org.nmcpye.datarun.mongo.datatemplateversion.DataTemplateVersion;

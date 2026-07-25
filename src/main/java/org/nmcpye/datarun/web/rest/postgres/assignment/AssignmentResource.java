@@ -47,11 +47,16 @@ public class AssignmentResource
     @RequestMapping(value = "forms", method = {RequestMethod.GET, RequestMethod.POST})
     protected ResponseEntity<PagedResponse<?>> getAllDto(QueryRequest queryRequest,
                                                          @RequestBody(required = false) String jsonQuery,
+                                                         @RequestParam(name = "referenceVersion", required = false, defaultValue = "0")
+                                                         int referenceVersion,
                                                          @AuthenticationPrincipal CurrentUserDetails user) throws Exception {
         hasMinimalRightsOrThrow(user);
         log.debug("REST request to getAll {}:{}", user.getUsername(), getName());
 
-        Page<AssignmentWithAccessDto> processedPage = assignmentService.getAllUserAccessibleDto(queryRequest, jsonQuery);
+        Page<AssignmentWithAccessDto> processedPage = assignmentService.getAllUserAccessibleDto(
+            queryRequest,
+            jsonQuery,
+            referenceVersion);
 
         String next = PagingConfigurator.createNextPageLink(processedPage);
 

@@ -19,7 +19,6 @@ public abstract class AbstractFormElementHandler<T extends AbstractElement>
         FormElementHandler<FormDataElementConf> handlerChain = new ValidateValueTypeHandler(source);
         handlerChain
             .linkWith(new CopyMainPropertiesHandler(source))
-            .linkWith(new ValidateReferenceTypeHandler(source))
             .linkWith(new MigrateDeprecatedPropertiesHandler(source));
 
         return handlerChain.process(element);
