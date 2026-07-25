@@ -2,16 +2,14 @@
 
 Role: implemented server contract and activation boundary
 
-Status: IMPLEMENTED ON `develop`; PRODUCTION DEPLOYMENT AND ACTIVATION PENDING
-
-Validated: 2026-07-25 at `0d83c580`
+Status: DEPLOYED; PRODUCTION ACTIVATION PENDING
 
 The durable end-to-end product contract is owned by the mobile repository's
 [bounded Reference plan](https://github.com/DataRun-ye/data-run-mobile/blob/develop/docs/agent-context/10-bounded-reference-field-plan.md).
 Mutable cross-repository status belongs in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34).
-The server-owned deployment task is
-[DataRun API #35](https://github.com/DataRun-ye/data-run-api/issues/35).
+The server foundation was deployed in `v6.4.0`. Activation status remains in
+[DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34).
 
 ## Implemented Server Surface
 
@@ -61,8 +59,9 @@ and is included by `master.xml`.
 - Assignment activity and organization-unit mutation is rejected when it
   would invalidate a Reference-enabled assignment scope.
 
-No Reference form is assigned in production, and the server commits above are
-not deployed. Do not infer activation from source reachability.
+No new Reference workflow is assigned in production. The additive migration is
+applied and the production catalog remains empty. Do not infer activation from
+deployed source reachability.
 
 ## Verification Evidence
 
@@ -76,7 +75,6 @@ Focused tests cover:
 - legacy payload mapping and the explicit Reference route;
 - complete rollback of catalog/submission work on failure.
 
-Production closure remains the work in issue #35: validate the migration
-against the production clone, deploy while unassigned, and smoke existing
-client/configuration/submission behavior. Catalog import and test-assignment
-activation happen only after that closes.
+Production `v6.4.0` passed health, release-identity, login, and configuration
+smoke checks after the additive migration. Catalog import and controlled
+test-assignment activation remain separate work.

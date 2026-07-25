@@ -1,6 +1,6 @@
 # Completed Work
 
-Updated: 2026-07-25
+Updated: 2026-07-26
 
 Purpose: compact historical outcomes only. This file is not current runtime or
 deployment authority.
@@ -15,6 +15,9 @@ deployment authority.
   ETL/ledger storage.
 - `0d83c580`: inactive assignment-member source was removed without dropping
   production tables.
+- `v6.4.0`: the immutable server image, additive Reference migration, external
+  JWT-key ownership, and existing login/configuration behavior were verified
+  in production without activating the new Reference workflow.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.
