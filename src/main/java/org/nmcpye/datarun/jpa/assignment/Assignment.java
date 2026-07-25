@@ -21,7 +21,6 @@ import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.team.Team;
-import org.nmcpye.datarun.party.entities.PartySet;
 
 import java.time.Instant;
 import java.util.*;
@@ -86,7 +85,7 @@ public class Assignment extends JpaSoftDeleteObject {
 
     @ManyToOne
     @JsonProperty
-    @JsonIgnoreProperties(value = {"defaultPartySet", "activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"activity", "team", "orgUnit", "parent", "children", "ancestors", "level", "createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
     private Assignment parent;
 
     @Type(JsonType.class)
@@ -113,11 +112,6 @@ public class Assignment extends JpaSoftDeleteObject {
     @JsonProperty
     protected Map<String, Object> properties;
 
-    @ManyToOne
-    @JsonIgnoreProperties(value = {"createdBy", "createdDate", "lastModifiedDate", "lastModifiedBy"}, allowSetters = true)
-    @JoinColumn(name = "default_party_set_id")
-    private PartySet defaultPartySet;
-
     /**
      * The name of this object. Required and unique.
      */
@@ -126,16 +120,6 @@ public class Assignment extends JpaSoftDeleteObject {
 
     @Column(name = "code", length = 100, unique = true)
     protected String code;
-
-    @JsonIgnore
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "assignment")
-    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    private Set<AssignmentDataTemplateEntity> dataTemplates = new HashSet<>();
-
-    @JsonIgnore
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "assignment")
-    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    private Set<AssignmentPartyBinding> bindings = new HashSet<>();
 
     @JsonIgnore
     @OneToMany(fetch = FetchType.LAZY)

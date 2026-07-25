@@ -70,8 +70,6 @@ spring:
       auto-commit: false
   liquibase:
     contexts: dev
-  jooq:
-    sql-dialect: postgres
   mail:
     host: localhost
     port: 25

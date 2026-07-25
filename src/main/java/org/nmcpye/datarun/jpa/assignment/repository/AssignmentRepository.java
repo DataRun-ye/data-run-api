@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.jpa.assignment.repository;
 
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.dto.AssignmentManifestProjection;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -110,15 +109,6 @@ public interface AssignmentRepository
 //    Page<AssignmentSummary> findSummariesTeam(@Param("teamIds") Collection<String> teamIds, Pageable pageable);
 //
 
-
-    @Query("SELECT a.id as assignmentId, a.uid as assignmentUid, a.name as label, a.activity.uid as activityUid, " +
-        "a.orgUnit.uid as orgUnitUid, " +
-        "a.team.uid as teamUid, a.deleted, a.startDay, " +
-        "a.status, a.forms, a.lastModifiedDate " +
-        "FROM Assignment a " +
-//        "LEFT JOIN a.activity LEFT JOIN a.team LEFT JOIN a.orgUnit " +
-        "WHERE a.uid IN :uids ")
-    List<AssignmentManifestProjection> findAssignmentManifestsByUids(@Param("uids") List<String> uids);
 
 //    @Query(
 //        value = "select assignment from Assignment assignment " +
