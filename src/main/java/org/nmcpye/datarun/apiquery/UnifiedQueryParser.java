@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * represent mongo-like {@link SimpleFilter} and {@link CompoundFilter}
- * for both Jpa and Mongo entities, For example,
+ * Represents the legacy query syntax as {@link SimpleFilter} and {@link CompoundFilter}
+ * expressions for JPA queries. For example,
  *
  * <pre>{@code
  *      {"name": {"$eq": "ANC"}}
@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
  *
  * @author Hamza Assada 23/03/2025 (7amza.it@gmail.com)
  * @see JpaQueryBuilder
- * @see MongoQueryBuilder
  */
 public class UnifiedQueryParser {
 
@@ -96,4 +95,3 @@ public class UnifiedQueryParser {
     }
 
 }
-

@@ -55,10 +55,6 @@ spring:
 #          - git-branch=${git.branch:}
 #      host: localhost
 #      port: 8500
-  data:
-    mongodb:
-      uri: mongodb://dRunUser:dRunUser@localhost:27017/dataRunApi
-      auto-index-creation: true
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     url: jdbc:postgresql://localhost:5432/dataRunApiStages
@@ -82,21 +78,6 @@ spring:
 #  batch:
 #    jdbc:
 #      initialize-schema: always
-#debezium:
-#  connectors:
-#    mongodb:
-#      name: submissions-cdc
-#      connector.class: MongoDbConnector
-#      tasks.max: 1
-#      database.hosts: mongodb:27017
-#      database.user: cdc_user
-#      database.password: s3cr3t
-#      database.include.list: datarun
-#      collection.include.list: datarun.submissions
-#      transforms: unwrap, flatten
-#      transforms.unwrap.type: io.debezium.transforms.ExtractNewRecordState
-#      transforms.flatten.type: org.apache.kafka.connect.transforms.Flatten$Value
-
 server:
   port: 8080
   # From the jhipster new upgrade
@@ -139,20 +120,9 @@ pilot:
     backfill: true
     projection: true
 
-# from mongo, do we run or not, comment all if not
 migration:
-  mongo:
-    collection: data_form_submission
-  chunk:
-    size: 150
-  page:
-    size: 100
-  run: true
-  auto-start: true
-
   size: 200
   cron: "0 */1 * * * *"
-  generate-missing-ids: true
   submissionUids: Eelt7ZePvz0, LaGeMmmCEtH, QIMwgBqVsqW, zglED4TsbTh, M3fdtzBSpn8, RQlMiMcukid, gGyX1CVnOaw, YLcsWJlB7uy, hcLU8ZtUdSd, Ls9TW9eSlYH, ck2pHW93sk2, rkwH5QNofRn, KcsA3KETRbY, woOl5yAmi8C, BoEmHvJUEpb,W8EtCDYfp1w, MrxGOZ6stwS, UYBPOIfCU0a, mpmjpJcMuas, IP2dMtoJkO4, ONIaOpzoYAe
   runOutboxBackfill: true
 

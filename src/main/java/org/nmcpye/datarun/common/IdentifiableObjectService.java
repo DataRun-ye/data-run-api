@@ -1,6 +1,6 @@
 package org.nmcpye.datarun.common;
 
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.springframework.data.domain.Page;
 
 import java.util.Optional;

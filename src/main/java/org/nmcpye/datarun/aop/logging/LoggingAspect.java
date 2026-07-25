@@ -47,13 +47,10 @@ public class LoggingAspect {
      * Pointcut that matches all Spring beans in the application's main packages.
      */
     @Pointcut(
-        "within(org.nmcpye.datarun.jpa.*.repository..*)" +
+            "within(org.nmcpye.datarun.jpa.*.repository..*)" +
             " || within(org.nmcpye.datarun.jpa.*.service..*)" +
             " || within(org.nmcpye.datarun.jpa.common..*)" +
-            " || within(org.nmcpye.datarun.mongo..*)" +
-            " || within(org.nmcpye.datarun.mongo..*)" +
             " || within(org.nmcpye.datarun.web.rest..*)" +
-            " || within(org.nmcpye.datarun.web.rest.mongo..*)" +
             " || within(org.nmcpye.datarun.common..*)"
     )
     public void applicationPackagePointcut() {

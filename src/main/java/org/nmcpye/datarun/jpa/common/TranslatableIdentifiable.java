@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.translation.Translatable;
 import org.nmcpye.datarun.common.translation.Translation;
@@ -61,7 +60,6 @@ abstract public class TranslatableIdentifiable extends JpaIdentifiableObject {
     // -------------------------------------------------------------------------
 
     @JsonIgnore
-    @BsonIgnore
     public Map<String, String> getTranslationCache() {
         return translationCache;
     }

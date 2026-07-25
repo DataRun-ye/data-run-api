@@ -5,7 +5,7 @@ import org.nmcpye.datarun.common.BaseMapper;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateDto;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
-import org.nmcpye.datarun.mongo.datatemplateversion.dto.FormTemplateVersionDto;
+import org.nmcpye.datarun.jpa.datatemplate.dto.FormTemplateVersionDto;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE,
     componentModel = MappingConstants.ComponentModel.SPRING)

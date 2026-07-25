@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.hibernate.annotations.Type;
 import org.nmcpye.datarun.common.translation.Translation;
 import org.nmcpye.datarun.security.CurrentUserDetails;
@@ -58,7 +57,6 @@ abstract public class TranslatableObject {
     // -------------------------------------------------------------------------
 
     @JsonIgnore
-    @BsonIgnore
     public Map<String, String> getTranslationCache() {
         return translationCache;
     }

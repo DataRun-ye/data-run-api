@@ -10,7 +10,7 @@ import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
 import org.nmcpye.datarun.jpa.reference.ReferenceEntry;
 import org.nmcpye.datarun.jpa.reference.ReferenceEntryRepository;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
-import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
+import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

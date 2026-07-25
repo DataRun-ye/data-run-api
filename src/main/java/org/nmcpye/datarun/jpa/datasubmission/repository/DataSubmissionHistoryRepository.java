@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * Spring Data MongoDB repository for the DataFormTemplate entity.
+ * JPA repository for submission history.
  */
 @Repository
 public interface DataSubmissionHistoryRepository

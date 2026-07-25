@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/// Spring Data MongoDB repository for the DataFormTemplate entity.
+/// JPA repository for persisted template elements.
 @Repository
 //@JaversSpringDataAuditable
 public interface TemplateElementRepository
