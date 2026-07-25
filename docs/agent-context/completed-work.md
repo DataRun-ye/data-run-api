@@ -28,6 +28,10 @@ deployment authority.
 - The immutable `6.4.1-40f176dde05b` candidate passed the release gate and
   isolated staging smoke against the production clone with Mongo stopped:
   health, identity, login, configuration reads, and ordinary submission upload.
+- `v6.4.1` is deployed in production. Public health/build identity and
+  authenticated mobile configuration sync passed; the app-owned UID migration
+  ran successfully. Empty Mongo persistence and its production Compose
+  service, volumes, and images were removed after backup and verification.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

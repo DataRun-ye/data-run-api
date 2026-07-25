@@ -35,10 +35,10 @@ When evidence conflicts:
   contract tests. Mobile assumptions must be characterized in mobile tests
   rather than copied here.
 - PostgreSQL/JPA/Liquibase are active production boundaries. Mongo persistence
-  and runtime ownership were removed from `develop` after all eight production
-  collections were confirmed empty and the candidate passed against the
-  production clone with Mongo stopped. The currently deployed production
-  Compose still owns the empty Mongo service until that candidate is promoted.
+  and runtime ownership were removed after all eight production collections
+  were confirmed empty and the candidate passed against the production clone
+  with Mongo stopped. Production no longer contains the Mongo service, volumes,
+  or image.
 - The old jOOQ/analytics-query, Party, and assignment-member implementations
   were removed from `develop`. The restored 2026-07-25 production clone
   confirmed that the legacy Party/assignment tables left by those attempts
