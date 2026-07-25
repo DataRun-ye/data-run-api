@@ -72,8 +72,8 @@ public class MaterializedViewRefresher {
         viewToSourceMaxSql.put("analytics.dim_malaria_unit_user_group",
                 "SELECT GREATEST(MAX(created_date), MAX(last_modified_date)) FROM public.user_group");
 
-        viewToSourceMaxSql.put("analytics.ref_value_enriched",
-                "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.ref_type_value");
+//        viewToSourceMaxSql.put("analytics.ref_value_enriched",
+//                "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.ref_type_value");
         // for each other
         viewToSourceMaxSql.put("analytics.events_enriched",
                 "SELECT GREATEST(MAX(created_at), MAX(updated_at)) FROM analytics.events");
