@@ -25,6 +25,9 @@ deployment authority.
 - `90281457`: the test runtime was aligned with the local Docker API, the
   app-owned `generate_uid()` function entered Liquibase ownership, and focused
   JWT tests were aligned with the active V1 endpoint.
+- The immutable `6.4.1-40f176dde05b` candidate passed the release gate and
+  isolated staging smoke against the production clone with Mongo stopped:
+  health, identity, login, configuration reads, and ordinary submission upload.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

@@ -1,0 +1,35 @@
+name: datarun-staging
+
+services:
+  app:
+    image: "${DATARUN_API_IMAGE:?Set DATARUN_API_IMAGE to an immutable DataRun API image}"
+    restart: unless-stopped
+    environment:
+      - _JAVA_OPTIONS=-Xms512m -Xmx1200m -XX:MaxMetaspaceSize=256m -XX:+UseG1GC
+      - SPRING_PROFILES_ACTIVE=prod,api-docs
+      - MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED=false
+      - SPRING_DATASOURCE_URL=${STAGING_DATABASE_URL:?Set STAGING_DATABASE_URL}
+      - SPRING_DATASOURCE_USERNAME=${STAGING_DATABASE_USERNAME:?Set STAGING_DATABASE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${STAGING_DATABASE_PASSWORD:?Set STAGING_DATABASE_PASSWORD}
+      - SPRING_LIQUIBASE_URL=${STAGING_DATABASE_URL:?Set STAGING_DATABASE_URL}
+      - SPRING_LIQUIBASE_USER=${STAGING_DATABASE_USERNAME:?Set STAGING_DATABASE_USERNAME}
+      - SPRING_LIQUIBASE_PASSWORD=${STAGING_DATABASE_PASSWORD:?Set STAGING_DATABASE_PASSWORD}
+      - DATARUN_JWT_BASE64_SECRET=${DATARUN_JWT_BASE64_SECRET:?Set DATARUN_JWT_BASE64_SECRET}
+    ports:
+      - "${DATARUN_STAGING_BIND_ADDRESS:-127.0.0.1}:${DATARUN_STAGING_PORT:-18080}:8080"
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:8080/management/health
+      interval: 5s
+      timeout: 5s
+      retries: 40
+    networks:
+      - staging-database
+
+networks:
+  staging-database:
+    external: true
+    name: "${STAGING_DATABASE_NETWORK:?Set STAGING_DATABASE_NETWORK}"

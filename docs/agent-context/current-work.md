@@ -7,10 +7,10 @@ or deployment authority.
 
 ## Now
 
-- Establish one isolated staging environment with its own database, secrets,
-  Compose project, and URL. Smoke the Mongo-retired candidate there before
-  promoting it to production. Remove the empty production Mongo container and
-  volume only after the replacement API is verified.
+- Promote the staged `6.4.1` Mongo-retired candidate only after explicit
+  approval: merge to `main`, tag and push the immutable image, back up
+  PostgreSQL, replace the production API, run the ordinary smoke gate, then
+  remove the confirmed-empty Mongo container and volume.
 
 Reference activation remains parked in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while

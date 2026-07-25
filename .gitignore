@@ -121,6 +121,10 @@ Desktop.ini
 !/deploy/production/
 !/deploy/production/compose.yml
 !/deploy/production/.env.example
+!/deploy/staging/
+!/deploy/staging/compose.yml
+!/deploy/staging/.env.example
+/deploy/staging/.env
 
 ######################
 # Logs

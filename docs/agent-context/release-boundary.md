@@ -31,6 +31,23 @@ scripts/release/build-image.sh --tar
 The scripts require a clean tree. The gate runs tests, production build checks,
 JAR version/commit verification, and a local image-tar build.
 
+## Staging
+
+`deploy/staging/compose.yml` runs only the candidate API against a dedicated
+local clone database on an external Docker network. It has its own JWT secret,
+Compose project, and port; its ignored `.env` must never contain production
+credentials.
+
+```bash
+cp deploy/staging/.env.example deploy/staging/.env
+chmod 600 deploy/staging/.env
+docker load -i target/jib-image.tar
+docker compose --env-file deploy/staging/.env -f deploy/staging/compose.yml up -d
+```
+
+Before promotion, verify health and `/management/info`, then smoke login,
+configuration reads, and one ordinary idempotent submission upload.
+
 ## Release
 
 1. Merge the verified candidate to `main` and tag `v<version>`.
