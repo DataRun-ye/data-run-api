@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260726-create-generate-uid" author="Hamza">
+        <sql splitStatements="false"><![CDATA[
+            CREATE OR REPLACE FUNCTION public.generate_uid()
+            RETURNS text
+            LANGUAGE plpgsql
+            AS $function$
+            DECLARE
+                letters TEXT := 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                allowed_chars TEXT := '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                uid TEXT := '';
+                i INT;
+            BEGIN
+                uid := substr(letters, floor(random() * length(letters) + 1)::int, 1);
+
+                FOR i IN 1..10 LOOP
+                    uid := uid || substr(allowed_chars, floor(random() * length(allowed_chars) + 1)::int, 1);
+                END LOOP;
+
+                RETURN uid;
+            END;
+            $function$;
+        ]]></sql>
+    </changeSet>
+</databaseChangeLog>

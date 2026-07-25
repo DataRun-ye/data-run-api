@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 class TokenAuthenticationSecurityMetersIT {
 
     private static final String INVALID_TOKENS_METER_EXPECTED_NAME = "security.authentication.invalid-tokens";
+    private static final String AUTHENTICATE_ENDPOINT = "/api/v1/authenticate";
 
     @Autowired
     private MockMvc mvc;
@@ -79,7 +80,7 @@ class TokenAuthenticationSecurityMetersIT {
     }
 
     private void tryToAuthenticate(String token) throws Exception {
-        mvc.perform(MockMvcRequestBuilders.get("/api/authenticate").header(AUTHORIZATION, BEARER + token));
+        mvc.perform(MockMvcRequestBuilders.get(AUTHENTICATE_ENDPOINT).header(AUTHORIZATION, BEARER + token));
     }
 
     private double aggregate(Collection<Counter> counters) {

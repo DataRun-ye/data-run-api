@@ -29,6 +29,8 @@
     <include file="/config/liquibase/changelog/app-user-constraints/app-user-add-omitted-constraints.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/option-groups/01-01-option-group-and-group-set-changelog.xml" relativeToChangelogFile="false"/>
 
+    <include file="/config/liquibase/changelog/functions/20260726-create-generate-uid.xml" relativeToChangelogFile="false"/>
+
     <!-- uid for options  -->
     <include file="/config/liquibase/changelog/options/2025-08-29-option-add-uid.xml" relativeToChangelogFile="false"/>
 

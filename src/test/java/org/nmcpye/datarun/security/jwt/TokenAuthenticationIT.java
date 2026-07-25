@@ -15,6 +15,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 @AuthenticationIntegrationTest
 class TokenAuthenticationIT {
 
+    private static final String AUTHENTICATE_ENDPOINT = "/api/v1/authenticate";
+
     @Autowired
     private MockMvc mvc;
 
@@ -42,12 +44,12 @@ class TokenAuthenticationIT {
     }
 
     private void expectOk(String token) throws Exception {
-        mvc.perform(MockMvcRequestBuilders.get("/api/authenticate").header(AUTHORIZATION, BEARER + token)).andExpect(status().isOk());
+        mvc.perform(MockMvcRequestBuilders.get(AUTHENTICATE_ENDPOINT).header(AUTHORIZATION, BEARER + token)).andExpect(status().isOk());
     }
 
     private void expectUnauthorized(String token) throws Exception {
         mvc
-            .perform(MockMvcRequestBuilders.get("/api/authenticate").header(AUTHORIZATION, BEARER + token))
+            .perform(MockMvcRequestBuilders.get(AUTHENTICATE_ENDPOINT).header(AUTHORIZATION, BEARER + token))
             .andExpect(status().isUnauthorized());
     }
 }

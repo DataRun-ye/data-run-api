@@ -2,6 +2,10 @@ package org.nmcpye.datarun.security.jwt;
 
 import static org.nmcpye.datarun.security.SecurityUtils.AUTHORITIES_KEY;
 import static org.nmcpye.datarun.security.SecurityUtils.JWT_ALGORITHM;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.util.Base64;
@@ -13,6 +17,10 @@ import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.context.annotation.Bean;
+import org.nmcpye.datarun.jpa.userrefreshtoken.service.TokenService;
+import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.security.DomainUserDetailsService;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.crypto.codec.Hex;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -33,6 +41,21 @@ public class JwtAuthenticationTestUtils {
     @Bean
     private MeterRegistry meterRegistry() {
         return new SimpleMeterRegistry();
+    }
+
+    @Bean
+    private DomainUserDetailsService domainUserDetailsService() {
+        DomainUserDetailsService service = mock(DomainUserDetailsService.class);
+        CurrentUserDetails userDetails = mock(CurrentUserDetails.class);
+        when(userDetails.getUsername()).thenReturn("anonymous");
+        doReturn(AuthorityUtils.createAuthorityList("ROLE_ADMIN")).when(userDetails).getAuthorities();
+        when(service.loadUserByUsername(anyString())).thenReturn(userDetails);
+        return service;
+    }
+
+    @Bean
+    private TokenService tokenService() {
+        return mock(TokenService.class);
     }
 
     public static String createValidToken(String jwtKey) {
