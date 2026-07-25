@@ -11,8 +11,6 @@ import java.util.Optional;
 public interface AssignmentService
     extends JpaIdentifiableObjectService<Assignment> {
 
-    void updateStatusForSubmission(String submissionId);
-
     /**
      * Updates the paths of organization units in the system.
      * This method is scheduled to run automatically at 3:00 AM every day.

@@ -11,7 +11,6 @@ import org.nmcpye.datarun.jpa.assignment.dto.AssignmentWithAccessDto;
 import org.nmcpye.datarun.jpa.assignment.mapper.AssignmentWithAccessMapper;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.common.DefaultJpaSoftDeleteService;
-import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.jpa.team.Team;
@@ -26,9 +25,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -39,7 +35,6 @@ public class DefaultAssignmentService
     implements AssignmentService {
 
     private final AssignmentRepository repository;
-    private final DataSubmissionRepository submissionRepository;
     private final TeamRepository teamRepository;
     private final ActivityRepository activityRepository;
     private final OrgUnitRepository orgUnitRepository;
@@ -55,8 +50,6 @@ public class DefaultAssignmentService
                                     CacheManager cacheManager,
                                     AssignmentMaintenanceService maintenanceService,
                                     AssignmentWithAccessMapper assignmentMapper,
-                                    AssignmentRepository assignmentRepository,
-                                    DataSubmissionRepository submissionRepository,
                                     ActivityRepository activityRepository,
                                     ReferenceAssignmentFormGate referenceAssignmentFormGate,
                                     ReferenceAssignmentScopeGuard referenceAssignmentScopeGuard) {
@@ -66,7 +59,6 @@ public class DefaultAssignmentService
         this.orgUnitRepository = orgUnitRepository;
         this.maintenanceService = maintenanceService;
         this.assignmentMapper = assignmentMapper;
-        this.submissionRepository = submissionRepository;
         this.activityRepository = activityRepository;
         this.referenceAssignmentFormGate = referenceAssignmentFormGate;
         this.referenceAssignmentScopeGuard = referenceAssignmentScopeGuard;
@@ -168,32 +160,6 @@ public class DefaultAssignmentService
             queryRequest,
             null);
         return repository.findOne(access.and(identity));
-    }
-
-    List<Assignment> getAssignmentsWithChildren(Collection<String> uids) {
-        List<Assignment> assignments = new ArrayList<>();
-        for (String uid : uids) {
-            assignments.addAll(repository.findAllByPathContaining(uid));
-        }
-        return assignments;
-    }
-
-    @Override
-    public void updateStatusForSubmission(String submissionId) {
-        final var submission =
-            submissionRepository.findById(submissionId);
-
-        submission.ifPresent(dataSubmission ->
-            repository.findByUid(dataSubmission.getAssignment())
-                .ifPresent(assignment -> {
-                    assignment.setStatus(dataSubmission.getStatus());
-                    assignment.setLastSubmittedBy(dataSubmission.getLastModifiedBy());
-                    // * **`update`**: This method is for updating an entity that's
-                    // already managed by the persistence context.
-                    // The author claims this method is more performant than `merge`
-                    // because it doesn't involve the same checks.
-                    repository.update(assignment);
-                }));
     }
 
     /**

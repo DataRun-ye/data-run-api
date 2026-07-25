@@ -32,6 +32,9 @@ deployment authority.
   authenticated mobile configuration sync passed; the app-owned UID migration
   ran successfully. Empty Mongo persistence and its production Compose
   service, volumes, and images were removed after backup and verification.
+- The assignment source-dead pass removed disabled listeners and migrations,
+  unreferenced services, superseded repository extensions, and zero-caller
+  queries while preserving the released assignment routes and schema.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

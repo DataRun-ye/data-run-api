@@ -7,10 +7,11 @@ or deployment authority.
 
 ## Now
 
-- Fix certificate-renewal Compose ownership in one bounded slice. Normal
-  `docker compose up -d` currently starts a one-shot `letsencrypt` service that
-  exits because its DNS credential path is not part of the normal deployment
-  boundary. Routine API deployment must not invoke certificate issuance.
+- Clean the production interface one bounded domain at a time: assignment,
+  form templates, then submissions. For each domain, map the released mobile
+  contract, remove source-dead alternatives, reconcile duplicated ownership,
+  assess unused APIs, and keep physical schema removal in a separate
+  Liquibase slice. The living map is `active-production-interface.md`.
 
 Reference activation remains parked in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while
@@ -18,10 +19,10 @@ the server runtime surface is cleaned.
 
 ## Next
 
-- Assess the remaining server runtime and development surface for active
-  ownership, obsolete registrations, duplicated persistence/configuration,
-  and deployment smells. Convert only proven findings into focused removal or
-  consolidation work.
+- Fix certificate-renewal Compose ownership in one bounded slice. Normal
+  `docker compose up -d` currently starts a one-shot `letsencrypt` service that
+  exits because its DNS credential path is not part of the normal deployment
+  boundary. Routine API deployment must not invoke certificate issuance.
 - Repair fresh-database bootstrap in one bounded Liquibase slice. The current
   chain reaches obsolete analytics changelogs that assume an `analytics`
   schema; remove or supersede that dead path without mixing it into staging.
