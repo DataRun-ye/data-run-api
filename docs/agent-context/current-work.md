@@ -18,10 +18,17 @@ status belongs in the issues.
 
 ## Next
 
+- Retire MongoDB through one bounded production slice: prove the remaining
+  runtime reads and writes, preserve or migrate anything still active, then
+  remove its application configuration, repositories, Compose service, and
+  production container.
+- After MongoDB retirement, assess the remaining server runtime and
+  development surface for active ownership, obsolete registrations,
+  duplicated persistence/configuration, and deployment smells. Convert only
+  proven findings into focused removal or consolidation work.
 - After Reference activation, characterize and consolidate JWT/token ownership
   across server login, refresh, and mobile offline re-entry. Keep one active
-  signing-secret owner and one intentional lifetime policy; do not rotate the
-  production secret or change reauthentication behavior inside that cleanup.
+  signing-secret owner and one intentional lifetime policy.
 
 ## Maintenance
 

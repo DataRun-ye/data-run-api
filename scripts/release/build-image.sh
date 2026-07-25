@@ -57,8 +57,11 @@ manifest_path="target/release/${version}-${short_commit}.env"
 if [[ "$mode" == "--tar" ]]; then
     sha256sum target/jib-image.tar > target/release/jib-image.tar.sha256
 else
-    digest="$(sed -n 's/^\[INFO\] Digest: \(sha256:[0-9a-f]\{64\}\)$/\1/p' "$log_path" | tail -1)"
-    if [[ -z "$digest" ]]; then
+    digest=""
+    if [[ -s target/jib-image.digest ]]; then
+        digest="$(tr -d '\r\n' < target/jib-image.digest)"
+    fi
+    if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
         echo "Jib did not report the pushed image digest." >&2
         exit 1
     fi
