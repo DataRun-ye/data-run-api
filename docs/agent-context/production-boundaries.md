@@ -42,10 +42,13 @@ When evidence conflicts:
 - PostgreSQL/JPA/Liquibase are active production boundaries. Mongo remains a
   separate legacy surface to investigate and retire in its own bounded work;
   do not remove it as incidental cleanup.
-- Source-dead analytics, pivot, jOOQ, Party, and assignment-member
-  implementations were removed from `develop`. Their historical physical
-  tables remain until a separately approved Liquibase removal proves
-  production counts, dependencies, upgrade behavior, and rollback.
+- The old jOOQ/analytics-query, Party, and assignment-member implementations
+  were removed from `develop`. The restored 2026-07-25 production clone
+  confirmed that the legacy Party/assignment tables left by those attempts
+  exist but are empty. They are inert schema residue, not an active surface or
+  current task; remove them only in a separately approved Liquibase slice.
+- This classification does not apply to the separate analytics ETL/ledger
+  tables still referenced by active source.
 
 ## Migration Rules
 
