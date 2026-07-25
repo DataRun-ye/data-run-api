@@ -24,6 +24,8 @@ import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequest;
 import org.nmcpye.datarun.web.rest.mongo.submission.QueryRequestValidator;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
+import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
+import org.nmcpye.datarun.web.rest.v1.datasubmission.service.ReferenceSubmissionUploadService;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -54,18 +56,21 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     private final CompositeSubmissionValidator compositeValidator;
     private final SubmissionAccessValidator submissionAccessValidator;
     private final TemplateElementService templateElementService;
+    private final ReferenceSubmissionUploadService referenceUploadService;
 
     public DataSubmissionResource(DataSubmissionService submissionService,
                                   DataSubmissionRepository submissionRepository,
                                   ObjectMapper objectMapper, CompositeSubmissionValidator compositeValidator,
                                   SubmissionAccessValidator submissionAccessValidator,
-                                  TemplateElementService templateElementService) {
+                                  TemplateElementService templateElementService,
+                                  ReferenceSubmissionUploadService referenceUploadService) {
         super(submissionService, submissionRepository);
         this.submissionService = submissionService;
         this.objectMapper = objectMapper;
         this.compositeValidator = compositeValidator;
         this.submissionAccessValidator = submissionAccessValidator;
         this.templateElementService = templateElementService;
+        this.referenceUploadService = referenceUploadService;
     }
 
     @Deprecated(since = "V7, main method do the same now")
@@ -119,6 +124,14 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
         EntitySaveSummaryVM summaryVM = new EntitySaveSummaryVM();
         submissionService.upsertAll(preProcess(entities), SecurityUtils.getCurrentUserDetailsOrThrow(), summaryVM);
         return ResponseEntity.ok(summaryVM);
+    }
+
+    @PostMapping(value = "/bulk", params = "referenceVersion=1")
+    public ResponseEntity<EntitySaveSummaryVM> saveReferenceAll(
+        @RequestBody List<DataSubmissionUploadV1Dto> requests) {
+        hasMinimalRightsOrThrow(
+            SecurityUtils.getCurrentUserDetailsOrThrow());
+        return ResponseEntity.ok(referenceUploadService.upsertAll(requests));
     }
 
     @Override

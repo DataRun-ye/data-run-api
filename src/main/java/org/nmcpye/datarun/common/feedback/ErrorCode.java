@@ -74,6 +74,11 @@ public enum ErrorCode {
     E4114("your user is not part of the team {0} that created the submission: {1}"),
     E4115("updating submission's form version is not allowed: incoming `{0}` required: `{1}`"),
     E4116("Submission {} not found"),
+    E4117("Submission `{0}` contains an invalid Reference value at `{1}`"),
+    E4118("Submission `{0}` repeats Reference `{1}` at `{2}`"),
+    E4119("Reference `{0}` is not available in the assignment organization unit"),
+    E4120("Unknown Reference `{0}` requires a valid definition"),
+    E4121("Submission `{0}` includes unused Reference definition `{1}`"),
 
     /* Users */
     E6201("User account not found"),
