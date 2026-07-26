@@ -17,6 +17,10 @@ Reference activation remains parked in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while
 the server runtime surface is cleaned.
 
+Endpoint removal candidates are assessed in
+`active-production-interface.md` and remain registered until the user
+explicitly confirms them.
+
 ## Next
 
 - Fix certificate-renewal Compose ownership in one bounded slice. Normal
