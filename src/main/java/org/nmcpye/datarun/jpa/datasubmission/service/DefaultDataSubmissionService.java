@@ -9,13 +9,10 @@ import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.common.DefaultJpaSoftDeleteService;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.events.EventChangeType;
-import org.nmcpye.datarun.jpa.datasubmission.events.SubmissionSavedEvent;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.outbox.repository.OutboxWritePort;
 import org.springframework.cache.CacheManager;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +31,6 @@ import java.util.stream.Collectors;
 public class DefaultDataSubmissionService
     extends DefaultJpaSoftDeleteService<DataSubmission>
     implements DataSubmissionService {
-    private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
     private final OutboxWritePort outboxRepo;
 
@@ -42,10 +38,8 @@ public class DefaultDataSubmissionService
         DataSubmissionRepository repository,
         CacheManager cacheManager,
         UserAccessService userAccessService,
-        ApplicationEventPublisher eventPublisher,
         ObjectMapper objectMapper, OutboxWritePort outboxRepo) {
         super(repository, cacheManager, userAccessService);
-        this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
         this.outboxRepo = outboxRepo;
     }
@@ -65,24 +59,6 @@ public class DefaultDataSubmissionService
         return results.get(0);
     }
 
-
-    private void afterPersist(DataSubmission result) {
-
-    }
-
-    private void afterUpdate(DataSubmission result) {
-        eventPublisher.publishEvent(new SubmissionSavedEvent(result.getId(),
-            EventChangeType.UPDATE, result.getLockVersion()));
-    }
-
-    /**
-     * Abstract method to be implemented by concrete services.
-     * This method is responsible for copying mutable fields from the incoming entity
-     * onto the existing entity during an update operation.
-     *
-     * @param existingEntity The entity fetched from the database (managed).
-     * @param incomingEntity The entity data provided for the update (detached).
-     */
     private boolean updateEntityFields(DataSubmission existingEntity, DataSubmission incomingEntity) {
         if(Boolean.TRUE.equals(existingEntity.getDeleted()) && Boolean.TRUE.equals(incomingEntity.getDeleted())) {
             return true;
@@ -137,16 +113,12 @@ public class DefaultDataSubmissionService
             DataSubmission existingEntity = existingEntitiesMap.get(incomingEntity.getUid());
             boolean isNew = (existingEntity == null);
 
-            beforeUpsertChecks(incomingEntity, isNew, user); // Apply pre-upsert checks for each entity
-
             if (isNew) {
                 if (incomingEntity.getId() == null) {
                     incomingEntity.setId(CodeGenerator.nextUlid());
                 }
-                beforePersist(incomingEntity);
                 entitiesToPersist.add(incomingEntity);
             } else {
-                beforeUpdate(existingEntity, incomingEntity);
                 final var deleted = updateEntityFields(existingEntity, incomingEntity);
                 if (deleted) entitiesToDelete.add(existingEntity);
                 else entitiesToUpdate.add(existingEntity);
@@ -163,9 +135,6 @@ public class DefaultDataSubmissionService
                 .map(this::enqueueSubmissionsOutbox)
                 .toList();
             outboxRepo.insertByEventType(outboxEvents, "SAVE");
-
-            persistedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
-                EventChangeType.CREATE, s.getLockVersion())));
             summary.getCreated().addAll(persistedResults.stream().map(DataSubmission::getUid).toList());
         }
         if (!entitiesToUpdate.isEmpty()) {
@@ -174,9 +143,6 @@ public class DefaultDataSubmissionService
                 .map(this::enqueueSubmissionsOutbox)
                 .toList();
             outboxRepo.insertByEventType(outboxEvents, "UPDATE");
-
-            updatedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
-                EventChangeType.UPDATE, s.getLockVersion()))); // Apply post-update hook for each
             summary.getUpdated().addAll(updatedResults.stream().map(DataSubmission::getUid).toList());
         }
 
@@ -186,9 +152,6 @@ public class DefaultDataSubmissionService
                 .map(this::enqueueSubmissionsOutbox)
                 .toList();
             outboxRepo.insertByEventType(outboxEvents, "DELETE");
-
-            deletedResults.forEach(s -> eventPublisher.publishEvent(new SubmissionSavedEvent(s.getId(),
-                EventChangeType.DELETE, s.getLockVersion()))); // Apply post-update hook for each
             summary.getUpdated().addAll(deletedResults.stream().map(DataSubmission::getUid).toList());
         }
 
@@ -205,17 +168,6 @@ public class DefaultDataSubmissionService
         var outbox = enqueueSubmissionsOutbox(object);
         outboxRepo.insertByEventType(List.of(outbox), "DELETE");
         super.softDelete(object);
-        eventPublisher.publishEvent(new SubmissionSavedEvent(object.getId(),
-            EventChangeType.DELETE, object.getLockVersion()));
-    }
-
-    private void beforeUpdate(DataSubmission existingEntity, DataSubmission incomingEntity) {
-    }
-
-    private void beforePersist(DataSubmission incomingEntity) {
-    }
-
-    private void beforeUpsertChecks(DataSubmission incomingEntity, boolean isNew, CurrentUserDetails user) {
     }
 
     private OutboxWritePort.OutboxInsert enqueueSubmissionsOutbox(DataSubmission s) {

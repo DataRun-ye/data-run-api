@@ -43,13 +43,26 @@ It is supporting rather than released-mobile code and remains intact.
 
 | Status | Released mobile request | Server owner |
 | --- | --- | --- |
-| CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveReferenceAll` -> `ReferenceSubmissionUploadService` |
+| CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveReferenceAll` -> `ReferenceSubmissionUploadService` -> `DefaultDataSubmissionService.upsertAll` |
 
 The released mobile owner is `SubmissionUploadService`. Ordinary and
 Reference-capable submissions currently share this versioned upload boundary.
-Submission pulling, generic CRUD routes, deprecated `objects`, delete, ETL,
-outbox, history, and migration helpers must each be classified from their own
-runtime effects; their names alone do not make them core-active.
+The active upload maps the versioned DTO, resolves the pinned template,
+generates missing repeat metadata for compatibility, validates access and
+submission context, resolves Reference definitions, upserts whole submission
+JSON, and writes the current `outbox` row in the same transaction.
+
+The disabled submission-history listener and its zero-caller processor/model
+alternatives are source-dead. Their physical table remains a schema concern.
+The separate `jpa/datasubmissionoutbox` tree targets the legacy
+`outbox_event` table; it has no active producer or enabled worker and is not
+the current `outbox` owner.
+
+Known active defect to close separately: the soft-delete branch in
+`DefaultDataSubmissionService.upsertAll` classifies deleted entities
+correctly but flushes the update collection instead of the delete collection.
+Submission pulling, inherited CRUD/read routes, deprecated `objects`, and the
+admin delete route still require independent API-use classification.
 
 ## Cleanup Cycle
 

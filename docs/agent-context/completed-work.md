@@ -39,6 +39,9 @@ deployment authority.
   disabled hardcoded migration runner, unused service/query alternatives, and
   false controller dependencies while preserving released reads, operational
   version authoring, submission template lookup, and schema.
+- The first submission source-dead pass removed the disabled history/event
+  chain and zero-caller form-data/reference helpers while preserving the
+  versioned upload, whole-JSON persistence, and current outbox write.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.
