@@ -19,12 +19,9 @@ import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -113,81 +110,6 @@ public class DataTemplateInstanceServiceImpl
     }
 
     @Override
-    public List<DataTemplateInstanceDto> findAllByUidIn(Collection<String> uids) {
-        final var masters = dataTemplateRepository.findAllByUidIn(uids);
-        // batch-load versions
-        List<String> ids = masters.stream()
-            .map(DataTemplate::getVersionUid)
-            .toList();
-
-        Map<String, FormTemplateVersionDto> versions = jpaTemplateVersionRepository.findAllByUidIn(ids).stream()
-            .map(jpaVersionMapper::toDto)
-            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, Function.identity()));
-
-        return masters.stream().map(m ->
-            dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
-                Optional.ofNullable(versions.get(m.getUid())).orElseThrow(
-                    () -> new IllegalQueryException(ErrorCode.E1120, m.getUid())
-                ))).toList();
-    }
-
-    @Override
-    public List<DataTemplateInstanceDto> findAllByLastModifiedDateAfter(Instant date) {
-        final var masters = dataTemplateRepository.findAllByLastModifiedDateAfter(date);
-        // batch-load versions
-        List<String> ids = masters.stream()
-            .map(DataTemplate::getVersionUid)
-            .toList();
-
-        Map<String, FormTemplateVersionDto> versions = jpaTemplateVersionRepository.findAllByUidIn(ids).stream()
-            .map(jpaVersionMapper::toDto)
-            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, Function.identity()));
-
-        return masters.stream().map(m ->
-            dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
-                Optional.ofNullable(versions.get(m.getUid())).orElseThrow(
-                    () -> new IllegalQueryException(ErrorCode.E1120, m.getUid())
-                ))).toList();
-    }
-
-    @Override
-    public List<DataTemplateInstanceDto> findAll() {
-        final var masters = dataTemplateRepository.findAll();
-        // batch-load versions
-        List<String> ids = masters.stream()
-            .map(DataTemplate::getVersionUid)
-            .toList();
-
-        Map<String, FormTemplateVersionDto> versions = jpaTemplateVersionRepository.findAllByUidIn(ids).stream()
-            .map(jpaVersionMapper::toDto)
-            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, Function.identity()));
-
-        return masters.stream().map(m ->
-            dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
-                Optional.ofNullable(versions.get(m.getUid())).orElseThrow(
-                    () -> new IllegalQueryException(ErrorCode.E1120, m.getUid())
-                ))).toList();
-    }
-
-    @Override
-    public Page<DataTemplateInstanceDto> findAllByUidIn(Collection<String> uids, Pageable pageable) {
-        final var masters = dataTemplateRepository.findAllByUidIn(uids, pageable);
-        // batch-load versions
-        List<String> ids = masters.stream()
-            .map(DataTemplate::getVersionUid)
-            .toList();
-
-        Map<String, FormTemplateVersionDto> versions = jpaTemplateVersionRepository.findAllByUidIn(ids).stream()
-            .map(jpaVersionMapper::toDto)
-            .collect(Collectors.toMap(FormTemplateVersionDto::getTemplateUid, Function.identity()));
-
-        return masters.map(m -> dataTemplateMapper.toInstanceDto(dataTemplateMapper.toDto(m),
-            Optional.ofNullable(versions.get(m.getUid())).orElseThrow(
-                () -> new IllegalQueryException(ErrorCode.E1120, m.getUid())
-            )));
-    }
-
-    @Override
     public Page<DataTemplateInstanceDto> findAllByUser(QueryRequest queryRequest, String jsonQueryBody) {
         // load only lightweight masters
         Page<DataTemplate> masters = dataTemplateService.findAllByUser(queryRequest, jsonQueryBody);
@@ -205,32 +127,6 @@ public class DataTemplateInstanceServiceImpl
                 () -> new IllegalQueryException(ErrorCode.E1120, m.getUid())
             )));
     }
-
-//    @Transactional
-//    @Override
-//    public void migrateDataFormTemplateVersion(DataFormTemplate formTemplate) {
-//        if (!dataTemplateRepository.existsByUid(formTemplate.getUid())) {
-//            final var formTemplateVersion = formTemplate.getVersion();
-//            final var templateUid = formTemplate.getUid();
-//
-//            final DataTemplateInstanceDto dataTemplateInstanceDto = dataFormTemplateMapper.toDto(formTemplate);
-//            final DataTemplate template = dataTemplateMapper.fromInstanceDto(dataTemplateInstanceDto);
-//
-//            final var newVersionUid = CodeGenerator.generateUid();
-//
-//            dataTemplateService.save(template.versionNumber(formTemplateVersion)
-//                // temporary for migrating old DataFormTemplate
-//                .uid(templateUid)
-//                .versionNumber(formTemplateVersion)
-//                .versionUid(newVersionUid));
-//
-//            templateVersionRepository.save(versionMapper
-//                .fromInstanceDto(dataTemplateInstanceDto)
-//                .uid(newVersionUid)
-//                .version(formTemplateVersion)
-//                .templateUid(templateUid));
-//        }
-//    }
 
     @CacheEvict(cacheNames = {
         UserRepository.USER_TEAM_FORM_ACCESS_CACHE,

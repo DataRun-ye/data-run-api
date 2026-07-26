@@ -4,7 +4,6 @@ import io.hypersistence.utils.spring.repository.BaseJpaRepository;
 import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
 import org.springframework.stereotype.Repository;
 
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -14,6 +13,4 @@ import java.util.List;
 @Repository
 public interface CanonicalElementRepository extends BaseJpaRepository<CanonicalElement, String> {
     List<CanonicalElement> findByTemplateUid(String templateUid);
-
-    Collection<CanonicalElement> findByTemplateUidIn(Collection<String> templateUids);
 }

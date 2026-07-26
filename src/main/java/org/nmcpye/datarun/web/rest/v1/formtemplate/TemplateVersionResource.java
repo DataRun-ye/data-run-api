@@ -7,7 +7,6 @@ import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
-import org.nmcpye.datarun.datatemplateprocessor.FormTemplateProcessor;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,13 +23,9 @@ public class TemplateVersionResource extends JpaBaseResource<TemplateVersion> {
     protected static final String NAME = "/formTemplateVersions";
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
-    protected final FormTemplateProcessor formTemplateProcessor;
-
     protected TemplateVersionResource(TemplateVersionService service,
-                                      TemplateVersionRepository repository,
-                                      FormTemplateProcessor formTemplateProcessor) {
+                                      TemplateVersionRepository repository) {
         super(service, repository);
-        this.formTemplateProcessor = formTemplateProcessor;
     }
 
 

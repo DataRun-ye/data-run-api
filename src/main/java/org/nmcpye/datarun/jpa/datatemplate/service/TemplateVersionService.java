@@ -2,10 +2,6 @@ package org.nmcpye.datarun.jpa.datatemplate.service;
 
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
-import org.nmcpye.datarun.jpa.datatemplate.dto.FormTemplateVersionDto;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-
 import java.util.Optional;
 
 /**
@@ -14,8 +10,4 @@ import java.util.Optional;
 public interface TemplateVersionService
     extends JpaIdentifiableObjectService<TemplateVersion> {
     Optional<TemplateVersion> findLatestByTemplate(String templateUid);
-
-    FormTemplateVersionDto findByVersion(String masterUid, int version);
-
-    Page<FormTemplateVersionDto> pageVersions(String templateId, Pageable pageable);
 }

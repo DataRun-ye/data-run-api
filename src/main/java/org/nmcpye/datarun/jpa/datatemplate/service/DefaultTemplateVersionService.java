@@ -1,23 +1,15 @@
 package org.nmcpye.datarun.jpa.datatemplate.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
-import org.nmcpye.datarun.jpa.datatemplate.mapper.DataTemplateMapper;
-import org.nmcpye.datarun.jpa.datatemplate.mapper.FormJpaTemplateVersionMapper;
-import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
-import org.nmcpye.datarun.jpa.datatemplate.dto.FormTemplateVersionDto;
 import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.springframework.cache.CacheManager;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,24 +32,13 @@ public class DefaultTemplateVersionService
     implements TemplateVersionService {
     private final DataTemplateService dataTemplateService;
     private final TemplateVersionRepository templateVersionRepository;
-    private final FormJpaTemplateVersionMapper versionMapper;
-
-    private final DataTemplateRepository templateRepository;
-    private final DataTemplateMapper dataTemplateMapper;
-
     public DefaultTemplateVersionService(TemplateVersionRepository repository,
                                          CacheManager cacheManager,
                                          DataTemplateService dataTemplateService,
-                                         UserAccessService userAccessService,
-                                         FormJpaTemplateVersionMapper versionMapper,
-                                         DataTemplateRepository templateRepository,
-                                         @Lazy DataTemplateMapper dataTemplateMapper) {
+                                         UserAccessService userAccessService) {
         super(repository, cacheManager, userAccessService);
         this.templateVersionRepository = repository;
         this.dataTemplateService = dataTemplateService;
-        this.versionMapper = versionMapper;
-        this.templateRepository = templateRepository;
-        this.dataTemplateMapper = dataTemplateMapper;
     }
 
     @Override
@@ -80,15 +61,4 @@ public class DefaultTemplateVersionService
         return templateVersionRepository.findTopByTemplateUidOrderByVersionNumberDesc(templateUid);
     }
 
-    @Override
-    public FormTemplateVersionDto findByVersion(String masterUid, int version) {
-        return templateVersionRepository.findByTemplateUidAndVersionNumber(masterUid, version).map(versionMapper::toDto)
-            .orElseThrow(() -> new IllegalQueryException(ErrorCode.E1114, masterUid + ":" + version));
-    }
-
-    @Override
-    public Page<FormTemplateVersionDto> pageVersions(String templateId, Pageable pageable) {
-        Page<TemplateVersion> page = templateVersionRepository.findAllByTemplateUidOrderByVersionNumberDesc(templateId, pageable);
-        return page.map(versionMapper::toDto);
-    }
 }

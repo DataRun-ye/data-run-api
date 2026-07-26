@@ -5,8 +5,6 @@ import jakarta.validation.constraints.Size;
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableRepository;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -36,13 +34,6 @@ public interface TemplateVersionRepository
     @Cacheable(cacheNames = TEMPLATE_UID_VERSION_UID_JPA_CACHE)
     Optional<TemplateVersion> findByTemplateUidAndUid(@NotNull @Size(max = 11) String templateUid, String id);
 
-
-    // List all versions sorted descending
-    Page<TemplateVersion> findAllByTemplateUidOrderByVersionNumberDesc(String templateId, Pageable pageable);
-
-    Page<TemplateVersion> findAllByTemplateUidInOrderByVersionNumberDesc(Collection<String> uids, Pageable pageable);
-
-    Set<TemplateVersion> findAllByTemplateUidInOrderByVersionNumberDesc(Collection<String> uids);
 
     List<TemplateVersion> findDistinctByTemplateUidInOrderByVersionNumberDesc(Collection<String> uids);
 

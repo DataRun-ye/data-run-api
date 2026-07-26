@@ -35,6 +35,10 @@ deployment authority.
 - The assignment source-dead pass removed disabled listeners and migrations,
   unreferenced services, superseded repository extensions, and zero-caller
   queries while preserving the released assignment routes and schema.
+- The form-template source-dead pass removed commented models/repositories, a
+  disabled hardcoded migration runner, unused service/query alternatives, and
+  false controller dependencies while preserving released reads, operational
+  version authoring, submission template lookup, and schema.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

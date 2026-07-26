@@ -15,7 +15,6 @@ public class TemplateElementService {
     public final static String TEMPLATE_MAP_CACHE = "templateMapCacheByTemplateAndVersion";
 
     private final DataTemplateInstanceService templateInstanceService;
-//    private final TemplateElementRepository templateConfigRepository;
 
     /// create elementMap and cache it.
     ///
@@ -24,18 +23,12 @@ public class TemplateElementService {
     /// @return elementMap cache;
     @Cacheable(cacheNames = TEMPLATE_MAP_CACHE)
     public TemplateElementMap getTemplateElementMap(String id, String versionUid) {
-//        final var elementsConfMap =
-//            templateConfigRepository.findAllByTemplateUidAndTemplateVersionUid(id, versionUid).stream().collect(Collectors.toMap(
-//                TemplateElement::getNamePath, Function.identity()));
         return new TemplateElementMap(templateInstanceService.findByTemplateAndVersionUid(id, versionUid)
-            .orElseThrow(), Map.of()/*elementsConfMap*/);
+            .orElseThrow(), Map.of());
     }
 
     public TemplateElementMap getTemplateElementMap(String id, Integer version) {
-//        final var elementsConfMap =
-//            templateConfigRepository.findAllByTemplateUidAndVersionNo(id, version).stream().collect(Collectors.toMap(
-//                TemplateElement::getNamePath, Function.identity()));
         return new TemplateElementMap(templateInstanceService.findByTemplateAndVersionNo(id, version)
-            .orElseThrow(), Map.of()/*elementsConfMap*/);
+            .orElseThrow(), Map.of());
     }
 }
