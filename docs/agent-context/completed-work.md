@@ -42,6 +42,9 @@ deployment authority.
 - The first submission source-dead pass removed the disabled history/event
   chain and zero-caller form-data/reference helpers while preserving the
   versioned upload, whole-JSON persistence, and current outbox write.
+- The abandoned `outbox_event` source, disabled workers, unused executor
+  configuration, and misleading admin endpoint were removed. The active
+  `outbox` writer/orchestrator and both physical tables were unchanged.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.
