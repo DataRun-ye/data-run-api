@@ -147,7 +147,7 @@ public class DefaultDataSubmissionService
         }
 
         if (!entitiesToDelete.isEmpty()) {
-            deletedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToUpdate);
+            deletedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToDelete);
             final var outboxEvents = deletedResults.stream()
                 .map(this::enqueueSubmissionsOutbox)
                 .toList();

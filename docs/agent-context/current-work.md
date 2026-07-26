@@ -17,10 +17,6 @@ Reference activation remains parked in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while
 the server runtime surface is cleaned.
 
-- After source cleanup, fix the active submission bulk soft-delete branch in a
-  focused correctness slice; it currently flushes the update collection where
-  it must persist the already-classified delete collection.
-
 ## Next
 
 - Fix certificate-renewal Compose ownership in one bounded slice. Normal

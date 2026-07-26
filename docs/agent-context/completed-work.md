@@ -45,6 +45,9 @@ deployment authority.
 - The abandoned `outbox_event` source, disabled workers, unused executor
   configuration, and misleading admin endpoint were removed. The active
   `outbox` writer/orchestrator and both physical tables were unchanged.
+- The submission bulk soft-delete collection bug was recovered from the
+  archived branch as a one-line correction with a mixed update/delete outbox
+  regression test; no delete policy or endpoint was activated.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

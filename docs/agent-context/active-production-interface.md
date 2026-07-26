@@ -58,11 +58,11 @@ The separate `jpa/datasubmissionoutbox` tree targets the legacy
 `outbox_event` table; it has no active producer or enabled worker and is not
 the current `outbox` owner.
 
-Known active defect to close separately: the soft-delete branch in
-`DefaultDataSubmissionService.upsertAll` classifies deleted entities
-correctly but flushes the update collection instead of the delete collection.
-Submission pulling, inherited CRUD/read routes, deprecated `objects`, and the
-admin delete route still require independent API-use classification.
+Mixed update/delete batches persist their classified collections separately
+and emit `UPDATE` and `DELETE` through the current outbox; this boundary has
+a focused regression test. Submission pulling, inherited CRUD/read routes,
+deprecated `objects`, and the admin delete route still require independent
+API-use classification.
 
 ## Cleanup Cycle
 
