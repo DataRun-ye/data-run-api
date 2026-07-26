@@ -48,6 +48,9 @@ deployment authority.
 - The submission bulk soft-delete collection bug was recovered from the
   archived branch as a one-line correction with a mixed update/delete outbox
   regression test; no delete policy or endpoint was activated.
+- The submission source pass removed unregistered migration-error listeners
+  and zero-caller repository queries while retaining the active repeat-ID
+  generator, compatibility routes, and physical tables.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

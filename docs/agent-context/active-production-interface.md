@@ -41,9 +41,13 @@ It is supporting rather than released-mobile code and remains intact.
 
 ## Submission
 
-| Status | Released mobile request | Server owner |
+| Status | Route | Server owner |
 | --- | --- | --- |
 | CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveReferenceAll` -> `ReferenceSubmissionUploadService` -> `DefaultDataSubmissionService.upsertAll` |
+| LEGACY-RISK / UNKNOWN | `GET /api/v1/dataSubmission`, `GET /byLastModified`, `POST /query`, `GET /{id}` | inherited generic read surface |
+| LEGACY-RISK / UNKNOWN | `POST /api/v1/dataSubmission/bulk` without the version parameter, `POST /`, `POST /return` | inherited/overridden compatibility write surface |
+| LEGACY-RISK / UNKNOWN | `GET|POST /api/v1/dataSubmission/objects` | deprecated flattened read surface |
+| ADMIN / UNKNOWN | `DELETE /api/v1/dataSubmission/{id}`, `PUT /{uid}` | inherited/overridden admin surface |
 
 The released mobile owner is `SubmissionUploadService`. Ordinary and
 Reference-capable submissions currently share this versioned upload boundary.
@@ -63,6 +67,11 @@ and emit `UPDATE` and `DELETE` through the current outbox; this boundary has
 a focused regression test. Submission pulling, inherited CRUD/read routes,
 deprecated `objects`, and the admin delete route still require independent
 API-use classification.
+
+The upload-time `MigrationRepeatIdGenerator` is core-active. The separate
+migration-error entity, repository, service, and skip/listener chain had no
+registered batch job or caller and is source-dead; its physical table remains
+a later schema-migration concern.
 
 ## Cleanup Cycle
 
