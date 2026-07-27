@@ -25,16 +25,6 @@ public interface UserRepository
 
     String USERS_BY_EMAIL_CACHE = "usersByEmail";
 
-    String USER_TEAM_IDS_CACHE = "userTeamIdsByLogin";
-    String USER_GROUP_IDS_CACHE = "userGroupIdsByLogin";
-
-    String USER_ACTIVITY_IDS_CACHE = "userActivityIdsByLogin";
-
-//    String USER_FORM_IDS_CACHE = "userFormIdsByLogin";
-
-    String USER_TEAM_FORM_ACCESS_CACHE = "userFormAccessByTeamAndForm";
-
-
     /// ////
     @Override
     default List<User> findAllByCodeIn(Collection<String> codes) {

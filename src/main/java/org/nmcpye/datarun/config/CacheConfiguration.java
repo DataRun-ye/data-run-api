@@ -78,10 +78,6 @@ public class CacheConfiguration {
         return cm -> {
             createCache(cm, UserRepository.USERS_BY_LOGIN_CACHE);
             createCache(cm, UserRepository.USERS_BY_EMAIL_CACHE);
-            createCache(cm, UserRepository.USER_TEAM_IDS_CACHE);
-            createCache(cm, UserRepository.USER_GROUP_IDS_CACHE);
-            createCache(cm, UserRepository.USER_ACTIVITY_IDS_CACHE);
-            createCache(cm, UserRepository.USER_TEAM_FORM_ACCESS_CACHE);
             createCache(cm, TemplateElementService.TEMPLATE_MAP_CACHE);
             createCache(cm, DataTemplateRepository.TEMPLATE_BY_UID_CACHE);
             createCache(cm, TemplateVersionRepository.TEMPLATE_UID_VERSION_NO_JPA_CACHE);

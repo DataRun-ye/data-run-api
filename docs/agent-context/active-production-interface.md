@@ -27,15 +27,33 @@ request succeeds.
 
 - `User.authorities` supplies Spring authentication authorities and the
   administrator flag.
+- `CurrentUserDetailsService` rebuilds one request-scoped authorization
+  snapshot from enabled direct teams, their enabled managed teams, activities,
+  and team-scoped form grants. It is intentionally not cached across requests;
+  access changes must not depend on four independently invalidated caches.
+- `CurrentUserProfileV1` adapts that principal to the released
+  `/api/v1/myDetails` response. Legacy count and `userGroupsUIDs` fields are
+  V1 wire compatibility only and retire when older supported mobile clients no
+  longer require that profile shape.
 - `ResourceApiAuthorization` preserves the coarse inherited-resource gate:
   administrators or users with a team may read; only administrators may use
   generic writes. It does not decide entity visibility or form permissions and
   retires as the inherited routes receive domain owners or are removed.
 - `UserAccessService` and registered access filters constrain entity reads.
+  Its creator-only fallback is a compatibility policy for unclassified generic
+  resources. Static service/filter comparison currently limits that fallback
+  to data-element group/set and org-unit group/set generic surfaces; each must
+  exit through an explicit domain filter or route removal.
 - `AssignmentFormAccessService` is the shared authorization owner for the
   actor, assignment team, assigned form, and requested form action.
+- Organization-unit sync is scoped to direct-team assignments and their
+  ancestors. Managed teams remain active mobile selector/summary data, but
+  managed-team assignments are not synchronized and do not expand org-unit
+  visibility.
 - Legacy role, privilege, and Spring ACL tables have no source policy owner and
   remain schema-only until a bounded Liquibase contraction.
+- User groups do not participate in the active authentication or work-scope
+  decision. Their CRUD and schema surface remains a separate removal decision.
 
 ## Form Templates
 
@@ -109,6 +127,8 @@ that no external operator or older client uses them.
 | `POST /api/{v1,custom}/assignments/forms` | retain GET; remove POST method registration | released mobile uses GET; no in-repo POST caller; both methods currently run the same read handler | high / older external client unknown |
 | inherited assignment writes: `POST`, `POST /bulk`, `POST /return`, `PUT /{uid}`, `DELETE /{id}` | remove write surface | assignment synchronization is read-only; no in-repo caller | medium / possible manual admin use |
 | `GET /api/{v1,custom}/assignments/updatePaths` | assess manual use, then remove or restrict to the maintenance owner | no mobile/in-repo caller; path maintenance also has a service/scheduled owner | medium / operator use unknown |
+| `GET /api/{v1,custom}/teams/managed` | remove after external-client confirmation; then retire `managedTeamsUIDs` from the security principal/V1 profile | released mobile gets managed teams embedded in direct-team sync and never calls this route | high / external admin client unknown |
+| inherited `/api/{v1,custom}/userGroups` CRUD | remove source, then handle tables in a separate Liquibase cutover | no released-mobile call or active authentication/access decision uses user groups | high / external admin client unknown |
 | inherited `formTemplates` writes | remove; retain `dataFormTemplates` as the operational authoring boundary | mobile reads only; full-template authoring has a separate validated/versioned endpoint | high / external direct writer unknown |
 | inherited `formTemplateVersions` writes | remove | mobile reads only; controller overrides save with a no-op, so POST routes misleadingly report without persisting | high / clients may rely on broken behavior |
 | generic assignment/form reads `/byLastModified`, `/query`, and `/{id}` | remove only after access-log/operator confirmation | no released-mobile or in-repo caller | medium / external reads unknown |

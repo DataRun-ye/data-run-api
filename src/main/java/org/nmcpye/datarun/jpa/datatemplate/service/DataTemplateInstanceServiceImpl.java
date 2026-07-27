@@ -13,7 +13,6 @@ import org.nmcpye.datarun.jpa.datatemplate.mapper.FormJpaTemplateVersionMapper;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
 import org.nmcpye.datarun.jpa.datatemplategenerator.TemplateElementGeneratorService;
-import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.datatemplate.dto.FormTemplateVersionDto;
 import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.springframework.cache.annotation.CacheEvict;
@@ -129,9 +128,6 @@ public class DataTemplateInstanceServiceImpl
     }
 
     @CacheEvict(cacheNames = {
-        UserRepository.USER_TEAM_FORM_ACCESS_CACHE,
-        UserRepository.USER_ACTIVITY_IDS_CACHE,
-        UserRepository.USER_TEAM_IDS_CACHE,
         DataTemplateRepository.TEMPLATE_BY_UID_CACHE,
         TemplateElementService.TEMPLATE_MAP_CACHE,
         TemplateVersionRepository.TEMPLATE_UID_VERSION_UID_JPA_CACHE,
@@ -156,9 +152,6 @@ public class DataTemplateInstanceServiceImpl
     }
 
     @CacheEvict(cacheNames = {
-        UserRepository.USER_TEAM_FORM_ACCESS_CACHE,
-        UserRepository.USER_ACTIVITY_IDS_CACHE,
-        UserRepository.USER_TEAM_IDS_CACHE,
         DataTemplateRepository.TEMPLATE_BY_UID_CACHE,
     })
     @Override
@@ -167,9 +160,6 @@ public class DataTemplateInstanceServiceImpl
     }
 
     @CacheEvict(cacheNames = {
-        UserRepository.USER_TEAM_FORM_ACCESS_CACHE,
-        UserRepository.USER_ACTIVITY_IDS_CACHE,
-        UserRepository.USER_TEAM_IDS_CACHE,
         DataTemplateRepository.TEMPLATE_BY_UID_CACHE,
     })
     @Override

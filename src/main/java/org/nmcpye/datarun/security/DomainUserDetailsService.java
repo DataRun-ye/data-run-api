@@ -20,14 +20,12 @@ public class DomainUserDetailsService implements UserDetailsService {
 
     private static final Logger LOG = LoggerFactory.getLogger(DomainUserDetailsService.class);
 
-    private final CurrentUserInfoService currentUserInfoService;
     private final UserRepository userRepository;
-    private final CreatUserDetailService creatUserDetailService;
+    private final CurrentUserDetailsService currentUserDetailsService;
 
-    public DomainUserDetailsService(CurrentUserInfoService currentUserInfoService, UserRepository userRepository, CreatUserDetailService creatUserDetailService) {
-        this.currentUserInfoService = currentUserInfoService;
+    public DomainUserDetailsService(UserRepository userRepository, CurrentUserDetailsService currentUserDetailsService) {
         this.userRepository = userRepository;
-        this.creatUserDetailService = creatUserDetailService;
+        this.currentUserDetailsService = currentUserDetailsService;
     }
 
     @Override
@@ -38,13 +36,13 @@ public class DomainUserDetailsService implements UserDetailsService {
         if (new EmailValidator().isValid(login, null)) {
             return userRepository
                 .findOneWithAuthoritiesByEmailIgnoreCase(login)
-                .map(creatUserDetailService::createUserDetails)
+                .map(currentUserDetailsService::createUserDetails)
                 .orElseThrow(() -> new UsernameNotFoundException("User with email " + login + " was not found in the database"));
         }
         String lowercaseLogin = login.toLowerCase(Locale.ENGLISH);
         final var userLogin = userRepository.findOneWithAuthoritiesByLogin(lowercaseLogin);
 
-        return userLogin.map(creatUserDetailService::createUserDetails)
+        return userLogin.map(currentUserDetailsService::createUserDetails)
             .orElseThrow(() -> new UsernameNotFoundException("User " + lowercaseLogin + " was not found in the database"));
     }
 }

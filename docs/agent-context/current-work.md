@@ -7,22 +7,11 @@ or deployment authority.
 
 ## Now
 
-- Continue the assignment, synchronization, and access pass. Authentication
-  authority and the coarse inherited-resource gate now have explicit owners.
-  Assignment-form actions are now scoped by actor, assignment team, and form.
-  Reconcile the remaining session work-scope snapshot, its four caches and
-  invalidation paths, and the entity read filters without turning one service
-  into a universal access owner.
-- Treat `ResourceApiAuthorization` as a compatibility boundary for inherited
-  generic routes. Retire it route by route as those endpoints are removed or
-  receive domain-specific authorization; reachability is not its permanent
-  architecture.
-- Physical role, privilege, and ACL tables remain a later Liquibase
-  contraction. Endpoint/task and physical-schema removal remain separate
-  decisions.
-- Retire the duplicated mobile `formPermissions` synchronization through its
-  own cross-repository cutover: remove its unused mobile registration and
-  table with a production-safe migration, then remove the server endpoint.
+- Characterize the active versioned submission upload end to end: HTTP
+  mapping, access, pinned-template/repeat/Reference processing, transaction
+  boundaries, whole-JSON persistence, result/retry semantics, and the current
+  outbox write. Consolidate each mixed owner or give it an explicit
+  compatibility or production-safe cutover exit.
 
 Reference activation remains parked in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while
@@ -34,11 +23,10 @@ explicitly confirms them.
 
 ## Next
 
-- After assignment/access closes, characterize the active versioned submission
-  upload end to end: HTTP mapping, access, template/repeat/reference
-  processing, transaction boundaries, whole-JSON persistence, result/retry
-  semantics, and the current outbox write. Consolidate each mixed owner or give
-  it an explicit compatibility exit.
+- Close the named access compatibility exits after their endpoint/client
+  decisions: inherited-route gating, the four generic group/set filters,
+  duplicated mobile `formPermissions`, V1 profile legacy fields, user-group
+  CRUD/schema, and role/privilege/ACL schema residue.
 - Fix certificate-renewal Compose ownership in one bounded slice. Normal
   `docker compose up -d` currently starts a one-shot `letsencrypt` service that
   exits because its DNS credential path is not part of the normal deployment

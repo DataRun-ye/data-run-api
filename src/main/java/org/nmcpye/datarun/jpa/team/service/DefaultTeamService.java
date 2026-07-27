@@ -72,7 +72,6 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
         Set<User> users = new HashSet<>(userRepository.findAllById(usersUids));
         team.setUsers(users);
 
-        this.clearTeamCaches(team);
         return save(team);
     }
 
@@ -144,7 +143,6 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
         log.debug("Request to partially update Team : {}", team);
 
         return repository.findByUid(team.getUid()).or(() -> repository.findById(Objects.requireNonNull(team.getId()))).map(existingTeam -> {
-            this.clearTeamCaches(existingTeam);
             if (!team.getUsers().isEmpty()) {
                 Set<String> usersLogins = team.getUsers().stream().map(User::getLogin).collect(Collectors.toSet());
                 Set<User> users = new HashSet<>(userRepository.findByLoginIn(usersLogins));
@@ -194,14 +192,4 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
         formPermissionsMigration.processInChunks();
     }
 
-    private void clearTeamCaches(Team team) {
-        team.getUsers().forEach(user -> {
-            this.clearCaches(UserRepository.USERS_BY_LOGIN_CACHE, user.getLogin());
-            this.clearCaches(UserRepository.USERS_BY_EMAIL_CACHE, user.getEmail());
-            this.clearCaches(UserRepository.USER_TEAM_IDS_CACHE, user.getLogin());
-            this.clearCaches(UserRepository.USER_GROUP_IDS_CACHE, user.getLogin());
-            this.clearCaches(UserRepository.USER_ACTIVITY_IDS_CACHE, user.getLogin());
-            this.clearCaches(UserRepository.USER_TEAM_FORM_ACCESS_CACHE, user.getLogin());
-        });
-    }
 }

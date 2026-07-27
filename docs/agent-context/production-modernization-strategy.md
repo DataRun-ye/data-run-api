@@ -50,6 +50,14 @@ Use this evidence ladder:
 6. `E5 - DEPLOYED`: image identity, production logs, database state, or field
    behavior confirms the contract.
 
+Production product roots are the released mobile field workflow and explicitly
+confirmed administrator configuration/import operations. Administrators
+currently create or bulk-load users, teams, assignments, organization units,
+templates, and options through selected API operations. Registration alone
+does not make every generic CRUD route a required capability: a controller,
+task, or model outside those two roots is `LEGACY-RISK` until its operator or
+external consumer is proven.
+
 Risk is raised only by evidence:
 
 - `R0 - SOURCE ONLY`: no runtime root, inbound consumer, reflection, stored

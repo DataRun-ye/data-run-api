@@ -59,6 +59,10 @@ deployment authority.
 - Assignment-form projection, Reference reads, and submission validation now
   share one team-and-assignment-scoped authorization owner. The unused generic
   reverse mapper was removed and the projection exposes external UIDs.
+- Authentication now builds one uncached, request-current team/activity/form
+  scope; `/myDetails` has an explicit V1 compatibility adapter, organization
+  units follow direct assignments only, and the remaining access fallbacks
+  have named retirement paths.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.
