@@ -44,7 +44,6 @@ public class CreatUserDetailService {
             .accountNonExpired(user.isActivated())
             .accountNonLocked(user.isActivated())
             .credentialsNonExpired(user.isActivated())
-            // TODO: migrate to use User's roles
             .authorities(user.getAuthorities().stream()
                 .map(authority -> new SimpleGrantedAuthority(authority.getName()))
                 .collect(Collectors.toList()))

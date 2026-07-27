@@ -14,8 +14,9 @@ separately rather than being treated as equally active.
 | Status | Released mobile request | Server owner | Required downstream path |
 | --- | --- | --- | --- |
 | CORE-ACTIVE | `GET /api/v1/assignments?paged=false` | `AssignmentResource` inherited read route | `DefaultAssignmentService.findAllByUser` -> `AssignmentFilter` -> `AssignmentRepository` |
-| CORE-ACTIVE | `GET /api/v1/assignments/forms?paged=false&referenceVersion=1` | `AssignmentResource.getAllDto` | access-filtered assignments -> `AssignmentWithAccessMapper` -> `FormAccessService` -> `ReferenceAssignmentFormGate` |
+| CORE-ACTIVE | `GET /api/v1/assignments/forms?paged=false&referenceVersion=1` | `AssignmentResource.getAllDto` | access-filtered assignments -> `AssignmentWithAccessMapper` -> `AssignmentFormAccessService` -> `ReferenceAssignmentFormGate` |
 | GATED | `GET /api/v1/assignments/{uid}/referenceEntries` | `ReferenceEntryResource` | `AssignmentService.findAccessibleByIdOrUid` and assignment/form access checks; deployed but unused until a Reference form is assigned |
+| SUPPORTING-REACHABLE | `GET /api/v1/formPermissions` | `UserFormPermissionsResource` | the mobile synchronizes this into `user_form_permissions`, but no active mobile behavior reads that table; retire mobile registration/table first, then this endpoint |
 
 The released mobile owners are `AssignmentDatasource` and
 `ReferenceEntryDatasource`. Assignment synchronization persists assignments
@@ -31,7 +32,8 @@ request succeeds.
   generic writes. It does not decide entity visibility or form permissions and
   retires as the inherited routes receive domain owners or are removed.
 - `UserAccessService` and registered access filters constrain entity reads.
-- `FormAccessService` projects assignment/form action permissions.
+- `AssignmentFormAccessService` is the shared authorization owner for the
+  actor, assignment team, assigned form, and requested form action.
 - Legacy role, privilege, and Spring ACL tables have no source policy owner and
   remain schema-only until a bounded Liquibase contraction.
 
@@ -68,6 +70,9 @@ The active upload maps the versioned DTO, resolves the pinned template,
 generates missing repeat metadata for compatibility, validates access and
 submission context, resolves Reference definitions, upserts whole submission
 JSON, and writes the current `outbox` row in the same transaction.
+Submission access and assignment-form projection use the same
+`AssignmentFormAccessService`; permissions from another team and forms absent
+from the assignment are rejected.
 
 The disabled submission-history listener and its zero-caller processor/model
 alternatives are source-dead. Their physical table remains a schema concern.

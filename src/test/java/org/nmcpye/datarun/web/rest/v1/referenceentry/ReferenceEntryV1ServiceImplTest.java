@@ -1,21 +1,26 @@
 package org.nmcpye.datarun.web.rest.v1.referenceentry;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.nmcpye.datarun.datatemplateprocessor.ReferenceTemplateCapabilityService;
-import org.nmcpye.datarun.jpa.accessfilter.FormAccessService;
+import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.reference.ReferenceEntry;
 import org.nmcpye.datarun.jpa.reference.ReferenceEntryRepository;
+import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.apiquery.QueryRequest;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,7 +39,7 @@ class ReferenceEntryV1ServiceImplTest {
 
     private AssignmentService assignmentService;
     private ReferenceTemplateCapabilityService capabilityService;
-    private FormAccessService formAccessService;
+    private AssignmentFormAccessService formAccessService;
     private ReferenceEntryRepository repository;
     private ReferenceEntryV1ServiceImpl service;
     private Assignment assignment;
@@ -43,7 +48,7 @@ class ReferenceEntryV1ServiceImplTest {
     void setUp() {
         assignmentService = mock(AssignmentService.class);
         capabilityService = mock(ReferenceTemplateCapabilityService.class);
-        formAccessService = mock(FormAccessService.class);
+        formAccessService = mock(AssignmentFormAccessService.class);
         repository = mock(ReferenceEntryRepository.class);
         service = new ReferenceEntryV1ServiceImpl(
             assignmentService,
@@ -58,7 +63,18 @@ class ReferenceEntryV1ServiceImplTest {
         assignment = new Assignment();
         assignment.setUid("assignment1");
         assignment.setOrgUnit(orgUnit);
+        Team team = new Team();
+        team.setUid("team0000001");
+        assignment.setTeam(team);
         assignment.setForms(Set.of("reference01"));
+        CurrentUserDetails user = mock(CurrentUserDetails.class);
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(user, null));
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -73,7 +89,10 @@ class ReferenceEntryV1ServiceImplTest {
         when(capabilityService.findReferenceTemplateUids(
             assignment.getForms()))
             .thenReturn(Set.of("reference01"));
-        when(formAccessService.canAddSubmissions("reference01"))
+        when(formAccessService.canAddSubmissions(
+            any(CurrentUserDetails.class),
+            eq(assignment),
+            eq("reference01")))
             .thenReturn(true);
         when(repository.findAllByOrgUnitIdOrderByUidAsc(
             eq(assignment.getOrgUnit().getId()),
@@ -129,7 +148,10 @@ class ReferenceEntryV1ServiceImplTest {
         when(capabilityService.findReferenceTemplateUids(
             assignment.getForms()))
             .thenReturn(Set.of("reference01"));
-        when(formAccessService.canAddSubmissions("reference01"))
+        when(formAccessService.canAddSubmissions(
+            any(CurrentUserDetails.class),
+            eq(assignment),
+            eq("reference01")))
             .thenReturn(false);
 
         assertThrows(

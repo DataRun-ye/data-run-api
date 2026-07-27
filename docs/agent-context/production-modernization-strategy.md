@@ -303,6 +303,10 @@ Do not land a second owner merely because the first owner is difficult.
   entity visibility remains in `UserAccessService`. The generic policy is a
   compatibility boundary that retires with the inherited routes. ACL tables
   remain until the later Liquibase pass.
+- Assignment-form authorization now evaluates the actor, assignment team,
+  assigned form, and action in `AssignmentFormAccessService`. Configuration
+  projection, Reference reads, and submission validation share that decision;
+  cross-team permissions and unassigned forms are not accepted.
 - `etl/` is projection-active and is not a source of assignment, form, or
   submission truth.
 - `FormTemplateResource` and `TemplateVersionResource` own released mobile

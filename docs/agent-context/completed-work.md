@@ -56,6 +56,9 @@ deployment authority.
 - The unused Spring ACL engine and dependency were removed after preserving
   its two live coarse rules in `ResourceApiAuthorization`. Entity and form
   scope owners were unchanged; ACL tables remain for the schema pass.
+- Assignment-form projection, Reference reads, and submission validation now
+  share one team-and-assignment-scoped authorization owner. The unused generic
+  reverse mapper was removed and the projection exposes external UIDs.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

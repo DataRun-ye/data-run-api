@@ -140,7 +140,9 @@ public class DefaultAssignmentService
         String jsonQueryBody,
         int referenceVersion) {
         Page<Assignment> assignedPage = findAllByUser(queryRequest, jsonQueryBody);
-        Page<AssignmentWithAccessDto> response = assignedPage.map(assignmentMapper::toDto);
+        var user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        Page<AssignmentWithAccessDto> response = assignedPage.map(
+            assignment -> assignmentMapper.toDto(assignment, user));
         referenceAssignmentFormGate.filterUnsupportedForms(
             assignedPage.getContent(),
             response.getContent(),
