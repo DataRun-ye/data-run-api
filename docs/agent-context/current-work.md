@@ -8,7 +8,7 @@ or deployment authority.
 ## Now
 
 - Reduce the runtime source surface using
-  `runtime-surface-cleanup.md`. Finish the proven source-dead leaf slice, then
+  `production-modernization-strategy.md`. Finish the proven source-dead leaf slice, then
   scan assignment/sync/access, form templates, submissions, projections, and
   remaining support code in order. Endpoint/task and physical-schema removal
   remain separate decisions.
