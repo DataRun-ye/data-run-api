@@ -67,7 +67,7 @@ public class SubmissionUploadService {
             submissions.add(submission);
         }
 
-        submissionService.upsertAll(submissions, currentUser, summary);
+        submissionService.upsertAll(submissions, summary);
         return summary;
     }
 

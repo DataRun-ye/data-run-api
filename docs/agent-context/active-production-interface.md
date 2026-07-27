@@ -92,6 +92,8 @@ submission JSON; and writes the current `outbox` row in the same transaction.
 Submission access and assignment-form projection use the same
 `AssignmentFormAccessService`; permissions from another team and forms absent
 from the assignment are rejected.
+`DataSubmissionService` receives canonical submissions and a result summary,
+not a security principal; authorization must complete before persistence.
 
 The unversioned generic writes still use the separate validator/enrichment
 pipeline in `DataSubmissionResource.preProcess`. They are not used by the

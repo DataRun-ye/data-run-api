@@ -113,8 +113,7 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
         requireResourceApiAccess(SecurityUtils.getCurrentUserDetailsOrThrow());
         var processedEntity = preProcess(List.of(payLoadEntity))
             .stream().findFirst().orElseThrow(() -> new IllegalQueryException("processing: " + payLoadEntity.getUid() + " swallowed submission"));
-        submissionService.upsert(processedEntity,
-            SecurityUtils.getCurrentUserDetailsOrThrow(), summary);
+        submissionService.upsert(processedEntity, summary);
 
     }
 
@@ -122,7 +121,7 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     public ResponseEntity<EntitySaveSummaryVM> saveAll(List<DataSubmission> entities) {
         requireResourceApiAccess(SecurityUtils.getCurrentUserDetailsOrThrow());
         EntitySaveSummaryVM summaryVM = new EntitySaveSummaryVM();
-        submissionService.upsertAll(preProcess(entities), SecurityUtils.getCurrentUserDetailsOrThrow(), summaryVM);
+        submissionService.upsertAll(preProcess(entities), summaryVM);
         return ResponseEntity.ok(summaryVM);
     }
 

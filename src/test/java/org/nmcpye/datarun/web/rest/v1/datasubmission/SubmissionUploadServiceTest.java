@@ -141,7 +141,6 @@ class SubmissionUploadServiceTest {
             any());
         ordered.verify(submissionService).upsertAll(
             eq(List.of(first, second)),
-            eq(user),
             any(EntitySaveSummaryVM.class));
         verify(assignmentRepository, times(2)).findByUid("assignment1");
         verify(templateElementService, times(2)).getTemplateElementMap(
@@ -202,7 +201,7 @@ class SubmissionUploadServiceTest {
 
         verify(formAccessService, never()).canSubmitData(any(), any(), any());
         verify(resolver, never()).resolve(any(), any(), any(), any());
-        verify(submissionService, never()).upsertAll(any(), any(), any());
+        verify(submissionService, never()).upsertAll(any(), any());
     }
 
     @Test
@@ -229,7 +228,7 @@ class SubmissionUploadServiceTest {
                 () -> service.upsertAll(
                     List.of(firstRequest, secondRequest))));
 
-        verify(submissionService, never()).upsertAll(any(), any(), any());
+        verify(submissionService, never()).upsertAll(any(), any());
     }
 
     @Test
