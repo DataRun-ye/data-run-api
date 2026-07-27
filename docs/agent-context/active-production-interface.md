@@ -67,10 +67,13 @@ cleanup pass must trace the filters, services, repositories, template
 processing, and cached element maps behind these two reads before removing
 similar-looking form APIs.
 
-`/api/v1/dataFormTemplates` is a separate operational authoring boundary. It
-validates and processes a complete template, creates an immutable version,
-updates the template's latest-version pointer, and generates template metadata.
-It is supporting rather than released-mobile code and remains intact.
+`/api/v1/dataFormTemplates` is the separate operational authoring boundary.
+`FormTemplateAuthoringResource` validates and processes the complete template,
+then `DataTemplateInstanceService.publishVersion` creates one immutable version,
+updates the template's latest-version pointer, and invokes downstream
+`TemplateElement` projection generation exactly once. The stored template
+version remains the product/form-runtime contract; generated element metadata
+supports extraction and is not a second template authority.
 
 ## Submission
 

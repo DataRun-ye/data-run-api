@@ -46,8 +46,8 @@ public class DataTemplateInstanceServiceImpl
      * Create a brand-new TemplateVersion and atomically flip the DataTemplate latest pointer to it.
      * Uses a PESSIMISTIC_WRITE lock on the DataTemplate to avoid concurrent versionNumber races.
      */
-    @Transactional
-    public DataTemplateInstanceDto saveNewVersion(DataTemplateInstanceDto dto) {
+    private DataTemplateInstanceDto persistNewVersion(
+        DataTemplateInstanceDto dto) {
         log.debug("Create new template version for template uid={}", dto.getUid());
 
         // Build domain object from DTO (this does not touch DB yet)
@@ -135,8 +135,9 @@ public class DataTemplateInstanceServiceImpl
         TemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_JPA_CACHE,
     })
     @Override
-    public DataTemplateInstanceDto save(DataTemplateInstanceDto dataTemplateInstanceDto) {
-        final var saved = saveNewVersion(dataTemplateInstanceDto);
+    public DataTemplateInstanceDto publishVersion(
+        DataTemplateInstanceDto dataTemplateInstanceDto) {
+        final var saved = persistNewVersion(dataTemplateInstanceDto);
         elementGeneratorService.generate(saved.getUid(), saved.getVersionUid());
         return saved;
     }
@@ -157,18 +158,6 @@ public class DataTemplateInstanceServiceImpl
     @Override
     public void deleteByUid(String uid) {
         dataTemplateService.deleteByUid(uid);
-    }
-
-    @CacheEvict(cacheNames = {
-        DataTemplateRepository.TEMPLATE_BY_UID_CACHE,
-    })
-    @Override
-    public DataTemplateInstanceDto update(DataTemplateInstanceDto dataTemplateInstanceDto) {
-        dataTemplateRepository.findByUid(dataTemplateInstanceDto.getUid()).orElseThrow(() ->
-            new IllegalQueryException(ErrorCode.E1113, dataTemplateInstanceDto.getUid()));
-        final var updated = save(dataTemplateInstanceDto);
-        elementGeneratorService.generate(updated.getUid(), updated.getVersionUid());
-        return updated;
     }
 
     @Override
@@ -210,8 +199,4 @@ public class DataTemplateInstanceServiceImpl
         return Optional.of(dataTemplateMapper.toInstanceDto(template.get(), version.get()));
     }
 
-    @Override
-    public void delete(DataTemplateInstanceDto object) {
-        deleteByUid(object.getUid());
-    }
 }

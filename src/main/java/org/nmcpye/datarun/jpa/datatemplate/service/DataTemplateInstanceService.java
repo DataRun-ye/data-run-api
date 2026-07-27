@@ -21,29 +21,14 @@ public interface DataTemplateInstanceService {
     Page<DataTemplateInstanceDto> findAllByUser(QueryRequest queryRequest, String jsonQueryBody);
 
     /**
-     * Save an object.
+     * Publish an immutable template version and move the template's latest
+     * pointer to it.
      *
-     * @param object the entity to save.
-     * @return the persisted entity.
+     * @param template the validated and processed template definition.
+     * @return the persisted template with its new version identity.
      */
-    DataTemplateInstanceDto save(DataTemplateInstanceDto object);
-
-    /**
-     * Updates a object.
-     *
-     * @param object the entity to update.
-     * @return the persisted entity.
-     */
-    DataTemplateInstanceDto update(DataTemplateInstanceDto object);
-
-    /**
-     * Delete an object.
-     *
-     * @param object the entity to delete.
-     */
-    void delete(DataTemplateInstanceDto object);
-
-    DataTemplateInstanceDto saveNewVersion(DataTemplateInstanceDto dataTemplateInstanceDto);
+    DataTemplateInstanceDto publishVersion(
+        DataTemplateInstanceDto template);
 
     Optional<DataTemplateInstanceDto> findLatestByTemplate(String templateUid);
 

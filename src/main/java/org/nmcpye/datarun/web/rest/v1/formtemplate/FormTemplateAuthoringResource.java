@@ -29,13 +29,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static org.nmcpye.datarun.web.rest.v1.formtemplate.FormTemplateMergeResource.V1;
+import static org.nmcpye.datarun.web.rest.v1.formtemplate.FormTemplateAuthoringResource.V1;
 
 @RestController
 @RequestMapping(value = {V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 @Slf4j
-public class FormTemplateMergeResource {
+public class FormTemplateAuthoringResource {
     protected static final String NAME = "/dataFormTemplates";
     protected static final String V1 = ApiVersion.API_V1 + NAME;
 
@@ -46,7 +46,7 @@ public class FormTemplateMergeResource {
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
 
-    public FormTemplateMergeResource(
+    public FormTemplateAuthoringResource(
         FormTemplateProcessor formTemplateProcessor,
         DataTemplateInstanceService templateService,
         ResourceApiAuthorization resourceApiAuthorization
@@ -123,11 +123,12 @@ public class FormTemplateMergeResource {
     protected DataTemplateInstanceDto saveEntity(DataTemplateInstanceDto payLoadEntity, EntitySaveSummaryVM summary) {
         var processedEntity = preProcess(payLoadEntity);
         try {
-            if (payLoadEntity.getUid() != null && templateService.existsByUid(payLoadEntity.getUid())) {
-                processedEntity = templateService.update(processedEntity);
+            boolean existingTemplate = processedEntity.getUid() != null
+                && templateService.existsByUid(processedEntity.getUid());
+            processedEntity = templateService.publishVersion(processedEntity);
+            if (existingTemplate) {
                 summary.getUpdated().add(processedEntity.getUid());
             } else {
-                processedEntity = templateService.save(payLoadEntity);
                 summary.getCreated().add(processedEntity.getUid());
             }
         } catch (Exception e) {
