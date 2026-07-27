@@ -129,7 +129,7 @@ public class DataTemplateInstanceServiceImpl
 
     @CacheEvict(cacheNames = {
         DataTemplateRepository.TEMPLATE_BY_UID_CACHE,
-        TemplateElementService.TEMPLATE_MAP_CACHE,
+        TemplateVersionResolver.TEMPLATE_VERSION_CONTEXT_CACHE,
         TemplateVersionRepository.TEMPLATE_UID_VERSION_UID_JPA_CACHE,
         TemplateVersionRepository.TEMPLATE_UID_VERSION_NO_JPA_CACHE,
         TemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_JPA_CACHE,

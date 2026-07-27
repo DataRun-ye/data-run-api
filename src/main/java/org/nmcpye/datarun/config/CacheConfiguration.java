@@ -17,7 +17,7 @@ import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
+import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
 import org.nmcpye.datarun.jpa.option.Option;
 import org.nmcpye.datarun.jpa.option.OptionGroup;
 import org.nmcpye.datarun.jpa.option.OptionGroupSet;
@@ -78,7 +78,8 @@ public class CacheConfiguration {
         return cm -> {
             createCache(cm, UserRepository.USERS_BY_LOGIN_CACHE);
             createCache(cm, UserRepository.USERS_BY_EMAIL_CACHE);
-            createCache(cm, TemplateElementService.TEMPLATE_MAP_CACHE);
+            createCache(cm,
+                TemplateVersionResolver.TEMPLATE_VERSION_CONTEXT_CACHE);
             createCache(cm, DataTemplateRepository.TEMPLATE_BY_UID_CACHE);
             createCache(cm, TemplateVersionRepository.TEMPLATE_UID_VERSION_NO_JPA_CACHE);
             createCache(cm, TemplateVersionRepository.TEMPLATE_UID_VERSION_UID_JPA_CACHE);

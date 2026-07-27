@@ -14,7 +14,7 @@ import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
 import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidator;
 import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
+import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -55,21 +55,21 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     final private DataSubmissionService submissionService;
     private final CompositeSubmissionValidator compositeValidator;
     private final SubmissionAccessValidator submissionAccessValidator;
-    private final TemplateElementService templateElementService;
+    private final TemplateVersionResolver templateVersionResolver;
     private final SubmissionUploadService uploadService;
 
     public DataSubmissionResource(DataSubmissionService submissionService,
                                   DataSubmissionRepository submissionRepository,
                                   ObjectMapper objectMapper, CompositeSubmissionValidator compositeValidator,
                                   SubmissionAccessValidator submissionAccessValidator,
-                                  TemplateElementService templateElementService,
+                                  TemplateVersionResolver templateVersionResolver,
                                   SubmissionUploadService uploadService) {
         super(submissionService, submissionRepository);
         this.submissionService = submissionService;
         this.objectMapper = objectMapper;
         this.compositeValidator = compositeValidator;
         this.submissionAccessValidator = submissionAccessValidator;
-        this.templateElementService = templateElementService;
+        this.templateVersionResolver = templateVersionResolver;
         this.uploadService = uploadService;
     }
 
@@ -160,7 +160,10 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
         return payLoadEntities.stream()
             .peek(payLoadEntity -> {
                 ObjectNode root = (ObjectNode) (payLoadEntity.getFormData() == null ? objectMapper.createObjectNode() : payLoadEntity.getFormData().deepCopy());
-                final var migrationRepeatIdGenerator = new MigrationRepeatIdGenerator(templateElementService.getTemplateElementMap(payLoadEntity.getForm(), payLoadEntity.getFormVersion()));
+                final var migrationRepeatIdGenerator =
+                    new MigrationRepeatIdGenerator(templateVersionResolver
+                        .resolveByUid(payLoadEntity.getForm(),
+                            payLoadEntity.getFormVersion()));
                 int generated = migrationRepeatIdGenerator
                     .generateMissingIdsForMigration(root, payLoadEntity.getUid());
                 if (generated > 0) {

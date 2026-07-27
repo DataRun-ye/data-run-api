@@ -13,9 +13,9 @@ import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
-import org.nmcpye.datarun.jpa.etl.model.TemplateElementMap;
+import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.reference.ReferenceSubmissionResolver;
 import org.nmcpye.datarun.jpa.team.Team;
@@ -57,10 +57,10 @@ class SubmissionUploadServiceTest {
     private DataSubmissionUploadV1Mapper mapper;
     private AssignmentRepository assignmentRepository;
     private AssignmentFormAccessService formAccessService;
-    private TemplateElementService templateElementService;
+    private TemplateVersionResolver templateVersionResolver;
     private ReferenceSubmissionResolver resolver;
     private SubmissionUploadService service;
-    private TemplateElementMap templateMap;
+    private TemplateVersionContext templateContext;
     private DataTemplateInstanceDto template;
     private CurrentUserDetails user;
     private Assignment assignment;
@@ -71,7 +71,7 @@ class SubmissionUploadServiceTest {
         mapper = mock(DataSubmissionUploadV1Mapper.class);
         assignmentRepository = mock(AssignmentRepository.class);
         formAccessService = mock(AssignmentFormAccessService.class);
-        templateElementService = mock(TemplateElementService.class);
+        templateVersionResolver = mock(TemplateVersionResolver.class);
         resolver = mock(ReferenceSubmissionResolver.class);
         service = new SubmissionUploadService(
             submissionService,
@@ -79,13 +79,13 @@ class SubmissionUploadServiceTest {
             new ObjectMapper(),
             assignmentRepository,
             formAccessService,
-            templateElementService,
+            templateVersionResolver,
             resolver);
 
-        templateMap = mock(TemplateElementMap.class);
+        templateContext = mock(TemplateVersionContext.class);
         template = mock(DataTemplateInstanceDto.class);
-        when(templateMap.getElementByIdPathMap()).thenReturn(Map.of());
-        when(templateMap.getTemplateInstanceDto()).thenReturn(template);
+        when(templateContext.getElementsByPath()).thenReturn(Map.of());
+        when(templateContext.getTemplate()).thenReturn(template);
         when(template.getUid()).thenReturn("formUid0001");
         when(template.getVersionUid()).thenReturn("version0001");
         when(template.getVersionNumber()).thenReturn(1);
@@ -143,7 +143,7 @@ class SubmissionUploadServiceTest {
             eq(List.of(first, second)),
             any(EntitySaveSummaryVM.class));
         verify(assignmentRepository, times(2)).findByUid("assignment1");
-        verify(templateElementService, times(2)).getTemplateElementMap(
+        verify(templateVersionResolver, times(2)).resolveByUid(
             "formUid0001",
             "version0001");
     }
@@ -272,10 +272,10 @@ class SubmissionUploadServiceTest {
     private void stubContext(DataSubmission submission) {
         when(assignmentRepository.findByUid(submission.getAssignment()))
             .thenReturn(Optional.of(assignment));
-        when(templateElementService.getTemplateElementMap(
+        when(templateVersionResolver.resolveByUid(
             submission.getForm(),
             submission.getFormVersion()))
-            .thenReturn(templateMap);
+            .thenReturn(templateContext);
     }
 
     private void withCurrentUser(Runnable operation) {

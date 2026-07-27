@@ -64,8 +64,8 @@ request succeeds.
 
 The released mobile owner is `DataFormTemplateDatasource`. The form-template
 cleanup pass must trace the filters, services, repositories, template
-processing, and cached element maps behind these two reads before removing
-similar-looking form APIs.
+processing, and pinned-version resolution behind these two reads before
+removing similar-looking form APIs.
 
 `/api/v1/dataFormTemplates` is the separate operational authoring boundary.
 `FormTemplateAuthoringResource` validates and processes the complete template,
@@ -88,7 +88,8 @@ supports extraction and is not a second template authority.
 The released mobile owner is `SubmissionUploadService`. Ordinary and
 Reference-capable submissions currently share this versioned upload boundary.
 The active upload maps the versioned DTO; resolves assignment and pinned
-template once; canonicalizes server-owned assignment/template context;
+template once through `TemplateVersionResolver`; canonicalizes server-owned
+assignment/template context;
 authorizes the canonical assignment/form pair; generates missing repeat
 metadata for compatibility; resolves Reference definitions; upserts whole
 submission JSON; and writes the current `outbox` row in the same transaction.

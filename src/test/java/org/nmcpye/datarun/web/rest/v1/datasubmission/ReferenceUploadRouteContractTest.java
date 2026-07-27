@@ -6,7 +6,7 @@ import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
 import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidator;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
+import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.service.SubmissionUploadService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -50,7 +50,7 @@ class ReferenceUploadRouteContractTest {
             new ObjectMapper(),
             mock(CompositeSubmissionValidator.class),
             mock(SubmissionAccessValidator.class),
-            mock(TemplateElementService.class),
+            mock(TemplateVersionResolver.class),
             mock(SubmissionUploadService.class));
 
         assertDoesNotThrow(

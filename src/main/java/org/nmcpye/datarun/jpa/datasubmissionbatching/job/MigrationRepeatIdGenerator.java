@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
-import org.nmcpye.datarun.jpa.etl.model.TemplateElementMap;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,7 @@ import java.util.Set;
  * <pre>
  * {@code
  *  ObjectNode rootCopy = original.isObject() ? ((ObjectNode) original).deepCopy() : objectMapper.createObjectNode();
- * 	MigrationRepeatIdGenerator gen = new MigrationRepeatIdGenerator(objectMapper, templateElementMap);
+ * 	MigrationRepeatIdGenerator gen = new MigrationRepeatIdGenerator(templateVersionContext);
  * 	int generated = gen.generateMissingIdsForMigration(rootCopy, submissionUid);
  * 	if (generated > 0) {
  * 		submission.setFormData(rootCopy); // persist mutated formData in migration
@@ -45,10 +45,10 @@ public final class MigrationRepeatIdGenerator {
     private static final String SUBMISSION_UID_FIELD = "_submissionUid";
     private static final String INDEX_FIELD = "_index";
 
-    private final TemplateElementMap elementMap;
+    private final TemplateVersionContext templateContext;
 
-    public MigrationRepeatIdGenerator(TemplateElementMap elementMap) {
-        this.elementMap = elementMap;
+    public MigrationRepeatIdGenerator(TemplateVersionContext templateContext) {
+        this.templateContext = templateContext;
     }
 
     /**
@@ -123,7 +123,8 @@ public final class MigrationRepeatIdGenerator {
             String key = entry.getKey();
             JsonNode value = entry.getValue();
             String childPath = (currentPath == null || currentPath.isEmpty()) ? key : currentPath + "." + key;
-            AbstractElement element = elementMap.getElementByIdPathMap().get(childPath);
+            AbstractElement element = templateContext.getElementsByPath()
+                .get(childPath);
 
             if (element instanceof FormSectionConf section && Boolean.TRUE.equals(section.getRepeatable())) {
                 // If the value isn't an array, skip (no repeat instances present)

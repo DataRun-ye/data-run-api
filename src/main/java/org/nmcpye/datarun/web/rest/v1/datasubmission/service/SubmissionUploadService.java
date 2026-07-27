@@ -13,9 +13,9 @@ import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
 import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
-import org.nmcpye.datarun.jpa.etl.model.TemplateElementMap;
+import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
 import org.nmcpye.datarun.jpa.reference.ReferenceSubmissionResolver;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -36,7 +36,7 @@ public class SubmissionUploadService {
     private final ObjectMapper objectMapper;
     private final AssignmentRepository assignmentRepository;
     private final AssignmentFormAccessService formAccessService;
-    private final TemplateElementService templateElementService;
+    private final TemplateVersionResolver templateVersionResolver;
     private final ReferenceSubmissionResolver referenceResolver;
 
     @Transactional
@@ -52,17 +52,17 @@ public class SubmissionUploadService {
         for (DataSubmissionUploadV1Dto request : requests) {
             DataSubmission submission = mapper.toEntity(request);
             Assignment assignment = assignmentFor(submission);
-            TemplateElementMap template = templateFor(submission);
+            TemplateVersionContext template = templateFor(submission);
             canonicalizeContext(
                 submission,
                 assignment,
-                template.getTemplateInstanceDto());
+                template.getTemplate());
             authorize(submission, assignment, currentUser);
             generateMissingRepeatIds(submission, template);
             referenceResolver.resolve(
                 submission,
                 assignment,
-                template.getTemplateInstanceDto(),
+                template.getTemplate(),
                 request.getReferenceDefinitions());
             submissions.add(submission);
         }
@@ -80,14 +80,14 @@ public class SubmissionUploadService {
                 "Assignment not found: " + submission.getAssignment()));
     }
 
-    private TemplateElementMap templateFor(DataSubmission submission) {
+    private TemplateVersionContext templateFor(DataSubmission submission) {
         if (submission.getFormVersion() != null) {
-            return templateElementService.getTemplateElementMap(
+            return templateVersionResolver.resolveByUid(
                 submission.getForm(),
                 submission.getFormVersion());
         }
         if (submission.getVersion() != null) {
-            return templateElementService.getTemplateElementMap(
+            return templateVersionResolver.resolveByNumber(
                 submission.getForm(),
                 submission.getVersion());
         }
@@ -136,7 +136,7 @@ public class SubmissionUploadService {
 
     private void generateMissingRepeatIds(
         DataSubmission submission,
-        TemplateElementMap template) {
+        TemplateVersionContext template) {
         ObjectNode root = (ObjectNode) (submission.getFormData() == null
             ? objectMapper.createObjectNode()
             : submission.getFormData().deepCopy());
