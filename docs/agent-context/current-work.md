@@ -1,6 +1,6 @@
 # Current Work
 
-Updated: 2026-07-26
+Updated: 2026-07-28
 
 Purpose: accepted server work only. This file is not code, API, architecture,
 or deployment authority.
@@ -8,10 +8,14 @@ or deployment authority.
 ## Now
 
 - Reduce the runtime source surface using
-  `production-modernization-strategy.md`. Finish the proven source-dead leaf slice, then
-  scan assignment/sync/access, form templates, submissions, projections, and
-  remaining support code in order. Endpoint/task and physical-schema removal
-  remain separate decisions.
+  `production-modernization-strategy.md`. Close the proven source-dead leaf
+  slice, then begin the assignment/sync/access pass.
+- In that access pass, preserve the active `User.authorities` login contract,
+  remove the unused `User.roles`/`Role`/`Privilege` attempt through a
+  schema-neutral source cutover, and replace the mechanically active
+  `AclService` gate before removing Spring ACL configuration/dependencies.
+  Physical role/privilege/ACL tables remain a later Liquibase contraction.
+  Endpoint/task and physical-schema removal remain separate decisions.
 
 Reference activation remains parked in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while

@@ -295,6 +295,18 @@ Do not land a second owner merely because the first owner is difficult.
 - `acl/` is mixed: active generic-resource checks coexist with dormant
   bootstrap and permission alternatives. It requires the access-boundary pass,
   not package-wide deprecation.
+- `User.authorities` is the active authentication authority source.
+  `User.roles`, `Role`, and `Privilege` are a separate persisted attempt with
+  no authentication, service, repository-consumer, or endpoint owner. Remove
+  that source mapping in the access pass; retain its physical tables until the
+  schema-contraction pass.
+- The active generic resources call `AclService`, but its active
+  `canRead`/`canAddNew`/`canUpdate`/`canDelete` methods do not query Spring ACL
+  entries. They implement hardcoded superuser/team gates. The Spring ACL
+  mutation/effective-permission methods have no caller. Characterize the
+  current generic-resource behavior, move it to the selected authority owner,
+  then remove the ACL engine/configuration/dependency; remove ACL tables only
+  in the later Liquibase pass.
 - `etl/` is projection-active and is not a source of assignment, form, or
   submission truth.
 - `FormTemplateResource` and `TemplateVersionResource` own released mobile
