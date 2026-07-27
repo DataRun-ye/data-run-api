@@ -7,11 +7,11 @@ or deployment authority.
 
 ## Now
 
-- Clean the production interface one bounded domain at a time: assignment,
-  form templates, then submissions. For each domain, map the released mobile
-  contract, remove source-dead alternatives, reconcile duplicated ownership,
-  assess unused APIs, and keep physical schema removal in a separate
-  Liquibase slice. The living map is `active-production-interface.md`.
+- Reduce the runtime source surface using
+  `runtime-surface-cleanup.md`. Finish the proven source-dead leaf slice, then
+  scan assignment/sync/access, form templates, submissions, projections, and
+  remaining support code in order. Endpoint/task and physical-schema removal
+  remain separate decisions.
 
 Reference activation remains parked in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while
