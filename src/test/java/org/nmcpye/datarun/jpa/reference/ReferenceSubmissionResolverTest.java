@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
@@ -13,7 +12,6 @@ import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.ReferenceDefinitionV1Dto;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
 
@@ -28,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 class ReferenceSubmissionResolverTest {
 
-    private AssignmentRepository assignmentRepository;
     private ReferenceEntryRepository referenceEntryRepository;
     private ReferenceValueExtractor extractor;
     private ReferenceSubmissionResolver resolver;
@@ -38,11 +35,9 @@ class ReferenceSubmissionResolverTest {
 
     @BeforeEach
     void setUp() {
-        assignmentRepository = mock(AssignmentRepository.class);
         referenceEntryRepository = mock(ReferenceEntryRepository.class);
         extractor = mock(ReferenceValueExtractor.class);
         resolver = new ReferenceSubmissionResolver(
-            assignmentRepository,
             referenceEntryRepository,
             extractor,
             new ReferenceDisplayNamePolicy());
@@ -61,8 +56,6 @@ class ReferenceSubmissionResolverTest {
         submission.setAssignment("assignment1");
         template = mock(DataTemplateInstanceDto.class);
 
-        when(assignmentRepository.findByUid("assignment1"))
-            .thenReturn(Optional.of(assignment));
     }
 
     @Test
@@ -78,6 +71,7 @@ class ReferenceSubmissionResolverTest {
 
         resolver.resolve(
             submission,
+            assignment,
             template,
             List.of(definition(
                 "a1234567890",
@@ -96,6 +90,7 @@ class ReferenceSubmissionResolverTest {
 
         resolver.resolve(
             submission,
+            assignment,
             template,
             List.of(definition(
                 "b1234567890",
@@ -138,7 +133,7 @@ class ReferenceSubmissionResolverTest {
         when(referenceEntryRepository.findAllByUidIn(any()))
             .thenReturn(List.of());
 
-        resolver.resolve(submission, template, definitions);
+        resolver.resolve(submission, assignment, template, definitions);
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<ReferenceEntry>> created =
@@ -168,7 +163,7 @@ class ReferenceSubmissionResolverTest {
                 assignment.getOrgUnit(),
                 "Canonical Existing Name")));
 
-        resolver.resolve(submission, template, List.of());
+        resolver.resolve(submission, assignment, template, List.of());
 
         verify(referenceEntryRepository, never()).persistAllAndFlush(any());
     }
@@ -189,7 +184,8 @@ class ReferenceSubmissionResolverTest {
 
         assertThrows(
             DomainValidationException.class,
-            () -> resolver.resolve(submission, template, List.of()));
+            () -> resolver.resolve(
+                submission, assignment, template, List.of()));
         verify(referenceEntryRepository, never()).findAllByUidIn(any());
     }
 
@@ -202,11 +198,13 @@ class ReferenceSubmissionResolverTest {
 
         assertThrows(
             DomainValidationException.class,
-            () -> resolver.resolve(submission, template, List.of()));
+            () -> resolver.resolve(
+                submission, assignment, template, List.of()));
         assertThrows(
             DomainValidationException.class,
             () -> resolver.resolve(
                 submission,
+                assignment,
                 template,
                 List.of(definition(
                     "b1234567890",
@@ -227,7 +225,8 @@ class ReferenceSubmissionResolverTest {
 
         assertThrows(
             DomainValidationException.class,
-            () -> resolver.resolve(submission, template, List.of()));
+            () -> resolver.resolve(
+                submission, assignment, template, List.of()));
     }
 
     @Test
@@ -236,7 +235,8 @@ class ReferenceSubmissionResolverTest {
 
         assertThrows(
             DomainValidationException.class,
-            () -> resolver.resolve(submission, template, List.of()));
+            () -> resolver.resolve(
+                submission, assignment, template, List.of()));
         verify(referenceEntryRepository, never()).findAllByUidIn(any());
     }
 

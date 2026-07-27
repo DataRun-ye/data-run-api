@@ -5,31 +5,39 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
+import org.nmcpye.datarun.jpa.activity.Activity;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
-import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
-import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidator;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
 import org.nmcpye.datarun.jpa.etl.model.TemplateElementMap;
+import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.reference.ReferenceSubmissionResolver;
+import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.mapper.DataSubmissionUploadV1Mapper;
-import org.nmcpye.datarun.web.rest.v1.datasubmission.service.ReferenceSubmissionUploadService;
-import org.springframework.transaction.annotation.Transactional;
+import org.nmcpye.datarun.web.rest.v1.datasubmission.service.SubmissionUploadService;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,86 +51,158 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class ReferenceSubmissionUploadServiceTest {
+class SubmissionUploadServiceTest {
 
     private DataSubmissionService submissionService;
     private DataSubmissionUploadV1Mapper mapper;
-    private CompositeSubmissionValidator compositeValidator;
-    private SubmissionAccessValidator accessValidator;
+    private AssignmentRepository assignmentRepository;
+    private AssignmentFormAccessService formAccessService;
     private TemplateElementService templateElementService;
     private ReferenceSubmissionResolver resolver;
-    private ReferenceSubmissionUploadService service;
+    private SubmissionUploadService service;
     private TemplateElementMap templateMap;
     private DataTemplateInstanceDto template;
     private CurrentUserDetails user;
+    private Assignment assignment;
 
     @BeforeEach
     void setUp() {
         submissionService = mock(DataSubmissionService.class);
         mapper = mock(DataSubmissionUploadV1Mapper.class);
-        compositeValidator = mock(CompositeSubmissionValidator.class);
-        accessValidator = mock(SubmissionAccessValidator.class);
+        assignmentRepository = mock(AssignmentRepository.class);
+        formAccessService = mock(AssignmentFormAccessService.class);
         templateElementService = mock(TemplateElementService.class);
         resolver = mock(ReferenceSubmissionResolver.class);
-        service = new ReferenceSubmissionUploadService(
+        service = new SubmissionUploadService(
             submissionService,
             mapper,
             new ObjectMapper(),
-            compositeValidator,
-            accessValidator,
+            assignmentRepository,
+            formAccessService,
             templateElementService,
             resolver);
+
         templateMap = mock(TemplateElementMap.class);
         template = mock(DataTemplateInstanceDto.class);
         when(templateMap.getElementByIdPathMap()).thenReturn(Map.of());
         when(templateMap.getTemplateInstanceDto()).thenReturn(template);
+        when(template.getUid()).thenReturn("formUid0001");
+        when(template.getVersionUid()).thenReturn("version0001");
+        when(template.getVersionNumber()).thenReturn(1);
+
+        Team team = new Team();
+        team.setUid("team0000001");
+        team.setCode("TEAM-1");
+        OrgUnit orgUnit = new OrgUnit();
+        orgUnit.setUid("orgUnit0001");
+        orgUnit.setCode("OU-1");
+        orgUnit.setName("Org unit 1");
+        Activity activity = new Activity();
+        activity.setUid("activity001");
+
+        assignment = new Assignment();
+        assignment.setUid("assignment1");
+        assignment.setTeam(team);
+        assignment.setOrgUnit(orgUnit);
+        assignment.setActivity(activity);
+        assignment.setForms(Set.of("formUid0001"));
+
         user = mock(CurrentUserDetails.class);
+        when(user.isSuper()).thenReturn(true);
     }
 
     @Test
     void transactionStartsAtPublicCoordinator() throws Exception {
         assertNotNull(
-            ReferenceSubmissionUploadService.class
+            SubmissionUploadService.class
                 .getMethod("upsertAll", List.class)
                 .getAnnotation(Transactional.class));
     }
 
     @Test
-    void resolvesEverySubmissionBeforeCallingPersistence() {
+    void preparesEverySubmissionBeforeCallingPersistence() {
         DataSubmissionUploadV1Dto firstRequest = request("firstSub01");
         DataSubmissionUploadV1Dto secondRequest = request("secondSub1");
         DataSubmission first = submission(firstRequest);
         DataSubmission second = submission(secondRequest);
         when(mapper.toEntity(firstRequest)).thenReturn(first);
         when(mapper.toEntity(secondRequest)).thenReturn(second);
-        stubValidation(first);
-        stubValidation(second);
+        stubContext(first);
+        stubContext(second);
 
-        try (MockedStatic<SecurityUtils> security =
-                 org.mockito.Mockito.mockStatic(SecurityUtils.class)) {
-            security.when(SecurityUtils::getCurrentUserDetailsOrThrow)
-                .thenReturn(user);
-            service.upsertAll(List.of(firstRequest, secondRequest));
-        }
+        withCurrentUser(() -> service.upsertAll(
+            List.of(firstRequest, secondRequest)));
 
         var ordered = inOrder(resolver, submissionService);
         ordered.verify(resolver, times(2)).resolve(
             any(),
-            any(),
+            eq(assignment),
+            eq(template),
             any());
         ordered.verify(submissionService).upsertAll(
             eq(List.of(first, second)),
             eq(user),
             any(EntitySaveSummaryVM.class));
+        verify(assignmentRepository, times(2)).findByUid("assignment1");
+        verify(templateElementService, times(2)).getTemplateElementMap(
+            "formUid0001",
+            "version0001");
+    }
 
-        org.mockito.ArgumentCaptor<DataSubmission> submissions =
-            org.mockito.ArgumentCaptor.forClass(DataSubmission.class);
-        verify(resolver, times(2)).resolve(
-            submissions.capture(),
-            any(),
-            any());
-        assertSame(first, submissions.getAllValues().get(0));
-        assertSame(second, submissions.getAllValues().get(1));
+    @Test
+    void canonicalizesContextBeforeAuthorizationAndReferenceResolution() {
+        DataSubmissionUploadV1Dto request = request("firstSub01");
+        DataSubmission submission = submission(request);
+        when(mapper.toEntity(request)).thenReturn(submission);
+        stubContext(submission);
+        when(user.isSuper()).thenReturn(false);
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of("team0000001"));
+        when(formAccessService.canSubmitData(
+            user,
+            assignment,
+            "formUid0001"))
+            .thenReturn(true);
+
+        withCurrentUser(() -> service.upsertAll(List.of(request)));
+
+        var ordered = inOrder(formAccessService, resolver);
+        ordered.verify(formAccessService).canSubmitData(
+            user,
+            assignment,
+            "formUid0001");
+        ordered.verify(resolver).resolve(
+            submission,
+            assignment,
+            template,
+            request.getReferenceDefinitions());
+        assertEquals("team0000001", submission.getTeam());
+        assertEquals("TEAM-1", submission.getTeamCode());
+        assertEquals("orgUnit0001", submission.getOrgUnit());
+        assertEquals("OU-1", submission.getOrgUnitCode());
+        assertEquals("Org unit 1", submission.getOrgUnitName());
+        assertEquals("activity001", submission.getActivity());
+        assertEquals("formUid0001", submission.getForm());
+        assertEquals("version0001", submission.getFormVersion());
+        assertEquals(1, submission.getVersion());
+    }
+
+    @Test
+    void rejectsNonDirectTeamBeforeReferenceAndPersistence() {
+        DataSubmissionUploadV1Dto request = request("firstSub01");
+        DataSubmission submission = submission(request);
+        when(mapper.toEntity(request)).thenReturn(submission);
+        stubContext(submission);
+        when(user.isSuper()).thenReturn(false);
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of("otherTeam01"));
+
+        assertThrows(
+            IllegalQueryException.class,
+            () -> withCurrentUser(
+                () -> service.upsertAll(List.of(request))));
+
+        verify(formAccessService, never()).canSubmitData(any(), any(), any());
+        verify(resolver, never()).resolve(any(), any(), any(), any());
+        verify(submissionService, never()).upsertAll(any(), any(), any());
     }
 
     @Test
@@ -133,29 +213,23 @@ class ReferenceSubmissionUploadServiceTest {
         DataSubmission second = submission(secondRequest);
         when(mapper.toEntity(firstRequest)).thenReturn(first);
         when(mapper.toEntity(secondRequest)).thenReturn(second);
-        stubValidation(first);
-        stubValidation(second);
+        stubContext(first);
+        stubContext(second);
         doThrow(new DomainValidationException("invalid reference"))
             .when(resolver)
             .resolve(
                 second,
+                assignment,
                 template,
                 secondRequest.getReferenceDefinitions());
 
-        try (MockedStatic<SecurityUtils> security =
-                 org.mockito.Mockito.mockStatic(SecurityUtils.class)) {
-            security.when(SecurityUtils::getCurrentUserDetailsOrThrow)
-                .thenReturn(user);
-            assertThrows(
-                DomainValidationException.class,
+        assertThrows(
+            DomainValidationException.class,
+            () -> withCurrentUser(
                 () -> service.upsertAll(
-                    List.of(firstRequest, secondRequest)));
-        }
+                    List.of(firstRequest, secondRequest))));
 
-        verify(submissionService, never()).upsertAll(
-            any(),
-            any(),
-            any());
+        verify(submissionService, never()).upsertAll(any(), any(), any());
     }
 
     @Test
@@ -163,18 +237,18 @@ class ReferenceSubmissionUploadServiceTest {
         DataSubmissionUploadV1Dto request = request("firstSub01");
         DataSubmission submission = submission(request);
         when(mapper.toEntity(request)).thenReturn(submission);
-        stubValidation(submission);
+        stubContext(submission);
         doThrow(new DomainValidationException("invalid reference"))
             .when(resolver)
             .resolve(
                 submission,
+                assignment,
                 template,
                 request.getReferenceDefinitions());
 
         PlatformTransactionManager transactionManager =
             mock(PlatformTransactionManager.class);
-        TransactionStatus transactionStatus =
-            mock(TransactionStatus.class);
+        TransactionStatus transactionStatus = mock(TransactionStatus.class);
         when(transactionManager.getTransaction(
             any(TransactionDefinition.class)))
             .thenReturn(transactionStatus);
@@ -184,47 +258,49 @@ class ReferenceSubmissionUploadServiceTest {
         ProxyFactory proxyFactory = new ProxyFactory(service);
         proxyFactory.setProxyTargetClass(true);
         proxyFactory.addAdvice(interceptor);
-        ReferenceSubmissionUploadService transactionalService =
-            (ReferenceSubmissionUploadService) proxyFactory.getProxy();
+        SubmissionUploadService transactionalService =
+            (SubmissionUploadService) proxyFactory.getProxy();
 
-        try (MockedStatic<SecurityUtils> security =
-                 org.mockito.Mockito.mockStatic(SecurityUtils.class)) {
-            security.when(SecurityUtils::getCurrentUserDetailsOrThrow)
-                .thenReturn(user);
-            assertThrows(
-                DomainValidationException.class,
-                () -> transactionalService.upsertAll(List.of(request)));
-        }
+        assertThrows(
+            DomainValidationException.class,
+            () -> withCurrentUser(
+                () -> transactionalService.upsertAll(List.of(request))));
 
         verify(transactionManager).rollback(transactionStatus);
         verify(transactionManager, never()).commit(transactionStatus);
     }
 
-    private void stubValidation(DataSubmission submission) {
+    private void stubContext(DataSubmission submission) {
+        when(assignmentRepository.findByUid(submission.getAssignment()))
+            .thenReturn(Optional.of(assignment));
         when(templateElementService.getTemplateElementMap(
             submission.getForm(),
             submission.getFormVersion()))
             .thenReturn(templateMap);
-        when(accessValidator.validateAccess(submission, user))
-            .thenReturn(submission);
-        when(compositeValidator.validateAndEnrich(submission))
-            .thenReturn(submission);
+    }
+
+    private void withCurrentUser(Runnable operation) {
+        try (MockedStatic<SecurityUtils> security =
+                 org.mockito.Mockito.mockStatic(SecurityUtils.class)) {
+            security.when(SecurityUtils::getCurrentUserDetailsOrThrow)
+                .thenReturn(user);
+            operation.run();
+        }
     }
 
     private DataSubmissionUploadV1Dto request(String uid) {
-        DataSubmissionUploadV1Dto request =
-            new DataSubmissionUploadV1Dto();
+        DataSubmissionUploadV1Dto request = new DataSubmissionUploadV1Dto();
         request.setUid(uid);
         request.setReferenceDefinitions(List.of());
         return request;
     }
 
-    private DataSubmission submission(
-        DataSubmissionUploadV1Dto request) {
+    private DataSubmission submission(DataSubmissionUploadV1Dto request) {
         DataSubmission submission = new DataSubmission();
         submission.setUid(request.getUid());
         submission.setForm("formUid0001");
         submission.setFormVersion("version0001");
+        submission.setAssignment("assignment1");
         submission.setFormData(new ObjectMapper().createObjectNode());
         return submission;
     }

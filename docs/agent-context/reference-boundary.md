@@ -37,7 +37,7 @@ Reference catalog request
 
 Reference submission upload
 -> DataSubmissionResource
--> ReferenceSubmissionUploadService
+-> SubmissionUploadService
 -> ReferenceValueExtractor / ReferenceSubmissionResolver
 -> existing DataSubmissionService transaction
 ```

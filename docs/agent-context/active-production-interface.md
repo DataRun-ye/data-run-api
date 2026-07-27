@@ -76,7 +76,7 @@ It is supporting rather than released-mobile code and remains intact.
 
 | Status | Route | Server owner |
 | --- | --- | --- |
-| CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveReferenceAll` -> `ReferenceSubmissionUploadService` -> `DefaultDataSubmissionService.upsertAll` |
+| CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveVersionedUpload` -> `SubmissionUploadService` -> `DefaultDataSubmissionService.upsertAll` |
 | LEGACY-RISK / UNKNOWN | `GET /api/v1/dataSubmission`, `GET /byLastModified`, `POST /query`, `GET /{id}` | inherited generic read surface |
 | LEGACY-RISK / UNKNOWN | `POST /api/v1/dataSubmission/bulk` without the version parameter, `POST /`, `POST /return` | inherited/overridden compatibility write surface |
 | LEGACY-RISK / UNKNOWN | `GET|POST /api/v1/dataSubmission/objects` | deprecated flattened read surface |
@@ -84,13 +84,19 @@ It is supporting rather than released-mobile code and remains intact.
 
 The released mobile owner is `SubmissionUploadService`. Ordinary and
 Reference-capable submissions currently share this versioned upload boundary.
-The active upload maps the versioned DTO, resolves the pinned template,
-generates missing repeat metadata for compatibility, validates access and
-submission context, resolves Reference definitions, upserts whole submission
-JSON, and writes the current `outbox` row in the same transaction.
+The active upload maps the versioned DTO; resolves assignment and pinned
+template once; canonicalizes server-owned assignment/template context;
+authorizes the canonical assignment/form pair; generates missing repeat
+metadata for compatibility; resolves Reference definitions; upserts whole
+submission JSON; and writes the current `outbox` row in the same transaction.
 Submission access and assignment-form projection use the same
 `AssignmentFormAccessService`; permissions from another team and forms absent
 from the assignment are rejected.
+
+The unversioned generic writes still use the separate validator/enrichment
+pipeline in `DataSubmissionResource.preProcess`. They are not used by the
+released mobile and remain `LEGACY-RISK` pending the recorded endpoint-use
+decision; their reachability does not make them a second product authority.
 
 The disabled submission-history listener and its zero-caller processor/model
 alternatives are source-dead. Their physical table remains a schema concern.

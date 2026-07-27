@@ -3,7 +3,6 @@ package org.nmcpye.datarun.jpa.reference;
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
-import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
@@ -29,13 +28,13 @@ public class ReferenceSubmissionResolver {
     private static final Pattern UID =
         Pattern.compile("^[a-zA-Z][a-zA-Z0-9]{10}$");
 
-    private final AssignmentRepository assignmentRepository;
     private final ReferenceEntryRepository referenceEntryRepository;
     private final ReferenceValueExtractor valueExtractor;
     private final ReferenceDisplayNamePolicy displayNamePolicy;
 
     public void resolve(
         DataSubmission submission,
+        Assignment assignment,
         DataTemplateInstanceDto template,
         Collection<ReferenceDefinitionV1Dto> suppliedDefinitions) {
         List<ReferenceValueOccurrence> occurrences = valueExtractor.extract(
@@ -62,10 +61,6 @@ public class ReferenceSubmissionResolver {
             return;
         }
 
-        Assignment assignment = assignmentRepository
-            .findByUid(submission.getAssignment())
-            .orElseThrow(() -> new DomainValidationException(
-                "Assignment is required"));
         if (assignment.getOrgUnit() == null || assignment.getActivity() == null) {
             throw new DomainValidationException(
                 "Reference assignment scope is incomplete");
