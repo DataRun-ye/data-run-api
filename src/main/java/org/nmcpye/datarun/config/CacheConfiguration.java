@@ -5,7 +5,6 @@ import org.ehcache.config.builders.ExpiryPolicyBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.jsr107.Eh107Configuration;
 import org.hibernate.cache.jcache.ConfigSettings;
-import org.nmcpye.datarun.caching.UserKeyGenerator;
 import org.nmcpye.datarun.etl.service.impl.RefTypeValueResolutionService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
@@ -74,11 +73,6 @@ public class CacheConfiguration {
     @Bean
     public HibernatePropertiesCustomizer hibernatePropertiesCustomizer(javax.cache.CacheManager cacheManager) {
         return hibernateProperties -> hibernateProperties.put(ConfigSettings.CACHE_MANAGER, cacheManager);
-    }
-
-    @Bean("userKeyGen")
-    public KeyGenerator userKeyGen() {
-        return new UserKeyGenerator();
     }
 
     @Bean
