@@ -32,8 +32,6 @@ import org.nmcpye.datarun.jpa.usegroup.UserGroup;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.userauthority.Authority;
-import org.nmcpye.datarun.jpa.userole.Privilege;
-import org.nmcpye.datarun.jpa.userole.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
@@ -90,16 +88,10 @@ public class CacheConfiguration {
             createCache(cm, TemplateVersionRepository.TEMPLATE_UID_VERSION_UID_JPA_CACHE);
             createCache(cm, TemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_JPA_CACHE);
             createCache(cm, User.class.getName());
-            createCache(cm, User.class.getName());
             createCache(cm, Authority.class.getName());
-            createCache(cm, Role.class.getName());
-            createCache(cm, Privilege.class.getName());
             createCache(cm, User.class.getName() + ".authorities");
             createCache(cm, User.class.getName() + ".teams");
-            createCache(cm, User.class.getName() + ".roles");
             createCache(cm, User.class.getName() + ".userGroups");
-            createCache(cm, Role.class.getName() + ".privileges");
-            createCache(cm, Privilege.class.getName() + ".roles");
 
             createCache(cm, UserGroup.class.getName());
             createCache(cm, UserGroup.class.getName() + ".users");

@@ -75,11 +75,11 @@ public interface UserRepository
 
     List<User> findByLoginIn(Collection<String> logins);
 
-    @EntityGraph(attributePaths = {"authorities", "roles"})
+    @EntityGraph(attributePaths = "authorities")
     @Cacheable(cacheNames = USERS_BY_LOGIN_CACHE)
     Optional<User> findOneWithAuthoritiesByLogin(String login);
 
-    @EntityGraph(attributePaths = {"authorities", "roles"})
+    @EntityGraph(attributePaths = "authorities")
     @Cacheable(cacheNames = USERS_BY_EMAIL_CACHE)
     Optional<User> findOneWithAuthoritiesByEmailIgnoreCase(String email);
 
