@@ -234,6 +234,13 @@ Each bounded slice closes this cycle:
 5. **Close:** remove superseded source, update the owning map, and name any
    genuinely separate follow-up.
 
+The existing test suite is sparse and mostly recent. `./mvnw test` explicitly
+excludes `*IT*` and `*IntTest*`; a passing count proves only the unit and
+contract behavior currently covered. It is not a coverage claim. Run focused
+integration tests or `verify` when the slice affects Spring wiring, JPA,
+Liquibase, security, or HTTP behavior, and add characterization where the
+active contract is otherwise unprotected.
+
 Adjacent debt cannot silently expand the slice. Debt required by the change is
 either cleaned in a prerequisite slice or explicitly isolated with a reason.
 Do not land a second owner merely because the first owner is difficult.
@@ -269,8 +276,10 @@ Do not land a second owner merely because the first owner is difficult.
 ## Established Evidence
 
 - `domainmapping/`, `importer/`, and `importprocessor/` had no external runtime
-  or data-contract owner. Their temporary removal compiled and passed all 75
-  tests; the real combined tree passed the same gate.
+  or data-contract owner. Their temporary removal compiled and passed the 75
+  currently discovered non-integration tests; the real combined tree passed
+  the same limited gate. Static root and inbound-reference evidence is the
+  primary removal proof.
 - `acl/` is mixed: active generic-resource checks coexist with dormant
   bootstrap and permission alternatives. It requires the access-boundary pass,
   not package-wide deprecation.
