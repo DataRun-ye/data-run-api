@@ -132,6 +132,10 @@ Use branch-by-abstraction when replacing active behavior:
 6. remove the old implementation and temporary seam.
 
 Compatibility adapters must have a named consumer and retirement condition.
+Reachability is not a permanent exemption from cleanup. A mixed or misplaced
+active owner closes only when it is consolidated, isolated behind a named
+temporary compatibility boundary, or assigned a production-safe cutover with
+an executable exit gate.
 
 ### 3. Clean The High-Risk Boundaries
 
@@ -188,6 +192,13 @@ Consolidate duplicate pipelines only after proving which one receives current
 submission writes and which outputs are still used.
 
 ### 4. Align Persistence
+
+After source ownership is settled and before schema contraction, run one
+bounded Liquibase reconciliation pass. Prove both clean-database replay and
+upgrade from an isolated production clone; correct include ordering; and
+classify duplicate or abandoned analytics, ETL, option, and projection
+changelogs. Do not restore dead source merely to satisfy an obsolete
+changelog, and do not mix table drops into replay repair.
 
 Use expand-and-contract for `R3` changes:
 
@@ -271,7 +282,8 @@ Do not land a second owner merely because the first owner is difficult.
 | 5 | Outbox, ETL, events, tall tables, exports, analytics, and MVs | PENDING |
 | 6 | Remaining operational, generic-resource, audit, cache, and utility surfaces | PENDING |
 | 7 | Source-owner consolidation within each surviving boundary | PENDING |
-| 8 | Schema contraction after source and compatibility closure | PENDING |
+| 8 | Liquibase replay reconciliation after source ownership settles | PENDING |
+| 9 | Schema contraction after source and compatibility closure | PENDING |
 
 ## Established Evidence
 

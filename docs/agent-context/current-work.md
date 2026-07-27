@@ -27,9 +27,10 @@ explicitly confirms them.
   `docker compose up -d` currently starts a one-shot `letsencrypt` service that
   exits because its DNS credential path is not part of the normal deployment
   boundary. Routine API deployment must not invoke certificate issuance.
-- Repair fresh-database bootstrap in one bounded Liquibase slice. The current
-  chain reaches obsolete analytics changelogs that assume an `analytics`
-  schema; remove or supersede that dead path without mixing it into staging.
+- After source ownership settles, reconcile the full Liquibase chain in one
+  bounded pass before schema contraction. Prove clean replay and
+  production-clone upgrade, then classify obsolete analytics, ETL, option, and
+  projection changelogs without mixing in table drops.
 - Determine whether the production `pg_idkit` PostgreSQL image provides any
   active extension before replacing it with the stock PostgreSQL 16 image.
   The active `generate_uid()` function is application-owned.
