@@ -63,6 +63,12 @@ deployment authority.
   scope; `/myDetails` has an explicit V1 compatibility adapter, organization
   units follow direct assignments only, and the remaining access fallbacks
   have named retirement paths.
+- `c9f614d9`: the released versioned submission route now has one general
+  upload owner that resolves assignment and pinned template once before
+  canonical authorization, repeat handling, Reference resolution, whole-JSON
+  persistence, and the current outbox transaction.
+- `4ad077f2`: submission persistence no longer accepts a security principal;
+  authorization completes before the canonical persistence boundary.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

@@ -284,9 +284,9 @@ Do not land a second owner merely because the first owner is difficult.
 | --- | --- | --- |
 | 0 | Executable and data-contract roots | IN PROGRESS |
 | 1 | Source-dead leaves and orphan graphs | IN PROGRESS |
-| 2 | Assignment, synchronization, and access | IN PROGRESS |
-| 3 | Form templates, versions, elements, and rules | PENDING |
-| 4 | Submission upload, persistence, validation, and compatibility | PENDING |
+| 2 | Assignment, synchronization, and access | ACTIVE OWNER CONSOLIDATED; EXITS SCHEDULED |
+| 3 | Form templates, versions, elements, and rules | IN PROGRESS |
+| 4 | Submission upload, persistence, validation, and compatibility | ACTIVE OWNER CONSOLIDATED; POLICY EXITS SCHEDULED |
 | 5 | Outbox, ETL, events, tall tables, exports, analytics, and MVs | PENDING |
 | 6 | Remaining operational, generic-resource, audit, cache, and utility surfaces | PENDING |
 | 7 | Source-owner consolidation within each surviving boundary | PENDING |
