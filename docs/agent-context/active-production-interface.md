@@ -75,6 +75,14 @@ updates the template's latest-version pointer, and invokes downstream
 version remains the product/form-runtime contract; generated element metadata
 supports extraction and is not a second template authority.
 
+`DataElement` remains operational authoring input for stable field identity,
+name/code, and value type. Option-set UID is a template-field property and is
+resolved into canonical projection metadata downstream; template processing
+does not copy it from `DataElement`. Data-element groups and group sets have no
+product consumer and their source routes, services, repositories, and JPA
+relations are removed. Their physical tables are schema-only pending a separate
+Liquibase contraction.
+
 ## Submission
 
 | Status | Route | Server owner |
