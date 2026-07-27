@@ -7,15 +7,18 @@ or deployment authority.
 
 ## Now
 
-- Reduce the runtime source surface using
-  `production-modernization-strategy.md`. Close the proven source-dead leaf
-  slice, then begin the assignment/sync/access pass.
-- In that access pass, preserve the active `User.authorities` login contract,
-  remove the unused `User.roles`/`Role`/`Privilege` attempt through a
-  schema-neutral source cutover, and replace the mechanically active
-  `AclService` gate before removing Spring ACL configuration/dependencies.
-  Physical role/privilege/ACL tables remain a later Liquibase contraction.
-  Endpoint/task and physical-schema removal remain separate decisions.
+- Continue the assignment, synchronization, and access pass. Authentication
+  authority and the coarse inherited-resource gate now have explicit owners.
+  Reconcile the remaining session work-scope snapshot, entity read filters,
+  assignment/form projection, and form-action authorization without turning
+  one service into a universal access owner.
+- Treat `ResourceApiAuthorization` as a compatibility boundary for inherited
+  generic routes. Retire it route by route as those endpoints are removed or
+  receive domain-specific authorization; reachability is not its permanent
+  architecture.
+- Physical role, privilege, and ACL tables remain a later Liquibase
+  contraction. Endpoint/task and physical-schema removal remain separate
+  decisions.
 
 Reference activation remains parked in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while

@@ -110,7 +110,7 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
 
     @Override
     protected void saveEntity(DataSubmission payLoadEntity, EntitySaveSummaryVM summary) {
-        hasMinimalRightsOrThrow(SecurityUtils.getCurrentUserDetailsOrThrow());
+        requireResourceApiAccess(SecurityUtils.getCurrentUserDetailsOrThrow());
         var processedEntity = preProcess(List.of(payLoadEntity))
             .stream().findFirst().orElseThrow(() -> new IllegalQueryException("processing: " + payLoadEntity.getUid() + " swallowed submission"));
         submissionService.upsert(processedEntity,
@@ -120,7 +120,7 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
 
     @Override
     public ResponseEntity<EntitySaveSummaryVM> saveAll(List<DataSubmission> entities) {
-        hasMinimalRightsOrThrow(SecurityUtils.getCurrentUserDetailsOrThrow());
+        requireResourceApiAccess(SecurityUtils.getCurrentUserDetailsOrThrow());
         EntitySaveSummaryVM summaryVM = new EntitySaveSummaryVM();
         submissionService.upsertAll(preProcess(entities), SecurityUtils.getCurrentUserDetailsOrThrow(), summaryVM);
         return ResponseEntity.ok(summaryVM);
@@ -129,7 +129,7 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     @PostMapping(value = "/bulk", params = "referenceVersion=1")
     public ResponseEntity<EntitySaveSummaryVM> saveReferenceAll(
         @RequestBody List<DataSubmissionUploadV1Dto> requests) {
-        hasMinimalRightsOrThrow(
+        requireResourceApiAccess(
             SecurityUtils.getCurrentUserDetailsOrThrow());
         return ResponseEntity.ok(referenceUploadService.upsertAll(requests));
     }
@@ -139,10 +139,10 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteByIdUid(@PathVariable("id") String id,
                                               @AuthenticationPrincipal CurrentUserDetails user) {
-        hasMinimalRightsOrThrow(user);
+        requireResourceApiAccess(user);
         log.debug("REST request to delete from {}: {}", getName(), id);
         final var entity = identifiableObjectService.findByUid(id).orElseThrow();
-        if (aclService.canDelete(entity, user)) {
+        if (resourceApiAuthorization.canManage(user)) {
             identifiableObjectService.delete(entity);
         } else {
             throw new DeleteAccessDeniedException("");

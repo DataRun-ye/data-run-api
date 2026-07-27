@@ -276,7 +276,7 @@ Do not land a second owner merely because the first owner is difficult.
 | --- | --- | --- |
 | 0 | Executable and data-contract roots | IN PROGRESS |
 | 1 | Source-dead leaves and orphan graphs | IN PROGRESS |
-| 2 | Assignment, synchronization, and access | PENDING |
+| 2 | Assignment, synchronization, and access | IN PROGRESS |
 | 3 | Form templates, versions, elements, and rules | PENDING |
 | 4 | Submission upload, persistence, validation, and compatibility | PENDING |
 | 5 | Outbox, ETL, events, tall tables, exports, analytics, and MVs | PENDING |
@@ -292,21 +292,17 @@ Do not land a second owner merely because the first owner is difficult.
   currently discovered non-integration tests; the real combined tree passed
   the same limited gate. Static root and inbound-reference evidence is the
   primary removal proof.
-- `acl/` is mixed: active generic-resource checks coexist with dormant
-  bootstrap and permission alternatives. It requires the access-boundary pass,
-  not package-wide deprecation.
 - `User.authorities` is the active authentication authority source.
   `User.roles`, `Role`, and `Privilege` are a separate persisted attempt with
-  no authentication, service, repository-consumer, or endpoint owner. Remove
-  that source mapping in the access pass; retain its physical tables until the
+  no authentication, service, repository-consumer, or endpoint owner. Their
+  source mapping has been removed; physical tables remain until the
   schema-contraction pass.
-- The active generic resources call `AclService`, but its active
-  `canRead`/`canAddNew`/`canUpdate`/`canDelete` methods do not query Spring ACL
-  entries. They implement hardcoded superuser/team gates. The Spring ACL
-  mutation/effective-permission methods have no caller. Characterize the
-  current generic-resource behavior, move it to the selected authority owner,
-  then remove the ACL engine/configuration/dependency; remove ACL tables only
-  in the later Liquibase pass.
+- The removed Spring ACL engine never became an active policy owner. Its live
+  wrapper only enforced team-or-admin access to inherited reads and admin-only
+  generic writes. That behavior now lives in `ResourceApiAuthorization`;
+  entity visibility remains in `UserAccessService`. The generic policy is a
+  compatibility boundary that retires with the inherited routes. ACL tables
+  remain until the later Liquibase pass.
 - `etl/` is projection-active and is not a source of assignment, form, or
   submission truth.
 - `FormTemplateResource` and `TemplateVersionResource` own released mobile

@@ -71,17 +71,17 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
 
     protected void saveEntity(T payLoadEntity, EntitySaveSummaryVM summary) {
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
-        hasMinimalRightsOrThrow(user);
+        requireResourceApiAccess(user);
         var processedEntity = preProcess(List.of(payLoadEntity)).stream().findFirst().get();
         if (identifiableObjectService.findByIdOrUid(processedEntity).isPresent()) {
-            if (aclService.canUpdate(payLoadEntity, user)) {
+            if (resourceApiAuthorization.canManage(user)) {
                 processedEntity = identifiableObjectService.update(processedEntity);
                 summary.getUpdated().add(processedEntity.getUid());
             } else {
                 throw new CreateAccessDeniedException("You have no right to send things here");
             }
         } else {
-            if (aclService.canAddNew(payLoadEntity, user)) {
+            if (resourceApiAuthorization.canManage(user)) {
                 processedEntity = identifiableObjectService.save(processedEntity);
                 summary.getCreated().add(processedEntity.getUid());
             } else {
@@ -94,10 +94,10 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteByIdUid(@PathVariable("id") String id,
                                               @AuthenticationPrincipal CurrentUserDetails user) {
-        hasMinimalRightsOrThrow(user);
+        requireResourceApiAccess(user);
         log.debug("REST request to delete from {}: {}", getName(), id);
         final var entity = identifiableObjectService.findByUid(id).orElseThrow();
-        if (aclService.canDelete(entity, user)) {
+        if (resourceApiAuthorization.canManage(user)) {
             identifiableObjectService.delete(entity);
         } else {
             throw new DeleteAccessDeniedException("");
@@ -115,7 +115,7 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
         @PathVariable(value = "uid", required = false) final String uid,
         @Valid @RequestBody T entity, @AuthenticationPrincipal CurrentUserDetails user
     ) throws URISyntaxException {
-        hasMinimalRightsOrThrow(user);
+        requireResourceApiAccess(user);
         log.debug("REST request to delete from {}: {}", getName(), uid);
         if (entity.getUid() == null) {
             throw new BadRequestAlertException("Invalid uid", getName(), "uid is null");
@@ -125,7 +125,7 @@ public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID
             throw new BadRequestAlertException("Invalid ID", getName(), "idinvalid");
         }
 
-        if (aclService.canUpdate(entity, user)) {
+        if (resourceApiAuthorization.canManage(user)) {
             entity = identifiableObjectService.update(entity);
         } else {
             throw new UpdateAccessDeniedException("AccessDenied");

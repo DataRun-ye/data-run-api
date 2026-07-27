@@ -22,6 +22,19 @@ The released mobile owners are `AssignmentDatasource` and
 and replaces the local assignment-form projection only after its secondary
 request succeeds.
 
+## Authorization Ownership
+
+- `User.authorities` supplies Spring authentication authorities and the
+  administrator flag.
+- `ResourceApiAuthorization` preserves the coarse inherited-resource gate:
+  administrators or users with a team may read; only administrators may use
+  generic writes. It does not decide entity visibility or form permissions and
+  retires as the inherited routes receive domain owners or are removed.
+- `UserAccessService` and registered access filters constrain entity reads.
+- `FormAccessService` projects assignment/form action permissions.
+- Legacy role, privilege, and Spring ACL tables have no source policy owner and
+  remain schema-only until a bounded Liquibase contraction.
+
 ## Form Templates
 
 | Status | Released mobile request | Server owner | Required downstream path |

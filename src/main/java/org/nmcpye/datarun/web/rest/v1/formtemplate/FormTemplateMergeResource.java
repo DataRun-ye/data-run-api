@@ -2,7 +2,6 @@ package org.nmcpye.datarun.web.rest.v1.formtemplate;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.acl.AclService;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
@@ -10,6 +9,7 @@ import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.security.authorization.ResourceApiAuthorization;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.datatemplateprocessor.FormTemplateProcessor;
@@ -41,15 +41,19 @@ public class FormTemplateMergeResource {
 
     private final FormTemplateProcessor formTemplateProcessor;
     private final DataTemplateInstanceService templateService;
-    protected final AclService aclService;
+    private final ResourceApiAuthorization resourceApiAuthorization;
 
     @Value("${jhipster.clientApp.name}")
     protected String applicationName;
 
-    public FormTemplateMergeResource(FormTemplateProcessor formTemplateProcessor, DataTemplateInstanceService templateService, AclService aclService) {
+    public FormTemplateMergeResource(
+        FormTemplateProcessor formTemplateProcessor,
+        DataTemplateInstanceService templateService,
+        ResourceApiAuthorization resourceApiAuthorization
+    ) {
         this.formTemplateProcessor = formTemplateProcessor;
         this.templateService = templateService;
-        this.aclService = aclService;
+        this.resourceApiAuthorization = resourceApiAuthorization;
     }
 
 
@@ -79,7 +83,7 @@ public class FormTemplateMergeResource {
 
     protected Page<DataTemplateInstanceDto> getList(QueryRequest queryRequest, String jsonQueryBody) {
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
-        hasMinimalRightsOrThrow(user);
+        requireResourceApiAccess(user);
         return templateService.findAllByUser(queryRequest, jsonQueryBody);
     }
 
@@ -148,21 +152,18 @@ public class FormTemplateMergeResource {
     @GetMapping("/{id}")
     public ResponseEntity<DataTemplateInstanceDto> getById(@PathVariable("id") String id) {
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
-        hasMinimalRightsOrThrow(user);
+        requireResourceApiAccess(user);
         log.debug("REST request to get from {}: {}", getName(), id);
         Optional<DataTemplateInstanceDto> entity = templateService.findByUid(id);
         return ResponseUtil.wrapOrNotFound(entity);
     }
 
     /**
-     * minimal Access rights or throw
-     *
-     * @param currentUser user
-     * @throws ResponseStatusException exception if has no business here whatsoever (no minimal rights)
+     * Require access to the resource API surface.
      */
-    protected void hasMinimalRightsOrThrow(CurrentUserDetails currentUser) throws ResponseStatusException {
-        if (currentUser == null || !aclService.hasMinimalRights(currentUser)) {
-            log.warn("REST Prevent Access, no minimal rights `{}`:`{}`", getName(), currentUser);
+    protected void requireResourceApiAccess(CurrentUserDetails currentUser) throws ResponseStatusException {
+        if (!resourceApiAuthorization.canRead(currentUser)) {
+            log.warn("REST Prevent Access, no resource API access `{}`:`{}`", getName(), currentUser);
             throw new AccessDeniedException("You Hava No Business Here");
         }
     }

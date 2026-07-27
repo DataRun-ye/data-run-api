@@ -1,6 +1,6 @@
 # Completed Work
 
-Updated: 2026-07-26
+Updated: 2026-07-28
 
 Purpose: compact historical outcomes only. This file is not current runtime or
 deployment authority.
@@ -51,6 +51,11 @@ deployment authority.
 - The submission source pass removed unregistered migration-error listeners
   and zero-caller repository queries while retaining the active repeat-ID
   generator, compatibility routes, and physical tables.
+- Authentication remains owned by `User.authorities`; the unused
+  role/privilege source model was removed without changing its physical tables.
+- The unused Spring ACL engine and dependency were removed after preserving
+  its two live coarse rules in `ResourceApiAuthorization`. Entity and form
+  scope owners were unchanged; ACL tables remain for the schema pass.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

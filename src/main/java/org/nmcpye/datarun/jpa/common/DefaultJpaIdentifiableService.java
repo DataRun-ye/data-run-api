@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.jpa.common;
 
-import org.nmcpye.datarun.acl.AclService;
 import org.nmcpye.datarun.apiquery.JpaQueryBuilder;
 import org.nmcpye.datarun.apiquery.LegacyQueryConverter;
 import org.nmcpye.datarun.apiquery.UnifiedQueryParser;
@@ -37,9 +36,6 @@ public abstract class DefaultJpaIdentifiableService
 
     protected final UserAccessService userAccessService;
     protected final JpaIdentifiableRepository<T> jpaIdentifiableRepository;
-
-    @Autowired
-    protected AclService aclService;
 
     @Autowired
     protected JpaQueryBuilder<T> jpaQueryBuilder;
@@ -156,4 +152,3 @@ public abstract class DefaultJpaIdentifiableService
                 .flatMap(repository::findByUid));
     }
 }
-

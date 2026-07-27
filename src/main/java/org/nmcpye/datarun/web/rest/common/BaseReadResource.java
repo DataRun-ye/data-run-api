@@ -1,13 +1,13 @@
 package org.nmcpye.datarun.web.rest.common;
 
 
-import org.nmcpye.datarun.acl.AclService;
 import org.nmcpye.datarun.common.DRunApiVersion;
 import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.IdentifiableObjectRepository;
 import org.nmcpye.datarun.common.IdentifiableObjectService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.security.authorization.ResourceApiAuthorization;
 import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
 import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
@@ -50,7 +50,7 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
     final protected IdentifiableObjectRepository<T, ID> repository;
 
     @Autowired
-    protected AclService aclService;
+    protected ResourceApiAuthorization resourceApiAuthorization;
 
     protected BaseReadResource(IdentifiableObjectService<T, ID> identifiableObjectService,
                                IdentifiableObjectRepository<T, ID> repository) {
@@ -109,14 +109,11 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
     }
 
     /**
-     * minimal Access rights or throw
-     *
-     * @param currentUser user
-     * @throws ResponseStatusException exception if has no business here whatsoever (no minimal rights)
+     * Require access to the inherited resource API surface.
      */
-    protected void hasMinimalRightsOrThrow(CurrentUserDetails currentUser) throws ResponseStatusException {
-        if (currentUser == null || !aclService.hasMinimalRights(currentUser)) {
-            log.warn("REST Prevent Access, no minimal rights `{}`:`{}`", getEntityClass().getSimpleName(), currentUser);
+    protected void requireResourceApiAccess(CurrentUserDetails currentUser) throws ResponseStatusException {
+        if (!resourceApiAuthorization.canRead(currentUser)) {
+            log.warn("REST Prevent Access, no resource API access `{}`:`{}`", getEntityClass().getSimpleName(), currentUser);
             throw new AccessDeniedException(HttpStatus.FORBIDDEN + ", You Hava No Business Here");
         }
     }
@@ -170,7 +167,7 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
     @GetMapping("/{id}")
     public ResponseEntity<T> getById(@PathVariable("id") String id,
                                      @AuthenticationPrincipal CurrentUserDetails user) {
-        hasMinimalRightsOrThrow(user);
+        requireResourceApiAccess(user);
         log.debug("REST request to get from {}: {}", getName(), id);
         Optional<T> entity = identifiableObjectService.findByIdOrUid(id);
         return ResponseUtil.wrapOrNotFound(entity);
@@ -179,8 +176,8 @@ public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID exte
     protected Page<T> getList(QueryRequest queryRequest, String jsonQueryBody) {
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
         log.debug("REST request to getList {}:{}", user.getUsername(), getName());
-        if (!aclService.hasMinimalRights(user)) {
-            log.warn("REST Prevent Access to `{}`, no minimal rights: `{}`", getEntityClass().getSimpleName(), user);
+        if (!resourceApiAuthorization.canRead(user)) {
+            log.warn("REST Prevent Access to `{}`, no resource API access: `{}`", getEntityClass().getSimpleName(), user);
             return Page.empty();
         }
 
