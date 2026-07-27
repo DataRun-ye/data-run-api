@@ -3,8 +3,6 @@ package org.nmcpye.datarun;
 import org.nmcpye.datarun.config.AsyncSyncConfiguration;
 import org.nmcpye.datarun.config.EmbeddedSQL;
 import org.nmcpye.datarun.config.JacksonConfiguration;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -24,7 +22,6 @@ import java.lang.annotation.Target;
 @SpringBootTest(classes = { DataRunApiApp.class, JacksonConfiguration.class, AsyncSyncConfiguration.class },
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("testdev")
-@ImportAutoConfiguration(exclude = { SecurityAutoConfiguration.class })
 @EmbeddedSQL
 public @interface IntegrationTest {
 }
