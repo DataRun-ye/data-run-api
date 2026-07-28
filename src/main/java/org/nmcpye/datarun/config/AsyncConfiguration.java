@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.aop.interceptor.SimpleAsyncUncaughtExceptionHandler;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.task.TaskExecutionProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,11 +19,21 @@ import java.util.concurrent.Executor;
 
 @Configuration
 @EnableAsync
-@EnableScheduling
 @RequiredArgsConstructor
 @Slf4j
 @Profile("!testdev & !testprod")
 public class AsyncConfiguration implements AsyncConfigurer {
+
+    @Configuration(proxyBeanMethods = false)
+    @EnableScheduling
+    @Profile("!testdev & !testprod")
+    @ConditionalOnProperty(
+        name = "datarun.scheduling.enabled",
+        havingValue = "true",
+        matchIfMissing = true
+    )
+    static class SchedulingConfiguration {
+    }
 
     private final TaskExecutionProperties taskExecutionProperties;
 
