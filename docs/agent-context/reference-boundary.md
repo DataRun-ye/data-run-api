@@ -15,8 +15,8 @@ The server foundation was deployed in `v6.4.0`. Activation status remains in
 
 - `09b9b27d` adds the neutral Reference catalog, assignment/form compatibility
   gate, access-scoped paginated reads, and additive Liquibase changeset.
-- `8fa1d7ac` adds template-aware Reference extraction and resolution to the V1
-  submission upload boundary.
+- `8fa1d7ac` adds template-aware Reference extraction and resolution to the
+  `/api/v1` submission upload boundary.
 - `reference_entry` stores canonical UID, display name, organization unit,
   optional first-registration activity, and standard audit fields.
 - Existing non-Reference assignment responses and submission payloads remain
@@ -53,7 +53,7 @@ and is included by `master.xml`.
 - `referenceVersion=1` enables those forms only when ordinary assignment and
   access checks also pass.
 - The Reference bulk upload path is selected explicitly with
-  `referenceVersion=1`; ordinary V1 uploads retain the existing path.
+  `referenceVersion=1`; ordinary `/api/v1` uploads retain the existing path.
 - Reference definitions are request-only data. A selected field value remains
   one UID in submission `formData`.
 - Assignment activity and organization-unit mutation is rejected when it

@@ -33,8 +33,8 @@ request succeeds.
   access changes must not depend on four independently invalidated caches.
 - `CurrentUserProfileV1` adapts that principal to the released
   `/api/v1/myDetails` response. Legacy count and `userGroupsUIDs` fields are
-  V1 wire compatibility only and retire when older supported mobile clients no
-  longer require that profile shape.
+  `/api/v1` wire compatibility only and retire when older supported mobile
+  clients no longer require that profile shape.
 - `ResourceApiAuthorization` preserves the coarse inherited-resource gate:
   administrators or users with a team may read; only administrators may use
   generic writes. It does not decide entity visibility or form permissions and
@@ -154,7 +154,7 @@ that no external operator or older client uses them.
 | `POST /api/{v1,custom}/assignments/forms` | retain GET; remove POST method registration | released mobile uses GET; no in-repo POST caller; both methods currently run the same read handler | high / older external client unknown |
 | inherited assignment writes: `POST`, `POST /bulk`, `POST /return`, `PUT /{uid}`, `DELETE /{id}` | remove write surface | assignment synchronization is read-only; no in-repo caller | medium / possible manual admin use |
 | `GET /api/{v1,custom}/assignments/updatePaths` | assess manual use, then remove or restrict to the maintenance owner | no mobile/in-repo caller; path maintenance also has a service/scheduled owner | medium / operator use unknown |
-| `GET /api/{v1,custom}/teams/managed` | remove after external-client confirmation; then retire `managedTeamsUIDs` from the security principal/V1 profile | released mobile gets managed teams embedded in direct-team sync and never calls this route | high / external admin client unknown |
+| `GET /api/{v1,custom}/teams/managed` | remove after external-client confirmation; then retire `managedTeamsUIDs` from the security principal and `/api/v1` profile | released mobile gets managed teams embedded in direct-team sync and never calls this route | high / external admin client unknown |
 | inherited `/api/{v1,custom}/userGroups` CRUD | remove source, then handle tables in a separate Liquibase cutover | no released-mobile call or active authentication/access decision uses user groups | high / external admin client unknown |
 | inherited `formTemplates` writes | remove; retain `dataFormTemplates` as the operational authoring boundary | mobile reads only; full-template authoring has a separate validated/versioned endpoint | high / external direct writer unknown |
 | inherited `formTemplateVersions` writes | remove | mobile reads only; controller overrides save with a no-op, so POST routes misleadingly report without persisting | high / clients may rely on broken behavior |

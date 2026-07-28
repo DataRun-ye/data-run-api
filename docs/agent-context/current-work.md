@@ -22,13 +22,14 @@ explicitly confirms them.
 ## Next
 
 - Implement the assignment-shadow foundation from the accepted transition
-  strategy: immutable bootstrap facts, V1 identity links, a current
-  actor-role-scope projection, and an equivalence report. V1 remains
-  authoritative and no released route or authorization decision changes.
+  strategy: immutable bootstrap facts, DataRun Baseline identity links, a
+  current actor-role-scope projection, and an equivalence report. The
+  baseline remains authoritative and no released route or authorization
+  decision changes.
 - Close the named access compatibility exits after their endpoint/client
   decisions: inherited-route gating, the four generic group/set filters,
-  duplicated mobile `formPermissions`, V1 profile legacy fields, user-group
-  CRUD/schema, and role/privilege/ACL schema residue.
+  duplicated mobile `formPermissions`, `/api/v1` profile legacy fields,
+  user-group CRUD/schema, and role/privilege/ACL schema residue.
 - Fix certificate-renewal Compose ownership in one bounded slice. Normal
   `docker compose up -d` currently starts a one-shot `letsencrypt` service that
   exits because its DNS credential path is not part of the normal deployment

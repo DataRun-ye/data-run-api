@@ -11,9 +11,10 @@ to event-backed assignment, authorization, and capture ownership. It does not
 import unfinished platform specifications or reserve abstractions for
 unaccepted capabilities.
 
-`DataRun V1` below means the architecture currently used in production. It
-does not mean the `/api/v1` namespace or a mobile release number. `Event
-architecture` means only the three bounded ownership changes defined here.
+`DataRun Baseline` is the identity name for the architecture currently used
+in production. It is not an API namespace, Maven version, or application
+release number. `Event architecture` means only the three bounded ownership
+changes defined here.
 
 ## Outcome
 
@@ -56,9 +57,10 @@ The 2026-07-25 production clone establishes the migration shape:
   activity, team, and pinned template-version context;
 - every stored submission organization unit, team, and activity matches its
   referenced assignment;
-- submission UID is unique and remains the V1 idempotency identity;
+- submission UID is unique and remains the DataRun Baseline idempotency
+  identity;
 - historical same-UID writes exist, so the compatibility path cannot assume
-  that every reachable V1 write was an identical retry.
+  that every reachable baseline write was an identical retry.
 
 Empty legacy role, assignment-member, assignment-template, and party-binding
 tables are not migration inputs.
@@ -68,10 +70,10 @@ tables are not migration inputs.
 Each boundary moves through one unambiguous sequence:
 
 ```text
-V1 authority
-  -> V1 authority with event shadow and comparison
-  -> event authority with V1 compatibility projection
-  -> retired V1 write owner
+DataRun Baseline authority
+  -> baseline authority with event shadow and comparison
+  -> event authority with baseline compatibility projection
+  -> retired baseline write owner
 ```
 
 The event journal and required projections use one database transaction.
@@ -85,20 +87,21 @@ equivalence, and rollback have passed a production-style release cycle.
 
 ### Accepted Mapping
 
-- The assignment actor is each enabled direct user of the V1 assignment team.
-- `Team` is a V1 grouping and compatibility identifier. It is not the event
-  role.
+- The assignment actor is each enabled direct user of the baseline assignment
+  team.
+- `Team` is a baseline grouping and compatibility identifier. It is not the
+  event role.
 - An initial role is the activity-specific effective set of forms for which
-  the V1 assignment and team permissions currently permit capture.
+  the baseline assignment and team permissions currently permit capture.
 - The assignment geographic scope is its organization unit.
-- Existing assignment and team UIDs remain in a V1 compatibility link; they
-  are not reused as event identities.
+- Existing assignment and team UIDs remain in a baseline compatibility link;
+  they are not reused as event identities.
 - Event and assignment-stream identities are UUIDs. The compatibility link
   makes bootstrap and repeated reconciliation idempotent.
 
-An enabled V1 assignment with no direct actor produces no active event grant
-and is reported by the bootstrap result. It is not assigned to an invented
-actor.
+An enabled baseline assignment with no direct actor produces no active event
+grant and is reported by the bootstrap result. It is not assigned to an
+invented actor.
 
 ### Shadow
 
@@ -106,23 +109,24 @@ actor.
    actor, activity, effective role, and organization-unit grant.
 2. Do not fabricate historical assignment changes.
 3. Build a current-assignment projection from those facts.
-4. Compare V1 and event projections for each actor:
+4. Compare baseline and event projections for each actor:
    assignment availability, organization-unit scope, eligible capture forms,
    and duplicate suppression.
-5. Keep all released reads and authorization decisions on V1 while any
-   unexplained mismatch remains.
+5. Keep all released reads and authorization decisions on the baseline while
+   any unexplained mismatch remains.
 
 ### Cutover
 
-One assignment command owner must handle V1 assignment writes and V1 team
-membership changes:
+One assignment command owner must handle baseline assignment writes and
+baseline team-membership changes:
 
 - creation or membership addition appends the required actor grants;
 - removal, disabling, or authority-bearing scope/role changes end affected
   grants;
 - an authority-bearing replacement ends the previous grant and creates its
   successor;
-- V1 rows and DTOs become compatibility projections in the same transaction.
+- Baseline rows and DTOs become compatibility projections in the same
+  transaction.
 
 The released mobile assignment and assignment-form DTOs remain unchanged.
 Their legacy assignment and team identifiers come from the compatibility
@@ -146,21 +150,21 @@ The event-backed decision first runs in shadow beside
 
 The event decision becomes authoritative only after these results are
 equivalent on production-clone fixtures and a controlled runtime scope.
-Authentication, administrator authority, and the V1 profile remain separate
-compatibility concerns.
+Authentication, administrator authority, and the released mobile profile
+remain separate compatibility concerns.
 
 ## Capture Lane
 
 ### Accepted Mapping
 
-- The V1 submission UID remains the external idempotency alias.
+- The baseline submission UID remains the external idempotency alias.
 - Every immutable capture fact has its own UUID.
 - The authenticated user is the actor for live capture.
 - Historical bootstrap resolves the stored creator to the existing user when
   possible; otherwise it creates a stable migration-only actor identity from
   the stored creator value rather than inventing a current user.
-- The subject for the V1 compatibility path is the assignment organization
-  unit.
+- The subject for the baseline compatibility path is the assignment
+  organization unit.
 - Activity, role/scope grant, pinned template version, entry timestamps, and
   whole form JSON are recorded with the capture fact.
 - Repeat rows remain embedded in form JSON.
@@ -169,11 +173,12 @@ compatibility concerns.
 
 - An exact retry of the current canonical payload is idempotent and appends no
   event.
-- A different payload accepted by an existing V1 compatibility route appends
-  a new immutable capture fact linked as the successor of the prior fact.
+- A different payload accepted by an existing baseline compatibility route
+  appends a new immutable capture fact linked as the successor of the prior
+  fact.
 - The current projection points to the latest accepted fact.
-- This preserves reachable V1 behavior without defining a new edit, delete,
-  review, or conflict product policy.
+- This preserves reachable baseline behavior without defining a new edit,
+  delete, review, or conflict product policy.
 
 ### Shadow And Cutover
 
@@ -184,33 +189,33 @@ compatibility concerns.
 3. Compare the event projection with `data_submission`, including retries,
    changed same-UID compatibility writes, soft-delete state, pinned versions,
    and outbox payload inputs.
-4. Cut capture authority to event append only after replay produces the V1
-   current projection exactly.
+4. Cut capture authority to event append only after replay produces the
+   baseline current projection exactly.
 5. Continue writing `data_submission` and the current outbox as compatibility
    and downstream projections in the event transaction.
 
 ## Delivery Sequence
 
 1. **Assignment shadow foundation**
-   Add the append-only assignment facts, V1 identity links, bootstrap, current
-   projection, and deterministic comparison report. No active read or
+   Add the append-only assignment facts, baseline identity links, bootstrap,
+   current projection, and deterministic comparison report. No active read or
    authorization change.
 2. **Assignment command ownership**
-   Route V1 assignment and team-membership changes through one command owner
-   while V1 remains authoritative.
+   Route baseline assignment and team-membership changes through one command
+   owner while the baseline remains authoritative.
 3. **Authorization shadow and cutover**
    Compare all five active decision surfaces, then enable event-backed capture
    authorization in a controlled scope.
 4. **Capture shadow foundation**
-   Add immutable capture facts, V1 submission aliases, current projection,
-   bootstrap, and replay comparison.
+   Add immutable capture facts, baseline submission aliases, current
+   projection, bootstrap, and replay comparison.
 5. **Capture authority cutover**
-   Make event append authoritative while preserving V1 upload and downstream
-   projections.
+   Make event append authoritative while preserving baseline upload and
+   downstream projections.
 6. **Compatibility contraction**
-   Remove V1 write owners only after supported clients and operational tools
-   use the event-backed boundaries. Physical table contraction remains a
-   later, separately verified migration.
+   Remove baseline write owners only after supported clients and operational
+   tools use the event-backed boundaries. Physical table contraction remains
+   a later, separately verified migration.
 
 ## Slice Gate
 
@@ -219,7 +224,7 @@ Every implementation handoff must state:
 ```text
 Authority before
 Authority after
-V1 compatibility owner
+Baseline compatibility owner
 Schema and backfill
 Shadow comparison
 Activation boundary

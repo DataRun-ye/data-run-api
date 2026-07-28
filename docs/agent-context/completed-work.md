@@ -24,7 +24,7 @@ deployment authority.
   clone with Mongo stopped.
 - `90281457`: the test runtime was aligned with the local Docker API, the
   app-owned `generate_uid()` function entered Liquibase ownership, and focused
-  JWT tests were aligned with the active V1 endpoint.
+  JWT tests were aligned with the active `/api/v1` endpoint.
 - The immutable `6.4.1-40f176dde05b` candidate passed the release gate and
   isolated staging smoke against the production clone with Mongo stopped:
   health, identity, login, configuration reads, and ordinary submission upload.
@@ -60,9 +60,9 @@ deployment authority.
   share one team-and-assignment-scoped authorization owner. The unused generic
   reverse mapper was removed and the projection exposes external UIDs.
 - Authentication now builds one uncached, request-current team/activity/form
-  scope; `/myDetails` has an explicit V1 compatibility adapter, organization
-  units follow direct assignments only, and the remaining access fallbacks
-  have named retirement paths.
+  scope; `/myDetails` has an explicit `/api/v1` compatibility adapter,
+  organization units follow direct assignments only, and the remaining access
+  fallbacks have named retirement paths.
 - `c9f614d9`: the released versioned submission route now has one general
   upload owner that resolves assignment and pinned template once before
   canonical authorization, repeat handling, Reference resolution, whole-JSON
