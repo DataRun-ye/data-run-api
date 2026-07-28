@@ -68,13 +68,11 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
     Set<OrgUnit> getDirectOrgUnits(CurrentUserDetails user, boolean includeDisabled) {
         final var orgUnitSet = flowInstanceRepository.findAllByTeamUidIn(user.getUserTeamsUIDs());
 
-        return !includeDisabled ? orgUnitSet
-            .stream()
-            .filter(assignment -> !Boolean.TRUE.equals(assignment.getTeam().getDisabled())
-                && !Boolean.TRUE.equals(assignment.getActivity().getDisabled()))
-            .map(Assignment::getOrgUnit)
-            .collect(Collectors.toSet()) : orgUnitSet
-            .stream()
+        return orgUnitSet.stream()
+            .filter(assignment -> !Boolean.TRUE.equals(assignment.getDeleted()))
+            .filter(assignment -> includeDisabled
+                || (!Boolean.TRUE.equals(assignment.getTeam().getDisabled())
+                && !Boolean.TRUE.equals(assignment.getActivity().getDisabled())))
             .map(Assignment::getOrgUnit)
             .collect(Collectors.toSet());
     }
