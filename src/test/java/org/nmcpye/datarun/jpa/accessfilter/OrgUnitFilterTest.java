@@ -20,24 +20,44 @@ import static org.mockito.Mockito.when;
 class OrgUnitFilterTest {
 
     @Test
-    void excludesOrgUnitsFromDisabledTeamsOrActivities() {
+    void excludesRetiredAssignmentsAndDisabledEntitiesInNormalPath() {
         AssignmentRepository repository = mock(AssignmentRepository.class);
         CurrentUserDetails user = mock(CurrentUserDetails.class);
         when(user.getUserTeamsUIDs()).thenReturn(Set.of("direct"));
-        when(user.getManagedTeamsUIDs()).thenReturn(Set.of("managed"));
         when(repository.findAllByTeamUidIn(anySet())).thenReturn(List.of(
-            assignment("enabled", false, false),
-            assignment("disabled-team", true, false),
-            assignment("disabled-activity", false, true)
+            assignment("enabled", false, false, false),
+            assignment("retired", false, false, true),
+            assignment("disabled-team", true, false, false),
+            assignment("disabled-activity", false, true, false)
         ));
 
         Set<OrgUnit> result = new OrgUnitFilter(repository).getDirectOrgUnits(user, false);
 
-        assertThat(result).extracting(OrgUnit::getUid).containsExactly("enabled");
+        assertThat(result).extracting(OrgUnit::getUid)
+            .containsExactly("enabled");
         verify(repository).findAllByTeamUidIn(Set.of("direct"));
     }
 
-    private Assignment assignment(String uid, boolean teamDisabled, boolean activityDisabled) {
+    @Test
+    void excludesRetiredAssignmentsWhenDisabledEntitiesAreIncluded() {
+        AssignmentRepository repository = mock(AssignmentRepository.class);
+        CurrentUserDetails user = mock(CurrentUserDetails.class);
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of("direct"));
+        when(repository.findAllByTeamUidIn(anySet())).thenReturn(List.of(
+            assignment("enabled", false, false, false),
+            assignment("retired", false, false, true),
+            assignment("disabled-team", true, false, false),
+            assignment("disabled-activity", false, true, false)
+        ));
+
+        Set<OrgUnit> result = new OrgUnitFilter(repository).getDirectOrgUnits(user, true);
+
+        assertThat(result).extracting(OrgUnit::getUid)
+            .containsExactlyInAnyOrder("enabled", "disabled-team", "disabled-activity");
+        verify(repository).findAllByTeamUidIn(Set.of("direct"));
+    }
+
+    private Assignment assignment(String uid, boolean teamDisabled, boolean activityDisabled, boolean deleted) {
         Activity activity = new Activity();
         activity.setId(uid + "-activity-id");
         activity.setUid(uid + "-activity");
@@ -59,6 +79,7 @@ class OrgUnitFilterTest {
         assignment.setTeam(team);
         assignment.setActivity(activity);
         assignment.setOrgUnit(orgUnit);
+        assignment.setDeleted(deleted);
         return assignment;
     }
 }
