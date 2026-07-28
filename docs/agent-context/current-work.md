@@ -148,8 +148,17 @@ application disabled, prints the bounded report, exits nonzero on conflict or
 mismatch, and closes the application context after completion. It is disabled
 by default and must never be exposed as an HTTP endpoint or scheduled task.
 
+The command must also disable the application's unrelated scheduled jobs for
+that process. Make the existing scheduling configuration conditional with a
+default-enabled property, and have the wrapper explicitly disable it. Normal
+server startup and production scheduling remain unchanged when the property is
+absent.
+
 The checked-in wrapper command must require explicit database environment
-values and the bootstrap opt-in. It must not contain, infer, or print secrets.
+values and the bootstrap opt-in. It must not contain, infer, or print database
+secrets. If application startup requires a JWT secret in this non-web process,
+generate an ephemeral value in memory rather than requiring or reusing a
+production key.
 
 ### Required Tests
 
@@ -175,6 +184,8 @@ production.
 - new bootstrap/snapshot/report/command classes under
   `assignmentshadow.bootstrap`;
 - one secret-free operator wrapper under `scripts/transition/`;
+- the smallest default-on scheduling condition in `AsyncConfiguration`, used
+  only to disable unrelated jobs in the explicit bootstrap process;
 - focused unit/PostgreSQL integration tests;
 - no Liquibase changes unless a test exposes a defect in the already accepted
   persistence schema, in which case stop and return to architect review.
