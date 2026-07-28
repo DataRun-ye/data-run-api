@@ -13,9 +13,10 @@ separately rather than being treated as equally active.
 
 | Status | Released mobile request | Server owner | Required downstream path |
 | --- | --- | --- | --- |
-| CORE-ACTIVE | `GET /api/v1/assignments?paged=false` | `AssignmentResource` inherited read route | `DefaultAssignmentService.findAllByUser` -> `AssignmentFilter` -> `AssignmentRepository` |
-| CORE-ACTIVE | `GET /api/v1/assignments/forms?paged=false&referenceVersion=1` | `AssignmentResource.getAllDto` | access-filtered assignments -> `AssignmentWithAccessMapper` -> `AssignmentFormAccessService` -> `ReferenceAssignmentFormGate` |
-| GATED | `GET /api/v1/assignments/{uid}/referenceEntries` | `ReferenceEntryResource` | `AssignmentService.findAccessibleByIdOrUid` and assignment/form access checks; deployed but unused until a Reference form is assigned |
+| CORE-ACTIVE | `GET /api/v1/assignments?paged=false` | `AssignmentV1Resource` | `ReleasedWorkReadAuthority` -> `LatestAssignmentGrantReader` -> validated assignment projection |
+| CORE-ACTIVE | `GET /api/v1/assignments/forms?paged=false&referenceVersion=1` | `AssignmentV1Resource.getAllDto` | the same released work scope -> event-grant form UIDs -> `ReferenceAssignmentFormGate` |
+| CORE-ACTIVE | `GET /api/v1/orgUnits?paged=false` | `OrgUnitV1Resource` | the same released work scope -> direct grant org units -> existing ancestor projection |
+| GATED | `GET /api/v1/assignments/{uid}/referenceEntries` | `ReferenceEntryResource` | the same released work scope -> active grant Reference capability -> grant org-unit catalog; deployed but unused until a Reference form is assigned |
 | SUPPORTING-REACHABLE | `GET /api/v1/formPermissions` | `UserFormPermissionsResource` | the mobile synchronizes this into `user_form_permissions`, but no active mobile behavior reads that table; retire mobile registration/table first, then this endpoint |
 
 The released mobile owners are `AssignmentDatasource` and
@@ -44,8 +45,12 @@ request succeeds.
   resources. Static service/filter comparison currently limits that fallback
   to data-element group/set and org-unit group/set generic surfaces; each must
   exit through an explicit domain filter or route removal.
-- `AssignmentFormAccessService` remains the baseline authorization owner for
-  assignment-form and Reference reads. On versioned upload it is used only by
+- `ReleasedWorkReadAuthority` is the field-user authority for released V1
+  assignment, assignment-form, organization-unit, and Reference reads. It
+  consumes one request-current highest-generation event snapshot and validates
+  the required baseline wire projection. Baseline filters cannot widen it.
+- `AssignmentFormAccessService` remains the baseline owner for separately
+  preserved custom/generic reads. On versioned upload it is used only by
   `BaselineVersionedUploadCompatibilityAdapter` to preserve released denial
   codes and narrow the explicit retired-assignment compatibility case.
 - `VersionedUploadEventAuthorizer` is the acceptance owner for released
@@ -56,6 +61,14 @@ request succeeds.
   ancestors. Managed teams remain active mobile selector/summary data, but
   managed-team assignments are not synchronized and do not expand org-unit
   visibility.
+- Two production-clone assignments with no canonical capture forms remain
+  visible only through `EmptyCaptureReadCompatibilityAdapter`. They expose no
+  forms and grant no Reference or upload authority. This adapter retires when
+  those source rows are removed/corrected or their product behavior is
+  explicitly defined.
+- `/api/custom` and inherited generic assignment/org-unit/Reference reads
+  remain baseline compatibility surfaces. They are not a second owner for the
+  released V1 work graph.
 - Legacy role, privilege, and Spring ACL tables have no source policy owner and
   remain schema-only until a bounded Liquibase contraction.
 - User groups do not participate in the active authentication or work-scope

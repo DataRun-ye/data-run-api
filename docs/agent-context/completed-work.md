@@ -109,6 +109,15 @@ deployment authority.
   outbox writes, revoked-state rollback, accepted late upload, restoration,
   and exact tuple equality. The clone was restored to 263,423 tuples and
   production was untouched.
+- `d1b02b7b`: one highest-generation event reader and one released work-read
+  owner now authorize the V1 assignment, assignment-form, organization-unit,
+  and Reference graph. Custom/generic routes retain baseline compatibility,
+  and the two empty-capture assignments are isolated as display-only. The
+  209-unit/contract and 38-integration release gate passed. Clone HTTP reads
+  matched all 5,002 assignments/forms and 5,086 organization units for the
+  largest actor; a disposable Reference fixture matched across V1/custom
+  routes. The untouched dump was restored, migrations reapplied, and bootstrap
+  reruns reproduced 263,423 exact tuples with a zero-write second pass.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

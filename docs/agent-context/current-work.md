@@ -4,198 +4,300 @@ Updated: 2026-07-28
 
 Status: ACCEPTED FOR IMPLEMENTATION
 
-## Released Work-Read Event Authority Cutover
+## Capture Replay Foundation
 
 ### Outcome
 
-Make current event-backed assignment grants the authorization authority for
-the released field-user work reads:
+Represent every current `data_submission` row as one deterministic immutable
+bootstrap capture fact and prove that those facts reproduce the active
+released submission projection exactly.
+
+This is a persistence, bootstrap, and comparison slice only. It does not
+change the released upload route, submission acceptance, same-UID upsert
+behavior, outbox writes, ETL, mobile payloads, or production.
+
+### Production-Clone Evidence
+
+The restored 2026-07-25 clone contains:
+
+- 52,535 submissions with distinct non-null UID, physical ID, and serial
+  number;
+- 48 soft-deleted rows;
+- 38,707 null statuses and 13,828 `IN_PROGRESS` statuses;
+- two SQL-null `form_data` values, zero JSON-literal-null values, and no
+  non-object form bodies;
+- complete assignment, team, organization-unit, and template-version
+  references for every row;
+- 44,517 rows whose `created_by` resolves to an existing user and 8,018 rows
+  whose historical creator is `system`;
+- all audit timestamps present;
+- 688 referenced organization units without an event identity link.
+
+Inherited/physical residue is not active capture state: all 52,535
+`translations` values are empty arrays, `submission_version` is uniformly
+`1`, `properties_map` has no active `DataSubmission` owner, and `lock_version`
+is optimistic-lock machinery. These columns remain untouched in
+`data_submission`; this slice does not copy them into events or remove them.
+
+The current outbox is a delivery queue, not a complete submission history:
+4,628 current submissions have no retained outbox row. Bootstrap must use
+`data_submission` as the source and must not infer missing capture history
+from outbox retention.
+
+### Persisted Shape
+
+Reuse the existing `event_journal` and `org_unit_identity_link`. Add only:
 
 ```text
-GET /api/v1/assignments?paged=false
-GET /api/v1/assignments/forms?paged=false&referenceVersion=1
-GET /api/v1/orgUnits?paged=false
-GET /api/v1/assignments/{assignmentUid}/referenceEntries
+capture_identity_link
+  capture_id                 UUID primary key
+  baseline_submission_uid    VARCHAR(11) unique
+  baseline_submission_id     current ULID, unique
+  baseline_serial_number     current BIGINT, unique
 ```
 
-These reads form one mobile offline-configuration graph. Cut them over
-together so assignment rows, eligible forms, organization-unit scope, and
-Reference catalog access cannot disagree.
+This immutable link preserves the released compatibility identities. A
+current-event pointer is deliberately not added: this slice has exactly one
+deterministic event per submission. A pointer is justified only when a later
+accepted slice appends more than one event for the same submission.
 
-Keep the released response DTOs, paging/query behavior, administrator access,
-Reference capability gate, local replacement semantics, and persistence
-unchanged. This slice has no mobile, schema, bootstrap, or production
-deployment change.
+Do not add a capture state table, submission history table, event journal,
+device identity, workflow state, conflict model, review model, or generic
+subject model.
 
-### Evidence Gate Already Closed
+### Bootstrap Capture Fact
 
-- Assignment bootstrap and command ownership are complete.
-- All five assignment-scope consumers passed shadow comparison on the
-  isolated production clone.
-- Versioned upload is already event-authorized.
-- The release gate passes with 188 unit/contract and 38 integration tests.
-- The restored clone contains 263,423 exact baseline/event authority tuples
-  with no unexplained differences.
-- Two baseline-visible assignments for one actor have no canonical capture
-  forms. They are not grants and are the only verified read compatibility
-  case.
-- Production has not been connected or changed by this transition work.
+Append one event per current submission:
 
-### Selected Owners
+```text
+event_type     capture
+shape_ref      baseline_submission_captured/v1
+activity_ref   canonical activity UID
+subject_type   org_unit
+subject_id     event identity of the canonical organization unit
+actor_id       system:migration/datarun-baseline-capture
+recorded_at    stored last_modified_date
+payload
+  submission   active released submission state
+```
 
-Introduce one shared current-grant reader over
-`AssignmentCaptureEventReadPort`. It must:
+This event is a system observation of the current baseline row. It does not
+claim that `created_by`, `last_modified_by`, or the migration process authored
+the historical user action. The stored audit values remain evidence inside
+the submission state.
 
-- read one immutable event snapshot for the request;
-- require the exact completed bootstrap checkpoint;
-- select only the highest generation for each assignment;
-- reject duplicate or contradictory latest generations as authority
-  unavailable;
-- distinguish an absent actor alias from unavailable authority;
-- expose current active grants separately from ended history.
+The submission state contains exactly:
 
-`VersionedUploadEventAuthorizer` must use this shared latest-generation owner
-without changing its accepted active/retired behavior. Do not leave a second
-generation-selection implementation in upload.
+```text
+uid
+deleted
+deletedAt
+formData
+status
+formUid
+formVersionUid
+formVersionNumber
+assignmentUid
+teamUid
+teamCode
+orgUnitUid
+orgUnitCode
+orgUnitName
+activityUid
+startEntryTime
+finishedEntryTime
+createdBy
+createdDate
+lastModifiedBy
+lastModifiedDate
+```
 
-Introduce one released work-read owner that consumes the shared snapshot:
+Preserve all listed nulls. The verified SQL-null form body is encoded as event
+JSON null and replays as SQL `NULL`; bootstrap must reject a JSON-literal-null
+or non-object source body instead of collapsing its meaning.
 
-- administrators retain the released bypass and perform no event read;
-- a field user sees only latest `ACTIVE` grants;
-- an absent actor alias produces an empty field-user result;
-- missing checkpoint, failed reads, or invalid event state fail closed as
-  service unavailable;
-- baseline assignment/team/form permission logic cannot widen an event result.
+Map `deleted_at`, entry timestamps, and audit timestamps through the active
+Hibernate UTC `Instant` policy and preserve database microsecond precision.
+Physical submission ID and serial belong only to `capture_identity_link`.
 
-The owner is request-current. Do not put grants in JWT claims, cross-request
-caches, or another persistent projection.
+The event ID and `capture_id` are deterministic namespaced UUIDs derived from
+the baseline submission UID. Reuse the existing organization-unit identity
+algorithm. Create a missing organization-unit link only when the referenced
+current organization unit exists; otherwise fail. Adding those links must not
+change existing assignment grants or released work reads. Do not create actor
+links, users, assignments, grants, or historical changes.
 
-### Query And Paging
+### Outbox Boundary
 
-For assignment and assignment-form reads, calculate the authorized assignment
-UIDs before the repository query and intersect them with the existing
-`QueryRequest`/JSON filters before paging. Filtering a page after retrieval is
-not acceptable because it changes page size, totals, and next links.
+Identity plus submission state preserves only the replayable inputs used to
+construct a new outbox row:
 
-Client filters may narrow the authorized set. They must never widen it.
+```text
+submission physical ID
+submission UID
+submission serial number
+template-version topic
+serialized form payload
+```
 
-### Surface Behavior
+The historical queue event type (`SAVE`, `UPDATE`, or `DELETE`), enqueue
+timestamp, delivery status, attempts, claims, errors, and ingest identity
+cannot be reconstructed from current submission state. They are not capture
+facts and must not be added to the event.
 
-#### Assignment list
+### Bootstrap Execution
 
-Return projection rows for the latest active event grants. The assignment JPA
-row remains the released wire projection; event state decides whether the row
-is visible.
+Implement an explicit non-web command with the same opt-in and isolated-clone
+discipline as assignment bootstrap. No external writer may use the database
+while it runs.
 
-#### Assignment forms
+At command start, capture a stable source boundary:
 
-Return the same authorized assignments. Form UIDs come from the latest active
-grant, then the existing `referenceVersion` capability gate may narrow them.
-Baseline team/form permission checks do not add forms.
+```text
+row count
+maximum serial number
+SHA-256 of canonical source rows ordered by serial number
+```
 
-#### Organization units
+The fingerprint covers compatibility ID/UID/serial plus every listed active
+state field. Serialize fields in the declared order, timestamps as UTC ISO-8601
+with stored precision, and each UTF-8 row as a length-prefixed value before
+updating the digest.
 
-Derive direct organization-unit UIDs from latest active grants, then include
-their existing ancestor chain. Managed-team assignments do not expand scope.
-`includeDisabled` must not reactivate ended or revoked grants.
+Then:
 
-#### Reference catalog
+1. read only rows inside that boundary by serial-number keyset in bounded
+   batches;
+2. atomically insert or verify each batch's exact identity links, organization
+   unit links, and journal events;
+3. commit completed batches so interruption is safely resumable;
+4. reject any deterministic identity or event whose stored content differs;
+5. in one final repeatable-read transaction, recompute the source boundary,
+   require it unchanged, run complete set comparison, and append the completion
+   checkpoint;
+6. report source rows, created/existing rows, source fingerprint, missing
+   identities, difference counts, and bounded diagnostic samples;
+7. exit non-zero on conflict, source movement, or mismatch.
 
-Require a latest active grant for the requested assignment containing at least
-one Reference-capable form after `referenceVersion=1` capability resolution.
-Read catalog rows only for that grant's organization unit. A baseline-visible
-assignment or permission cannot authorize the catalog.
+Do not load all form JSON into memory and do not use page offsets. The
+PostgreSQL advisory lock prevents two bootstrap commands from running
+together; the explicit isolated/no-writer gate protects against ordinary
+submission writes that do not acquire that lock.
 
-### Empty-Capture Read Compatibility
+### Completion Checkpoint
 
-Preserve the two verified baseline-visible assignments with no canonical
-capture forms behind one named read-only compatibility adapter:
+Append exactly one checkpoint after final comparison:
 
-- they may remain in assignment list and assignment-form wire projections;
-- their direct organization units and ancestors may remain in org-unit sync;
-- they expose no eligible forms;
-- they grant no Reference catalog access;
-- they grant no upload authority;
-- any assignment with a canonical capture form is ineligible for this adapter.
+```text
+event_id       namespaced UUID for
+               datarun-baseline/capture-shadow/bootstrap-completed/v1
+event_type     transition_checkpoint
+shape_ref      capture_shadow_bootstrap_completed/v1
+activity_ref   null
+subject_type   transition
+subject_id     namespaced UUID for datarun-baseline/capture-shadow/v1
+actor_id       system:migration/datarun-baseline-capture
+recorded_at    maximum source last_modified_date, or Unix epoch when empty
+payload
+  sourceCount
+  sourceMaxSerial
+  sourceSha256
+```
 
-This is display compatibility, not a mutable grant or second authority.
-Retire it when those source rows are corrected/removed or a separately accepted
-product decision defines their intended behavior.
+A completed rerun must still execute full set comparison, verify the exact
+checkpoint and source fingerprint, perform no writes, and report `created=0`.
+Fingerprinting, comparison, and diagnostic collection must remain bounded in
+memory.
 
-### Ownership Cleanup
+### Replay Comparison
 
-- Remove `AssignmentCaptureShadowComparator` from the four read paths.
-- Remove comparison-only reports, categories, surface enums, metrics, and
-  tests after no active consumer remains.
-- Replace broad `BaselineAssignmentCaptureAdapter` read use with the narrow
-  empty-capture compatibility adapter; retain only independently active
-  compatibility required by upload.
-- Remove baseline assignment-form and Reference authorization from these four
-  released reads once the event owner supplies their scope.
-- Keep `AssignmentFilter` and generic inherited read behavior only for
-  separately classified admin/legacy routes. Do not silently cut over or
-  remove those routes here.
-- Do not create another work-scope table, cache, grant projection, or DTO
-  authority.
+For every source row, reconstruct the active submission projection from
+`capture_identity_link` plus its deterministic journal event. Require:
+
+- exact set equality between source UIDs, identity links, and all
+  `capture`/`baseline_submission_captured/v1` events;
+- exactly one identity and one bootstrap event per submission;
+- no orphan, duplicate, or extra bootstrap capture event;
+- exact compatibility ID, UID, and serial-number equality;
+- exact equality for every listed active state field;
+- exact accepted envelope, subject, migration actor, and checkpoint;
+- availability of the replayable outbox inputs listed above.
+
+The comparison target is the listed active submission projection, not every
+physical column in `data_submission`. It does not compare outbox history,
+queue metadata, `translations`, `submission_version`, `properties_map`, or
+`lock_version`.
+
+### Ownership Boundaries
+
+- `data_submission` remains the released write and read authority.
+- `DefaultDataSubmissionService`, `SubmissionUploadService`, and current
+  outbox ownership are unchanged.
+- Capture-owned links and bootstrap events are comparison-only.
+- `org_unit_identity_link` remains shared active identity infrastructure;
+  tests must prove new aliases do not alter assignment authority or V1 reads.
+- Assignment grants are existing context only; bootstrap does not authorize,
+  create, or reinterpret them.
+- Historical facts preserve current accepted state only. They do not claim to
+  reconstruct prior edits or deletion history.
+- No live shadow append is added here. That is a separately accepted slice
+  after bootstrap/replay equivalence closes.
 
 ### Tests
 
 Focused tests must prove:
 
-- highest generation alone decides each assignment;
-- duplicate/contradictory latest state fails closed;
-- administrator reads preserve released behavior without event reads;
-- absent actor alias returns empty field-user reads;
-- missing checkpoint and reader failure return service unavailable;
-- query filters narrow authorized assignment UIDs before paging;
-- assignment list and forms expose the same assignment set;
-- forms are exactly the active grant forms after capability narrowing;
-- ended/revoked grants disappear from assignments, forms, org units, and
-  Reference access;
-- org units contain active direct scope plus ancestors only;
-- managed-team scope and `includeDisabled` cannot widen event authority;
-- Reference uses the event-authorized assignment, forms, and org unit;
-- the empty-capture adapter cannot grant forms, Reference, or upload;
-- upload retains its existing active and eligible-retired decisions through
-  the shared latest-grant reader;
-- no comparison-only shadow owner remains on a released read path.
+- schema constraints, foreign keys, and capture-link immutability;
+- deterministic IDs and exact conflict detection;
+- SQL-null form data, null status, soft deletion, pinned template, and audit
+  values round-trip exactly;
+- JSON-literal-null and non-object form bodies fail explicitly;
+- all timestamp fields use UTC and preserve microsecond precision;
+- missing organization-unit aliases are deterministic and do not change
+  assignment authority or released reads;
+- an unresolved organization unit fails without fabricated identity;
+- interrupted multi-batch bootstrap resumes without duplicate events;
+- source movement prevents checkpoint creation;
+- comparison and checkpoint share one repeatable-read final transaction;
+- a completed rerun writes nothing;
+- changing any active state, alias, event, envelope, or checkpoint value is
+  reported as a mismatch;
+- extra bootstrap capture events are rejected;
+- submission upload, outbox, ETL, and released HTTP behavior remain untouched.
 
 Run focused tests, then `scripts/release/verify.sh`.
 
 Against the isolated production clone:
 
-1. require exact 263,423 baseline/event tuple comparison before starting;
-2. exercise active assignment/form/org-unit/Reference reads through HTTP;
-3. exercise membership, permission, form-scope, status, assignment-retire,
-   restore, and latest-generation changes;
-4. prove all four read surfaces change together and upload behavior is
-   unchanged;
-5. prove the two empty-capture rows remain display-only;
-6. restore the disposable clone afterward.
+1. restore the untouched dump and apply current migrations;
+2. restore the exact 263,423 assignment-authority checkpoint;
+3. run capture bootstrap and require 52,535 exact events;
+4. run it again and require zero created rows;
+5. inspect bounded-batch memory behavior and elapsed time;
+6. rerun assignment tuple comparison and released-read checks unchanged;
+7. restore the disposable clone afterward.
 
 Do not connect to or deploy production.
 
 ### Slice Gate
 
-- **Authority before:** baseline filters decide all four reads; event state is
-  comparison-only.
-- **Authority after:** latest active event grants decide all four field-user
-  reads; baseline retains only explicit empty-capture display compatibility.
-- **Persistence/wire/mobile:** unchanged.
-- **Schema/bootstrap:** unchanged; exact checkpoint remains mandatory.
-- **Rollback:** revert the cutover to restore baseline read authority; no data
-  rollback exists.
-- **Retirement:** empty-capture compatibility has the explicit source-data or
-  product-decision exit above. It must not become permanent grant semantics.
+- **Authority before/after:** `data_submission`.
+- **Compatibility owner:** existing submission service, outbox, and released
+  DTOs, unchanged.
+- **Schema:** one additive immutable capture identity link beside the existing
+  journal.
+- **Activation:** explicit isolated bootstrap command only.
+- **Rollback:** code rollback leaves additive, unread capture rows inert; no
+  baseline data rollback is required.
+- **Retirement:** none in this slice. Live shadow append is not permitted until
+  exact replay equivalence is closed.
 
 ### Definition Of Done
 
-- One shared owner resolves latest assignment grant generations.
-- All four released field-user reads use one event-backed work scope.
-- Baseline logic cannot widen event-authorized assignments, forms, org units,
-  or Reference access.
-- Empty-capture compatibility is isolated and incapable of authorization.
-- Upload behavior remains unchanged and uses the shared generation owner.
-- Comparison-only shadow code is removed.
-- Focused, full release, and isolated-clone gates pass.
-- Production remains untouched.
+- The model contains only the accepted capture link and bootstrap fact.
+- Bootstrap is bounded, deterministic, resumable, and conflict-detecting.
+- Replay reproduces all 52,535 active clone projections exactly.
+- The second clone run creates nothing.
+- Shared organization-unit identity and assignment reads remain unchanged.
+- Focused and full release gates pass.
+- Released upload/outbox/ETL behavior and production remain unchanged.
