@@ -8,7 +8,6 @@ import org.nmcpye.datarun.jpa.common.enumeration.EntityAuditAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -29,16 +28,12 @@ public class AsyncEntityAuditEventWriter implements EntityAuditEventWriter {
 
     private final ObjectMapper objectMapper; //Jackson object mapper
 
-    private final ConversionService conversionService;
-
     public AsyncEntityAuditEventWriter(
         EntityAuditEventRepository auditingEntityRepository,
-        ObjectMapper objectMapper,
-        ConversionService conversionService
+        ObjectMapper objectMapper
     ) {
         this.auditingEntityRepository = auditingEntityRepository;
         this.objectMapper = objectMapper;
-        this.conversionService = conversionService;
     }
 
     /**
@@ -86,7 +81,7 @@ public class AsyncEntityAuditEventWriter implements EntityAuditEventWriter {
             // returning null as we don't want to raise an application exception here
             return null;
         }
-        auditedEntity.setEntityId(conversionService.convert(entityId, String.class));
+        auditedEntity.setEntityId(entityId == null ? null : entityId.toString());
         auditedEntity.setEntityValue(entityData);
         final JpaIdentifiableObject abstractAuditEntity = (JpaIdentifiableObject) entity;
         if (EntityAuditAction.CREATE.equals(action)) {
