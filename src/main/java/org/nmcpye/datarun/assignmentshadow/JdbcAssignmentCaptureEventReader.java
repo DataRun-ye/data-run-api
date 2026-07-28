@@ -22,6 +22,8 @@ public class JdbcAssignmentCaptureEventReader
     private static final String SELECT_GRANTS_SQL = """
         SELECT
             identity.baseline_assignment_uid,
+            identity.assignment_id,
+            grant_projection.source_event_id,
             identity.target_actor_id,
             identity.generation,
             role.activity_uid,
@@ -117,6 +119,8 @@ public class JdbcAssignmentCaptureEventReader
             parameters,
             (resultSet, rowNumber) -> new AssignmentCaptureEventGrant(
                 resultSet.getString("baseline_assignment_uid"),
+                resultSet.getObject("assignment_id", UUID.class),
+                resultSet.getObject("source_event_id", UUID.class),
                 resultSet.getObject("target_actor_id", UUID.class),
                 resultSet.getInt("generation"),
                 resultSet.getString("activity_uid"),

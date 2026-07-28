@@ -119,6 +119,8 @@ public class LatestAssignmentGrantReader {
     ) {
         return grant != null
             && !isBlank(grant.baselineAssignmentUid())
+            && grant.assignmentId() != null
+            && grant.sourceEventId() != null
             && grant.generation() >= 0
             && Objects.equals(grant.targetActorId(), targetActorId)
             && !isBlank(grant.activityUid())

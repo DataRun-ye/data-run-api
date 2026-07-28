@@ -5,6 +5,8 @@ import java.util.UUID;
 
 public record AssignmentCaptureEventGrant(
     String baselineAssignmentUid,
+    UUID assignmentId,
+    UUID sourceEventId,
     UUID targetActorId,
     int generation,
     String activityUid,
@@ -15,6 +17,36 @@ public record AssignmentCaptureEventGrant(
 ) {
     public AssignmentCaptureEventGrant {
         formUids = List.copyOf(formUids);
+    }
+
+    public AssignmentCaptureEventGrant(
+        String baselineAssignmentUid,
+        UUID targetActorId,
+        int generation,
+        String activityUid,
+        UUID orgUnitId,
+        String baselineOrgUnitUid,
+        List<String> formUids,
+        AssignmentLifecycleState lifecycleState
+    ) {
+        this(
+            baselineAssignmentUid,
+            AssignmentShadowIdentities.namespacedUuid(
+                "test/assignment/" + baselineAssignmentUid + "/"
+                    + targetActorId + "/" + generation
+            ),
+            AssignmentShadowIdentities.namespacedUuid(
+                "test/grant/" + baselineAssignmentUid + "/"
+                    + targetActorId + "/" + generation + "/" + lifecycleState
+            ),
+            targetActorId,
+            generation,
+            activityUid,
+            orgUnitId,
+            baselineOrgUnitUid,
+            formUids,
+            lifecycleState
+        );
     }
 
     public AssignmentCaptureScope scope() {

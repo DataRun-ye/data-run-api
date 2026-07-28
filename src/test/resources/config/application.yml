@@ -61,6 +61,8 @@ server:
   address: localhost
 
 datarun:
+  transition:
+    capture-live-shadow-enabled: false
   security:
     authentication:
       jwt:

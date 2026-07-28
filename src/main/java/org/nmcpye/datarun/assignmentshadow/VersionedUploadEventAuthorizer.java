@@ -62,21 +62,29 @@ public class VersionedUploadEventAuthorizer {
             this.assignmentUids = assignmentUids;
         }
 
-        public void authorize(
+        public VersionedUploadAuthorityReceipt authorize(
             Assignment assignment,
             String formUid,
             String submissionUid
         ) {
             if (user.isSuper()) {
-                return;
+                return VersionedUploadAuthorityReceipt.administrator(
+                    user.getUid()
+                );
             }
 
-            EventDecision decision = decideSafely(assignment, formUid);
-            if (decision == EventDecision.ACTIVE_GRANT
-                || decision == EventDecision.ENDED_RETIRED_ASSIGNMENT) {
-                return;
+            Decision decision = decideSafely(assignment, formUid);
+            if (decision.kind() == EventDecision.ACTIVE_GRANT
+                || decision.kind() == EventDecision.ENDED_RETIRED_ASSIGNMENT) {
+                AssignmentCaptureEventGrant grant =
+                    Objects.requireNonNull(decision.grant());
+                return VersionedUploadAuthorityReceipt.assignment(
+                    user.getUid(),
+                    grant.targetActorId(),
+                    grant.sourceEventId()
+                );
             }
-            if (decision == EventDecision.AUTHORITY_UNAVAILABLE) {
+            if (decision.kind() == EventDecision.AUTHORITY_UNAVAILABLE) {
                 throw new AssignmentCaptureAuthorityUnavailableException();
             }
 
@@ -113,13 +121,13 @@ public class VersionedUploadEventAuthorizer {
 
             log.warn(
                 "assignment_capture_upload_authority status=invariant_failure event_decision={} baseline_decision={}",
-                decision,
+                decision.kind(),
                 baseline
             );
             throw new AssignmentCaptureAuthorityUnavailableException();
         }
 
-        private EventDecision decideSafely(
+        private Decision decideSafely(
             Assignment assignment,
             String formUid
         ) {
@@ -130,25 +138,25 @@ public class VersionedUploadEventAuthorizer {
                     "assignment_capture_upload_authority decision_status=failed failure_type={}",
                     exception.getClass().getSimpleName()
                 );
-                return EventDecision.AUTHORITY_UNAVAILABLE;
+                return Decision.of(EventDecision.AUTHORITY_UNAVAILABLE);
             }
         }
 
-        private EventDecision decide(
+        private Decision decide(
             Assignment assignment,
             String formUid
         ) {
             LatestAssignmentGrantSnapshot current = snapshot();
             if (current.status()
                 == LatestAssignmentGrantSnapshot.Status.AUTHORITY_UNAVAILABLE) {
-                return EventDecision.AUTHORITY_UNAVAILABLE;
+                return Decision.of(EventDecision.AUTHORITY_UNAVAILABLE);
             }
 
             AssignmentCaptureEventGrant latest = current
                 .latestGrant(assignment.getUid())
                 .orElse(null);
             if (latest == null) {
-                return EventDecision.NO_GRANT;
+                return Decision.of(EventDecision.NO_GRANT);
             }
             var structuralScope = scopeFactory.fromAssignment(
                 user,
@@ -159,7 +167,7 @@ public class VersionedUploadEventAuthorizer {
                 && structuralScope.isPresent()
                 && latest.lifecycleState() == AssignmentLifecycleState.ACTIVE
                 && latest.matches(structuralScope.get(), formUid)) {
-                return EventDecision.ACTIVE_GRANT;
+                return new Decision(EventDecision.ACTIVE_GRANT, latest);
             }
 
             var retiredScope = compatibility.retiredScope(user, assignment);
@@ -167,9 +175,12 @@ public class VersionedUploadEventAuthorizer {
                 && retiredScope.get().formUids().contains(formUid)
                 && latest.lifecycleState() == AssignmentLifecycleState.ENDED
                 && latest.scope().equals(retiredScope.get())) {
-                return EventDecision.ENDED_RETIRED_ASSIGNMENT;
+                return new Decision(
+                    EventDecision.ENDED_RETIRED_ASSIGNMENT,
+                    latest
+                );
             }
-            return EventDecision.REVOKED_HISTORY;
+            return Decision.of(EventDecision.REVOKED_HISTORY);
         }
 
         private LatestAssignmentGrantSnapshot snapshot() {
@@ -204,5 +215,14 @@ public class VersionedUploadEventAuthorizer {
         REVOKED_HISTORY,
         NO_GRANT,
         AUTHORITY_UNAVAILABLE
+    }
+
+    private record Decision(
+        EventDecision kind,
+        AssignmentCaptureEventGrant grant
+    ) {
+        private static Decision of(EventDecision kind) {
+            return new Decision(kind, null);
+        }
     }
 }

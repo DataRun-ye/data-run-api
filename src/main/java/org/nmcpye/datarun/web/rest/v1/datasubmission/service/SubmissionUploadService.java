@@ -4,12 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.assignmentshadow.VersionedUploadEventAuthorizer;
+import org.nmcpye.datarun.captureshadow.VersionedCaptureCommand;
+import org.nmcpye.datarun.captureshadow.VersionedCaptureSubmissionCommand;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
 import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,7 +32,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class SubmissionUploadService {
 
-    private final DataSubmissionService submissionService;
+    private final VersionedCaptureCommand captureCommand;
     private final DataSubmissionUploadV1Mapper mapper;
     private final ObjectMapper objectMapper;
     private final AssignmentRepository assignmentRepository;
@@ -45,6 +47,7 @@ public class SubmissionUploadService {
         if (requests == null || requests.isEmpty()) {
             return summary;
         }
+        rejectDuplicateUids(requests);
 
         var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
         var authorization = eventAuthorizer.openSession(
@@ -54,7 +57,8 @@ public class SubmissionUploadService {
                 .map(DataSubmissionUploadV1Dto::getAssignment)
                 .toList()
         );
-        List<DataSubmission> submissions = new ArrayList<>(requests.size());
+        List<VersionedCaptureSubmissionCommand> commands =
+            new ArrayList<>(requests.size());
         for (DataSubmissionUploadV1Dto request : requests) {
             DataSubmission submission = mapper.toEntity(request);
             Assignment assignment = assignmentFor(submission);
@@ -63,7 +67,7 @@ public class SubmissionUploadService {
                 submission,
                 assignment,
                 template.getTemplate());
-            authorization.authorize(
+            var authority = authorization.authorize(
                 assignment,
                 submission.getForm(),
                 submission.getUid()
@@ -77,11 +81,30 @@ public class SubmissionUploadService {
                 assignment,
                 template.getTemplate(),
                 request.getReferenceDefinitions());
-            submissions.add(submission);
+            commands.add(new VersionedCaptureSubmissionCommand(
+                submission,
+                authority
+            ));
         }
 
-        submissionService.upsertAll(submissions, summary);
+        captureCommand.execute(commands, summary);
         return summary;
+    }
+
+    private void rejectDuplicateUids(
+        List<DataSubmissionUploadV1Dto> requests
+    ) {
+        var uids = new HashSet<String>();
+        for (DataSubmissionUploadV1Dto request : requests) {
+            if (request != null
+                && request.getUid() != null
+                && !uids.add(request.getUid())) {
+                throw new DomainValidationException(
+                    "Duplicate submission UID in versioned upload: "
+                        + request.getUid()
+                );
+            }
+        }
     }
 
     private Assignment assignmentFor(DataSubmission submission) {

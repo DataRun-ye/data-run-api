@@ -5,7 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.nmcpye.datarun.assignmentshadow.AssignmentShadowIdentities;
+import org.nmcpye.datarun.captureshadow.CanonicalSubmissionSnapshot;
+import org.nmcpye.datarun.captureshadow.CaptureSubmissionCanonicalizer;
 import org.nmcpye.datarun.captureshadow.CaptureShadowProtocol;
 import org.springframework.stereotype.Component;
 
@@ -21,9 +22,12 @@ import java.util.List;
 final class CaptureCanonicalizer {
 
     private final ObjectMapper objectMapper;
+    private final CaptureSubmissionCanonicalizer submissionCanonicalizer;
 
     CaptureCanonicalizer(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
+        this.submissionCanonicalizer =
+            new CaptureSubmissionCanonicalizer(objectMapper);
     }
 
     CanonicalCapture canonicalize(CaptureSourceRow source) {
@@ -38,28 +42,31 @@ final class CaptureCanonicalizer {
             );
         }
 
-        ObjectNode submission = objectMapper.createObjectNode();
-        put(submission, "uid", source.uid());
-        put(submission, "deleted", source.deleted());
-        put(submission, "deletedAt", source.deletedAt());
-        submission.set("formData", canonicalFormData(source));
-        put(submission, "status", source.status());
-        put(submission, "formUid", source.formUid());
-        put(submission, "formVersionUid", source.formVersionUid());
-        put(submission, "formVersionNumber", source.formVersionNumber());
-        put(submission, "assignmentUid", source.assignmentUid());
-        put(submission, "teamUid", source.teamUid());
-        put(submission, "teamCode", source.teamCode());
-        put(submission, "orgUnitUid", source.orgUnitUid());
-        put(submission, "orgUnitCode", source.orgUnitCode());
-        put(submission, "orgUnitName", source.orgUnitName());
-        put(submission, "activityUid", source.activityUid());
-        put(submission, "startEntryTime", source.startEntryTime());
-        put(submission, "finishedEntryTime", source.finishedEntryTime());
-        put(submission, "createdBy", source.createdBy());
-        put(submission, "createdDate", source.createdDate());
-        put(submission, "lastModifiedBy", source.lastModifiedBy());
-        put(submission, "lastModifiedDate", source.lastModifiedDate());
+        ObjectNode submission = submissionCanonicalizer.canonicalize(
+            new CanonicalSubmissionSnapshot(
+                source.uid(),
+                source.deleted(),
+                source.deletedAt(),
+                canonicalFormData(source),
+                source.status(),
+                source.formUid(),
+                source.formVersionUid(),
+                source.formVersionNumber(),
+                source.assignmentUid(),
+                source.teamUid(),
+                source.teamCode(),
+                source.orgUnitUid(),
+                source.orgUnitCode(),
+                source.orgUnitName(),
+                source.activityUid(),
+                source.startEntryTime(),
+                source.finishedEntryTime(),
+                source.createdBy(),
+                source.createdDate(),
+                source.lastModifiedBy(),
+                source.lastModifiedDate()
+            )
+        );
 
         ObjectNode payload = objectMapper.createObjectNode();
         payload.set("submission", submission);
@@ -67,7 +74,8 @@ final class CaptureCanonicalizer {
             source,
             CaptureShadowProtocol.captureId(source.uid()),
             CaptureShadowProtocol.captureEventId(source.uid()),
-            AssignmentShadowIdentities.orgUnitId(source.orgUnitUid()),
+            org.nmcpye.datarun.assignmentshadow.TransitionIdentityResolver
+                .orgUnitIdFor(source.orgUnitUid()),
             source.lastModifiedDate(),
             payload
         );
@@ -152,22 +160,6 @@ final class CaptureCanonicalizer {
         return new CaptureShadowBootstrapConflictException(
             "Submission " + source.uid() + " has unsupported " + kind + " form_data"
         );
-    }
-
-    private static void put(ObjectNode node, String name, String value) {
-        if (value == null) node.putNull(name); else node.put(name, value);
-    }
-
-    private static void put(ObjectNode node, String name, Boolean value) {
-        if (value == null) node.putNull(name); else node.put(name, value);
-    }
-
-    private static void put(ObjectNode node, String name, Integer value) {
-        if (value == null) node.putNull(name); else node.put(name, value);
-    }
-
-    private static void put(ObjectNode node, String name, Instant value) {
-        put(node, name, format(value));
     }
 
     private static String nullable(Object value) {

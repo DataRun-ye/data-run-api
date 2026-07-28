@@ -3,7 +3,12 @@ package org.nmcpye.datarun.captureshadow.bootstrap;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.nmcpye.datarun.captureshadow.CaptureCurrentProjectionPort;
+import org.nmcpye.datarun.captureshadow.CaptureIdentityConflictException;
+import org.nmcpye.datarun.captureshadow.CaptureIdentityLink;
+import org.nmcpye.datarun.captureshadow.CaptureIdentityLinkPort;
 import org.nmcpye.datarun.captureshadow.CaptureShadowProtocol;
+import org.nmcpye.datarun.assignmentshadow.AssignmentAuthorityConflictException;
+import org.nmcpye.datarun.assignmentshadow.TransitionIdentityResolver;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -22,19 +27,25 @@ public class CaptureBootstrapBatchTransaction {
     private final CaptureSourceReader sourceReader;
     private final CaptureCanonicalizer canonicalizer;
     private final CaptureCurrentProjectionPort currentProjection;
+    private final CaptureIdentityLinkPort identities;
+    private final TransitionIdentityResolver transitionIdentities;
 
     CaptureBootstrapBatchTransaction(
         JdbcTemplate jdbc,
         ObjectMapper objectMapper,
         CaptureSourceReader sourceReader,
         CaptureCanonicalizer canonicalizer,
-        CaptureCurrentProjectionPort currentProjection
+        CaptureCurrentProjectionPort currentProjection,
+        CaptureIdentityLinkPort identities,
+        TransitionIdentityResolver transitionIdentities
     ) {
         this.jdbc = jdbc;
         this.objectMapper = objectMapper;
         this.sourceReader = sourceReader;
         this.canonicalizer = canonicalizer;
         this.currentProjection = currentProjection;
+        this.identities = identities;
+        this.transitionIdentities = transitionIdentities;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -85,67 +96,40 @@ public class CaptureBootstrapBatchTransaction {
             capture.orgUnitId(),
             capture.source().orgUnitUid()
         ) == 1;
-        if (!existed) {
-            jdbc.update(
-                """
-                    INSERT INTO org_unit_identity_link (org_unit_id, baseline_org_unit_uid)
-                    VALUES (?, ?)
-                    ON CONFLICT DO NOTHING
-                    """,
-                capture.orgUnitId(),
+        try {
+            transitionIdentities.requireOrCreateOrgUnit(
                 capture.source().orgUnitUid()
             );
+        } catch (AssignmentAuthorityConflictException exception) {
+            throw new CaptureShadowBootstrapConflictException(
+                "Conflicting immutable organization-unit alias for submission "
+                    + capture.source().uid(),
+                exception
+            );
         }
-        requireExact(
-            "organization-unit alias",
-            capture.source().uid(),
-            """
-                SELECT count(*)
-                FROM org_unit_identity_link
-                WHERE org_unit_id = ?
-                  AND baseline_org_unit_uid = ?
-                """,
-            capture.orgUnitId(),
-            capture.source().orgUnitUid()
-        );
         if (existed) counts.orgUnitAliasesExisting++; else counts.orgUnitAliasesCreated++;
     }
 
     private void persistIdentity(CanonicalCapture capture, MutableCounts counts) {
-        boolean existed = count(
-            exactIdentitySql(),
-            capture.captureId(),
-            capture.source().uid(),
-            capture.source().submissionId(),
-            capture.source().serialNumber()
-        ) == 1;
-        if (!existed) {
-            jdbc.update(
-                """
-                    INSERT INTO capture_identity_link (
-                        capture_id,
-                        baseline_submission_uid,
-                        baseline_submission_id,
-                        baseline_serial_number
-                    ) VALUES (?, ?, ?, ?)
-                    ON CONFLICT DO NOTHING
-                    """,
-                capture.captureId(),
-                capture.source().uid(),
-                capture.source().submissionId(),
-                capture.source().serialNumber()
-            );
-        }
-        requireExact(
-            "capture identity",
-            capture.source().uid(),
-            exactIdentitySql(),
+        CaptureIdentityLink expected = new CaptureIdentityLink(
             capture.captureId(),
             capture.source().uid(),
             capture.source().submissionId(),
             capture.source().serialNumber()
         );
-        if (existed) counts.identitiesExisting++; else counts.identitiesCreated++;
+        try {
+            var resolution = identities.resolveOrInsert(expected);
+            if (resolution.inserted()) {
+                counts.identitiesCreated++;
+            } else {
+                counts.identitiesExisting++;
+            }
+        } catch (CaptureIdentityConflictException exception) {
+            throw new CaptureShadowBootstrapConflictException(
+                exception.getMessage(),
+                exception
+            );
+        }
     }
 
     private void persistEvent(CanonicalCapture capture, MutableCounts counts) {
@@ -203,7 +187,7 @@ public class CaptureBootstrapBatchTransaction {
         }
 
         try {
-            currentProjection.insertBootstrapPointer(capture.captureId(), capture.eventId());
+            currentProjection.insertInitialPointer(capture.captureId(), capture.eventId());
         } catch (DataIntegrityViolationException exception) {
             throw new CaptureShadowBootstrapConflictException(
                 "Capture current pointer insert conflicted for capture_id="
@@ -212,17 +196,6 @@ public class CaptureBootstrapBatchTransaction {
             );
         }
         counts.currentPointersCreated++;
-    }
-
-    private String exactIdentitySql() {
-        return """
-            SELECT count(*)
-            FROM capture_identity_link
-            WHERE capture_id = ?
-              AND baseline_submission_uid = ?
-              AND baseline_submission_id = ?
-              AND baseline_serial_number = ?
-            """;
     }
 
     private String exactEventSql() {

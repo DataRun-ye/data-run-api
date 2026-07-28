@@ -23,7 +23,7 @@ public class AssignmentGrantLifecycle {
     private static final String SUBJECT_TYPE = "assignment";
 
     private final ActorIdentityLinkPort actors;
-    private final OrgUnitIdentityLinkPort orgUnits;
+    private final TransitionIdentityResolver transitionIdentities;
     private final AssignmentIdentityLinkPort identities;
     private final AssignmentRoleDefinitionPort roles;
     private final AssignmentGrantProjectionPort grants;
@@ -33,7 +33,7 @@ public class AssignmentGrantLifecycle {
 
     public AssignmentGrantLifecycle(
         ActorIdentityLinkPort actors,
-        OrgUnitIdentityLinkPort orgUnits,
+        TransitionIdentityResolver transitionIdentities,
         AssignmentIdentityLinkPort identities,
         AssignmentRoleDefinitionPort roles,
         AssignmentGrantProjectionPort grants,
@@ -42,7 +42,7 @@ public class AssignmentGrantLifecycle {
         Clock clock
     ) {
         this.actors = actors;
-        this.orgUnits = orgUnits;
+        this.transitionIdentities = transitionIdentities;
         this.identities = identities;
         this.roles = roles;
         this.grants = grants;
@@ -69,7 +69,10 @@ public class AssignmentGrantLifecycle {
                 continue;
             }
             if (commandActorId == null) {
-                commandActorId = ensureActor(commandActorUserUid).actorId().toString();
+                commandActorId = transitionIdentities
+                    .requireOrCreateActor(commandActorUserUid)
+                    .actorId()
+                    .toString();
             }
             if (oldIntent != null) {
                 end(key, oldIntent, commandActorId);
@@ -81,8 +84,10 @@ public class AssignmentGrantLifecycle {
     }
 
     private void start(IntentKey key, CaptureIntent intent, String commandActorId) {
-        ActorIdentityLink targetActor = ensureActor(key.userUid());
-        OrgUnitIdentityLink orgUnit = ensureOrgUnit(intent.orgUnitUid());
+        ActorIdentityLink targetActor =
+            transitionIdentities.requireOrCreateActor(key.userUid());
+        OrgUnitIdentityLink orgUnit =
+            transitionIdentities.requireOrCreateOrgUnit(intent.orgUnitUid());
         AssignmentRoleDefinition role = roles.resolveOrInsert(
             intent.activityUid(),
             intent.formUids()
@@ -164,30 +169,6 @@ public class AssignmentGrantLifecycle {
             current.orgUnitId(),
             AssignmentLifecycleState.ENDED
         ));
-    }
-
-    private ActorIdentityLink ensureActor(String userUid) {
-        UUID actorId = AssignmentShadowIdentities.actorId(userUid);
-        return actors.findByBaselineUserUid(userUid)
-            .map(existing -> {
-                if (!existing.actorId().equals(actorId)) {
-                    throw conflict("Conflicting actor alias for user " + userUid);
-                }
-                return existing;
-            })
-            .orElseGet(() -> actors.insert(new ActorIdentityLink(actorId, userUid)));
-    }
-
-    private OrgUnitIdentityLink ensureOrgUnit(String orgUnitUid) {
-        UUID orgUnitId = AssignmentShadowIdentities.orgUnitId(orgUnitUid);
-        return orgUnits.findByBaselineOrgUnitUid(orgUnitUid)
-            .map(existing -> {
-                if (!existing.orgUnitId().equals(orgUnitId)) {
-                    throw conflict("Conflicting organization-unit alias for " + orgUnitUid);
-                }
-                return existing;
-            })
-            .orElseGet(() -> orgUnits.insert(new OrgUnitIdentityLink(orgUnitId, orgUnitUid)));
     }
 
     private AssignmentAuthorityConflictException conflict(String message) {

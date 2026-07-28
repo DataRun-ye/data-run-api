@@ -132,10 +132,17 @@ class VersionedUploadEventAuthorizerTest {
         VersionedUploadEventAuthorizer.Session session =
             authorizer.openSession(user, List.of(ASSIGNMENT_UID));
 
-        assertDoesNotThrow(() ->
+        VersionedUploadAuthorityReceipt receipt = assertDoesNotThrow(() ->
             session.authorize(assignment, FORM_UID, "Sub00000001")
         );
 
+        assertThat(receipt.actorId())
+            .isEqualTo(AssignmentShadowIdentities.actorId(USER_UID));
+        assertThat(receipt.acceptance())
+            .isInstanceOf(
+                VersionedUploadAuthorityReceipt
+                    .AdministratorAcceptance.class
+            );
         verify(eventReader, never()).readAssignments(
             eq(USER_UID),
             anyCollection()
@@ -145,6 +152,46 @@ class VersionedUploadEventAuthorizerTest {
             assignment,
             FORM_UID
         );
+    }
+
+    @Test
+    void activeAndEndedAcceptanceReturnTheExactGrantReceipt() {
+        AssignmentCaptureEventGrant active = grant(
+            assignment,
+            AssignmentLifecycleState.ACTIVE
+        );
+        when(eventReader.readAssignments(eq(USER_UID), anyCollection()))
+            .thenReturn(snapshot(active));
+
+        VersionedUploadAuthorityReceipt activeReceipt =
+            session().authorize(assignment, FORM_UID, "Sub00000001");
+
+        assertThat(activeReceipt.actorId()).isEqualTo(active.targetActorId());
+        assertThat(activeReceipt.acceptance())
+            .isEqualTo(
+                new VersionedUploadAuthorityReceipt.AssignmentAcceptance(
+                    active.sourceEventId()
+                )
+            );
+
+        assignment.setDeleted(true);
+        AssignmentCaptureEventGrant ended = grant(
+            assignment,
+            AssignmentLifecycleState.ENDED
+        );
+        when(eventReader.readAssignments(eq(USER_UID), anyCollection()))
+            .thenReturn(snapshot(ended));
+
+        VersionedUploadAuthorityReceipt endedReceipt =
+            session().authorize(assignment, FORM_UID, "Sub00000002");
+
+        assertThat(endedReceipt.actorId()).isEqualTo(ended.targetActorId());
+        assertThat(endedReceipt.acceptance())
+            .isEqualTo(
+                new VersionedUploadAuthorityReceipt.AssignmentAcceptance(
+                    ended.sourceEventId()
+                )
+            );
     }
 
     @Test

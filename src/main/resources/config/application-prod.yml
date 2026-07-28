@@ -103,6 +103,8 @@ server:
 # Full reference is available at: https://www.jhipster.tech/common-application-properties/
 # ===================================================================
 datarun:
+  transition:
+    capture-live-shadow-enabled: false
   security:
     authentication:
       jwt:

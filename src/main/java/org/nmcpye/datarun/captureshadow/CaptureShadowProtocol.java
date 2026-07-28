@@ -19,6 +19,8 @@ public final class CaptureShadowProtocol {
 
     public static final String CAPTURE_EVENT_TYPE = "capture";
     public static final String CAPTURE_SHAPE_REF = "baseline_submission_captured/v1";
+    public static final String LIVE_CAPTURE_SHAPE_REF =
+        "capture_state_accepted/v1";
     public static final String CAPTURE_SUBJECT_TYPE = "org_unit";
     public static final String CHECKPOINT_EVENT_TYPE = "transition_checkpoint";
     public static final String CHECKPOINT_SHAPE_REF =

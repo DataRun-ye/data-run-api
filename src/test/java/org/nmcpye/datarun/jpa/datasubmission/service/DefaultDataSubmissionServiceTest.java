@@ -282,7 +282,8 @@ class DefaultDataSubmissionServiceTest {
         updateReturnsInput();
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(
+        List<SubmissionMutationResult> results =
+            service.upsertAllClassified(List.of(
             newSubmission,
             incomingChanged,
             incomingUnchanged,
@@ -318,11 +319,21 @@ class DefaultDataSubmissionServiceTest {
             "delete00001",
             "deleted0001"), summary.getUpdated());
         assertEquals(5, results.size());
-        assertSame(newSubmission, results.get(0));
-        assertSame(existingChanged, results.get(1));
-        assertSame(existingUnchanged, results.get(2));
-        assertSame(existingFirstDelete, results.get(3));
-        assertSame(existingDeletedRetry, results.get(4));
+        assertEquals(
+            List.of(
+                SubmissionMutationKind.CREATE,
+                SubmissionMutationKind.UPDATE,
+                SubmissionMutationKind.UNCHANGED,
+                SubmissionMutationKind.DELETE,
+                SubmissionMutationKind.UNCHANGED
+            ),
+            results.stream().map(SubmissionMutationResult::kind).toList()
+        );
+        assertSame(newSubmission, results.get(0).submission());
+        assertSame(existingChanged, results.get(1).submission());
+        assertSame(existingUnchanged, results.get(2).submission());
+        assertSame(existingFirstDelete, results.get(3).submission());
+        assertSame(existingDeletedRetry, results.get(4).submission());
         assertEquals(deletedAt, existingDeletedRetry.getDeletedAt());
     }
 

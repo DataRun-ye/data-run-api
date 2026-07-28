@@ -19,13 +19,14 @@ import org.nmcpye.datarun.assignmentshadow.VersionedUploadEventAuthorizer;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.captureshadow.VersionedCaptureCommand;
+import org.nmcpye.datarun.captureshadow.VersionedCaptureSubmissionCommand;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
@@ -59,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.doAnswer;
@@ -71,7 +73,7 @@ import static org.mockito.Mockito.when;
 
 class SubmissionUploadServiceTest {
 
-    private DataSubmissionService submissionService;
+    private VersionedCaptureCommand captureCommand;
     private DataSubmissionUploadV1Mapper mapper;
     private AssignmentRepository assignmentRepository;
     private AssignmentFormAccessService formAccessService;
@@ -87,7 +89,7 @@ class SubmissionUploadServiceTest {
 
     @BeforeEach
     void setUp() {
-        submissionService = mock(DataSubmissionService.class);
+        captureCommand = mock(VersionedCaptureCommand.class);
         mapper = mock(DataSubmissionUploadV1Mapper.class);
         assignmentRepository = mock(AssignmentRepository.class);
         formAccessService = mock(AssignmentFormAccessService.class);
@@ -113,7 +115,7 @@ class SubmissionUploadServiceTest {
                 compatibility
             );
         service = new SubmissionUploadService(
-            submissionService,
+            captureCommand,
             mapper,
             objectMapper,
             assignmentRepository,
@@ -163,6 +165,22 @@ class SubmissionUploadServiceTest {
     }
 
     @Test
+    void duplicateUidFailsBeforeAuthorizationOrPreparation() {
+        DataSubmissionUploadV1Dto first = request("firstSub01");
+        DataSubmissionUploadV1Dto duplicate = request("firstSub01");
+
+        DomainValidationException failure = assertThrows(
+            DomainValidationException.class,
+            () -> service.upsertAll(List.of(first, duplicate))
+        );
+
+        assertTrue(failure.getMessage().contains("firstSub01"));
+        verify(mapper, never()).toEntity(any());
+        verify(eventReader, never()).readAssignments(any(), anyCollection());
+        verify(captureCommand, never()).execute(any(), any());
+    }
+
+    @Test
     void preparesEverySubmissionBeforeCallingPersistence() {
         DataSubmissionUploadV1Dto firstRequest = request("firstSub01");
         DataSubmissionUploadV1Dto secondRequest = request("secondSub1");
@@ -176,14 +194,14 @@ class SubmissionUploadServiceTest {
         withCurrentUser(() -> service.upsertAll(
             List.of(firstRequest, secondRequest)));
 
-        var ordered = inOrder(resolver, submissionService);
+        var ordered = inOrder(resolver, captureCommand);
         ordered.verify(resolver, times(2)).resolve(
             any(),
             eq(assignment),
             eq(template),
             any());
-        ordered.verify(submissionService).upsertAll(
-            eq(List.of(first, second)),
+        ordered.verify(captureCommand).execute(
+            commands(first, second),
             any(EntitySaveSummaryVM.class));
         verify(assignmentRepository, times(2)).findByUid("assignment1");
         verify(templateVersionResolver, times(2)).resolveByUid(
@@ -244,7 +262,7 @@ class SubmissionUploadServiceTest {
         assertEquals(ErrorCode.E4114, failure.getErrorCode());
         verify(formAccessService, never()).canSubmitData(any(), any(), any());
         verify(resolver, never()).resolve(any(), any(), any(), any());
-        verify(submissionService, never()).upsertAll(any(), any());
+        verify(captureCommand, never()).execute(any(), any());
     }
 
     @Test
@@ -272,7 +290,7 @@ class SubmissionUploadServiceTest {
             anyCollection()
         );
         verify(resolver, never()).resolve(any(), any(), any(), any());
-        verify(submissionService, never()).upsertAll(any(), any());
+        verify(captureCommand, never()).execute(any(), any());
     }
 
     @Test
@@ -293,7 +311,7 @@ class SubmissionUploadServiceTest {
                 List.of("firstSub01", "secondSub1")
             );
             return null;
-        }).when(submissionService).upsertAll(any(), any());
+        }).when(captureCommand).execute(any(), any());
 
         EntitySaveSummaryVM result = withCurrentUser(() ->
             service.upsertAll(List.of(firstRequest, secondRequest))
@@ -307,8 +325,8 @@ class SubmissionUploadServiceTest {
             eq("user0000001"),
             anyCollection()
         );
-        verify(submissionService).upsertAll(
-            eq(List.of(first, second)),
+        verify(captureCommand).execute(
+            commands(first, second),
             any(EntitySaveSummaryVM.class)
         );
     }
@@ -354,8 +372,8 @@ class SubmissionUploadServiceTest {
             template,
             request.getReferenceDefinitions()
         );
-        verify(submissionService).upsertAll(
-            eq(List.of(submission)),
+        verify(captureCommand).execute(
+            commands(submission),
             any(EntitySaveSummaryVM.class)
         );
     }
@@ -379,7 +397,7 @@ class SubmissionUploadServiceTest {
         );
 
         verify(resolver, never()).resolve(any(), any(), any(), any());
-        verify(submissionService, never()).upsertAll(any(), any());
+        verify(captureCommand, never()).execute(any(), any());
     }
 
     @Test
@@ -401,7 +419,7 @@ class SubmissionUploadServiceTest {
         );
 
         verify(resolver, never()).resolve(any(), any(), any(), any());
-        verify(submissionService, never()).upsertAll(any(), any());
+        verify(captureCommand, never()).execute(any(), any());
     }
 
     @Test
@@ -428,7 +446,7 @@ class SubmissionUploadServiceTest {
                 () -> service.upsertAll(
                     List.of(firstRequest, secondRequest))));
 
-        verify(submissionService, never()).upsertAll(any(), any());
+        verify(captureCommand, never()).execute(any(), any());
     }
 
     @Test
@@ -544,5 +562,18 @@ class SubmissionUploadServiceTest {
         submission.setAssignment("assignment1");
         submission.setFormData(new ObjectMapper().createObjectNode());
         return submission;
+    }
+
+    private List<VersionedCaptureSubmissionCommand> commands(
+        DataSubmission... expected
+    ) {
+        List<DataSubmission> expectedSubmissions = List.of(expected);
+        return argThat(actual ->
+            actual != null
+                && actual.stream()
+                .map(VersionedCaptureSubmissionCommand::submission)
+                .toList()
+                .equals(expectedSubmissions)
+        );
     }
 }

@@ -91,6 +91,16 @@ public class DefaultDataSubmissionService
     public List<DataSubmission> upsertAll(
         Collection<DataSubmission> entities,
         EntitySaveSummaryVM summary) {
+        return upsertAllClassified(entities, summary).stream()
+            .map(SubmissionMutationResult::submission)
+            .toList();
+    }
+
+    @Transactional
+    @Override
+    public List<SubmissionMutationResult> upsertAllClassified(
+        Collection<DataSubmission> entities,
+        EntitySaveSummaryVM summary) {
         if (entities == null || entities.isEmpty()) {
             return List.of();
         }
@@ -114,6 +124,8 @@ public class DefaultDataSubmissionService
         List<DataSubmission> entitiesToDelete = new ArrayList<>();
         List<DataSubmission> normalResults = new ArrayList<>();
         List<DataSubmission> deleteResults = new ArrayList<>();
+        List<SubmissionMutationKind> normalKinds = new ArrayList<>();
+        List<SubmissionMutationKind> deleteKinds = new ArrayList<>();
 
         for (DataSubmission incomingEntity : entities) {
             DataSubmission existingEntity = existingEntitiesMap.get(incomingEntity.getUid());
@@ -130,12 +142,18 @@ public class DefaultDataSubmissionService
                     existingEntity.setDeleted(true);
                     existingEntity.setDeletedAt(Instant.now());
                     entitiesToDelete.add(existingEntity);
+                    deleteKinds.add(SubmissionMutationKind.DELETE);
+                } else {
+                    deleteKinds.add(SubmissionMutationKind.UNCHANGED);
                 }
             } else {
                 normalResults.add(existingEntity);
                 if (!mutableFieldsMatch(existingEntity, incomingEntity)) {
                     updateMutableFields(existingEntity, incomingEntity);
                     entitiesToUpdate.add(existingEntity);
+                    normalKinds.add(SubmissionMutationKind.UPDATE);
+                } else {
+                    normalKinds.add(SubmissionMutationKind.UNCHANGED);
                 }
             }
         }
@@ -169,9 +187,25 @@ public class DefaultDataSubmissionService
         summary.getUpdated().addAll(normalResults.stream().map(DataSubmission::getUid).toList());
         summary.getUpdated().addAll(deleteResults.stream().map(DataSubmission::getUid).toList());
 
-        List<DataSubmission> combinedResults = new ArrayList<>(persistedResults);
-        combinedResults.addAll(normalResults);
-        combinedResults.addAll(deleteResults);
+        List<SubmissionMutationResult> combinedResults = new ArrayList<>();
+        persistedResults.forEach(submission -> combinedResults.add(
+            new SubmissionMutationResult(
+                SubmissionMutationKind.CREATE,
+                submission
+            )
+        ));
+        for (int index = 0; index < normalResults.size(); index++) {
+            combinedResults.add(new SubmissionMutationResult(
+                normalKinds.get(index),
+                normalResults.get(index)
+            ));
+        }
+        for (int index = 0; index < deleteResults.size(); index++) {
+            combinedResults.add(new SubmissionMutationResult(
+                deleteKinds.get(index),
+                deleteResults.get(index)
+            ));
+        }
         return combinedResults;
     }
 

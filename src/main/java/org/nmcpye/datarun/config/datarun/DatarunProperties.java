@@ -15,8 +15,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 )
 public class DatarunProperties {
     private final Security security = new Security();
+    private final Transition transition = new Transition();
 
     public DatarunProperties() {
+    }
+
+    @Getter
+    @Setter
+    public static class Transition {
+        private boolean captureLiveShadowEnabled = false;
     }
 
     @Getter

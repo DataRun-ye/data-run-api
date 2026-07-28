@@ -22,4 +22,9 @@ public interface DataSubmissionService
     List<DataSubmission> upsertAll(
         Collection<DataSubmission> entities,
         EntitySaveSummaryVM summary);
+
+    @Transactional
+    List<SubmissionMutationResult> upsertAllClassified(
+        Collection<DataSubmission> entities,
+        EntitySaveSummaryVM summary);
 }
