@@ -95,6 +95,12 @@ deployment authority.
   isolated production clone preserved exact baseline/shadow equality through
   scope/form, membership, permission, status, delete/restore, and
   non-authority changes. The clone was restored and production was untouched.
+- `0b1861bd`: all five released assignment-scope consumers now run one batched,
+  fail-open event authorization shadow without changing responses or upload
+  authority. The 174-unit/contract and 37-integration release gate passed;
+  clone-only HTTP scenarios covered active, revoked, disabled, retired,
+  accepted late-upload, and restored states with exact tuple equality. The
+  clone was restored to 263,423 exact tuples and production was untouched.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

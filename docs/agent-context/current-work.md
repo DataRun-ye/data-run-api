@@ -4,265 +4,210 @@ Updated: 2026-07-28
 
 Status: ACCEPTED FOR IMPLEMENTATION
 
-## Assignment Capture Authorization Shadow
+## Versioned Upload Event Authorization Cutover
 
 ### Outcome
 
-Run one event-backed capture-authorization decision in shadow beside the
-released baseline decision across the five active surfaces that consume
-assignment scope:
-
-- assignment list;
-- assignment-form projection;
-- organization-unit synchronization;
-- Reference catalog access;
-- versioned submission upload.
-
-The released baseline remains response and upload authority in this slice.
-No request, response, mobile, persistence, or authorization behavior changes.
-No schema change, backfill, feature flag, or production activation is included.
-
-### Selected Boundary
-
-Introduce one read-only event-backed owner for actor capture scope. It reads
-the assignment lifecycle projection created from the event journal; it does
-not mutate that projection and does not create a second authority.
-
-The normalized active value is:
+Make the event-backed assignment grant the authorization authority for the
+released versioned submission upload:
 
 ```text
-baseline assignment UID
-target actor UUID
-activity UID
-organization-unit UUID
-sorted distinct capture-form UIDs
+POST /api/v1/dataSubmission/bulk?referenceVersion=1
 ```
 
-Read it by joining the current active grant stream through:
+Keep the request DTO, response summary, administrator bypass, validation
+order, error codes, Reference resolution, repeat metadata, whole-JSON
+persistence, and outbox transaction unchanged.
 
-```text
-actor_identity_link
-assignment_identity_link
-assignment_grant_projection
-assignment_role_definition
-org_unit_identity_link
-```
+This slice cuts over only versioned upload. Assignment list,
+assignment-form, organization-unit, and Reference catalog reads continue to
+use their released owners with event comparison. No mobile, schema,
+bootstrap, configuration, or production deployment change is included.
 
-Do not use `assignment_access_projection` for per-assignment decisions: it is
-the deduplicated effective-access projection and intentionally omits baseline
-assignment identity. Extend the read port with one bounded batch query rather
-than reconstructing identity in services.
+### Evidence Gate Already Closed
 
-Resolve the authenticated actor from `CurrentUserDetails.uid` through
-`actor_identity_link`. Reads never mint a missing alias. No alias plus no
-baseline capture scope is an equivalent empty result. A baseline capture scope
-without its actor alias is an unexplained mismatch.
+The preceding shadow stage is complete:
 
-Administrator authority remains the existing explicit `isSuper()` decision.
-Administrators are not represented as assignment grants and are not included
-in field-user equivalence counts.
+- focused tests and the full release gate passed;
+- 174 unit/contract and 37 integration tests passed;
+- active, membership-revoked, permission-revoked, disabled,
+  assignment-retired, late-upload, and restored clone-only states were
+  exercised through real HTTP routes;
+- all five active surfaces produced no unexplained shadow result;
+- the lifecycle fixture ended with 263,425 baseline and event tuples and zero
+  differences;
+- the disposable clone was restored and re-bootstrapped to its original
+  263,423 tuples with zero differences;
+- production was not connected or changed.
 
-### Baseline Normalization
+### Selected Authority
 
-For current work and synchronized configuration, a baseline capture scope
-exists only when:
-
-- the assignment is not soft-deleted;
-- assignment activity, assignment team, and team activity are enabled;
-- the actor is a direct team member;
-- assignment, actor, activity, organization-unit, team, and form identities
-  required by the current path are valid;
-- the sorted distinct intersection of assignment forms and same-team
-  `ADD_SUBMISSIONS`/`EDIT_SUBMISSIONS` permissions is non-empty.
-
-Use `CanonicalCaptureFormResolver` for the form intersection. Do not create a
-second interpretation of role forms.
-
-For versioned upload only, preserve the released exception: assignment
-soft-deletion does not itself reject an already-created offline submission.
-Current team membership and same-team capture permission still apply.
-
-The shadow result for one assignment/form is one of:
+Introduce one request-scoped event authorization owner for field-user capture.
+It reads the current actor's assignment grant generations through the existing
+`AssignmentCaptureEventReadPort` and decides, for one baseline assignment UID
+and form UID:
 
 ```text
 ACTIVE_GRANT
 ENDED_RETIRED_ASSIGNMENT
 REVOKED_HISTORY
 NO_GRANT
-SHADOW_UNAVAILABLE
+AUTHORITY_UNAVAILABLE
 ```
 
-`ENDED_RETIRED_ASSIGNMENT` requires a matching ended actor/assignment/form
-generation, the current baseline assignment's `deleted=true` state, and the
-same current membership and form-permission checks that make soft deletion the
-only reason the active grant is absent. History ended or currently denied
-because membership, permission, team, activity, role, or scope changed is
-`REVOKED_HISTORY` and must not broaden released upload acceptance. This
-distinction is comparison evidence only in this slice.
+The event decision owns acceptance after this slice:
 
-### Surface Integration
+- an active matching grant accepts an upload against an active assignment;
+- a matching ended generation may accept only the existing retired-assignment
+  compatibility case described below;
+- revoked history or no grant denies;
+- missing exact bootstrap checkpoint or failed event reads fail closed as
+  service unavailable; they never fall back to baseline acceptance;
+- administrators retain the current explicit bypass without an invented
+  assignment grant.
 
-#### Assignment list
+The authority is request-current. Do not put grants in JWT claims,
+cross-request caches, or persistent decision tables.
 
-Keep the inherited baseline result unchanged. For a non-administrator request,
-batch-compare the returned assignments with active actor grant streams.
+### Bulk And Validation Order
 
-- capture-bearing baseline assignments must have the same event-backed scope;
-- event-backed assignment scopes absent from the baseline result are
-  unexplained mismatches;
-- a baseline-visible assignment with no capture-form intersection is
-  `COMPATIBILITY_ONLY_EMPTY_CAPTURE`, not an event grant and not an unexplained
-  mismatch.
+Preserve the released per-request order:
 
-Do not add one event query per assignment. A paged request compares the page
-returned; the released mobile's `paged=false` request compares the complete
-result.
+```text
+map request
+resolve assignment
+resolve pinned template version
+canonicalize submission context
+authorize
+generate missing repeat metadata
+resolve Reference values/definitions
+persist batch and outbox
+```
 
-#### Assignment-form projection
+Create one request-scoped authorization session for the bulk request. On the
+first authorization decision, batch-read event history for the distinct,
+non-null raw assignment UIDs in the request. Reuse that immutable snapshot for
+the remaining requests.
 
-Keep `AssignmentWithAccessDto` and `AssignmentFormDto` unchanged. Compare only
-forms for which the baseline currently permits capture through
-`ADD_SUBMISSIONS` or `EDIT_SUBMISSIONS`.
+This must not prepare, validate, or resolve later submissions before an earlier
+submission reaches its authorization point. The first failing request and its
+existing error therefore remain authoritative. Do not introduce one event
+query per submission.
 
-`canAddSubmissions`, `canEditSubmissions`, `canDeleteSubmissions`, and forms
-visible only through non-capture permissions remain baseline wire
-compatibility fields. Do not infer those action distinctions from the initial
-event role, which intentionally owns only the canonical capture-form set.
+### Retired Assignment Compatibility
 
-#### Organization-unit synchronization
+The released server accepts an already-created offline upload referencing a
+soft-deleted assignment when current direct team membership and the same-team
+capture permission still hold. Preserve only that behavior:
 
-Compare direct organization-unit scopes derived from baseline capture-bearing
-assignments with direct scopes from active grants. Ancestors remain a hierarchy
-navigation projection loaded from the baseline organization-unit tree; they
-are not additional grants.
+- the submitted assignment row is `deleted=true`;
+- event history contains the matching ended actor/assignment/form generation;
+- current direct membership still holds;
+- current `ADD_SUBMISSIONS` or `EDIT_SUBMISSIONS` permission still holds for
+  the submitted form;
+- team and activity status and assignment scope still match the ended
+  generation.
 
-A direct organization unit supplied only by a baseline-visible empty-capture
-assignment is compatibility-only. An event-backed direct scope with no
-baseline capture scope is an unexplained mismatch.
+Use the existing baseline adapter only to narrow and map this explicit
+compatibility case. It must not reactivate the assignment, expose it for new
+work, or turn membership, permission, team/activity, role/form, or scope
+revocation into late-upload permission.
 
-#### Reference catalog
+### Released Error Compatibility
 
-Keep the current accessible-assignment and `ADD_SUBMISSIONS` requirement.
-Whenever that baseline check permits Reference catalog access, the event
-shadow must contain the same active assignment/form scope.
+When the event authority denies, preserve the existing field-user errors:
 
-The reverse is not sufficient: an event role may contain a form through
-`EDIT_SUBMISSIONS`, while Reference creation currently requires
-`ADD_SUBMISSIONS`. Keep that action-specific narrowing in the existing
-baseline adapter. It retires only with a separately accepted action-capability
-cutover; do not invent one here.
+- no current direct team membership -> `E4114`;
+- no current same-team capture permission -> `E1112`.
 
-#### Versioned submission upload
+The baseline adapter may classify the denial solely to preserve these wire
+errors. It must never change an event denial into acceptance.
 
-Refactor the current field-user upload check into a value decision so both
-baseline and event results are available before the existing error is thrown.
-Return the baseline decision to `SubmissionUploadService`; retain the exact
-released error codes and administrator bypass.
+If the baseline classifier says `ALLOWED` while event authority has no active
+or eligible retired generation, treat that as an event/projection invariant
+failure and fail closed. Emit one bounded diagnostic without user, form-data,
+token, or request-body content. Do not silently use baseline acceptance.
 
-Expected comparisons:
+An active event grant is accepted without a baseline authorization veto. That
+is the ownership cutover. Existing assignment rows remain required as the
+compatibility projection supplying canonical assignment/team/activity/org-unit
+context.
 
-- accepted active assignment/form -> `ACTIVE_GRANT`;
-- accepted soft-deleted assignment/form ->
-  `ENDED_RETIRED_ASSIGNMENT`;
-- baseline denial after membership/permission/status/scope change ->
-  `REVOKED_HISTORY` or `NO_GRANT`, both denied;
-- an event active grant rejected by the baseline -> unexplained mismatch;
-- baseline acceptance with no matching active or retired-assignment history ->
-  unexplained mismatch.
+### Ownership Cleanup
 
-Only `POST /api/v1/dataSubmission/bulk?referenceVersion=1` is in scope. The
-unversioned validator pipeline remains a separately classified legacy-risk
-surface and must not acquire another authorization implementation in this
-slice.
-
-### Comparison Ownership
-
-Use one comparator and one normalized event read model across all surfaces.
-Do not scatter equality logic through controllers, mappers, filters, and upload
-services.
-
-Comparison must:
-
-- return baseline behavior without throwing merely because shadow data is
-  unavailable or mismatched;
-- emit bounded structured diagnostics and Micrometer counters by surface and
-  result category;
-- never log form data, names, tokens, passwords, or request bodies;
-- avoid persistent comparison tables;
-- avoid cross-request caches and token claims;
-- batch event reads once per actor/request or upload batch;
-- treat a missing bootstrap checkpoint as `SHADOW_UNAVAILABLE`, not as
-  permission and not as a reason to block the released baseline path.
-
-Tests must be able to assert comparison outcomes directly. Do not make log
-parsing the only executable contract.
+- Move upload decision semantics out of
+  `AssignmentCaptureShadowComparator` into the selected authorization owner.
+- Remove the upload-specific shadow integration once the event decision is
+  authoritative; retain shadow comparison only for the four read surfaces.
+- Keep baseline upload logic behind one named compatibility adapter for
+  retired-assignment narrowing and released denial-code mapping.
+- Do not duplicate grant matching in `SubmissionUploadService`.
+- Do not add another authorization check to the unversioned generic write
+  routes; they remain a separately classified legacy-risk surface.
+- Transitional names may remain only where the four read shadows still use
+  them. Remove upload-only dead methods, records, and tests in this slice.
 
 ### Tests
 
-Focused unit and PostgreSQL tests must prove:
+Focused tests must prove:
 
-- active projection lookup preserves baseline assignment identity and returns
-  canonical role forms and aliased organization-unit scope;
-- actor alias absence is equivalent only when baseline capture scope is also
-  empty;
-- assignment list, capture-form, direct organization-unit, and Reference
-  comparisons classify exact, compatibility-only, unavailable, and
-  unexplained outcomes correctly;
-- assignment list and bulk upload perform bounded event queries, not per-row
-  lookups;
-- administrator behavior is unchanged and excluded from assignment-grant
-  comparison;
-- active versioned upload is classified `ACTIVE_GRANT` and retains current
-  success/error behavior;
-- an accepted upload against a soft-deleted assignment is classified
-  `ENDED_RETIRED_ASSIGNMENT`;
-- membership removal, permission removal, team/activity disablement, role/form
-  change, and scope change leave history but do not become late-upload
-  permission;
-- missing checkpoint or contrary shadow data changes diagnostics only, never
-  the released response in this slice;
-- assignment and assignment-form wire JSON, organization-unit results,
-  Reference paging, and versioned upload summaries remain unchanged.
+- one event read per bulk request, including many submissions sharing or
+  mixing assignments;
+- administrator upload performs no event read and preserves success behavior;
+- active matching grant accepts with the unchanged summary;
+- active event grant acceptance does not depend on baseline authorization
+  acceptance;
+- no grant and revoked history deny without baseline fallback;
+- denial preserves `E4114` versus `E1112`;
+- baseline `ALLOWED` plus missing/contrary event state fails closed;
+- missing checkpoint and event-read failure fail closed and persist nothing;
+- a matching ended generation accepts only the retired-assignment compatibility
+  case;
+- membership, permission, team/activity status, form-role, and scope changes
+  deny even when matching history exists;
+- an active grant cannot authorize a soft-deleted assignment;
+- an earlier authorization failure still wins over malformed later requests;
+- repeat metadata, Reference creation, whole-JSON persistence, outbox writes,
+  retries, and transaction rollback retain their current behavior.
 
-Run focused tests, then `scripts/release/verify.sh`. Against the isolated
-production clone:
+Run focused tests, then `scripts/release/verify.sh`.
 
-1. run the generation-aware assignment comparison and require exact tuple
-   equality;
-2. exercise the five surfaces for clone-only field-user fixtures through the
-   real HTTP routes;
-3. cover active, retired-assignment, membership/permission revoked, disabled,
-   and restored states;
-4. require zero unexplained comparison outcomes and unchanged HTTP payloads;
-5. restore the disposable clone after the scenarios.
+Against the isolated production clone:
+
+1. require exact baseline/event tuple comparison before starting;
+2. use clone-only actor, assignment, and submission fixtures;
+3. exercise active acceptance, membership and permission denial, team disable,
+   assignment retirement with accepted late upload, and restoration;
+4. prove ordinary and Reference versioned uploads preserve status, summary,
+   persisted canonical context, repeat metadata, and outbox behavior;
+5. require no unexplained state and no per-submission event query growth;
+6. restore the disposable clone afterward.
 
 Do not connect to or deploy production.
 
 ### Slice Gate
 
-- **Authority before:** released baseline filters and
-  `AssignmentFormAccessService`.
-- **Authority after:** unchanged; one event-backed decision runs in shadow and
-  owns comparison evidence.
-- **Baseline compatibility owner:** existing assignment filters,
-  action-specific form flags, and versioned upload errors.
-- **Schema/backfill:** none; requires the completed assignment bootstrap and
-  checkpoint.
-- **Shadow comparison:** all five active surfaces use one normalized event read
-  model and one comparator.
-- **Activation:** none in this slice.
-- **Rollback:** removing the shadow reader/comparator restores the identical
-  baseline behavior; no data rollback exists.
-- **Retirement:** the next cutover handoff may select event authority only
-  after clone and controlled runtime evidence contain no unexplained mismatch.
+- **Authority before:** `BaselineAssignmentCaptureAdapter` decides versioned
+  field-user upload; event state is comparison-only.
+- **Authority after:** the event authorization owner decides versioned
+  field-user upload; baseline logic only narrows retired-assignment
+  compatibility and maps released denial codes.
+- **Persistence:** unchanged `data_submission` and outbox transaction.
+- **Wire/mobile:** unchanged.
+- **Schema/bootstrap:** unchanged; exact completed checkpoint is mandatory.
+- **Rollback:** revert this cutover to restore baseline upload authority; no
+  data rollback exists.
+- **Retirement:** the baseline upload compatibility adapter retires only after
+  action-specific error compatibility and retired-assignment policy receive a
+  separately accepted replacement. It is not a second acceptance authority.
 
 ### Definition Of Done
 
-- The five active surfaces produce explicit event-shadow evidence without
-  changing released behavior.
-- Event decisions are request-current, batched, and assignment-specific.
-- Retired-assignment upload compatibility is distinguished from revoked
-  history and does not broaden acceptance.
-- Action-specific compatibility fields remain in one named baseline adapter.
+- Versioned upload has one event-backed acceptance owner.
+- Baseline acceptance cannot override event denial.
+- Existing administrator, error, validation-order, Reference, repeat,
+  persistence, retry, and outbox behavior remains characterized and passing.
+- Bulk event reads are bounded once per request.
+- Upload-only shadow/dead paths are removed.
 - Focused, full release, and isolated-clone gates pass.
 - Production remains untouched.
