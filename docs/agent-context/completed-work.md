@@ -131,6 +131,14 @@ deployment authority.
   delete still write once, while their exact retries leave audit/version state
   and outbox counts unchanged. The disposable row was removed, the clone was
   restored, and production remained untouched.
+- `5381c409`: every bootstrapped capture now has one reconstructible current
+  event pointer without changing released reads, uploads, or persistence
+  authority. The 263-unit/contract and 38-integration release gate passed.
+  Against the isolated production clone, all 52,535 pointers matched the exact
+  bootstrap facts, completed reruns wrote nothing, and deleting only the
+  projection then replaying rebuilt all pointers without changing journal
+  count or content. The clone was restored from the untouched dump and
+  production remained untouched.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

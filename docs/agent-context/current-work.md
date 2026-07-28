@@ -4,180 +4,393 @@ Updated: 2026-07-28
 
 Status: ACCEPTED FOR IMPLEMENTATION
 
-## Capture Current Projection And Replay
+## Live Capture Facts In Shadow
 
 ### Outcome
 
-Add the smallest replayable current-state projection for capture facts and
-prove that it can be reconstructed from the immutable bootstrap facts while
-remaining exactly equivalent to `data_submission`.
+Append one immutable capture fact for each actual state mutation accepted
+through the released versioned submission upload, and atomically point the
+capture-current projection at that fact.
 
-This slice completes the missing projection part of the accepted capture
-foundation. It does not append live capture facts and does not change upload,
-authorization, outbox, ETL, HTTP, or mobile behavior.
+This is still a shadow slice:
 
-### Evidence
+- `data_submission` remains the active current-state authority;
+- the current `outbox` remains the active downstream write;
+- HTTP requests, responses, authorization outcomes, form JSON, repeat
+  behavior, and ETL behavior remain unchanged;
+- exact same-UID retries append no event;
+- live shadowing is disabled by default and is not enabled in production in
+  this slice.
 
-The capture bootstrap currently creates one immutable `capture_identity_link`
-and one immutable `baseline_submission_captured/v1` journal fact for every
-`data_submission` row. The production-clone gate reproduced all 52,535 rows
-exactly and a second run wrote nothing.
+### Authority Before And After
 
-There is no current capture projection. Consequently, a later accepted state
-change has no authoritative pointer to its predecessor, and the current state
-cannot yet be rebuilt as a projection from the journal. The accepted
-transition requires this pointer before live event shadowing.
+Before this slice, immutable capture facts and current pointers exist only for
+the production-clone bootstrap boundary. Released uploads do not append or
+advance them.
 
-Exact same-UID retries are already successful persistence/outbox no-ops at
-`9e5185ce`, so the projection does not need a retry counter, version, or other
-duplicate-suppression state.
+After this slice, the released versioned upload remains the baseline command
+authority, but every actual `CREATE`, `UPDATE`, or `DELETE` mutation can also
+append an equivalent immutable fact in the same transaction. `UNCHANGED`
+remains a successful persistence, outbox, and event no-op.
 
-### Persisted Shape
+No second mutable capture authority is introduced. The current pointer is a
+rebuildable projection over immutable facts.
 
-Add exactly one table:
+### Active Entry And Compatibility Boundary
 
-```text
-capture_current_projection
-  capture_id       UUID primary key -> capture_identity_link.capture_id
-  source_event_id  UUID unique, not null -> event_journal.event_id
-```
-
-The table is a mutable, rebuildable projection. It stores no copied submission
-JSON, status, timestamps, generation, actor, authority, or baseline IDs.
-Those values remain in immutable journal facts and existing compatibility
-projections.
-
-Add a dedicated Liquibase changeset after the existing capture foundation.
-Its rollback drops only this table. Do not edit an already-recorded changeset
-or add a database trigger that makes the projection immutable.
-
-### Ownership
-
-Introduce one capture-current-projection port and one JDBC implementation with
-only these operations:
-
-- strictly insert the bootstrap pointer;
-- read the pointer by capture ID.
-
-Do not add a generic pointer-advance operation. The two foreign keys cannot
-prove that an arbitrary journal event belongs to a capture. Pointer advance is
-owned by the later live-event command, which must define that association and
-append the fact plus advance its pointer atomically.
-
-The JDBC owner participates in its caller's transaction and must not open a
-`REQUIRES_NEW` transaction. In the existing 250-row bootstrap batch, identity,
-event, and pointer work therefore commits or rolls back together.
-
-`capture_identity_link` remains the immutable compatibility identity map.
-`event_journal` remains the immutable fact owner. `data_submission` remains
-the active production authority in this slice.
-
-### Bootstrap And Replay Behavior
-
-Extend the existing capture bootstrap rather than add a second command:
-
-1. After proving the exact identity and bootstrap event for a source row,
-   read the pointer by capture ID.
-2. An existing exact pointer is counted as existing and performs no write.
-3. An existing different pointer fails immediately with the capture ID and
-   expected/actual event IDs; it is never silently overwritten.
-4. An absent pointer uses a strict insert without `ON CONFLICT DO NOTHING`.
-   Primary-key, unique-event, and foreign-key violations become one sanitized
-   `CaptureShadowBootstrapConflictException`.
-5. If projection rows are removed while immutable identities and bootstrap
-   facts remain, rerunning the bootstrap reconstructs only the missing
-   pointers. It creates no replacement identities, events, or checkpoint.
-6. The final comparison includes missing, differing, and extra projection
-   rows and verifies that every pointer selects the exact canonical submission
-   fact expected from the source row.
-
-Add `ItemCount currentPointers` to batch progress and the operator report. Add
-`missingCurrentPointerCount`, `currentPointerDifferenceCount`, and
-`extraCurrentPointerCount` to comparison/report results. Include pointer
-creation in `createdCount()` and all three differences in `differenceCount()`.
-Operator output names are:
+The owned entry is:
 
 ```text
-current_pointers_created
-current_pointers_existing
-missing_current_pointers
-current_pointer_differences
-extra_current_pointers
+POST /api/v1/dataSubmission/bulk?referenceVersion=1
+  -> DataSubmissionResource.saveVersionedUpload
+  -> SubmissionUploadService
+  -> VersionedUploadEventAuthorizer
+  -> capture command
+  -> DefaultDataSubmissionService
+  -> data_submission + outbox + capture fact + current pointer
 ```
 
-A differing pointer is an expected capture ID pointing to an event other than
-its deterministic bootstrap event. Malformed or unequal journal content stays
-an event difference. Pointer plus event equality proves the reached journal
-fact. Compute extras with an anti-join against exact source-backed identities,
-not `table count - source count`, so one missing and one unrelated extra row
-cannot cancel each other.
+The `/api/custom` alias reaches the same handler and is covered by the same
+command.
 
-The existing immutable v1 checkpoint continues to certify only identity and
-bootstrap-event parity for its source fingerprint. Projection differences
-make the command exit non-zero but do not rewrite or supersede an existing
-checkpoint. No new checkpoint shape is added in this slice, and an existing
-checkpoint must not be interpreted as projection readiness.
+Do not shadow or alter these separately registered compatibility surfaces:
 
-Preserve the existing `baseline_submission_captured/v1` event bytes and
-deterministic IDs. Do not introduce the future live-event shape in this slice.
+- unversioned `POST /api/{v1,custom}/dataSubmission/bulk`;
+- inherited single and `/return` submission writes;
+- inherited administrator `PUT` and `DELETE`.
+
+They are not used by the released mobile, but their reachability makes them a
+capture-authority cutover blocker. Before event append becomes authoritative,
+each must be retired or routed through an explicit command adapter. They must
+not be hidden behind a generic repository listener.
+
+### Classified Baseline Mutation
+
+The current summary cannot drive event append because `updated` combines real
+updates, deletes, and unchanged retries. Add an internal mutation result:
+
+```text
+SubmissionMutationKind = CREATE | UPDATE | DELETE | UNCHANGED
+
+SubmissionMutationResult
+  kind
+  persisted submission
+```
+
+`DefaultDataSubmissionService` remains the only classifier. Classification
+must follow its actual persistence branches:
+
+- absent UID: `CREATE`, including a newly inserted soft-deleted row;
+- existing active row first receiving `deleted=true`: `DELETE`;
+- existing row with changed mutable persisted state: `UPDATE`;
+- exact mutable-state retry or repeated delete: `UNCHANGED`.
+
+Return post-flush entities so generated physical ID, serial number, audit
+fields, server deletion time, and optimistic-lock state are final.
+
+Keep the existing `upsert` and `upsertAll` API as a compatibility adapter over
+the classified method. Preserve its returned entities, summary contents,
+outbox events, and transaction behavior. The released upload uses the
+classified method through the capture command.
+
+One versioned bulk request may contain each submission UID at most once.
+Reject a duplicate UID before authorization or persistence so one command
+cannot carry two competing final states or authority receipts for one capture.
+The released mobile does not intentionally send duplicate UIDs.
+
+### Accepted Authority Receipt
+
+`VersionedUploadEventAuthorizer.Session.authorize` must return the exact
+accepted basis instead of only returning `void`.
+
+For field-user acceptance, return:
+
+- the authenticated actor UUID already resolved through
+  `actor_identity_link`;
+- the source event UUID of the accepted assignment-grant projection.
+
+That one grant event resolves the grant-generation identity and whether it was
+active or ended. Do not copy role, scope, generation number, or lifecycle
+state into the capture fact.
+
+For administrator acceptance, return:
+
+- the deterministic authenticated actor UUID;
+- an explicit administrator basis with no invented assignment grant.
+
+Extend the internal assignment-grant read model only with its existing
+`assignment_id` and `source_event_id` columns as needed. Denial behavior and
+released error codes remain unchanged.
+
+Extract one small transition-identity resolver from the existing assignment
+lifecycle logic so assignment and capture commands enforce the same
+deterministic user-UID actor alias and baseline organization-unit alias. Do not
+create second actor or organization-unit identity strategies.
+The authority receipt computes or carries identity; it does not persist an
+alias. When shadowing is enabled and an actual mutation exists, the capture
+command transactionally requires or creates the exact actor alias and
+organization-unit alias before append. When shadowing is disabled or the
+mutation is `UNCHANGED`, it creates no transition alias.
+
+### Canonical Live Fact
+
+Use this event envelope:
+
+```text
+event_id       random UUID generated once by the server command
+event_type     capture
+shape_ref      capture_state_accepted/v1
+activity_ref   canonical persisted activity UID
+subject_type   org_unit
+subject_id     existing aliased organization-unit UUID
+actor_id       authenticated actor UUID string
+recorded_at    server clock
+payload        versioned JSON below
+```
+
+The payload is:
+
+```json
+{
+  "captureId": "<UUID>",
+  "previousEventId": "<UUID or null>",
+  "acceptance": {
+    "kind": "assignment",
+    "grantEventId": "<UUID>"
+  },
+  "submission": {}
+}
+```
+
+Administrator acceptance uses only:
+
+```json
+{
+  "kind": "administrator"
+}
+```
+
+`submission` has exactly the canonical fields already emitted by
+`baseline_submission_captured/v1`. Extract the existing canonical submission
+builder from the bootstrap-only class and reuse it for both source rows and
+post-flush entities. Existing bootstrap payload bytes and source fingerprints
+must remain unchanged.
+
+The acceptance object is payload provenance, not an authorization decision
+stored in the event envelope. For assignment acceptance, the referenced grant
+event must exist and remain the exact event used by the authorizer. Its
+assignment subject must resolve through `assignment_identity_link` to the same
+baseline assignment UID and actor carried by the capture. Replay validates
+that relationship. Administrator acceptance has no grant event.
+
+Do not add copied role/scope fields, workflow state, flags, client DTO values,
+lock version, outbox values, or speculative event-envelope fields.
+
+### Identity And Lineage
+
+The capture ID remains the deterministic UUID alias of the baseline submission
+UID.
+
+Extract the exact capture identity-link read/insert rules from bootstrap into
+one shared port. Bootstrap and live append must not maintain separate SQL or
+conflict semantics for the same immutable alias.
+
+For `CREATE`:
+
+1. require the post-flush physical submission ID and serial number;
+2. insert one exact `capture_identity_link`;
+3. require the actor and organization-unit aliases;
+4. append the live fact with `previousEventId=null`;
+5. strictly insert its initial current pointer.
+
+For `UPDATE` or `DELETE`:
+
+1. require the existing capture identity to match UID, physical ID, and serial;
+2. lock/read its current pointer;
+3. require the pointed event to belong to this capture:
+   - the deterministic bootstrap event for this capture, or
+   - a live event whose payload has this exact `captureId`;
+4. append the live fact with that pointer as `previousEventId`;
+5. compare-and-swap the pointer from the expected event to the new event.
+
+The compare-and-swap updates exactly one row:
+
+```text
+capture_id = expected capture
+source_event_id = expected predecessor
+```
+
+Zero affected rows is a conflict. Event append, pointer movement,
+`data_submission`, and outbox must then roll back together. The current
+projection port exposes strict initial insert, read, and compare-and-swap; it
+does not expose an unconditional update.
+
+`UNCHANGED` performs none of the identity, alias, event, or pointer writes.
+For a multi-capture batch, lock and append actual mutations in deterministic
+capture-ID order so reversed request order cannot create avoidable pointer
+deadlocks.
+
+### Command And Transaction Ownership
+
+Introduce one versioned capture command between `SubmissionUploadService` and
+baseline persistence.
+
+`SubmissionUploadService` remains a wire/canonicalization adapter. It resolves
+assignment and pinned template, canonicalizes context, obtains the accepted
+authority receipt, generates repeat metadata, resolves Reference definitions,
+then gives the accepted commands to the capture command.
+
+The capture command:
+
+1. invokes classified baseline persistence;
+2. if live shadowing is disabled, returns the unchanged summary;
+3. if enabled, appends only actual mutation facts and advances their pointers.
+
+Keep the existing outer transaction. Do not use after-commit append,
+`REQUIRES_NEW`, an entity listener, or an asynchronous worker. Shadow failure
+must roll back baseline state and outbox rather than create divergence.
+
+Add one typed setting under the existing `datarun` properties:
+
+```text
+datarun.transition.capture-live-shadow-enabled=false
+```
+
+The default is false in every profile. Enabling requires exact capture
+bootstrap and current-projection replay first. This slice does not enable it
+in production.
+
+### Replay And Comparison
+
+Live append must not make the current projection unrebuildable.
+
+Extend capture replay to understand both accepted shapes:
+
+- `baseline_submission_captured/v1` is the optional first fact for rows inside
+  the pinned bootstrap boundary;
+- `capture_state_accepted/v1` carries its capture ID and predecessor;
+- a post-bootstrap created capture starts with a live fact whose predecessor
+  is null;
+- every later live fact points to exactly one earlier fact of the same capture.
+
+For every identity, replay must reject:
+
+- an unknown event shape;
+- a missing or cross-capture predecessor;
+- a fork, cycle, or more than one head;
+- a present current pointer that does not equal the derived head;
+- a derived head whose canonical submission differs from current
+  `data_submission`;
+- conflicting or unrelated identity/current rows.
+
+Historical facts before the derived head are validated for shape, capture
+identity, predecessor linkage, envelope consistency, and canonical payload
+structure. They are not compared to current `data_submission`, because a later
+accepted fact legitimately supersedes their state.
+
+Replay has two explicit modes:
+
+- validation requires every identity to have the exact derived current pointer
+  and fails on a missing, differing, or extra pointer;
+- repair may insert a missing derived pointer, but still fails on a differing
+  or extra pointer and never overwrites one.
+
+Every journal row with `event_type=capture` and either accepted capture shape
+must resolve to exactly one capture identity. An orphan live event, duplicate
+ownership, or capture event with an unknown shape is a replay failure; replay
+must not discover events only by walking outward from identities.
+
+When current pointers alone are removed, replay reconstructs their derived
+heads in repair mode without inserting, deleting, or changing journal facts or
+identities.
+Use bounded pages; do not load all submission JSON into one unbounded
+collection.
+
+The existing bootstrap checkpoint remains unchanged. It certifies only its
+pinned bootstrap boundary and is not rewritten by live events.
 
 ### Tests
 
-Focused PostgreSQL tests must prove:
+Use small deterministic PostgreSQL fixtures for the implementation loop.
+Focused tests must prove:
 
-- the table has exactly the two specified columns, primary key, unique event
-  pointer, and both foreign keys;
-- one capture cannot have two current rows and one event cannot be current for
-  two captures;
-- strict insert/read work and a conflicting pointer cannot be overwritten;
-- rollback of an outer transaction removes a newly inserted pointer;
-- first bootstrap creates one pointer per source row;
-- the completed rerun writes no identity, event, pointer, or checkpoint;
-- deleting only projection rows and rerunning reconstructs them from existing
-  immutable facts without new facts;
-- a wrong pointer fails fast and rolls back its complete 250-row batch; final
-  bounded diagnostics remain for missing/extra set mismatches;
-- one missing and one unrelated extra pointer are both reported even when
-  total projection cardinality equals source cardinality;
-- interrupted batch processing resumes without duplicate pointers;
-- journal payloads reached through current pointers remain exact for null and
-  object form JSON, soft-deleted rows, pinned versions, context, and audit
-  timestamps;
-- a pre-existing exact v1 checkpoint remains byte-identical when projection
-  validation fails and no replacement checkpoint is written.
+- exact classification for create, update, delete, repeated delete, and
+  unchanged retry while preserving summaries and outbox behavior;
+- duplicate UIDs in one versioned request fail before any write;
+- active-grant, ended-grant, and administrator receipts use exact actor/grant
+  event identity; denials and error codes do not change;
+- disabled shadowing performs no transition writes;
+- create, update, delete, and exact retry produce event counts `1, 1, 1, 0`;
+- ordinary and Reference-capable submissions use the same command;
+- canonical live and bootstrap submission snapshots are field-identical;
+- a field-user fact references the grant event actually used for acceptance;
+- assignment acceptance cannot reference another actor's or another baseline
+  assignment's grant event;
+- administrator facts contain no invented grant;
+- wrong identity, wrong pointer, cross-capture predecessor, stale
+  compare-and-swap, or append failure rolls back submission, outbox, event,
+  and pointer together;
+- concurrent same-UID mutations cannot create two accepted heads;
+- overlapping bulk mutations presented in opposite input order do not
+  deadlock and still produce one chain per capture;
+- bootstrap-only, mixed bootstrap/live, and live-only capture chains replay to
+  one exact head;
+- projection-only deletion and bounded replay restore all pointers without
+  changing journal count or deterministic journal-content checksum;
+- forks, cycles, missing/cross-capture predecessors, orphan live events,
+  unknown capture shapes, extra identities/pointers, and current-head
+  canonical-state differences are reported and fail;
+- with live shadowing enabled, the `/api/custom` versioned alias appends through
+  the same command;
+- with live shadowing enabled, every unversioned bulk/single/return and
+  inherited administrator PUT/DELETE compatibility route remains behaviorally
+  unchanged and appends no live shadow fact.
 
-Run focused tests, then `scripts/release/verify.sh`.
+Run focused tests and then `scripts/release/verify.sh`.
 
-Against the isolated production clone:
+### Final Production-Clone Gate
 
-1. restore
-   `/mnt/windows-csystem-disk/datarun-production-clones/nmcpdb-production-20260725.dump`;
-2. build the reviewed candidate and explicitly apply all migrations, including
-   the new projection changeset, because the isolated bootstrap command runs
-   with Liquibase disabled;
-3. run assignment bootstrap and require its existing exact tuple/checkpoint
-   result, then run capture bootstrap;
-4. require 52,535 capture identities, bootstrap facts, and current pointers;
-5. record the clean run's 64-character source SHA-256 as the pinned acceptance
-   value, and require zero source/projection differences;
-6. rerun and require every created counter to be zero and the same source
-   fingerprint;
-7. record journal row count and a deterministic journal-content checksum;
-8. remove only the disposable clone's current pointers, rerun, and require
-   `current_pointers_created=52535`, all identity/event/checkpoint created
-   counters zero, and unchanged journal count/checksum;
-9. rerun once more and require every created counter to be zero and the same
-   pinned source fingerprint;
-10. restore the clone from the untouched dump afterward.
+Run the full clone only once after code review and the full release gate:
+
+1. restore the untouched 2026-07-25 dump;
+2. apply candidate migrations;
+3. run assignment and capture bootstrap and require their pinned exact
+   results;
+4. enable live shadow only for the disposable candidate process;
+5. exercise one ordinary and one Reference fixture through versioned HTTP
+   create, actual update, exact retry, delete, and repeated delete;
+6. require baseline rows, outbox operations, immutable facts, authority
+   receipts, and current pointers to match the focused contract;
+7. run full capture comparison across the 52,535 baseline rows plus disposable
+   fixtures;
+8. record journal count/checksum, remove only current pointers, replay once,
+   and require exact reconstruction with unchanged journal count/checksum;
+9. rerun comparison and require zero writes and zero differences;
+10. remove disposable fixtures and restore the untouched dump.
 
 Do not connect to or deploy production.
 
+### Activation, Rollback, And Retirement
+
+Activation boundary: code and schema may land with the setting false. A future
+production enablement requires exact bootstrap/replay on that database and a
+separately approved release gate.
+
+Rollback position: with the setting false, the released baseline path behaves
+as before. The additive event and pointer rows can remain unread. Once enabled,
+roll back by disabling the setting; do not delete immutable facts.
+
+Retirement criterion: this shadow slice closes only when event replay remains
+exact. Event append cannot become capture authority until the unversioned and
+generic write surfaces are retired or adapted and a later cutover slice proves
+that `data_submission` and outbox can be derived compatibility projections.
+
 ### Definition Of Done
 
-- Every bootstrapped capture has exactly one current source-event pointer.
-- The projection can be reconstructed from immutable capture facts.
-- Comparison proves the pointed facts equal the current baseline source.
-- No submission or upload behavior changes.
-- Focused and full release gates pass.
-- Production-clone replay and idempotency pass, the clone is restored, and
-  production remains untouched.
+- Actual released versioned mutations append one exact immutable capture fact.
+- Exact retries append nothing.
+- Every live capture chain has one atomically advanced current pointer.
+- Current pointers rebuild from immutable facts.
+- Released behavior remains unchanged with shadowing disabled.
+- Focused, full, and one final production-clone gate pass.
+- Production remains untouched.
