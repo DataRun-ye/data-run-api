@@ -3,6 +3,7 @@ package org.nmcpye.datarun.web.rest.errors;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureAuthorityUnavailableException;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.TemplateValidationException;
@@ -117,6 +118,9 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     // --- Helper to keep code clean ---
     private void logErrorToDb(Throwable ex, NativeWebRequest request, int status) {
         markAsLogged(request); // prevent double logging
+        if (ex instanceof AssignmentCaptureAuthorityUnavailableException) {
+            return;
+        }
         Map<String, Object> context = new HashMap<>();
         context.put("requestId", UUID.randomUUID().toString());
 

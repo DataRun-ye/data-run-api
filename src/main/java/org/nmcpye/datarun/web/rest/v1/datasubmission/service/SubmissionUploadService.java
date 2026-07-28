@@ -3,13 +3,9 @@ package org.nmcpye.datarun.web.rest.v1.datasubmission.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
-import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator.VersionedUploadComparison;
-import org.nmcpye.datarun.assignmentshadow.BaselineAssignmentCaptureAdapter;
-import org.nmcpye.datarun.assignmentshadow.BaselineAssignmentCaptureAdapter.VersionedUploadDecision;
+import org.nmcpye.datarun.assignmentshadow.VersionedUploadEventAuthorizer;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
@@ -28,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -39,8 +36,7 @@ public class SubmissionUploadService {
     private final AssignmentRepository assignmentRepository;
     private final TemplateVersionResolver templateVersionResolver;
     private final ReferenceSubmissionResolver referenceResolver;
-    private final BaselineAssignmentCaptureAdapter baselineCapture;
-    private final AssignmentCaptureShadowComparator captureShadow;
+    private final VersionedUploadEventAuthorizer eventAuthorizer;
 
     @Transactional
     public EntitySaveSummaryVM upsertAll(
@@ -51,9 +47,14 @@ public class SubmissionUploadService {
         }
 
         var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
+        var authorization = eventAuthorizer.openSession(
+            currentUser,
+            requests.stream()
+                .filter(Objects::nonNull)
+                .map(DataSubmissionUploadV1Dto::getAssignment)
+                .toList()
+        );
         List<DataSubmission> submissions = new ArrayList<>(requests.size());
-        List<VersionedUploadComparison> comparisons =
-            new ArrayList<>(requests.size());
         for (DataSubmissionUploadV1Dto request : requests) {
             DataSubmission submission = mapper.toEntity(request);
             Assignment assignment = assignmentFor(submission);
@@ -62,28 +63,10 @@ public class SubmissionUploadService {
                 submission,
                 assignment,
                 template.getTemplate());
-            VersionedUploadDecision authorization =
-                baselineCapture.decideVersionedUpload(
-                    currentUser,
-                    assignment,
-                    submission.getForm()
-                );
-            VersionedUploadComparison comparison =
-                new VersionedUploadComparison(
-                    assignment,
-                    submission.getForm(),
-                    authorization.accepted()
-                );
-            if (!authorization.accepted()) {
-                captureShadow.compareVersionedUploads(
-                    currentUser,
-                    List.of(comparison)
-                );
-            }
-            enforceAuthorization(
-                authorization,
-                submission,
-                assignment
+            authorization.authorize(
+                assignment,
+                submission.getForm(),
+                submission.getUid()
             );
             generateMissingRepeatIds(
                 submission,
@@ -95,10 +78,8 @@ public class SubmissionUploadService {
                 template.getTemplate(),
                 request.getReferenceDefinitions());
             submissions.add(submission);
-            comparisons.add(comparison);
         }
 
-        captureShadow.compareVersionedUploads(currentUser, comparisons);
         submissionService.upsertAll(submissions, summary);
         return summary;
     }
@@ -141,23 +122,6 @@ public class SubmissionUploadService {
         submission.setOrgUnitCode(assignment.getOrgUnit().getCode());
         submission.setOrgUnitName(assignment.getOrgUnit().getName());
         submission.setActivity(assignment.getActivity().getUid());
-    }
-
-    private void enforceAuthorization(
-        VersionedUploadDecision authorization,
-        DataSubmission submission,
-        Assignment assignment
-    ) {
-        String teamUid = assignment.getTeam().getUid();
-        if (authorization == VersionedUploadDecision.NOT_DIRECT_TEAM) {
-            throw new IllegalQueryException(
-                ErrorCode.E4114,
-                teamUid,
-                submission.getUid());
-        }
-        if (authorization == VersionedUploadDecision.NO_CAPTURE_PERMISSION) {
-            throw new IllegalQueryException(ErrorCode.E1112, teamUid);
-        }
     }
 
     private void generateMissingRepeatIds(

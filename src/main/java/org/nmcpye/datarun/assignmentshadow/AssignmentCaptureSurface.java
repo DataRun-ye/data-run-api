@@ -4,8 +4,7 @@ public enum AssignmentCaptureSurface {
     ASSIGNMENT_LIST("assignment_list"),
     ASSIGNMENT_FORMS("assignment_forms"),
     ORG_UNIT_SYNC("org_unit_sync"),
-    REFERENCE_CATALOG("reference_catalog"),
-    VERSIONED_UPLOAD("versioned_upload");
+    REFERENCE_CATALOG("reference_catalog");
 
     private final String tag;
 

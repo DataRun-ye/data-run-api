@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.web.rest.errors;
 
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -8,10 +10,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.IntegrationTest;
+import org.nmcpye.datarun.jpa.errorevent.service.ErrorEventService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
@@ -24,6 +28,9 @@ class ExceptionTranslatorIT {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private ErrorEventService errorEventService;
 
     @Test
     void testConcurrencyFailure() throws Exception {
@@ -113,5 +120,23 @@ class ExceptionTranslatorIT {
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andExpect(jsonPath("$.message").value("error.http.500"))
             .andExpect(jsonPath("$.title").value("Internal Server Error"));
+    }
+
+    @Test
+    void assignmentCaptureAuthorityUnavailableIsNotPersisted() throws Exception {
+        clearInvocations(errorEventService);
+
+        mockMvc
+            .perform(get(
+                "/api/exception-translator-test/assignment-capture-authority-unavailable"
+            ))
+            .andExpect(status().isServiceUnavailable())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.message").value("error.http.503"))
+            .andExpect(jsonPath("$.title").value(
+                "Assignment capture authority is unavailable"
+            ));
+
+        verifyNoInteractions(errorEventService);
     }
 }

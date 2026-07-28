@@ -26,4 +26,15 @@ public record AssignmentCaptureEventGrant(
             formUids
         );
     }
+
+    public boolean matches(
+        AssignmentCaptureScope expected,
+        String formUid
+    ) {
+        return baselineAssignmentUid.equals(expected.assignmentUid())
+            && targetActorId.equals(expected.targetActorId())
+            && activityUid.equals(expected.activityUid())
+            && orgUnitId.equals(expected.orgUnitId())
+            && formUids.contains(formUid);
+    }
 }

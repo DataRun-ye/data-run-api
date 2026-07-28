@@ -1,53 +1,41 @@
 package org.nmcpye.datarun.assignmentshadow;
 
+import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 @Component
-public class BaselineAssignmentCaptureAdapter {
+public class BaselineVersionedUploadCompatibilityAdapter {
 
-    private final CanonicalCaptureFormResolver captureForms;
     private final AssignmentCaptureScopeFactory scopeFactory;
+    private final CanonicalCaptureFormResolver captureForms;
+    private final AssignmentFormAccessService formAccessService;
     private final Clock clock;
 
-    public BaselineAssignmentCaptureAdapter(
-        CanonicalCaptureFormResolver captureForms,
+    public BaselineVersionedUploadCompatibilityAdapter(
         AssignmentCaptureScopeFactory scopeFactory,
+        CanonicalCaptureFormResolver captureForms,
+        AssignmentFormAccessService formAccessService,
         Clock clock
     ) {
-        this.captureForms = captureForms;
         this.scopeFactory = scopeFactory;
+        this.captureForms = captureForms;
+        this.formAccessService = formAccessService;
         this.clock = clock;
     }
 
-    public Optional<AssignmentCaptureScope> activeScope(
-        CurrentUserDetails user,
-        Assignment assignment
-    ) {
-        return captureScope(user, assignment);
-    }
-
-    public Optional<AssignmentCaptureScope> structuralScope(
-        CurrentUserDetails user,
-        Assignment assignment,
-        Collection<String> forms
-    ) {
-        return scopeFactory.fromAssignment(user, assignment, forms);
-    }
-
-    private Optional<AssignmentCaptureScope> captureScope(
+    public Optional<AssignmentCaptureScope> retiredScope(
         CurrentUserDetails user,
         Assignment assignment
     ) {
         if (user == null || user.isSuper() || assignment == null
-            || Boolean.TRUE.equals(assignment.getDeleted())) {
+            || !Boolean.TRUE.equals(assignment.getDeleted())) {
             return Optional.empty();
         }
 
@@ -72,10 +60,31 @@ public class BaselineAssignmentCaptureAdapter {
             if (forms.isEmpty()) {
                 return Optional.empty();
             }
-            return structuralScope(user, assignment, forms);
+            return scopeFactory.fromAssignment(user, assignment, forms);
         } catch (IllegalArgumentException ignored) {
             return Optional.empty();
         }
     }
 
+    public DenialClassification classifyDenial(
+        CurrentUserDetails user,
+        Assignment assignment,
+        String formUid
+    ) {
+        String teamUid = assignment.getTeam().getUid();
+        if (user.getUserTeamsUIDs() == null
+            || !user.getUserTeamsUIDs().contains(teamUid)) {
+            return DenialClassification.NOT_DIRECT_TEAM;
+        }
+        if (!formAccessService.canSubmitData(user, assignment, formUid)) {
+            return DenialClassification.NO_CAPTURE_PERMISSION;
+        }
+        return DenialClassification.ALLOWED;
+    }
+
+    public enum DenialClassification {
+        ALLOWED,
+        NOT_DIRECT_TEAM,
+        NO_CAPTURE_PERMISSION
+    }
 }

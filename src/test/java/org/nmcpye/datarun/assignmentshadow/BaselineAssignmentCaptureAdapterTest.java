@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.common.enumeration.FormPermission;
-import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
@@ -33,17 +32,15 @@ class BaselineAssignmentCaptureAdapterTest {
     private static final String FORM_UID_2 = "Frm00000002";
     private static final Instant NOW = Instant.parse("2026-07-28T12:00:00Z");
 
-    private AssignmentFormAccessService formAccessService;
     private BaselineAssignmentCaptureAdapter adapter;
     private CurrentUserDetails user;
     private Assignment assignment;
 
     @BeforeEach
     void setUp() {
-        formAccessService = mock(AssignmentFormAccessService.class);
         adapter = new BaselineAssignmentCaptureAdapter(
             new CanonicalCaptureFormResolver(new ObjectMapper()),
-            formAccessService,
+            new AssignmentCaptureScopeFactory(),
             Clock.fixed(NOW, ZoneOffset.UTC)
         );
         user = mock(CurrentUserDetails.class);
@@ -78,61 +75,10 @@ class BaselineAssignmentCaptureAdapterTest {
     }
 
     @Test
-    void softDeletionIsTheOnlyStatusExceptionForVersionedUploadScope() {
+    void activeScopeRejectsSoftDeletedAssignments() {
         assignment.setDeleted(true);
 
         assertThat(adapter.activeScope(user, assignment)).isEmpty();
-        assertThat(adapter.deletionTolerantScope(user, assignment)).isPresent();
-
-        assignment.getTeam().setDisabled(true);
-        assertThat(adapter.deletionTolerantScope(user, assignment)).isEmpty();
-
-        assignment.getTeam().setDisabled(false);
-        assignment.getActivity().setDisabled(true);
-        assertThat(adapter.deletionTolerantScope(user, assignment)).isEmpty();
-
-        assignment.getActivity().setDisabled(false);
-        assignment.getTeam().getActivity().setDisabled(true);
-        assertThat(adapter.deletionTolerantScope(user, assignment)).isEmpty();
-    }
-
-    @Test
-    void membershipAndPermissionRemainCurrentBaselineDecisions() {
-        when(user.getUserTeamsUIDs()).thenReturn(Set.of("Tem00000009"));
-        assertThat(adapter.activeScope(user, assignment)).isEmpty();
-        assertThat(adapter.decideVersionedUpload(
-            user,
-            assignment,
-            FORM_UID_1
-        )).isEqualTo(
-            BaselineAssignmentCaptureAdapter.VersionedUploadDecision.NOT_DIRECT_TEAM
-        );
-
-        when(user.getUserTeamsUIDs()).thenReturn(Set.of(TEAM_UID));
-        when(formAccessService.canSubmitData(
-            user,
-            assignment,
-            FORM_UID_1
-        )).thenReturn(false);
-        assertThat(adapter.decideVersionedUpload(
-            user,
-            assignment,
-            FORM_UID_1
-        )).isEqualTo(
-            BaselineAssignmentCaptureAdapter.VersionedUploadDecision.NO_CAPTURE_PERMISSION
-        );
-
-        assignment.setDeleted(true);
-        when(formAccessService.canSubmitData(
-            user,
-            assignment,
-            FORM_UID_1
-        )).thenReturn(true);
-        assertThat(adapter.decideVersionedUpload(
-            user,
-            assignment,
-            FORM_UID_1
-        ).accepted()).isTrue();
     }
 
     private UserFormAccess access(

@@ -4,12 +4,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureAuthorityUnavailableException;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureEventGrant;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureEventReadPort;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureEventSnapshot;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureScopeFactory;
+import org.nmcpye.datarun.assignmentshadow.AssignmentLifecycleState;
+import org.nmcpye.datarun.assignmentshadow.AssignmentShadowIdentities;
 import org.nmcpye.datarun.assignmentshadow.BaselineAssignmentCaptureAdapter;
+import org.nmcpye.datarun.assignmentshadow.BaselineVersionedUploadCompatibilityAdapter;
 import org.nmcpye.datarun.assignmentshadow.CanonicalCaptureFormResolver;
+import org.nmcpye.datarun.assignmentshadow.VersionedUploadEventAuthorizer;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
@@ -41,15 +50,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -65,8 +76,9 @@ class SubmissionUploadServiceTest {
     private AssignmentFormAccessService formAccessService;
     private TemplateVersionResolver templateVersionResolver;
     private ReferenceSubmissionResolver resolver;
-    private AssignmentCaptureShadowComparator captureShadow;
+    private AssignmentCaptureEventReadPort eventReader;
     private SubmissionUploadService service;
+    private ObjectMapper objectMapper;
     private TemplateVersionContext templateContext;
     private DataTemplateInstanceDto template;
     private CurrentUserDetails user;
@@ -80,13 +92,30 @@ class SubmissionUploadServiceTest {
         formAccessService = mock(AssignmentFormAccessService.class);
         templateVersionResolver = mock(TemplateVersionResolver.class);
         resolver = mock(ReferenceSubmissionResolver.class);
-        captureShadow = mock(AssignmentCaptureShadowComparator.class);
-        ObjectMapper objectMapper = new ObjectMapper();
+        eventReader = mock(AssignmentCaptureEventReadPort.class);
+        objectMapper = new ObjectMapper();
+        CanonicalCaptureFormResolver captureForms =
+            new CanonicalCaptureFormResolver(objectMapper);
+        AssignmentCaptureScopeFactory scopeFactory =
+            new AssignmentCaptureScopeFactory();
         BaselineAssignmentCaptureAdapter baselineCapture =
             new BaselineAssignmentCaptureAdapter(
-                new CanonicalCaptureFormResolver(objectMapper),
+                captureForms,
+                scopeFactory,
+                Clock.systemUTC()
+            );
+        BaselineVersionedUploadCompatibilityAdapter compatibility =
+            new BaselineVersionedUploadCompatibilityAdapter(
+                scopeFactory,
+                captureForms,
                 formAccessService,
                 Clock.systemUTC()
+            );
+        VersionedUploadEventAuthorizer eventAuthorizer =
+            new VersionedUploadEventAuthorizer(
+                eventReader,
+                scopeFactory,
+                compatibility
             );
         service = new SubmissionUploadService(
             submissionService,
@@ -95,8 +124,7 @@ class SubmissionUploadServiceTest {
             assignmentRepository,
             templateVersionResolver,
             resolver,
-            baselineCapture,
-            captureShadow);
+            eventAuthorizer);
 
         templateContext = mock(TemplateVersionContext.class);
         template = mock(DataTemplateInstanceDto.class);
@@ -115,6 +143,9 @@ class SubmissionUploadServiceTest {
         orgUnit.setName("Org unit 1");
         Activity activity = new Activity();
         activity.setUid("activity001");
+        activity.setDisabled(false);
+        team.setActivity(activity);
+        team.setDisabled(false);
 
         assignment = new Assignment();
         assignment.setUid("assignment1");
@@ -124,6 +155,7 @@ class SubmissionUploadServiceTest {
         assignment.setForms(Set.of("formUid0001"));
 
         user = mock(CurrentUserDetails.class);
+        when(user.getUid()).thenReturn("user0000001");
         when(user.isSuper()).thenReturn(true);
     }
 
@@ -162,9 +194,7 @@ class SubmissionUploadServiceTest {
         verify(templateVersionResolver, times(2)).resolveByUid(
             "formUid0001",
             "version0001");
-        verify(captureShadow).compareVersionedUploads(
-            eq(user),
-            argThat(uploads -> uploads.size() == 2));
+        verify(eventReader, never()).readAssignments(any(), anyCollection());
     }
 
     @Test
@@ -175,24 +205,21 @@ class SubmissionUploadServiceTest {
         stubContext(submission);
         when(user.isSuper()).thenReturn(false);
         when(user.getUserTeamsUIDs()).thenReturn(Set.of("team0000001"));
-        when(formAccessService.canSubmitData(
-            user,
-            assignment,
-            "formUid0001"))
-            .thenReturn(true);
+        stubActiveEvent();
 
         withCurrentUser(() -> service.upsertAll(List.of(request)));
 
-        var ordered = inOrder(formAccessService, resolver);
-        ordered.verify(formAccessService).canSubmitData(
-            user,
-            assignment,
-            "formUid0001");
+        var ordered = inOrder(eventReader, resolver);
+        ordered.verify(eventReader).readAssignments(
+            eq("user0000001"),
+            anyCollection()
+        );
         ordered.verify(resolver).resolve(
             submission,
             assignment,
             template,
             request.getReferenceDefinitions());
+        verify(formAccessService, never()).canSubmitData(any(), any(), any());
         assertEquals("team0000001", submission.getTeam());
         assertEquals("TEAM-1", submission.getTeamCode());
         assertEquals("orgUnit0001", submission.getOrgUnit());
@@ -212,12 +239,14 @@ class SubmissionUploadServiceTest {
         stubContext(submission);
         when(user.isSuper()).thenReturn(false);
         when(user.getUserTeamsUIDs()).thenReturn(Set.of("otherTeam01"));
+        stubNoEventGrants();
 
-        assertThrows(
+        IllegalQueryException failure = assertThrows(
             IllegalQueryException.class,
             () -> withCurrentUser(
                 () -> service.upsertAll(List.of(request))));
 
+        assertEquals(ErrorCode.E4114, failure.getErrorCode());
         verify(formAccessService, never()).canSubmitData(any(), any(), any());
         verify(resolver, never()).resolve(any(), any(), any(), any());
         verify(submissionService, never()).upsertAll(any(), any());
@@ -227,11 +256,14 @@ class SubmissionUploadServiceTest {
     void earlierAuthorizationFailureWinsBeforePreparingLaterRequests() {
         DataSubmissionUploadV1Dto deniedRequest = request("firstSub01");
         DataSubmissionUploadV1Dto laterRequest = request("secondSub1");
+        laterRequest.setAssignment(null);
+        laterRequest.setFormVersion(null);
         DataSubmission denied = submission(deniedRequest);
         when(mapper.toEntity(deniedRequest)).thenReturn(denied);
         stubContext(denied);
         when(user.isSuper()).thenReturn(false);
         when(user.getUserTeamsUIDs()).thenReturn(Set.of("otherTeam01"));
+        stubNoEventGrants();
 
         IllegalQueryException failure = assertThrows(
             IllegalQueryException.class,
@@ -240,13 +272,139 @@ class SubmissionUploadServiceTest {
 
         assertEquals(ErrorCode.E4114, failure.getErrorCode());
         verify(mapper, never()).toEntity(laterRequest);
-        verify(captureShadow).compareVersionedUploads(
-            eq(user),
-            argThat(uploads ->
-                uploads.size() == 1
-                    && !uploads.get(0).baselineAccepted()
-            )
+        verify(eventReader).readAssignments(
+            eq("user0000001"),
+            anyCollection()
         );
+        verify(resolver, never()).resolve(any(), any(), any(), any());
+        verify(submissionService, never()).upsertAll(any(), any());
+    }
+
+    @Test
+    void fieldUserBulkReadsEventsOnceForSharedAssignment() {
+        DataSubmissionUploadV1Dto firstRequest = request("firstSub01");
+        DataSubmissionUploadV1Dto secondRequest = request("secondSub1");
+        DataSubmission first = submission(firstRequest);
+        DataSubmission second = submission(secondRequest);
+        when(mapper.toEntity(firstRequest)).thenReturn(first);
+        when(mapper.toEntity(secondRequest)).thenReturn(second);
+        stubContext(first);
+        stubContext(second);
+        when(user.isSuper()).thenReturn(false);
+        stubActiveEvent();
+        doAnswer(invocation -> {
+            EntitySaveSummaryVM summary = invocation.getArgument(1);
+            summary.getCreated().addAll(
+                List.of("firstSub01", "secondSub1")
+            );
+            return null;
+        }).when(submissionService).upsertAll(any(), any());
+
+        EntitySaveSummaryVM result = withCurrentUser(() ->
+            service.upsertAll(List.of(firstRequest, secondRequest))
+        );
+
+        assertEquals(
+            List.of("firstSub01", "secondSub1"),
+            result.getCreated()
+        );
+        verify(eventReader, times(1)).readAssignments(
+            eq("user0000001"),
+            anyCollection()
+        );
+        verify(submissionService).upsertAll(
+            eq(List.of(first, second)),
+            any(EntitySaveSummaryVM.class)
+        );
+    }
+
+    @Test
+    void activeAuthorizationPreservesWholeJsonRepeatPreparation() {
+        DataSubmissionUploadV1Dto request = request("firstSub01");
+        DataSubmission submission = submission(request);
+        var formData = objectMapper.createObjectNode();
+        formData.put("answer", "preserved");
+        formData.putArray("visits")
+            .addObject()
+            .put("value", "first");
+        submission.setFormData(formData);
+        FormSectionConf repeat = new FormSectionConf();
+        repeat.setRepeatable(true);
+        when(templateContext.getElementsByPath())
+            .thenReturn(Map.of("visits", repeat));
+        when(mapper.toEntity(request)).thenReturn(submission);
+        stubContext(submission);
+        when(user.isSuper()).thenReturn(false);
+        stubActiveEvent();
+
+        withCurrentUser(() -> service.upsertAll(List.of(request)));
+
+        assertEquals(
+            "preserved",
+            submission.getFormData().path("answer").asText()
+        );
+        var repeatRow = submission.getFormData()
+            .path("visits")
+            .path(0);
+        assertEquals("first", repeatRow.path("value").asText());
+        assertTrue(repeatRow.path("_id").isTextual());
+        assertEquals("firstSub01", repeatRow.path("_parentId").asText());
+        assertEquals(
+            "firstSub01",
+            repeatRow.path("_submissionUid").asText()
+        );
+        verify(resolver).resolve(
+            submission,
+            assignment,
+            template,
+            request.getReferenceDefinitions()
+        );
+        verify(submissionService).upsertAll(
+            eq(List.of(submission)),
+            any(EntitySaveSummaryVM.class)
+        );
+    }
+
+    @Test
+    void unavailableAuthorityStopsBeforeReferenceAndPersistence() {
+        DataSubmissionUploadV1Dto request = request("firstSub01");
+        DataSubmission submission = submission(request);
+        when(mapper.toEntity(request)).thenReturn(submission);
+        stubContext(submission);
+        when(user.isSuper()).thenReturn(false);
+        when(eventReader.readAssignments(
+            eq("user0000001"),
+            anyCollection()
+        )).thenReturn(AssignmentCaptureEventSnapshot.unavailable());
+
+        assertThrows(
+            AssignmentCaptureAuthorityUnavailableException.class,
+            () -> withCurrentUser(
+                () -> service.upsertAll(List.of(request)))
+        );
+
+        verify(resolver, never()).resolve(any(), any(), any(), any());
+        verify(submissionService, never()).upsertAll(any(), any());
+    }
+
+    @Test
+    void eventReadFailureStopsBeforeReferenceAndPersistence() {
+        DataSubmissionUploadV1Dto request = request("firstSub01");
+        DataSubmission submission = submission(request);
+        when(mapper.toEntity(request)).thenReturn(submission);
+        stubContext(submission);
+        when(user.isSuper()).thenReturn(false);
+        when(eventReader.readAssignments(
+            eq("user0000001"),
+            anyCollection()
+        )).thenThrow(new IllegalStateException("event store unavailable"));
+
+        assertThrows(
+            AssignmentCaptureAuthorityUnavailableException.class,
+            () -> withCurrentUser(
+                () -> service.upsertAll(List.of(request)))
+        );
+
         verify(resolver, never()).resolve(any(), any(), any(), any());
         verify(submissionService, never()).upsertAll(any(), any());
     }
@@ -325,18 +483,51 @@ class SubmissionUploadServiceTest {
             .thenReturn(templateContext);
     }
 
-    private void withCurrentUser(Runnable operation) {
+    private void stubActiveEvent() {
+        AssignmentCaptureEventGrant grant = new AssignmentCaptureEventGrant(
+            assignment.getUid(),
+            AssignmentShadowIdentities.actorId("user0000001"),
+            0,
+            assignment.getActivity().getUid(),
+            AssignmentShadowIdentities.orgUnitId(
+                assignment.getOrgUnit().getUid()
+            ),
+            assignment.getOrgUnit().getUid(),
+            List.of("formUid0001"),
+            AssignmentLifecycleState.ACTIVE
+        );
+        when(eventReader.readAssignments(
+            eq("user0000001"),
+            anyCollection()
+        )).thenReturn(AssignmentCaptureEventSnapshot.available(
+            AssignmentShadowIdentities.actorId("user0000001"),
+            List.of(grant)
+        ));
+    }
+
+    private void stubNoEventGrants() {
+        when(eventReader.readAssignments(
+            eq("user0000001"),
+            anyCollection()
+        )).thenReturn(AssignmentCaptureEventSnapshot.available(
+            AssignmentShadowIdentities.actorId("user0000001"),
+            List.of()
+        ));
+    }
+
+    private <T> T withCurrentUser(Supplier<T> operation) {
         try (MockedStatic<SecurityUtils> security =
                  org.mockito.Mockito.mockStatic(SecurityUtils.class)) {
             security.when(SecurityUtils::getCurrentUserDetailsOrThrow)
                 .thenReturn(user);
-            operation.run();
+            return operation.get();
         }
     }
 
     private DataSubmissionUploadV1Dto request(String uid) {
         DataSubmissionUploadV1Dto request = new DataSubmissionUploadV1Dto();
         request.setUid(uid);
+        request.setAssignment("assignment1");
         request.setReferenceDefinitions(List.of());
         return request;
     }

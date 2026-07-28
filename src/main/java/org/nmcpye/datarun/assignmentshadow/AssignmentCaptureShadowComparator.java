@@ -27,7 +27,6 @@ import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureComparisonCat
 import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureComparisonCategory.UNEXPLAINED_EVENT_SCOPE;
 import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureEventSnapshot.Status.AVAILABLE;
 import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowResult.ACTIVE_GRANT;
-import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowResult.ENDED_RETIRED_ASSIGNMENT;
 import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowResult.NO_GRANT;
 import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowResult.REVOKED_HISTORY;
 
@@ -210,8 +209,7 @@ public class AssignmentCaptureShadowComparator {
                     user,
                     assignment,
                     List.of(formUid)
-                ),
-                Optional.empty()
+                )
             );
             results.add(result);
             report.add(
@@ -222,97 +220,6 @@ public class AssignmentCaptureShadowComparator {
         }
         report.shadowResults(results);
         return finish(report, forms.size(), activeGrants(shadow).size());
-    }
-
-    public AssignmentCaptureComparisonReport compareVersionedUploads(
-        CurrentUserDetails user,
-        List<VersionedUploadComparison> uploads
-    ) {
-        AssignmentCaptureSurface surface =
-            AssignmentCaptureSurface.VERSIONED_UPLOAD;
-        return compareSafely(
-            surface,
-            uploads.size(),
-            unavailableResults(uploads.size()),
-            () -> compareVersionedUploadsInternal(user, uploads)
-        );
-    }
-
-    private AssignmentCaptureComparisonReport compareVersionedUploadsInternal(
-        CurrentUserDetails user,
-        List<VersionedUploadComparison> uploads
-    ) {
-        AssignmentCaptureSurface surface =
-            AssignmentCaptureSurface.VERSIONED_UPLOAD;
-        if (excludedAdministrator(user)) {
-            return AssignmentCaptureComparisonReport.skipped(surface);
-        }
-
-        Set<String> assignmentUids = uploads.stream()
-            .map(upload -> upload.assignment().getUid())
-            .collect(Collectors.toCollection(LinkedHashSet::new));
-        AssignmentCaptureEventSnapshot shadow = readAssignments(
-            user,
-            assignmentUids
-        );
-        if (unavailable(shadow)) {
-            return unavailable(
-                surface,
-                Math.max(1, uploads.size()),
-                unavailableResults(uploads.size())
-            );
-        }
-
-        ReportBuilder report = new ReportBuilder(surface);
-        List<AssignmentCaptureShadowResult> results = new ArrayList<>();
-        for (VersionedUploadComparison upload : uploads) {
-            Assignment assignment = upload.assignment();
-            Optional<AssignmentCaptureScope> retiredScope =
-                Boolean.TRUE.equals(assignment.getDeleted())
-                    ? baseline.deletionTolerantScope(user, assignment)
-                    : Optional.empty();
-            AssignmentCaptureShadowResult result = classify(
-                shadow,
-                assignment,
-                upload.formUid(),
-                baseline.structuralScope(
-                    user,
-                    assignment,
-                    List.of(upload.formUid())
-                ),
-                retiredScope
-            );
-            results.add(result);
-            if (upload.baselineAccepted()) {
-                if (Boolean.TRUE.equals(assignment.getDeleted())) {
-                    report.add(
-                        result == ENDED_RETIRED_ASSIGNMENT
-                            ? EXACT
-                            : result == ACTIVE_GRANT
-                                ? UNEXPLAINED_EVENT_SCOPE
-                                : UNEXPLAINED_BASELINE_SCOPE
-                    );
-                } else {
-                    report.add(
-                        result == ACTIVE_GRANT
-                            ? EXACT
-                            : UNEXPLAINED_BASELINE_SCOPE
-                    );
-                }
-            } else {
-                report.add(
-                    result == ACTIVE_GRANT
-                        ? UNEXPLAINED_EVENT_SCOPE
-                        : EXACT
-                );
-            }
-        }
-        report.shadowResults(results);
-        return finish(
-            report,
-            uploads.stream().filter(VersionedUploadComparison::baselineAccepted).count(),
-            activeGrants(shadow).size()
-        );
     }
 
     private AssignmentCaptureComparisonReport compareAssignmentScopes(
@@ -382,8 +289,7 @@ public class AssignmentCaptureShadowComparator {
         AssignmentCaptureEventSnapshot shadow,
         Assignment assignment,
         String formUid,
-        Optional<AssignmentCaptureScope> structuralScope,
-        Optional<AssignmentCaptureScope> retiredScope
+        Optional<AssignmentCaptureScope> structuralScope
     ) {
         List<AssignmentCaptureEventGrant> history = shadow.grants().stream()
             .filter(grant -> grant.baselineAssignmentUid().equals(
@@ -393,28 +299,10 @@ public class AssignmentCaptureShadowComparator {
         if (structuralScope.isPresent()
             && history.stream().anyMatch(grant ->
                 grant.lifecycleState() == AssignmentLifecycleState.ACTIVE
-                    && matches(grant, structuralScope.get(), formUid))) {
+                    && grant.matches(structuralScope.get(), formUid))) {
             return ACTIVE_GRANT;
         }
-        if (retiredScope.isPresent()
-            && history.stream().anyMatch(grant ->
-                grant.lifecycleState() == AssignmentLifecycleState.ENDED
-                    && matches(grant, retiredScope.get(), formUid))) {
-            return ENDED_RETIRED_ASSIGNMENT;
-        }
         return history.isEmpty() ? NO_GRANT : REVOKED_HISTORY;
-    }
-
-    private boolean matches(
-        AssignmentCaptureEventGrant grant,
-        AssignmentCaptureScope scope,
-        String formUid
-    ) {
-        return grant.baselineAssignmentUid().equals(scope.assignmentUid())
-            && grant.targetActorId().equals(scope.targetActorId())
-            && grant.activityUid().equals(scope.activityUid())
-            && grant.orgUnitId().equals(scope.orgUnitId())
-            && grant.formUids().contains(formUid);
     }
 
     private AssignmentCaptureEventSnapshot readAll(CurrentUserDetails user) {
@@ -558,13 +446,6 @@ public class AssignmentCaptureShadowComparator {
             );
         }
         return result;
-    }
-
-    public record VersionedUploadComparison(
-        Assignment assignment,
-        String formUid,
-        boolean baselineAccepted
-    ) {
     }
 
     private static final class ReportBuilder {

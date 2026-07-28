@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.nmcpye.datarun.common.enumeration.FormPermission;
-import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
@@ -17,7 +15,6 @@ import org.nmcpye.datarun.userdetail.UserFormAccess;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -34,9 +31,6 @@ import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureComparisonCat
 import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureComparisonCategory.UNEXPLAINED_BASELINE_SCOPE;
 import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureComparisonCategory.UNEXPLAINED_EVENT_SCOPE;
 import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowResult.ACTIVE_GRANT;
-import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowResult.ENDED_RETIRED_ASSIGNMENT;
-import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowResult.NO_GRANT;
-import static org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowResult.REVOKED_HISTORY;
 
 class AssignmentCaptureShadowComparatorTest {
 
@@ -66,7 +60,7 @@ class AssignmentCaptureShadowComparatorTest {
         BaselineAssignmentCaptureAdapter baseline =
             new BaselineAssignmentCaptureAdapter(
                 new CanonicalCaptureFormResolver(new ObjectMapper()),
-                mock(AssignmentFormAccessService.class),
+                new AssignmentCaptureScopeFactory(),
                 Clock.fixed(
                     Instant.parse("2026-07-28T12:00:00Z"),
                     ZoneOffset.UTC
@@ -238,160 +232,7 @@ class AssignmentCaptureShadowComparatorTest {
     }
 
     @Test
-    void bulkUploadReadsOnceAndDistinguishesRetiredFromRevokedHistory() {
-        Assignment retired = assignment(
-            "Asg00000002",
-            "Org00000002",
-            Set.of(FORM_UID_2)
-        );
-        retired.setDeleted(true);
-        Assignment revoked = assignment(
-            "Asg00000003",
-            "Org00000003",
-            Set.of(FORM_UID_1)
-        );
-        when(eventReader.readAssignments(eq(USER_UID), anyCollection()))
-            .thenReturn(snapshot(
-                grant(
-                    active,
-                    AssignmentLifecycleState.ACTIVE,
-                    0,
-                    List.of(FORM_UID_1)
-                ),
-                grant(
-                    retired,
-                    AssignmentLifecycleState.ENDED,
-                    0,
-                    List.of(FORM_UID_2)
-                ),
-                grant(
-                    revoked,
-                    AssignmentLifecycleState.ENDED,
-                    0,
-                    List.of(FORM_UID_2)
-                )
-            ));
-
-        AssignmentCaptureComparisonReport report =
-            comparator.compareVersionedUploads(
-                user,
-                List.of(
-                    new AssignmentCaptureShadowComparator.VersionedUploadComparison(
-                        active,
-                        FORM_UID_1,
-                        true
-                    ),
-                    new AssignmentCaptureShadowComparator.VersionedUploadComparison(
-                        retired,
-                        FORM_UID_2,
-                        true
-                    ),
-                    new AssignmentCaptureShadowComparator.VersionedUploadComparison(
-                        revoked,
-                        FORM_UID_1,
-                        false
-                    )
-                )
-            );
-
-        assertThat(report.shadowResults()).containsExactly(
-            ACTIVE_GRANT,
-            ENDED_RETIRED_ASSIGNMENT,
-            REVOKED_HISTORY
-        );
-        assertThat(report.count(EXACT)).isEqualTo(3);
-        ArgumentCaptor<Collection<String>> assignments =
-            ArgumentCaptor.forClass(Collection.class);
-        verify(eventReader).readAssignments(
-            eq(USER_UID),
-            assignments.capture()
-        );
-        assertThat(assignments.getValue()).containsExactlyInAnyOrder(
-            active.getUid(),
-            retired.getUid(),
-            revoked.getUid()
-        );
-    }
-
-    @Test
-    void activeGrantNeverOverridesBaselineUploadDenial() {
-        when(eventReader.readAssignments(eq(USER_UID), anyCollection()))
-            .thenReturn(snapshot(grant(
-                active,
-                AssignmentLifecycleState.ACTIVE,
-                0,
-                List.of(FORM_UID_1)
-            )));
-
-        AssignmentCaptureComparisonReport report =
-            comparator.compareVersionedUploads(
-                user,
-                List.of(
-                    new AssignmentCaptureShadowComparator.VersionedUploadComparison(
-                        active,
-                        FORM_UID_1,
-                        false
-                    )
-                )
-            );
-
-        assertThat(report.shadowResults()).containsExactly(ACTIVE_GRANT);
-        assertThat(report.count(UNEXPLAINED_EVENT_SCOPE)).isEqualTo(1);
-    }
-
-    @Test
-    void activeHistoryWithChangedScopeRemainsADeniedExactResult() {
-        Assignment previousScope = assignment(
-            active.getUid(),
-            "Org00000009",
-            Set.of(FORM_UID_1)
-        );
-        when(eventReader.readAssignments(eq(USER_UID), anyCollection()))
-            .thenReturn(snapshot(grant(
-                previousScope,
-                AssignmentLifecycleState.ACTIVE,
-                0,
-                List.of(FORM_UID_1)
-            )));
-
-        AssignmentCaptureComparisonReport report =
-            comparator.compareVersionedUploads(
-                user,
-                List.of(
-                    new AssignmentCaptureShadowComparator.VersionedUploadComparison(
-                        active,
-                        FORM_UID_1,
-                        false
-                    )
-                )
-            );
-
-        assertThat(report.shadowResults()).containsExactly(REVOKED_HISTORY);
-        assertThat(report.count(EXACT)).isEqualTo(1);
-        assertThat(report.count(UNEXPLAINED_EVENT_SCOPE)).isZero();
-    }
-
-    @Test
-    void unavailableShadowAndAdministratorsNeverAffectBaseline() {
-        when(eventReader.readAssignments(eq(USER_UID), anyCollection()))
-            .thenReturn(AssignmentCaptureEventSnapshot.unavailable());
-
-        AssignmentCaptureComparisonReport unavailable =
-            comparator.compareVersionedUploads(
-                user,
-                List.of(
-                    new AssignmentCaptureShadowComparator.VersionedUploadComparison(
-                        active,
-                        FORM_UID_1,
-                        true
-                    )
-                )
-            );
-
-        assertThat(unavailable.shadowResults())
-            .containsExactly(AssignmentCaptureShadowResult.SHADOW_UNAVAILABLE);
-        assertThat(unavailable.count(SHADOW_UNAVAILABLE)).isEqualTo(1);
-
+    void administratorsAreExcludedFromReadSurfaceComparison() {
         CurrentUserDetails administrator = mock(CurrentUserDetails.class);
         when(administrator.isSuper()).thenReturn(true);
         AssignmentCaptureComparisonReport skipped =
@@ -432,27 +273,6 @@ class AssignmentCaptureShadowComparatorTest {
             );
 
         assertThat(report.count(SHADOW_UNAVAILABLE)).isEqualTo(1);
-    }
-
-    @Test
-    void absentHistoryClassifiesAsNoGrant() {
-        when(eventReader.readAssignments(eq(USER_UID), anyCollection()))
-            .thenReturn(snapshot());
-
-        AssignmentCaptureComparisonReport report =
-            comparator.compareVersionedUploads(
-                user,
-                List.of(
-                    new AssignmentCaptureShadowComparator.VersionedUploadComparison(
-                        active,
-                        FORM_UID_1,
-                        false
-                    )
-                )
-            );
-
-        assertThat(report.shadowResults()).containsExactly(NO_GRANT);
-        assertThat(report.count(EXACT)).isEqualTo(1);
     }
 
     private AssignmentCaptureEventSnapshot snapshot(

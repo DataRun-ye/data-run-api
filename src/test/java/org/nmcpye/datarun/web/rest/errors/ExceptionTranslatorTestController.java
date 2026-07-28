@@ -2,6 +2,7 @@ package org.nmcpye.datarun.web.rest.errors;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureAuthorityUnavailableException;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
@@ -44,6 +45,11 @@ public class ExceptionTranslatorTestController {
     @GetMapping("/internal-server-error")
     public void internalServerError() {
         throw new RuntimeException();
+    }
+
+    @GetMapping("/assignment-capture-authority-unavailable")
+    public void assignmentCaptureAuthorityUnavailable() {
+        throw new AssignmentCaptureAuthorityUnavailableException();
     }
 
     public static class TestDTO {
