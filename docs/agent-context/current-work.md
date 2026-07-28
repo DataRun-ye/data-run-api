@@ -7,9 +7,9 @@ or deployment authority.
 
 ## Now
 
-- Review and accept `initial-event-transition-strategy.md`. This is an
-  architect task only. Do not implement event storage, speculative platform
-  contracts, or future submission lifecycle behavior during this review.
+- Architect review and acceptance of
+  `initial-event-transition-strategy.md`. Implementation begins when the
+  accepted current blueprint replaces this review item.
 
 Reference activation remains parked in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while
@@ -21,11 +21,11 @@ explicitly confirms them.
 
 ## Next
 
-- Implement the assignment-shadow foundation from the accepted transition
-  strategy: immutable bootstrap facts, DataRun Baseline identity links, a
-  current actor-role-scope projection, and an equivalence report. The
-  baseline remains authoritative and no released route or authorization
-  decision changes.
+- Correct baseline assignment eligibility before event shadowing:
+  organization-unit synchronization must exclude soft-deleted assignments,
+  while the existing upload acceptance for retired assignment UIDs remains
+  unchanged and is characterized separately. Then implement the
+  assignment-shadow foundation from the accepted transition strategy.
 - Close the named access compatibility exits after their endpoint/client
   decisions: inherited-route gating, the four generic group/set filters,
   duplicated mobile `formPermissions`, `/api/v1` profile legacy fields,
