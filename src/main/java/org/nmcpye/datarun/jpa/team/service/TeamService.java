@@ -18,5 +18,4 @@ public interface TeamService
 
     Optional<Team> partialUpdate(Team team);
 
-    void runFormPermissionsMigration();
 }

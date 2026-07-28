@@ -48,6 +48,79 @@ final class AssignmentShadowComparison {
     }
 
     AssignmentShadowBootstrapReport compare(AssignmentShadowBootstrapMetrics metrics) {
+        return compare(metrics, true);
+    }
+
+    AssignmentShadowBootstrapReport compareCurrent(AssignmentShadowBootstrapMetrics metrics) {
+        requireCurrentStreamParity();
+        return compare(metrics, false);
+    }
+
+    private void requireCurrentStreamParity() {
+        long streamMismatches = count("""
+            WITH desired AS (
+                SELECT assignment_uid, user_uid, activity_uid, org_unit_uid, form_uids
+                FROM assignment_shadow_bootstrap_desired
+                WHERE lifecycle_state = 'ACTIVE'
+            ), actual AS (
+                SELECT
+                    identity.baseline_assignment_uid AS assignment_uid,
+                    actor.baseline_user_uid AS user_uid,
+                    role.activity_uid,
+                    org_unit.baseline_org_unit_uid AS org_unit_uid,
+                    role.form_uids
+                FROM assignment_identity_link identity
+                JOIN assignment_grant_projection grant_projection
+                  ON grant_projection.assignment_id = identity.assignment_id
+                 AND grant_projection.lifecycle_state = 'ACTIVE'
+                JOIN actor_identity_link actor
+                  ON actor.actor_id = identity.target_actor_id
+                JOIN org_unit_identity_link org_unit
+                  ON org_unit.org_unit_id = grant_projection.org_unit_id
+                JOIN assignment_role_definition role
+                  ON role.role_key = grant_projection.role_key
+            )
+            SELECT count(*)
+            FROM (
+                SELECT *
+                FROM (
+                    SELECT * FROM desired
+                    EXCEPT
+                    SELECT * FROM actual
+                ) desired_only
+                UNION ALL
+                SELECT *
+                FROM (
+                    SELECT * FROM actual
+                    EXCEPT
+                    SELECT * FROM desired
+                ) actual_only
+            ) mismatch
+            """);
+        long duplicateActiveStreams = count("""
+            SELECT count(*)
+            FROM (
+                SELECT identity.baseline_assignment_uid, identity.target_actor_id
+                FROM assignment_identity_link identity
+                JOIN assignment_grant_projection grant_projection
+                  ON grant_projection.assignment_id = identity.assignment_id
+                 AND grant_projection.lifecycle_state = 'ACTIVE'
+                GROUP BY identity.baseline_assignment_uid, identity.target_actor_id
+                HAVING count(*) > 1
+            ) duplicate_stream
+            """);
+        if (streamMismatches != 0 || duplicateActiveStreams != 0) {
+            throw new AssignmentShadowBootstrapConflictException(
+                "Current assignment stream comparison failed: mismatches=" + streamMismatches
+                    + ", duplicateActiveStreams=" + duplicateActiveStreams
+            );
+        }
+    }
+
+    private AssignmentShadowBootstrapReport compare(
+        AssignmentShadowBootstrapMetrics metrics,
+        boolean verifyBootstrapRetiredGrants
+    ) {
         jdbc.execute(CREATE_BASELINE_TUPLES_SQL);
         jdbc.execute(CREATE_SHADOW_TUPLES_SQL);
 
@@ -82,7 +155,7 @@ final class AssignmentShadowComparison {
             "SELECT count(*) FROM assignment_grant_projection WHERE lifecycle_state = 'ACTIVE'"
         );
         long effectiveAccess = count("SELECT count(*) FROM assignment_access_projection");
-        long retiredGrantMismatches = count("""
+        long retiredGrantMismatches = verifyBootstrapRetiredGrants ? count("""
             SELECT count(*)
             FROM assignment_shadow_bootstrap_desired desired
             LEFT JOIN assignment_grant_projection actual
@@ -93,7 +166,7 @@ final class AssignmentShadowComparison {
              AND actual.lifecycle_state = 'ENDED'
             WHERE desired.lifecycle_state = 'ENDED'
               AND actual.assignment_id IS NULL
-            """);
+            """) : 0;
 
         return new AssignmentShadowBootstrapReport(
             baselineTupleCount,

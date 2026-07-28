@@ -10,6 +10,9 @@ import org.nmcpye.datarun.common.IdentifiableProperty;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
+import org.nmcpye.datarun.jpa.activity.Activity;
+import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.stereotype.Service;
@@ -42,6 +45,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
     @Override
     @SuppressWarnings("unchecked")
     public void save(JpaIdentifiableObject object) {
+        rejectAssignmentAuthorityBypass(object);
         JpaIdentifiableRepository<JpaIdentifiableObject> store = getIdentifiableObjectStore(
             HibernateProxyUtils.getRealClass(object));
         if (store != null) {
@@ -69,6 +73,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
     @Transactional
     @Override
     public void update(JpaIdentifiableObject object, CurrentUserDetails user) {
+        rejectAssignmentAuthorityBypass(object);
         JpaIdentifiableRepository<? super JpaIdentifiableObject> store = getIdentifiableObjectStore(object);
 
         if (store != null) {
@@ -97,6 +102,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
     @Transactional
     @Override
     public <T extends JpaIdentifiableObject> void updateNoAcl(T object) {
+        rejectAssignmentAuthorityBypass(object);
         JpaIdentifiableRepository<? super T> store = getIdentifiableObjectStore(object);
 
         if (store != null) {
@@ -113,7 +119,7 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
     @Transactional
     @Override
     public void delete(JpaIdentifiableObject object, CurrentUserDetails user) {
-
+        rejectAssignmentAuthorityBypass(object);
     }
 
     @Transactional(readOnly = true)
@@ -225,6 +231,15 @@ public class DefaultIdentifiableObjectManager implements IdentifiableObjectManag
         }
 
         return store.findFirstByCode(code).orElseThrow(() -> new IllegalQueryException(ErrorCode.E1113, type.getSimpleName(), code));
+    }
+
+    private void rejectAssignmentAuthorityBypass(JpaIdentifiableObject object) {
+        if (object instanceof Assignment || object instanceof Team || object instanceof Activity) {
+            throw new IllegalStateException(
+                object.getClass().getSimpleName()
+                    + " mutations must use AssignmentAuthorityCommandService"
+            );
+        }
     }
 
     @CheckForNull

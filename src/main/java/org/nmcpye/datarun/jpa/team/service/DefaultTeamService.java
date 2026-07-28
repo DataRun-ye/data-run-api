@@ -1,18 +1,13 @@
 package org.nmcpye.datarun.jpa.team.service;
 
-import jakarta.el.PropertyNotFoundException;
+import org.nmcpye.datarun.assignmentshadow.AssignmentAuthorityCommandService;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
-import org.nmcpye.datarun.jpa.activity.Activity;
-import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
 import org.nmcpye.datarun.jpa.common.DefaultJpaIdentifiableService;
-import org.nmcpye.datarun.jpa.migration.TeamFormPermissionsMigration;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
-import org.nmcpye.datarun.jpa.user.User;
-import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.slf4j.Logger;
@@ -24,11 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.nmcpye.datarun.jpa.team.repository.TeamSpecifications.getManagedSpecification;
 
@@ -40,67 +31,39 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
 
     final private TeamRepository repository;
 
-    final private UserRepository userRepository;
-    final private ActivityRepository activityRepository;
-    private final TeamFormPermissionsMigration formPermissionsMigration;
+    private final AssignmentAuthorityCommandService authorityCommands;
 
-    public DefaultTeamService(TeamRepository repository, UserRepository userRepository, ActivityRepository activityRepository, CacheManager cacheManager, UserAccessService userAccessService, TeamFormPermissionsMigration formPermissionsMigration) {
+    public DefaultTeamService(TeamRepository repository, CacheManager cacheManager,
+                              UserAccessService userAccessService,
+                              AssignmentAuthorityCommandService authorityCommands) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
-        this.userRepository = userRepository;
-        this.activityRepository = activityRepository;
-        this.formPermissionsMigration = formPermissionsMigration;
+        this.authorityCommands = authorityCommands;
     }
 
     @Override
     public Team saveWithRelations(Team team) {
-        Activity activity = null;
-
-        if (team.getActivity() != null) {
-            activity = findActivity(team.getActivity());
-        }
-
-        Set<Team> managedTeams = team.getManagedTeams();
-        if (!managedTeams.isEmpty()) {
-            Set<Team> teamsManaged = managedTeams.stream().map(this::findTeam).collect(Collectors.toSet());
-            team.setManagedTeams(teamsManaged);
-        }
-
-        team.setActivity(activity);
-
-        Set<String> usersUids = team.getUsers().stream().map(User::getId).collect(Collectors.toSet());
-        Set<User> users = new HashSet<>(userRepository.findAllById(usersUids));
-        team.setUsers(users);
-
-        return save(team);
+        return authorityCommands.saveTeam(team);
     }
 
-    private Activity findActivity(Activity activity) {
-        return Optional.ofNullable(activity.getId()).flatMap(activityRepository::findById)
-            .or(() -> Optional.ofNullable(activity.getUid())
-                .flatMap(activityRepository::findByUid)).orElseThrow(() -> {
-                log.error("Activity not found: " + activity.getUid());
-                return new IllegalQueryException(
-                    new ErrorMessage(ErrorCode.E1004,
-                        "Activity", activity.getUid()));
-            });
+    @Override
+    public Team save(Team team) {
+        return authorityCommands.saveTeam(team);
     }
 
-    private Team findTeam(Team team) {
-        return Optional.ofNullable(team.getUid()).flatMap(repository::findByUid).or(() -> Optional.ofNullable(team.getId()).flatMap(repository::findById)).or(() -> {
-            String code = team.getCode();
-            var activity = team.getActivity();
-            String activityUid;
-            if (activity != null) {
-                activityUid = activity.getUid();
-            } else {
-                activityUid = null;
-            }
-            return repository.findByCodeAndActivityUid(code, activityUid);
-        }).orElseThrow(() -> {
-            log.error("Team not found: " + team.getUid());
-            return new PropertyNotFoundException("Team not found: " + team);
-        });
+    @Override
+    public Team update(Team team) {
+        return authorityCommands.updateTeam(team);
+    }
+
+    @Override
+    public void delete(Team team) {
+        authorityCommands.deleteTeam(team);
+    }
+
+    @Override
+    public void deleteByUid(String uid) {
+        authorityCommands.deleteTeam(findByUid(uid).orElseThrow());
     }
 
 //    @Override
@@ -141,55 +104,7 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
     @Override
     public Optional<Team> partialUpdate(Team team) {
         log.debug("Request to partially update Team : {}", team);
-
-        return repository.findByUid(team.getUid()).or(() -> repository.findById(Objects.requireNonNull(team.getId()))).map(existingTeam -> {
-            if (!team.getUsers().isEmpty()) {
-                Set<String> usersLogins = team.getUsers().stream().map(User::getLogin).collect(Collectors.toSet());
-                Set<User> users = new HashSet<>(userRepository.findByLoginIn(usersLogins));
-
-                existingTeam.setUsers(users);
-            }
-
-            if (team.getActivity() != null) {
-                var activity = activityRepository.findByUid(team.getActivity().getUid()).or(() -> activityRepository.findById(team.getActivity().getId()));
-                existingTeam.setActivity(activity.get());
-            }
-
-            if (team.getUid() != null) {
-                existingTeam.setUid(team.getUid());
-            }
-            if (team.getCode() != null) {
-                existingTeam.setCode(team.getCode());
-            }
-            if (team.getName() != null) {
-                existingTeam.setName(team.getName());
-            }
-            if (team.getDescription() != null) {
-                existingTeam.setDescription(team.getDescription());
-            }
-            if (team.getDisabled() != null) {
-                existingTeam.setDisabled(team.getDisabled());
-            }
-            if (team.getCreatedBy() != null) {
-                existingTeam.setCreatedBy(team.getCreatedBy());
-            }
-            if (team.getCreatedDate() != null) {
-                existingTeam.setCreatedDate(team.getCreatedDate());
-            }
-            if (team.getLastModifiedBy() != null) {
-                existingTeam.setLastModifiedBy(team.getLastModifiedBy());
-            }
-            if (team.getLastModifiedDate() != null) {
-                existingTeam.setLastModifiedDate(team.getLastModifiedDate());
-            }
-
-            return existingTeam;
-        }).map(repository::save);
-    }
-
-    @Override
-    public void runFormPermissionsMigration() {
-        formPermissionsMigration.processInChunks();
+        return authorityCommands.partialUpdateTeam(team);
     }
 
 }

@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.jpa.activity.service;
 
+import org.nmcpye.datarun.assignmentshadow.AssignmentAuthorityCommandService;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
@@ -25,12 +26,40 @@ public class DefaultActivityService
     implements ActivityService {
 
     private final ActivityRepository repository;
+    private final AssignmentAuthorityCommandService authorityCommands;
 
 
     public DefaultActivityService(ActivityRepository repository, CacheManager cacheManager,
-                                  UserAccessService userAccessService) {
+                                  UserAccessService userAccessService,
+                                  AssignmentAuthorityCommandService authorityCommands) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
+        this.authorityCommands = authorityCommands;
+    }
+
+    @Override
+    public Activity saveWithRelations(Activity activity) {
+        return authorityCommands.saveActivity(activity);
+    }
+
+    @Override
+    public Activity save(Activity activity) {
+        return authorityCommands.saveActivity(activity);
+    }
+
+    @Override
+    public Activity update(Activity activity) {
+        return authorityCommands.updateActivity(activity);
+    }
+
+    @Override
+    public void delete(Activity activity) {
+        authorityCommands.deleteActivity(activity);
+    }
+
+    @Override
+    public void deleteByUid(String uid) {
+        authorityCommands.deleteActivity(findByUid(uid).orElseThrow());
     }
 
     @Override

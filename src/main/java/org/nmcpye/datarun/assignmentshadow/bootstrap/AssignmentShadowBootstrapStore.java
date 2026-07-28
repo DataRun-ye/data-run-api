@@ -193,6 +193,35 @@ final class AssignmentShadowBootstrapStore {
         verifyGrants();
     }
 
+    void measureCurrent(AssignmentShadowBootstrapMetrics metrics) {
+        metrics.actorAliases = existingOnly("""
+            SELECT count(DISTINCT user_uid)
+            FROM assignment_shadow_bootstrap_desired
+            """);
+        metrics.orgUnitAliases = existingOnly("""
+            SELECT count(DISTINCT org_unit_uid)
+            FROM assignment_shadow_bootstrap_desired
+            """);
+        metrics.identities = existingOnly(
+            "SELECT count(*) FROM assignment_shadow_bootstrap_desired"
+        );
+        metrics.events = metrics.identities;
+        metrics.activeGrants = existingOnly("""
+            SELECT count(*)
+            FROM assignment_shadow_bootstrap_desired
+            WHERE lifecycle_state = 'ACTIVE'
+            """);
+        metrics.endedGrants = existingOnly("""
+            SELECT count(*)
+            FROM assignment_shadow_bootstrap_desired
+            WHERE lifecycle_state = 'ENDED'
+            """);
+    }
+
+    private ItemCount existingOnly(String sql) {
+        return new ItemCount(0, count(sql));
+    }
+
     private ItemCount existingAndCreated(String tableName, String exactExistingSql) {
         long total = count("SELECT count(*) FROM " + tableName);
         long existing = count(exactExistingSql);

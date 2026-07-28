@@ -3,6 +3,7 @@ package org.nmcpye.datarun.web.rest.postgres.assignment;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
+import org.nmcpye.datarun.common.repository.UpdateAccessDeniedException;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentWithAccessDto;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
@@ -74,6 +75,9 @@ public class AssignmentResource
         @RequestParam(name = "forceUpdate", required = false, defaultValue = "false") boolean forceUpdate,
         @AuthenticationPrincipal CurrentUserDetails user) {
         requireResourceApiAccess(user);
+        if (!resourceApiAuthorization.canManage(user)) {
+            throw new UpdateAccessDeniedException("AccessDenied");
+        }
         log.debug("REST request to update orgUnit Paths");
 
         try {

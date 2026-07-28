@@ -1,24 +1,21 @@
 package org.nmcpye.datarun.assignmentshadow.bootstrap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.nmcpye.datarun.assignmentshadow.AssignmentRoleDefinition;
 import org.nmcpye.datarun.assignmentshadow.AssignmentRoleDefinitionPort;
-import org.nmcpye.datarun.common.enumeration.FormPermission;
+import org.nmcpye.datarun.assignmentshadow.AssignmentShadowIdentities;
+import org.nmcpye.datarun.assignmentshadow.CanonicalCaptureFormResolver;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @Component
@@ -63,7 +60,6 @@ final class AssignmentShadowBaselineSnapshot {
             FROM team_user
             JOIN app_user
                 ON app_user.id = team_user.user_id
-               AND app_user.activated = TRUE
         ) actor
             ON actor.team_id = team.id
         """;
@@ -146,15 +142,18 @@ final class AssignmentShadowBaselineSnapshot {
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
     private final AssignmentRoleDefinitionPort roleDefinitions;
+    private final CanonicalCaptureFormResolver captureForms;
 
     AssignmentShadowBaselineSnapshot(
         JdbcTemplate jdbc,
         ObjectMapper objectMapper,
-        AssignmentRoleDefinitionPort roleDefinitions
+        AssignmentRoleDefinitionPort roleDefinitions,
+        CanonicalCaptureFormResolver captureForms
     ) {
         this.jdbc = jdbc;
         this.objectMapper = objectMapper;
         this.roleDefinitions = roleDefinitions;
+        this.captureForms = captureForms;
     }
 
     void stage(AssignmentShadowBootstrapMetrics metrics) {
@@ -271,13 +270,12 @@ final class AssignmentShadowBaselineSnapshot {
             metrics.retiredRows++;
         }
 
-        UUID actorId = namespacedUuid("datarun-baseline/actor/" + source.userUid());
-        UUID orgUnitId = namespacedUuid("datarun-baseline/org-unit/" + source.orgUnitUid());
-        UUID assignmentId = namespacedUuid(
-            "datarun-baseline/assignment/" + source.assignmentUid()
-                + "/actor/" + source.userUid() + "/generation/0"
+        UUID actorId = AssignmentShadowIdentities.actorId(source.userUid());
+        UUID orgUnitId = AssignmentShadowIdentities.orgUnitId(source.orgUnitUid());
+        UUID assignmentId = AssignmentShadowIdentities.assignmentId(
+            source.assignmentUid(), source.userUid(), 0
         );
-        UUID eventId = namespacedUuid(
+        UUID eventId = AssignmentShadowIdentities.namespacedUuid(
             "datarun-baseline/event/assignment-observed/" + assignmentId
         );
         eligibleRows.add(new Object[]{
@@ -306,73 +304,7 @@ final class AssignmentShadowBaselineSnapshot {
     }
 
     private List<String> canonicalCaptureForms(String assignmentForms, String formPermissions) {
-        JsonNode assigned = readRequiredArray(assignmentForms, "assignment.forms");
-        Set<String> assignedFormUids = new LinkedHashSet<>();
-        for (JsonNode formUid : assigned) {
-            String value = requiredUidText(formUid, "assignment.forms entry");
-            assignedFormUids.add(value);
-        }
-
-        JsonNode permissionEntries = readRequiredArray(formPermissions, "team.form_permissions");
-        Set<String> capturePermissionFormUids = new LinkedHashSet<>();
-        for (JsonNode permissionEntry : permissionEntries) {
-            if (!permissionEntry.isObject()) {
-                throw new IllegalArgumentException("team.form_permissions entry is not an object");
-            }
-            String formUid = requiredUidText(permissionEntry.get("form"), "team permission form");
-            JsonNode permissions = permissionEntry.get("permissions");
-            if (permissions == null || !permissions.isArray()) {
-                throw new IllegalArgumentException("team permission permissions is not an array");
-            }
-            boolean grantsCapture = false;
-            for (JsonNode permission : permissions) {
-                if (!permission.isTextual()) {
-                    throw new IllegalArgumentException("team permission value is not text");
-                }
-                FormPermission parsed;
-                try {
-                    parsed = FormPermission.valueOf(permission.textValue());
-                } catch (IllegalArgumentException exception) {
-                    throw new IllegalArgumentException(
-                        "unknown team form permission " + permission.textValue(),
-                        exception
-                    );
-                }
-                grantsCapture = grantsCapture
-                    || parsed == FormPermission.ADD_SUBMISSIONS
-                    || parsed == FormPermission.EDIT_SUBMISSIONS;
-            }
-            if (grantsCapture) {
-                capturePermissionFormUids.add(formUid);
-            }
-        }
-
-        return assignedFormUids.stream()
-            .filter(capturePermissionFormUids::contains)
-            .sorted()
-            .toList();
-    }
-
-    private JsonNode readRequiredArray(String value, String fieldName) {
-        if (value == null) {
-            throw new IllegalArgumentException(fieldName + " is null");
-        }
-        try {
-            JsonNode parsed = objectMapper.readTree(value);
-            if (parsed == null || !parsed.isArray()) {
-                throw new IllegalArgumentException(fieldName + " is not an array");
-            }
-            return parsed;
-        } catch (JsonProcessingException exception) {
-            throw new IllegalArgumentException(fieldName + " is malformed", exception);
-        }
-    }
-
-    private String requiredUidText(JsonNode value, String fieldName) {
-        if (value == null || !value.isTextual() || !CodeGenerator.isValidUid(value.textValue())) {
-            throw new IllegalArgumentException(fieldName + " is not a valid UID");
-        }
-        return value.textValue();
+        return captureForms.resolve(assignmentForms, formPermissions);
     }
 
     private void requireUid(String fieldName, String value, List<String> errors) {
@@ -477,10 +409,7 @@ final class AssignmentShadowBaselineSnapshot {
     }
 
     private List<String> readFormUidList(String value) {
-        JsonNode formUids = readRequiredArray(value, "staged role form_uids");
-        List<String> values = new ArrayList<>(formUids.size());
-        formUids.forEach(formUid -> values.add(requiredUidText(formUid, "staged role form UID")));
-        return List.copyOf(values);
+        return captureForms.readCanonicalFormUidList(value, "staged role form_uids");
     }
 
     private String writeJson(Object value) {
@@ -492,10 +421,6 @@ final class AssignmentShadowBaselineSnapshot {
                 exception
             );
         }
-    }
-
-    private static UUID namespacedUuid(String value) {
-        return UUID.nameUUIDFromBytes(value.getBytes(StandardCharsets.UTF_8));
     }
 
     private record SourceRow(

@@ -6,6 +6,7 @@ import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -39,30 +40,40 @@ public class AssignmentMaintenanceService {
 
     private void processInChunks(boolean force) {
         int page = 0;
-        Page<Assignment> chunk;
-        do {
-            Pageable pg = PageRequest.of(page, CHUNK_SIZE);
-            chunk = force
+        while (true) {
+            Pageable pg = PageRequest.of(
+                force ? page : 0,
+                CHUNK_SIZE,
+                Sort.by("id").ascending()
+            );
+            Page<Assignment> chunk = force
                 ? repository.findAll(pg)
                 : repository.findAllByPathIsNull(pg);
-
-            if (!chunk.isEmpty()) {
-                // run each chunk in its own transaction to keep EM small
-                Page<Assignment> finalChunk = chunk;
-                new TransactionTemplate(txm).execute(status -> {
-                    for (Assignment ou : finalChunk) {
-                        // calling getter will recompute
-                        ou.setPath(ou.getPath());
-                        ou.setLevel(ou.getLevel());
-                    }
-                    repository.saveAll(finalChunk.getContent());
-                    // make sure we don’t accumulate managed state
-                    em.flush();
-                    em.clear();
-                    return null;
-                });
+            if (chunk.isEmpty()) {
+                return;
             }
-            page++;
-        } while (!chunk.isLast());
+            Page<Assignment> finalChunk = chunk;
+            new TransactionTemplate(txm).execute(status -> {
+                for (Assignment assignment : finalChunk) {
+                    String path = assignment.getPath();
+                    Integer hierarchyLevel = assignment.getHierarchyLevel();
+                    em.detach(assignment);
+                    repository.updateDerivedPath(
+                        assignment.getId(),
+                        path,
+                        hierarchyLevel
+                    );
+                }
+                em.flush();
+                em.clear();
+                return null;
+            });
+            if (force) {
+                if (chunk.isLast()) {
+                    return;
+                }
+                page++;
+            }
+        }
     }
 }

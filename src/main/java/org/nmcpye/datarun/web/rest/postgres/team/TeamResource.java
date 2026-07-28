@@ -1,10 +1,12 @@
 package org.nmcpye.datarun.web.rest.postgres.team;
 
 import jakarta.validation.constraints.NotNull;
+import org.nmcpye.datarun.common.repository.UpdateAccessDeniedException;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
 import org.nmcpye.datarun.jpa.team.service.TeamService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
@@ -17,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
@@ -79,11 +82,16 @@ public class TeamResource extends JpaBaseResource<Team> {
      * or with status {@code 500 (Internal Server Error)} if the team couldn't be updated.
      * @throws URISyntaxException if the Location URI syntax is incorrect.
      */
-    @PatchMapping(value = "/teams/{uid}", consumes = {"application/json", "application/merge-patch+json"})
+    @PatchMapping(value = {"/{uid}", "/teams/{uid}"}, consumes = {"application/json", "application/merge-patch+json"})
     public ResponseEntity<Team> partialUpdateTeam(
         @PathVariable(value = "uid", required = false) final String uid,
-        @NotNull @RequestBody Team team
+        @NotNull @RequestBody Team team,
+        @AuthenticationPrincipal CurrentUserDetails user
     ) throws URISyntaxException {
+        requireResourceApiAccess(user);
+        if (!resourceApiAuthorization.canManage(user)) {
+            throw new UpdateAccessDeniedException("AccessDenied");
+        }
         log.debug("REST request to partial update Team partially : {}, {}", uid, team);
         if (team.getUid() == null) {
             throw new BadRequestAlertException("Invalid uid", getName(), "idnull");
@@ -105,11 +113,4 @@ public class TeamResource extends JpaBaseResource<Team> {
         );
     }
 
-    @GetMapping("/migrate")
-    public ResponseEntity<String> updatePaths() throws Exception {
-        log.info("REST request to migrate team form permissions");
-        teamService.runFormPermissionsMigration();
-
-        return ResponseEntity.ok("Paths updated successfully");
-    }
 }
