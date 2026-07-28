@@ -96,6 +96,7 @@
     <include file="/config/liquibase/changelog/etl/20260211-events-drop-anchor-columns.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20260211-tall-canonical-drop-is-deleted-column.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/reference-entry/20260725-create-reference-entry.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/event-transition/20260728-assignment-shadow-persistence-foundation.xml" relativeToChangelogFile="false"/>
 
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

@@ -8,35 +8,33 @@ Status: ACCEPTED FOR IMPLEMENTATION
 
 ### Outcome
 
-Create the additive, append-only persistence boundary required for assignment
-event shadowing. This slice defines storage and tested persistence ports only;
-it does not bootstrap data, intercept assignment writes, change active reads,
-or expose a runtime endpoint.
+Create the smallest additive persistence boundary needed to shadow assignment
+lifecycle events and effective access. This slice defines storage and tested
+ports only. It does not bootstrap data, intercept writes, change active reads,
+or expose an endpoint, runner, schedule, or feature flag.
 
-This foundation is consumed by the next bootstrap/comparison slice on this
-branch and must not be deployed or merged to production on its own.
+This foundation is consumed by the next bootstrap/comparison slice and must
+not be deployed or merged to production alone.
 
-### Current Evidence
+### Evidence
 
-- `assignment` is the mutable production authority and has no lifecycle
-  sequence.
-- `analytics.events` is a mutable ETL projection of submission/repeat rows. It
-  is not an event journal and must not be reused.
-- `outbox` is submission/ETL-specific. `outbox_event` is inactive schema
-  residue. Neither owns command history.
-- `app_entity_audit_event` is asynchronous and cannot guarantee atomic append
-  or stream ordering.
-- PostgreSQL `uuid`, JSONB, `NamedParameterJdbcTemplate`, and application-side
-  UUID generation are established repository conventions.
+- Mutable `assignment`, direct `team_user` membership, team form permissions,
+  and organization-unit scope are the DataRun Baseline authorities.
+- `analytics.events` is a mutable ETL projection and is not an event journal.
+- Both outbox tables and asynchronous entity audit are unsuitable for
+  transactional assignment history.
+- The accepted assignment contract uses UUID actor, assignment, and geographic
+  scope identities. Current 11-character user and organization-unit UIDs
+  remain compatibility aliases.
 
 ### Storage Contract
 
-Add one Liquibase changeset at the end of `master.xml` with explicit rollback.
-Use these names so the new authority cannot be confused with ETL projections.
+Add one Liquibase changeset at the end of `master.xml`, with explicit rollback.
+All new tables use the public schema.
 
 #### `event_journal`
 
-Append-only server journal shared by the accepted assignment and capture
+Append-only journal shared only by the accepted assignment and capture
 transition lanes:
 
 - `journal_position BIGSERIAL` primary key;
@@ -46,138 +44,165 @@ transition lanes:
 - `activity_ref VARCHAR(11)` nullable;
 - `subject_type VARCHAR(32)` not null;
 - `subject_id UUID` not null;
-- `subject_version BIGINT` not null and greater than zero;
 - `actor_id VARCHAR(128)` not null;
 - `recorded_at TIMESTAMP WITH TIME ZONE` not null;
-- `payload JSONB` not null and constrained to a JSON object.
+- `payload JSONB` not null and constrained to an object.
 
-Require unique `(subject_type, subject_id, subject_version)`. Index
-`(subject_type, subject_id, journal_position)` and
-`(event_type, journal_position)`. Add a database trigger that rejects UPDATE
-and DELETE. Rollback drops the trigger/function and table. The journal append
-port must require the expected next subject version so concurrent lifecycle
-appends cannot both succeed.
+Index `(subject_type, subject_id, journal_position)` and
+`(event_type, journal_position)`.
 
-Do not add device IDs, device sequences, sync watermarks, review flags, future
-event types, or submission fields in this slice.
+These are the minimum immutable identity, classification, authorship, ordering,
+and payload fields needed by both accepted lanes. Do not add subject versions,
+device/sync fields, review fields, future event types, or submission columns.
+
+#### `actor_identity_link`
+
+Immutable alias between the DataRun Baseline user and event actor:
+
+- `actor_id UUID` primary key;
+- `baseline_user_uid VARCHAR(11)` unique and not null.
+
+Do not copy login, name, authority, team membership, or other mutable user
+properties.
+
+#### `org_unit_identity_link`
+
+Immutable alias between a DataRun Baseline organization unit and the UUID
+scope identity used by assignment events:
+
+- `org_unit_id UUID` primary key;
+- `baseline_org_unit_uid VARCHAR(11)` unique and not null.
+
+Do not copy names, codes, paths, parents, or hierarchy state.
 
 #### `assignment_role_definition`
 
-Immutable role definition derived later from one activity and one canonical
-capture-form set:
+Immutable role derived later from an activity and canonical capture-form set:
 
 - `role_key VARCHAR(128)` primary key;
 - `activity_uid VARCHAR(11)` not null;
-- `form_set_hash CHAR(64)` not null;
-- `form_uids JSONB` not null and constrained to an array;
-- `created_at TIMESTAMP WITH TIME ZONE` not null;
-- unique `(activity_uid, form_set_hash)`.
+- `form_uids JSONB` not null and constrained to an array.
 
-Do not foreign-key baseline UIDs. Historical facts must survive later baseline
-row contraction.
+The role resolver canonicalizes the form UID list and derives `role_key` from
+the activity and that list. It rejects an empty set. Require unique
+`(activity_uid, form_uids)` after canonicalization so the same role content
+cannot be stored under another key. Do not store the derivable hash or a
+second creation timestamp. Do not foreign-key baseline UIDs.
 
 #### `assignment_identity_link`
 
-Maps one baseline assignment row and direct actor to independently endable
-grant generations:
+Immutable mapping from one baseline assignment row and actor to an independently
+endable generation:
 
+- `assignment_id UUID` primary key;
 - `baseline_assignment_uid VARCHAR(11)` not null;
-- `target_actor_uid VARCHAR(11)` not null;
+- `target_actor_id UUID` not null and foreign-keyed to
+  `actor_identity_link`;
 - `generation INTEGER` not null and non-negative;
-- `assignment_id UUID` unique and not null;
-- `baseline_team_uid VARCHAR(11)` not null;
-- `predecessor_assignment_id UUID` nullable;
-- primary key `(baseline_assignment_uid, target_actor_uid, generation)`;
-- self foreign key from predecessor to `assignment_id`.
+- unique `(baseline_assignment_uid, target_actor_id, generation)`.
 
-No actor is invented and equivalent grants from different baseline assignment
-rows are not collapsed here.
+The prior generation is derivable and is not stored. Team remains baseline
+compatibility context; it is not duplicated into event identity, role, or
+scope. Equivalent grants from different baseline assignment rows remain
+distinct here.
 
 #### `assignment_grant_projection`
 
-Current state of each independently endable assignment stream:
+Replaceable current-state read model for one assignment stream:
 
-- `assignment_id UUID` primary key and foreign key to the identity link;
-- `source_event_id UUID` unique, not null, and foreign key to the journal;
-- `role_key VARCHAR(128)` not null and foreign key to the role definition;
-- `target_actor_uid VARCHAR(11)` not null;
-- `activity_uid VARCHAR(11)` not null;
-- `org_unit_uid VARCHAR(11)` not null;
-- `lifecycle_state VARCHAR(16)` constrained to `ACTIVE` or `ENDED`;
-- `valid_from TIMESTAMP WITH TIME ZONE` nullable;
-- `valid_to TIMESTAMP WITH TIME ZONE` nullable;
-- `updated_at TIMESTAMP WITH TIME ZONE` not null.
+- `assignment_id UUID` primary key and foreign-keyed to the identity link;
+- `source_event_id UUID` unique, not null, and foreign-keyed to the journal;
+- `role_key VARCHAR(128)` not null and foreign-keyed to the role definition;
+- `org_unit_id UUID` not null and foreign-keyed to
+  `org_unit_identity_link`;
+- `lifecycle_state VARCHAR(16)` constrained to `ACTIVE` or `ENDED`.
 
-Create `assignment_access_projection` as a view selecting distinct active
-`target_actor_uid`, `activity_uid`, `org_unit_uid`, and `role_key`. Deduplication
-belongs in this effective-access projection, not the identity link or journal.
+Create `assignment_access_projection` as a view joining identity, role, and
+grant rows and selecting distinct active `target_actor_id`, `activity_uid`,
+`org_unit_id`, and `role_key`. Deduplication belongs only in this effective
+access view. Index the identity link by `target_actor_id`, which is the active
+access lookup key.
+
+A grant update requires the caller's expected current `source_event_id`.
+Concurrent commands therefore cannot both advance the same projection; a
+losing transaction also rolls back its journal append.
+
+This table is never an independent source of truth. Before cutover, the
+DataRun Baseline remains authoritative. After cutover, the journal is
+authoritative. Only the assignment projector may advance this table from an
+already accepted journal event, and replay must be able to rebuild it exactly.
+There is no administrator CRUD or independent business mutation surface.
+
+One shared database trigger function rejects UPDATE and DELETE on
+`event_journal`, `actor_identity_link`, `assignment_role_definition`, and
+`assignment_identity_link`, plus `org_unit_identity_link`. The grant
+projection is the only mutable table.
 
 ### Persistence Ports
 
-Create small JDBC-backed ports under clear packages such as
-`org.nmcpye.datarun.eventjournal` and
-`org.nmcpye.datarun.assignmentshadow`:
+Create typed JDBC-backed ports under `eventjournal` and `assignmentshadow`:
 
-- append and read journal events;
-- insert/read immutable role definitions;
+- append/read journal events without a stream-version input;
+- insert/read immutable actor and organization-unit aliases;
+- resolve or insert canonical immutable role definitions;
 - insert/read identity generations;
-- insert/update/read grant projection state;
-- read the deduplicated active-access projection.
+- internally apply/read grant state from accepted journal events, with
+  expected-source-event concurrency;
+- read deduplicated active access.
 
-The journal port exposes no update or delete operation. Use typed Java records
-for inputs/results; do not expose JDBC maps or JPA entities. Duplicate event
-IDs, duplicate stream generations, and conflicting role definitions must fail
-rather than silently overwrite existing facts.
+Immutable ports expose no update/delete methods. Do not expose JDBC maps or JPA
+entities. Duplicate event IDs, aliases, generations, and conflicting role
+definitions fail instead of overwriting facts.
+
+Keep the grant write port package-owned by `assignmentshadow`; later command
+owners call a projector, not the projection store directly.
 
 ### Required Tests
 
-Add focused PostgreSQL integration tests proving:
+PostgreSQL integration tests prove:
 
 - Liquibase creates every table, constraint, index, trigger, and view;
-- a journal event round-trips with native UUID and JSONB values;
-- duplicate event IDs fail;
-- duplicate subject versions fail;
-- UPDATE and DELETE of a journal row fail;
+- native UUID/JSONB journal round-trip and duplicate event rejection;
+- direct UPDATE/DELETE rejection for every immutable table;
+- actor and organization-unit alias uniqueness;
 - transaction rollback removes an appended event;
 - independent baseline assignment/actor generations remain distinct;
-- duplicate effective active grants collapse only in
-  `assignment_access_projection`;
-- ended grants disappear from effective access while their identity, event,
-  and grant state remain stored;
-- conflicting role content cannot reuse an activity/form-set identity.
+- overlapping grants deduplicate only in the access view;
+- ending a grant preserves history but removes effective access;
+- conflicting role content cannot reuse a role identity;
+- a stale expected source event cannot advance a grant, and the same
+  transaction rolls back its journal append.
 
 ### Scope
 
-- one new Liquibase changeset under
+- one new changeset under
   `src/main/resources/config/liquibase/changelog/event-transition/`;
 - `src/main/resources/config/liquibase/master.xml`;
-- new persistence records/ports/implementations only under
-  `eventjournal` and `assignmentshadow` packages;
-- focused integration tests for those new owners.
+- new records, ports, and JDBC implementations only under `eventjournal` and
+  `assignmentshadow`;
+- focused integration tests for these owners.
 
 ### Production Boundary
 
-- Authority before and after: mutable baseline assignment/access services.
-- API and mobile payloads: unchanged.
-- Existing tables and data: unchanged; all schema is additive.
-- Shadow comparison: not active until the next slice populates these tables.
-- Activation: none in this slice.
-- Rollback: drop only the new view, trigger/function, and four new tables.
+- Active authority before and after: unchanged DataRun Baseline services.
+- API, mobile payloads, existing tables, and existing data: unchanged.
+- Shadow population and comparison: next slice.
+- Activation: none.
+- Rollback: drop only the new view, triggers/function, and six new tables.
 - Deployment: prohibited until bootstrap/comparison and production-clone
   migration evidence are complete.
 
 ### Excluded Work
 
-- Bootstrap, reconciliation, or production-clone data population.
+- Bootstrap or reconciliation.
 - Assignment command interception or dual writes.
-- Authorization reads or cutover.
-- Capture event persistence.
-- Administrator endpoints, schedules, startup runners, or feature flags.
-- Reuse or cleanup of analytics events, outbox, audit, or inert legacy tables.
+- Authorization or capture cutover.
+- Administrator endpoints, schedules, startup runners, or flags.
+- Analytics, outbox, audit, or legacy-table cleanup.
 
 ### Verification
 
-Run focused integration tests chosen for the new ports, then:
+Run focused integration tests, then:
 
 ```bash
 ./mvnw test
@@ -187,9 +212,9 @@ git diff --check
 
 ### Definition Of Done
 
-- The schema and ports implement exactly this contract.
-- Append-only and transaction behavior are proven against PostgreSQL.
+- The schema and ports contain only the properties above.
+- Immutability, concurrency, and rollback are proven against PostgreSQL.
 - No existing runtime owner reads or writes the new structures.
-- The full test/build gate passes, or unrelated baseline failures are reported
-  without expanding this slice.
-- No production deployment is performed.
+- Full gates pass, or an unrelated baseline failure is reported without
+  expanding the slice.
+- Nothing is deployed.

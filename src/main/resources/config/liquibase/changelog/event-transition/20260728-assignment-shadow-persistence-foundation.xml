@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260728-assignment-shadow-persistence-foundation" author="datarunapi">
+        <createTable tableName="event_journal">
+            <column name="journal_position" type="BIGSERIAL">
+                <constraints
+                    nullable="false"
+                    primaryKey="true"
+                    primaryKeyName="pk_event_journal"/>
+            </column>
+            <column name="event_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="event_type" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="shape_ref" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="activity_ref" type="VARCHAR(11)"/>
+            <column name="subject_type" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="subject_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="actor_id" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="recorded_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="event_journal"
+            columnNames="event_id"
+            constraintName="uq_event_journal_event_id"/>
+        <createIndex
+            tableName="event_journal"
+            indexName="idx_event_journal_subject_position">
+            <column name="subject_type"/>
+            <column name="subject_id"/>
+            <column name="journal_position"/>
+        </createIndex>
+        <createIndex
+            tableName="event_journal"
+            indexName="idx_event_journal_type_position">
+            <column name="event_type"/>
+            <column name="journal_position"/>
+        </createIndex>
+
+        <createTable tableName="actor_identity_link">
+            <column name="actor_id" type="UUID">
+                <constraints
+                    nullable="false"
+                    primaryKey="true"
+                    primaryKeyName="pk_actor_identity_link"/>
+            </column>
+            <column name="baseline_user_uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="actor_identity_link"
+            columnNames="baseline_user_uid"
+            constraintName="uq_actor_identity_baseline_user"/>
+
+        <createTable tableName="org_unit_identity_link">
+            <column name="org_unit_id" type="UUID">
+                <constraints
+                    nullable="false"
+                    primaryKey="true"
+                    primaryKeyName="pk_org_unit_identity_link"/>
+            </column>
+            <column name="baseline_org_unit_uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="org_unit_identity_link"
+            columnNames="baseline_org_unit_uid"
+            constraintName="uq_org_unit_identity_baseline_org_unit"/>
+
+        <createTable tableName="assignment_role_definition">
+            <column name="role_key" type="VARCHAR(128)">
+                <constraints
+                    nullable="false"
+                    primaryKey="true"
+                    primaryKeyName="pk_assignment_role_definition"/>
+            </column>
+            <column name="activity_uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="form_uids" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="assignment_role_definition"
+            columnNames="activity_uid, form_uids"
+            constraintName="uq_assignment_role_content"/>
+
+        <createTable tableName="assignment_identity_link">
+            <column name="assignment_id" type="UUID">
+                <constraints
+                    nullable="false"
+                    primaryKey="true"
+                    primaryKeyName="pk_assignment_identity_link"/>
+            </column>
+            <column name="baseline_assignment_uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="target_actor_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="generation" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="assignment_identity_link"
+            columnNames="baseline_assignment_uid, target_actor_id, generation"
+            constraintName="uq_assignment_identity_generation"/>
+        <addForeignKeyConstraint
+            baseTableName="assignment_identity_link"
+            baseColumnNames="target_actor_id"
+            referencedTableName="actor_identity_link"
+            referencedColumnNames="actor_id"
+            constraintName="fk_assignment_identity_actor"/>
+        <createIndex
+            tableName="assignment_identity_link"
+            indexName="idx_assignment_identity_target_actor">
+            <column name="target_actor_id"/>
+        </createIndex>
+
+        <createTable tableName="assignment_grant_projection">
+            <column name="assignment_id" type="UUID">
+                <constraints
+                    nullable="false"
+                    primaryKey="true"
+                    primaryKeyName="pk_assignment_grant_projection"/>
+            </column>
+            <column name="source_event_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_key" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="org_unit_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lifecycle_state" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="assignment_grant_projection"
+            columnNames="source_event_id"
+            constraintName="uq_assignment_grant_source_event"/>
+        <addForeignKeyConstraint
+            baseTableName="assignment_grant_projection"
+            baseColumnNames="assignment_id"
+            referencedTableName="assignment_identity_link"
+            referencedColumnNames="assignment_id"
+            constraintName="fk_assignment_grant_identity"/>
+        <addForeignKeyConstraint
+            baseTableName="assignment_grant_projection"
+            baseColumnNames="source_event_id"
+            referencedTableName="event_journal"
+            referencedColumnNames="event_id"
+            constraintName="fk_assignment_grant_source_event"/>
+        <addForeignKeyConstraint
+            baseTableName="assignment_grant_projection"
+            baseColumnNames="role_key"
+            referencedTableName="assignment_role_definition"
+            referencedColumnNames="role_key"
+            constraintName="fk_assignment_grant_role"/>
+        <addForeignKeyConstraint
+            baseTableName="assignment_grant_projection"
+            baseColumnNames="org_unit_id"
+            referencedTableName="org_unit_identity_link"
+            referencedColumnNames="org_unit_id"
+            constraintName="fk_assignment_grant_org_unit"/>
+
+        <sql dbms="postgresql" splitStatements="false"><![CDATA[
+            ALTER TABLE event_journal
+                ADD CONSTRAINT ck_event_journal_payload_object
+                CHECK (jsonb_typeof(payload) = 'object');
+
+            ALTER TABLE assignment_role_definition
+                ADD CONSTRAINT ck_assignment_role_form_uids_array
+                CHECK (jsonb_typeof(form_uids) = 'array');
+
+            ALTER TABLE assignment_identity_link
+                ADD CONSTRAINT ck_assignment_identity_generation
+                CHECK (generation >= 0);
+
+            ALTER TABLE assignment_grant_projection
+                ADD CONSTRAINT ck_assignment_grant_lifecycle_state
+                CHECK (lifecycle_state IN ('ACTIVE', 'ENDED'));
+
+            CREATE FUNCTION reject_immutable_table_mutation()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $function$
+            BEGIN
+                RAISE EXCEPTION '% is immutable', TG_TABLE_NAME;
+            END;
+            $function$;
+
+            CREATE TRIGGER trg_event_journal_immutable
+                BEFORE UPDATE OR DELETE ON event_journal
+                FOR EACH ROW
+                EXECUTE FUNCTION reject_immutable_table_mutation();
+
+            CREATE TRIGGER trg_actor_identity_link_immutable
+                BEFORE UPDATE OR DELETE ON actor_identity_link
+                FOR EACH ROW
+                EXECUTE FUNCTION reject_immutable_table_mutation();
+
+            CREATE TRIGGER trg_org_unit_identity_link_immutable
+                BEFORE UPDATE OR DELETE ON org_unit_identity_link
+                FOR EACH ROW
+                EXECUTE FUNCTION reject_immutable_table_mutation();
+
+            CREATE TRIGGER trg_assignment_role_definition_immutable
+                BEFORE UPDATE OR DELETE ON assignment_role_definition
+                FOR EACH ROW
+                EXECUTE FUNCTION reject_immutable_table_mutation();
+
+            CREATE TRIGGER trg_assignment_identity_link_immutable
+                BEFORE UPDATE OR DELETE ON assignment_identity_link
+                FOR EACH ROW
+                EXECUTE FUNCTION reject_immutable_table_mutation();
+
+            CREATE VIEW assignment_access_projection AS
+            SELECT DISTINCT
+                identity_link.target_actor_id,
+                role_definition.activity_uid,
+                grant_projection.org_unit_id,
+                grant_projection.role_key
+            FROM assignment_grant_projection grant_projection
+            JOIN assignment_identity_link identity_link
+                ON identity_link.assignment_id = grant_projection.assignment_id
+            JOIN assignment_role_definition role_definition
+                ON role_definition.role_key = grant_projection.role_key
+            WHERE grant_projection.lifecycle_state = 'ACTIVE';
+        ]]></sql>
+
+        <rollback>
+            <sql dbms="postgresql" splitStatements="false"><![CDATA[
+                DROP VIEW assignment_access_projection;
+                DROP TABLE assignment_grant_projection;
+                DROP TRIGGER trg_assignment_identity_link_immutable ON assignment_identity_link;
+                DROP TRIGGER trg_assignment_role_definition_immutable ON assignment_role_definition;
+                DROP TRIGGER trg_org_unit_identity_link_immutable ON org_unit_identity_link;
+                DROP TRIGGER trg_actor_identity_link_immutable ON actor_identity_link;
+                DROP TRIGGER trg_event_journal_immutable ON event_journal;
+                DROP FUNCTION reject_immutable_table_mutation();
+                DROP TABLE assignment_identity_link;
+                DROP TABLE assignment_role_definition;
+                DROP TABLE org_unit_identity_link;
+                DROP TABLE actor_identity_link;
+                DROP TABLE event_journal;
+            ]]></sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
