@@ -5,6 +5,9 @@ Updated: 2026-07-28
 Purpose: compact historical outcomes only. This file is not current runtime or
 deployment authority.
 
+- `d1b87dc9`: additive assignment-event persistence landed without changing
+  active reads or writes; PostgreSQL tests prove immutability, identity,
+  concurrency, rollback, and effective-access projection behavior.
 - `5d0f5688`: `/api/v1/admin/**` now requires `ROLE_ADMIN`; integration tests
   prove ordinary-user denial and administrator access.
 - `3559cfe9`: organization-unit access now excludes soft-deleted assignments
