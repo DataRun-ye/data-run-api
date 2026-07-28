@@ -22,8 +22,7 @@ commit="$(git rev-parse HEAD)"
 short_commit="$(git rev-parse --short=12 HEAD)"
 
 echo "Verifying DataRun API ${version} at ${short_commit}"
-./mvnw test
-./mvnw -Pprod -DskipTests verify
+./mvnw -Pprod clean verify
 
 jar_path="target/data-run-api-${version}.jar"
 test -f "$jar_path"
