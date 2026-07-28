@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260728-capture-shadow-persistence-foundation" author="datarunapi">
+        <createTable tableName="capture_identity_link">
+            <column name="capture_id" type="UUID">
+                <constraints
+                    nullable="false"
+                    primaryKey="true"
+                    primaryKeyName="pk_capture_identity_link"/>
+            </column>
+            <column name="baseline_submission_uid" type="VARCHAR(11)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="baseline_submission_id" type="VARCHAR(26)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="baseline_serial_number" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="capture_identity_link"
+            columnNames="baseline_submission_uid"
+            constraintName="uq_capture_identity_submission_uid"/>
+        <addUniqueConstraint
+            tableName="capture_identity_link"
+            columnNames="baseline_submission_id"
+            constraintName="uq_capture_identity_submission_id"/>
+        <addUniqueConstraint
+            tableName="capture_identity_link"
+            columnNames="baseline_serial_number"
+            constraintName="uq_capture_identity_serial_number"/>
+
+        <sql dbms="postgresql" splitStatements="false"><![CDATA[
+            CREATE TRIGGER trg_capture_identity_link_immutable
+                BEFORE UPDATE OR DELETE ON capture_identity_link
+                FOR EACH ROW
+                EXECUTE FUNCTION reject_immutable_table_mutation();
+        ]]></sql>
+
+        <rollback>
+            <sql dbms="postgresql" splitStatements="false"><![CDATA[
+                DROP TRIGGER trg_capture_identity_link_immutable ON capture_identity_link;
+                DROP TABLE capture_identity_link;
+            ]]></sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
