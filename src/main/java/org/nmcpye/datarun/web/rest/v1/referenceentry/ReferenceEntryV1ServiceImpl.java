@@ -1,13 +1,18 @@
 package org.nmcpye.datarun.web.rest.v1.referenceentry;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureAuthorityUnavailableException;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureEventGrant;
+import org.nmcpye.datarun.assignmentshadow.ReleasedWorkReadAuthority;
+import org.nmcpye.datarun.assignmentshadow.ReleasedWorkReadScope;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.datatemplateprocessor.ReferenceTemplateCapabilityService;
 import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
+import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
+import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.jpa.reference.ReferenceEntry;
 import org.nmcpye.datarun.jpa.reference.ReferenceEntryRepository;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -35,42 +40,69 @@ public class ReferenceEntryV1ServiceImpl implements ReferenceEntryV1Service {
     private final ReferenceTemplateCapabilityService capabilityService;
     private final AssignmentFormAccessService formAccessService;
     private final ReferenceEntryRepository referenceEntryRepository;
-    private final AssignmentCaptureShadowComparator captureShadow;
+    private final OrgUnitRepository orgUnitRepository;
+    private final ReleasedWorkReadAuthority releasedWorkAuthority;
 
     @Override
     public PagedResponse<ReferenceEntryV1Dto> getForAssignment(
         String assignmentUid,
         QueryRequest queryRequest) {
-        Assignment assignment = assignmentService.findAccessibleByIdOrUid(assignmentUid)
-            .orElseThrow(() -> new AccessDeniedException("Assignment is not accessible"));
-        Set<String> permittedReferenceForms =
-            assertReferenceSubmissionAccess(assignment);
-        captureShadow.compareReferenceCatalog(
-            SecurityUtils.getCurrentUserDetailsOrThrow(),
-            assignment,
-            permittedReferenceForms
-        );
+        var user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        if (user.isSuper()) {
+            return getBaselineForAssignment(assignmentUid, queryRequest);
+        }
 
-        if (assignment.getOrgUnit() == null) {
+        ReleasedWorkReadScope scope = releasedWorkAuthority.readAssignments(
+            user,
+            Set.of(assignmentUid)
+        );
+        if (scope.actorAliasAbsent()) {
+            return catalogResponse(Page.empty(pageable(queryRequest)));
+        }
+        AssignmentCaptureEventGrant grant = scope.activeGrant(assignmentUid)
+            .orElseThrow(() ->
+                new AccessDeniedException("Assignment is not accessible")
+            );
+        assignmentService.findByIdOrUid(grant.baselineAssignmentUid())
+            .orElseThrow(AssignmentCaptureAuthorityUnavailableException::new);
+        OrgUnit catalogOrgUnit = releasedCatalogOrgUnit(grant);
+        return catalogResponse(catalogOrgUnit, queryRequest);
+    }
+
+    @Override
+    public PagedResponse<ReferenceEntryV1Dto> getBaselineForAssignment(
+        String assignmentUid,
+        QueryRequest queryRequest
+    ) {
+        Assignment assignment = assignmentService
+            .findAccessibleByIdOrUid(assignmentUid)
+            .orElseThrow(() ->
+                new AccessDeniedException("Assignment is not accessible")
+            );
+        OrgUnit catalogOrgUnit = baselineCatalogOrgUnit(assignment);
+        if (catalogOrgUnit == null) {
             throw new IllegalQueryException(
                 ErrorCode.E1199,
                 "Assignment has no organization unit");
         }
+        return catalogResponse(catalogOrgUnit, queryRequest);
+    }
 
-        int pageNumber = Math.max(0, queryRequest.getPage());
-        int pageSize = Math.min(
-            MAX_PAGE_SIZE,
-            Math.max(1, queryRequest.getSize()));
-        PageRequest pageable = PageRequest.of(
-            pageNumber,
-            pageSize,
-            Sort.by(Sort.Direction.ASC, "uid"));
-
+    private PagedResponse<ReferenceEntryV1Dto> catalogResponse(
+        OrgUnit catalogOrgUnit,
+        QueryRequest queryRequest
+    ) {
         Page<ReferenceEntryV1Dto> page = referenceEntryRepository
             .findAllByOrgUnitIdOrderByUidAsc(
-                assignment.getOrgUnit().getId(),
-                pageable)
+                catalogOrgUnit.getId(),
+                pageable(queryRequest))
             .map(this::toDto);
+        return catalogResponse(page);
+    }
+
+    private PagedResponse<ReferenceEntryV1Dto> catalogResponse(
+        Page<ReferenceEntryV1Dto> page
+    ) {
         String next = PagingConfigurator.createNextPageLink(page);
         return PagingConfigurator.initPageResponse(
             page,
@@ -78,7 +110,20 @@ public class ReferenceEntryV1ServiceImpl implements ReferenceEntryV1Service {
             "referenceEntries");
     }
 
-    private Set<String> assertReferenceSubmissionAccess(Assignment assignment) {
+    private PageRequest pageable(QueryRequest queryRequest) {
+        int pageNumber = Math.max(0, queryRequest.getPage());
+        int pageSize = Math.min(
+            MAX_PAGE_SIZE,
+            Math.max(1, queryRequest.getSize())
+        );
+        return PageRequest.of(
+            pageNumber,
+            pageSize,
+            Sort.by(Sort.Direction.ASC, "uid")
+        );
+    }
+
+    private OrgUnit baselineCatalogOrgUnit(Assignment assignment) {
         Set<String> referenceForms = capabilityService.findReferenceTemplateUids(
             Optional.ofNullable(assignment.getForms()).orElse(Set.of()));
         var user = SecurityUtils.getCurrentUserDetailsOrThrow();
@@ -92,7 +137,20 @@ public class ReferenceEntryV1ServiceImpl implements ReferenceEntryV1Service {
             throw new AccessDeniedException(
                 "No Reference form is available for submission");
         }
-        return permittedForms;
+        return assignment.getOrgUnit();
+    }
+
+    private OrgUnit releasedCatalogOrgUnit(
+        AssignmentCaptureEventGrant grant
+    ) {
+        Set<String> referenceForms = capabilityService
+            .findReferenceTemplateUids(grant.formUids());
+        if (referenceForms.isEmpty()) {
+            throw new AccessDeniedException(
+                "No Reference form is available for submission");
+        }
+        return orgUnitRepository.findByUid(grant.baselineOrgUnitUid())
+            .orElseThrow(AssignmentCaptureAuthorityUnavailableException::new);
     }
 
     private ReferenceEntryV1Dto toDto(ReferenceEntry entry) {

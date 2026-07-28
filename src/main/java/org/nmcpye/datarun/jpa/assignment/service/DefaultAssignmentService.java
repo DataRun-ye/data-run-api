@@ -1,7 +1,8 @@
 package org.nmcpye.datarun.jpa.assignment.service;
 
 import org.nmcpye.datarun.assignmentshadow.AssignmentAuthorityCommandService;
-import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
+import org.nmcpye.datarun.assignmentshadow.ReleasedWorkReadAuthority;
+import org.nmcpye.datarun.assignmentshadow.ReleasedWorkReadScope;
 import org.nmcpye.datarun.datatemplateprocessor.ReferenceAssignmentFormGate;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
@@ -33,7 +34,7 @@ public class DefaultAssignmentService
     private final AssignmentMaintenanceService maintenanceService;
     private final AssignmentWithAccessMapper assignmentMapper;
     private final ReferenceAssignmentFormGate referenceAssignmentFormGate;
-    private final AssignmentCaptureShadowComparator captureShadow;
+    private final ReleasedWorkReadAuthority releasedWorkAuthority;
 
     public DefaultAssignmentService(AssignmentRepository repository,
                                     UserAccessService userAccessService,
@@ -42,14 +43,14 @@ public class DefaultAssignmentService
                                     AssignmentWithAccessMapper assignmentMapper,
                                     ReferenceAssignmentFormGate referenceAssignmentFormGate,
                                     AssignmentAuthorityCommandService authorityCommands,
-                                    AssignmentCaptureShadowComparator captureShadow) {
+                                    ReleasedWorkReadAuthority releasedWorkAuthority) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.maintenanceService = maintenanceService;
         this.assignmentMapper = assignmentMapper;
         this.referenceAssignmentFormGate = referenceAssignmentFormGate;
         this.authorityCommands = authorityCommands;
-        this.captureShadow = captureShadow;
+        this.releasedWorkAuthority = releasedWorkAuthority;
     }
 
     @Override
@@ -88,20 +89,79 @@ public class DefaultAssignmentService
         QueryRequest queryRequest,
         String jsonQueryBody,
         int referenceVersion) {
-        Page<Assignment> assignedPage = findAllByUser(queryRequest, jsonQueryBody);
         var user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        Page<Assignment> assignedPage = findAllByUser(
+            queryRequest,
+            jsonQueryBody
+        );
         Page<AssignmentWithAccessDto> response = assignedPage.map(
-            assignment -> assignmentMapper.toDto(assignment, user));
+            assignment -> assignmentMapper.toDto(assignment, user)
+        );
         referenceAssignmentFormGate.filterUnsupportedForms(
-            assignedPage.getContent(),
             response.getContent(),
-            referenceVersion);
-        captureShadow.compareAssignmentForms(
-            user,
-            assignedPage.getContent(),
-            !queryRequest.isPaged()
+            referenceVersion
         );
         return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<AssignmentWithAccessDto> getAllReleasedWorkDto(
+        QueryRequest queryRequest,
+        String jsonQueryBody,
+        int referenceVersion
+    ) {
+        var user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        ReleasedWorkReadScope scope = releasedWorkAuthority.readAll(user);
+        Page<Assignment> assignedPage = findReleasedWork(
+            scope,
+            queryRequest,
+            jsonQueryBody
+        );
+        Page<AssignmentWithAccessDto> response = assignedPage.map(
+            assignment -> scope.administrator()
+                ? assignmentMapper.toDto(assignment, user)
+                : assignmentMapper.toDto(
+                    assignment,
+                    user,
+                    scope.formUids(assignment.getUid())
+                )
+        );
+        referenceAssignmentFormGate.filterUnsupportedForms(
+            response.getContent(),
+            referenceVersion
+        );
+        return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Assignment> findAllReleasedWork(
+        QueryRequest queryRequest,
+        String jsonQueryBody
+    ) {
+        var user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        ReleasedWorkReadScope scope = releasedWorkAuthority.readAll(user);
+        return findReleasedWork(scope, queryRequest, jsonQueryBody);
+    }
+
+    private Page<Assignment> findReleasedWork(
+        ReleasedWorkReadScope scope,
+        QueryRequest queryRequest,
+        String jsonQueryBody
+    ) {
+        if (scope.administrator()) {
+            return findAllByUser(queryRequest, jsonQueryBody);
+        }
+        Specification<Assignment> authorizedAssignments =
+            (root, query, cb) -> scope.assignmentUids().isEmpty()
+                ? cb.disjunction()
+                : root.get("uid").in(scope.assignmentUids());
+        Specification<Assignment> query = querySpecification(
+            queryRequest,
+            jsonQueryBody
+        ).and(authorizedAssignments);
+        return repository.findAll(query, queryRequest.getPageable());
     }
 
     @Override

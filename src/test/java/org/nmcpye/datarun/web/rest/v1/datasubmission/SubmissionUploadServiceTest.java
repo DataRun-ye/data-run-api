@@ -10,10 +10,11 @@ import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureEventReadPort;
 import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureEventSnapshot;
 import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureScopeFactory;
 import org.nmcpye.datarun.assignmentshadow.AssignmentLifecycleState;
+import org.nmcpye.datarun.assignmentshadow.AssignmentShadowCheckpoint;
 import org.nmcpye.datarun.assignmentshadow.AssignmentShadowIdentities;
-import org.nmcpye.datarun.assignmentshadow.BaselineAssignmentCaptureAdapter;
 import org.nmcpye.datarun.assignmentshadow.BaselineVersionedUploadCompatibilityAdapter;
 import org.nmcpye.datarun.assignmentshadow.CanonicalCaptureFormResolver;
+import org.nmcpye.datarun.assignmentshadow.LatestAssignmentGrantReader;
 import org.nmcpye.datarun.assignmentshadow.VersionedUploadEventAuthorizer;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
@@ -98,12 +99,6 @@ class SubmissionUploadServiceTest {
             new CanonicalCaptureFormResolver(objectMapper);
         AssignmentCaptureScopeFactory scopeFactory =
             new AssignmentCaptureScopeFactory();
-        BaselineAssignmentCaptureAdapter baselineCapture =
-            new BaselineAssignmentCaptureAdapter(
-                captureForms,
-                scopeFactory,
-                Clock.systemUTC()
-            );
         BaselineVersionedUploadCompatibilityAdapter compatibility =
             new BaselineVersionedUploadCompatibilityAdapter(
                 scopeFactory,
@@ -113,7 +108,7 @@ class SubmissionUploadServiceTest {
             );
         VersionedUploadEventAuthorizer eventAuthorizer =
             new VersionedUploadEventAuthorizer(
-                eventReader,
+                latestGrantReader(eventReader),
                 scopeFactory,
                 compatibility
             );
@@ -481,6 +476,15 @@ class SubmissionUploadServiceTest {
             submission.getForm(),
             submission.getFormVersion()))
             .thenReturn(templateContext);
+    }
+
+    private LatestAssignmentGrantReader latestGrantReader(
+        AssignmentCaptureEventReadPort reader
+    ) {
+        AssignmentShadowCheckpoint checkpoint =
+            mock(AssignmentShadowCheckpoint.class);
+        when(checkpoint.existsAndIsExact()).thenReturn(true);
+        return new LatestAssignmentGrantReader(reader, checkpoint);
     }
 
     private void stubActiveEvent() {

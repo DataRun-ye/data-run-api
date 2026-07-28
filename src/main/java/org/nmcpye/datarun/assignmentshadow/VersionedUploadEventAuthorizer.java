@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -22,16 +21,16 @@ public class VersionedUploadEventAuthorizer {
         VersionedUploadEventAuthorizer.class
     );
 
-    private final AssignmentCaptureEventReadPort eventReader;
+    private final LatestAssignmentGrantReader latestGrantReader;
     private final AssignmentCaptureScopeFactory scopeFactory;
     private final BaselineVersionedUploadCompatibilityAdapter compatibility;
 
     public VersionedUploadEventAuthorizer(
-        AssignmentCaptureEventReadPort eventReader,
+        LatestAssignmentGrantReader latestGrantReader,
         AssignmentCaptureScopeFactory scopeFactory,
         BaselineVersionedUploadCompatibilityAdapter compatibility
     ) {
-        this.eventReader = eventReader;
+        this.latestGrantReader = latestGrantReader;
         this.scopeFactory = scopeFactory;
         this.compatibility = compatibility;
     }
@@ -53,7 +52,7 @@ public class VersionedUploadEventAuthorizer {
 
         private final CurrentUserDetails user;
         private final Set<String> assignmentUids;
-        private AssignmentCaptureEventSnapshot snapshot;
+        private LatestAssignmentGrantSnapshot snapshot;
 
         private Session(
             CurrentUserDetails user,
@@ -139,21 +138,14 @@ public class VersionedUploadEventAuthorizer {
             Assignment assignment,
             String formUid
         ) {
-            AssignmentCaptureEventSnapshot current = snapshot();
+            LatestAssignmentGrantSnapshot current = snapshot();
             if (current.status()
-                == AssignmentCaptureEventSnapshot.Status.SHADOW_UNAVAILABLE) {
+                == LatestAssignmentGrantSnapshot.Status.AUTHORITY_UNAVAILABLE) {
                 return EventDecision.AUTHORITY_UNAVAILABLE;
             }
 
-            List<AssignmentCaptureEventGrant> history = current.grants().stream()
-                .filter(grant -> grant.baselineAssignmentUid().equals(
-                    assignment.getUid()
-                ))
-                .toList();
-            AssignmentCaptureEventGrant latest = history.stream()
-                .max(Comparator.comparingInt(
-                    AssignmentCaptureEventGrant::generation
-                ))
+            AssignmentCaptureEventGrant latest = current
+                .latestGrant(assignment.getUid())
                 .orElse(null);
             if (latest == null) {
                 return EventDecision.NO_GRANT;
@@ -180,12 +172,12 @@ public class VersionedUploadEventAuthorizer {
             return EventDecision.REVOKED_HISTORY;
         }
 
-        private AssignmentCaptureEventSnapshot snapshot() {
+        private LatestAssignmentGrantSnapshot snapshot() {
             if (snapshot != null) {
                 return snapshot;
             }
             try {
-                snapshot = eventReader.readAssignments(
+                snapshot = latestGrantReader.readAssignments(
                     user.getUid(),
                     assignmentUids
                 );
@@ -193,14 +185,14 @@ public class VersionedUploadEventAuthorizer {
                     log.warn(
                         "assignment_capture_upload_authority reader_status=invalid_result"
                     );
-                    snapshot = AssignmentCaptureEventSnapshot.unavailable();
+                    snapshot = LatestAssignmentGrantSnapshot.unavailable();
                 }
             } catch (RuntimeException exception) {
                 log.warn(
                     "assignment_capture_upload_authority reader_status=failed failure_type={}",
                     exception.getClass().getSimpleName()
                 );
-                snapshot = AssignmentCaptureEventSnapshot.unavailable();
+                snapshot = LatestAssignmentGrantSnapshot.unavailable();
             }
             return snapshot;
         }

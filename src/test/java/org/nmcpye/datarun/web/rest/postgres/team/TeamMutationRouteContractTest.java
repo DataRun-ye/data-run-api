@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.web.rest.postgres.team;
 
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
 import org.nmcpye.datarun.common.repository.UpdateAccessDeniedException;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
@@ -13,6 +12,7 @@ import org.nmcpye.datarun.security.authorization.ResourceApiAuthorization;
 import org.nmcpye.datarun.web.rest.common.BaseReadWriteResource;
 import org.nmcpye.datarun.web.rest.postgres.activity.ActivityResource;
 import org.nmcpye.datarun.web.rest.postgres.assignment.AssignmentResource;
+import org.nmcpye.datarun.web.rest.postgres.assignment.AssignmentV1Resource;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,7 +47,9 @@ class TeamMutationRouteContractTest {
     @Test
     void bothApiAliasesExposeTheInheritedMutationSurface() {
         assertThat(AssignmentResource.class.getAnnotation(RequestMapping.class).value())
-            .containsExactly("/api/custom/assignments", "/api/v1/assignments");
+            .containsExactly("/api/custom/assignments");
+        assertThat(AssignmentV1Resource.class.getAnnotation(RequestMapping.class).value())
+            .containsExactly("/api/v1/assignments");
         assertThat(TeamResource.class.getAnnotation(RequestMapping.class).value())
             .containsExactly("/api/custom/teams", "/api/v1/teams");
         assertThat(ActivityResource.class.getAnnotation(RequestMapping.class).value())
@@ -103,8 +105,7 @@ class TeamMutationRouteContractTest {
         AssignmentService assignmentService = mock(AssignmentService.class);
         AssignmentResource assignmentResource = new AssignmentResource(
             assignmentService,
-            mock(AssignmentRepository.class),
-            mock(AssignmentCaptureShadowComparator.class)
+            mock(AssignmentRepository.class)
         );
         ReflectionTestUtils.setField(
             assignmentResource,

@@ -7,4 +7,8 @@ public interface ReferenceEntryV1Service {
     PagedResponse<ReferenceEntryV1Dto> getForAssignment(
         String assignmentUid,
         QueryRequest queryRequest);
+
+    PagedResponse<ReferenceEntryV1Dto> getBaselineForAssignment(
+        String assignmentUid,
+        QueryRequest queryRequest);
 }

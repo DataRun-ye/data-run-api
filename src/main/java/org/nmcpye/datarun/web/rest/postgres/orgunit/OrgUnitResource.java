@@ -19,18 +19,16 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import static org.nmcpye.datarun.web.rest.postgres.orgunit.OrgUnitResource.CUSTOM;
-import static org.nmcpye.datarun.web.rest.postgres.orgunit.OrgUnitResource.V1;
 
 /**
  * REST Extended controller for managing {@link OrgUnit}.
  */
 @RestController
-@RequestMapping(value = {CUSTOM, V1})
+@RequestMapping(CUSTOM)
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 public class OrgUnitResource extends JpaBaseResource<OrgUnit> {
     protected static final String NAME = "/orgUnits";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
-    protected static final String V1 = ApiVersion.API_V1 + NAME;
 
     private final Logger log = LoggerFactory.getLogger(OrgUnitResource.class);
 

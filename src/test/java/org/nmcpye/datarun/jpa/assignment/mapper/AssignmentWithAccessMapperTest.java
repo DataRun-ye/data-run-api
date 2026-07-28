@@ -65,4 +65,38 @@ class AssignmentWithAccessMapperTest {
                 assertThat(form.isCanAddSubmissions()).isTrue();
             });
     }
+
+    @Test
+    void eventAuthorizedFormsCannotBeAddedOrRemovedByBaselineAccess() {
+        Team team = new Team();
+        team.setUid("team0000001");
+        Assignment assignment = new Assignment();
+        assignment.setUid("assign00001");
+        assignment.setTeam(team);
+        assignment.setForms(Set.of("form0000001", "form0000002"));
+        CurrentUserDetails user = mock(CurrentUserDetails.class);
+        when(user.getFormAccess()).thenReturn(List.of(
+            UserFormAccess.builder()
+                .team(team.getUid())
+                .form("form0000002")
+                .permissions(Set.of(FormPermission.ADD_SUBMISSIONS))
+                .build()
+        ));
+        var mapper = new AssignmentWithAccessMapper(
+            new AssignmentFormAccessService()
+        );
+
+        var dto = mapper.toDto(
+            assignment,
+            user,
+            List.of("form0000001")
+        );
+
+        assertThat(dto.getAccessibleForms())
+            .singleElement()
+            .satisfies(form -> {
+                assertThat(form.getForm()).isEqualTo("form0000001");
+                assertThat(form.isCanAddSubmissions()).isFalse();
+            });
+    }
 }

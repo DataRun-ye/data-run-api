@@ -71,7 +71,7 @@ class VersionedUploadEventAuthorizerTest {
                 clock
             );
         authorizer = new VersionedUploadEventAuthorizer(
-            eventReader,
+            latestGrantReader(eventReader),
             scopeFactory,
             compatibility
         );
@@ -440,6 +440,15 @@ class VersionedUploadEventAuthorizerTest {
 
     private VersionedUploadEventAuthorizer.Session session() {
         return authorizer.openSession(user, List.of(ASSIGNMENT_UID));
+    }
+
+    private LatestAssignmentGrantReader latestGrantReader(
+        AssignmentCaptureEventReadPort reader
+    ) {
+        AssignmentShadowCheckpoint checkpoint =
+            mock(AssignmentShadowCheckpoint.class);
+        when(checkpoint.existsAndIsExact()).thenReturn(true);
+        return new LatestAssignmentGrantReader(reader, checkpoint);
     }
 
     private AssignmentCaptureEventSnapshot snapshot(

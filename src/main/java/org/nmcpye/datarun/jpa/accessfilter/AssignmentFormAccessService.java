@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -59,6 +60,31 @@ public class AssignmentFormAccessService {
 
         return assignment.getForms().stream()
             .filter(form -> hasAnyAccess(user, assignment, form))
+            .map(form -> AssignmentFormDto.builder()
+                .form(form)
+                .assignment(assignment.getUid())
+                .canAddSubmissions(
+                    hasAnyPermission(user, assignment, form, ADD_SUBMISSIONS))
+                .canEditSubmissions(
+                    hasAnyPermission(user, assignment, form, EDIT_SUBMISSIONS))
+                .canDeleteSubmissions(
+                    hasAnyPermission(user, assignment, form, DELETE_SUBMISSIONS))
+                .build())
+            .collect(Collectors.toSet());
+    }
+
+    public Set<AssignmentFormDto> getAuthorizedForms(
+        Assignment assignment,
+        CurrentUserDetails user,
+        Collection<String> authorizedFormUids
+    ) {
+        if (user == null || assignment == null || authorizedFormUids == null) {
+            return Set.of();
+        }
+
+        return authorizedFormUids.stream()
+            .filter(Objects::nonNull)
+            .distinct()
             .map(form -> AssignmentFormDto.builder()
                 .form(form)
                 .assignment(assignment.getUid())

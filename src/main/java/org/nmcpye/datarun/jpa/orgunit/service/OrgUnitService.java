@@ -2,6 +2,8 @@ package org.nmcpye.datarun.jpa.orgunit.service;
 
 import org.nmcpye.datarun.jpa.common.JpaIdentifiableObjectService;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
+import org.nmcpye.datarun.apiquery.QueryRequest;
+import org.springframework.data.domain.Page;
 
 /**
  * Service Interface for managing {@link OrgUnit}.
@@ -20,4 +22,9 @@ public interface OrgUnitService
     void updatePaths();
 
     void forceUpdatePaths();
+
+    Page<OrgUnit> findAllReleasedWork(
+        QueryRequest queryRequest,
+        String jsonQueryBody
+    );
 }

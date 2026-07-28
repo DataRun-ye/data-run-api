@@ -2,7 +2,6 @@ package org.nmcpye.datarun.datatemplateprocessor;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentFormDto;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentWithAccessDto;
 
@@ -29,9 +28,6 @@ class ReferenceAssignmentFormGateTest {
 
     @Test
     void oldClientKeepsOrdinaryFormAndExcludesReferenceForm() {
-        Assignment assignment = new Assignment();
-        assignment.setForms(Set.of("ordinary01", "reference01"));
-
         AssignmentWithAccessDto response = new AssignmentWithAccessDto();
         response.setAccessibleForms(new HashSet<>(Set.of(
             form("ordinary01"),
@@ -42,7 +38,6 @@ class ReferenceAssignmentFormGateTest {
             .thenReturn(Set.of("reference01"));
 
         gate.filterUnsupportedForms(
-            List.of(assignment),
             List.of(response),
             0);
 
@@ -57,15 +52,11 @@ class ReferenceAssignmentFormGateTest {
 
     @Test
     void referenceVersionOneLeavesAccessibleFormsUnchanged() {
-        Assignment assignment = new Assignment();
-        assignment.setForms(Set.of("reference01"));
-
         AssignmentWithAccessDto response = new AssignmentWithAccessDto();
         response.setAccessibleForms(new HashSet<>(Set.of(
             form("reference01"))));
 
         gate.filterUnsupportedForms(
-            List.of(assignment),
             List.of(response),
             1);
 

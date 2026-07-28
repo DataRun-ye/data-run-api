@@ -53,6 +53,14 @@ public abstract class DefaultJpaIdentifiableService
     protected Specification<T> baseAccessSpecification(CurrentUserDetails user, QueryRequest queryRequest,
                                                        String jsonQueryBody) {
         var accessSpec = userAccessService.readSpec(getClazz(), user, queryRequest);
+        return accessSpec.and(querySpecification(queryRequest, jsonQueryBody));
+    }
+
+    protected Specification<T> querySpecification(
+        QueryRequest queryRequest,
+        String jsonQueryBody
+    ) {
+        Specification<T> querySpec = Specification.where(null);
         FilterExpression combinedFilter = buildCombinedFilter(queryRequest, jsonQueryBody);
         // add the 'since' filter
         // only if it's not the epoch sentinel
@@ -67,9 +75,11 @@ public abstract class DefaultJpaIdentifiableService
         }
 
         if (combinedFilter != null) {
-            accessSpec = accessSpec.and(jpaQueryBuilder.buildQuery(List.of(combinedFilter)));
+            querySpec = querySpec.and(
+                jpaQueryBuilder.buildQuery(List.of(combinedFilter))
+            );
         }
-        return accessSpec;
+        return querySpec;
     }
 
     protected FilterExpression buildCombinedFilter(QueryRequest queryRequest, String jsonQueryBody) {

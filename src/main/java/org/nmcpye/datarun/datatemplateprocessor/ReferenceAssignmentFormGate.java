@@ -1,14 +1,13 @@
 package org.nmcpye.datarun.datatemplateprocessor;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.jpa.assignment.dto.AssignmentFormDto;
 import org.nmcpye.datarun.jpa.assignment.dto.AssignmentWithAccessDto;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -18,23 +17,24 @@ public class ReferenceAssignmentFormGate {
     private final ReferenceTemplateCapabilityService capabilityService;
 
     public void filterUnsupportedForms(
-        Collection<Assignment> assignments,
         Collection<AssignmentWithAccessDto> responses,
         int referenceVersion) {
-        if (referenceVersion >= 1 || assignments == null || assignments.isEmpty()) {
+        if (referenceVersion >= 1 || responses == null || responses.isEmpty()) {
             return;
         }
 
-        Set<String> assignedFormUids = assignments.stream()
+        Set<String> assignedFormUids = responses.stream()
             .filter(Objects::nonNull)
-            .flatMap(assignment -> Optional.ofNullable(assignment.getForms())
-                .orElse(Set.of())
-                .stream())
+            .map(AssignmentWithAccessDto::getAccessibleForms)
+            .filter(Objects::nonNull)
+            .flatMap(Collection::stream)
+            .map(AssignmentFormDto::getForm)
+            .filter(Objects::nonNull)
             .collect(HashSet::new, Set::add, Set::addAll);
 
         Set<String> unsupportedFormUids =
             capabilityService.findReferenceTemplateUids(assignedFormUids);
-        if (unsupportedFormUids.isEmpty() || responses == null) {
+        if (unsupportedFormUids.isEmpty()) {
             return;
         }
 

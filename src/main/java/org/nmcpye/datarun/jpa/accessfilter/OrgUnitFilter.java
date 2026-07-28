@@ -1,6 +1,5 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
-import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
@@ -19,21 +18,17 @@ import java.util.stream.Stream;
  */
 @Component
 public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
-    private final AssignmentRepository flowInstanceRepository;
-    private final AssignmentCaptureShadowComparator captureShadow;
+    private final AssignmentRepository assignmentRepository;
 
-    public OrgUnitFilter(
-        AssignmentRepository flowInstanceRepository,
-        AssignmentCaptureShadowComparator captureShadow
-    ) {
-        this.flowInstanceRepository = flowInstanceRepository;
-        this.captureShadow = captureShadow;
+    public OrgUnitFilter(AssignmentRepository assignmentRepository) {
+        this.assignmentRepository = assignmentRepository;
     }
 
     @Override
     public Specification<OrgUnit> getAccessSpecification(CurrentUserDetails user,
                                                          QueryRequest queryRequest) {
-        final boolean includeDisabled = queryRequest != null && queryRequest.isIncludeDisabled();
+        final boolean includeDisabled =
+            queryRequest != null && queryRequest.isIncludeDisabled();
         final var directOrgUnits = getDirectOrgUnits(user, includeDisabled);
         final var directUids = directOrgUnits.stream().map(OrgUnit::getUid).collect(Collectors.toSet());
 
@@ -47,42 +42,26 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
             .concat(ancestorsUids.stream(), directUids.stream())
             .collect(Collectors.toSet());
 
-        return (root, query, cb) -> {
-            if (user.isSuper()) {
-                return cb.conjunction();
-            } else {
-                return root.get("uid").in(allUids);
-//                if (Long.class != query.getResultType()) {
-//                    root.fetch("parent", JoinType.LEFT);
-//                }
-//                Join<OrgUnit, Assignment> assignmentJoin = root.join("assignments", JoinType.INNER);
-//                Join<Assignment, Activity> assignmentActivityJoin = assignmentJoin.join("activity", JoinType.INNER);
-//                Join<Assignment, Team> teamJoin = assignmentJoin.join("team", JoinType.INNER);
-//                Join<Team, User> userJoin = teamJoin.join("users", JoinType.INNER);
-//
-//                Predicate teamNotDisabled = includeDisabled ? cb.and() : cb.isFalse(teamJoin.get("disabled"));
-//                Predicate activityNotDisabled = includeDisabled ? cb.and() : cb.isFalse(assignmentActivityJoin.get("disabled"));
-//
-//                query.distinct(true);
-//                return cb.and(cb.equal(userJoin.get("login"), user.getUsername()),
-//                    activityNotDisabled,
-//                    teamNotDisabled);
-            }
-        };
+        return (root, query, cb) -> user.isSuper()
+            ? cb.conjunction()
+            : root.get("uid").in(allUids);
     }
 
-    Set<OrgUnit> getDirectOrgUnits(CurrentUserDetails user, boolean includeDisabled) {
-        final var visibleAssignments = flowInstanceRepository
+    Set<OrgUnit> getDirectOrgUnits(
+        CurrentUserDetails user,
+        boolean includeDisabled
+    ) {
+        return assignmentRepository
             .findAllByTeamUidIn(user.getUserTeamsUIDs())
             .stream()
-            .filter(assignment -> !Boolean.TRUE.equals(assignment.getDeleted()))
+            .filter(assignment ->
+                !Boolean.TRUE.equals(assignment.getDeleted())
+            )
             .filter(assignment -> includeDisabled
                 || (!Boolean.TRUE.equals(assignment.getTeam().getDisabled())
-                && !Boolean.TRUE.equals(assignment.getActivity().getDisabled())))
-            .toList();
-        captureShadow.compareDirectOrgUnits(user, visibleAssignments);
-
-        return visibleAssignments.stream()
+                && !Boolean.TRUE.equals(
+                    assignment.getActivity().getDisabled()
+                )))
             .map(Assignment::getOrgUnit)
             .collect(Collectors.toSet());
     }

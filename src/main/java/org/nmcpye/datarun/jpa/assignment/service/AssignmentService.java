@@ -26,5 +26,16 @@ public interface AssignmentService
         String jsonQueryBody,
         int referenceVersion);
 
+    Page<AssignmentWithAccessDto> getAllReleasedWorkDto(
+        QueryRequest queryRequest,
+        String jsonQueryBody,
+        int referenceVersion
+    );
+
+    Page<Assignment> findAllReleasedWork(
+        QueryRequest queryRequest,
+        String jsonQueryBody
+    );
+
     Optional<Assignment> findAccessibleByIdOrUid(String idOrUid);
 }
