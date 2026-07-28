@@ -125,6 +125,12 @@ deployment authority.
   Released reads remained byte-equivalent after normalization, ordinary
   upload/retry behavior was characterized, the clone was restored, and
   production remained untouched.
+- `9e5185ce`: exact same-UID submission retries are successful no-ops in the
+  existing persistence owner. The 255-unit/contract and 38-integration release
+  gate passed. Clone HTTP checks proved that create, real update, and first
+  delete still write once, while their exact retries leave audit/version state
+  and outbox counts unchanged. The disposable row was removed, the clone was
+  restored, and production remained untouched.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

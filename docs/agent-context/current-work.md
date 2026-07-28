@@ -4,131 +4,180 @@ Updated: 2026-07-28
 
 Status: ACCEPTED FOR IMPLEMENTATION
 
-## Same-UID Submission Retry Idempotency
+## Capture Current Projection And Replay
 
 ### Outcome
 
-Make an accepted same-UID submission retry that has no effective persisted
-change a successful no-op. Preserve the released response contract while
-avoiding a redundant database update, audit/version change, and outbox row.
+Add the smallest replayable current-state projection for capture facts and
+prove that it can be reconstructed from the immutable bootstrap facts while
+remaining exactly equivalent to `data_submission`.
 
-This is a correction inside the current `data_submission` authority. It is a
-prerequisite for live capture-event shadowing, not an event implementation.
+This slice completes the missing projection part of the accepted capture
+foundation. It does not append live capture facts and does not change upload,
+authorization, outbox, ETL, HTTP, or mobile behavior.
 
 ### Evidence
 
-`DefaultDataSubmissionService.upsertAll` currently sends every existing,
-non-delete submission through `updateAllAndFlush` and emits an `UPDATE` outbox
-row. An already-deleted retry is also written again and emits another `DELETE`.
-The production-clone capture gate reproduced this directly: the first upload
-of one UID emitted `SAVE`; an unchanged retry returned `updated` and emitted
-`UPDATE`.
+The capture bootstrap currently creates one immutable `capture_identity_link`
+and one immutable `baseline_submission_captured/v1` journal fact for every
+`data_submission` row. The production-clone gate reproduced all 52,535 rows
+exactly and a second run wrote nothing.
 
-The released mobile treats a UID listed in either `created` or `updated` as a
-successful upload. Therefore an unchanged retry can remain in `updated`
-without changing the HTTP payload or mobile synchronization behavior.
+There is no current capture projection. Consequently, a later accepted state
+change has no authoritative pointer to its predecessor, and the current state
+cannot yet be rebuilt as a projection from the journal. The accepted
+transition requires this pointer before live event shadowing.
 
-### Required Behavior
+Exact same-UID retries are already successful persistence/outbox no-ops at
+`9e5185ce`, so the projection does not need a retry counter, version, or other
+duplicate-suppression state.
 
-For an existing UID, compare only the state the current persistence owner can
-actually change:
+### Persisted Shape
+
+Add exactly one table:
 
 ```text
-formData
-activity
-assignment
-team
-orgUnit
-status
-orgUnitCode
-orgUnitName
-teamCode
-deleted transition
+capture_current_projection
+  capture_id       UUID primary key -> capture_identity_link.capture_id
+  source_event_id  UUID unique, not null -> event_journal.event_id
 ```
 
-Use null-safe value equality and deep JSON value equality. Do not compare or
-start mutating immutable or currently ignored fields such as physical ID,
-serial number, form/template identity, pinned version, entry timestamps, or
-audit fields.
+The table is a mutable, rebuildable projection. It stores no copied submission
+JSON, status, timestamps, generation, actor, authority, or baseline IDs.
+Those values remain in immutable journal facts and existing compatibility
+projections.
 
-Classify each existing submission as exactly one of:
+Add a dedicated Liquibase changeset after the existing capture foundation.
+Its rollback drops only this table. Do not edit an already-recorded changeset
+or add a database trigger that makes the projection immutable.
 
-- unchanged normal retry: return the existing entity and add its UID to
-  `summary.updated`, but perform no repository update and no outbox write;
-- changed normal update: preserve the current field mutation, repository
-  update, `UPDATE` outbox write, and `summary.updated` result;
-- first delete transition: preserve server-owned deletion time, repository
-  update, `DELETE` outbox write, and `summary.updated` result;
-- already-deleted retry with `deleted=true`: return the existing entity and
-  add its UID to `summary.updated`, but perform no repository update and no
-  outbox write. Preserve current delete precedence: ignore other mutable values
-  in this request;
-- already-deleted row with incoming `deleted=false` or omitted: never clear
-  `deleted` or `deletedAt`; classify matching mutable state as unchanged, or
-  preserve the current normal `UPDATE` behavior when mutable state differs.
+### Ownership
 
-For a first delete transition, preserve the current precedence exactly: set
-only `deleted=true` and a server-owned deletion timestamp. Do not copy mutable
-payload/context changes or a client-provided `deletedAt` from the same request.
+Introduce one capture-current-projection port and one JDBC implementation with
+only these operations:
 
-New submissions retain the current `SAVE` behavior. Do not redesign
-undelete/edit policy, immutable-field conflict policy, duplicate UIDs inside
-one request, unversioned compatibility routes, or synced mobile editing in
-this slice.
+- strictly insert the bootstrap pointer;
+- read the pointer by capture ID.
 
-### Ownership And Compatibility
+Do not add a generic pointer-advance operation. The two foreign keys cannot
+prove that an arbitrary journal event belongs to a capture. Pointer advance is
+owned by the later live-event command, which must define that association and
+append the fact plus advance its pointer atomically.
 
-- `DefaultDataSubmissionService` remains the single persistence and outbox
-  classification owner after authorization and canonicalization.
-- `SubmissionUploadService` and all released request/response DTOs remain
-  unchanged.
-- Both versioned and compatibility callers receive the existing
-  `EntitySaveSummaryVM` shape.
-- `data_submission` remains authoritative; capture bootstrap rows remain
-  inert comparison material.
-- No schema, endpoint, mobile, ETL, or production change is permitted.
+The JDBC owner participates in its caller's transaction and must not open a
+`REQUIRES_NEW` transaction. In the existing 250-row bootstrap batch, identity,
+event, and pointer work therefore commits or rolls back together.
+
+`capture_identity_link` remains the immutable compatibility identity map.
+`event_journal` remains the immutable fact owner. `data_submission` remains
+the active production authority in this slice.
+
+### Bootstrap And Replay Behavior
+
+Extend the existing capture bootstrap rather than add a second command:
+
+1. After proving the exact identity and bootstrap event for a source row,
+   read the pointer by capture ID.
+2. An existing exact pointer is counted as existing and performs no write.
+3. An existing different pointer fails immediately with the capture ID and
+   expected/actual event IDs; it is never silently overwritten.
+4. An absent pointer uses a strict insert without `ON CONFLICT DO NOTHING`.
+   Primary-key, unique-event, and foreign-key violations become one sanitized
+   `CaptureShadowBootstrapConflictException`.
+5. If projection rows are removed while immutable identities and bootstrap
+   facts remain, rerunning the bootstrap reconstructs only the missing
+   pointers. It creates no replacement identities, events, or checkpoint.
+6. The final comparison includes missing, differing, and extra projection
+   rows and verifies that every pointer selects the exact canonical submission
+   fact expected from the source row.
+
+Add `ItemCount currentPointers` to batch progress and the operator report. Add
+`missingCurrentPointerCount`, `currentPointerDifferenceCount`, and
+`extraCurrentPointerCount` to comparison/report results. Include pointer
+creation in `createdCount()` and all three differences in `differenceCount()`.
+Operator output names are:
+
+```text
+current_pointers_created
+current_pointers_existing
+missing_current_pointers
+current_pointer_differences
+extra_current_pointers
+```
+
+A differing pointer is an expected capture ID pointing to an event other than
+its deterministic bootstrap event. Malformed or unequal journal content stays
+an event difference. Pointer plus event equality proves the reached journal
+fact. Compute extras with an anti-join against exact source-backed identities,
+not `table count - source count`, so one missing and one unrelated extra row
+cannot cancel each other.
+
+The existing immutable v1 checkpoint continues to certify only identity and
+bootstrap-event parity for its source fingerprint. Projection differences
+make the command exit non-zero but do not rewrite or supersede an existing
+checkpoint. No new checkpoint shape is added in this slice, and an existing
+checkpoint must not be interpreted as projection readiness.
+
+Preserve the existing `baseline_submission_captured/v1` event bytes and
+deterministic IDs. Do not introduce the future live-event shape in this slice.
 
 ### Tests
 
-Focused service tests must prove:
+Focused PostgreSQL tests must prove:
 
-- an unchanged normal retry returns the existing entity in `updated` without
-  repository update or outbox write;
-- a changed mutable value produces one `UPDATE` and one outbox row;
-- an already-deleted retry returns success without another write or outbox
-  row;
-- an already-deleted row with `deleted=false` or omitted remains deleted and
-  is either an unchanged no-op or a normal update according to mutable state;
-- a first delete transition still produces exactly one `DELETE` outbox row;
-- first-delete precedence ignores accompanying mutable changes and a supplied
-  deletion timestamp;
-- a mixed batch of new, changed, unchanged, first-delete, and deleted-retry
-  inputs classifies every UID once and writes only the required batches;
-- each listed mutable field independently triggers an update when changed;
-- `null` to JSON, JSON to `null`, and `null` to `null` form-data transitions
-  are safe, and structurally equal JSON trees are unchanged.
+- the table has exactly the two specified columns, primary key, unique event
+  pointer, and both foreign keys;
+- one capture cannot have two current rows and one event cannot be current for
+  two captures;
+- strict insert/read work and a conflicting pointer cannot be overwritten;
+- rollback of an outer transaction removes a newly inserted pointer;
+- first bootstrap creates one pointer per source row;
+- the completed rerun writes no identity, event, pointer, or checkpoint;
+- deleting only projection rows and rerunning reconstructs them from existing
+  immutable facts without new facts;
+- a wrong pointer fails fast and rolls back its complete 250-row batch; final
+  bounded diagnostics remain for missing/extra set mismatches;
+- one missing and one unrelated extra pointer are both reported even when
+  total projection cardinality equals source cardinality;
+- interrupted batch processing resumes without duplicate pointers;
+- journal payloads reached through current pointers remain exact for null and
+  object form JSON, soft-deleted rows, pinned versions, context, and audit
+  timestamps;
+- a pre-existing exact v1 checkpoint remains byte-identical when projection
+  validation fails and no replacement checkpoint is written.
 
 Run focused tests, then `scripts/release/verify.sh`.
 
 Against the isolated production clone:
 
-1. upload one ordinary new submission and record its stored audit/version and
-   outbox state;
-2. retry the identical canonical payload and require the same successful
-   summary with no stored or outbox change;
-3. change one mutable value and require exactly one update and outbox row;
-4. retry that changed payload and require no further write;
-5. perform one delete transition, retry it, and require only one delete write;
-6. restore the disposable clone afterward.
+1. restore
+   `/mnt/windows-csystem-disk/datarun-production-clones/nmcpdb-production-20260725.dump`;
+2. build the reviewed candidate and explicitly apply all migrations, including
+   the new projection changeset, because the isolated bootstrap command runs
+   with Liquibase disabled;
+3. run assignment bootstrap and require its existing exact tuple/checkpoint
+   result, then run capture bootstrap;
+4. require 52,535 capture identities, bootstrap facts, and current pointers;
+5. record the clean run's 64-character source SHA-256 as the pinned acceptance
+   value, and require zero source/projection differences;
+6. rerun and require every created counter to be zero and the same source
+   fingerprint;
+7. record journal row count and a deterministic journal-content checksum;
+8. remove only the disposable clone's current pointers, rerun, and require
+   `current_pointers_created=52535`, all identity/event/checkpoint created
+   counters zero, and unchanged journal count/checksum;
+9. rerun once more and require every created counter to be zero and the same
+   pinned source fingerprint;
+10. restore the clone from the untouched dump afterward.
 
 Do not connect to or deploy production.
 
 ### Definition Of Done
 
-- Exact semantic retries are successful no-ops at the existing persistence
-  owner.
-- Real updates, creates, and first deletes preserve released behavior.
-- HTTP payloads and mobile success classification are unchanged.
+- Every bootstrapped capture has exactly one current source-event pointer.
+- The projection can be reconstructed from immutable capture facts.
+- Comparison proves the pointed facts equal the current baseline source.
+- No submission or upload behavior changes.
 - Focused and full release gates pass.
-- Clone evidence proves audit/version and outbox stability on retries.
-- The clone is restored and production remains untouched.
+- Production-clone replay and idempotency pass, the clone is restored, and
+  production remains untouched.

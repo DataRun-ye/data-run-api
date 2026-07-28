@@ -147,8 +147,12 @@ the current `outbox` owner.
 
 Mixed update/delete batches persist their classified collections separately
 and emit `UPDATE` and `DELETE` through the current outbox; this boundary has
-a focused regression test. Capture bootstrap facts and identity links are
-comparison-only and are not read or appended by the released upload path.
+a focused regression test. An accepted same-UID request whose mutable
+persisted state is already exact returns success in `updated` without a
+repository write, audit/version change, or outbox row. Real changes and first
+delete transitions retain their existing writes. Capture bootstrap facts and
+identity links are comparison-only and are not read or appended by the
+released upload path.
 Submission pulling, inherited CRUD/read routes,
 deprecated `objects`, and the admin delete route still require independent
 API-use classification.
