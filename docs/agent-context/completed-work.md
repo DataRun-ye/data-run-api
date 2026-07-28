@@ -118,6 +118,13 @@ deployment authority.
   largest actor; a disposable Reference fixture matched across V1/custom
   routes. The untouched dump was restored, migrations reapplied, and bootstrap
   reruns reproduced 263,423 exact tuples with a zero-write second pass.
+- `12fba7f2`: deterministic capture bootstrap reproduced all 52,535 current
+  submission rows as exact immutable facts on the isolated production clone.
+  It created 282 missing organization-unit aliases, then a second run wrote
+  nothing and reproduced the same source fingerprint with zero differences.
+  Released reads remained byte-equivalent after normalization, ordinary
+  upload/retry behavior was characterized, the clone was restored, and
+  production remained untouched.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.
