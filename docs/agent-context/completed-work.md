@@ -83,6 +83,12 @@ deployment authority.
   `canonical_element` projection. The duplicate `template_element` writer,
   entity/cache ownership, and persistence-only fields were removed without a
   schema change; nested-repeat ancestry and option-set projection are covered.
+- Assignment-shadow bootstrap closed through `d3476ab7`. The explicit non-web
+  command created 105,153 deterministic assignment streams on the isolated
+  production clone; 263,423 baseline and shadow capture-authority tuples
+  matched with zero differences. A second run created nothing and reproduced
+  the same result. Active reads, writes, authorization, and production were
+  unchanged.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.
