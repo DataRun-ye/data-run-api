@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.web.rest.postgres.team;
 
 import org.junit.jupiter.api.Test;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
 import org.nmcpye.datarun.common.repository.UpdateAccessDeniedException;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
@@ -102,7 +103,8 @@ class TeamMutationRouteContractTest {
         AssignmentService assignmentService = mock(AssignmentService.class);
         AssignmentResource assignmentResource = new AssignmentResource(
             assignmentService,
-            mock(AssignmentRepository.class)
+            mock(AssignmentRepository.class),
+            mock(AssignmentCaptureShadowComparator.class)
         );
         ReflectionTestUtils.setField(
             assignmentResource,

@@ -286,7 +286,8 @@ class AssignmentAuthorityCommandIntegrationTest {
         assignment.setId(ASSIGNMENT_ID_2);
         AssignmentResource assignmentResource = new AssignmentResource(
             assignmentService,
-            assignmentRepository
+            assignmentRepository,
+            mock(AssignmentCaptureShadowComparator.class)
         );
         CurrentUserDetails routeUser = mock(CurrentUserDetails.class);
         ResourceApiAuthorization authorization = mock(ResourceApiAuthorization.class);
@@ -462,7 +463,8 @@ class AssignmentAuthorityCommandIntegrationTest {
         bootstrap.run();
         AssignmentResource resource = new AssignmentResource(
             assignmentService,
-            assignmentRepository
+            assignmentRepository,
+            mock(AssignmentCaptureShadowComparator.class)
         );
         ResourceApiAuthorization authorization = mock(ResourceApiAuthorization.class);
         when(authorization.canRead(any())).thenReturn(true);

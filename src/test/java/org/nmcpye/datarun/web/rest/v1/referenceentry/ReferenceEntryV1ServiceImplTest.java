@@ -4,6 +4,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
 import org.nmcpye.datarun.datatemplateprocessor.ReferenceTemplateCapabilityService;
 import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
@@ -29,6 +30,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -41,6 +43,7 @@ class ReferenceEntryV1ServiceImplTest {
     private ReferenceTemplateCapabilityService capabilityService;
     private AssignmentFormAccessService formAccessService;
     private ReferenceEntryRepository repository;
+    private AssignmentCaptureShadowComparator captureShadow;
     private ReferenceEntryV1ServiceImpl service;
     private Assignment assignment;
 
@@ -50,11 +53,13 @@ class ReferenceEntryV1ServiceImplTest {
         capabilityService = mock(ReferenceTemplateCapabilityService.class);
         formAccessService = mock(AssignmentFormAccessService.class);
         repository = mock(ReferenceEntryRepository.class);
+        captureShadow = mock(AssignmentCaptureShadowComparator.class);
         service = new ReferenceEntryV1ServiceImpl(
             assignmentService,
             capabilityService,
             formAccessService,
-            repository);
+            repository,
+            captureShadow);
 
         OrgUnit orgUnit = new OrgUnit();
         orgUnit.setId("org-unit-internal-id");
@@ -119,6 +124,10 @@ class ReferenceEntryV1ServiceImplTest {
         verify(repository).findAllByOrgUnitIdOrderByUidAsc(
             eq(assignment.getOrgUnit().getId()),
             pageable.capture());
+        verify(captureShadow).compareReferenceCatalog(
+            any(CurrentUserDetails.class),
+            eq(assignment),
+            argThat(forms -> Set.copyOf(forms).equals(Set.of("reference01"))));
         assertEquals(2, pageable.getValue().getPageNumber());
         assertEquals(500, pageable.getValue().getPageSize());
         assertEquals(

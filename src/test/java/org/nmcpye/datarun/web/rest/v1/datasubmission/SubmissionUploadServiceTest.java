@@ -4,8 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
+import org.nmcpye.datarun.assignmentshadow.BaselineAssignmentCaptureAdapter;
+import org.nmcpye.datarun.assignmentshadow.CanonicalCaptureFormResolver;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
@@ -32,6 +36,7 @@ import org.springframework.transaction.annotation.AnnotationTransactionAttribute
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -59,6 +65,7 @@ class SubmissionUploadServiceTest {
     private AssignmentFormAccessService formAccessService;
     private TemplateVersionResolver templateVersionResolver;
     private ReferenceSubmissionResolver resolver;
+    private AssignmentCaptureShadowComparator captureShadow;
     private SubmissionUploadService service;
     private TemplateVersionContext templateContext;
     private DataTemplateInstanceDto template;
@@ -73,14 +80,23 @@ class SubmissionUploadServiceTest {
         formAccessService = mock(AssignmentFormAccessService.class);
         templateVersionResolver = mock(TemplateVersionResolver.class);
         resolver = mock(ReferenceSubmissionResolver.class);
+        captureShadow = mock(AssignmentCaptureShadowComparator.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        BaselineAssignmentCaptureAdapter baselineCapture =
+            new BaselineAssignmentCaptureAdapter(
+                new CanonicalCaptureFormResolver(objectMapper),
+                formAccessService,
+                Clock.systemUTC()
+            );
         service = new SubmissionUploadService(
             submissionService,
             mapper,
-            new ObjectMapper(),
+            objectMapper,
             assignmentRepository,
-            formAccessService,
             templateVersionResolver,
-            resolver);
+            resolver,
+            baselineCapture,
+            captureShadow);
 
         templateContext = mock(TemplateVersionContext.class);
         template = mock(DataTemplateInstanceDto.class);
@@ -146,6 +162,9 @@ class SubmissionUploadServiceTest {
         verify(templateVersionResolver, times(2)).resolveByUid(
             "formUid0001",
             "version0001");
+        verify(captureShadow).compareVersionedUploads(
+            eq(user),
+            argThat(uploads -> uploads.size() == 2));
     }
 
     @Test
@@ -200,6 +219,34 @@ class SubmissionUploadServiceTest {
                 () -> service.upsertAll(List.of(request))));
 
         verify(formAccessService, never()).canSubmitData(any(), any(), any());
+        verify(resolver, never()).resolve(any(), any(), any(), any());
+        verify(submissionService, never()).upsertAll(any(), any());
+    }
+
+    @Test
+    void earlierAuthorizationFailureWinsBeforePreparingLaterRequests() {
+        DataSubmissionUploadV1Dto deniedRequest = request("firstSub01");
+        DataSubmissionUploadV1Dto laterRequest = request("secondSub1");
+        DataSubmission denied = submission(deniedRequest);
+        when(mapper.toEntity(deniedRequest)).thenReturn(denied);
+        stubContext(denied);
+        when(user.isSuper()).thenReturn(false);
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of("otherTeam01"));
+
+        IllegalQueryException failure = assertThrows(
+            IllegalQueryException.class,
+            () -> withCurrentUser(
+                () -> service.upsertAll(List.of(deniedRequest, laterRequest))));
+
+        assertEquals(ErrorCode.E4114, failure.getErrorCode());
+        verify(mapper, never()).toEntity(laterRequest);
+        verify(captureShadow).compareVersionedUploads(
+            eq(user),
+            argThat(uploads ->
+                uploads.size() == 1
+                    && !uploads.get(0).baselineAccepted()
+            )
+        );
         verify(resolver, never()).resolve(any(), any(), any(), any());
         verify(submissionService, never()).upsertAll(any(), any());
     }

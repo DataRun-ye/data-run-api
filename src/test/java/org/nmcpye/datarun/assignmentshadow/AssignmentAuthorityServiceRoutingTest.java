@@ -39,7 +39,8 @@ class AssignmentAuthorityServiceRoutingTest {
             mock(AssignmentMaintenanceService.class),
             mock(AssignmentWithAccessMapper.class),
             mock(ReferenceAssignmentFormGate.class),
-            commands
+            commands,
+            mock(AssignmentCaptureShadowComparator.class)
         );
         Assignment assignment = new Assignment();
         when(commands.saveAssignment(assignment)).thenReturn(assignment);

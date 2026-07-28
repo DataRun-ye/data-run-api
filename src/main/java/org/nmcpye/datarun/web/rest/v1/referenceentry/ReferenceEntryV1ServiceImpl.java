@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.web.rest.v1.referenceentry;
 
 import lombok.RequiredArgsConstructor;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.datatemplateprocessor.ReferenceTemplateCapabilityService;
@@ -34,6 +35,7 @@ public class ReferenceEntryV1ServiceImpl implements ReferenceEntryV1Service {
     private final ReferenceTemplateCapabilityService capabilityService;
     private final AssignmentFormAccessService formAccessService;
     private final ReferenceEntryRepository referenceEntryRepository;
+    private final AssignmentCaptureShadowComparator captureShadow;
 
     @Override
     public PagedResponse<ReferenceEntryV1Dto> getForAssignment(
@@ -41,7 +43,13 @@ public class ReferenceEntryV1ServiceImpl implements ReferenceEntryV1Service {
         QueryRequest queryRequest) {
         Assignment assignment = assignmentService.findAccessibleByIdOrUid(assignmentUid)
             .orElseThrow(() -> new AccessDeniedException("Assignment is not accessible"));
-        assertReferenceSubmissionAccess(assignment);
+        Set<String> permittedReferenceForms =
+            assertReferenceSubmissionAccess(assignment);
+        captureShadow.compareReferenceCatalog(
+            SecurityUtils.getCurrentUserDetailsOrThrow(),
+            assignment,
+            permittedReferenceForms
+        );
 
         if (assignment.getOrgUnit() == null) {
             throw new IllegalQueryException(
@@ -70,19 +78,21 @@ public class ReferenceEntryV1ServiceImpl implements ReferenceEntryV1Service {
             "referenceEntries");
     }
 
-    private void assertReferenceSubmissionAccess(Assignment assignment) {
+    private Set<String> assertReferenceSubmissionAccess(Assignment assignment) {
         Set<String> referenceForms = capabilityService.findReferenceTemplateUids(
             Optional.ofNullable(assignment.getForms()).orElse(Set.of()));
         var user = SecurityUtils.getCurrentUserDetailsOrThrow();
-        boolean canAddReferenceSubmission = referenceForms.stream()
-            .anyMatch(form -> formAccessService.canAddSubmissions(
+        Set<String> permittedForms = referenceForms.stream()
+            .filter(form -> formAccessService.canAddSubmissions(
                 user,
                 assignment,
-                form));
-        if (!canAddReferenceSubmission) {
+                form))
+            .collect(java.util.stream.Collectors.toSet());
+        if (permittedForms.isEmpty()) {
             throw new AccessDeniedException(
                 "No Reference form is available for submission");
         }
+        return permittedForms;
     }
 
     private ReferenceEntryV1Dto toDto(ReferenceEntry entry) {

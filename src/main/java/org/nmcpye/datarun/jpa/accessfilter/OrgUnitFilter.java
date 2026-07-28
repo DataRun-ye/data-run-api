@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
@@ -19,9 +20,14 @@ import java.util.stream.Stream;
 @Component
 public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
     private final AssignmentRepository flowInstanceRepository;
+    private final AssignmentCaptureShadowComparator captureShadow;
 
-    public OrgUnitFilter(AssignmentRepository flowInstanceRepository) {
+    public OrgUnitFilter(
+        AssignmentRepository flowInstanceRepository,
+        AssignmentCaptureShadowComparator captureShadow
+    ) {
         this.flowInstanceRepository = flowInstanceRepository;
+        this.captureShadow = captureShadow;
     }
 
     @Override
@@ -66,13 +72,17 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
     }
 
     Set<OrgUnit> getDirectOrgUnits(CurrentUserDetails user, boolean includeDisabled) {
-        final var orgUnitSet = flowInstanceRepository.findAllByTeamUidIn(user.getUserTeamsUIDs());
-
-        return orgUnitSet.stream()
+        final var visibleAssignments = flowInstanceRepository
+            .findAllByTeamUidIn(user.getUserTeamsUIDs())
+            .stream()
             .filter(assignment -> !Boolean.TRUE.equals(assignment.getDeleted()))
             .filter(assignment -> includeDisabled
                 || (!Boolean.TRUE.equals(assignment.getTeam().getDisabled())
                 && !Boolean.TRUE.equals(assignment.getActivity().getDisabled())))
+            .toList();
+        captureShadow.compareDirectOrgUnits(user, visibleAssignments);
+
+        return visibleAssignments.stream()
             .map(Assignment::getOrgUnit)
             .collect(Collectors.toSet());
     }

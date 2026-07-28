@@ -5,10 +5,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.nmcpye.datarun.common.enumeration.FormPermission;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
+import org.nmcpye.datarun.userdetail.UserFormAccess;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Component
@@ -84,6 +88,52 @@ public class CanonicalCaptureFormResolver {
         return values.stream().sorted().toList();
     }
 
+    public List<String> resolveForActor(
+        Collection<String> assignmentForms,
+        Collection<UserFormAccess> formAccess,
+        String teamUid,
+        Instant now
+    ) {
+        LinkedHashSet<String> assignedFormUids = new LinkedHashSet<>();
+        if (assignmentForms == null) {
+            throw new IllegalArgumentException("assignment.forms is null");
+        }
+        assignmentForms.forEach(formUid ->
+            assignedFormUids.add(requiredUid(formUid, "assignment.forms entry"))
+        );
+
+        LinkedHashSet<String> capturePermissionFormUids = new LinkedHashSet<>();
+        if (formAccess != null) {
+            formAccess.stream()
+                .filter(access -> Objects.equals(access.getTeam(), teamUid))
+                .filter(access ->
+                    (access.getValidFrom() == null
+                        || access.getValidFrom().isBefore(now))
+                        && (access.getValidTo() == null
+                        || access.getValidTo().isAfter(now)))
+                .forEach(access -> {
+                    String formUid = requiredUid(
+                        access.getForm(),
+                        "team permission form"
+                    );
+                    if (access.getPermissions() == null) {
+                        throw new IllegalArgumentException(
+                            "team permission permissions is null"
+                        );
+                    }
+                    if (access.getPermissions().contains(FormPermission.ADD_SUBMISSIONS)
+                        || access.getPermissions().contains(FormPermission.EDIT_SUBMISSIONS)) {
+                        capturePermissionFormUids.add(formUid);
+                    }
+                });
+        }
+
+        return assignedFormUids.stream()
+            .filter(capturePermissionFormUids::contains)
+            .sorted()
+            .toList();
+    }
+
     private JsonNode readRequiredArray(String value, String fieldName) {
         if (value == null) {
             throw new IllegalArgumentException(fieldName + " is null");
@@ -104,5 +154,12 @@ public class CanonicalCaptureFormResolver {
             throw new IllegalArgumentException(fieldName + " is not a valid UID");
         }
         return value.textValue();
+    }
+
+    private String requiredUid(String value, String fieldName) {
+        if (!CodeGenerator.isValidUid(value)) {
+            throw new IllegalArgumentException(fieldName + " is not a valid UID");
+        }
+        return value;
     }
 }

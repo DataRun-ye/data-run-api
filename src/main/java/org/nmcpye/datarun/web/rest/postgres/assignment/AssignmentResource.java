@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.web.rest.postgres.assignment;
 
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.feedback.ErrorMessage;
@@ -10,6 +11,7 @@ import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.apiquery.QueryRequest;
@@ -38,11 +40,33 @@ public class AssignmentResource
     private final Logger log = LoggerFactory.getLogger(AssignmentResource.class);
 
     private final AssignmentService assignmentService;
+    private final AssignmentCaptureShadowComparator captureShadow;
 
     public AssignmentResource(AssignmentService assignmentService,
-                              AssignmentRepository assignmentRepository) {
+                              AssignmentRepository assignmentRepository,
+                              AssignmentCaptureShadowComparator captureShadow) {
         super(assignmentService, assignmentRepository);
         this.assignmentService = assignmentService;
+        this.captureShadow = captureShadow;
+    }
+
+    @Override
+    @GetMapping("")
+    protected ResponseEntity<PagedResponse<?>> getAll(QueryRequest queryRequest) {
+        Page<Assignment> processedPage = getList(queryRequest, null);
+        captureShadow.compareAssignmentList(
+            SecurityUtils.getCurrentUserDetailsOrThrow(),
+            processedPage.getContent(),
+            !queryRequest.isPaged()
+        );
+
+        String next = PagingConfigurator.createNextPageLink(processedPage);
+        PagedResponse<Assignment> response = PagingConfigurator.initPageResponse(
+            processedPage,
+            next,
+            getName()
+        );
+        return ResponseEntity.ok(response);
     }
 
     @RequestMapping(value = "forms", method = {RequestMethod.GET, RequestMethod.POST})

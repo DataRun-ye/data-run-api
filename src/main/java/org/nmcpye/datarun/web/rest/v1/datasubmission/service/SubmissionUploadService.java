@@ -3,10 +3,13 @@ package org.nmcpye.datarun.web.rest.v1.datasubmission.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator.VersionedUploadComparison;
+import org.nmcpye.datarun.assignmentshadow.BaselineAssignmentCaptureAdapter;
+import org.nmcpye.datarun.assignmentshadow.BaselineAssignmentCaptureAdapter.VersionedUploadDecision;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
-import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
@@ -17,7 +20,6 @@ import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
 import org.nmcpye.datarun.jpa.reference.ReferenceSubmissionResolver;
-import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.mapper.DataSubmissionUploadV1Mapper;
@@ -35,9 +37,10 @@ public class SubmissionUploadService {
     private final DataSubmissionUploadV1Mapper mapper;
     private final ObjectMapper objectMapper;
     private final AssignmentRepository assignmentRepository;
-    private final AssignmentFormAccessService formAccessService;
     private final TemplateVersionResolver templateVersionResolver;
     private final ReferenceSubmissionResolver referenceResolver;
+    private final BaselineAssignmentCaptureAdapter baselineCapture;
+    private final AssignmentCaptureShadowComparator captureShadow;
 
     @Transactional
     public EntitySaveSummaryVM upsertAll(
@@ -49,6 +52,8 @@ public class SubmissionUploadService {
 
         var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
         List<DataSubmission> submissions = new ArrayList<>(requests.size());
+        List<VersionedUploadComparison> comparisons =
+            new ArrayList<>(requests.size());
         for (DataSubmissionUploadV1Dto request : requests) {
             DataSubmission submission = mapper.toEntity(request);
             Assignment assignment = assignmentFor(submission);
@@ -57,16 +62,43 @@ public class SubmissionUploadService {
                 submission,
                 assignment,
                 template.getTemplate());
-            authorize(submission, assignment, currentUser);
-            generateMissingRepeatIds(submission, template);
+            VersionedUploadDecision authorization =
+                baselineCapture.decideVersionedUpload(
+                    currentUser,
+                    assignment,
+                    submission.getForm()
+                );
+            VersionedUploadComparison comparison =
+                new VersionedUploadComparison(
+                    assignment,
+                    submission.getForm(),
+                    authorization.accepted()
+                );
+            if (!authorization.accepted()) {
+                captureShadow.compareVersionedUploads(
+                    currentUser,
+                    List.of(comparison)
+                );
+            }
+            enforceAuthorization(
+                authorization,
+                submission,
+                assignment
+            );
+            generateMissingRepeatIds(
+                submission,
+                template
+            );
             referenceResolver.resolve(
                 submission,
                 assignment,
                 template.getTemplate(),
                 request.getReferenceDefinitions());
             submissions.add(submission);
+            comparisons.add(comparison);
         }
 
+        captureShadow.compareVersionedUploads(currentUser, comparisons);
         submissionService.upsertAll(submissions, summary);
         return summary;
     }
@@ -111,25 +143,19 @@ public class SubmissionUploadService {
         submission.setActivity(assignment.getActivity().getUid());
     }
 
-    private void authorize(
+    private void enforceAuthorization(
+        VersionedUploadDecision authorization,
         DataSubmission submission,
-        Assignment assignment,
-        CurrentUserDetails user) {
-        if (user.isSuper()) {
-            return;
-        }
-
+        Assignment assignment
+    ) {
         String teamUid = assignment.getTeam().getUid();
-        if (!user.getUserTeamsUIDs().contains(teamUid)) {
+        if (authorization == VersionedUploadDecision.NOT_DIRECT_TEAM) {
             throw new IllegalQueryException(
                 ErrorCode.E4114,
                 teamUid,
                 submission.getUid());
         }
-        if (!formAccessService.canSubmitData(
-            user,
-            assignment,
-            submission.getForm())) {
+        if (authorization == VersionedUploadDecision.NO_CAPTURE_PERMISSION) {
             throw new IllegalQueryException(ErrorCode.E1112, teamUid);
         }
     }

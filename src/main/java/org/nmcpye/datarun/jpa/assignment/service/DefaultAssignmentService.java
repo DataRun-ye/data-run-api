@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.jpa.assignment.service;
 
 import org.nmcpye.datarun.assignmentshadow.AssignmentAuthorityCommandService;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
 import org.nmcpye.datarun.datatemplateprocessor.ReferenceAssignmentFormGate;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
@@ -32,6 +33,7 @@ public class DefaultAssignmentService
     private final AssignmentMaintenanceService maintenanceService;
     private final AssignmentWithAccessMapper assignmentMapper;
     private final ReferenceAssignmentFormGate referenceAssignmentFormGate;
+    private final AssignmentCaptureShadowComparator captureShadow;
 
     public DefaultAssignmentService(AssignmentRepository repository,
                                     UserAccessService userAccessService,
@@ -39,13 +41,15 @@ public class DefaultAssignmentService
                                     AssignmentMaintenanceService maintenanceService,
                                     AssignmentWithAccessMapper assignmentMapper,
                                     ReferenceAssignmentFormGate referenceAssignmentFormGate,
-                                    AssignmentAuthorityCommandService authorityCommands) {
+                                    AssignmentAuthorityCommandService authorityCommands,
+                                    AssignmentCaptureShadowComparator captureShadow) {
         super(repository, cacheManager, userAccessService);
         this.repository = repository;
         this.maintenanceService = maintenanceService;
         this.assignmentMapper = assignmentMapper;
         this.referenceAssignmentFormGate = referenceAssignmentFormGate;
         this.authorityCommands = authorityCommands;
+        this.captureShadow = captureShadow;
     }
 
     @Override
@@ -92,6 +96,11 @@ public class DefaultAssignmentService
             assignedPage.getContent(),
             response.getContent(),
             referenceVersion);
+        captureShadow.compareAssignmentForms(
+            user,
+            assignedPage.getContent(),
+            !queryRequest.isPaged()
+        );
         return response;
     }
 

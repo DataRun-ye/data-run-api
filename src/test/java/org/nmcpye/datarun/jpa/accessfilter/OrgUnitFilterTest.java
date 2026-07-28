@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
 import org.junit.jupiter.api.Test;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
@@ -13,6 +14,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,11 +33,20 @@ class OrgUnitFilterTest {
             assignment("disabled-activity", false, true, false)
         ));
 
-        Set<OrgUnit> result = new OrgUnitFilter(repository).getDirectOrgUnits(user, false);
+        AssignmentCaptureShadowComparator captureShadow =
+            mock(AssignmentCaptureShadowComparator.class);
+        Set<OrgUnit> result = new OrgUnitFilter(
+            repository,
+            captureShadow
+        ).getDirectOrgUnits(user, false);
 
         assertThat(result).extracting(OrgUnit::getUid)
             .containsExactly("enabled");
         verify(repository).findAllByTeamUidIn(Set.of("direct"));
+        verify(captureShadow).compareDirectOrgUnits(
+            eq(user),
+            org.mockito.ArgumentMatchers.anyList()
+        );
     }
 
     @Test
@@ -50,11 +61,20 @@ class OrgUnitFilterTest {
             assignment("disabled-activity", false, true, false)
         ));
 
-        Set<OrgUnit> result = new OrgUnitFilter(repository).getDirectOrgUnits(user, true);
+        AssignmentCaptureShadowComparator captureShadow =
+            mock(AssignmentCaptureShadowComparator.class);
+        Set<OrgUnit> result = new OrgUnitFilter(
+            repository,
+            captureShadow
+        ).getDirectOrgUnits(user, true);
 
         assertThat(result).extracting(OrgUnit::getUid)
             .containsExactlyInAnyOrder("enabled", "disabled-team", "disabled-activity");
         verify(repository).findAllByTeamUidIn(Set.of("direct"));
+        verify(captureShadow).compareDirectOrgUnits(
+            eq(user),
+            org.mockito.ArgumentMatchers.anyList()
+        );
     }
 
     private Assignment assignment(String uid, boolean teamDisabled, boolean activityDisabled, boolean deleted) {

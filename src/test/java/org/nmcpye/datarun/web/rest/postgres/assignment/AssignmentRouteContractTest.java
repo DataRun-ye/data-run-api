@@ -2,10 +2,10 @@ package org.nmcpye.datarun.web.rest.postgres.assignment;
 
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.apiquery.QueryRequest;
+import org.nmcpye.datarun.assignmentshadow.AssignmentCaptureShadowComparator;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.web.rest.common.BaseReadResource;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,7 +27,7 @@ class AssignmentRouteContractTest {
             new String[]{"/api/custom/assignments", "/api/v1/assignments"},
             root.value());
 
-        Method assignments = BaseReadResource.class.getDeclaredMethod(
+        Method assignments = AssignmentResource.class.getDeclaredMethod(
             "getAll",
             QueryRequest.class);
         assertArrayEquals(
@@ -51,7 +51,8 @@ class AssignmentRouteContractTest {
     void assignmentMappingsRegisterWithoutAmbiguity() {
         AssignmentResource resource = new AssignmentResource(
             mock(AssignmentService.class),
-            mock(AssignmentRepository.class));
+            mock(AssignmentRepository.class),
+            mock(AssignmentCaptureShadowComparator.class));
 
         assertDoesNotThrow(
             () -> MockMvcBuilders.standaloneSetup(resource).build());
