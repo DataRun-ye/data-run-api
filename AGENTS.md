@@ -16,6 +16,9 @@ Core rules:
   persistence/network effects, and focused executable tests.
 - Keep one behavior or bounded prerequisite per change. Do not hide unrelated
   cleanup inside feature work.
+- Implementation agents follow the accepted handoff in `current-work.md`.
+  They do not read ignored `.review` material or architect-only transition
+  strategy unless the handoff explicitly requires an architect review.
 - Do not deploy, mutate production data, or run a production migration without
   explicit user approval.
 - Preserve compatibility with deployed mobile clients unless an approved

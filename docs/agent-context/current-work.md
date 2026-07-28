@@ -7,10 +7,9 @@ or deployment authority.
 
 ## Now
 
-- Define the product-policy cutover for same-UID submission mutation,
-  synchronized edit/delete, and conflict behavior. The released app currently
-  creates and idempotently retries submissions; compatibility reachability is
-  not authority to invent a broader lifecycle.
+- Review and accept `initial-event-transition-strategy.md`. This is an
+  architect task only. Do not implement event storage, speculative platform
+  contracts, or future submission lifecycle behavior during this review.
 
 Reference activation remains parked in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while
@@ -22,6 +21,10 @@ explicitly confirms them.
 
 ## Next
 
+- Implement the assignment-shadow foundation from the accepted transition
+  strategy: immutable bootstrap facts, V1 identity links, a current
+  actor-role-scope projection, and an equivalence report. V1 remains
+  authoritative and no released route or authorization decision changes.
 - Close the named access compatibility exits after their endpoint/client
   decisions: inherited-route gating, the four generic group/set filters,
   duplicated mobile `formPermissions`, V1 profile legacy fields, user-group
