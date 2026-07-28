@@ -6,8 +6,7 @@ import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
- * Generic Access Filter Interface, initial temporary
- * step before transitioning to ABAC
+ * Entity-read visibility filter used by generic read services.
  *
  * @author Hamza Assada
  * @since 21/03/2025
@@ -17,7 +16,12 @@ public interface AccessFilter<T extends AuditableObject<?>> {
 
     Specification<T> getAccessSpecification(CurrentUserDetails user, QueryRequest queryRequest);
 
-    static <E extends AuditableObject<?>> Specification<E> createDefaultSpecification(CurrentUserDetails user) {
+    /**
+     * Compatibility policy for generic resources that do not yet have an
+     * explicit domain visibility filter. Retire it by classifying each such
+     * route, then registering a domain filter or removing the route.
+     */
+    static <E extends AuditableObject<?>> Specification<E> createCompatibilitySpecification(CurrentUserDetails user) {
         return (root, query, criteriaBuilder) -> {
             if (user.isSuper()) {
                 return criteriaBuilder.conjunction();

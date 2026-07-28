@@ -59,7 +59,7 @@ public class OrgUnitResource extends JpaBaseResource<OrgUnit> {
         @RequestParam(name = "forceUpdate", required = false, defaultValue = "false") boolean forceUpdate) {
         log.debug("REST request to update orgUnit Paths");
         final var user = SecurityUtils.getCurrentUserDetailsOrThrow();
-        hasMinimalRightsOrThrow(user);
+        requireResourceApiAccess(user);
         try {
             if (forceUpdate) {
                 serviceCustom.forceUpdatePaths();

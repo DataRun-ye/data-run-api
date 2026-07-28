@@ -20,7 +20,6 @@ import org.nmcpye.datarun.jpa.common.JpaIdentifiableObject;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.jpa.usegroup.UserGroup;
 import org.nmcpye.datarun.jpa.userauthority.Authority;
-import org.nmcpye.datarun.jpa.userole.Role;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -106,16 +105,6 @@ public class User extends JpaIdentifiableObject {
     @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
     @BatchSize(size = 20)
     private Set<Authority> authorities = new HashSet<>();
-
-    @JsonIgnore
-    @ManyToMany
-    @JoinTable(
-        name = "app_user_role_members",
-        joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
-        inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")}
-    )
-    @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
-    Set<Role> roles;
 
     @ManyToMany(mappedBy = "users")
     @JsonIgnoreProperties(value = {"managedTeams", "managedByTeams", "users", "assignments",

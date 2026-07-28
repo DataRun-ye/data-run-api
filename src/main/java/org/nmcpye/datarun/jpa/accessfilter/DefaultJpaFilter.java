@@ -30,6 +30,6 @@ public class DefaultJpaFilter<T extends AuditableObject<?>>
     @Override
     public Specification<T> getAccessSpecification(CurrentUserDetails user,
                                                    QueryRequest queryRequest) {
-        return AccessFilter.createDefaultSpecification(user);
+        return AccessFilter.createCompatibilitySpecification(user);
     }
 }

@@ -7,7 +7,7 @@ import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 
 /**
  * Convert field/section snapshots + metadata to
- * TemplateElement entities (in-memory only).
+ * in-memory projection inputs.
  *
  * @author Hamza Assada
  * @since 09/09/2025
@@ -20,4 +20,3 @@ public interface TemplateElementBuilder {
     TemplateElement buildTemplateElementFromRepeat(FormSectionConf section, PathMetadata meta,
                                                    TemplateVersion templateVersion);
 }
-

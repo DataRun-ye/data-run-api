@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
-import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.utils.UuidUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -85,56 +84,4 @@ public class MetadataUpsertService {
         }
     }
 
-    // -------- template_element upsert ----------
-    private static final String TEMPLATE_UPSERT_SQL = """
-        INSERT INTO template_element (uid, template_uid, template_version_uid, template_version_no,
-                                      canonical_element_id, json_data_path, canonical_path, name, data_element_uid,
-           data_type, semantic_type, option_set_uid, option_set_id, parent_repeat_json_data_path,
-           parent_repeat_canonical_path, display_label, sort_order, created_date)
-        VALUES
-          (:uid, :templateUid, :templateVersionUid, :templateVersionNo, :canonicalElementId,
-           :jsonDataPath, :canonicalPath, :name, :dataElementUid,
-           :dataType, :semanticType, :optionSetUid, :optionSetId, :parentRepeatJsonDataPath,
-           :parentRepeatCanonicalPath, CAST(:displayLabel AS jsonb), :sortOrder, now())
-         ON CONFLICT (template_uid, template_version_uid, canonical_path) DO Nothing;
-        """;
-
-    @Transactional
-    public void upsertTemplateElements(List<TemplateElement> elems) {
-        if (elems == null || elems.isEmpty()) return;
-        List<SqlParameterSource> batch = new ArrayList<>(elems.size());
-        for (TemplateElement e : elems) {
-            MapSqlParameterSource p = new MapSqlParameterSource();
-            p.addValue("uid", e.getUid());
-            p.addValue("templateUid", e.getTemplateUid());
-            p.addValue("templateVersionUid", e.getTemplateVersionUid());
-            p.addValue("templateVersionNo", e.getTemplateVersionNo());
-            var ceId = UuidUtils.toUuidOrNull(e.getCanonicalElementId());
-            p.addValue("canonicalElementId", ceId);
-            p.addValue("jsonDataPath", e.getJsonDataPath());
-            p.addValue("canonicalPath", e.getCanonicalPath());
-            p.addValue("name", e.getName());
-            p.addValue("dataElementUid", e.getDataElementUid());
-            p.addValue("dataType", e.getDataType() == null ? null : e.getDataType().name());
-            p.addValue("semanticType", e.getSemanticType() == null ? null : e.getSemanticType().name());
-            p.addValue("optionSetUid", e.getOptionSetUid());
-            p.addValue("optionSetId", e.getOptionSetId());
-            p.addValue("parentRepeatJsonDataPath", e.getParentRepeatJsonDataPath());
-            p.addValue("parentRepeatCanonicalPath", e.getParentRepeatCanonicalPath());
-            try {
-                p.addValue("displayLabel", objectMapper.writeValueAsString(e.getDisplayLabel()));
-            } catch (JsonProcessingException ex) {
-                throw new IllegalStateException(ex);
-            }
-            p.addValue("sortOrder", e.getSortOrder());
-            batch.add(p);
-        }
-
-//        chunkExecution(batch, TEMPLATE_UPSERT_SQL);
-        for (int i = 0; i < batch.size(); i += BATCH_SIZE) {
-            int end = Math.min(batch.size(), i + BATCH_SIZE);
-            List<SqlParameterSource> slice = batch.subList(i, end);
-            npJdbc.batchUpdate(TEMPLATE_UPSERT_SQL, slice.toArray(new SqlParameterSource[0]));
-        }
-    }
 }

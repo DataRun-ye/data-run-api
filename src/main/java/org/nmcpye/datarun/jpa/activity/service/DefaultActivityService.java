@@ -42,13 +42,4 @@ public class DefaultActivityService
         }
         return repository.findAllByUser(pageable);
     }
-
-    private void clearCaches(Activity activity) {
-//        team.getUsers().forEach(user -> {
-//            this.clearCaches(UserRepository.USERS_BY_LOGIN_CACHE, user.getLogin());
-//            this.clearCaches(UserRepository.USERS_BY_EMAIL_CACHE, user.getEmail());
-//            this.clearCaches(UserRepository.USER_TEAM_IDS_CACHE, user.getLogin());
-//            this.clearCaches(UserRepository.USER_GROUP_IDS_CACHE, user.getLogin());
-//        });
-    }
 }

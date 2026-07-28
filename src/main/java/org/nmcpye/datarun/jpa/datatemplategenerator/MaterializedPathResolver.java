@@ -179,12 +179,10 @@ public class MaterializedPathResolver implements PathResolver {
 
     // For sections: find nearest repeatable ancestor *above* this section (i.e., among earlier segments)
     private String findNearestRepeatAncestorAbove(List<String> segments) {
-        for (int i = segments.size() - 1; i >= 0; i--) {
+        for (int i = segments.size() - 2; i >= 0; i--) {
             String seg = segments.get(i);
             FormSectionConf s = sectionByName.get(seg);
             if (s != null && Boolean.TRUE.equals(s.getRepeatable())) {
-                // if this is the final segment and equals the current section name, skip because that's the section itself
-                // the caller will use this method when they need an ancestor above
                 return String.join(".", segments.subList(0, i + 1));
             }
         }

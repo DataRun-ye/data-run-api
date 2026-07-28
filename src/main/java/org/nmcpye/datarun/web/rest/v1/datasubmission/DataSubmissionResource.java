@@ -14,7 +14,7 @@ import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
 import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidator;
 import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
+import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -25,7 +25,7 @@ import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.nmcpye.datarun.apiquery.QueryRequestValidator;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
-import org.nmcpye.datarun.web.rest.v1.datasubmission.service.ReferenceSubmissionUploadService;
+import org.nmcpye.datarun.web.rest.v1.datasubmission.service.SubmissionUploadService;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -55,22 +55,22 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     final private DataSubmissionService submissionService;
     private final CompositeSubmissionValidator compositeValidator;
     private final SubmissionAccessValidator submissionAccessValidator;
-    private final TemplateElementService templateElementService;
-    private final ReferenceSubmissionUploadService referenceUploadService;
+    private final TemplateVersionResolver templateVersionResolver;
+    private final SubmissionUploadService uploadService;
 
     public DataSubmissionResource(DataSubmissionService submissionService,
                                   DataSubmissionRepository submissionRepository,
                                   ObjectMapper objectMapper, CompositeSubmissionValidator compositeValidator,
                                   SubmissionAccessValidator submissionAccessValidator,
-                                  TemplateElementService templateElementService,
-                                  ReferenceSubmissionUploadService referenceUploadService) {
+                                  TemplateVersionResolver templateVersionResolver,
+                                  SubmissionUploadService uploadService) {
         super(submissionService, submissionRepository);
         this.submissionService = submissionService;
         this.objectMapper = objectMapper;
         this.compositeValidator = compositeValidator;
         this.submissionAccessValidator = submissionAccessValidator;
-        this.templateElementService = templateElementService;
-        this.referenceUploadService = referenceUploadService;
+        this.templateVersionResolver = templateVersionResolver;
+        this.uploadService = uploadService;
     }
 
     @Deprecated(since = "V7, main method do the same now")
@@ -110,28 +110,27 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
 
     @Override
     protected void saveEntity(DataSubmission payLoadEntity, EntitySaveSummaryVM summary) {
-        hasMinimalRightsOrThrow(SecurityUtils.getCurrentUserDetailsOrThrow());
+        requireResourceApiAccess(SecurityUtils.getCurrentUserDetailsOrThrow());
         var processedEntity = preProcess(List.of(payLoadEntity))
             .stream().findFirst().orElseThrow(() -> new IllegalQueryException("processing: " + payLoadEntity.getUid() + " swallowed submission"));
-        submissionService.upsert(processedEntity,
-            SecurityUtils.getCurrentUserDetailsOrThrow(), summary);
+        submissionService.upsert(processedEntity, summary);
 
     }
 
     @Override
     public ResponseEntity<EntitySaveSummaryVM> saveAll(List<DataSubmission> entities) {
-        hasMinimalRightsOrThrow(SecurityUtils.getCurrentUserDetailsOrThrow());
+        requireResourceApiAccess(SecurityUtils.getCurrentUserDetailsOrThrow());
         EntitySaveSummaryVM summaryVM = new EntitySaveSummaryVM();
-        submissionService.upsertAll(preProcess(entities), SecurityUtils.getCurrentUserDetailsOrThrow(), summaryVM);
+        submissionService.upsertAll(preProcess(entities), summaryVM);
         return ResponseEntity.ok(summaryVM);
     }
 
     @PostMapping(value = "/bulk", params = "referenceVersion=1")
-    public ResponseEntity<EntitySaveSummaryVM> saveReferenceAll(
+    public ResponseEntity<EntitySaveSummaryVM> saveVersionedUpload(
         @RequestBody List<DataSubmissionUploadV1Dto> requests) {
-        hasMinimalRightsOrThrow(
+        requireResourceApiAccess(
             SecurityUtils.getCurrentUserDetailsOrThrow());
-        return ResponseEntity.ok(referenceUploadService.upsertAll(requests));
+        return ResponseEntity.ok(uploadService.upsertAll(requests));
     }
 
     @Override
@@ -139,10 +138,10 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteByIdUid(@PathVariable("id") String id,
                                               @AuthenticationPrincipal CurrentUserDetails user) {
-        hasMinimalRightsOrThrow(user);
+        requireResourceApiAccess(user);
         log.debug("REST request to delete from {}: {}", getName(), id);
         final var entity = identifiableObjectService.findByUid(id).orElseThrow();
-        if (aclService.canDelete(entity, user)) {
+        if (resourceApiAuthorization.canManage(user)) {
             identifiableObjectService.delete(entity);
         } else {
             throw new DeleteAccessDeniedException("");
@@ -156,10 +155,15 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
 
     @Override
     protected List<DataSubmission> preProcess(List<DataSubmission> payLoadEntities) {
+        // Compatibility path for the unversioned generic write routes. The
+        // released mobile uses saveVersionedUpload instead.
         return payLoadEntities.stream()
             .peek(payLoadEntity -> {
                 ObjectNode root = (ObjectNode) (payLoadEntity.getFormData() == null ? objectMapper.createObjectNode() : payLoadEntity.getFormData().deepCopy());
-                final var migrationRepeatIdGenerator = new MigrationRepeatIdGenerator(templateElementService.getTemplateElementMap(payLoadEntity.getForm(), payLoadEntity.getFormVersion()));
+                final var migrationRepeatIdGenerator =
+                    new MigrationRepeatIdGenerator(templateVersionResolver
+                        .resolveByUid(payLoadEntity.getForm(),
+                            payLoadEntity.getFormVersion()));
                 int generated = migrationRepeatIdGenerator
                     .generateMissingIdsForMigration(root, payLoadEntity.getUid());
                 if (generated > 0) {

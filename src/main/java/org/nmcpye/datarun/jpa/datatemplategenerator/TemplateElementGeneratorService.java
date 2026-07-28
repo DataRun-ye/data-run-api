@@ -31,8 +31,8 @@ public class TemplateElementGeneratorService {
     private final OptionSetRepository optionSetRepository;
 
     /**
-     * Generates template elements and persists them via MetadataUpsertService (batch upsert).
-     * This method is idempotent (uses deterministic UIDs) and safe for concurrent runs.
+     * Derives and persists canonical projection metadata for one published
+     * template version. This method is idempotent and safe for concurrent runs.
      */
     @Transactional
     public List<TemplateElement> generate(String templateUid, String versionUid) {
@@ -76,9 +76,6 @@ public class TemplateElementGeneratorService {
                 SemanticType.Repeat.name()
             );
             final String repeatCanonicalUid = canonicalUidFromStringAsUuid(repeatCanonicalKey);
-
-            // attach to the template element
-            repeatCfg.setCanonicalElementId(repeatCanonicalUid);
 
             CanonicalElement ce = createCanonicalElement(repeatCfg, repeatCanonicalUid, null);
             canonicalByUid.putIfAbsent(repeatCanonicalUid, ce);
@@ -140,9 +137,6 @@ public class TemplateElementGeneratorService {
 
             final String fieldCanonicalUid = canonicalUidFromStringAsUuid(fieldCanonicalKey);
 
-            // attach to the template element
-            cfg.setCanonicalElementId(fieldCanonicalUid);
-
             // create or merge canonical element
 
             CanonicalElement ce = canonicalByUid.get(fieldCanonicalUid);
@@ -167,9 +161,6 @@ public class TemplateElementGeneratorService {
 
         // canonical elements upsert (this will append json_data_paths via SQL OR merge logic)
         metadataUpsertService.upsertCanonicalElements(canonicalList);
-
-        // then template elements upsert
-        metadataUpsertService.upsertTemplateElements(out);
 
         return out;
     }

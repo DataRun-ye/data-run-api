@@ -40,8 +40,7 @@ public final class SafeNameUtils {
      * prepending ancestors (nearest parent already used), then appending a deterministic
      * numeric suffix if needed.
      * <p>
-     * This modifies TemplateElement.safeName (via setter) and updates canonicalByUid
-     * CanonicalElement.setSafeName(...) so canonical objects match.
+     * This updates each canonical element's safe name.
      */
     public static void ensureUniqueSafeNamesBasePreferred(Map<String, CanonicalElement> canonicalByUid) {
 
@@ -215,4 +214,3 @@ public final class SafeNameUtils {
         return lower;
     }
 }
-

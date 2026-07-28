@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.accessfilter.FormAccessService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.springframework.stereotype.Component;
 
@@ -17,15 +17,11 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class SubmissionAccessValidator {
-    private final FormAccessService formAccessService;
+    private final AssignmentFormAccessService formAccessService;
     private final AssignmentRepository assignmentRepository;
 
     public DataSubmission validateAccess(DataSubmission submission, CurrentUserDetails user) {
         if (!user.isSuper()) {
-            if (!formAccessService.canSubmitData(submission.getForm())) {
-                log.error("User {} cannot submit data", user.getUsername());
-                throw new IllegalQueryException(ErrorCode.E1112, submission.getTeam());
-            }
             if (submission.getAssignment() == null) {
                 throw new DomainValidationException("Assignment is required");
             }
@@ -36,6 +32,19 @@ public class SubmissionAccessValidator {
             if (!user.getUserTeamsUIDs().contains(incomingTeam)) {
                 log.error("User {}, with team {} cannot submit data", user.getUsername(), incomingTeam);
                 throw new IllegalQueryException(ErrorCode.E4114, submission.getTeam(), submission.getUid());
+            }
+            if (!formAccessService.canSubmitData(
+                user,
+                assignment,
+                submission.getForm())) {
+                log.error(
+                    "User {} cannot submit form {} for assignment {}",
+                    user.getUsername(),
+                    submission.getForm(),
+                    submission.getAssignment());
+                throw new IllegalQueryException(
+                    ErrorCode.E1112,
+                    submission.getTeam());
             }
         }
 

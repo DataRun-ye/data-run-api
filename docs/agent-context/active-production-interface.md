@@ -14,13 +14,46 @@ separately rather than being treated as equally active.
 | Status | Released mobile request | Server owner | Required downstream path |
 | --- | --- | --- | --- |
 | CORE-ACTIVE | `GET /api/v1/assignments?paged=false` | `AssignmentResource` inherited read route | `DefaultAssignmentService.findAllByUser` -> `AssignmentFilter` -> `AssignmentRepository` |
-| CORE-ACTIVE | `GET /api/v1/assignments/forms?paged=false&referenceVersion=1` | `AssignmentResource.getAllDto` | access-filtered assignments -> `AssignmentWithAccessMapper` -> `FormAccessService` -> `ReferenceAssignmentFormGate` |
+| CORE-ACTIVE | `GET /api/v1/assignments/forms?paged=false&referenceVersion=1` | `AssignmentResource.getAllDto` | access-filtered assignments -> `AssignmentWithAccessMapper` -> `AssignmentFormAccessService` -> `ReferenceAssignmentFormGate` |
 | GATED | `GET /api/v1/assignments/{uid}/referenceEntries` | `ReferenceEntryResource` | `AssignmentService.findAccessibleByIdOrUid` and assignment/form access checks; deployed but unused until a Reference form is assigned |
+| SUPPORTING-REACHABLE | `GET /api/v1/formPermissions` | `UserFormPermissionsResource` | the mobile synchronizes this into `user_form_permissions`, but no active mobile behavior reads that table; retire mobile registration/table first, then this endpoint |
 
 The released mobile owners are `AssignmentDatasource` and
 `ReferenceEntryDatasource`. Assignment synchronization persists assignments
 and replaces the local assignment-form projection only after its secondary
 request succeeds.
+
+## Authorization Ownership
+
+- `User.authorities` supplies Spring authentication authorities and the
+  administrator flag.
+- `CurrentUserDetailsService` rebuilds one request-scoped authorization
+  snapshot from enabled direct teams, their enabled managed teams, activities,
+  and team-scoped form grants. It is intentionally not cached across requests;
+  access changes must not depend on four independently invalidated caches.
+- `CurrentUserProfileV1` adapts that principal to the released
+  `/api/v1/myDetails` response. Legacy count and `userGroupsUIDs` fields are
+  V1 wire compatibility only and retire when older supported mobile clients no
+  longer require that profile shape.
+- `ResourceApiAuthorization` preserves the coarse inherited-resource gate:
+  administrators or users with a team may read; only administrators may use
+  generic writes. It does not decide entity visibility or form permissions and
+  retires as the inherited routes receive domain owners or are removed.
+- `UserAccessService` and registered access filters constrain entity reads.
+  Its creator-only fallback is a compatibility policy for unclassified generic
+  resources. Static service/filter comparison currently limits that fallback
+  to data-element group/set and org-unit group/set generic surfaces; each must
+  exit through an explicit domain filter or route removal.
+- `AssignmentFormAccessService` is the shared authorization owner for the
+  actor, assignment team, assigned form, and requested form action.
+- Organization-unit sync is scoped to direct-team assignments and their
+  ancestors. Managed teams remain active mobile selector/summary data, but
+  managed-team assignments are not synchronized and do not expand org-unit
+  visibility.
+- Legacy role, privilege, and Spring ACL tables have no source policy owner and
+  remain schema-only until a bounded Liquibase contraction.
+- User groups do not participate in the active authentication or work-scope
+  decision. Their CRUD and schema surface remains a separate removal decision.
 
 ## Form Templates
 
@@ -31,19 +64,37 @@ request succeeds.
 
 The released mobile owner is `DataFormTemplateDatasource`. The form-template
 cleanup pass must trace the filters, services, repositories, template
-processing, and cached element maps behind these two reads before removing
-similar-looking form APIs.
+processing, and pinned-version resolution behind these two reads before
+removing similar-looking form APIs.
 
-`/api/v1/dataFormTemplates` is a separate operational authoring boundary. It
-validates and processes a complete template, creates an immutable version,
-updates the template's latest-version pointer, and generates template metadata.
-It is supporting rather than released-mobile code and remains intact.
+`/api/v1/dataFormTemplates` is the separate operational authoring boundary.
+`FormTemplateAuthoringResource` validates and processes the complete template,
+then `DataTemplateInstanceService.publishVersion` creates one immutable version,
+updates the template's latest-version pointer, and invokes downstream
+canonical projection generation exactly once. The stored template
+version remains the product/form-runtime contract; generated element metadata
+supports extraction and is not a second template authority.
+
+`canonical_element` is the projection metadata consumed by the active ETL and
+pivot/export path, including nested-repeat ancestry and option-set identity.
+The duplicate `template_element` writer, JPA entity ownership, and cache were
+removed after confirming there was no source, mobile, SQL, or declared external
+reader. Its physical table remains schema-only until a separately tested
+Liquibase contraction.
+
+`DataElement` remains operational authoring input for stable field identity,
+name/code, and value type. Option-set UID is a template-field property and is
+resolved into canonical projection metadata downstream; template processing
+does not copy it from `DataElement`. Data-element groups and group sets have no
+product consumer and their source routes, services, repositories, and JPA
+relations are removed. Their physical tables are schema-only pending a separate
+Liquibase contraction.
 
 ## Submission
 
 | Status | Route | Server owner |
 | --- | --- | --- |
-| CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveReferenceAll` -> `ReferenceSubmissionUploadService` -> `DefaultDataSubmissionService.upsertAll` |
+| CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveVersionedUpload` -> `SubmissionUploadService` -> `DefaultDataSubmissionService.upsertAll` |
 | LEGACY-RISK / UNKNOWN | `GET /api/v1/dataSubmission`, `GET /byLastModified`, `POST /query`, `GET /{id}` | inherited generic read surface |
 | LEGACY-RISK / UNKNOWN | `POST /api/v1/dataSubmission/bulk` without the version parameter, `POST /`, `POST /return` | inherited/overridden compatibility write surface |
 | LEGACY-RISK / UNKNOWN | `GET|POST /api/v1/dataSubmission/objects` | deprecated flattened read surface |
@@ -51,10 +102,22 @@ It is supporting rather than released-mobile code and remains intact.
 
 The released mobile owner is `SubmissionUploadService`. Ordinary and
 Reference-capable submissions currently share this versioned upload boundary.
-The active upload maps the versioned DTO, resolves the pinned template,
-generates missing repeat metadata for compatibility, validates access and
-submission context, resolves Reference definitions, upserts whole submission
-JSON, and writes the current `outbox` row in the same transaction.
+The active upload maps the versioned DTO; resolves assignment and pinned
+template once through `TemplateVersionResolver`; canonicalizes server-owned
+assignment/template context;
+authorizes the canonical assignment/form pair; generates missing repeat
+metadata for compatibility; resolves Reference definitions; upserts whole
+submission JSON; and writes the current `outbox` row in the same transaction.
+Submission access and assignment-form projection use the same
+`AssignmentFormAccessService`; permissions from another team and forms absent
+from the assignment are rejected.
+`DataSubmissionService` receives canonical submissions and a result summary,
+not a security principal; authorization must complete before persistence.
+
+The unversioned generic writes still use the separate validator/enrichment
+pipeline in `DataSubmissionResource.preProcess`. They are not used by the
+released mobile and remain `LEGACY-RISK` pending the recorded endpoint-use
+decision; their reachability does not make them a second product authority.
 
 The disabled submission-history listener and its zero-caller processor/model
 alternatives are source-dead. Their physical table remains a schema concern.
@@ -91,6 +154,8 @@ that no external operator or older client uses them.
 | `POST /api/{v1,custom}/assignments/forms` | retain GET; remove POST method registration | released mobile uses GET; no in-repo POST caller; both methods currently run the same read handler | high / older external client unknown |
 | inherited assignment writes: `POST`, `POST /bulk`, `POST /return`, `PUT /{uid}`, `DELETE /{id}` | remove write surface | assignment synchronization is read-only; no in-repo caller | medium / possible manual admin use |
 | `GET /api/{v1,custom}/assignments/updatePaths` | assess manual use, then remove or restrict to the maintenance owner | no mobile/in-repo caller; path maintenance also has a service/scheduled owner | medium / operator use unknown |
+| `GET /api/{v1,custom}/teams/managed` | remove after external-client confirmation; then retire `managedTeamsUIDs` from the security principal/V1 profile | released mobile gets managed teams embedded in direct-team sync and never calls this route | high / external admin client unknown |
+| inherited `/api/{v1,custom}/userGroups` CRUD | remove source, then handle tables in a separate Liquibase cutover | no released-mobile call or active authentication/access decision uses user groups | high / external admin client unknown |
 | inherited `formTemplates` writes | remove; retain `dataFormTemplates` as the operational authoring boundary | mobile reads only; full-template authoring has a separate validated/versioned endpoint | high / external direct writer unknown |
 | inherited `formTemplateVersions` writes | remove | mobile reads only; controller overrides save with a no-op, so POST routes misleadingly report without persisting | high / clients may rely on broken behavior |
 | generic assignment/form reads `/byLastModified`, `/query`, and `/{id}` | remove only after access-log/operator confirmation | no released-mobile or in-repo caller | medium / external reads unknown |

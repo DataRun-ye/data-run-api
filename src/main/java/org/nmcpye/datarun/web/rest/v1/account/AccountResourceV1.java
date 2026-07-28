@@ -30,25 +30,14 @@ public class AccountResourceV1 extends AccountResource {
     }
 
     /**
-     * {@code GET /authenticate} : check if the user is authenticated, and return its details.
+     * {@code GET /myDetails} : return the authenticated user's mobile profile.
      *
      * @param user the Authenticated principal request.
      * @return the user details if the user is authenticated.
      */
     @GetMapping("/myDetails")
-    public CurrentUserDetails getMyDetails(@AuthenticationPrincipal CurrentUserDetails user) {
+    public CurrentUserProfileV1 getMyDetails(@AuthenticationPrincipal CurrentUserDetails user) {
         log.debug("REST request to check if the current user is authenticated");
-        return user;
+        return CurrentUserProfileV1.from(user);
     }
-//    @GetMapping("/myDetails")
-//    public ResponseEntity<PagedResponse<?>> getMyDetails(@AuthenticationPrincipal CurrentUserDetails user) {
-//        log.debug("REST request to check if the current user is authenticated");
-//
-//        Page<CurrentUserDetails> processedPage = new PageImpl<>(List.of(user));
-//
-//        String next = PagingConfigurator.createNextPageLink(processedPage);
-//
-//        PagedResponse<CurrentUserDetails> response = PagingConfigurator.initPageResponse(processedPage, next);
-//        return ResponseEntity.ok(response);
-//    }
 }

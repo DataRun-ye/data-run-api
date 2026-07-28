@@ -27,8 +27,9 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
     @Override
     public Specification<OrgUnit> getAccessSpecification(CurrentUserDetails user,
                                                          QueryRequest queryRequest) {
-        final var directOrgUnits = getDirectAndManagedOrgUnit(user, queryRequest.isIncludeDisabled());
-        final var directAndManagedUids = directOrgUnits.stream().map(OrgUnit::getUid).collect(Collectors.toSet());
+        final boolean includeDisabled = queryRequest != null && queryRequest.isIncludeDisabled();
+        final var directOrgUnits = getDirectOrgUnits(user, includeDisabled);
+        final var directUids = directOrgUnits.stream().map(OrgUnit::getUid).collect(Collectors.toSet());
 
         final Set<String> ancestorsUids = directOrgUnits
             .stream()
@@ -37,7 +38,7 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
             .collect(Collectors.toSet());
 
         final var allUids = Stream
-            .concat(ancestorsUids.stream(), directAndManagedUids.stream())
+            .concat(ancestorsUids.stream(), directUids.stream())
             .collect(Collectors.toSet());
 
         return (root, query, cb) -> {
@@ -64,15 +65,13 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
         };
     }
 
-    Set<OrgUnit> getDirectAndManagedOrgUnit(CurrentUserDetails user, boolean includeDisabled) {
-        final var orgUnitSet = flowInstanceRepository.findAllByTeamUidIn(
-            Stream.concat(user.getUserTeamsUIDs().stream(),
-                    user.getManagedTeamsUIDs().stream())
-                .collect(Collectors.toSet()));
+    Set<OrgUnit> getDirectOrgUnits(CurrentUserDetails user, boolean includeDisabled) {
+        final var orgUnitSet = flowInstanceRepository.findAllByTeamUidIn(user.getUserTeamsUIDs());
 
         return !includeDisabled ? orgUnitSet
             .stream()
-            .filter(assignment -> !assignment.getTeam().getDisabled() || !assignment.getActivity().getDisabled())
+            .filter(assignment -> !Boolean.TRUE.equals(assignment.getTeam().getDisabled())
+                && !Boolean.TRUE.equals(assignment.getActivity().getDisabled()))
             .map(Assignment::getOrgUnit)
             .collect(Collectors.toSet()) : orgUnitSet
             .stream()

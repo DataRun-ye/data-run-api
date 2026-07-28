@@ -10,7 +10,6 @@ import org.nmcpye.datarun.jpa.common.DefaultJpaSoftDeleteService;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
-import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.outbox.repository.OutboxWritePort;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
@@ -46,10 +45,12 @@ public class DefaultDataSubmissionService
 
     @Transactional
     @Override
-    public DataSubmission upsert(DataSubmission entity, CurrentUserDetails user, EntitySaveSummaryVM summary) {
+    public DataSubmission upsert(
+        DataSubmission entity,
+        EntitySaveSummaryVM summary) {
         // Absolutely minimal logic here. All actual work is delegated.
         // upsertAll will validate for null entity or null UID within the list.
-        List<DataSubmission> results = upsertAll(List.of(entity), user, summary);
+        List<DataSubmission> results = upsertAll(List.of(entity), summary);
 
         // This check is a safeguard for unexpected behavior from upsertAll,
         // rather than input validation.
@@ -85,8 +86,9 @@ public class DefaultDataSubmissionService
 
     @Transactional
     @Override
-    public List<DataSubmission> upsertAll(Collection<DataSubmission> entities,
-                                          CurrentUserDetails user, EntitySaveSummaryVM summary) {
+    public List<DataSubmission> upsertAll(
+        Collection<DataSubmission> entities,
+        EntitySaveSummaryVM summary) {
         if (entities == null || entities.isEmpty()) {
             return List.of();
         }

@@ -20,7 +20,7 @@ public class FormTemplateVersionFilter extends DefaultJpaFilter<TemplateVersion>
                 return cb.conjunction();
             }
 
-            if (user.getUserFormsUIDs() == null || user.getUserTeamsUIDs().isEmpty()) {
+            if (user.getUserFormsUIDs() == null || user.getUserFormsUIDs().isEmpty()) {
                 return cb.disjunction(); // user has no access
             }
 

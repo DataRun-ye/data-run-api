@@ -1,17 +1,16 @@
 # Current Work
 
-Updated: 2026-07-26
+Updated: 2026-07-28
 
 Purpose: accepted server work only. This file is not code, API, architecture,
 or deployment authority.
 
 ## Now
 
-- Clean the production interface one bounded domain at a time: assignment,
-  form templates, then submissions. For each domain, map the released mobile
-  contract, remove source-dead alternatives, reconcile duplicated ownership,
-  assess unused APIs, and keep physical schema removal in a separate
-  Liquibase slice. The living map is `active-production-interface.md`.
+- Define the product-policy cutover for same-UID submission mutation,
+  synchronized edit/delete, and conflict behavior. The released app currently
+  creates and idempotently retries submissions; compatibility reachability is
+  not authority to invent a broader lifecycle.
 
 Reference activation remains parked in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while
@@ -23,13 +22,18 @@ explicitly confirms them.
 
 ## Next
 
+- Close the named access compatibility exits after their endpoint/client
+  decisions: inherited-route gating, the four generic group/set filters,
+  duplicated mobile `formPermissions`, V1 profile legacy fields, user-group
+  CRUD/schema, and role/privilege/ACL schema residue.
 - Fix certificate-renewal Compose ownership in one bounded slice. Normal
   `docker compose up -d` currently starts a one-shot `letsencrypt` service that
   exits because its DNS credential path is not part of the normal deployment
   boundary. Routine API deployment must not invoke certificate issuance.
-- Repair fresh-database bootstrap in one bounded Liquibase slice. The current
-  chain reaches obsolete analytics changelogs that assume an `analytics`
-  schema; remove or supersede that dead path without mixing it into staging.
+- After source ownership settles, reconcile the full Liquibase chain in one
+  bounded pass before schema contraction. Prove clean replay and
+  production-clone upgrade, then classify obsolete analytics, ETL, option, and
+  projection changelogs without mixing in table drops.
 - Determine whether the production `pg_idkit` PostgreSQL image provides any
   active extension before replacing it with the stock PostgreSQL 16 image.
   The active `generate_uid()` function is application-owned.

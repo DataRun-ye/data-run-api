@@ -12,11 +12,7 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nmcpye.datarun.datatemplateelement.AggregationType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ReferenceType;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
-import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
 import org.nmcpye.datarun.jpa.option.OptionSet;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * @author Hamza Assada
@@ -54,11 +50,6 @@ public class DataElement extends BaseDataElement {
     @Column(name = "reference_type", updatable = false)
     private ReferenceType resourceType;
 
-
-    @ManyToMany(mappedBy = "dataElements")
-    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    @JsonIgnoreProperties(value = {"dataElementGroupSets", "dataElements", "translations"}, allowSetters = true)
-    protected Set<DataElementGroup> dataElementGroups = new HashSet<>();
 
     @JsonIgnore
     @Column(name = "is_measure")

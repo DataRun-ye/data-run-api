@@ -47,6 +47,6 @@ public class AccessFilterRegistry {
         AccessFilter<T> filter = (AccessFilter<T>) getFilter(entityClass);
         return spec.and(filter != null ?
             filter.getAccessSpecification(user, queryRequest) :
-            AccessFilter.createDefaultSpecification(user));
+            AccessFilter.createCompatibilitySpecification(user));
     }
 }

@@ -5,20 +5,16 @@ import org.ehcache.config.builders.ExpiryPolicyBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.jsr107.Eh107Configuration;
 import org.hibernate.cache.jcache.ConfigSettings;
-import org.nmcpye.datarun.caching.UserKeyGenerator;
 import org.nmcpye.datarun.etl.service.impl.RefTypeValueResolutionService;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.auditing.EntityAuditEvent;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
-import org.nmcpye.datarun.jpa.dataelementgroup.DataElementGroup;
-import org.nmcpye.datarun.jpa.dataelementgroupset.DataElementGroupSet;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
-import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateElementService;
+import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
 import org.nmcpye.datarun.jpa.option.Option;
 import org.nmcpye.datarun.jpa.option.OptionGroup;
 import org.nmcpye.datarun.jpa.option.OptionGroupSet;
@@ -33,8 +29,6 @@ import org.nmcpye.datarun.jpa.usegroup.UserGroup;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.jpa.userauthority.Authority;
-import org.nmcpye.datarun.jpa.userole.Privilege;
-import org.nmcpye.datarun.jpa.userole.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
@@ -76,36 +70,22 @@ public class CacheConfiguration {
         return hibernateProperties -> hibernateProperties.put(ConfigSettings.CACHE_MANAGER, cacheManager);
     }
 
-    @Bean("userKeyGen")
-    public KeyGenerator userKeyGen() {
-        return new UserKeyGenerator();
-    }
-
     @Bean
     public JCacheManagerCustomizer cacheManagerCustomizer() {
         return cm -> {
             createCache(cm, UserRepository.USERS_BY_LOGIN_CACHE);
             createCache(cm, UserRepository.USERS_BY_EMAIL_CACHE);
-            createCache(cm, UserRepository.USER_TEAM_IDS_CACHE);
-            createCache(cm, UserRepository.USER_GROUP_IDS_CACHE);
-            createCache(cm, UserRepository.USER_ACTIVITY_IDS_CACHE);
-            createCache(cm, UserRepository.USER_TEAM_FORM_ACCESS_CACHE);
-            createCache(cm, TemplateElementService.TEMPLATE_MAP_CACHE);
+            createCache(cm,
+                TemplateVersionResolver.TEMPLATE_VERSION_CONTEXT_CACHE);
             createCache(cm, DataTemplateRepository.TEMPLATE_BY_UID_CACHE);
             createCache(cm, TemplateVersionRepository.TEMPLATE_UID_VERSION_NO_JPA_CACHE);
             createCache(cm, TemplateVersionRepository.TEMPLATE_UID_VERSION_UID_JPA_CACHE);
             createCache(cm, TemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_JPA_CACHE);
             createCache(cm, User.class.getName());
-            createCache(cm, User.class.getName());
             createCache(cm, Authority.class.getName());
-            createCache(cm, Role.class.getName());
-            createCache(cm, Privilege.class.getName());
             createCache(cm, User.class.getName() + ".authorities");
             createCache(cm, User.class.getName() + ".teams");
-            createCache(cm, User.class.getName() + ".roles");
             createCache(cm, User.class.getName() + ".userGroups");
-            createCache(cm, Role.class.getName() + ".privileges");
-            createCache(cm, Privilege.class.getName() + ".roles");
 
             createCache(cm, UserGroup.class.getName());
             createCache(cm, UserGroup.class.getName() + ".users");
@@ -140,12 +120,6 @@ public class CacheConfiguration {
             createCache(cm, OrgUnitGroupSet.class.getName());
             createCache(cm, OrgUnitGroupSet.class.getName() + ".orgUnitGroups");
             createCache(cm, DataElement.class.getName());
-            createCache(cm, DataElement.class.getName() + ".dataElementGroups");
-            createCache(cm, DataElementGroup.class.getName());
-            createCache(cm, DataElementGroup.class.getName() + ".dataElements");
-            createCache(cm, DataElementGroup.class.getName() + ".dataElementGroupSets");
-            createCache(cm, DataElementGroupSet.class.getName());
-            createCache(cm, DataElementGroupSet.class.getName() + ".dataElementGroups");
             createCache(cm, DataTemplate.class.getName());
 
             createCache(cm, Option.class.getName());
@@ -159,7 +133,6 @@ public class CacheConfiguration {
             createCache(cm, OptionGroupSet.class.getName());
             createCache(cm, OptionGroupSet.class.getName() + ".optionGroups");
 
-            createCache(cm, TemplateElement.class.getName());
             createCache(cm, TemplateVersion.class.getName());
 
             createCache(cm, org.nmcpye.datarun.jpa.datasubmission.DataSubmission.class.getName());

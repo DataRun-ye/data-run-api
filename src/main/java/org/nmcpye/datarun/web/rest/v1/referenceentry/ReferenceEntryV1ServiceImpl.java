@@ -4,11 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.datatemplateprocessor.ReferenceTemplateCapabilityService;
-import org.nmcpye.datarun.jpa.accessfilter.FormAccessService;
+import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.service.AssignmentService;
 import org.nmcpye.datarun.jpa.reference.ReferenceEntry;
 import org.nmcpye.datarun.jpa.reference.ReferenceEntryRepository;
+import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
@@ -31,7 +32,7 @@ public class ReferenceEntryV1ServiceImpl implements ReferenceEntryV1Service {
 
     private final AssignmentService assignmentService;
     private final ReferenceTemplateCapabilityService capabilityService;
-    private final FormAccessService formAccessService;
+    private final AssignmentFormAccessService formAccessService;
     private final ReferenceEntryRepository referenceEntryRepository;
 
     @Override
@@ -72,8 +73,12 @@ public class ReferenceEntryV1ServiceImpl implements ReferenceEntryV1Service {
     private void assertReferenceSubmissionAccess(Assignment assignment) {
         Set<String> referenceForms = capabilityService.findReferenceTemplateUids(
             Optional.ofNullable(assignment.getForms()).orElse(Set.of()));
+        var user = SecurityUtils.getCurrentUserDetailsOrThrow();
         boolean canAddReferenceSubmission = referenceForms.stream()
-            .anyMatch(formAccessService::canAddSubmissions);
+            .anyMatch(form -> formAccessService.canAddSubmissions(
+                user,
+                assignment,
+                form));
         if (!canAddReferenceSubmission) {
             throw new AccessDeniedException(
                 "No Reference form is available for submission");

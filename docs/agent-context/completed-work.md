@@ -1,6 +1,6 @@
 # Completed Work
 
-Updated: 2026-07-26
+Updated: 2026-07-28
 
 Purpose: compact historical outcomes only. This file is not current runtime or
 deployment authority.
@@ -51,6 +51,28 @@ deployment authority.
 - The submission source pass removed unregistered migration-error listeners
   and zero-caller repository queries while retaining the active repeat-ID
   generator, compatibility routes, and physical tables.
+- Authentication remains owned by `User.authorities`; the unused
+  role/privilege source model was removed without changing its physical tables.
+- The unused Spring ACL engine and dependency were removed after preserving
+  its two live coarse rules in `ResourceApiAuthorization`. Entity and form
+  scope owners were unchanged; ACL tables remain for the schema pass.
+- Assignment-form projection, Reference reads, and submission validation now
+  share one team-and-assignment-scoped authorization owner. The unused generic
+  reverse mapper was removed and the projection exposes external UIDs.
+- Authentication now builds one uncached, request-current team/activity/form
+  scope; `/myDetails` has an explicit V1 compatibility adapter, organization
+  units follow direct assignments only, and the remaining access fallbacks
+  have named retirement paths.
+- `c9f614d9`: the released versioned submission route now has one general
+  upload owner that resolves assignment and pinned template once before
+  canonical authorization, repeat handling, Reference resolution, whole-JSON
+  persistence, and the current outbox transaction.
+- `4ad077f2`: submission persistence no longer accepts a security principal;
+  authorization completes before the canonical persistence boundary.
+- Template publication now has one immutable-version owner and one active
+  `canonical_element` projection. The duplicate `template_element` writer,
+  entity/cache ownership, and persistence-only fields were removed without a
+  schema change; nested-repeat ancestry and option-set projection are covered.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

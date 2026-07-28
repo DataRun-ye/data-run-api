@@ -9,7 +9,6 @@ import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.outbox.repository.OutboxWritePort;
-import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.springframework.cache.CacheManager;
 
 import java.util.List;
@@ -64,7 +63,6 @@ class DefaultDataSubmissionServiceTest {
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         List<DataSubmission> results = service.upsertAll(
             List.of(incomingUpdate, incomingDelete),
-            mock(CurrentUserDetails.class),
             summary);
 
         ArgumentCaptor<List<DataSubmission>> persistedBatches =

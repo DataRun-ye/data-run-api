@@ -50,7 +50,7 @@ public class AssignmentResource
                                                          @RequestParam(name = "referenceVersion", required = false, defaultValue = "0")
                                                          int referenceVersion,
                                                          @AuthenticationPrincipal CurrentUserDetails user) throws Exception {
-        hasMinimalRightsOrThrow(user);
+        requireResourceApiAccess(user);
         log.debug("REST request to getAll {}:{}", user.getUsername(), getName());
 
         Page<AssignmentWithAccessDto> processedPage = assignmentService.getAllUserAccessibleDto(
@@ -73,7 +73,7 @@ public class AssignmentResource
     public ResponseEntity<String> updatePaths(
         @RequestParam(name = "forceUpdate", required = false, defaultValue = "false") boolean forceUpdate,
         @AuthenticationPrincipal CurrentUserDetails user) {
-        hasMinimalRightsOrThrow(user);
+        requireResourceApiAccess(user);
         log.debug("REST request to update orgUnit Paths");
 
         try {
