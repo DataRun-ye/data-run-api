@@ -60,18 +60,22 @@ public class DefaultDataSubmissionService
         return results.get(0);
     }
 
-    private boolean updateEntityFields(DataSubmission existingEntity, DataSubmission incomingEntity) {
-        if(Boolean.TRUE.equals(existingEntity.getDeleted()) && Boolean.TRUE.equals(incomingEntity.getDeleted())) {
-            return true;
-        }
+    private boolean mutableFieldsMatch(DataSubmission existingEntity, DataSubmission incomingEntity) {
+        return Objects.equals(existingEntity.getFormData(), incomingEntity.getFormData())
+            && Objects.equals(existingEntity.getActivity(), incomingEntity.getActivity())
+            && Objects.equals(existingEntity.getAssignment(), incomingEntity.getAssignment())
+            && Objects.equals(existingEntity.getTeam(), incomingEntity.getTeam())
+            && Objects.equals(existingEntity.getOrgUnit(), incomingEntity.getOrgUnit())
+            && Objects.equals(existingEntity.getStatus(), incomingEntity.getStatus())
+            && Objects.equals(existingEntity.getOrgUnitCode(), incomingEntity.getOrgUnitCode())
+            && Objects.equals(existingEntity.getOrgUnitName(), incomingEntity.getOrgUnitName())
+            && Objects.equals(existingEntity.getTeamCode(), incomingEntity.getTeamCode());
+    }
 
-        if(Boolean.TRUE.equals(incomingEntity.getDeleted()) && Boolean.FALSE.equals(existingEntity.getDeleted())) {
-            existingEntity.setDeleted(true);
-            existingEntity.setDeletedAt(Instant.now());
-            return true;
-        }
-
-        existingEntity.setFormData(incomingEntity.getFormData().deepCopy());
+    private void updateMutableFields(DataSubmission existingEntity, DataSubmission incomingEntity) {
+        existingEntity.setFormData(incomingEntity.getFormData() == null
+            ? null
+            : incomingEntity.getFormData().deepCopy());
         existingEntity.setActivity(incomingEntity.getActivity());
         existingEntity.setAssignment(incomingEntity.getAssignment());
         existingEntity.setTeam(incomingEntity.getTeam());
@@ -80,8 +84,6 @@ public class DefaultDataSubmissionService
         existingEntity.setOrgUnitCode(incomingEntity.getOrgUnitCode());
         existingEntity.setOrgUnitName(incomingEntity.getOrgUnitName());
         existingEntity.setTeamCode(incomingEntity.getTeamCode());
-
-        return false;
     }
 
     @Transactional
@@ -110,6 +112,8 @@ public class DefaultDataSubmissionService
         List<DataSubmission> entitiesToPersist = new ArrayList<>();
         List<DataSubmission> entitiesToUpdate = new ArrayList<>();
         List<DataSubmission> entitiesToDelete = new ArrayList<>();
+        List<DataSubmission> normalResults = new ArrayList<>();
+        List<DataSubmission> deleteResults = new ArrayList<>();
 
         for (DataSubmission incomingEntity : entities) {
             DataSubmission existingEntity = existingEntitiesMap.get(incomingEntity.getUid());
@@ -120,16 +124,23 @@ public class DefaultDataSubmissionService
                     incomingEntity.setId(CodeGenerator.nextUlid());
                 }
                 entitiesToPersist.add(incomingEntity);
+            } else if (Boolean.TRUE.equals(incomingEntity.getDeleted())) {
+                deleteResults.add(existingEntity);
+                if (!Boolean.TRUE.equals(existingEntity.getDeleted())) {
+                    existingEntity.setDeleted(true);
+                    existingEntity.setDeletedAt(Instant.now());
+                    entitiesToDelete.add(existingEntity);
+                }
             } else {
-                final var deleted = updateEntityFields(existingEntity, incomingEntity);
-                if (deleted) entitiesToDelete.add(existingEntity);
-                else entitiesToUpdate.add(existingEntity);
+                normalResults.add(existingEntity);
+                if (!mutableFieldsMatch(existingEntity, incomingEntity)) {
+                    updateMutableFields(existingEntity, incomingEntity);
+                    entitiesToUpdate.add(existingEntity);
+                }
             }
         }
 
         List<DataSubmission> persistedResults = List.of();
-        List<DataSubmission> updatedResults = List.of();
-        List<DataSubmission> deletedResults = List.of();
 
         if (!entitiesToPersist.isEmpty()) {
             persistedResults = jpaAuditableObjectRepository.persistAllAndFlush(entitiesToPersist);
@@ -140,26 +151,27 @@ public class DefaultDataSubmissionService
             summary.getCreated().addAll(persistedResults.stream().map(DataSubmission::getUid).toList());
         }
         if (!entitiesToUpdate.isEmpty()) {
-            updatedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToUpdate);
+            List<DataSubmission> updatedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToUpdate);
             final var outboxEvents = updatedResults.stream()
                 .map(this::enqueueSubmissionsOutbox)
                 .toList();
             outboxRepo.insertByEventType(outboxEvents, "UPDATE");
-            summary.getUpdated().addAll(updatedResults.stream().map(DataSubmission::getUid).toList());
         }
 
         if (!entitiesToDelete.isEmpty()) {
-            deletedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToDelete);
+            List<DataSubmission> deletedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToDelete);
             final var outboxEvents = deletedResults.stream()
                 .map(this::enqueueSubmissionsOutbox)
                 .toList();
             outboxRepo.insertByEventType(outboxEvents, "DELETE");
-            summary.getUpdated().addAll(deletedResults.stream().map(DataSubmission::getUid).toList());
         }
 
+        summary.getUpdated().addAll(normalResults.stream().map(DataSubmission::getUid).toList());
+        summary.getUpdated().addAll(deleteResults.stream().map(DataSubmission::getUid).toList());
+
         List<DataSubmission> combinedResults = new ArrayList<>(persistedResults);
-        combinedResults.addAll(updatedResults);
-        combinedResults.addAll(deletedResults);
+        combinedResults.addAll(normalResults);
+        combinedResults.addAll(deleteResults);
         return combinedResults;
     }
 
