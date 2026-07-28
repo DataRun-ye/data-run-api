@@ -2,55 +2,85 @@
 
 Updated: 2026-07-28
 
-Purpose: accepted server work only. This file is not code, API, architecture,
-or deployment authority.
+Status: ACCEPTED FOR IMPLEMENTATION
 
-## Now
+## Baseline Assignment Eligibility Correction
 
-- Architect review and acceptance of
-  `initial-event-transition-strategy.md`. Implementation begins when the
-  accepted current blueprint replaces this review item.
+### Outcome
 
-Reference activation remains parked in
-[DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while
-the server runtime surface is cleaned.
+Organization-unit access must not be derived from a soft-deleted assignment.
+This aligns organization-unit synchronization with the released assignment
+list before assignment event shadowing begins.
 
-Endpoint removal candidates are assessed in
-`active-production-interface.md` and remain registered until the user
-explicitly confirms them.
+### Current Evidence
 
-## Next
+- `OrgUnitFilter.getDirectOrgUnits` loads assignments for the actor's direct
+  teams and filters disabled teams and activities, but not
+  `assignment.deleted`.
+- `DefaultJpaSoftDeleteService` excludes soft-deleted assignments from normal
+  assignment reads.
+- The production clone contains 78 organization-unit scopes held only through
+  retired assignments, exposed to eight users by the current filter.
+- `includeDisabled` controls disabled team/activity visibility. It does not
+  mean that retired assignments grant access.
 
-- Correct baseline assignment eligibility before event shadowing:
-  organization-unit synchronization must exclude soft-deleted assignments,
-  while the existing upload acceptance for retired assignment UIDs remains
-  unchanged and is characterized separately. Then implement the
-  assignment-shadow foundation from the accepted transition strategy.
-- Close the named access compatibility exits after their endpoint/client
-  decisions: inherited-route gating, the four generic group/set filters,
-  duplicated mobile `formPermissions`, `/api/v1` profile legacy fields,
-  user-group CRUD/schema, and role/privilege/ACL schema residue.
-- Fix certificate-renewal Compose ownership in one bounded slice. Normal
-  `docker compose up -d` currently starts a one-shot `letsencrypt` service that
-  exits because its DNS credential path is not part of the normal deployment
-  boundary. Routine API deployment must not invoke certificate issuance.
-- After source ownership settles, reconcile the full Liquibase chain in one
-  bounded pass before schema contraction. Prove clean replay and
-  production-clone upgrade, then classify obsolete analytics, ETL, option, and
-  projection changelogs without mixing in table drops.
-- Determine whether the production `pg_idkit` PostgreSQL image provides any
-  active extension before replacing it with the stock PostgreSQL 16 image.
-  The active `generate_uid()` function is application-owned.
-- After the production path and staging boundary are stable, keep one concise
-  deployment playbook covering verification, image publication, staging smoke,
-  production promotion, health checks, and rollback.
-- After Reference activation, characterize and consolidate JWT/token ownership
-  across server login, refresh, and mobile offline re-entry. Keep one active
-  signing-secret owner and one intentional lifetime policy.
+### Required Change
 
-## Maintenance
+In `OrgUnitFilter`, exclude every assignment where
+`Boolean.TRUE.equals(assignment.getDeleted())` before mapping assignments to
+organization units.
 
-- Keep only accepted open work.
-- Remove closed work and add one factual line to `completed-work.md` when
-  useful.
-- Do not copy issue checklists or speculative backlog into this file.
+The exclusion applies when `includeDisabled` is both `false` and `true`.
+Existing disabled-team and disabled-activity behavior remains unchanged.
+
+Add focused characterization covering:
+
+- a retired assignment is excluded in the normal path;
+- a retired assignment is still excluded when disabled entities are included;
+- enabled assignments remain included;
+- disabled teams and activities retain their current `includeDisabled`
+  behavior.
+
+### Scope
+
+- `src/main/java/org/nmcpye/datarun/jpa/accessfilter/OrgUnitFilter.java`
+- `src/test/java/org/nmcpye/datarun/jpa/accessfilter/OrgUnitFilterTest.java`
+
+### Production Boundary
+
+- Authority before and after: `OrgUnitFilter` remains the organization-unit
+  access owner for the released path.
+- API and payloads: unchanged.
+- Database schema and data: unchanged; no migration or backfill.
+- Submission upload: unchanged, including current handling of retired
+  assignment UIDs.
+- Event transition: no event tables, facts, projections, or shadow reads are
+  introduced in this slice.
+- Activation: the correction takes effect only when a later server release is
+  deployed.
+- Rollback: revert this code change; no persisted state requires rollback.
+
+### Excluded Work
+
+- Assignment event modeling or bootstrap.
+- Changes to assignment upload authorization.
+- Managed-team organization-unit expansion.
+- Endpoint removal, schema cleanup, or unrelated access refactoring.
+
+### Verification
+
+Run:
+
+```bash
+./mvnw -Dtest=OrgUnitFilterTest test
+./mvnw test
+git diff --check
+```
+
+### Definition Of Done
+
+- The focused tests prove both `includeDisabled` modes.
+- The full unit-test suite passes, or any unrelated baseline failure is
+  reported without being hidden or fixed in this slice.
+- The diff contains only the filter and its focused test.
+- No production deployment is performed.
