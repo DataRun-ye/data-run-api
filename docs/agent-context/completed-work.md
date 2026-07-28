@@ -139,6 +139,14 @@ deployment authority.
   projection then replaying rebuilt all pointers without changing journal
   count or content. The clone was restored from the untouched dump and
   production remained untouched.
+- `0e9e5ffe`: actual create, update, and delete mutations accepted by the
+  released versioned upload now append one immutable capture fact and advance
+  one rebuildable pointer in the same transaction when shadowing is enabled;
+  exact retries append nothing and shadowing remains disabled by default. The
+  285-unit/contract and 38-integration release gate passed. On the isolated
+  production clone, all 52,535 capture chains validated, all pointers rebuilt
+  from facts, and the journal fingerprint remained unchanged. The untouched
+  dump was restored and production remained untouched.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.
