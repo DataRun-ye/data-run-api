@@ -7,12 +7,10 @@ or deployment authority.
 
 ## Now
 
-- Characterize and consolidate the form-template/version boundary: released
-  mobile reads, confirmed administrator authoring, immutable version creation
-  and latest-version selection, pinned submission lookup, and downstream ETL
-  element metadata. Remove source-dead alternatives and give each surviving
-  compatibility path a named exit. Do not change stored template JSON or
-  schema in this pass.
+- Define the product-policy cutover for same-UID submission mutation,
+  synchronized edit/delete, and conflict behavior. The released app currently
+  creates and idempotently retries submissions; compatibility reachability is
+  not authority to invent a broader lifecycle.
 
 Reference activation remains parked in
 [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while
@@ -24,10 +22,6 @@ explicitly confirms them.
 
 ## Next
 
-- Define the product-policy cutover for same-UID submission mutation,
-  synchronized edit/delete, and conflict behavior. The released app currently
-  creates and idempotently retries submissions; compatibility reachability is
-  not authority to invent a broader lifecycle.
 - Close the named access compatibility exits after their endpoint/client
   decisions: inherited-route gating, the four generic group/set filters,
   duplicated mobile `formPermissions`, V1 profile legacy fields, user-group

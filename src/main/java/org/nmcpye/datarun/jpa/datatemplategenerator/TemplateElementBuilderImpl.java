@@ -10,13 +10,10 @@ import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.springframework.stereotype.Component;
 
-import java.nio.ByteBuffer;
-import java.security.MessageDigest;
 import java.util.Objects;
 
 /**
- * Builds TemplateElement instances. Keeps responsibility small: mapping / normalization.
- * Persistence is delegated to Publisher.
+ * Builds the in-memory inputs used to derive canonical projection metadata.
  *
  * @author Hamza Assada
  * @since 09/09/2025
@@ -34,27 +31,14 @@ public class TemplateElementBuilderImpl implements TemplateElementBuilder {
         Objects.requireNonNull(meta);
         Objects.requireNonNull(templateVersion);
 
-        final var h = hashToLong(String.join("|", templateVersion.getUid(),
-            meta.getJsonDataPath(), DataType.ARRAY.name(), SemanticType.Repeat.name()));
-
-        // synthetic dataElementUid for repeat grain
-        final var schemaFingerprint = "E_" + Long.toUnsignedString(h, 36);
-
         var cfg = TemplateElement.builder()
-//            .canonicalElementUid(schemaFingerprint) // set by caller
-            .dataElementUid(f.getId())
-            .uid(schemaFingerprint)
             .templateUid(templateVersion.getTemplateUid())
-            .templateVersionUid(templateVersion.getUid())
-            .templateVersionNo(templateVersion.getVersionNumber())
             .name(f.getName())
             .jsonDataPath(meta.getJsonDataPath())
             .canonicalPath(meta.getCanonicalPath())
             .dataType(DataType.fromValueType(f.getType()))
             .semanticType(SemanticType.fromValueType(f.getType()))
             .parentRepeatJsonDataPath(meta.getParentRepeatIdPath())
-            .parentRepeatCanonicalPath(meta.getCanonicalParentRepeatPath())
-            .sortOrder(f.getOrder())
             .optionSetUid(f.getOptionSet())
             .displayLabel(f.getLabel());
         return cfg.build();
@@ -70,43 +54,15 @@ public class TemplateElementBuilderImpl implements TemplateElementBuilder {
 
         var cfg = TemplateElement.builder()
             .templateUid(templateVersion.getTemplateUid())
-            .templateVersionUid(templateVersion.getUid())
-            .templateVersionNo(templateVersion.getVersionNumber())
             .dataType(DataType.ARRAY)
             .semanticType(SemanticType.Repeat);
 
-        final var h = hashToLong(String.join("|", templateVersion.getUid(),
-            meta.getJsonDataPath(), DataType.ARRAY.name(), SemanticType.Repeat.name()));
-
-        // synthetic dataElementUid for repeat grain
-        final var schemaFingerprint = "R_" + Math.abs(h);
-
         cfg
-//            .canonicalElementUid(canonicalElementUid) // set by caller
-            .uid(schemaFingerprint)
-            .dataElementUid(schemaFingerprint)
             .jsonDataPath(meta.getJsonDataPath())
             .name(section.getName())
             .canonicalPath(meta.getCanonicalPath())
             .parentRepeatJsonDataPath(meta.getParentRepeatIdPath())
-            .parentRepeatCanonicalPath(meta.getCanonicalParentRepeatPath())
-            .displayLabel(section.getLabel())
-            .sortOrder(section.getOrder());
-        if (section.getCategoryId() != null) {
-            cfg.naturalKeyCandidate(section.getCategoryId());
-        }
+            .displayLabel(section.getLabel());
         return cfg.build();
-    }
-
-    // ---------- helper methods (small) ------------
-    public static long hashToLong(String input) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] digest = md.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            ByteBuffer buf = ByteBuffer.wrap(digest, 0, Long.BYTES);
-            return buf.getLong();
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to compute hash", e);
-        }
     }
 }

@@ -69,6 +69,10 @@ deployment authority.
   persistence, and the current outbox transaction.
 - `4ad077f2`: submission persistence no longer accepts a security principal;
   authorization completes before the canonical persistence boundary.
+- Template publication now has one immutable-version owner and one active
+  `canonical_element` projection. The duplicate `template_element` writer,
+  entity/cache ownership, and persistence-only fields were removed without a
+  schema change; nested-repeat ancestry and option-set projection are covered.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

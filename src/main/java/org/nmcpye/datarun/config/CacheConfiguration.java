@@ -11,7 +11,6 @@ import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.auditing.EntityAuditEvent;
 import org.nmcpye.datarun.jpa.dataelement.DataElement;
 import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
-import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersion;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.TemplateVersionRepository;
@@ -134,7 +133,6 @@ public class CacheConfiguration {
             createCache(cm, OptionGroupSet.class.getName());
             createCache(cm, OptionGroupSet.class.getName() + ".optionGroups");
 
-            createCache(cm, TemplateElement.class.getName());
             createCache(cm, TemplateVersion.class.getName());
 
             createCache(cm, org.nmcpye.datarun.jpa.datasubmission.DataSubmission.class.getName());

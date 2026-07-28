@@ -71,9 +71,16 @@ removing similar-looking form APIs.
 `FormTemplateAuthoringResource` validates and processes the complete template,
 then `DataTemplateInstanceService.publishVersion` creates one immutable version,
 updates the template's latest-version pointer, and invokes downstream
-`TemplateElement` projection generation exactly once. The stored template
+canonical projection generation exactly once. The stored template
 version remains the product/form-runtime contract; generated element metadata
 supports extraction and is not a second template authority.
+
+`canonical_element` is the projection metadata consumed by the active ETL and
+pivot/export path, including nested-repeat ancestry and option-set identity.
+The duplicate `template_element` writer, JPA entity ownership, and cache were
+removed after confirming there was no source, mobile, SQL, or declared external
+reader. Its physical table remains schema-only until a separately tested
+Liquibase contraction.
 
 `DataElement` remains operational authoring input for stable field identity,
 name/code, and value type. Option-set UID is a template-field property and is
