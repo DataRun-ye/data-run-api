@@ -44,8 +44,14 @@ request succeeds.
   resources. Static service/filter comparison currently limits that fallback
   to data-element group/set and org-unit group/set generic surfaces; each must
   exit through an explicit domain filter or route removal.
-- `AssignmentFormAccessService` is the shared authorization owner for the
-  actor, assignment team, assigned form, and requested form action.
+- `AssignmentFormAccessService` remains the baseline authorization owner for
+  assignment-form and Reference reads. On versioned upload it is used only by
+  `BaselineVersionedUploadCompatibilityAdapter` to preserve released denial
+  codes and narrow the explicit retired-assignment compatibility case.
+- `VersionedUploadEventAuthorizer` is the acceptance owner for released
+  versioned field-user uploads. It batch-reads request-current event grants,
+  accepts an exact active or eligible ended generation, and fails closed when
+  event authority is unavailable or contradicts baseline compatibility.
 - Organization-unit sync is scoped to direct-team assignments and their
   ancestors. Managed teams remain active mobile selector/summary data, but
   managed-team assignments are not synchronized and do not expand org-unit
@@ -94,7 +100,7 @@ Liquibase contraction.
 
 | Status | Route | Server owner |
 | --- | --- | --- |
-| CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveVersionedUpload` -> `SubmissionUploadService` -> `DefaultDataSubmissionService.upsertAll` |
+| CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveVersionedUpload` -> `SubmissionUploadService` -> `VersionedUploadEventAuthorizer` -> `DefaultDataSubmissionService.upsertAll` |
 | LEGACY-RISK / UNKNOWN | `GET /api/v1/dataSubmission`, `GET /byLastModified`, `POST /query`, `GET /{id}` | inherited generic read surface |
 | LEGACY-RISK / UNKNOWN | `POST /api/v1/dataSubmission/bulk` without the version parameter, `POST /`, `POST /return` | inherited/overridden compatibility write surface |
 | LEGACY-RISK / UNKNOWN | `GET|POST /api/v1/dataSubmission/objects` | deprecated flattened read surface |
@@ -105,12 +111,13 @@ Reference-capable submissions currently share this versioned upload boundary.
 The active upload maps the versioned DTO; resolves assignment and pinned
 template once through `TemplateVersionResolver`; canonicalizes server-owned
 assignment/template context;
-authorizes the canonical assignment/form pair; generates missing repeat
-metadata for compatibility; resolves Reference definitions; upserts whole
-submission JSON; and writes the current `outbox` row in the same transaction.
-Submission access and assignment-form projection use the same
-`AssignmentFormAccessService`; permissions from another team and forms absent
-from the assignment are rejected.
+authorizes the canonical assignment/form pair from the actor's latest
+event-backed grant; generates missing repeat metadata for compatibility;
+resolves Reference definitions; upserts whole submission JSON; and writes the
+current `outbox` row in the same transaction. One immutable event snapshot is
+read per bulk request. Baseline access cannot turn an event denial into
+acceptance; it only preserves the released `E4114`/`E1112` distinction and the
+exact soft-deleted-assignment late-upload case.
 `DataSubmissionService` receives canonical submissions and a result summary,
 not a security principal; authorization must complete before persistence.
 

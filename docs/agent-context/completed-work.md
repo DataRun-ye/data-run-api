@@ -101,6 +101,14 @@ deployment authority.
   clone-only HTTP scenarios covered active, revoked, disabled, retired,
   accepted late-upload, and restored states with exact tuple equality. The
   clone was restored to 263,423 exact tuples and production was untouched.
+- `61f8da6c`: event-backed assignment grants now authorize the released
+  versioned submission upload. Baseline logic remains only for exact
+  retired-assignment compatibility and released denial-code mapping. The
+  188-unit/contract and 38-integration release gate passed; clone-only HTTP
+  scenarios proved ordinary and Reference persistence, repeat metadata,
+  outbox writes, revoked-state rollback, accepted late upload, restoration,
+  and exact tuple equality. The clone was restored to 263,423 tuples and
+  production was untouched.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.
