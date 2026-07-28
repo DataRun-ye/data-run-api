@@ -11,10 +11,13 @@ record CaptureComparisonResult(
     long missingEventCount,
     long eventDifferenceCount,
     long extraEventCount,
+    long missingCurrentPointerCount,
+    long currentPointerDifferenceCount,
+    long extraCurrentPointerCount,
     List<String> diagnosticSamples
 ) {
 
-    long differenceCount() {
+    long foundationDifferenceCount() {
         return missingIdentityCount
             + identityDifferenceCount
             + extraIdentityCount
@@ -23,5 +26,12 @@ record CaptureComparisonResult(
             + missingEventCount
             + eventDifferenceCount
             + extraEventCount;
+    }
+
+    long differenceCount() {
+        return foundationDifferenceCount()
+            + missingCurrentPointerCount
+            + currentPointerDifferenceCount
+            + extraCurrentPointerCount;
     }
 }

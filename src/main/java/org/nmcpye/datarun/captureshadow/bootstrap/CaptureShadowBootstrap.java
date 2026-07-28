@@ -70,7 +70,8 @@ public class CaptureShadowBootstrap {
             boundary,
             progress.orgUnitAliases(),
             progress.identities(),
-            progress.events()
+            progress.events(),
+            progress.currentPointers()
         );
         if (!report.successful()) {
             throw new CaptureShadowBootstrapMismatchException(report);
@@ -109,6 +110,8 @@ public class CaptureShadowBootstrap {
         private long identitiesExisting;
         private long eventsCreated;
         private long eventsExisting;
+        private long currentPointersCreated;
+        private long currentPointersExisting;
 
         private void add(CaptureBootstrapBatchResult batch) {
             orgUnitAliasesCreated += batch.orgUnitAliasesCreated();
@@ -117,6 +120,8 @@ public class CaptureShadowBootstrap {
             identitiesExisting += batch.identitiesExisting();
             eventsCreated += batch.eventsCreated();
             eventsExisting += batch.eventsExisting();
+            currentPointersCreated += batch.currentPointersCreated();
+            currentPointersExisting += batch.currentPointersExisting();
         }
 
         private ItemCount orgUnitAliases() {
@@ -129,6 +134,10 @@ public class CaptureShadowBootstrap {
 
         private ItemCount events() {
             return new ItemCount(eventsCreated, eventsExisting);
+        }
+
+        private ItemCount currentPointers() {
+            return new ItemCount(currentPointersCreated, currentPointersExisting);
         }
     }
 }

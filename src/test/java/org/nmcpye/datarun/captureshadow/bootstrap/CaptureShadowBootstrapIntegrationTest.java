@@ -114,12 +114,16 @@ class CaptureShadowBootstrapIntegrationTest {
             .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(2, 0));
         assertThat(first.events())
             .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(2, 0));
+        assertThat(first.currentPointers())
+            .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(2, 0));
         assertThat(first.checkpoints())
             .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(1, 0));
         assertThat(second.createdCount()).isZero();
         assertThat(second.identities())
             .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(0, 2));
         assertThat(second.events())
+            .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(0, 2));
+        assertThat(second.currentPointers())
             .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(0, 2));
         assertThat(second.checkpoints())
             .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(0, 1));
@@ -139,6 +143,16 @@ class CaptureShadowBootstrapIntegrationTest {
             .isEqualTo("2026-07-25T04:05:06.000001Z");
         assertThat(submission.path("lastModifiedDate").textValue())
             .isEqualTo("2026-07-25T08:09:10.654321Z");
+        JsonNode objectSubmission = eventPayload("D9000000002").path("submission");
+        assertThat(objectSubmission.path("formData").path("repeat").path(0).path("value").intValue())
+            .isEqualTo(7);
+        assertThat(objectSubmission.path("formData").path("name").textValue())
+            .isEqualTo("capture");
+        assertThat(objectSubmission.path("status").textValue()).isEqualTo("IN_PROGRESS");
+        assertThat(objectSubmission.path("assignmentUid").textValue())
+            .isEqualTo("S9000000001");
+        assertThat(objectSubmission.path("teamUid").textValue()).isEqualTo("T9000000001");
+        assertThat(objectSubmission.path("activityUid").textValue()).isEqualTo("A9000000001");
         assertThat(jdbc.queryForObject(
             "SELECT recorded_at FROM event_journal WHERE event_id = ?",
             Instant.class,
@@ -157,7 +171,10 @@ class CaptureShadowBootstrapIntegrationTest {
         assertThat(first.toOperatorText())
             .contains("source_rows=2")
             .contains("source_sha256=")
+            .contains("current_pointers_created=2")
+            .contains("current_pointers_existing=0")
             .contains("missing_identities=0")
+            .contains("missing_current_pointers=0")
             .contains("difference_count=0");
     }
 
@@ -180,6 +197,7 @@ class CaptureShadowBootstrapIntegrationTest {
             .isInstanceOf(CaptureShadowBootstrapConflictException.class)
             .hasMessageContaining("form_data");
         assertThat(count("capture_identity_link")).isZero();
+        assertThat(count("capture_current_projection")).isZero();
         assertThat(captureEventCount()).isZero();
     }
 
@@ -201,6 +219,7 @@ class CaptureShadowBootstrapIntegrationTest {
             .hasMessageContaining("unresolved organization unit");
         assertThat(count("org_unit_identity_link")).isZero();
         assertThat(count("capture_identity_link")).isZero();
+        assertThat(count("capture_current_projection")).isZero();
         assertThat(captureEventCount()).isZero();
     }
 
@@ -217,6 +236,8 @@ class CaptureShadowBootstrapIntegrationTest {
 
         assertThat(interrupted.rows()).isEqualTo(CaptureShadowBootstrap.BATCH_SIZE);
         assertThat(count("capture_identity_link")).isEqualTo(CaptureShadowBootstrap.BATCH_SIZE);
+        assertThat(count("capture_current_projection"))
+            .isEqualTo(CaptureShadowBootstrap.BATCH_SIZE);
         assertThat(captureEventCount()).isEqualTo(CaptureShadowBootstrap.BATCH_SIZE);
         assertThat(checkpointCount()).isZero();
 
@@ -227,9 +248,239 @@ class CaptureShadowBootstrapIntegrationTest {
             .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(1, 250));
         assertThat(resumed.events())
             .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(1, 250));
+        assertThat(resumed.currentPointers())
+            .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(1, 250));
         assertThat(count("capture_identity_link")).isEqualTo(251);
+        assertThat(count("capture_current_projection")).isEqualTo(251);
         assertThat(captureEventCount()).isEqualTo(251);
         assertThat(checkpointCount()).isEqualTo(1);
+    }
+
+    @Test
+    void deletingOnlyCurrentPointersReconstructsThemWithoutNewImmutableFacts() {
+        insertOrgUnit(CAPTURE_ORG_ID, CAPTURE_ORG_UID);
+        insertSubmission(
+            SUBMISSION_ID,
+            SUBMISSION_UID,
+            SUBMISSION_SERIAL,
+            false,
+            null,
+            "{}",
+            null,
+            "2026-07-25T08:09:10.654321Z"
+        );
+        bootstrap.run();
+        List<String> journalBeforeReplay = journalContent();
+        String checkpointBeforeReplay = checkpointContent();
+
+        jdbc.update("DELETE FROM capture_current_projection");
+        CaptureShadowBootstrapReport replay = bootstrap.run();
+
+        assertThat(replay.currentPointers())
+            .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(1, 0));
+        assertThat(replay.identities())
+            .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(0, 1));
+        assertThat(replay.events())
+            .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(0, 1));
+        assertThat(replay.checkpoints())
+            .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(0, 1));
+        assertThat(replay.createdCount()).isEqualTo(1);
+        assertThat(journalContent()).isEqualTo(journalBeforeReplay);
+        assertThat(checkpointContent()).isEqualTo(checkpointBeforeReplay);
+    }
+
+    @Test
+    void wrongPointerFailsFastAndRollsBackTheCompleteBatch() {
+        insertOrgUnit(CAPTURE_ORG_ID, CAPTURE_ORG_UID);
+        insertLargeSubmissionFixture(CaptureShadowBootstrap.BATCH_SIZE);
+        bootstrap.run();
+        jdbc.update("DELETE FROM capture_current_projection");
+        UUID wrongEventId = UUID.fromString("83000000-0000-0000-0000-000000000001");
+        insertUnrelatedTestEvent(wrongEventId);
+        String lastSubmissionUid = "D0000000250";
+        UUID lastCaptureId = CaptureShadowProtocol.captureId(lastSubmissionUid);
+        jdbc.update(
+            """
+                INSERT INTO capture_current_projection (capture_id, source_event_id)
+                VALUES (?, ?)
+                """,
+            lastCaptureId,
+            wrongEventId
+        );
+
+        assertThatThrownBy(bootstrap::run)
+            .isInstanceOf(CaptureShadowBootstrapConflictException.class)
+            .hasMessageContaining("capture_id=" + lastCaptureId)
+            .hasMessageContaining(
+                "expected_event_id=" + CaptureShadowProtocol.captureEventId(lastSubmissionUid)
+            )
+            .hasMessageContaining("actual_event_id=" + wrongEventId);
+        assertThat(count("capture_current_projection")).isEqualTo(1);
+        assertThat(count("capture_identity_link")).isEqualTo(CaptureShadowBootstrap.BATCH_SIZE);
+        assertThat(captureEventCount()).isEqualTo(CaptureShadowBootstrap.BATCH_SIZE);
+        assertThat(checkpointCount()).isEqualTo(1);
+    }
+
+    @Test
+    void missingAndUnrelatedExtraPointersAreBothReportedAtEqualCardinality() {
+        insertOrgUnit(CAPTURE_ORG_ID, CAPTURE_ORG_UID);
+        insertSubmission(
+            SUBMISSION_ID,
+            SUBMISSION_UID,
+            SUBMISSION_SERIAL,
+            false,
+            null,
+            "{}",
+            null,
+            "2026-07-25T08:09:10.654321Z"
+        );
+        CaptureShadowBootstrapReport completed = bootstrap.run();
+        String checkpointBeforeMismatch = checkpointContent();
+        jdbc.update("DELETE FROM capture_current_projection");
+        UUID extraCaptureId = UUID.fromString("84000000-0000-0000-0000-000000000001");
+        UUID extraEventId = UUID.fromString("84000000-0000-0000-0000-000000000002");
+        jdbc.update(
+            """
+                INSERT INTO capture_identity_link (
+                    capture_id, baseline_submission_uid,
+                    baseline_submission_id, baseline_serial_number
+                ) VALUES (?, 'D9999999999', '01JCAP99999999999999999999', 999999)
+                """,
+            extraCaptureId
+        );
+        insertUnrelatedTestEvent(extraEventId);
+        jdbc.update(
+            """
+                INSERT INTO capture_current_projection (capture_id, source_event_id)
+                VALUES (?, ?)
+                """,
+            extraCaptureId,
+            extraEventId
+        );
+        CaptureShadowBootstrapReport.ItemCount zero =
+            new CaptureShadowBootstrapReport.ItemCount(0, 0);
+
+        CaptureShadowBootstrapReport mismatch = finalTransaction.compareAndCheckpoint(
+            completed.sourceBoundary(),
+            zero,
+            zero,
+            zero,
+            zero
+        );
+
+        assertThat(count("capture_current_projection")).isEqualTo(1);
+        assertThat(mismatch.missingCurrentPointerCount()).isEqualTo(1);
+        assertThat(mismatch.currentPointerDifferenceCount()).isZero();
+        assertThat(mismatch.extraCurrentPointerCount()).isEqualTo(1);
+        assertThat(mismatch.differenceCount()).isEqualTo(3);
+        assertThat(mismatch.diagnosticSamples()).hasSizeLessThanOrEqualTo(10);
+        assertThat(mismatch.checkpoints())
+            .isEqualTo(new CaptureShadowBootstrapReport.ItemCount(0, 1));
+        assertThat(checkpointContent()).isEqualTo(checkpointBeforeMismatch);
+        assertThat(checkpointCount()).isEqualTo(1);
+    }
+
+    @Test
+    void finalComparisonReportsADifferentPointerWithoutReclassifyingTheEvent() {
+        insertOrgUnit(CAPTURE_ORG_ID, CAPTURE_ORG_UID);
+        insertSubmission(
+            SUBMISSION_ID,
+            SUBMISSION_UID,
+            SUBMISSION_SERIAL,
+            false,
+            null,
+            "{}",
+            null,
+            "2026-07-25T08:09:10.654321Z"
+        );
+        CaptureShadowBootstrapReport completed = bootstrap.run();
+        String checkpointBeforeMismatch = checkpointContent();
+        UUID differentEventId = UUID.fromString("84500000-0000-0000-0000-000000000001");
+        insertUnrelatedTestEvent(differentEventId);
+        jdbc.update(
+            """
+                UPDATE capture_current_projection
+                SET source_event_id = ?
+                WHERE capture_id = ?
+                """,
+            differentEventId,
+            CaptureShadowProtocol.captureId(SUBMISSION_UID)
+        );
+        CaptureShadowBootstrapReport.ItemCount zero =
+            new CaptureShadowBootstrapReport.ItemCount(0, 0);
+
+        CaptureShadowBootstrapReport mismatch = finalTransaction.compareAndCheckpoint(
+            completed.sourceBoundary(),
+            zero,
+            zero,
+            zero,
+            zero
+        );
+
+        assertThat(mismatch.missingCurrentPointerCount()).isZero();
+        assertThat(mismatch.currentPointerDifferenceCount()).isEqualTo(1);
+        assertThat(mismatch.extraCurrentPointerCount()).isZero();
+        assertThat(mismatch.eventDifferenceCount()).isZero();
+        assertThat(mismatch.differenceCount()).isEqualTo(1);
+        assertThat(checkpointContent()).isEqualTo(checkpointBeforeMismatch);
+        assertThat(checkpointCount()).isEqualTo(1);
+    }
+
+    @Test
+    void uniqueEventPointerConflictIsSanitizedAndCannotOverwriteCurrentState() {
+        insertOrgUnit(CAPTURE_ORG_ID, CAPTURE_ORG_UID);
+        insertSubmission(
+            SUBMISSION_ID,
+            SUBMISSION_UID,
+            SUBMISSION_SERIAL,
+            false,
+            null,
+            "{}",
+            null,
+            "2026-07-25T08:09:10.654321Z"
+        );
+        bootstrap.run();
+        jdbc.update("DELETE FROM capture_current_projection");
+        UUID unrelatedCaptureId = UUID.fromString("85000000-0000-0000-0000-000000000001");
+        jdbc.update(
+            """
+                INSERT INTO capture_identity_link (
+                    capture_id, baseline_submission_uid,
+                    baseline_submission_id, baseline_serial_number
+                ) VALUES (?, 'D9999999999', '01JCAP99999999999999999999', 999999)
+                """,
+            unrelatedCaptureId
+        );
+        UUID expectedEventId = CaptureShadowProtocol.captureEventId(SUBMISSION_UID);
+        jdbc.update(
+            """
+                INSERT INTO capture_current_projection (capture_id, source_event_id)
+                VALUES (?, ?)
+                """,
+            unrelatedCaptureId,
+            expectedEventId
+        );
+
+        assertThatThrownBy(bootstrap::run)
+            .isInstanceOf(CaptureShadowBootstrapConflictException.class)
+            .hasMessage(
+                "Capture current pointer insert conflicted for capture_id="
+                    + CaptureShadowProtocol.captureId(SUBMISSION_UID)
+            )
+            .satisfies(exception ->
+                assertThat(exception.getMessage())
+                    .doesNotContain("uq_capture_current_source_event")
+            );
+        assertThat(jdbc.queryForObject(
+            """
+                SELECT source_event_id
+                FROM capture_current_projection
+                WHERE capture_id = ?
+                """,
+            UUID.class,
+            unrelatedCaptureId
+        )).isEqualTo(expectedEventId);
+        assertThat(count("capture_current_projection")).isEqualTo(1);
     }
 
     @Test
@@ -274,6 +525,10 @@ class CaptureShadowBootstrapIntegrationTest {
             new CaptureShadowBootstrapReport.ItemCount(
                 batch.eventsCreated(),
                 batch.eventsExisting()
+            ),
+            new CaptureShadowBootstrapReport.ItemCount(
+                batch.currentPointersCreated(),
+                batch.currentPointersExisting()
             )
         );
 
@@ -321,7 +576,7 @@ class CaptureShadowBootstrapIntegrationTest {
     }
 
     @Test
-    void laterCaptureEventShapeIsOutsideBootstrapExactSet() {
+    void unrelatedTestEventIsOutsideBootstrapExactSet() {
         insertOrgUnit(CAPTURE_ORG_ID, CAPTURE_ORG_UID);
         insertSubmission(
             SUBMISSION_ID,
@@ -340,8 +595,8 @@ class CaptureShadowBootstrapIntegrationTest {
                 INSERT INTO event_journal (
                     event_id, event_type, shape_ref, activity_ref, subject_type,
                     subject_id, actor_id, recorded_at, payload
-                ) VALUES (?, 'capture', 'baseline_submission_captured/v2', NULL,
-                          'org_unit', ?, 'system:later-capture-writer', now(), '{}'::jsonb)
+                ) VALUES (?, 'test_only', 'test_only/unrelated_event/v1', NULL,
+                          'test_only', ?, 'system:test', now(), '{}'::jsonb)
                 """,
             laterEventId,
             UUID.fromString("20000000-0000-0000-0000-000000000002")
@@ -382,6 +637,7 @@ class CaptureShadowBootstrapIntegrationTest {
             .isInstanceOf(CaptureShadowBootstrapConflictException.class)
             .hasMessageContaining("organization-unit alias");
         assertThat(count("capture_identity_link")).isZero();
+        assertThat(count("capture_current_projection")).isZero();
         assertThat(captureEventCount()).isZero();
         assertThat(count("org_unit_identity_link")).isEqualTo(1);
     }
@@ -418,6 +674,7 @@ class CaptureShadowBootstrapIntegrationTest {
             .hasMessageContaining("capture event");
         assertThat(count("capture_identity_link")).isZero();
         assertThat(count("org_unit_identity_link")).isZero();
+        assertThat(count("capture_current_projection")).isZero();
         assertThat(captureEventCount()).isEqualTo(1);
     }
 
@@ -806,11 +1063,33 @@ class CaptureShadowBootstrapIntegrationTest {
 
     private JsonNode eventPayload(String submissionUid) throws Exception {
         String payload = jdbc.queryForObject(
-            "SELECT payload::text FROM event_journal WHERE event_id = ?",
+            """
+                SELECT event.payload::text
+                FROM capture_current_projection current_pointer
+                JOIN capture_identity_link identity_link
+                  ON identity_link.capture_id = current_pointer.capture_id
+                JOIN event_journal event
+                  ON event.event_id = current_pointer.source_event_id
+                WHERE identity_link.baseline_submission_uid = ?
+                """,
             String.class,
-            CaptureShadowProtocol.captureEventId(submissionUid)
+            submissionUid
         );
         return objectMapper.readTree(payload);
+    }
+
+    private void insertUnrelatedTestEvent(UUID eventId) {
+        jdbc.update(
+            """
+                INSERT INTO event_journal (
+                    event_id, event_type, shape_ref, activity_ref, subject_type,
+                    subject_id, actor_id, recorded_at, payload
+                ) VALUES (?, 'test_only', 'test_only/unrelated_event/v1', NULL,
+                          'test_only', ?, 'system:test', now(), '{}'::jsonb)
+                """,
+            eventId,
+            UUID.randomUUID()
+        );
     }
 
     private List<String> journalContent() {
@@ -837,6 +1116,21 @@ class CaptureShadowBootstrapIntegrationTest {
         return value == null ? 0 : value;
     }
 
+    private String checkpointContent() {
+        return jdbc.queryForObject(
+            """
+                SELECT event_id::text || '|' || event_type || '|' || shape_ref || '|'
+                       || COALESCE(activity_ref, '<null>') || '|' || subject_type || '|'
+                       || subject_id::text || '|' || actor_id || '|' || recorded_at::text
+                       || '|' || payload::text
+                FROM event_journal
+                WHERE event_id = ?
+                """,
+            String.class,
+            CaptureShadowProtocol.CHECKPOINT_EVENT_ID
+        );
+    }
+
     private long count(String table) {
         Long value = jdbc.queryForObject("SELECT count(*) FROM " + table, Long.class);
         return value == null ? 0 : value;
@@ -846,6 +1140,7 @@ class CaptureShadowBootstrapIntegrationTest {
         jdbc.execute(
             """
                 TRUNCATE TABLE
+                    capture_current_projection,
                     capture_identity_link,
                     assignment_grant_projection,
                     assignment_identity_link,

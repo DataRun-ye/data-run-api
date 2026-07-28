@@ -7,6 +7,7 @@ public record CaptureShadowBootstrapReport(
     ItemCount orgUnitAliases,
     ItemCount identities,
     ItemCount events,
+    ItemCount currentPointers,
     ItemCount checkpoints,
     long sourceMovementCount,
     long missingIdentityCount,
@@ -17,6 +18,9 @@ public record CaptureShadowBootstrapReport(
     long missingEventCount,
     long eventDifferenceCount,
     long extraEventCount,
+    long missingCurrentPointerCount,
+    long currentPointerDifferenceCount,
+    long extraCurrentPointerCount,
     long checkpointDifferenceCount,
     List<String> diagnosticSamples
 ) {
@@ -35,6 +39,9 @@ public record CaptureShadowBootstrapReport(
             + missingEventCount
             + eventDifferenceCount
             + extraEventCount
+            + missingCurrentPointerCount
+            + currentPointerDifferenceCount
+            + extraCurrentPointerCount
             + checkpointDifferenceCount;
     }
 
@@ -46,6 +53,7 @@ public record CaptureShadowBootstrapReport(
         return orgUnitAliases.created()
             + identities.created()
             + events.created()
+            + currentPointers.created()
             + checkpoints.created();
     }
 
@@ -59,6 +67,7 @@ public record CaptureShadowBootstrapReport(
             + item("org_unit_aliases", orgUnitAliases)
             + item("capture_identities", identities)
             + item("capture_events", events)
+            + item("current_pointers", currentPointers)
             + item("completion_checkpoints", checkpoints)
             + "source_movement=" + sourceMovementCount + "\n"
             + "missing_identities=" + missingIdentityCount + "\n"
@@ -69,6 +78,9 @@ public record CaptureShadowBootstrapReport(
             + "missing_events=" + missingEventCount + "\n"
             + "event_differences=" + eventDifferenceCount + "\n"
             + "extra_events=" + extraEventCount + "\n"
+            + "missing_current_pointers=" + missingCurrentPointerCount + "\n"
+            + "current_pointer_differences=" + currentPointerDifferenceCount + "\n"
+            + "extra_current_pointers=" + extraCurrentPointerCount + "\n"
             + "checkpoint_differences=" + checkpointDifferenceCount + "\n"
             + "difference_count=" + differenceCount() + "\n"
             + "diagnostic_samples=" + diagnosticSamples + "\n";

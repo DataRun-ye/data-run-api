@@ -8,10 +8,12 @@ public record CaptureBootstrapBatchResult(
     long identitiesCreated,
     long identitiesExisting,
     long eventsCreated,
-    long eventsExisting
+    long eventsExisting,
+    long currentPointersCreated,
+    long currentPointersExisting
 ) {
 
     static CaptureBootstrapBatchResult empty(long nextSerial) {
-        return new CaptureBootstrapBatchResult(nextSerial, 0, 0, 0, 0, 0, 0, 0);
+        return new CaptureBootstrapBatchResult(nextSerial, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     }
 }

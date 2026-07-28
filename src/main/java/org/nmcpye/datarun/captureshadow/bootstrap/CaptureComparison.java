@@ -85,6 +85,12 @@ final class CaptureComparison {
         if (comparison.extraEventCount > 0) {
             comparison.sample("extra bootstrap capture events=" + comparison.extraEventCount);
         }
+        comparison.extraCurrentPointerCount = extraCurrentPointerCount(boundary);
+        if (comparison.extraCurrentPointerCount > 0) {
+            comparison.sample(
+                "extra capture current pointers=" + comparison.extraCurrentPointerCount
+            );
+        }
         return comparison.result();
     }
 
@@ -104,11 +110,13 @@ final class CaptureComparison {
         List<ActualIdentity> identities = identities(submissionUids, captureIds);
         List<ActualAlias> aliases = aliases(orgUnitUids, orgUnitIds);
         List<ActualEvent> events = events(eventIds);
+        List<ActualCurrentPointer> currentPointers = currentPointers(captureIds);
 
         for (CanonicalCapture capture : expected) {
             compareIdentity(capture, identities, comparison);
             compareAlias(capture, aliases, comparison);
             compareEvent(capture, events, comparison);
+            compareCurrentPointer(capture, currentPointers, comparison);
         }
     }
 
@@ -190,6 +198,30 @@ final class CaptureComparison {
         }
     }
 
+    private void compareCurrentPointer(
+        CanonicalCapture expected,
+        List<ActualCurrentPointer> actual,
+        MutableComparison comparison
+    ) {
+        ActualCurrentPointer pointer = actual.stream()
+            .filter(value -> value.captureId().equals(expected.captureId()))
+            .findFirst()
+            .orElse(null);
+        if (pointer == null) {
+            comparison.missingCurrentPointerCount++;
+            comparison.sample(
+                "missing capture current pointer capture_id=" + expected.captureId()
+            );
+            return;
+        }
+        if (!pointer.sourceEventId().equals(expected.eventId())) {
+            comparison.currentPointerDifferenceCount++;
+            comparison.sample(
+                "capture current pointer mismatch capture_id=" + expected.captureId()
+            );
+        }
+    }
+
     private List<ActualIdentity> identities(List<String> uids, List<UUID> ids) {
         return namedJdbc.query(
             """
@@ -247,6 +279,44 @@ final class CaptureComparison {
         );
     }
 
+    private List<ActualCurrentPointer> currentPointers(List<UUID> captureIds) {
+        return namedJdbc.query(
+            """
+                SELECT capture_id, source_event_id
+                FROM capture_current_projection
+                WHERE capture_id IN (:captureIds)
+                """,
+            new MapSqlParameterSource("captureIds", captureIds),
+            (resultSet, rowNumber) -> new ActualCurrentPointer(
+                resultSet.getObject("capture_id", UUID.class),
+                resultSet.getObject("source_event_id", UUID.class)
+            )
+        );
+    }
+
+    private long extraCurrentPointerCount(CaptureSourceBoundary boundary) {
+        if (boundary.sourceMaxSerial() == null) {
+            return count("SELECT count(*) FROM capture_current_projection");
+        }
+        return count(
+            """
+                SELECT count(*)
+                FROM capture_current_projection current_pointer
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM capture_identity_link identity_link
+                    JOIN data_submission source
+                      ON source.uid = identity_link.baseline_submission_uid
+                     AND source.id = identity_link.baseline_submission_id
+                     AND source.serial_number = identity_link.baseline_serial_number
+                    WHERE identity_link.capture_id = current_pointer.capture_id
+                      AND source.serial_number <= ?
+                )
+                """,
+            boundary.sourceMaxSerial()
+        );
+    }
+
     private JsonNode readJson(String value) {
         try {
             return objectMapper.readTree(value);
@@ -287,6 +357,9 @@ final class CaptureComparison {
     ) {
     }
 
+    private record ActualCurrentPointer(UUID captureId, UUID sourceEventId) {
+    }
+
     private static final class MutableComparison {
         private long missingIdentityCount;
         private long identityDifferenceCount;
@@ -296,6 +369,9 @@ final class CaptureComparison {
         private long missingEventCount;
         private long eventDifferenceCount;
         private long extraEventCount;
+        private long missingCurrentPointerCount;
+        private long currentPointerDifferenceCount;
+        private long extraCurrentPointerCount;
         private final List<String> diagnosticSamples = new ArrayList<>();
 
         private void sample(String value) {
@@ -314,6 +390,9 @@ final class CaptureComparison {
                 missingEventCount,
                 eventDifferenceCount,
                 extraEventCount,
+                missingCurrentPointerCount,
+                currentPointerDifferenceCount,
+                extraCurrentPointerCount,
                 diagnosticSamples
             );
         }

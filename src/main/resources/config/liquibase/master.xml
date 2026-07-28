@@ -98,6 +98,7 @@
     <include file="/config/liquibase/changelog/reference-entry/20260725-create-reference-entry.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/event-transition/20260728-assignment-shadow-persistence-foundation.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/event-transition/20260728-capture-shadow-persistence-foundation.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/event-transition/20260728-capture-current-projection.xml" relativeToChangelogFile="false"/>
 
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

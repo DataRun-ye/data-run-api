@@ -39,7 +39,8 @@ public class CaptureBootstrapFinalTransaction {
         CaptureSourceBoundary initialBoundary,
         ItemCount orgUnitAliases,
         ItemCount identities,
-        ItemCount events
+        ItemCount events,
+        ItemCount currentPointers
     ) {
         assertRepeatableRead();
         CaptureSourceBoundary finalBoundary = sourceSnapshot.captureCurrentTransaction();
@@ -62,7 +63,7 @@ public class CaptureBootstrapFinalTransaction {
             : new ItemCount(0, 0);
 
         boolean exactBeforeCheckpoint = !sourceMoved
-            && result.differenceCount() == 0
+            && result.foundationDifferenceCount() == 0
             && checkpointDifference == 0;
         if (exactBeforeCheckpoint && checkpointStatus == CaptureCheckpointStore.Status.ABSENT) {
             checkpointStore.insert(finalBoundary);
@@ -74,6 +75,7 @@ public class CaptureBootstrapFinalTransaction {
             orgUnitAliases,
             identities,
             events,
+            currentPointers,
             checkpoints,
             sourceMoved ? 1 : 0,
             result.missingIdentityCount(),
@@ -84,6 +86,9 @@ public class CaptureBootstrapFinalTransaction {
             result.missingEventCount(),
             result.eventDifferenceCount(),
             result.extraEventCount(),
+            result.missingCurrentPointerCount(),
+            result.currentPointerDifferenceCount(),
+            result.extraCurrentPointerCount(),
             checkpointDifference,
             samples
         );

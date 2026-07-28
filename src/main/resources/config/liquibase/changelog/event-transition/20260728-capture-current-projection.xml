@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260728-capture-current-projection" author="datarunapi">
+        <createTable tableName="capture_current_projection">
+            <column name="capture_id" type="UUID">
+                <constraints
+                    nullable="false"
+                    primaryKey="true"
+                    primaryKeyName="pk_capture_current_projection"/>
+            </column>
+            <column name="source_event_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="capture_current_projection"
+            columnNames="source_event_id"
+            constraintName="uq_capture_current_source_event"/>
+        <addForeignKeyConstraint
+            baseTableName="capture_current_projection"
+            baseColumnNames="capture_id"
+            referencedTableName="capture_identity_link"
+            referencedColumnNames="capture_id"
+            constraintName="fk_capture_current_identity"/>
+        <addForeignKeyConstraint
+            baseTableName="capture_current_projection"
+            baseColumnNames="source_event_id"
+            referencedTableName="event_journal"
+            referencedColumnNames="event_id"
+            constraintName="fk_capture_current_source_event"/>
+
+        <rollback>
+            <dropTable tableName="capture_current_projection"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

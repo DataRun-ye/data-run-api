@@ -2,7 +2,9 @@ package org.nmcpye.datarun.captureshadow.bootstrap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nmcpye.datarun.captureshadow.CaptureCurrentProjectionPort;
 import org.nmcpye.datarun.captureshadow.CaptureShadowProtocol;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -19,17 +21,20 @@ public class CaptureBootstrapBatchTransaction {
     private final ObjectMapper objectMapper;
     private final CaptureSourceReader sourceReader;
     private final CaptureCanonicalizer canonicalizer;
+    private final CaptureCurrentProjectionPort currentProjection;
 
     CaptureBootstrapBatchTransaction(
         JdbcTemplate jdbc,
         ObjectMapper objectMapper,
         CaptureSourceReader sourceReader,
-        CaptureCanonicalizer canonicalizer
+        CaptureCanonicalizer canonicalizer,
+        CaptureCurrentProjectionPort currentProjection
     ) {
         this.jdbc = jdbc;
         this.objectMapper = objectMapper;
         this.sourceReader = sourceReader;
         this.canonicalizer = canonicalizer;
+        this.currentProjection = currentProjection;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -52,6 +57,7 @@ public class CaptureBootstrapBatchTransaction {
             persistOrgUnitAlias(capture, counts);
             persistIdentity(capture, counts);
             persistEvent(capture, counts);
+            persistCurrentPointer(capture, counts);
         }
         return counts.result(rows.get(rows.size() - 1).serialNumber(), rows.size());
     }
@@ -182,6 +188,32 @@ public class CaptureBootstrapBatchTransaction {
         if (existed) counts.eventsExisting++; else counts.eventsCreated++;
     }
 
+    private void persistCurrentPointer(CanonicalCapture capture, MutableCounts counts) {
+        var currentEventId = currentProjection.findSourceEventId(capture.captureId());
+        if (currentEventId.isPresent()) {
+            if (!currentEventId.get().equals(capture.eventId())) {
+                throw new CaptureShadowBootstrapConflictException(
+                    "Conflicting capture current pointer capture_id=" + capture.captureId()
+                        + " expected_event_id=" + capture.eventId()
+                        + " actual_event_id=" + currentEventId.get()
+                );
+            }
+            counts.currentPointersExisting++;
+            return;
+        }
+
+        try {
+            currentProjection.insertBootstrapPointer(capture.captureId(), capture.eventId());
+        } catch (DataIntegrityViolationException exception) {
+            throw new CaptureShadowBootstrapConflictException(
+                "Capture current pointer insert conflicted for capture_id="
+                    + capture.captureId(),
+                exception
+            );
+        }
+        counts.currentPointersCreated++;
+    }
+
     private String exactIdentitySql() {
         return """
             SELECT count(*)
@@ -255,6 +287,8 @@ public class CaptureBootstrapBatchTransaction {
         private long identitiesExisting;
         private long eventsCreated;
         private long eventsExisting;
+        private long currentPointersCreated;
+        private long currentPointersExisting;
 
         private CaptureBootstrapBatchResult result(long nextSerial, int rows) {
             return new CaptureBootstrapBatchResult(
@@ -265,7 +299,9 @@ public class CaptureBootstrapBatchTransaction {
                 identitiesCreated,
                 identitiesExisting,
                 eventsCreated,
-                eventsExisting
+                eventsExisting,
+                currentPointersCreated,
+                currentPointersExisting
             );
         }
     }
