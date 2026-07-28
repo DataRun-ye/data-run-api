@@ -5,6 +5,8 @@ Updated: 2026-07-28
 Purpose: compact historical outcomes only. This file is not current runtime or
 deployment authority.
 
+- `3559cfe9`: organization-unit access now excludes soft-deleted assignments
+  in both normal and include-disabled reads; focused and full tests pass.
 - `e8bee6b4`: `main` was aligned to the reconstructed deployed server baseline.
 - `09b9b27d`: bounded Reference catalog, read boundary, and old-client gate
   landed on `develop`.

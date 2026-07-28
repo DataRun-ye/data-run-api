@@ -4,83 +4,78 @@ Updated: 2026-07-28
 
 Status: ACCEPTED FOR IMPLEMENTATION
 
-## Baseline Assignment Eligibility Correction
+## Secure The Versioned Administrator Boundary
 
 ### Outcome
 
-Organization-unit access must not be derived from a soft-deleted assignment.
-This aligns organization-unit synchronization with the released assignment
-list before assignment event shadowing begins.
+Every `/api/v1/admin/**` request requires `ROLE_ADMIN`, matching the existing
+`/api/custom/admin/**` and `/api/admin/**` boundaries.
 
 ### Current Evidence
 
-- `OrgUnitFilter.getDirectOrgUnits` loads assignments for the actor's direct
-  teams and filters disabled teams and activities, but not
-  `assignment.deleted`.
-- `DefaultJpaSoftDeleteService` excludes soft-deleted assignments from normal
-  assignment reads.
-- The production clone contains 78 organization-unit scopes held only through
-  retired assignments, exposed to eight users by the current filter.
-- `includeDisabled` controls disabled team/activity visibility. It does not
-  mean that retired assignments grant access.
+- `UserResource` is registered at both `/api/custom/admin/users` and
+  `/api/v1/admin/users`.
+- `DataRunSecurityConfig` explicitly protects `/api/custom/admin/**` and
+  `/api/admin/**`, but not `/api/v1/admin/**`.
+- `/api/v1/admin/**` currently falls through to the general `/api/**`
+  authenticated rule.
+- `UserResource` custom GET, PUT, and DELETE handlers have no class-level or
+  method-level administrator guard. Generic inherited writes perform
+  additional checks, but those do not protect the custom handlers.
 
 ### Required Change
 
-In `OrgUnitFilter`, exclude every assignment where
-`Boolean.TRUE.equals(assignment.getDeleted())` before mapping assignments to
-organization units.
+Add an MVC request matcher for `/api/v1/admin/**` requiring
+`AuthoritiesConstants.ADMIN`. It must appear before the general `/api/**`
+authenticated matcher.
 
-The exclusion applies when `includeDisabled` is both `false` and `true`.
-Existing disabled-team and disabled-activity behavior remains unchanged.
+Add an integration test against a real registered versioned administrator
+route proving:
 
-Add focused characterization covering:
+- an authenticated `ROLE_USER` receives HTTP 403;
+- an authenticated `ROLE_ADMIN` is allowed through the security boundary.
 
-- a retired assignment is excluded in the normal path;
-- a retired assignment is still excluded when disabled entities are included;
-- enabled assignments remain included;
-- disabled teams and activities retain their current `includeDisabled`
-  behavior.
+Use `GET /api/v1/admin/users/all` unless runtime route evidence requires an
+equivalent registered `/api/v1/admin/**` endpoint.
 
 ### Scope
 
-- `src/main/java/org/nmcpye/datarun/jpa/accessfilter/OrgUnitFilter.java`
-- `src/test/java/org/nmcpye/datarun/jpa/accessfilter/OrgUnitFilterTest.java`
+- `src/main/java/org/nmcpye/datarun/config/datarun/DataRunSecurityConfig.java`
+- one focused test under `src/test/java/org/nmcpye/datarun/security/`
 
 ### Production Boundary
 
-- Authority before and after: `OrgUnitFilter` remains the organization-unit
-  access owner for the released path.
-- API and payloads: unchanged.
-- Database schema and data: unchanged; no migration or backfill.
-- Submission upload: unchanged, including current handling of retired
-  assignment UIDs.
-- Event transition: no event tables, facts, projections, or shadow reads are
-  introduced in this slice.
-- Activation: the correction takes effect only when a later server release is
-  deployed.
+- Authentication and token behavior: unchanged.
+- Administrator APIs and payloads: unchanged for administrators.
+- Normal authenticated users lose unintended access to versioned
+  administrator handlers.
+- Database schema and data: unchanged.
+- Assignment, configuration, and submission behavior: unchanged.
+- Activation: only with a later approved server deployment.
 - Rollback: revert this code change; no persisted state requires rollback.
 
 ### Excluded Work
 
-- Assignment event modeling or bootstrap.
-- Changes to assignment upload authorization.
-- Managed-team organization-unit expansion.
-- Endpoint removal, schema cleanup, or unrelated access refactoring.
+- User, role, privilege, or ACL redesign.
+- Assignment event modeling.
+- Changes to `/api/custom/admin/**`, `/api/admin/**`, or public authentication
+  endpoints.
+- Generic endpoint cleanup or user-service refactoring.
 
 ### Verification
 
 Run:
 
 ```bash
-./mvnw -Dtest=OrgUnitFilterTest test
+./mvnw -Dtest=UserAdminRouteSecurityIT test
 ./mvnw test
 git diff --check
 ```
 
 ### Definition Of Done
 
-- The focused tests prove both `includeDisabled` modes.
-- The full unit-test suite passes, or any unrelated baseline failure is
-  reported without being hidden or fixed in this slice.
-- The diff contains only the filter and its focused test.
+- The focused integration test proves both non-admin denial and admin access.
+- The full test suite passes, or an unrelated baseline failure is reported
+  without being hidden or fixed in this slice.
+- The diff contains only the matcher and its focused test.
 - No production deployment is performed.
