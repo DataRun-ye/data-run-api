@@ -89,6 +89,12 @@ deployment authority.
   matched with zero differences. A second run created nothing and reproduced
   the same result. Active reads, writes, authorization, and production were
   unchanged.
+- `c83ec9d7`: assignment, team, and activity authority-changing writes now use
+  one transactional command owner. The full 156-unit/contract and
+  37-integration release gate passed; real HTTP mutation scenarios on the
+  isolated production clone preserved exact baseline/shadow equality through
+  scope/form, membership, permission, status, delete/restore, and
+  non-authority changes. The clone was restored and production was untouched.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

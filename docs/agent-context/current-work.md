@@ -4,337 +4,265 @@ Updated: 2026-07-28
 
 Status: ACCEPTED FOR IMPLEMENTATION
 
-## Assignment Authority Command Ownership
+## Assignment Capture Authorization Shadow
 
 ### Outcome
 
-Route every registered mutation that can change assignment-derived capture
-authority through one transactional command owner. The command writes the
-current assignment/team/activity tables and the assignment event shadow in the
-same transaction.
+Run one event-backed capture-authorization decision in shadow beside the
+released baseline decision across the five active surfaces that consume
+assignment scope:
 
-Current tables and DTOs remain the read and wire authority in this slice. No
-mobile, configuration-sync, submission-upload, or authorization read changes
-are included.
+- assignment list;
+- assignment-form projection;
+- organization-unit synchronization;
+- Reference catalog access;
+- versioned submission upload.
 
-### Authority Boundary
+The released baseline remains response and upload authority in this slice.
+No request, response, mobile, persistence, or authorization behavior changes.
+No schema change, backfill, feature flag, or production activation is included.
 
-Before this slice, authority-changing writes are split across generic
-assignment, team, and activity services. Team membership, form permissions,
-disabled state, assignment scope/forms, and activity disabled state can all
-change the same effective grant without one owner.
+### Selected Boundary
 
-After this slice:
+Introduce one read-only event-backed owner for actor capture scope. It reads
+the assignment lifecycle projection created from the event journal; it does
+not mutate that projection and does not create a second authority.
 
-- `AssignmentAuthorityCommandService` is the only mutation facade for
-  assignments, teams, and activities;
-- a small baseline mutation adapter owns JPA relation resolution and current
-  row persistence;
-- a canonical snapshot component derives assignment/actor capture intents;
-- one grant-lifecycle component owns identity links, role resolution, journal
-  append, generations, and grant projection updates;
-- existing services remain route/read adapters and do not write their
-  repositories directly.
-
-Do not create separate command owners for assignments, memberships, or status
-changes. They are inputs to one authority projection.
-
-User-account activation is authentication eligibility, not assignment
-authority. A direct team membership may exist before an account can log in and
-must not generate a new assignment lifecycle when the account is activated.
-`UserService` therefore remains the owner of account activation and user data;
-the assignment snapshot does not filter direct members by `app_user.activated`.
-The isolated production clone contains no otherwise-eligible assignment rows
-for inactive direct members, so this correction does not alter its observed
-capture-authority tuple count.
-
-### Registered Write Roots
-
-The owner must cover both `/api/custom` and `/api/v1` aliases for:
-
-- assignment `POST`, `POST /return`, `POST /bulk`, `PUT`, and soft `DELETE`;
-- team `POST`, `POST /return`, `POST /bulk`, `PUT`, partial `PATCH`, and hard
-  `DELETE`;
-- activity `POST`, `POST /return`, `POST /bulk`, `PUT`, and hard `DELETE`.
-
-The current team PATCH route is the duplicated path
-`/api/{custom,v1}/teams/teams/{uid}`. Add the canonical
-`/api/{custom,v1}/teams/{uid}` PATCH mapping to the same secured handler and
-retain the old path only as a compatibility alias. Its retirement criterion is
-one deployed release with no access-log or operator-tool use of the old path.
-
-The mobile application does not call these writes. They are operational admin
-surfaces, but they are registered and therefore cannot bypass the owner.
-
-Keep `/bulk` compatibility: the resource loops over entities and each item is
-its own command transaction. Do not turn a partial bulk success into one large
-transaction in this slice.
-
-### Canonical Capture Intent
-
-For each affected baseline assignment, derive zero or more immutable intent
-values keyed by:
+The normalized active value is:
 
 ```text
-(baseline assignment UID, direct team-user UID)
+baseline assignment UID
+target actor UUID
+activity UID
+organization-unit UUID
+sorted distinct capture-form UIDs
 ```
 
-An intent exists only when:
+Read it by joining the current active grant stream through:
 
-- assignment activity, assignment team, and team activity are enabled;
+```text
+actor_identity_link
+assignment_identity_link
+assignment_grant_projection
+assignment_role_definition
+org_unit_identity_link
+```
+
+Do not use `assignment_access_projection` for per-assignment decisions: it is
+the deduplicated effective-access projection and intentionally omits baseline
+assignment identity. Extend the read port with one bounded batch query rather
+than reconstructing identity in services.
+
+Resolve the authenticated actor from `CurrentUserDetails.uid` through
+`actor_identity_link`. Reads never mint a missing alias. No alias plus no
+baseline capture scope is an equivalent empty result. A baseline capture scope
+without its actor alias is an unexplained mismatch.
+
+Administrator authority remains the existing explicit `isSuper()` decision.
+Administrators are not represented as assignment grants and are not included
+in field-user equivalence counts.
+
+### Baseline Normalization
+
+For current work and synchronized configuration, a baseline capture scope
+exists only when:
+
 - the assignment is not soft-deleted;
-- the actor is a direct team member, independently of account activation;
-- organization-unit, assignment, activity, team, and user UIDs are valid;
-- the sorted distinct intersection of `assignment.forms` and same-team
+- assignment activity, assignment team, and team activity are enabled;
+- the actor is a direct team member;
+- assignment, actor, activity, organization-unit, team, and form identities
+  required by the current path are valid;
+- the sorted distinct intersection of assignment forms and same-team
   `ADD_SUBMISSIONS`/`EDIT_SUBMISSIONS` permissions is non-empty.
 
-The value contains only:
+Use `CanonicalCaptureFormResolver` for the form intersection. Do not create a
+second interpretation of role forms.
+
+For versioned upload only, preserve the released exception: assignment
+soft-deletion does not itself reject an already-created offline submission.
+Current team membership and same-team capture permission still apply.
+
+The shadow result for one assignment/form is one of:
 
 ```text
-activity UID
-organization-unit UID
-canonical capture-form UID list
+ACTIVE_GRANT
+ENDED_RETIRED_ASSIGNMENT
+REVOKED_HISTORY
+NO_GRANT
+SHADOW_UNAVAILABLE
 ```
 
-Managed teams, user groups, administrator bypass, view/delete-only
-permissions, names, codes, and compatibility action flags do not enter the
-intent.
+`ENDED_RETIRED_ASSIGNMENT` requires a matching ended actor/assignment/form
+generation, the current baseline assignment's `deleted=true` state, and the
+same current membership and form-permission checks that make soft deletion the
+only reason the active grant is absent. History ended or currently denied
+because membership, permission, team, activity, role, or scope changed is
+`REVOKED_HISTORY` and must not broaden released upload acceptance. This
+distinction is comparison evidence only in this slice.
 
-Extract one pure canonical capture-form resolver and use it from both the
-runtime command and bootstrap parsing. Do not leave two implementations of
-the role intersection rule.
+### Surface Integration
 
-Match the bootstrap validation order exactly: every source row requires valid
-assignment/activity/team identity and parseable assignment-form and team-
-permission JSON; a direct actor row also requires a valid user identity.
-Disabled, no-actor, and empty-form rows then produce no intent. Only an
-otherwise eligible row requires a valid non-null organization-unit scope.
-Invalid required data aborts the command.
+#### Assignment list
 
-### Command Algorithm
+Keep the inherited baseline result unchanged. For a non-administrator request,
+batch-compare the returned assignments with active actor grant streams.
 
-Every command performs these steps in one transaction:
+- capture-bearing baseline assignments must have the same event-backed scope;
+- event-backed assignment scopes absent from the baseline result are
+  unexplained mismatches;
+- a baseline-visible assignment with no capture-form intersection is
+  `COMPATIBILITY_ONLY_EMPTY_CAPTURE`, not an event grant and not an unexplained
+  mismatch.
 
-1. Acquire one transaction-scoped PostgreSQL advisory lock shared by all
-   assignment-authority commands. These writes are low-volume admin work;
-   serialization is preferred to generation races.
-2. Identify all affected baseline assignment UIDs and snapshot their canonical
-   intents before mutation.
-3. Require the immutable bootstrap-completed checkpoint described below, then
-   verify that every authority-bearing pre-state has one matching active shadow
-   generation. A missing checkpoint or missing/contrary pre-state aborts before
-   the baseline mutation.
-4. Apply the baseline mutation, including relation resolution and current
-   validation, then flush it.
-5. Snapshot the affected intents after mutation and diff by assignment UID and
-   actor UID.
-6. Apply the lifecycle changes below.
-7. Compare affected baseline capture tuples with affected shadow tuples. Any
-   difference rolls back the baseline and shadow changes together.
+Do not add one event query per assignment. A paged request compares the page
+returned; the released mobile's `paged=false` request compares the complete
+result.
 
-Diff behavior:
+#### Assignment-form projection
 
-- absent -> present: create the next generation and active grant;
-- present -> absent: end the current generation;
-- present -> changed role/activity/scope: end the current generation, then
-  create the successor generation;
-- unchanged: append nothing, including stable-UID update retries and
-  non-authority field updates. A create request without a UID is not an
-  idempotent retry; preserve the current behavior that assigns a new baseline
-  identity.
+Keep `AssignmentWithAccessDto` and `AssignmentFormDto` unchanged. Compare only
+forms for which the baseline currently permits capture through
+`ADD_SUBMISSIONS` or `EDIT_SUBMISSIONS`.
 
-Equivalent authority from another assignment remains active because streams
-are reconciled independently and only the access projection deduplicates them.
+`canAddSubmissions`, `canEditSubmissions`, `canDeleteSubmissions`, and forms
+visible only through non-capture permissions remain baseline wire
+compatibility fields. Do not infer those action distinctions from the initial
+event role, which intentionally owns only the canonical capture-form set.
 
-### Event And Identity Contract
+#### Organization-unit synchronization
 
-Reuse the existing journal, aliases, role definitions, assignment identity
-links, and grant projection. No Liquibase change is allowed in this slice.
+Compare direct organization-unit scopes derived from baseline capture-bearing
+assignments with direct scopes from active grants. Ancestors remain a hierarchy
+navigation projection loaded from the baseline organization-unit tree; they
+are not additional grants.
 
-Extend the bootstrap transaction to append one deterministic checkpoint only
-after exact tuple comparison succeeds:
+A direct organization unit supplied only by a baseline-visible empty-capture
+assignment is compatibility-only. An event-backed direct scope with no
+baseline capture scope is an unexplained mismatch.
 
-```text
-event_id: UUID.nameUUIDFromBytes("datarun-baseline/assignment-shadow/bootstrap-completed/v1")
-event_type: transition_checkpoint
-shape_ref: assignment_shadow_bootstrap_completed/v1
-activity_ref: null
-subject_type: transition
-subject_id: UUID.nameUUIDFromBytes("datarun-baseline/assignment-shadow/v1")
-actor_id: system:migration/datarun-baseline-assignment-bootstrap
-payload: {}
-```
+#### Reference catalog
 
-Before live command activation, an exact bootstrap rerun verifies and reuses
-that event. A conflicting event is a hard failure. After live generations
-exist, do not rerun the generation-`0` bootstrap; use generation-aware
-baseline-versus-current-projection comparison instead. The command owner checks
-the checkpoint while holding the same transaction advisory lock, so a new
-authority-bearing row can be distinguished from a deployment that has never
-completed bootstrap.
+Keep the current accessible-assignment and `ADD_SUBMISSIONS` requirement.
+Whenever that baseline check permits Reference catalog access, the event
+shadow must contain the same active assignment/form scope.
 
-Update bootstrap actor selection to include every direct team member rather
-than only activated accounts, and keep the comparison on that same grant
-definition. This is an assignment-authority correction, not an authentication
-change.
+The reverse is not sufficient: an event role may contain a form through
+`EDIT_SUBMISSIONS`, while Reference creation currently requires
+`ADD_SUBMISSIONS`. Keep that action-specific narrowing in the existing
+baseline adapter. It retires only with a separately accepted action-capability
+cutover; do not invent one here.
 
-Extract and reuse the deterministic baseline identity functions already used
-by bootstrap:
+#### Versioned submission upload
 
-```text
-datarun-baseline/actor/{userUid}
-datarun-baseline/org-unit/{orgUnitUid}
-datarun-baseline/assignment/{assignmentUid}/actor/{userUid}/generation/{n}
-```
+Refactor the current field-user upload check into a value decision so both
+baseline and event results are available before the existing error is thrown.
+Return the baseline decision to `SubmissionUploadService`; retain the exact
+released error codes and administrator bypass.
 
-The first generation is always `0`, whether first observed by bootstrap or
-created later by a live command. A restore, re-addition, or changed role/scope
-uses `max(existing generation) + 1`. Concurrent commands cannot create
-duplicate generations.
+Expected comparisons:
 
-Live lifecycle facts use:
+- accepted active assignment/form -> `ACTIVE_GRANT`;
+- accepted soft-deleted assignment/form ->
+  `ENDED_RETIRED_ASSIGNMENT`;
+- baseline denial after membership/permission/status/scope change ->
+  `REVOKED_HISTORY` or `NO_GRANT`, both denied;
+- an event active grant rejected by the baseline -> unexplained mismatch;
+- baseline acceptance with no matching active or retired-assignment history ->
+  unexplained mismatch.
 
-```text
-event_type: assignment_changed
-subject_type: assignment
-subject_id: assignment generation UUID
-activity_ref: baseline activity UID
-actor_id: UUID alias of the authenticated command actor, serialized as text
-recorded_at: server Clock instant
-```
+Only `POST /api/v1/dataSubmission/bulk?referenceVersion=1` is in scope. The
+unversioned validator pipeline remains a separately classified legacy-risk
+surface and must not acquire another authorization implementation in this
+slice.
 
-Start fact:
+### Comparison Ownership
 
-```text
-shape_ref: assignment_created/v1
-payload: { role, org_unit_id }
-```
+Use one comparator and one normalized event read model across all surfaces.
+Do not scatter equality logic through controllers, mappers, filters, and upload
+services.
 
-End fact:
+Comparison must:
 
-```text
-shape_ref: assignment_ended/v1
-payload: {}
-```
+- return baseline behavior without throwing merely because shadow data is
+  unavailable or mismatched;
+- emit bounded structured diagnostics and Micrometer counters by surface and
+  result category;
+- never log form data, names, tokens, passwords, or request bodies;
+- avoid persistent comparison tables;
+- avoid cross-request caches and token claims;
+- batch event reads once per actor/request or upload batch;
+- treat a missing bootstrap checkpoint as `SHADOW_UNAVAILABLE`, not as
+  permission and not as a reason to block the released baseline path.
 
-The immutable identity link already owns target actor and baseline assignment
-UID. The envelope owns activity and command actor. Do not duplicate team,
-names, codes, target actor, baseline UID, or timestamps in payloads.
-
-Ending updates the current grant row to `ENDED` with the end event as its
-source while retaining its role and scope. Starting inserts a new identity and
-`ACTIVE` grant. Event IDs are new UUIDs; idempotency comes from transactional
-state comparison, not deterministic reuse of a request with no command ID.
-
-When an activity changes, the end fact retains the old generation's activity
-UID and the start fact uses the successor generation's new activity UID.
-
-The command actor comes from the authenticated server context. Request-body
-actor or audit fields never authorize or author lifecycle facts.
-
-### Baseline Mutation Compatibility
-
-- Unify assignment create and update relation resolution. Both must resolve
-  team, activity, organization unit, and parent and run the existing Reference
-  scope guard before persistence; create must no longer bypass this path.
-- Preserve assignment soft-delete and restore behavior, including
-  `deletedAt` handling.
-- Preserve full team update and partial-patch field semantics. Centralize user
-  resolution so existing ID/UID/login representations are accepted, and reject
-  a supplied user that cannot be resolved instead of silently dropping it.
-- Keep user-account activation outside this command owner. Team membership,
-  not the account's current login eligibility, starts or ends a grant.
-- Preserve team managed-team compatibility data, but it does not affect the
-  authority intent.
-- Preserve activity and team hard-delete behavior. Referenced rows remain
-  protected by current foreign keys; unreferenced deletion has no grant.
-- Keep current response JSON and save summaries unchanged.
-
-### Bypass And Security Closure
-
-- Remove `GET /teams/migrate`, `runFormPermissionsMigration`, and
-  `TeamFormPermissionsMigration`. The registered operation is a semantic no-op
-  and direct `TeamRepository.saveAll` bypass; no replacement endpoint is
-  required.
-- Replace assignment path maintenance's whole-entity `saveAll` with targeted
-  repository updates of derived `path` and hierarchy-level columns only. Keep
-  the schedule and force/missing modes, but do not allow maintenance to write
-  authority fields. Missing-path pagination must not skip rows as the result
-  set shrinks.
-- Require the same super-user manage decision used by inherited writes for
-  team partial PATCH and the manual assignment path-maintenance endpoint.
-  Ordinary `ROLE_USER` access is denied.
-- No production code outside the selected command/baseline adapter may call
-  assignment, team, or activity repository `save`, `saveAll`, or delete for
-  these registered mutations. Add a focused structural check where practical.
+Tests must be able to assert comparison outcomes directly. Do not make log
+parsing the only executable contract.
 
 ### Tests
 
-Focused route/unit/PostgreSQL tests must prove:
+Focused unit and PostgreSQL tests must prove:
 
-- every route alias and bulk/partial path delegates to the command owner;
-- assignment create, delete, restore, role/form, team, activity, and scope
-  changes produce the expected generations;
-- direct membership add/remove and team permission changes reconcile every
-  affected assignment;
-- team/activity disable and re-enable end and recreate affected grants;
-- empty-form/no-actor/disabled behavior matches bootstrap;
-- overlapping assignments remain independent while effective access remains
-  deduplicated;
-- stable-UID update retries and non-authority updates emit no event;
-- a missing or contrary pre-existing shadow blocks baseline mutation;
-- baseline failure, journal failure, projection failure, or parity mismatch
-  rolls back both sides;
-- concurrent commands cannot create duplicate generations;
-- bootstrap includes inactive direct members, records its completion checkpoint
-  only after exact equality, and commands reject a missing checkpoint;
-- a first live assignment/actor stream uses generation `0` and a later
-  restoration uses the next generation;
-- an activity change records the old activity on the end fact and the new
-  activity on the start fact;
-- bulk remains one transaction per item;
-- both team PATCH aliases delegate to one handler, and team PATCH and manual
-  maintenance reject an ordinary user;
-- path maintenance changes only derived columns and does not skip rows;
-- assignment/team/activity wire JSON remains compatible.
+- active projection lookup preserves baseline assignment identity and returns
+  canonical role forms and aliased organization-unit scope;
+- actor alias absence is equivalent only when baseline capture scope is also
+  empty;
+- assignment list, capture-form, direct organization-unit, and Reference
+  comparisons classify exact, compatibility-only, unavailable, and
+  unexplained outcomes correctly;
+- assignment list and bulk upload perform bounded event queries, not per-row
+  lookups;
+- administrator behavior is unchanged and excluded from assignment-grant
+  comparison;
+- active versioned upload is classified `ACTIVE_GRANT` and retains current
+  success/error behavior;
+- an accepted upload against a soft-deleted assignment is classified
+  `ENDED_RETIRED_ASSIGNMENT`;
+- membership removal, permission removal, team/activity disablement, role/form
+  change, and scope change leave history but do not become late-upload
+  permission;
+- missing checkpoint or contrary shadow data changes diagnostics only, never
+  the released response in this slice;
+- assignment and assignment-form wire JSON, organization-unit results,
+  Reference paging, and versioned upload summaries remain unchanged.
 
-Run focused tests, then `scripts/release/verify.sh`. On an isolated clone whose
-bootstrap has completed, exercise assignment, membership, permission,
-team/activity status, delete/restore, and non-authority changes and prove full
-tuple equality after each scenario. Roll back or recreate the disposable clone
-after the scenario. Do not connect to production.
+Run focused tests, then `scripts/release/verify.sh`. Against the isolated
+production clone:
+
+1. run the generation-aware assignment comparison and require exact tuple
+   equality;
+2. exercise the five surfaces for clone-only field-user fixtures through the
+   real HTTP routes;
+3. cover active, retired-assignment, membership/permission revoked, disabled,
+   and restored states;
+4. require zero unexplained comparison outcomes and unchanged HTTP payloads;
+5. restore the disposable clone after the scenarios.
+
+Do not connect to or deploy production.
 
 ### Slice Gate
 
-- **Authority before:** split baseline JPA services and repositories.
-- **Authority after:** one assignment-authority command; baseline remains read
-  authority and compatibility projection.
-- **Schema/backfill:** existing additive schema and completed bootstrap only.
-- **Shadow comparison:** affected-tuple parity inside every command plus clone
-  scenarios.
-- **Activation:** future deployment first stops the old API from accepting
-  assignment/team/activity admin writes, then runs migration and the
-  checkpoint-producing bootstrap. Start the new application, run the
-  generation-aware exact comparison, and only then reopen those admin writes.
-  This prevents an old writer from racing the bootstrap snapshot.
-- **Rollback:** the old application ignores additive shadow data and continues
-  serving released reads/mobile behavior. Assignment/team/activity admin writes
-  are paused while the old writer is restored. If an old-writer authority
-  change occurs, exact comparison blocks redeployment; recovery is an
-  authority-scoped reconciliation that appends observed lifecycle facts before
-  command writes reopen. Never restore the whole production database or
-  overwrite shadow rows, because submissions may have continued during the
-  rollback window.
-- **Retirement:** baseline-only mutation paths and direct repository bypasses
-  are removed in this slice; baseline read authority retires only in the later
-  authorization cutover.
+- **Authority before:** released baseline filters and
+  `AssignmentFormAccessService`.
+- **Authority after:** unchanged; one event-backed decision runs in shadow and
+  owns comparison evidence.
+- **Baseline compatibility owner:** existing assignment filters,
+  action-specific form flags, and versioned upload errors.
+- **Schema/backfill:** none; requires the completed assignment bootstrap and
+  checkpoint.
+- **Shadow comparison:** all five active surfaces use one normalized event read
+  model and one comparator.
+- **Activation:** none in this slice.
+- **Rollback:** removing the shadow reader/comparator restores the identical
+  baseline behavior; no data rollback exists.
+- **Retirement:** the next cutover handoff may select event authority only
+  after clone and controlled runtime evidence contain no unexplained mismatch.
 
 ### Definition Of Done
 
-- All registered authority-changing writes have one owner and one transaction.
-- Baseline rows, lifecycle facts, and the grant projection cannot diverge on a
-  successful command.
-- The two known repository bypasses and the team PATCH security gap are gone.
-- Current mobile/API reads and submission behavior are unchanged.
+- The five active surfaces produce explicit event-shadow evidence without
+  changing released behavior.
+- Event decisions are request-current, batched, and assignment-specific.
+- Retired-assignment upload compatibility is distinguished from revoked
+  history and does not broaden acceptance.
+- Action-specific compatibility fields remain in one named baseline adapter.
 - Focused, full release, and isolated-clone gates pass.
 - Production remains untouched.
