@@ -5,6 +5,9 @@ Updated: 2026-07-28
 Purpose: compact historical outcomes only. This file is not current runtime or
 deployment authority.
 
+- `252c38e0`: production-profile verification now runs the real unit and
+  integration gate; 113 unit and 37 current-contract integration tests pass,
+  and release artifact version/commit identity is verified.
 - `d1b87dc9`: additive assignment-event persistence landed without changing
   active reads or writes; PostgreSQL tests prove immutability, identity,
   concurrency, rollback, and effective-access projection behavior.
