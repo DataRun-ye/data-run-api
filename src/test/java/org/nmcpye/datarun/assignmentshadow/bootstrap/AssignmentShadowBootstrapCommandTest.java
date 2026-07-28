@@ -62,9 +62,27 @@ class AssignmentShadowBootstrapCommandTest {
         verify(context).close();
     }
 
+    @Test
+    void explicitRunRefusesEagerApplicationInitialization() {
+        AssignmentShadowBootstrap bootstrap = mock(AssignmentShadowBootstrap.class);
+        ConfigurableApplicationContext context = mock(ConfigurableApplicationContext.class);
+        Environment environment = isolatedEnvironment();
+        when(environment.getProperty("spring.main.lazy-initialization")).thenReturn("false");
+
+        AssignmentShadowBootstrapCommand command =
+            new AssignmentShadowBootstrapCommand(bootstrap, context, environment);
+
+        assertThatThrownBy(() -> command.run(mock(ApplicationArguments.class)))
+            .isInstanceOf(AssignmentShadowBootstrapConflictException.class)
+            .hasMessageContaining("spring.main.lazy-initialization=true");
+        verify(bootstrap, never()).run();
+        verify(context).close();
+    }
+
     private static Environment isolatedEnvironment() {
         Environment environment = mock(Environment.class);
         when(environment.getProperty("spring.main.web-application-type")).thenReturn("none");
+        when(environment.getProperty("spring.main.lazy-initialization")).thenReturn("true");
         when(environment.getProperty("datarun.scheduling.enabled")).thenReturn("false");
         when(environment.getProperty("spring.liquibase.enabled")).thenReturn("false");
         when(environment.getProperty("application.liquibase.async-start")).thenReturn("false");

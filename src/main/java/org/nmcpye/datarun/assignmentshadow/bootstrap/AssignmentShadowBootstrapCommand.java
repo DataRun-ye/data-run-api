@@ -55,6 +55,7 @@ public class AssignmentShadowBootstrapCommand implements ApplicationRunner {
 
     private void assertIsolatedRuntime() {
         requireProperty("spring.main.web-application-type", "none");
+        requireProperty("spring.main.lazy-initialization", "true");
         requireProperty("datarun.scheduling.enabled", "false");
         requireProperty("spring.liquibase.enabled", "false");
         requireProperty("application.liquibase.async-start", "false");

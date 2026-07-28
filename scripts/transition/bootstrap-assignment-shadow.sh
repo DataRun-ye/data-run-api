@@ -27,6 +27,7 @@ export DATARUN_JWT_BASE64_SECRET
 exec java -jar "$DATARUN_API_JAR" \
     "$@" \
     --spring.main.web-application-type=none \
+    --spring.main.lazy-initialization=true \
     --spring.liquibase.enabled=false \
     --application.liquibase.async-start=false \
     --datarun.scheduling.enabled=false \
