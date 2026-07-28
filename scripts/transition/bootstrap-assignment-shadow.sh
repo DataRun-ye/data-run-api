@@ -28,6 +28,11 @@ exec java -jar "$DATARUN_API_JAR" \
     "$@" \
     --spring.main.web-application-type=none \
     --spring.main.lazy-initialization=true \
+    --spring.main.banner-mode=off \
+    --logging.level.ROOT=WARN \
+    --logging.level.org.nmcpye.datarun=WARN \
+    --logging.level.org.springframework.jdbc.core.JdbcTemplate=WARN \
+    --logging.level.org.hibernate.orm.incubating=ERROR \
     --spring.liquibase.enabled=false \
     --application.liquibase.async-start=false \
     --datarun.scheduling.enabled=false \
