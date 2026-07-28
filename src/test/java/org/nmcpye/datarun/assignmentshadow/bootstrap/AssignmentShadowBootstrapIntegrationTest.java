@@ -455,13 +455,12 @@ class AssignmentShadowBootstrapIntegrationTest {
             capturePermissions(FORM_UID_1)
         );
         addTeamUser("bst-team-disabled");
-        insertOrgUnit("bst-org-disabled-team", "O0000000003");
         insertAssignment(
             "bst-asg-disabled-team",
             "S0000000003",
             ACTIVITY_ID,
             "bst-team-disabled",
-            "bst-org-disabled-team",
+            null,
             false,
             forms(FORM_UID_1)
         );

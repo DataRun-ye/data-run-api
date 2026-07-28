@@ -222,17 +222,6 @@ final class AssignmentShadowBaselineSnapshot {
             malformedReasons.add(exception.getMessage());
         }
 
-        if (source.orgUnitUid() == null) {
-            metrics.nullScopeRows++;
-            metrics.addValidationSample(
-                source.assignmentDbId(),
-                source.userDbId(),
-                "null organization-unit scope"
-            );
-            return;
-        }
-        requireUid("organization-unit", source.orgUnitUid(), malformedReasons);
-
         if (!malformedReasons.isEmpty()) {
             metrics.malformedRows++;
             metrics.addValidationSample(
@@ -255,6 +244,25 @@ final class AssignmentShadowBaselineSnapshot {
         }
         if (captureFormUids.isEmpty()) {
             metrics.emptyFormSetRows++;
+            return;
+        }
+        if (source.orgUnitUid() == null) {
+            metrics.nullScopeRows++;
+            metrics.addValidationSample(
+                source.assignmentDbId(),
+                source.userDbId(),
+                "null organization-unit scope"
+            );
+            return;
+        }
+        requireUid("organization-unit", source.orgUnitUid(), malformedReasons);
+        if (!malformedReasons.isEmpty()) {
+            metrics.malformedRows++;
+            metrics.addValidationSample(
+                source.assignmentDbId(),
+                source.userDbId(),
+                String.join(", ", malformedReasons)
+            );
             return;
         }
 
