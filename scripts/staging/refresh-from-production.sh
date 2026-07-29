@@ -32,6 +32,10 @@ trap cleanup EXIT
 
 echo "Stopping the staging API."
 ssh "$staging_api_ssh" "
+    prepare_containers=\$(docker ps --all --quiet --filter name=datarun-staging-prepare-)
+    if [ -n \"\$prepare_containers\" ]; then
+        docker rm --force \$prepare_containers >/dev/null
+    fi
     if [ -f /home/nmcp/datarun-staging/compose.yml ] &&
        [ -f /home/nmcp/datarun-staging/.env ]; then
         cd /home/nmcp/datarun-staging
@@ -40,7 +44,8 @@ ssh "$staging_api_ssh" "
 "
 
 if [[ "${DATARUN_STAGING_REUSE_DUMP:-false}" == "true" ]] &&
-   ssh "$staging_db_ssh" "test -s '$remote_dump'"; then
+   ssh "$staging_db_ssh" \
+       "test -s '$remote_dump' && pg_restore -l '$remote_dump' >/dev/null 2>&1"; then
     echo "Reusing the retained compressed staging dump."
 else
     echo "Streaming a fresh compressed dump from production to the staging DB host."

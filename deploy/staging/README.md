@@ -3,6 +3,57 @@
 This environment proves released-client and administrator compatibility before
 the initial event-transition candidate is considered for production.
 
+## What To Run
+
+Run all commands from the canonical operator checkout on the development
+machine:
+
+```bash
+cd /home/hamza/datarun/data-run-api
+```
+
+Do not clone the repository onto either staging VM. The scripts copy only the
+required runtime files and operate through SSH.
+
+When server code changed, run these two commands:
+
+```bash
+scripts/staging/publish-candidate.sh
+```
+
+```bash
+DATARUN_STAGING_REHEARSAL=true scripts/staging/rehearse.sh
+```
+
+When reusing the same candidate, run only the second command.
+
+On success, staging remains running for mobile and administrator testing until
+the next explicit rehearsal. On failure, stop and report the final error; do
+not continue with later commands or diagnose database/container internals.
+
+The rehearsal replaces staging from current production, applies the candidate,
+runs its automated checks, starts the API, and checks the public address. It
+stops at the first failed step.
+
+## Individual Recovery Commands
+
+Agents may use these only to diagnose a failed rehearsal.
+
+To refresh only the database while diagnosing connectivity:
+
+```bash
+DATARUN_STAGING_REFRESH=true scripts/staging/refresh-from-production.sh
+```
+
+To prepare/start an already published candidate without another refresh:
+
+```bash
+scripts/staging/deploy-candidate.sh
+```
+
+Do not use that last command after a failed or partially isolated preparation;
+run the full rehearsal so it begins from a clean production snapshot.
+
 ## Environment
 
 - API host: `nmcp@product-staging.lab` (`192.168.1.220`)
