@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.io.Serial;
 
-@ResponseStatus(HttpStatus.FORBIDDEN)
+@ResponseStatus(HttpStatus.UNAUTHORIZED)
 public class TokenRefreshException extends RuntimeException {
 
     @Serial
@@ -13,6 +13,7 @@ public class TokenRefreshException extends RuntimeException {
     public TokenRefreshException(String message) {
         super(message);
     }
+
     public TokenRefreshException(String token, String message) {
         super(String.format("Failed for [%s]: %s", token, message));
     }

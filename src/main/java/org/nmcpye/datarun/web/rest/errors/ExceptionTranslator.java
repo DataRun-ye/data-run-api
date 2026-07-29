@@ -81,7 +81,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(value = TokenRefreshException.class)
     public ResponseEntity<?> handleTokenRefreshException(TokenRefreshException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler

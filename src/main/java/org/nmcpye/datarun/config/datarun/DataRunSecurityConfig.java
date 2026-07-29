@@ -57,20 +57,14 @@ public class DataRunSecurityConfig {
                         .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/v1/authenticate")).permitAll()
                         .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/authenticate")).permitAll()
 
-                        .requestMatchers(mvc.pattern("/api/custom/register")).permitAll()
-                        .requestMatchers(mvc.pattern("/api/custom/activate")).permitAll()
-                        .requestMatchers(mvc.pattern("/api/custom/me/reset-password/init")).permitAll()
-                        .requestMatchers(mvc.pattern("/api/custom/me/reset-password/finish")).permitAll()
+                        .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/custom/register"))
+                        .hasAuthority(AuthoritiesConstants.ADMIN)
+                        .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/v1/register"))
+                        .hasAuthority(AuthoritiesConstants.ADMIN)
 
                         // Admin-only
-                        .requestMatchers("/api/custom/admin/**").hasAuthority(AuthoritiesConstants.ADMIN)
-
                         .requestMatchers(mvc.pattern("/api/custom/admin/**")).hasAuthority(AuthoritiesConstants.ADMIN)
 
-                        .requestMatchers(mvc.pattern("/api/register")).permitAll()
-                        .requestMatchers(mvc.pattern("/api/activate")).permitAll()
-                        .requestMatchers(mvc.pattern("/api/account/reset-password/init")).permitAll()
-                        .requestMatchers(mvc.pattern("/api/account/reset-password/finish")).permitAll()
                         .requestMatchers(mvc.pattern("/api/admin/**")).hasAuthority(AuthoritiesConstants.ADMIN)
                         .requestMatchers(mvc.pattern("/api/v1/admin/**")).hasAuthority(AuthoritiesConstants.ADMIN)
                         .requestMatchers(mvc.pattern("/api/custom/**")).authenticated()
@@ -81,6 +75,7 @@ public class DataRunSecurityConfig {
                         .requestMatchers(mvc.pattern("/management/info")).permitAll()
                         .requestMatchers(mvc.pattern("/management/prometheus")).permitAll()
                         .requestMatchers(mvc.pattern("/management/**")).hasAuthority(AuthoritiesConstants.ADMIN)
+                        .anyRequest().denyAll()
 
             )
             // Support Basic Auth

@@ -52,12 +52,27 @@ Completion evidence and the release-candidate assessment belong in
 - The digest-pinned API is healthy on the staging LAN endpoint. The nginx
   upstream was corrected from HTTPS port 80 to HTTP port 8080; public health
   and exact build-identity smoke now pass.
+- Authenticated smoke proved that a raw production clone retains production
+  password hashes. Staging identity sanitization now replaces every copied
+  hash and refresh token before public startup, rotates the staging JWT, and
+  provisions only host-secret `staging-admin` and `staging-field` identities.
+  Final post-sanitization login/configuration smoke is pending staging network
+  availability.
 - A normalized 30-day production access-log check confirms active
   administrator use of assignment query/create/bulk, team query/create,
   organization-unit query/create/bulk, activity, data-element, option-set,
   form-template publication, submission query, and pivot routes. Registered
   routes outside this list are not made canonical by this evidence.
 - Authenticated mobile and administrator workflow smoke remain open.
+- The bounded endpoint-security correction is implemented locally:
+  user creation is administrator-only on both aliases; current database
+  authorities override stale JWT claims; inactive users cannot receive or
+  rotate tokens; unmatched routes fail closed; and `/api/custom` is explicitly
+  a deprecated compatibility alias. Focused authentication and route-security
+  tests pass. The clean release gate and staging identity smoke remain open.
 
 Resume with the released-client and actually-used administrator compatibility
-checks. Do not refresh or prepare the database again.
+checks after publishing and deploying the corrected candidate. Do not refresh
+the database again; rerun candidate preparation so the integrated
+sanitization, JWT rotation, and identity smoke execute against the existing
+fresh clone.

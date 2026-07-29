@@ -23,10 +23,9 @@ import java.util.Optional;
  * REST controller for managing the current user's account.
  */
 @RestController
-@RequestMapping(value = {AccountResource.CUSTOM, AccountResource.V1})
+@RequestMapping(AccountResource.CUSTOM)
 public class AccountResource /*extends AbstractRelationalResource<User>*/ {
     protected static final String CUSTOM = ApiVersion.API_CUSTOM;
-    protected static final String V1 = ApiVersion.API_V1;
 
     protected static class AccountResourceException extends RuntimeException {
         public AccountResourceException(String message) {

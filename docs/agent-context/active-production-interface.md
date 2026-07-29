@@ -16,6 +16,27 @@ path without replacement breaks a released mobile capability. Reachable
 administration, maintenance, compatibility, and gated code is classified
 separately rather than being treated as equally active.
 
+## Authentication And HTTP Gate
+
+| Status | Route | Contract |
+| --- | --- | --- |
+| CORE-ACTIVE | `POST /api/v1/authenticate` | released mobile login; returns access and refresh tokens |
+| CORE-ACTIVE | `POST /api/v1/refresh` | released mobile refresh-token rotation; invalid, expired, unavailable, or inactive users receive `401` |
+| CORE-ACTIVE | `GET /api/v1/myDetails` | authenticated released-mobile profile |
+| PUBLIC STATUS | `GET /api/v1/authenticate`, `GET /api/authenticate`, health and info management routes | no user data; retained compatibility/status surface |
+| ADMIN | `/api/v1/admin/**`, `/api/admin/**`, `/api/custom/admin/**`, and both account-creation aliases | current database `ROLE_ADMIN` is required |
+| DEPRECATED COMPATIBILITY | `/api/custom/**` | authenticated or administrator-gated alias; not used by the released mobile and not a target API |
+
+JWT claims identify the subject, but request authority comes from the current
+activated database user and current database authorities. A stale token claim
+cannot preserve administrator access after the database role changes.
+Deactivated users cannot receive or rotate tokens. All routes outside the
+explicit allowlist fail closed.
+
+HTTP Basic and public Prometheus access remain baseline operational
+compatibility pending evidence from the administrator and monitoring smoke.
+They are not canonicalized by this transition.
+
 ## Assignment
 
 | Status | Released mobile request | Server owner | Required downstream path |
@@ -206,4 +227,4 @@ that no external operator or older client uses them.
 | generic submission reads `GET /`, `/byLastModified`, `POST /query`, `GET /{id}` | remove only after access-log/operator confirmation | submission pull is disabled; no current mobile caller | medium / older pull/reporting client unknown |
 | unversioned submission writes `POST /bulk`, `POST /`, `POST /return` | retain until old-client compatibility is explicitly retired | current mobile uses `bulk?referenceVersion=1`; older clients may use the unversioned payload | low removal confidence / highest client risk |
 | submission `PUT /{uid}` and `DELETE /{id}` | defer to synced edit/delete policy | no current mobile caller; admin-only route exists, but lifecycle policy is incomplete | low removal confidence / product-policy risk |
-| `/api/custom` aliases for assignment and submission | remove only after external-client confirmation | released mobile uses `/api/v1`; no in-repo custom caller | medium / external integration unknown |
+| `/api/custom` aliases | replace remaining administrator/operational callers with `/api/v1`, then remove | released mobile uses `/api/v1`; recent production access logs still contain successful custom calls | medium / caller must be identified during administrator smoke |
