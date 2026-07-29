@@ -200,8 +200,10 @@ final candidate branch.
 6. **Activate capture shadow separately.** Bootstrap and validate capture
    facts, enable shadow append, observe exact equivalence, and retain
    `data_submission` as authority.
-7. **Close competing submission writes.** Route, isolate, or retire
-   unversioned/custom/administrator writes before capture authority changes.
+7. **Eliminate capture-write bypasses.** Route every supported
+   unversioned/custom/administrator mutation through the capture command, or
+   remove it after caller evidence proves it unused. No route may write
+   `data_submission` directly once capture events become authority.
 8. **Cut capture authority.** Make immutable capture append the accepted
    command and produce `data_submission` plus `outbox` as compatibility
    projections in the same transaction.
