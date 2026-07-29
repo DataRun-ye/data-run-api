@@ -227,7 +227,8 @@ The completed branch work records:
 - assignment replay that fails before mutation on malformed facts, detects
   missing/differing rows, repairs from facts, and leaves journal/access results
   unchanged;
-- a full Maven gate of 296 tests with zero failures or errors;
+- a clean production-profile gate of 296 unit/contract tests and 38
+  integration tests with zero failures or errors;
 - a production-profile JAR build;
 - candidate Liquibase migration of the isolated production clone;
 - first and idempotent assignment bootstrap runs producing 105,153 facts and
