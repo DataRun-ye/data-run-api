@@ -101,8 +101,26 @@ DATARUN_STAGING_REFRESH=true scripts/staging/refresh-from-production.sh
 ```
 
 The refresh streams a new custom-format dump directly from the current
-production PostgreSQL container. It never stores production credentials.
-Production is read only; only `datarun_staging` is replaced.
+production PostgreSQL container to the staging database VM. Dump bytes do not
+pass through the operator machine. The dedicated
+`datarun-production-refresh` SSH alias and private key exist only on the
+staging database VM; its public key is authorized for user `hamza` in the
+production Compute Engine instance's SSH metadata. Strict host-key checking is
+required. The flow never stores production database credentials. Production
+is read only; only `datarun_staging` is replaced.
+
+The dump is written to a partial file and validated before it atomically
+replaces the reusable dump. Staging remains running until that transfer
+succeeds. A failed transfer therefore neither replaces the database nor stops
+the staging API.
+
+Verify the host-to-host connection without reading production data:
+
+```bash
+ssh nmcp@product-staging-db.lab \
+  "ssh datarun-production-refresh true"
+```
+
 If restore fails after transfer, the compressed dump remains on the DB host.
 Retry with `DATARUN_STAGING_REUSE_DUMP=true` to avoid another production read.
 

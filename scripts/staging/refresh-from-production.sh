@@ -12,11 +12,12 @@ if [[ "$DATARUN_STAGING_REFRESH" != "true" ]]; then
     exit 2
 fi
 
-production_ssh="${DATARUN_PRODUCTION_SSH:-hamza@api.nmcpye.org}"
 staging_api_ssh="${DATARUN_STAGING_API_SSH:-nmcp@product-staging.lab}"
 staging_db_ssh="${DATARUN_STAGING_DB_SSH:-nmcp@product-staging-db.lab}"
+production_refresh_alias="${DATARUN_PRODUCTION_REFRESH_ALIAS:-datarun-production-refresh}"
 staging_database="${DATARUN_STAGING_DATABASE:-datarun_staging}"
 remote_dump="/var/tmp/${staging_database}.dump"
+remote_partial_dump="${remote_dump}.partial"
 remote_restore_list="/var/tmp/${staging_database}.restore.list"
 refresh_complete=false
 
@@ -30,6 +31,30 @@ cleanup() {
 }
 trap cleanup EXIT
 
+if [[ "${DATARUN_STAGING_REUSE_DUMP:-false}" == "true" ]] &&
+   ssh "$staging_db_ssh" \
+       "test -s '$remote_dump' && pg_restore -l '$remote_dump' >/dev/null 2>&1"; then
+    echo "Reusing the retained compressed staging dump."
+else
+    echo "Streaming a fresh compressed dump directly from production to the staging DB host."
+    ssh "$staging_db_ssh" "
+        set -eu
+        cleanup_partial_dump() {
+            rm -f '$remote_partial_dump'
+        }
+        trap cleanup_partial_dump EXIT
+        cleanup_partial_dump
+        ssh '$production_refresh_alias' \
+            \"docker exec nmcp-db sh -lc \
+                'pg_dump -U \\\"\\\$POSTGRES_USER\\\" -d \\\"\\\$POSTGRES_DB\\\" \
+                    -Fc --no-owner --no-privileges'\" \
+            > '$remote_partial_dump'
+        pg_restore -l '$remote_partial_dump' >/dev/null
+        mv -f '$remote_partial_dump' '$remote_dump'
+        trap - EXIT
+    "
+fi
+
 echo "Stopping the staging API."
 ssh "$staging_api_ssh" "
     prepare_containers=\$(docker ps --all --quiet --filter name=datarun-staging-prepare-)
@@ -42,17 +67,6 @@ ssh "$staging_api_ssh" "
         docker compose --env-file .env down
     fi
 "
-
-if [[ "${DATARUN_STAGING_REUSE_DUMP:-false}" == "true" ]] &&
-   ssh "$staging_db_ssh" \
-       "test -s '$remote_dump' && pg_restore -l '$remote_dump' >/dev/null 2>&1"; then
-    echo "Reusing the retained compressed staging dump."
-else
-    echo "Streaming a fresh compressed dump from production to the staging DB host."
-    ssh "$production_ssh" \
-        "docker exec nmcp-db sh -lc 'pg_dump -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -Fc --no-owner --no-privileges'" |
-        ssh "$staging_db_ssh" "cat > '$remote_dump'"
-fi
 
 echo "Preparing the restore list."
 ssh "$staging_db_ssh" \

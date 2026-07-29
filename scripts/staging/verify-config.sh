@@ -13,6 +13,15 @@ grep -Fq -- 'timeout --foreground' scripts/staging/prepare-candidate.sh
 grep -Fq -- 'up -d --wait --wait-timeout' scripts/staging/deploy-candidate.sh
 grep -Fq -- '--datarun.transition.capture-live-shadow-enabled=false' \
     scripts/staging/prepare-candidate.sh
+grep -Fq -- "ssh '\$production_refresh_alias'" \
+    scripts/staging/refresh-from-production.sh
+grep -Fq -- "mv -f '\$remote_partial_dump' '\$remote_dump'" \
+    scripts/staging/refresh-from-production.sh
+if grep -Fq -- 'ssh "$production_ssh"' \
+    scripts/staging/refresh-from-production.sh; then
+    echo "Production dumps must stream directly to the staging DB host." >&2
+    exit 1
+fi
 if grep -Fq -- '--network host' scripts/staging/prepare-candidate.sh; then
     echo "Preparation containers must not use host networking." >&2
     exit 1
