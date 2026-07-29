@@ -44,16 +44,10 @@ public class TokenService {
     @Value("${datarun.security.authentication.jwt.refresh-token-validity-in-seconds:2592000}") // 30 days
     private long refreshTokenValidity;
 
-    public Optional<RefreshTokenDto> findDtoByToken(String token) {
-        return tokenRepository.findByToken(token);
-    }
-
     @Transactional(readOnly = true)
     public String generateAccessToken(String username) {
         Instant now = Instant.now();
-        final var user = userRepository
-            .findOneWithAuthoritiesByLogin(username)
-            .orElseThrow(() -> new TokenRefreshException(username, "invalid"));
+        User user = requireActiveUser(username);
         String authorities = user.getAuthorities().stream()
             .map(Authority::getName)
             .collect(Collectors.joining(" "));
@@ -69,9 +63,25 @@ public class TokenService {
     }
 
     public RefreshTokenDto createRefreshToken(String username) {
-        final User user = userRepository
-            .findOneWithAuthoritiesByLogin(username)
-            .orElseThrow(() -> new TokenRefreshException(username, "invalid"));
+        return saveRefreshToken(requireActiveUser(username));
+    }
+
+    /**
+     * Invalidate the presented refresh token and issue a new one.
+     */
+    public RefreshTokenDto rotateRefreshToken(String token) {
+        RefreshToken refreshToken = tokenRepository
+            .findByToken(token, RefreshToken.class)
+            .filter(value -> !value.isExpired())
+            .orElseThrow(() -> new TokenRefreshException(
+                "Invalid or expired refresh token"
+            ));
+        User user = requireActiveUser(refreshToken.getUser().getLogin());
+        tokenRepository.deleteByUserUid(user.getUid());
+        return saveRefreshToken(user);
+    }
+
+    private RefreshTokenDto saveRefreshToken(User user) {
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(user);
         refreshToken.setExpiryDate(Instant.now().plus(refreshTokenValidity, ChronoUnit.SECONDS));
@@ -81,18 +91,13 @@ public class TokenService {
             .map(RefreshTokenDto::new).orElseThrow();
     }
 
-    @Transactional(readOnly = true)
-    public Optional<RefreshTokenDto> verifyRefreshToken(String token) {
-        return tokenRepository.findByToken(token)
-            .filter(t -> !t.isExpired());
-    }
-
-    /**
-     * Invalidate the current refresh token and issue a new one.
-     */
-    public RefreshTokenDto rotateRefreshToken(RefreshTokenDto refreshToken) {
-        tokenRepository.deleteByUserUid(refreshToken.getUser().getUid());
-        return createRefreshToken(refreshToken.getUser().getLogin());
+    private User requireActiveUser(String username) {
+        return userRepository
+            .findOneWithAuthoritiesByLogin(username)
+            .filter(User::isActivated)
+            .orElseThrow(() -> new TokenRefreshException(
+                "User is inactive or unavailable"
+            ));
     }
 
     /**
