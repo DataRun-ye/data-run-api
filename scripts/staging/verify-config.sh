@@ -10,6 +10,7 @@ bash -n scripts/staging/*.sh
 grep -Fq -- '--entrypoint /entrypoint.sh' scripts/staging/prepare-candidate.sh
 grep -Fq -- '--env-file "$candidate_env_file"' scripts/staging/prepare-candidate.sh
 grep -Fq -- 'timeout --foreground' scripts/staging/prepare-candidate.sh
+grep -Fq -- 'up -d --wait --wait-timeout' scripts/staging/deploy-candidate.sh
 grep -Fq -- '--datarun.transition.capture-live-shadow-enabled=false' \
     scripts/staging/prepare-candidate.sh
 if grep -Fq -- '--network host' scripts/staging/prepare-candidate.sh; then

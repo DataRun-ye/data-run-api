@@ -59,6 +59,6 @@ ssh "$staging_api_ssh" "
         tail -n 100 prepare.log >&2
         exit 1
     fi
-    docker compose --env-file .env up -d
+    docker compose --env-file .env up -d --wait --wait-timeout 180
     docker compose --env-file .env ps
 "
