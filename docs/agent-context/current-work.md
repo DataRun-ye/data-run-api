@@ -23,8 +23,9 @@ Completion evidence and the release-candidate assessment belong in
 
 ## Checkpoint
 
-- Fresh production snapshot restored as `datarun_staging`: 2.15 GB, 254
-  production Liquibase records, 210,447 assignments, and 53,303 submissions.
+- Fresh production snapshot restored directly from production to
+  `datarun_staging`: 254 production Liquibase records, 210,447 assignments,
+  and 53,448 submissions.
 - Staging PostgreSQL accepts the `datarun_staging` runtime role only from
   `192.168.1.220`; credentials and the staging JWT remain host-only.
 - Full release verification passed for commit
@@ -41,10 +42,17 @@ Completion evidence and the release-candidate assessment belong in
 - The corrected full gate passed on the disposable staging state: assignment
   bootstrap `SUCCESS` with 263,622 tuples and zero baseline differences;
   event-only replay `EXACT` with zero missing, unexpected, or differing rows.
-- The final clean production refresh is blocked before dump creation because
-  direct SSH to `api.nmcpye.org:22` times out. Staging API is stopped and the
-  database remains disposable until that refresh completes.
+- Production refresh SSH is owned by the staging DB VM through a dedicated,
+  Google instance-metadata-managed key and strict host verification. Dump data
+  travels directly from production to staging DB and no longer traverses the
+  operator machine.
+- The clean-clone candidate gate passed: migrations completed, assignment
+  bootstrap reported `SUCCESS` with 263,622 tuples, and event-only replay
+  reported `EXACT`.
+- The digest-pinned API is healthy on the staging LAN endpoint. The public
+  nginx endpoint currently returns `502`, so public, authenticated mobile, and
+  administrator smoke remain open.
 
-Resume with one fresh production stream, then run the already-proven
-digest-pinned deployment gate. No image transfer or further gate redesign is
-required.
+Resume by correcting only the public nginx upstream route, then run the
+existing public smoke and the released-client/administrator compatibility
+checks. Do not refresh or prepare the database again.

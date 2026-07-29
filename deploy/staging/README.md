@@ -112,7 +112,9 @@ is read only; only `datarun_staging` is replaced.
 The dump is written to a partial file and validated before it atomically
 replaces the reusable dump. Staging remains running until that transfer
 succeeds. A failed transfer therefore neither replaces the database nor stops
-the staging API.
+the staging API. During transfer, the command reports compressed MiB and
+elapsed time. During restore, it reports elapsed time; a percentage would be
+misleading because custom-format compression and restore work are not linear.
 
 Verify the host-to-host connection without reading production data:
 

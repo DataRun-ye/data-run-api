@@ -44,11 +44,25 @@ else
         }
         trap cleanup_partial_dump EXIT
         cleanup_partial_dump
+        dump_started_at=\$(date +%s)
         ssh '$production_refresh_alias' \
             \"docker exec nmcp-db sh -lc \
                 'pg_dump -U \\\"\\\$POSTGRES_USER\\\" -d \\\"\\\$POSTGRES_DB\\\" \
                     -Fc --no-owner --no-privileges'\" \
-            > '$remote_partial_dump'
+            > '$remote_partial_dump' &
+        dump_pid=\$!
+        while kill -0 \"\$dump_pid\" >/dev/null 2>&1; do
+            sleep 10
+            if kill -0 \"\$dump_pid\" >/dev/null 2>&1; then
+                dump_bytes=\$(stat -c %s '$remote_partial_dump' 2>/dev/null || printf 0)
+                dump_elapsed=\$((\$(date +%s) - dump_started_at))
+                printf 'Dumping: %d MiB, elapsed %02d:%02d\\n' \
+                    \$((dump_bytes / 1024 / 1024)) \
+                    \$((dump_elapsed / 60)) \
+                    \$((dump_elapsed % 60))
+            fi
+        done
+        wait \"\$dump_pid\"
         pg_restore -l '$remote_partial_dump' >/dev/null
         mv -f '$remote_partial_dump' '$remote_dump'
         trap - EXIT
@@ -80,10 +94,24 @@ ssh "$staging_db_ssh" \
      sudo -n -u postgres createdb --owner=datarun_staging '$staging_database'"
 ssh "$staging_db_ssh" \
     "sudo -n -u postgres psql -d '$staging_database'" < "$restore_prerequisites"
-ssh "$staging_db_ssh" \
-    "sudo -n -u postgres pg_restore --exit-on-error --no-owner --no-privileges \
+ssh "$staging_db_ssh" "
+    set -eu
+    restore_started_at=\$(date +%s)
+    sudo -n -u postgres pg_restore --exit-on-error --no-owner --no-privileges \
         --role=datarun_staging --use-list='$remote_restore_list' \
-        --dbname='$staging_database' '$remote_dump'"
+        --dbname='$staging_database' '$remote_dump' &
+    restore_pid=\$!
+    while kill -0 \"\$restore_pid\" >/dev/null 2>&1; do
+        sleep 10
+        if kill -0 \"\$restore_pid\" >/dev/null 2>&1; then
+            restore_elapsed=\$((\$(date +%s) - restore_started_at))
+            printf 'Restoring: elapsed %02d:%02d\\n' \
+                \$((restore_elapsed / 60)) \
+                \$((restore_elapsed % 60))
+        fi
+    done
+    wait \"\$restore_pid\"
+"
 
 refresh_complete=true
 echo "Production refresh restored successfully."
