@@ -244,9 +244,10 @@ candidate.
 
 ## Ordered Cutover
 
-1. **Prepare one staging clone.** Automate restore, candidate migration,
-   assignment bootstrap, exact comparison, reset, and candidate startup
-   without production credentials.
+1. **Prepare one staging clone.** Stream a fresh compressed dump directly from
+   the current production database without exposing credentials; replace only
+   `datarun_staging`; apply candidate migrations, assignment bootstrap, exact
+   comparison, and candidate startup.
 2. **Prove released-client compatibility.** Smoke installed mobile
    `6.0.3+54`; inventory and smoke the administrator operations that are
    actually used.
@@ -276,11 +277,11 @@ architecture.
 
 ## Next Bounded Slice
 
-The event-contract and assignment-replay closure is complete. The next
-recommended implementation is **transition staging preparation**:
+The event-contract and assignment-replay closure is complete. The active
+implementation is **transition staging preparation**:
 
-- create/reset a named staging clone from the immutable dump;
-- use a disposable non-production database role;
+- refresh a named staging clone directly from current production;
+- use a staging-only non-production database role;
 - apply candidate migrations;
 - run assignment bootstrap and exact comparison;
 - start the candidate API with capture shadow disabled;
