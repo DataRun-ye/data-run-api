@@ -28,10 +28,8 @@ ssh "$staging_api_ssh" "
     install -m 0700 /tmp/prepare-candidate.sh '$runtime_dir/prepare-candidate.sh'
     rm -f /tmp/candidate.env /tmp/compose.yml /tmp/prepare-candidate.sh
 
-    if [ ! -s '$runtime_dir/jwt-secret' ]; then
-        umask 0077
-        openssl rand -base64 64 | tr -d '\\n' > '$runtime_dir/jwt-secret'
-    fi
+    umask 0077
+    openssl rand -base64 64 | tr -d '\\n' > '$runtime_dir/jwt-secret'
 
     . '$runtime_dir/candidate.env'
     database_password=\$(cat '$runtime_dir/runtime-password')
@@ -51,6 +49,7 @@ ssh "$staging_api_ssh" "
     chmod 0600 '$runtime_dir/.env'
 
     cd '$runtime_dir'
+    docker compose --env-file .env down
     if ! docker image inspect \"\$DATARUN_API_IMAGE_PIN\" >/dev/null 2>&1; then
         docker pull \"\$DATARUN_API_IMAGE_PIN\" >/dev/null
     fi
@@ -59,6 +58,13 @@ ssh "$staging_api_ssh" "
         tail -n 100 prepare.log >&2
         exit 1
     fi
+"
+
+scripts/staging/sanitize-users.sh
+
+ssh "$staging_api_ssh" "
+    set -eu
+    cd '$runtime_dir'
     docker compose --env-file .env up -d --wait --wait-timeout 180
     docker compose --env-file .env ps
 "

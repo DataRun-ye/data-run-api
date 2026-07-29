@@ -143,19 +143,38 @@ scripts/staging/deploy-candidate.sh
 
 Candidate preparation applies Liquibase, runs the exact assignment bootstrap,
 and validates that the assignment projection rebuilds from immutable facts.
-The API remains stopped during this sequence. Deployment pulls the
-digest-pinned candidate image, keeps credentials on the host, and starts the
-same image only after preparation passes.
+The API remains stopped during this sequence. Before startup, staging replaces
+all copied password hashes, reset credentials, email logins, and refresh
+tokens. It provisions only `staging-admin` and `staging-field`; the field
+identity retains the selected source user's UID and team memberships so mobile
+access remains realistic. Passwords are generated once and retained only in
+the staging DB host's mode-`0600` user file. Deployment pulls the digest-pinned
+candidate image, stops any previous staging API before replay, rotates the
+staging JWT key, and starts it only after preparation and identity sanitization
+pass. Existing staging sessions never survive a candidate replacement.
 
-From the operator checkout:
+The first setup must identify one production-clone field user whose access
+scope is suitable for mobile smoke:
 
 ```bash
-scripts/staging/smoke.sh
+DATARUN_STAGING_FIELD_TEMPLATE_LOGIN=<source-login> \
+  scripts/staging/deploy-candidate.sh
 ```
 
-Set `DATARUN_STAGING_LOGIN` and `DATARUN_STAGING_PASSWORD` only in the current
-shell to add login and current-user checks. Do not store user credentials in
-the repository or command history.
+Later refreshes and deployments reuse the host-only selection and generated
+credentials. Automated smoke reads them directly over SSH without printing
+them:
+
+```bash
+DATARUN_STAGING_IDENTITY=all scripts/staging/smoke.sh
+```
+
+This checks login, current-user lookup, and refresh-token rotation for both
+staging identities. To enter credentials in a mobile or administrator client,
+inspect the host-only file in your own terminal. Never put its values in chat,
+repository files, or command history. Explicit
+`DATARUN_STAGING_LOGIN`/`DATARUN_STAGING_PASSWORD` variables remain available
+for one-off smoke of another staging identity.
 
 ## Compatibility Gate
 

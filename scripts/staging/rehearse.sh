@@ -15,6 +15,6 @@ cd "$repo_root"
 scripts/staging/verify-config.sh
 DATARUN_STAGING_REFRESH=true scripts/staging/refresh-from-production.sh
 scripts/staging/deploy-candidate.sh
-scripts/staging/smoke.sh
+DATARUN_STAGING_IDENTITY=all scripts/staging/smoke.sh
 
 echo "Staging rehearsal passed. The environment remains running for manual smoke."
