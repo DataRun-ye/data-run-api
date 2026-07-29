@@ -726,7 +726,7 @@ class AssignmentShadowBootstrapIntegrationTest {
                 INSERT INTO event_journal (
                     event_id, event_type, shape_ref, activity_ref, subject_type,
                     subject_id, actor_id, recorded_at, payload
-                ) VALUES (?, 'assignment_changed', 'test-extra/v1', ?, 'assignment', ?,
+                ) VALUES (?, 'assignment_changed', 'test_extra/v1', ?, 'assignment', ?,
                     'bootstrap-test', now(), '{}'::jsonb)
                 """,
             eventId,
@@ -785,6 +785,7 @@ class AssignmentShadowBootstrapIntegrationTest {
     private void cleanFixtures() {
         jdbc.execute("""
             TRUNCATE TABLE
+                transition_checkpoint,
                 assignment_grant_projection,
                 assignment_identity_link,
                 assignment_role_definition,

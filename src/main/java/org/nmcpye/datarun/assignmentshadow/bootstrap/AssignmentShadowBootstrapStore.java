@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.assignmentshadow.bootstrap;
 
+import org.nmcpye.datarun.eventjournal.EventContract;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -13,9 +14,10 @@ import static org.nmcpye.datarun.assignmentshadow.bootstrap.AssignmentShadowBoot
 @Component
 final class AssignmentShadowBootstrapStore {
 
-    private static final String EVENT_TYPE = "assignment_changed";
-    private static final String SHAPE_REF = "baseline_assignment_observed/v1";
-    private static final String SUBJECT_TYPE = "assignment";
+    private static final String EVENT_TYPE = EventContract.ASSIGNMENT_CHANGED;
+    private static final String SHAPE_REF =
+        EventContract.BASELINE_ASSIGNMENT_OBSERVED;
+    private static final String SUBJECT_TYPE = EventContract.ASSIGNMENT;
     private static final String SYSTEM_ACTOR =
         "system:migration/datarun-baseline-assignment-bootstrap";
 
@@ -89,10 +91,10 @@ final class AssignmentShadowBootstrapStore {
         )
         SELECT
             event_id,
-            'assignment_changed',
-            'baseline_assignment_observed/v1',
+            '%s',
+            '%s',
             activity_uid,
-            'assignment',
+            '%s',
             assignment_id,
             'system:migration/datarun-baseline-assignment-bootstrap',
             ?,
@@ -105,7 +107,7 @@ final class AssignmentShadowBootstrapStore {
         WHERE desired_order > ? AND desired_order <= ?
         ORDER BY desired_order
         ON CONFLICT (event_id) DO NOTHING
-        """;
+        """.formatted(EVENT_TYPE, SHAPE_REF, SUBJECT_TYPE);
 
     private static final String INSERT_GRANTS_SQL = """
         INSERT INTO assignment_grant_projection (

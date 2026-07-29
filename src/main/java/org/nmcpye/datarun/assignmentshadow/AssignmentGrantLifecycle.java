@@ -1,10 +1,13 @@
 package org.nmcpye.datarun.assignmentshadow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.nmcpye.datarun.assignmentshadow.AssignmentAuthoritySnapshot.CaptureIntent;
 import org.nmcpye.datarun.assignmentshadow.AssignmentAuthoritySnapshot.IntentKey;
 import org.nmcpye.datarun.eventjournal.AppendJournalEvent;
+import org.nmcpye.datarun.eventjournal.EventContract;
 import org.nmcpye.datarun.eventjournal.EventJournalPort;
+import org.nmcpye.datarun.transition.TransitionTimestamp;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -19,8 +22,8 @@ import java.util.UUID;
 @Component
 public class AssignmentGrantLifecycle {
 
-    private static final String EVENT_TYPE = "assignment_changed";
-    private static final String SUBJECT_TYPE = "assignment";
+    private static final String EVENT_TYPE = EventContract.ASSIGNMENT_CHANGED;
+    private static final String SUBJECT_TYPE = EventContract.ASSIGNMENT;
 
     private final ActorIdentityLinkPort actors;
     private final TransitionIdentityResolver transitionIdentities;
@@ -113,20 +116,25 @@ public class AssignmentGrantLifecycle {
         ));
 
         UUID eventId = UUID.randomUUID();
-        Instant recordedAt = clock.instant();
+        Instant recordedAt = TransitionTimestamp.toDatabasePrecision(
+            clock.instant()
+        );
         journal.append(new AppendJournalEvent(
             eventId,
             EVENT_TYPE,
-            "assignment_created/v1",
+            EventContract.ASSIGNMENT_CREATED,
             intent.activityUid(),
             SUBJECT_TYPE,
             assignmentId,
             commandActorId,
             recordedAt,
-            objectMapper.valueToTree(Map.of(
-                "role", role.roleKey(),
-                "org_unit_id", orgUnit.orgUnitId().toString()
-            ))
+            assignmentCreatedPayload(
+                targetActor.actorId(),
+                role.roleKey(),
+                orgUnit.orgUnitId(),
+                intent.activityUid(),
+                recordedAt
+            )
         ));
         grants.insert(new AssignmentGrantProjection(
             assignmentId,
@@ -151,16 +159,19 @@ public class AssignmentGrantLifecycle {
             .orElseThrow(() -> conflict("Missing active assignment grant for " + key));
 
         UUID eventId = UUID.randomUUID();
+        Instant recordedAt = TransitionTimestamp.toDatabasePrecision(
+            clock.instant()
+        );
         journal.append(new AppendJournalEvent(
             eventId,
             EVENT_TYPE,
-            "assignment_ended/v1",
+            EventContract.ASSIGNMENT_ENDED,
             intent.activityUid(),
             SUBJECT_TYPE,
             identity.assignmentId(),
             commandActorId,
-            clock.instant(),
-            objectMapper.createObjectNode()
+            recordedAt,
+            objectMapper.createObjectNode().putNull("reason")
         ));
         grants.update(current.sourceEventId(), new AssignmentGrantProjection(
             current.assignmentId(),
@@ -173,5 +184,26 @@ public class AssignmentGrantLifecycle {
 
     private AssignmentAuthorityConflictException conflict(String message) {
         return new AssignmentAuthorityConflictException(message);
+    }
+
+    private ObjectNode assignmentCreatedPayload(
+        UUID targetActorId,
+        String roleKey,
+        UUID orgUnitId,
+        String activityUid,
+        Instant validFrom
+    ) {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.putObject("target_actor")
+            .put("type", "actor")
+            .put("id", targetActorId.toString());
+        payload.put("role", roleKey);
+        ObjectNode scope = payload.putObject("scope");
+        scope.put("geographic", orgUnitId.toString());
+        scope.putNull("subject_list");
+        scope.putArray("activity").add(activityUid);
+        payload.put("valid_from", validFrom.toString());
+        payload.putNull("valid_to");
+        return payload;
     }
 }

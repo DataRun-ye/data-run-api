@@ -77,6 +77,7 @@ class AssignmentShadowPersistenceIntegrationTest {
         new TransactionTemplate(transactionManager).executeWithoutResult(status ->
             jdbc.execute("""
                 TRUNCATE TABLE
+                    transition_checkpoint,
                     assignment_grant_projection,
                     assignment_identity_link,
                     assignment_role_definition,
@@ -104,6 +105,7 @@ class AssignmentShadowPersistenceIntegrationTest {
                   AND table_type = 'BASE TABLE'
                   AND table_name IN (
                       'event_journal',
+                      'transition_checkpoint',
                       'actor_identity_link',
                       'org_unit_identity_link',
                       'assignment_role_definition',
@@ -121,6 +123,7 @@ class AssignmentShadowPersistenceIntegrationTest {
                 WHERE table_schema = 'public'
                   AND table_name IN (
                       'event_journal',
+                      'transition_checkpoint',
                       'actor_identity_link',
                       'org_unit_identity_link',
                       'assignment_role_definition',
@@ -145,6 +148,7 @@ class AssignmentShadowPersistenceIntegrationTest {
                 WHERE constraint_schema = 'public'
                   AND table_name IN (
                       'event_journal',
+                      'transition_checkpoint',
                       'actor_identity_link',
                       'org_unit_identity_link',
                       'assignment_role_definition',
@@ -162,6 +166,7 @@ class AssignmentShadowPersistenceIntegrationTest {
                 WHERE schemaname = 'public'
                   AND tablename IN (
                       'event_journal',
+                      'transition_checkpoint',
                       'actor_identity_link',
                       'org_unit_identity_link',
                       'assignment_role_definition',
@@ -184,6 +189,7 @@ class AssignmentShadowPersistenceIntegrationTest {
                 WHERE trigger_schema = 'public'
                   AND trigger_name IN (
                       'trg_event_journal_immutable',
+                      'trg_transition_checkpoint_immutable',
                       'trg_actor_identity_link_immutable',
                       'trg_org_unit_identity_link_immutable',
                       'trg_assignment_role_definition_immutable',
@@ -213,7 +219,8 @@ class AssignmentShadowPersistenceIntegrationTest {
             "assignment_identity_link",
             "assignment_role_definition",
             "event_journal",
-            "org_unit_identity_link"
+            "org_unit_identity_link",
+            "transition_checkpoint"
         );
         assertThat(columns)
             .containsEntry("event_journal", List.of(
@@ -225,6 +232,11 @@ class AssignmentShadowPersistenceIntegrationTest {
                 "subject_type",
                 "subject_id",
                 "actor_id",
+                "recorded_at",
+                "payload"
+            ))
+            .containsEntry("transition_checkpoint", List.of(
+                "checkpoint_key",
                 "recorded_at",
                 "payload"
             ))
@@ -248,6 +260,12 @@ class AssignmentShadowPersistenceIntegrationTest {
             "pk_event_journal",
             "uq_event_journal_event_id",
             "ck_event_journal_payload_object",
+            "ck_event_journal_event_type",
+            "ck_event_journal_shape_ref",
+            "ck_event_journal_subject_type",
+            "ck_event_journal_known_shape_envelope",
+            "pk_transition_checkpoint",
+            "ck_transition_checkpoint_payload_object",
             "pk_actor_identity_link",
             "uq_actor_identity_baseline_user",
             "pk_org_unit_identity_link",
@@ -272,6 +290,7 @@ class AssignmentShadowPersistenceIntegrationTest {
             "uq_event_journal_event_id",
             "idx_event_journal_subject_position",
             "idx_event_journal_type_position",
+            "pk_transition_checkpoint",
             "pk_actor_identity_link",
             "uq_actor_identity_baseline_user",
             "pk_org_unit_identity_link",
@@ -300,7 +319,9 @@ class AssignmentShadowPersistenceIntegrationTest {
             "event_journal:DELETE",
             "event_journal:UPDATE",
             "org_unit_identity_link:DELETE",
-            "org_unit_identity_link:UPDATE"
+            "org_unit_identity_link:UPDATE",
+            "transition_checkpoint:DELETE",
+            "transition_checkpoint:UPDATE"
         );
         assertThat(immutableFunctionCount).isEqualTo(1);
         assertThat(viewDefinition)
@@ -323,9 +344,17 @@ class AssignmentShadowPersistenceIntegrationTest {
         UUID assignmentId = UUID.randomUUID();
         UUID eventId = appendEvent(assignmentId, "assignment_created/v1", T0);
         identityLinks.insert(identity("Asg00000001", 0, assignmentId));
+        jdbc.update(
+            """
+                INSERT INTO transition_checkpoint (
+                    checkpoint_key, recorded_at, payload
+                ) VALUES ('test_checkpoint/v1', now(), '{}'::jsonb)
+                """
+        );
 
         List<ImmutableTable> immutableTables = List.of(
             new ImmutableTable("event_journal", "event_type"),
+            new ImmutableTable("transition_checkpoint", "recorded_at"),
             new ImmutableTable("actor_identity_link", "baseline_user_uid"),
             new ImmutableTable("org_unit_identity_link", "baseline_org_unit_uid"),
             new ImmutableTable("assignment_role_definition", "activity_uid"),

@@ -40,6 +40,21 @@
             </column>
         </createTable>
 
+        <createTable tableName="transition_checkpoint">
+            <column name="checkpoint_key" type="VARCHAR(128)">
+                <constraints
+                    nullable="false"
+                    primaryKey="true"
+                    primaryKeyName="pk_transition_checkpoint"/>
+            </column>
+            <column name="recorded_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
         <addUniqueConstraint
             tableName="event_journal"
             columnNames="event_id"
@@ -201,6 +216,67 @@
                 ADD CONSTRAINT ck_event_journal_payload_object
                 CHECK (jsonb_typeof(payload) = 'object');
 
+            ALTER TABLE event_journal
+                ADD CONSTRAINT ck_event_journal_event_type
+                CHECK (
+                    event_type IN (
+                        'capture',
+                        'review',
+                        'alert',
+                        'task_created',
+                        'task_completed',
+                        'assignment_changed'
+                    )
+                );
+
+            ALTER TABLE event_journal
+                ADD CONSTRAINT ck_event_journal_shape_ref
+                CHECK (shape_ref ~ '^[a-z][a-z0-9_]*/v[0-9]+$');
+
+            ALTER TABLE event_journal
+                ADD CONSTRAINT ck_event_journal_subject_type
+                CHECK (
+                    subject_type IN (
+                        'subject',
+                        'actor',
+                        'assignment',
+                        'process'
+                    )
+                );
+
+            ALTER TABLE event_journal
+                ADD CONSTRAINT ck_event_journal_known_shape_envelope
+                CHECK (
+                    shape_ref NOT IN (
+                        'baseline_assignment_observed/v1',
+                        'assignment_created/v1',
+                        'assignment_ended/v1',
+                        'baseline_submission_captured/v1',
+                        'capture_state_accepted/v1'
+                    )
+                    OR (
+                        shape_ref IN (
+                            'baseline_assignment_observed/v1',
+                            'assignment_created/v1',
+                            'assignment_ended/v1'
+                        )
+                        AND event_type = 'assignment_changed'
+                        AND subject_type = 'assignment'
+                    )
+                    OR (
+                        shape_ref IN (
+                            'baseline_submission_captured/v1',
+                            'capture_state_accepted/v1'
+                        )
+                        AND event_type = 'capture'
+                        AND subject_type = 'subject'
+                    )
+                );
+
+            ALTER TABLE transition_checkpoint
+                ADD CONSTRAINT ck_transition_checkpoint_payload_object
+                CHECK (jsonb_typeof(payload) = 'object');
+
             ALTER TABLE assignment_role_definition
                 ADD CONSTRAINT ck_assignment_role_form_uids_array
                 CHECK (jsonb_typeof(form_uids) = 'array');
@@ -224,6 +300,11 @@
 
             CREATE TRIGGER trg_event_journal_immutable
                 BEFORE UPDATE OR DELETE ON event_journal
+                FOR EACH ROW
+                EXECUTE FUNCTION reject_immutable_table_mutation();
+
+            CREATE TRIGGER trg_transition_checkpoint_immutable
+                BEFORE UPDATE OR DELETE ON transition_checkpoint
                 FOR EACH ROW
                 EXECUTE FUNCTION reject_immutable_table_mutation();
 
@@ -269,12 +350,14 @@
                 DROP TRIGGER trg_assignment_role_definition_immutable ON assignment_role_definition;
                 DROP TRIGGER trg_org_unit_identity_link_immutable ON org_unit_identity_link;
                 DROP TRIGGER trg_actor_identity_link_immutable ON actor_identity_link;
+                DROP TRIGGER trg_transition_checkpoint_immutable ON transition_checkpoint;
                 DROP TRIGGER trg_event_journal_immutable ON event_journal;
                 DROP FUNCTION reject_immutable_table_mutation();
                 DROP TABLE assignment_identity_link;
                 DROP TABLE assignment_role_definition;
                 DROP TABLE org_unit_identity_link;
                 DROP TABLE actor_identity_link;
+                DROP TABLE transition_checkpoint;
                 DROP TABLE event_journal;
             ]]></sql>
         </rollback>

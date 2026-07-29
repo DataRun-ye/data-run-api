@@ -1,9 +1,16 @@
 # Completed Work
 
-Updated: 2026-07-28
+Updated: 2026-07-29
 
 Purpose: compact historical outcomes only. This file is not current runtime or
 deployment authority.
+
+- The initial event-contract closure moved operational checkpoints out of the
+  journal, enforced the closed structural vocabulary, emitted accepted
+  assignment lifecycle shapes, and made assignment grants exactly replayable
+  from immutable facts. All 296 Maven tests passed; the migrated production
+  clone reproduced 105,153 grants and 263,423 access tuples with zero
+  differences. Production remained untouched.
 
 - `252c38e0`: production-profile verification now runs the real unit and
   integration gate; 113 unit and 37 current-contract integration tests pass,

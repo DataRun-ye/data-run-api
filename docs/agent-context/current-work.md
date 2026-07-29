@@ -2,7 +2,9 @@
 
 Updated: 2026-07-29
 
-Status: NO ACCEPTED IMPLEMENTATION SLICE
+Status: NO ACTIVE IMPLEMENTATION
 
-No implementation slice is currently active. Select and accept the next
-bounded handoff before changing runtime behavior.
+The initial event-contract and assignment-replay closure is complete. No next
+implementation slice has been accepted. The current candidate assessment and
+recommended staging/client-smoke boundary are in
+`initial-event-transition-boundary.md`.

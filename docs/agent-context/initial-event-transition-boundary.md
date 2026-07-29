@@ -17,10 +17,11 @@ Status: CANDIDATE - NOT DEPLOYED
 - `datarun.transition.capture-live-shadow-enabled` is `false` in every
   committed profile.
 
-This branch is a valid candidate first transition step, not a completed event
-architecture. It has moved released assignment reads and versioned-upload
-authorization to event-backed grants while retaining the released HTTP and
-database compatibility surfaces. Capture events remain optional shadow state;
+This branch is a credible first transition candidate, not a completed event
+architecture or a production release. Released assignment reads and
+versioned-upload authorization use event-backed grants while the released HTTP
+and database contracts remain intact. Assignment projections are now exactly
+rebuildable from immutable facts. Capture events remain optional shadow state;
 `data_submission` and the current `outbox` are still capture authority.
 
 ## Boundary Map
@@ -28,7 +29,7 @@ database compatibility surfaces. Capture events remain optional shadow state;
 | Boundary | Candidate authority | Compatibility surface | Current transition state |
 | --- | --- | --- | --- |
 | Assignment mutation | `AssignmentAuthorityCommandService` owns assignment, team, and activity mutations that affect capture authority | Existing assignment, team, activity, membership, and form-permission rows and DTOs remain written | The command mutates the baseline model and reconciles lifecycle events/projections in one transaction. The journal is not yet the sole mutation input. |
-| Assignment lifecycle | Immutable `assignment_changed` facts plus `assignment_grant_projection` | Baseline assignment UID, team grouping, activity, org-unit, and form rows remain resolvable | Bootstrapped and maintained for active command routes. |
+| Assignment lifecycle | Immutable `assignment_changed` facts plus `assignment_grant_projection` | Baseline assignment UID, team grouping, activity, org-unit, and form rows remain resolvable | Bootstrapped and maintained for active command routes; isolated validate/repair replay derives the projection without baseline authority reads. |
 | Released work reads | `ReleasedWorkReadAuthority` reads highest-generation event grants | `/api/v1` assignment, assignment-form, org-unit, and Reference response shapes are unchanged | Cut over on the candidate branch. Missing or inconsistent event authority fails closed. |
 | Versioned upload authorization | `VersionedUploadEventAuthorizer` uses the accepted assignment grant | Baseline logic only preserves released denial codes, administrator acceptance, and eligible late upload against an ended assignment | Cut over on the candidate branch. |
 | Submission mutation | `DefaultDataSubmissionService` classifies create, update, delete, and unchanged retry | `data_submission`, response summaries, and current `outbox` remain authoritative | Same-UID exact retry is a successful write/outbox no-op. |
@@ -41,7 +42,9 @@ database compatibility surfaces. Capture events remain optional shadow state;
 
 The additive transition schema contains:
 
-- `event_journal`: immutable assignment, checkpoint, and capture facts;
+- `event_journal`: immutable assignment and capture facts only;
+- `transition_checkpoint`: immutable operational migration/bootstrap
+  completion metadata, deliberately outside the event journal;
 - `actor_identity_link`, `org_unit_identity_link`, and
   `assignment_identity_link`: immutable aliases from baseline identities;
 - `assignment_role_definition`: one canonical activity/form-set capture role;
@@ -53,6 +56,49 @@ The additive transition schema contains:
 
 Bootstrap facts reconstruct the state observable in the production clone.
 They are not invented historical assignment or submission timelines.
+
+## Transferable Event Contract
+
+The candidate mechanically protects the accepted parts that are usable now:
+
+- `event_type` is the closed structural vocabulary `capture`, `review`,
+  `alert`, `task_created`, `task_completed`, and `assignment_changed`;
+- `shape_ref` follows `{shape_name}/v{version}` and remains distinct from
+  structural event type;
+- event subjects use the typed categories `subject`, `actor`, `assignment`,
+  and `process`;
+- `assignment_created/v1` and `assignment_ended/v1` are
+  `assignment_changed` facts about one assignment identity and emit the
+  accepted payload fields;
+- a capture remains `event_type=capture`; its current subject is the assigned
+  organization unit represented as a typed `subject`, while its separate
+  capture ID is only the immutable stream/projection key;
+- current assignment authority is a rebuildable projection, not a mutable
+  second source of truth.
+
+The transition journal is intentionally a reduced internal server envelope.
+It maps event ID, structural type, shape, activity, typed subject, actor,
+recorded time, and payload without inventing final device ID, device sequence,
+or sync-watermark values that released clients do not provide. A future native
+event transport must add those semantics at its own boundary; it must not
+reinterpret this internal journal as the complete wire envelope.
+
+Temporary transition adapters are explicit:
+
+- `baseline_assignment_observed/v1` records migration-observed assignment
+  state, not fabricated history;
+- `baseline_submission_captured/v1` and `capture_state_accepted/v1` preserve
+  the baseline submission snapshot, pinned template version, and accepted
+  upload provenance until capture authority is cut over;
+- immutable identity links map baseline 11-character external UIDs to typed
+  event identities;
+- baseline mutation commands still write baseline rows and event facts in one
+  transaction until event append becomes the accepted command.
+
+Baseline-only authority remains equally explicit: `data_submission` and the
+current `outbox` still own capture state and downstream delivery. ETL, tall
+tables, pivots, and exports remain downstream projections and never authorize
+work.
 
 ## Released Mobile Contract
 
@@ -152,17 +198,18 @@ assignment-compatible candidate
 - **Production database**: never used by local tests. Migration, bootstrap,
   activation, and rollback require a separately approved release window.
 
-The disposable clone was restored to the untouched dump after the completed
-gates to remove test facts, temporary users, and candidate mutations and to
-preserve a reusable production input. That was correct. What is missing is a
-separately prepared staging clone that remains migrated and bootstrapped for
-client smoke.
+Restoring the disposable clone to the untouched dump after earlier gates was
+correct: the dump is reusable input, not a progressively migrated environment.
+For this closure, the disposable clone is currently migrated and bootstrapped
+only long enough to prove the exact replay gate; it is still not the retained
+staging environment. What is missing is a separately prepared staging clone
+that remains migrated and bootstrapped for client smoke.
 
 `deploy/staging/compose.yml` currently starts only the candidate API. It assumes
 that the database, Docker network, credentials, migrations, and required
 bootstrap already exist; it does not prepare them.
 
-## Existing Evidence
+## Executable Evidence
 
 The completed branch work records:
 
@@ -175,39 +222,49 @@ The completed branch work records:
 - capture pointer validation and reconstruction without changing journal
   content;
 - live capture create/update/delete/retry transaction and replay tests;
-- a full release gate of 285 unit/contract tests and 38 integration tests.
+- closed-vocabulary and known shape/envelope persistence constraints;
+- exact assignment-created and assignment-ended payload fixtures;
+- assignment replay that fails before mutation on malformed facts, detects
+  missing/differing rows, repairs from facts, and leaves journal/access results
+  unchanged;
+- a full Maven gate of 296 tests with zero failures or errors;
+- a production-profile JAR build;
+- candidate Liquibase migration of the isolated production clone;
+- first and idempotent assignment bootstrap runs producing 105,153 facts and
+  105,153 grants, with 263,423 effective access tuples and zero baseline/event
+  differences;
+- production-clone assignment replay reporting zero missing, unexpected, or
+  differing projection rows.
 
-This is strong implementation evidence, but it does not prove every external
-administrator route, every old client, or an installed mobile against the
-final candidate branch.
+This proves the candidate is ready for installed-client compatibility smoke.
+It does not yet prove every external administrator route or an installed
+mobile against the final candidate, so it is not yet a production-release
+candidate.
 
 ## Ordered Cutover
 
-1. **Preserve the candidate boundary.** Keep this map, the focused tests, and
-   the transition scripts synchronized with implementation. Do not import
-   unresolved event-platform concepts.
-2. **Prepare one staging clone.** Automate restore, candidate migration,
+1. **Prepare one staging clone.** Automate restore, candidate migration,
    assignment bootstrap, exact comparison, reset, and candidate startup
    without production credentials.
-3. **Prove released-client compatibility.** Smoke installed mobile
+2. **Prove released-client compatibility.** Smoke installed mobile
    `6.0.3+54`; inventory and smoke the administrator operations that are
    actually used.
-4. **Integrate the first transition candidate.** Merge to `develop` only after
+3. **Integrate the first transition candidate.** Merge to `develop` only after
    the staging gate passes. Merging is not deployment.
-5. **Deploy assignment authority separately.** In a later approved release
+4. **Deploy assignment authority separately.** In a later approved release
    window, stop assignment writers, apply migrations, run exact assignment
    bootstrap, then start the candidate with capture shadow disabled.
-6. **Activate capture shadow separately.** Bootstrap and validate capture
+5. **Activate capture shadow separately.** Bootstrap and validate capture
    facts, enable shadow append, observe exact equivalence, and retain
    `data_submission` as authority.
-7. **Eliminate capture-write bypasses.** Route every supported
+6. **Eliminate capture-write bypasses.** Route every supported
    unversioned/custom/administrator mutation through the capture command, or
    remove it after caller evidence proves it unused. No route may write
    `data_submission` directly once capture events become authority.
-8. **Cut capture authority.** Make immutable capture append the accepted
+7. **Cut capture authority.** Make immutable capture append the accepted
    command and produce `data_submission` plus `outbox` as compatibility
    projections in the same transaction.
-9. **Retire baseline write owners.** Invert or remove baseline assignment and
+8. **Retire baseline write owners.** Invert or remove baseline assignment and
    capture mutation owners only after event replay, compatibility, rollback,
    and one production-style cycle pass.
 
@@ -218,7 +275,8 @@ architecture.
 
 ## Next Bounded Slice
 
-The next recommended implementation is **transition staging preparation**:
+The event-contract and assignment-replay closure is complete. The next
+recommended implementation is **transition staging preparation**:
 
 - create/reset a named staging clone from the immutable dump;
 - use a disposable non-production database role;
@@ -230,4 +288,6 @@ The next recommended implementation is **transition staging preparation**:
 
 It changes no product behavior and closes the environment ambiguity that
 currently blocks reliable mobile and administrator compatibility evidence.
-Only after this slice passes should the branch be considered for integration.
+The current branch justifies spending time on that smoke. It does not justify
+production publication until the smoke and actually used administrator-route
+inventory pass.

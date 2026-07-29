@@ -1,5 +1,8 @@
 package org.nmcpye.datarun.assignmentshadow;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -92,6 +96,9 @@ class AssignmentAuthorityCommandIntegrationTest {
     @Autowired
     private TeamRepository teamRepository;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @MockitoSpyBean
     private EventJournalPort journal;
 
@@ -153,6 +160,61 @@ class AssignmentAuthorityCommandIntegrationTest {
         assertThat(generations()).containsExactly(0, 1, 2);
         assertThat(assignmentEventCount()).isEqualTo(eventCount);
         assertThat(activeGrantCount()).isEqualTo(1);
+    }
+
+    @Test
+    void liveLifecycleFactsMatchAcceptedAssignmentPayloadShapes() {
+        bootstrap.run();
+
+        commands.updateAssignment(
+            assignment(ACTIVITY_UID_2, Set.of(FORM_UID_1), false)
+        );
+
+        JsonNode ended = eventPayload("assignment_ended/v1");
+        assertThat(ended.fieldNames()).toIterable().containsExactly("reason");
+        assertThat(ended.path("reason").isNull()).isTrue();
+
+        JsonNode created = eventPayload("assignment_created/v1");
+        assertThat(created.fieldNames()).toIterable().containsExactlyInAnyOrder(
+            "target_actor",
+            "role",
+            "scope",
+            "valid_from",
+            "valid_to"
+        );
+        assertThat(created.path("target_actor").fieldNames())
+            .toIterable()
+            .containsExactlyInAnyOrder("type", "id");
+        assertThat(created.path("target_actor").path("type").textValue())
+            .isEqualTo("actor");
+        assertThat(created.path("target_actor").path("id").textValue())
+            .isEqualTo(jdbc.queryForObject(
+                """
+                    SELECT target_actor_id::text
+                    FROM assignment_identity_link
+                    WHERE baseline_assignment_uid = ?
+                      AND generation = 1
+                    """,
+                String.class,
+                ASSIGNMENT_UID
+            ));
+        assertThat(created.path("scope").fieldNames())
+            .toIterable()
+            .containsExactlyInAnyOrder("geographic", "subject_list", "activity");
+        assertThat(created.path("scope").path("subject_list").isNull()).isTrue();
+        assertThat(created.path("scope").path("activity"))
+            .containsExactly(objectMapper.getNodeFactory().textNode(ACTIVITY_UID_2));
+        assertThat(created.path("valid_to").isNull()).isTrue();
+        Instant recordedAt = jdbc.queryForObject(
+            """
+                SELECT recorded_at
+                FROM event_journal
+                WHERE shape_ref = 'assignment_created/v1'
+                """,
+            java.sql.Timestamp.class
+        ).toInstant();
+        assertThat(Instant.parse(created.path("valid_from").textValue()))
+            .isEqualTo(recordedAt);
     }
 
     @Test
@@ -653,6 +715,19 @@ class AssignmentAuthorityCommandIntegrationTest {
         );
     }
 
+    private JsonNode eventPayload(String shapeRef) {
+        String payload = jdbc.queryForObject(
+            "SELECT payload::text FROM event_journal WHERE shape_ref = ?",
+            String.class,
+            shapeRef
+        );
+        try {
+            return objectMapper.readTree(payload);
+        } catch (JsonProcessingException exception) {
+            throw new AssertionError("Stored event payload is not JSON", exception);
+        }
+    }
+
     private int teamMemberCount() {
         return jdbc.queryForObject(
             "SELECT count(*) FROM team_user WHERE team_id = ?",
@@ -672,9 +747,9 @@ class AssignmentAuthorityCommandIntegrationTest {
 
     private int checkpointCount() {
         return jdbc.queryForObject(
-            "SELECT count(*) FROM event_journal WHERE event_id = ?",
+            "SELECT count(*) FROM transition_checkpoint WHERE checkpoint_key = ?",
             Integer.class,
-            AssignmentShadowCheckpoint.EVENT_ID
+            AssignmentShadowCheckpoint.KEY
         );
     }
 
@@ -789,6 +864,7 @@ class AssignmentAuthorityCommandIntegrationTest {
     private void cleanFixtures() {
         jdbc.execute("""
             TRUNCATE TABLE
+                transition_checkpoint,
                 assignment_grant_projection,
                 assignment_identity_link,
                 assignment_role_definition,

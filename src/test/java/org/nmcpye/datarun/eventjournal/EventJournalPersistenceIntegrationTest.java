@@ -40,6 +40,7 @@ class EventJournalPersistenceIntegrationTest {
         new TransactionTemplate(transactionManager).executeWithoutResult(status ->
             jdbc.execute("""
                 TRUNCATE TABLE
+                    transition_checkpoint,
                     assignment_grant_projection,
                     assignment_identity_link,
                     assignment_role_definition,
@@ -112,6 +113,114 @@ class EventJournalPersistenceIntegrationTest {
         assertThat(eventJournal.findByEventId(eventId)).isEmpty();
     }
 
+    @Test
+    void appendRejectsValuesOutsideTheTransitionEventContract() {
+        AppendJournalEvent valid = event(
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            assignmentCreatedPayload()
+        );
+
+        assertThatThrownBy(() -> EventContract.requireValid(new AppendJournalEvent(
+            valid.eventId(),
+            "transition_checkpoint",
+            valid.shapeRef(),
+            valid.activityRef(),
+            valid.subjectType(),
+            valid.subjectId(),
+            valid.actorId(),
+            valid.recordedAt(),
+            valid.payload()
+        ))).isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("structural event type");
+
+        assertThatThrownBy(() -> EventContract.requireValid(new AppendJournalEvent(
+            valid.eventId(),
+            valid.eventType(),
+            "assignment-created/v1",
+            valid.activityRef(),
+            valid.subjectType(),
+            valid.subjectId(),
+            valid.actorId(),
+            valid.recordedAt(),
+            valid.payload()
+        ))).isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("shape reference");
+
+        assertThatThrownBy(() -> EventContract.requireValid(new AppendJournalEvent(
+            valid.eventId(),
+            valid.eventType(),
+            valid.shapeRef(),
+            valid.activityRef(),
+            "org_unit",
+            valid.subjectId(),
+            valid.actorId(),
+            valid.recordedAt(),
+            valid.payload()
+        ))).isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("subject type");
+
+        assertThatThrownBy(() -> EventContract.requireValid(new AppendJournalEvent(
+            valid.eventId(),
+            valid.eventType(),
+            valid.shapeRef(),
+            valid.activityRef(),
+            valid.subjectType(),
+            valid.subjectId(),
+            valid.actorId(),
+            valid.recordedAt(),
+            objectMapper.createArrayNode()
+        ))).isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("required value");
+
+        assertThatThrownBy(() -> EventContract.requireValid(new AppendJournalEvent(
+            valid.eventId(),
+            "capture",
+            valid.shapeRef(),
+            valid.activityRef(),
+            "subject",
+            valid.subjectId(),
+            valid.actorId(),
+            valid.recordedAt(),
+            valid.payload()
+        ))).isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("requires event type assignment_changed");
+    }
+
+    @Test
+    void databaseRejectsDirectWritesOutsideTheEventContract() {
+        assertDirectWriteRejected(
+            "transition_checkpoint",
+            "assignment_created/v1",
+            "assignment",
+            "{}"
+        );
+        assertDirectWriteRejected(
+            "assignment_changed",
+            "assignment-created/v1",
+            "assignment",
+            "{}"
+        );
+        assertDirectWriteRejected(
+            "assignment_changed",
+            "assignment_created/v1",
+            "org_unit",
+            "{}"
+        );
+        assertDirectWriteRejected(
+            "assignment_changed",
+            "assignment_created/v1",
+            "assignment",
+            "[]"
+        );
+        assertDirectWriteRejected(
+            "capture",
+            "assignment_created/v1",
+            "subject",
+            "{}"
+        );
+    }
+
     private AppendJournalEvent event(UUID eventId, UUID subjectId, JsonNode payload) {
         return new AppendJournalEvent(
             eventId,
@@ -139,6 +248,36 @@ class EventJournalPersistenceIntegrationTest {
         payload.put("valid_from", RECORDED_AT.toString());
         payload.putNull("valid_to");
         return payload;
+    }
+
+    private void assertDirectWriteRejected(
+        String eventType,
+        String shapeRef,
+        String subjectType,
+        String payload
+    ) {
+        assertThatThrownBy(() -> jdbc.update(
+            """
+                INSERT INTO event_journal (
+                    event_id,
+                    event_type,
+                    shape_ref,
+                    activity_ref,
+                    subject_type,
+                    subject_id,
+                    actor_id,
+                    recorded_at,
+                    payload
+                ) VALUES (?, ?, ?, NULL, ?, ?, 'system:test', now(),
+                          CAST(? AS jsonb))
+                """,
+            UUID.randomUUID(),
+            eventType,
+            shapeRef,
+            subjectType,
+            UUID.randomUUID(),
+            payload
+        )).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     private record JournalStorageTypes(String eventIdType, String subjectIdType, String payloadType) {

@@ -40,6 +40,7 @@ class CaptureCurrentProjectionPersistenceIntegrationTest {
         jdbc.execute(
             """
                 TRUNCATE TABLE
+                    transition_checkpoint,
                     capture_current_projection,
                     capture_identity_link,
                     event_journal
@@ -167,7 +168,7 @@ class CaptureCurrentProjectionPersistenceIntegrationTest {
                     actor_id,
                     recorded_at,
                     payload
-                ) VALUES (?, 'capture', 'test/v1', NULL, 'org_unit', ?,
+                ) VALUES (?, 'capture', 'test/v1', NULL, 'subject', ?,
                           'system:test', now(), '{}'::jsonb)
                 """,
             eventId,

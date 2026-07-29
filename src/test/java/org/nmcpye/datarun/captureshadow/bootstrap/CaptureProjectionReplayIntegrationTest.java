@@ -130,18 +130,12 @@ class CaptureProjectionReplayIntegrationTest {
         create(FIRST_UID, 1, true);
         jdbc.update(
             """
-                INSERT INTO event_journal (
-                    event_id, event_type, shape_ref, activity_ref, subject_type,
-                    subject_id, actor_id, recorded_at, payload
-                ) VALUES (?, ?, ?, NULL, ?, ?, ?, now(),
+                INSERT INTO transition_checkpoint (
+                    checkpoint_key, recorded_at, payload
+                ) VALUES (?, now(),
                           '{"sourceCount":1,"sourceMaxSerial":null,"sourceSha256":"bad"}'::jsonb)
                 """,
-            CaptureShadowProtocol.CHECKPOINT_EVENT_ID,
-            CaptureShadowProtocol.CHECKPOINT_EVENT_TYPE,
-            CaptureShadowProtocol.CHECKPOINT_SHAPE_REF,
-            CaptureShadowProtocol.CHECKPOINT_SUBJECT_TYPE,
-            CaptureShadowProtocol.CHECKPOINT_SUBJECT_ID,
-            CaptureShadowProtocol.SYSTEM_ACTOR
+            CaptureShadowProtocol.CHECKPOINT_KEY
         );
 
         assertReplayFailure("checkpoint is malformed");
@@ -241,7 +235,7 @@ class CaptureProjectionReplayIntegrationTest {
                     event_id, event_type, shape_ref, activity_ref, subject_type,
                     subject_id, actor_id, recorded_at, payload
                 ) VALUES (?, 'capture', 'unknown_capture/v1', 'A9400000001',
-                          'org_unit', ?, 'system:test', now(), '{}'::jsonb)
+                          'subject', ?, 'system:test', now(), '{}'::jsonb)
                 """,
             UUID.fromString("94000000-0000-0000-0000-000000000041"),
             TransitionIdentityResolver.orgUnitIdFor(ORG_UNIT_UID)
@@ -317,7 +311,7 @@ class CaptureProjectionReplayIntegrationTest {
                     event_id, event_type, shape_ref, activity_ref, subject_type,
                     subject_id, actor_id, recorded_at, payload
                 ) VALUES (?, 'capture', 'capture_state_accepted/v1',
-                          'A9400000001', 'org_unit', ?, ?, now(), CAST(? AS jsonb))
+                          'A9400000001', 'subject', ?, ?, now(), CAST(? AS jsonb))
                 """,
             eventId,
             TransitionIdentityResolver.orgUnitIdFor(ORG_UNIT_UID),
@@ -349,7 +343,7 @@ class CaptureProjectionReplayIntegrationTest {
                     event_id, event_type, shape_ref, activity_ref, subject_type,
                     subject_id, actor_id, recorded_at, payload
                 ) VALUES (?, 'capture', 'capture_state_accepted/v1',
-                          'A9400000001', 'org_unit', ?, ?, now(), CAST(? AS jsonb))
+                          'A9400000001', 'subject', ?, ?, now(), CAST(? AS jsonb))
                 """,
             UUID.fromString("94000000-0000-0000-0000-000000000052"),
             TransitionIdentityResolver.orgUnitIdFor(ORG_UNIT_UID),
@@ -431,6 +425,7 @@ class CaptureProjectionReplayIntegrationTest {
         jdbc.execute(
             """
                 TRUNCATE TABLE
+                    transition_checkpoint,
                     capture_current_projection,
                     capture_identity_link,
                     assignment_grant_projection,

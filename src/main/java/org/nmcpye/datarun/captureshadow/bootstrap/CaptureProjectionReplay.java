@@ -10,6 +10,7 @@ import org.nmcpye.datarun.captureshadow.CaptureCurrentProjectionPort;
 import org.nmcpye.datarun.captureshadow.CaptureIdentityLink;
 import org.nmcpye.datarun.captureshadow.CaptureShadowProtocol;
 import org.nmcpye.datarun.eventjournal.JournalEvent;
+import org.nmcpye.datarun.transition.TransitionCheckpointStore;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -68,6 +69,7 @@ public class CaptureProjectionReplay {
     private final CaptureCanonicalizer canonicalizer;
     private final CaptureCurrentProjectionPort currentProjection;
     private final CaptureAcceptanceValidator acceptanceValidator;
+    private final TransitionCheckpointStore checkpoints;
 
     public CaptureProjectionReplay(
         JdbcTemplate jdbc,
@@ -76,7 +78,8 @@ public class CaptureProjectionReplay {
         CaptureSourceReader sourceReader,
         CaptureCanonicalizer canonicalizer,
         CaptureCurrentProjectionPort currentProjection,
-        CaptureAcceptanceValidator acceptanceValidator
+        CaptureAcceptanceValidator acceptanceValidator,
+        TransitionCheckpointStore checkpoints
     ) {
         this.jdbc = jdbc;
         this.namedJdbc = namedJdbc;
@@ -85,6 +88,7 @@ public class CaptureProjectionReplay {
         this.canonicalizer = canonicalizer;
         this.currentProjection = currentProjection;
         this.acceptanceValidator = acceptanceValidator;
+        this.checkpoints = checkpoints;
     }
 
     @Transactional(isolation = Isolation.REPEATABLE_READ)
@@ -867,61 +871,14 @@ public class CaptureProjectionReplay {
     }
 
     private BootstrapBoundary bootstrapBoundary() {
-        List<JournalEvent> checkpoints = jdbc.query(
-            """
-                SELECT
-                    journal_position,
-                    event_id,
-                    event_type,
-                    shape_ref,
-                    activity_ref,
-                    subject_type,
-                    subject_id,
-                    actor_id,
-                    recorded_at,
-                    payload::text AS payload
-                FROM event_journal
-                WHERE event_id = ?
-                   OR (
-                       shape_ref = ?
-                       AND subject_type = ?
-                       AND subject_id = ?
-                   )
-                """,
-            (resultSet, rowNumber) -> mapEvent(resultSet),
-            CaptureShadowProtocol.CHECKPOINT_EVENT_ID,
-            CaptureShadowProtocol.CHECKPOINT_SHAPE_REF,
-            CaptureShadowProtocol.CHECKPOINT_SUBJECT_TYPE,
-            CaptureShadowProtocol.CHECKPOINT_SUBJECT_ID
+        var checkpoint = checkpoints.find(
+            CaptureShadowProtocol.CHECKPOINT_KEY
         );
-        if (checkpoints.isEmpty()) {
+        if (checkpoint.isEmpty()) {
             return new BootstrapBoundary(false, null);
         }
-        if (checkpoints.size() != 1) {
-            throw conflict("Capture bootstrap checkpoint is ambiguous");
-        }
-        JournalEvent checkpoint = checkpoints.get(0);
-        JsonNode payload = checkpoint.payload();
-        if (!checkpoint.eventId().equals(
-            CaptureShadowProtocol.CHECKPOINT_EVENT_ID
-        )
-            || !CaptureShadowProtocol.CHECKPOINT_EVENT_TYPE.equals(
-                checkpoint.eventType()
-            )
-            || !CaptureShadowProtocol.CHECKPOINT_SHAPE_REF.equals(
-                checkpoint.shapeRef()
-            )
-            || checkpoint.activityRef() != null
-            || !CaptureShadowProtocol.CHECKPOINT_SUBJECT_TYPE.equals(
-                checkpoint.subjectType()
-            )
-            || !CaptureShadowProtocol.CHECKPOINT_SUBJECT_ID.equals(
-                checkpoint.subjectId()
-            )
-            || !CaptureShadowProtocol.SYSTEM_ACTOR.equals(
-                checkpoint.actorId()
-            )
-            || !payload.isObject()
+        JsonNode payload = checkpoint.orElseThrow().payload();
+        if (!payload.isObject()
             || payload.size() != 3
             || !payload.path("sourceCount").isIntegralNumber()
             || !payload.path("sourceCount").canConvertToLong()

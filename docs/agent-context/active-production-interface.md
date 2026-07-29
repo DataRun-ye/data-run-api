@@ -64,6 +64,11 @@ request succeeds.
   versioned field-user uploads. It batch-reads request-current event grants,
   accepts an exact active or eligible ended generation, and fails closed when
   event authority is unavailable or contradicts baseline compatibility.
+- Assignment authority is derived from immutable assignment facts. The
+  isolated assignment replay validates or rebuilds
+  `assignment_grant_projection` using only the journal, immutable identity
+  links, and immutable role definitions; baseline assignment/team/permission
+  rows are not replay inputs.
 - Organization-unit sync is scoped to direct-team assignments and their
   ancestors. Managed teams remain active mobile selector/summary data, but
   managed-team assignments are not synchronized and do not expand org-unit

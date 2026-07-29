@@ -1,18 +1,25 @@
 package org.nmcpye.datarun.captureshadow.bootstrap;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.nmcpye.datarun.captureshadow.CaptureShadowProtocol;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.nmcpye.datarun.transition.TransitionCheckpoint;
+import org.nmcpye.datarun.transition.TransitionCheckpointStore;
+import org.nmcpye.datarun.transition.TransitionTimestamp;
 import org.springframework.stereotype.Component;
 
-import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Objects;
+import java.util.HashSet;
+import java.util.Set;
 
 @Component
 final class CaptureCheckpointStore {
+
+    private static final Set<String> PAYLOAD_FIELDS = Set.of(
+        "sourceCount",
+        "sourceMaxSerial",
+        "sourceSha256"
+    );
 
     enum Status {
         ABSENT,
@@ -20,62 +27,29 @@ final class CaptureCheckpointStore {
         MISMATCH
     }
 
-    private final JdbcTemplate jdbc;
+    private final TransitionCheckpointStore checkpoints;
     private final ObjectMapper objectMapper;
 
-    CaptureCheckpointStore(JdbcTemplate jdbc, ObjectMapper objectMapper) {
-        this.jdbc = jdbc;
+    CaptureCheckpointStore(
+        TransitionCheckpointStore checkpoints,
+        ObjectMapper objectMapper
+    ) {
+        this.checkpoints = checkpoints;
         this.objectMapper = objectMapper;
     }
 
     Status status(CaptureSourceBoundary boundary) {
-        long candidates = count(
-            """
-                SELECT count(*)
-                FROM event_journal
-                WHERE event_id = ?
-                   OR (
-                       shape_ref = ?
-                       AND subject_type = ?
-                       AND subject_id = ?
-                   )
-                """,
-            CaptureShadowProtocol.CHECKPOINT_EVENT_ID,
-            CaptureShadowProtocol.CHECKPOINT_SHAPE_REF,
-            CaptureShadowProtocol.CHECKPOINT_SUBJECT_TYPE,
-            CaptureShadowProtocol.CHECKPOINT_SUBJECT_ID
-        );
-        if (candidates == 0) {
-            return Status.ABSENT;
-        }
-        return candidates == 1 && count(exactSql(), exactArguments(boundary)) == 1
-            ? Status.EXACT
-            : Status.MISMATCH;
+        return checkpoints.find(CaptureShadowProtocol.CHECKPOINT_KEY)
+            .map(checkpoint -> exact(checkpoint, boundary)
+                ? Status.EXACT
+                : Status.MISMATCH)
+            .orElse(Status.ABSENT);
     }
 
     void insert(CaptureSourceBoundary boundary) {
-        jdbc.update(
-            """
-                INSERT INTO event_journal (
-                    event_id,
-                    event_type,
-                    shape_ref,
-                    activity_ref,
-                    subject_type,
-                    subject_id,
-                    actor_id,
-                    recorded_at,
-                    payload
-                ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, CAST(? AS jsonb))
-                ON CONFLICT (event_id) DO NOTHING
-                """,
-            CaptureShadowProtocol.CHECKPOINT_EVENT_ID,
-            CaptureShadowProtocol.CHECKPOINT_EVENT_TYPE,
-            CaptureShadowProtocol.CHECKPOINT_SHAPE_REF,
-            CaptureShadowProtocol.CHECKPOINT_SUBJECT_TYPE,
-            CaptureShadowProtocol.CHECKPOINT_SUBJECT_ID,
-            CaptureShadowProtocol.SYSTEM_ACTOR,
-            Timestamp.from(recordedAt(boundary)),
+        checkpoints.insert(
+            CaptureShadowProtocol.CHECKPOINT_KEY,
+            recordedAt(boundary),
             payload(boundary)
         );
         if (status(boundary) != Status.EXACT) {
@@ -85,42 +59,49 @@ final class CaptureCheckpointStore {
         }
     }
 
-    private String exactSql() {
-        return """
-            SELECT count(*)
-            FROM event_journal
-            WHERE event_id = ?
-              AND event_type = ?
-              AND shape_ref = ?
-              AND activity_ref IS NULL
-              AND subject_type = ?
-              AND subject_id = ?
-              AND actor_id = ?
-              AND recorded_at = ?
-              AND payload = CAST(? AS jsonb)
-            """;
+    private boolean exact(
+        TransitionCheckpoint checkpoint,
+        CaptureSourceBoundary boundary
+    ) {
+        return checkpoint.key().equals(CaptureShadowProtocol.CHECKPOINT_KEY)
+            && checkpoint.recordedAt().equals(recordedAt(boundary))
+            && exactPayload(checkpoint, boundary);
     }
 
-    private Object[] exactArguments(CaptureSourceBoundary boundary) {
-        return new Object[]{
-            CaptureShadowProtocol.CHECKPOINT_EVENT_ID,
-            CaptureShadowProtocol.CHECKPOINT_EVENT_TYPE,
-            CaptureShadowProtocol.CHECKPOINT_SHAPE_REF,
-            CaptureShadowProtocol.CHECKPOINT_SUBJECT_TYPE,
-            CaptureShadowProtocol.CHECKPOINT_SUBJECT_ID,
-            CaptureShadowProtocol.SYSTEM_ACTOR,
-            Timestamp.from(recordedAt(boundary)),
-            payload(boundary)
-        };
+    private boolean exactPayload(
+        TransitionCheckpoint checkpoint,
+        CaptureSourceBoundary boundary
+    ) {
+        if (!checkpoint.payload().isObject()) {
+            return false;
+        }
+        Set<String> fields = new HashSet<>();
+        checkpoint.payload().fieldNames().forEachRemaining(fields::add);
+        if (!fields.equals(PAYLOAD_FIELDS)
+            || !checkpoint.payload().path("sourceCount").isIntegralNumber()
+            || checkpoint.payload().path("sourceCount").longValue()
+                != boundary.sourceCount()
+            || !checkpoint.payload().path("sourceSha256").isTextual()
+            || !checkpoint.payload().path("sourceSha256").textValue()
+                .equals(boundary.sourceSha256())) {
+            return false;
+        }
+        if (boundary.sourceMaxSerial() == null) {
+            return checkpoint.payload().path("sourceMaxSerial").isNull();
+        }
+        return checkpoint.payload().path("sourceMaxSerial").isIntegralNumber()
+            && checkpoint.payload().path("sourceMaxSerial").longValue()
+                == boundary.sourceMaxSerial();
     }
 
     private Instant recordedAt(CaptureSourceBoundary boundary) {
-        return boundary.maximumLastModifiedDate() == null
+        Instant value = boundary.maximumLastModifiedDate() == null
             ? Instant.EPOCH
             : boundary.maximumLastModifiedDate();
+        return TransitionTimestamp.toDatabasePrecision(value);
     }
 
-    private String payload(CaptureSourceBoundary boundary) {
+    private ObjectNode payload(CaptureSourceBoundary boundary) {
         ObjectNode payload = objectMapper.createObjectNode();
         payload.put("sourceCount", boundary.sourceCount());
         if (boundary.sourceMaxSerial() == null) {
@@ -129,15 +110,6 @@ final class CaptureCheckpointStore {
             payload.put("sourceMaxSerial", boundary.sourceMaxSerial());
         }
         payload.put("sourceSha256", boundary.sourceSha256());
-        try {
-            return objectMapper.writeValueAsString(payload);
-        } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Checkpoint JSON could not be serialized", exception);
-        }
-    }
-
-    private long count(String sql, Object... arguments) {
-        Long value = jdbc.queryForObject(sql, Long.class, arguments);
-        return Objects.requireNonNull(value, "Count query returned null");
+        return payload;
     }
 }

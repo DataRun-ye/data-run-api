@@ -25,18 +25,12 @@ class CaptureCanonicalizerTest {
             .isEqualTo("datarun-baseline/capture/");
         assertThat(CaptureShadowProtocol.CAPTURE_EVENT_ID_NAMESPACE)
             .isEqualTo("datarun-baseline/event/submission-captured/");
-        assertThat(CaptureShadowProtocol.CHECKPOINT_EVENT_NAMESPACE)
-            .isEqualTo("datarun-baseline/capture-shadow/bootstrap-completed/v1");
-        assertThat(CaptureShadowProtocol.CHECKPOINT_SUBJECT_NAMESPACE)
-            .isEqualTo("datarun-baseline/capture-shadow/v1");
+        assertThat(CaptureShadowProtocol.CHECKPOINT_KEY)
+            .isEqualTo("capture_shadow_bootstrap/v1");
         assertThat(CaptureShadowProtocol.captureId("S0000000001"))
             .isEqualTo(UUID.fromString("5fc5dc13-f2b7-3cbe-9156-c0158c0103d7"));
         assertThat(CaptureShadowProtocol.captureEventId("S0000000001"))
             .isEqualTo(UUID.fromString("9723a288-efcc-3519-8b1f-b97322f42ee8"));
-        assertThat(CaptureShadowProtocol.CHECKPOINT_EVENT_ID)
-            .isEqualTo(UUID.fromString("7f60cac8-4f5b-3e65-9f6b-bf1bf357dc29"));
-        assertThat(CaptureShadowProtocol.CHECKPOINT_SUBJECT_ID)
-            .isEqualTo(UUID.fromString("c23e96d9-4b82-35c4-9d77-af279331048a"));
     }
 
     @Test

@@ -71,6 +71,18 @@ bootstrap/replay is required only before capture shadow is enabled. The
 authoritative sequence and compatibility gate are in
 `initial-event-transition-boundary.md`.
 
+The isolated assignment commands are:
+
+```bash
+scripts/transition/bootstrap-assignment-shadow.sh
+scripts/transition/replay-assignment-projection.sh
+```
+
+Both require explicit opt-in and clone-only credentials. Replay additionally
+requires assignment writers to be stopped and an explicit `validate` or
+`repair` mode. `validate` must report `status=EXACT` before candidate startup;
+`repair` is an operator recovery action, not routine application startup.
+
 ## Release
 
 1. Merge the verified candidate to `main` and tag `v<version>`.

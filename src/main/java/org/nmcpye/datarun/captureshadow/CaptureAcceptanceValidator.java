@@ -2,6 +2,7 @@ package org.nmcpye.datarun.captureshadow;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.nmcpye.datarun.assignmentshadow.TransitionIdentityResolver;
+import org.nmcpye.datarun.eventjournal.EventContract;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -18,9 +19,9 @@ import java.util.UUID;
 public class CaptureAcceptanceValidator {
 
     private static final Set<String> ASSIGNMENT_EVENT_SHAPES = Set.of(
-        "baseline_assignment_observed/v1",
-        "assignment_created/v1",
-        "assignment_ended/v1"
+        EventContract.BASELINE_ASSIGNMENT_OBSERVED,
+        EventContract.ASSIGNMENT_CREATED,
+        EventContract.ASSIGNMENT_ENDED
     );
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -91,9 +92,9 @@ public class CaptureAcceptanceValidator {
                         + check.grantEventId()
                 );
             }
-            if (!"assignment_changed".equals(grant.eventType())
+            if (!EventContract.ASSIGNMENT_CHANGED.equals(grant.eventType())
                 || !ASSIGNMENT_EVENT_SHAPES.contains(grant.shapeRef())
-                || !"assignment".equals(grant.subjectType())) {
+                || !EventContract.ASSIGNMENT.equals(grant.subjectType())) {
                 throw conflict(
                     "Capture acceptance does not reference an assignment grant event"
                 );

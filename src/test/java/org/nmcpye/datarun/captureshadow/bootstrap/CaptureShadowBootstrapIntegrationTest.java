@@ -558,7 +558,7 @@ class CaptureShadowBootstrapIntegrationTest {
                     event_id, event_type, shape_ref, activity_ref, subject_type,
                     subject_id, actor_id, recorded_at, payload
                 ) VALUES (?, 'capture', 'baseline_submission_captured/v1', NULL,
-                          'org_unit', ?, 'system:migration/datarun-baseline-capture',
+                          'subject', ?, 'system:migration/datarun-baseline-capture',
                           now(), '{}'::jsonb)
                 """,
             UUID.fromString("10000000-0000-0000-0000-000000000001"),
@@ -595,8 +595,8 @@ class CaptureShadowBootstrapIntegrationTest {
                 INSERT INTO event_journal (
                     event_id, event_type, shape_ref, activity_ref, subject_type,
                     subject_id, actor_id, recorded_at, payload
-                ) VALUES (?, 'test_only', 'test_only/unrelated_event/v1', NULL,
-                          'test_only', ?, 'system:test', now(), '{}'::jsonb)
+                ) VALUES (?, 'alert', 'test_only_unrelated_event/v1', NULL,
+                          'process', ?, 'system:test', now(), '{}'::jsonb)
                 """,
             laterEventId,
             UUID.fromString("20000000-0000-0000-0000-000000000002")
@@ -661,7 +661,7 @@ class CaptureShadowBootstrapIntegrationTest {
                     event_id, event_type, shape_ref, activity_ref, subject_type,
                     subject_id, actor_id, recorded_at, payload
                 ) VALUES (?, 'capture', 'baseline_submission_captured/v1',
-                          'A9000000001', 'org_unit', ?, 'wrong-actor',
+                          'A9000000001', 'subject', ?, 'wrong-actor',
                           CAST('2026-07-25 08:09:10.654321+00' AS timestamptz),
                           '{}'::jsonb)
                 """,
@@ -693,18 +693,13 @@ class CaptureShadowBootstrapIntegrationTest {
         );
         jdbc.update(
             """
-                INSERT INTO event_journal (
-                    event_id, event_type, shape_ref, activity_ref, subject_type,
-                    subject_id, actor_id, recorded_at, payload
-                ) VALUES (?, 'transition_checkpoint',
-                          'capture_shadow_bootstrap_completed/v1', NULL,
-                          'transition', ?,
-                          'system:migration/datarun-baseline-capture',
+                INSERT INTO transition_checkpoint (
+                    checkpoint_key, recorded_at, payload
+                ) VALUES (?,
                           CAST('1970-01-01 00:00:00+00' AS timestamptz),
                           '{"sourceCount":999,"sourceMaxSerial":null,"sourceSha256":"wrong"}'::jsonb)
                 """,
-            CaptureShadowProtocol.CHECKPOINT_EVENT_ID,
-            CaptureShadowProtocol.CHECKPOINT_SUBJECT_ID
+            CaptureShadowProtocol.CHECKPOINT_KEY
         );
 
         assertThatThrownBy(bootstrap::run)
@@ -717,14 +712,14 @@ class CaptureShadowBootstrapIntegrationTest {
         assertThat(count("capture_identity_link")).isEqualTo(1);
         assertThat(captureEventCount()).isEqualTo(1);
         assertThat(jdbc.queryForObject(
-            "SELECT payload->>'sourceSha256' FROM event_journal WHERE event_id = ?",
+            "SELECT payload->>'sourceSha256' FROM transition_checkpoint WHERE checkpoint_key = ?",
             String.class,
-            CaptureShadowProtocol.CHECKPOINT_EVENT_ID
+            CaptureShadowProtocol.CHECKPOINT_KEY
         )).isEqualTo("wrong");
     }
 
     @Test
-    void correctLookingCheckpointUnderWrongEventIdIsRejected() throws Exception {
+    void unrelatedCheckpointDoesNotSatisfyCaptureCheckpoint() throws Exception {
         insertOrgUnit(CAPTURE_ORG_ID, CAPTURE_ORG_UID);
         insertSubmission(
             SUBMISSION_ID,
@@ -741,40 +736,27 @@ class CaptureShadowBootstrapIntegrationTest {
             .put("sourceCount", boundary.sourceCount())
             .put("sourceMaxSerial", boundary.sourceMaxSerial())
             .put("sourceSha256", boundary.sourceSha256());
-        UUID wrongEventId = UUID.fromString("10000000-0000-0000-0000-000000000003");
         jdbc.update(
             """
-                INSERT INTO event_journal (
-                    event_id, event_type, shape_ref, activity_ref, subject_type,
-                    subject_id, actor_id, recorded_at, payload
-                ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, CAST(? AS jsonb))
+                INSERT INTO transition_checkpoint (
+                    checkpoint_key, recorded_at, payload
+                ) VALUES (?, ?, CAST(? AS jsonb))
                 """,
-            wrongEventId,
-            CaptureShadowProtocol.CHECKPOINT_EVENT_TYPE,
-            CaptureShadowProtocol.CHECKPOINT_SHAPE_REF,
-            CaptureShadowProtocol.CHECKPOINT_SUBJECT_TYPE,
-            CaptureShadowProtocol.CHECKPOINT_SUBJECT_ID,
-            CaptureShadowProtocol.SYSTEM_ACTOR,
+            "unrelated_transition/v1",
             Timestamp.from(boundary.maximumLastModifiedDate()),
             objectMapper.writeValueAsString(payload)
         );
 
-        assertThatThrownBy(bootstrap::run)
-            .isInstanceOf(CaptureShadowBootstrapMismatchException.class)
-            .satisfies(exception -> assertThat(
-                ((CaptureShadowBootstrapMismatchException) exception)
-                    .report()
-                    .checkpointDifferenceCount()
-            ).isEqualTo(1));
+        assertThat(bootstrap.run().successful()).isTrue();
         assertThat(jdbc.queryForObject(
-            "SELECT count(*) FROM event_journal WHERE event_id = ?",
+            "SELECT count(*) FROM transition_checkpoint WHERE checkpoint_key = ?",
             Long.class,
-            CaptureShadowProtocol.CHECKPOINT_EVENT_ID
-        )).isZero();
+            CaptureShadowProtocol.CHECKPOINT_KEY
+        )).isEqualTo(1);
         assertThat(jdbc.queryForObject(
-            "SELECT count(*) FROM event_journal WHERE event_id = ?",
+            "SELECT count(*) FROM transition_checkpoint WHERE checkpoint_key = ?",
             Long.class,
-            wrongEventId
+            "unrelated_transition/v1"
         )).isEqualTo(1);
     }
 
@@ -1084,8 +1066,8 @@ class CaptureShadowBootstrapIntegrationTest {
                 INSERT INTO event_journal (
                     event_id, event_type, shape_ref, activity_ref, subject_type,
                     subject_id, actor_id, recorded_at, payload
-                ) VALUES (?, 'test_only', 'test_only/unrelated_event/v1', NULL,
-                          'test_only', ?, 'system:test', now(), '{}'::jsonb)
+                ) VALUES (?, 'alert', 'test_only_unrelated_event/v1', NULL,
+                          'process', ?, 'system:test', now(), '{}'::jsonb)
                 """,
             eventId,
             UUID.randomUUID()
@@ -1109,9 +1091,9 @@ class CaptureShadowBootstrapIntegrationTest {
 
     private long checkpointCount() {
         Long value = jdbc.queryForObject(
-            "SELECT count(*) FROM event_journal WHERE event_id = ?",
+            "SELECT count(*) FROM transition_checkpoint WHERE checkpoint_key = ?",
             Long.class,
-            CaptureShadowProtocol.CHECKPOINT_EVENT_ID
+            CaptureShadowProtocol.CHECKPOINT_KEY
         );
         return value == null ? 0 : value;
     }
@@ -1119,15 +1101,12 @@ class CaptureShadowBootstrapIntegrationTest {
     private String checkpointContent() {
         return jdbc.queryForObject(
             """
-                SELECT event_id::text || '|' || event_type || '|' || shape_ref || '|'
-                       || COALESCE(activity_ref, '<null>') || '|' || subject_type || '|'
-                       || subject_id::text || '|' || actor_id || '|' || recorded_at::text
-                       || '|' || payload::text
-                FROM event_journal
-                WHERE event_id = ?
+                SELECT checkpoint_key || '|' || recorded_at::text || '|' || payload::text
+                FROM transition_checkpoint
+                WHERE checkpoint_key = ?
                 """,
             String.class,
-            CaptureShadowProtocol.CHECKPOINT_EVENT_ID
+            CaptureShadowProtocol.CHECKPOINT_KEY
         );
     }
 
@@ -1140,6 +1119,7 @@ class CaptureShadowBootstrapIntegrationTest {
         jdbc.execute(
             """
                 TRUNCATE TABLE
+                    transition_checkpoint,
                     capture_current_projection,
                     capture_identity_link,
                     assignment_grant_projection,

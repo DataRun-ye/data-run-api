@@ -86,6 +86,7 @@ public class JdbcEventJournal implements EventJournalPort {
     @Override
     @Transactional
     public JournalEvent append(AppendJournalEvent event) {
+        EventContract.requireValid(event);
         MapSqlParameterSource parameters = new MapSqlParameterSource()
             .addValue("eventId", event.eventId())
             .addValue("eventType", event.eventType())

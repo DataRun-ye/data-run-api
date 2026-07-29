@@ -40,6 +40,7 @@ class AssignmentCaptureEventReaderIntegrationTest {
     void cleanShadowTables() {
         jdbc.execute("""
             TRUNCATE TABLE
+                transition_checkpoint,
                 assignment_grant_projection,
                 assignment_identity_link,
                 assignment_role_definition,

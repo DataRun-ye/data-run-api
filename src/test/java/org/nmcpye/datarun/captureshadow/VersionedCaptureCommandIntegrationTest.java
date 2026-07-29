@@ -320,6 +320,7 @@ class VersionedCaptureCommandIntegrationTest {
         jdbc.execute(
             """
                 TRUNCATE TABLE
+                    transition_checkpoint,
                     capture_current_projection,
                     capture_identity_link,
                     assignment_grant_projection,
