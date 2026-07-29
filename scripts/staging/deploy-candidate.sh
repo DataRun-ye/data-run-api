@@ -51,7 +51,9 @@ ssh "$staging_api_ssh" "
     chmod 0600 '$runtime_dir/.env'
 
     cd '$runtime_dir'
-    docker pull \"\$DATARUN_API_IMAGE_PIN\" >/dev/null
+    if ! docker image inspect \"\$DATARUN_API_IMAGE_PIN\" >/dev/null 2>&1; then
+        docker pull \"\$DATARUN_API_IMAGE_PIN\" >/dev/null
+    fi
     if ! DATARUN_STAGING_ENV='$runtime_dir/.env' \
         ./prepare-candidate.sh >prepare.log 2>&1; then
         tail -n 100 prepare.log >&2

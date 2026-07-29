@@ -32,9 +32,19 @@ Completion evidence and the release-candidate assessment belong in
 - Candidate image `kaswarah/datarunapi:6.4.1-staging-fe0bc0690b29` is published
   at digest
   `sha256:2d255fc9809040ebeff725ca6968204d3953998a214b62aa20ef699f9154dc87`.
-- The staging VM's external route reset Docker Hub downloads and then became
-  unreachable during the resumable archive fallback. Candidate migrations,
-  assignment bootstrap/replay, and API startup have not run.
+- The candidate archive was delivered over the staging LAN, matched the local
+  Jib archive exactly, and loaded as the same immutable digest.
+- The initial preparation exposed an entrypoint argument-forwarding defect;
+  that container and API were stopped. The corrected gate now uses an explicit
+  entrypoint, no host network, host-only temporary secret files, deterministic
+  cleanup/timeouts, and a bounded synchronous migration phase.
+- The corrected full gate passed on the disposable staging state: assignment
+  bootstrap `SUCCESS` with 263,622 tuples and zero baseline differences;
+  event-only replay `EXACT` with zero missing, unexpected, or differing rows.
+- The final clean production refresh is blocked before dump creation because
+  direct SSH to `api.nmcpye.org:22` times out. Staging API is stopped and the
+  database remains disposable until that refresh completes.
 
-Resume by completing the same image delivery on the staging LAN, then run the
-existing digest-pinned deployment gate. Do not refresh the database again.
+Resume with one fresh production stream, then run the already-proven
+digest-pinned deployment gate. No image transfer or further gate redesign is
+required.
