@@ -49,10 +49,15 @@ Completion evidence and the release-candidate assessment belong in
 - The clean-clone candidate gate passed: migrations completed, assignment
   bootstrap reported `SUCCESS` with 263,622 tuples, and event-only replay
   reported `EXACT`.
-- The digest-pinned API is healthy on the staging LAN endpoint. The public
-  nginx endpoint currently returns `502`, so public, authenticated mobile, and
-  administrator smoke remain open.
+- The digest-pinned API is healthy on the staging LAN endpoint. The nginx
+  upstream was corrected from HTTPS port 80 to HTTP port 8080; public health
+  and exact build-identity smoke now pass.
+- A normalized 30-day production access-log check confirms active
+  administrator use of assignment query/create/bulk, team query/create,
+  organization-unit query/create/bulk, activity, data-element, option-set,
+  form-template publication, submission query, and pivot routes. Registered
+  routes outside this list are not made canonical by this evidence.
+- Authenticated mobile and administrator workflow smoke remain open.
 
-Resume by correcting only the public nginx upstream route, then run the
-existing public smoke and the released-client/administrator compatibility
+Resume with the released-client and actually-used administrator compatibility
 checks. Do not refresh or prepare the database again.

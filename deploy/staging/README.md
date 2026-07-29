@@ -59,6 +59,8 @@ run the full rehearsal so it begins from a clean production snapshot.
 - API host: `nmcp@product-staging.lab` (`192.168.1.220`)
 - Database host: `nmcp@product-staging-db.lab` (`192.168.1.221`)
 - Public API: `https://staging.nmcpye.org`
+- TLS proxy: `root@192.168.10.10`; the staging virtual host terminates TLS
+  and proxies to `http://192.168.1.220:8080`
 - Runtime directory: `/home/nmcp/datarun-staging`
 - Database: `datarun_staging`
 
