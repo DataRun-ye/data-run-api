@@ -1,8 +1,15 @@
 # Active Production Interface
 
-Role: released mobile-to-server HTTP contract and active server ownership map
+Role: released mobile-to-server HTTP contract and current-branch server
+ownership map
 
-Status: LIVING
+Status: LIVING CANDIDATE - transition owners are not deployed
+
+The deployed server remains `v6.4.1`. This document preserves the released
+mobile wire contract while mapping its owner on the transition candidate
+branch. Use `initial-event-transition-boundary.md` for the split between
+deployed authority, candidate authority, compatibility projections, and
+bootstrap requirements.
 
 This map follows the strict comment-out test: `CORE-ACTIVE` means removing the
 path without replacement breaks a released mobile capability. Reachable
@@ -152,8 +159,12 @@ persisted state is already exact returns success in `updated` without a
 repository write, audit/version change, or outbox row. Real changes and first
 delete transitions retain their existing writes. Capture bootstrap facts,
 identity links, and the reconstructible current-event projection are
-transition-only comparison/replay state. They are not read or appended by the
-released upload path and are not released production authority.
+transition-only comparison/replay state. When
+`datarun.transition.capture-live-shadow-enabled=false`, the released upload
+does not read or append capture facts. When separately enabled after
+bootstrap/replay, actual mutations append one fact and advance one pointer in
+the same baseline transaction. They are still not released production
+authority.
 Submission pulling, inherited CRUD/read routes,
 deprecated `objects`, and the admin delete route still require independent
 API-use classification.

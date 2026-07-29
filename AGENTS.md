@@ -7,6 +7,9 @@ Before changing code:
 
 - read `docs/agent-context/production-boundaries.md`;
 - read the focused context document for the boundary being changed;
+- read `docs/agent-context/initial-event-transition-boundary.md` before
+  changing assignment authority, released work reads, versioned submission
+  upload, event persistence, bootstrap, replay, or transition deployment;
 - use `docs/agent-context/current-work.md` only for accepted current priority.
 
 Core rules:

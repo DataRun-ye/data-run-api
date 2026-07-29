@@ -38,6 +38,22 @@ local clone database on an external Docker network. It has its own JWT secret,
 Compose project, and port; its ignored `.env` must never contain production
 credentials.
 
+The Compose file does not create, restore, migrate, or bootstrap that
+database. Keep these environment roles distinct:
+
+- an archived production dump is immutable input;
+- a disposable clone proves migrations and comparisons, then is reset;
+- a staging clone is separately restored, migrated, bootstrapped, and retained
+  for installed-client smoke;
+- a development database uses small synthetic data for fast loops;
+- production is never a local test target.
+
+Restoring a disposable clone after a gate preserves the reusable source state;
+it does not undo candidate code. Never use the archived dump or the disposable
+comparison database itself as the staging database.
+
+After the dedicated staging database is prepared:
+
 ```bash
 cp deploy/staging/.env.example deploy/staging/.env
 chmod 600 deploy/staging/.env
@@ -47,6 +63,13 @@ docker compose --env-file deploy/staging/.env -f deploy/staging/compose.yml up -
 
 Before promotion, verify health and `/management/info`, then smoke login,
 configuration reads, and one ordinary idempotent submission upload.
+
+For the initial event-transition candidate, ordinary Liquibase startup is not
+enough. Apply migrations and complete exact assignment bootstrap before the
+candidate serves field-user assignment/configuration requests. Capture
+bootstrap/replay is required only before capture shadow is enabled. The
+authoritative sequence and compatibility gate are in
+`initial-event-transition-boundary.md`.
 
 ## Release
 
