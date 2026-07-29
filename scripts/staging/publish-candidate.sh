@@ -16,17 +16,21 @@ short_commit="$(git rev-parse --short=12 HEAD)"
 repository="${DATARUN_IMAGE_REPOSITORY:-kaswarah/datarunapi}"
 image_ref="${repository}:${version}-staging-${short_commit}"
 
-mkdir -p target/staging
-verify_log="target/staging/verify.log"
-image_log="target/staging/image.log"
+verify_log_temp="$(mktemp /tmp/datarun-staging-verify.XXXXXX.log)"
+trap 'rm -f "$verify_log_temp"' EXIT
 
 scripts/staging/verify-config.sh
 
-echo "Running the release gate; full output is in $verify_log."
-if ! scripts/release/verify.sh >"$verify_log" 2>&1; then
-    tail -n 80 "$verify_log" >&2
+echo "Running the release gate; full output will be retained under target/staging/."
+if ! scripts/release/verify.sh >"$verify_log_temp" 2>&1; then
+    tail -n 80 "$verify_log_temp" >&2
     exit 1
 fi
+
+mkdir -p target/staging
+verify_log="target/staging/verify.log"
+image_log="target/staging/image.log"
+cp "$verify_log_temp" "$verify_log"
 
 echo "Publishing immutable staging candidate $image_ref."
 if ! ./mvnw -Pprod -DskipTests \
