@@ -8,6 +8,12 @@ set -a
 source "$DATARUN_STAGING_ENV"
 set +a
 
+# The assignment-shadow bootstrap and replay phases below exist only in the
+# event-transition work. A production image, or any ordinary develop candidate,
+# has no such feature and the phase fails with the real cause hidden by
+# --logging.level.ROOT=WARN. Opt in explicitly when rehearsing that branch.
+assignment_shadow="${DATARUN_STAGING_ASSIGNMENT_SHADOW:-false}"
+
 active_container=""
 candidate_env_file="$(mktemp /tmp/datarun-staging-candidate.XXXXXX.env)"
 chmod 0600 "$candidate_env_file"
@@ -99,20 +105,26 @@ common_args=(
 echo "Applying candidate Liquibase migrations."
 run_migrations
 
-echo "Bootstrapping assignment facts and projection."
-run_candidate assignment-bootstrap \
-    "${common_args[@]}" \
-    --spring.liquibase.enabled=false \
-    --datarun.assignment-shadow.bootstrap.isolated=true \
-    --datarun.assignment-shadow.bootstrap.enabled=true
+if [[ "$assignment_shadow" == "true" ]]; then
+    echo "Bootstrapping assignment facts and projection."
+    run_candidate assignment-bootstrap \
+        "${common_args[@]}" \
+        --spring.liquibase.enabled=false \
+        --datarun.assignment-shadow.bootstrap.isolated=true \
+        --datarun.assignment-shadow.bootstrap.enabled=true
 
-echo "Validating event-only assignment projection replay."
-run_candidate assignment-replay \
-    "${common_args[@]}" \
-    --spring.liquibase.enabled=false \
-    --datarun.assignment-shadow.replay.no-writers=true \
-    --datarun.assignment-shadow.replay.isolated=true \
-    --datarun.assignment-shadow.replay.enabled=true \
-    --datarun.assignment-shadow.replay.mode=validate
+    echo "Validating event-only assignment projection replay."
+    run_candidate assignment-replay \
+        "${common_args[@]}" \
+        --spring.liquibase.enabled=false \
+        --datarun.assignment-shadow.replay.no-writers=true \
+        --datarun.assignment-shadow.replay.isolated=true \
+        --datarun.assignment-shadow.replay.enabled=true \
+        --datarun.assignment-shadow.replay.mode=validate
+else
+    echo "Skipping the assignment shadow bootstrap and replay; they exist only in"
+    echo "the event-transition work. Set DATARUN_STAGING_ASSIGNMENT_SHADOW=true to"
+    echo "run them."
+fi
 
 echo "Candidate database preparation passed."
