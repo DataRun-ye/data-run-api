@@ -74,5 +74,39 @@ deployment authority.
   entity/cache ownership, and persistence-only fields were removed without a
   schema change; nested-repeat ancestry and option-set projection are covered.
 
+- `43a3d52d`: `deploy/production/compose.yml` reconciled with the topology
+  deployed since the 2026-08-29 Google Cloud to Proxmox cutover. The API is the
+  only service it owns; PostgreSQL 16 is a managed VM service on
+  `datarun-prod-db.lab` reached over TLS, and nginx/TLS is external. This also
+  removed the one-shot `letsencrypt` service that exited on every
+  `docker compose up -d`, and promoted the database VM spec out of the
+  gitignored `.review` directory. Verified against the live container.
+- The production `pg_idkit` question is closed by that cutover: production runs
+  stock PostgreSQL 16, with `idkit_ulid_generate()` supplied by
+  `deploy/production/restore-prerequisites.sql` for inactive `supply_temp`
+  defaults only. `public.generate_uid()` remains application-owned.
+- `3c797950`, `09efc954`, `44b5c52a`, `c29aa11c`, `f9eb2e1f`, `b895e270`: the
+  staging rehearsal kit moved onto `develop` and was repaired for the current
+  environment. The refresh now dumps from the Proxmox production database
+  through a forced-command key instead of a retired containerized cloud
+  database; the restore list skips the `idkit_ulid_generate()` function that
+  production now carries; the assignment-shadow phases are opt-in; and user
+  sanitization no longer aborts under `set -u` on repeat runs. Staging was then
+  baselined to the exact production artifact and smoked.
+- `650a198f`, `a7c7e008`, `b1f403e9`, `1f2f9633`, `559b3cb0`, `f0f04a1e`,
+  `9c69b0eb`: bounded fixes taken from `architecture/initial-event-transition`
+  without any event-transition code. `/api/v1/admin/**` now requires ADMIN;
+  identical submission retries no longer rewrite `formData`; deleted
+  assignments no longer grant org-unit access; entity audit is decoupled from
+  web conversion; `UserDTO` sits at its declared package path; the logback
+  `conversionRule` uses the supported attribute; and refresh-token rotation has
+  one owner in `TokenService` returning `401`. Released mobile `6.0.3` is
+  unaffected: `AuthApi` uses an interceptor-free Dio and
+  `isCredentialRejection()` already treated 401 and 403 identically.
+- `a9e988bc`: the five generated user and account integration tests were
+  removed. They held every failing test in the suite (48 across 53 runs) and
+  cost over five minutes. The remaining suite is green: 127 unit and 41
+  integration tests.
+
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

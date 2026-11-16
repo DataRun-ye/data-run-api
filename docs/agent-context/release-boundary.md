@@ -44,8 +44,15 @@ scripts/release/verify.sh
 scripts/release/build-image.sh --tar
 ```
 
-The scripts require a clean tree. The gate runs tests, production build checks,
-JAR version/commit verification, and a local image-tar build.
+The scripts require a clean tree. The gate runs the unit tests, production
+build checks, JAR version/commit verification, and a local image-tar build.
+
+Integration tests are deliberately outside the gate. Surefire excludes
+`**/*IT*` and the gate's `verify` runs with `-DskipTests`, so no `*IT` class is
+executed by `verify.sh`. Run them on demand with `./mvnw verify`. A coherent
+test strategy is to be planned and built against the server surface that
+exists at that time; until then the gate does not depend on integration
+coverage.
 
 ## Staging
 

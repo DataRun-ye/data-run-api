@@ -26,23 +26,19 @@ explicitly confirms them.
   decisions: inherited-route gating, the four generic group/set filters,
   duplicated mobile `formPermissions`, V1 profile legacy fields, user-group
   CRUD/schema, and role/privilege/ACL schema residue.
-- Fix certificate-renewal Compose ownership in one bounded slice. Normal
-  `docker compose up -d` currently starts a one-shot `letsencrypt` service that
-  exits because its DNS credential path is not part of the normal deployment
-  boundary. Routine API deployment must not invoke certificate issuance.
 - After source ownership settles, reconcile the full Liquibase chain in one
   bounded pass before schema contraction. Prove clean replay and
   production-clone upgrade, then classify obsolete analytics, ETL, option, and
   projection changelogs without mixing in table drops.
-- Determine whether the production `pg_idkit` PostgreSQL image provides any
-  active extension before replacing it with the stock PostgreSQL 16 image.
-  The active `generate_uid()` function is application-owned.
 - After the production path and staging boundary are stable, keep one concise
   deployment playbook covering verification, image publication, staging smoke,
   production promotion, health checks, and rollback.
-- After Reference activation, characterize and consolidate JWT/token ownership
-  across server login, refresh, and mobile offline re-entry. Keep one active
-  signing-secret owner and one intentional lifetime policy.
+- Finish consolidating JWT/token ownership. Refresh-token rotation now has one
+  owner in `TokenService` and one failure status (`401`), proven by
+  `TokenServiceTest`, `CustomJwtAuthenticationConverterTest`, and
+  `ExceptionTranslatorIT`. Server login and mobile offline re-entry are still
+  unconsolidated; keep one active signing-secret owner and one intentional
+  lifetime policy.
 
 ## Maintenance
 
