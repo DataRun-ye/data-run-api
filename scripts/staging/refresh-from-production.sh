@@ -36,6 +36,13 @@ if [[ "${DATARUN_STAGING_REUSE_DUMP:-false}" == "true" ]] &&
        "test -s '$remote_dump' && pg_restore -l '$remote_dump' >/dev/null 2>&1"; then
     echo "Reusing the retained compressed staging dump."
 else
+    # No dump command is sent. The production database VM pins it as the forced
+    # command on this restricted key's authorized_keys entry, so the key can
+    # only ever emit
+    #   sudo -n -u postgres pg_dump -d nmcpdb -Fc --no-owner --no-privileges
+    # and cannot open a shell, forward a port, or run anything else. Before the
+    # 2026-08-29 Proxmox move this streamed from a containerized production
+    # database via "docker exec nmcp-db"; that container no longer exists.
     echo "Streaming a fresh compressed dump directly from production to the staging DB host."
     ssh "$staging_db_ssh" "
         set -eu
@@ -46,9 +53,6 @@ else
         cleanup_partial_dump
         dump_started_at=\$(date +%s)
         ssh '$production_refresh_alias' \
-            \"docker exec nmcp-db sh -lc \
-                'pg_dump -U \\\"\\\$POSTGRES_USER\\\" -d \\\"\\\$POSTGRES_DB\\\" \
-                    -Fc --no-owner --no-privileges'\" \
             > '$remote_partial_dump' &
         dump_pid=\$!
         while kill -0 \"\$dump_pid\" >/dev/null 2>&1; do

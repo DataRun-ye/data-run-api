@@ -103,13 +103,25 @@ DATARUN_STAGING_REFRESH=true scripts/staging/refresh-from-production.sh
 ```
 
 The refresh streams a new custom-format dump directly from the current
-production PostgreSQL container to the staging database VM. Dump bytes do not
+production PostgreSQL service to the staging database VM. Dump bytes do not
 pass through the operator machine. The dedicated
 `datarun-production-refresh` SSH alias and private key exist only on the
-staging database VM; its public key is authorized for user `hamza` in the
-production Compute Engine instance's SSH metadata. Strict host-key checking is
-required. The flow never stores production database credentials. Production
-is read only; only `datarun_staging` is replaced.
+staging database VM; its public key is authorized for user `nmcp` on the
+production database VM `datarun-prod-db.lab` (192.168.1.111). That
+`authorized_keys` entry pins a forced command, so the key can only ever emit
+
+```
+sudo -n -u postgres pg_dump -d nmcpdb -Fc --no-owner --no-privileges
+```
+
+and cannot open a shell, forward a port, or run any other command. Strict
+host-key checking is required. The flow never stores production database
+credentials. Production is read only; only `datarun_staging` is replaced.
+
+Before the 2026-08-29 Proxmox move this streamed from a containerized
+production database via `docker exec nmcp-db`, authorized for user `hamza` in
+the Compute Engine instance's SSH metadata. Neither that container nor that
+instance is in service, so the pre-move flow cannot reach production.
 
 The dump is written to a partial file and validated before it atomically
 replaces the reusable dump. Staging remains running until that transfer
@@ -118,11 +130,13 @@ the staging API. During transfer, the command reports compressed MiB and
 elapsed time. During restore, it reports elapsed time; a percentage would be
 misleading because custom-format compression and restore work are not linear.
 
-Verify the host-to-host connection without reading production data:
+Verify the host-to-host connection. The forced command ignores any command
+argument, so passing `true` still dumps production. Read the first bytes and
+stop instead; `PGDMP` confirms authentication, `sudo`, and `pg_dump` all work:
 
 ```bash
 ssh nmcp@product-staging-db.lab \
-  "ssh datarun-production-refresh true"
+  "ssh datarun-production-refresh | head -c 5"
 ```
 
 If restore fails after transfer, the compressed dump remains on the DB host.
