@@ -40,7 +40,7 @@ ssh "$staging_db_ssh" "
             printf 'STAGING_FIELD_LOGIN=staging-field\\n'
             printf 'STAGING_FIELD_PASSWORD=%s\\n' \"\$(openssl rand -hex 24)\"
             printf 'STAGING_FIELD_TEMPLATE_LOGIN=%s\\n' \
-                '${DATARUN_STAGING_FIELD_TEMPLATE_LOGIN}'
+                '${DATARUN_STAGING_FIELD_TEMPLATE_LOGIN:-}'
         } > '$remote_config'
     fi
 
