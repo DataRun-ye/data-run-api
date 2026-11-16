@@ -14,10 +14,26 @@ Status: ACTIVE
 - `/management/info` must report the Maven version and release commit after
   deployment.
 - `deploy/production/compose.yml` owns the sanitized production topology.
-- Its project name is `datarun`; changing it can detach the existing named
-  volumes.
-- The production project directory is `/home/hamza/datarun`, where the
-  relative init and nginx mounts live.
+- Its project name is `datarun` and its container name is `datarunapi`;
+  changing either detaches the deployed container identity.
+- Since the 2026-08-29 move from Google Cloud to Proxmox, production is two
+  VMs on `pve.lab`:
+  - API: `datarun-prod.lab` (192.168.1.110), project directory
+    `/home/nmcp/datarun`. This Compose project owns exactly one container,
+    `app`/`datarunapi`. There are no bundled database, nginx, or certificate
+    services, and no named volumes. The VM additionally runs containers that
+    this repository does not own; verified 2026-11-16: datarun-local-app-*,
+    datarun-reference-server-1, datarun-prometheus, datarun-node-exporter,
+    datarun-blackbox-exporter.
+  - Database: `datarun-prod-db.lab` (192.168.1.111), PostgreSQL 16 as a
+    managed VM service with database and role `nmcpdb`, reached over TLS
+    (`sslmode=require`). It is not containerized and `compose.yml` does not
+    own it.
+  - nginx and TLS termination are external to this repository.
+  - `pg_hba-production.conf`, `provision-production-role.sql`, and
+    `restore-prerequisites.sql` in `deploy/production/` are the DB VM's
+    spec. The runtime role password lives only in
+    `/etc/datarun-production/runtime-password` on that VM.
 - Production secrets remain in the host environment. They are not committed or
   printed.
 
