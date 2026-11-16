@@ -49,17 +49,24 @@ JAR version/commit verification, and a local image-tar build.
 
 ## Staging
 
-`deploy/staging/compose.yml` runs only the candidate API against a dedicated
-local clone database on an external Docker network. It has its own JWT secret,
-Compose project, and port; its ignored `.env` must never contain production
+`deploy/staging/compose.yml` runs only the candidate API on
+`product-staging.lab` (192.168.1.220) against `datarun_staging` on
+`product-staging-db.lab` (192.168.1.221). It has its own JWT secret, Compose
+project, and port; its ignored `.env` must never contain production
 credentials.
 
+Staging deploys an image, never a branch: the image staging validates is the
+image production promotes. `deploy/staging/README.md` is the operator
+procedure.
+
 ```bash
-cp deploy/staging/.env.example deploy/staging/.env
-chmod 600 deploy/staging/.env
-docker load -i target/jib-image.tar
-docker compose --env-file deploy/staging/.env -f deploy/staging/compose.yml up -d
+scripts/staging/publish-candidate.sh
+DATARUN_STAGING_REHEARSAL=true scripts/staging/rehearse.sh
 ```
+
+Use the second command alone when the image has not changed. To baseline
+staging against production without building, set `DATARUN_API_IMAGE` to the
+image production is running and rehearse; Liquibase then has nothing to apply.
 
 Before promotion, verify health and `/management/info`, then smoke login,
 configuration reads, and one ordinary idempotent submission upload.

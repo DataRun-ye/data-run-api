@@ -1,7 +1,9 @@
-# Transition Staging
+# Server Staging
 
-This environment proves released-client and administrator compatibility before
-the initial event-transition candidate is considered for production.
+This environment proves a candidate against a sanitized clone of current
+production before that candidate is considered for production. Staging runs an
+image, never a branch, and the rehearsal re-clones the database on every run,
+so an experiment cannot contaminate a release verdict.
 
 ## What To Run
 
