@@ -14,9 +14,6 @@ import java.lang.annotation.Target;
 /**
  * Base composite annotation for integration tests.
  */
-/**
- * Base composite annotation for integration tests.
- */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest(classes = { DataRunApiApp.class, JacksonConfiguration.class, AsyncSyncConfiguration.class },
@@ -25,10 +22,3 @@ import java.lang.annotation.Target;
 @EmbeddedSQL
 public @interface IntegrationTest {
 }
-//@Target(ElementType.TYPE)
-//@Retention(RetentionPolicy.RUNTIME)
-//@SpringBootTest(classes = { DataRunApiApp.class,
-//        JacksonConfiguration.class, AsyncSyncConfiguration.class })
-//@EmbeddedSQL
-//public @interface IntegrationTest {
-//}
