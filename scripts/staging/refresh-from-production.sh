@@ -86,10 +86,16 @@ ssh "$staging_api_ssh" "
     fi
 "
 
+# Skip objects that restore-prerequisites.sql already owns. Since the
+# 2026-08-29 Proxmox move, production itself carries
+# public.idkit_ulid_generate() as a plain function replacing the retired
+# pg_idkit extension, so the dump now contains it and pg_restore would fail
+# with "already exists with same argument types". public.generate_uid() is
+# application-owned and must NOT be filtered.
 echo "Preparing the restore list."
 ssh "$staging_db_ssh" \
     "pg_restore -l '$remote_dump' |
-        grep -v -E ' EXTENSION - (pg_idkit|pgcrypto) | COMMENT - EXTENSION (pg_idkit|pgcrypto) ' \
+        grep -v -E ' EXTENSION - (pg_idkit|pgcrypto) | COMMENT - EXTENSION (pg_idkit|pgcrypto) | FUNCTION public idkit_ulid_generate\(\) ' \
         > '$remote_restore_list'"
 
 echo "Replacing the staging database."
