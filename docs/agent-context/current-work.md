@@ -1,20 +1,26 @@
 # Current Work
 
-Updated: 2026-07-28
+Updated: 2026-11-17
 
 Purpose: accepted server work only. This file is not code, API, architecture,
 or deployment authority.
 
 ## Now
 
+- ITN 2026 household lists (campaign from the week of 2026-11-23; Reference
+  form already assigned in production, see `reference-boundary.md`). Load the
+  lists with `scripts/reference`: staging first, then production only with
+  explicit approval and before campaign users are linked to teams. No
+  production code change before the campaign. Shared status:
+  [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34).
+- After the campaign, ship with the `develop` release: record the client app
+  version with last-seen; retire Reference entries instead of deleting them
+  (the phone list serves active entries only); a per-field "allow Add new"
+  setting next to `ScannedCodeProperties`.
 - Define the product-policy cutover for same-UID submission mutation,
   synchronized edit/delete, and conflict behavior. The released app currently
   creates and idempotently retries submissions; compatibility reachability is
   not authority to invent a broader lifecycle.
-
-Reference activation remains parked in
-[DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34) while
-the server runtime surface is cleaned.
 
 Endpoint removal candidates are assessed in
 `active-production-interface.md` and remain registered until the user
