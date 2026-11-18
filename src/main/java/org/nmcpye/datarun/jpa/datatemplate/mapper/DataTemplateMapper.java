@@ -18,6 +18,12 @@ public interface DataTemplateMapper
     })
     DataTemplate fromInstanceDto(DataTemplateInstanceDto dto);
 
+    /**
+     * The template's identity with one version's content. Version uid and
+     * number come from that version, not from the template's current version:
+     * uploads canonicalize a submission's version from this, so taking them
+     * from the template relabelled older-version submissions.
+     */
     @Mappings({
         @Mapping(target = "id", source = "templateDto.id"),
         @Mapping(target = "uid", source = "templateDto.uid"),
@@ -26,8 +32,8 @@ public interface DataTemplateMapper
         @Mapping(target = "name", source = "templateDto.name"),
         @Mapping(target = "description", source = "templateDto.description"),
         @Mapping(target = "label", source = "templateDto.label"),
-        @Mapping(target = "versionNumber", source = "templateDto.versionNumber"),
-        @Mapping(target = "versionUid", source = "templateDto.versionUid"),
+        @Mapping(target = "versionNumber", source = "versionDto.versionNumber"),
+        @Mapping(target = "versionUid", source = "versionDto.uid"),
         @Mapping(target = "fields", source = "versionDto.fields"),
         @Mapping(target = "sections", source = "versionDto.sections"),
     })
