@@ -3,6 +3,7 @@ package org.nmcpye.datarun.web.rest.v1.datasubmission;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
@@ -24,25 +25,24 @@ import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.mapper.DataSubmissionUploadV1Mapper;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.service.SubmissionUploadService;
-import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.interceptor.TransactionInterceptor;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -59,11 +59,14 @@ class SubmissionUploadServiceTest {
     private AssignmentFormAccessService formAccessService;
     private TemplateVersionResolver templateVersionResolver;
     private ReferenceSubmissionResolver resolver;
+    private PlatformTransactionManager transactionManager;
+    private TransactionStatus transactionStatus;
     private SubmissionUploadService service;
     private TemplateVersionContext templateContext;
     private DataTemplateInstanceDto template;
     private CurrentUserDetails user;
     private Assignment assignment;
+    private final Map<String, DataSubmission> entities = new java.util.HashMap<>();
 
     @BeforeEach
     void setUp() {
@@ -73,6 +76,10 @@ class SubmissionUploadServiceTest {
         formAccessService = mock(AssignmentFormAccessService.class);
         templateVersionResolver = mock(TemplateVersionResolver.class);
         resolver = mock(ReferenceSubmissionResolver.class);
+        transactionManager = mock(PlatformTransactionManager.class);
+        transactionStatus = mock(TransactionStatus.class);
+        when(transactionManager.getTransaction(any(TransactionDefinition.class)))
+            .thenReturn(transactionStatus);
         service = new SubmissionUploadService(
             submissionService,
             mapper,
@@ -80,7 +87,8 @@ class SubmissionUploadServiceTest {
             assignmentRepository,
             formAccessService,
             templateVersionResolver,
-            resolver);
+            resolver,
+            transactionManager);
 
         templateContext = mock(TemplateVersionContext.class);
         template = mock(DataTemplateInstanceDto.class);
@@ -109,51 +117,55 @@ class SubmissionUploadServiceTest {
 
         user = mock(CurrentUserDetails.class);
         when(user.isSuper()).thenReturn(true);
+
+        doAnswer(invocation -> {
+            List<DataSubmission> saved = invocation.getArgument(0);
+            EntitySaveSummaryVM summary = invocation.getArgument(1);
+            saved.forEach(submission -> summary.getCreated().add(submission.getUid()));
+            return saved;
+        }).when(submissionService).upsertAll(anyList(), any(EntitySaveSummaryVM.class));
     }
 
     @Test
-    void transactionStartsAtPublicCoordinator() throws Exception {
-        assertNotNull(
-            SubmissionUploadService.class
-                .getMethod("upsertAll", List.class)
-                .getAnnotation(Transactional.class));
+    void eachSubmissionRunsInItsOwnNewTransaction() {
+        DataSubmissionUploadV1Dto firstRequest = stubbedRequest("firstSub01");
+        DataSubmissionUploadV1Dto secondRequest = stubbedRequest("secondSub1");
+
+        EntitySaveSummaryVM summary = upload(List.of(firstRequest, secondRequest));
+
+        ArgumentCaptor<TransactionDefinition> definitions =
+            ArgumentCaptor.forClass(TransactionDefinition.class);
+        verify(transactionManager, times(2)).getTransaction(definitions.capture());
+        definitions.getAllValues().forEach(definition -> assertEquals(
+            TransactionDefinition.PROPAGATION_REQUIRES_NEW,
+            definition.getPropagationBehavior()));
+        verify(transactionManager, times(2)).commit(transactionStatus);
+        assertEquals(List.of("firstSub01", "secondSub1"), summary.getCreated());
+        assertTrue(summary.getFailed().isEmpty());
     }
 
     @Test
-    void preparesEverySubmissionBeforeCallingPersistence() {
-        DataSubmissionUploadV1Dto firstRequest = request("firstSub01");
-        DataSubmissionUploadV1Dto secondRequest = request("secondSub1");
-        DataSubmission first = submission(firstRequest);
-        DataSubmission second = submission(secondRequest);
-        when(mapper.toEntity(firstRequest)).thenReturn(first);
-        when(mapper.toEntity(secondRequest)).thenReturn(second);
-        stubContext(first);
-        stubContext(second);
+    void persistsEachSubmissionInItsOwnCall() {
+        DataSubmissionUploadV1Dto firstRequest = stubbedRequest("firstSub01");
+        DataSubmissionUploadV1Dto secondRequest = stubbedRequest("secondSub1");
 
-        withCurrentUser(() -> service.upsertAll(
-            List.of(firstRequest, secondRequest)));
+        upload(List.of(firstRequest, secondRequest));
 
         var ordered = inOrder(resolver, submissionService);
-        ordered.verify(resolver, times(2)).resolve(
-            any(),
-            eq(assignment),
-            eq(template),
-            any());
+        ordered.verify(resolver).resolve(any(), eq(assignment), eq(template), any());
         ordered.verify(submissionService).upsertAll(
-            eq(List.of(first, second)),
+            submissionsWithUids("firstSub01"),
             any(EntitySaveSummaryVM.class));
-        verify(assignmentRepository, times(2)).findByUid("assignment1");
-        verify(templateVersionResolver, times(2)).resolveByUid(
-            "formUid0001",
-            "version0001");
+        ordered.verify(resolver).resolve(any(), eq(assignment), eq(template), any());
+        ordered.verify(submissionService).upsertAll(
+            submissionsWithUids("secondSub1"),
+            any(EntitySaveSummaryVM.class));
     }
 
     @Test
     void canonicalizesContextBeforeAuthorizationAndReferenceResolution() {
-        DataSubmissionUploadV1Dto request = request("firstSub01");
-        DataSubmission submission = submission(request);
-        when(mapper.toEntity(request)).thenReturn(submission);
-        stubContext(submission);
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
+        DataSubmission submission = entity("firstSub01");
         when(user.isSuper()).thenReturn(false);
         when(user.getUserTeamsUIDs()).thenReturn(Set.of("team0000001"));
         when(formAccessService.canSubmitData(
@@ -162,7 +174,7 @@ class SubmissionUploadServiceTest {
             "formUid0001"))
             .thenReturn(true);
 
-        withCurrentUser(() -> service.upsertAll(List.of(request)));
+        upload(List.of(request));
 
         var ordered = inOrder(formAccessService, resolver);
         ordered.verify(formAccessService).canSubmitData(
@@ -186,117 +198,121 @@ class SubmissionUploadServiceTest {
     }
 
     @Test
-    void rejectsNonDirectTeamBeforeReferenceAndPersistence() {
-        DataSubmissionUploadV1Dto request = request("firstSub01");
-        DataSubmission submission = submission(request);
-        when(mapper.toEntity(request)).thenReturn(submission);
-        stubContext(submission);
+    void reportsANonDirectTeamPerSubmissionWithoutReachingReferenceOrPersistence() {
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
         when(user.isSuper()).thenReturn(false);
         when(user.getUserTeamsUIDs()).thenReturn(Set.of("otherTeam01"));
 
-        assertThrows(
-            IllegalQueryException.class,
-            () -> withCurrentUser(
-                () -> service.upsertAll(List.of(request))));
+        EntitySaveSummaryVM summary = upload(List.of(request));
 
+        assertTrue(summary.getFailed().get("firstSub01").startsWith("E4114: "));
+        assertTrue(summary.getCreated().isEmpty());
         verify(formAccessService, never()).canSubmitData(any(), any(), any());
         verify(resolver, never()).resolve(any(), any(), any(), any());
         verify(submissionService, never()).upsertAll(any(), any());
-    }
-
-    @Test
-    void resolutionFailureDoesNotReachSubmissionPersistence() {
-        DataSubmissionUploadV1Dto firstRequest = request("firstSub01");
-        DataSubmissionUploadV1Dto secondRequest = request("secondSub1");
-        DataSubmission first = submission(firstRequest);
-        DataSubmission second = submission(secondRequest);
-        when(mapper.toEntity(firstRequest)).thenReturn(first);
-        when(mapper.toEntity(secondRequest)).thenReturn(second);
-        stubContext(first);
-        stubContext(second);
-        doThrow(new DomainValidationException("invalid reference"))
-            .when(resolver)
-            .resolve(
-                second,
-                assignment,
-                template,
-                secondRequest.getReferenceDefinitions());
-
-        assertThrows(
-            DomainValidationException.class,
-            () -> withCurrentUser(
-                () -> service.upsertAll(
-                    List.of(firstRequest, secondRequest))));
-
-        verify(submissionService, never()).upsertAll(any(), any());
-    }
-
-    @Test
-    void resolverFailureRollsBackTheOuterTransaction() {
-        DataSubmissionUploadV1Dto request = request("firstSub01");
-        DataSubmission submission = submission(request);
-        when(mapper.toEntity(request)).thenReturn(submission);
-        stubContext(submission);
-        doThrow(new DomainValidationException("invalid reference"))
-            .when(resolver)
-            .resolve(
-                submission,
-                assignment,
-                template,
-                request.getReferenceDefinitions());
-
-        PlatformTransactionManager transactionManager =
-            mock(PlatformTransactionManager.class);
-        TransactionStatus transactionStatus = mock(TransactionStatus.class);
-        when(transactionManager.getTransaction(
-            any(TransactionDefinition.class)))
-            .thenReturn(transactionStatus);
-        TransactionInterceptor interceptor = new TransactionInterceptor(
-            transactionManager,
-            new AnnotationTransactionAttributeSource());
-        ProxyFactory proxyFactory = new ProxyFactory(service);
-        proxyFactory.setProxyTargetClass(true);
-        proxyFactory.addAdvice(interceptor);
-        SubmissionUploadService transactionalService =
-            (SubmissionUploadService) proxyFactory.getProxy();
-
-        assertThrows(
-            DomainValidationException.class,
-            () -> withCurrentUser(
-                () -> transactionalService.upsertAll(List.of(request))));
-
         verify(transactionManager).rollback(transactionStatus);
-        verify(transactionManager, never()).commit(transactionStatus);
     }
 
-    private void stubContext(DataSubmission submission) {
-        when(assignmentRepository.findByUid(submission.getAssignment()))
-            .thenReturn(Optional.of(assignment));
-        when(templateVersionResolver.resolveByUid(
-            submission.getForm(),
-            submission.getFormVersion()))
-            .thenReturn(templateContext);
+    @Test
+    void oneRejectedSubmissionDoesNotBlockTheOthers() {
+        DataSubmissionUploadV1Dto firstRequest = stubbedRequest("firstSub01");
+        DataSubmissionUploadV1Dto secondRequest = stubbedRequest("secondSub1");
+        DataSubmissionUploadV1Dto thirdRequest = stubbedRequest("thirdSub01");
+        doThrow(new DomainValidationException("invalid reference"))
+            .when(resolver)
+            .resolve(submissionWithUid("secondSub1"), any(), any(), any());
+
+        EntitySaveSummaryVM summary = upload(List.of(firstRequest, secondRequest, thirdRequest));
+
+        assertEquals(List.of("firstSub01", "thirdSub01"), summary.getCreated());
+        assertEquals(Set.of("secondSub1"), summary.getFailed().keySet());
+        assertTrue(summary.getFailed().get("secondSub1").contains("invalid reference"));
+        verify(transactionManager, times(2)).commit(transactionStatus);
+        verify(transactionManager, times(1)).rollback(transactionStatus);
     }
 
-    private void withCurrentUser(Runnable operation) {
+    @Test
+    void reportsAnUnexpectedFailureWithoutAbortingTheRequest() {
+        DataSubmissionUploadV1Dto firstRequest = stubbedRequest("firstSub01");
+        DataSubmissionUploadV1Dto secondRequest = stubbedRequest("secondSub1");
+        doThrow(new IllegalStateException("database unavailable"))
+            .when(resolver)
+            .resolve(submissionWithUid("firstSub01"), any(), any(), any());
+
+        EntitySaveSummaryVM summary = upload(List.of(firstRequest, secondRequest));
+
+        assertEquals("database unavailable", summary.getFailed().get("firstSub01"));
+        assertEquals(List.of("secondSub1"), summary.getCreated());
+    }
+
+    @Test
+    void legacyRouteSavesEachSubmissionSeparately() {
+        DataSubmission first = submission("firstSub01");
+        DataSubmission second = submission("secondSub1");
+        AtomicReference<DataSubmission> validated = new AtomicReference<>();
+
+        EntitySaveSummaryVM summary = service.upsertAllLegacy(
+            List.of(first, second),
+            candidate -> {
+                if (candidate == first) {
+                    throw new IllegalQueryException("not allowed");
+                }
+                validated.set(candidate);
+                return candidate;
+            });
+
+        assertEquals(Set.of("firstSub01"), summary.getFailed().keySet());
+        assertEquals(List.of("secondSub1"), summary.getCreated());
+        assertSame(second, validated.get());
+        verify(submissionService).upsertAll(submissionsWithUids("secondSub1"), any(EntitySaveSummaryVM.class));
+        verify(submissionService, never()).upsertAll(submissionsWithUids("firstSub01"), any(EntitySaveSummaryVM.class));
+    }
+
+    private EntitySaveSummaryVM upload(List<DataSubmissionUploadV1Dto> requests) {
+        AtomicReference<EntitySaveSummaryVM> result = new AtomicReference<>();
         try (MockedStatic<SecurityUtils> security =
                  org.mockito.Mockito.mockStatic(SecurityUtils.class)) {
             security.when(SecurityUtils::getCurrentUserDetailsOrThrow)
                 .thenReturn(user);
-            operation.run();
+            result.set(service.upsertAll(requests));
         }
+        return result.get();
     }
 
-    private DataSubmissionUploadV1Dto request(String uid) {
+    private DataSubmissionUploadV1Dto stubbedRequest(String uid) {
         DataSubmissionUploadV1Dto request = new DataSubmissionUploadV1Dto();
         request.setUid(uid);
         request.setReferenceDefinitions(List.of());
+        DataSubmission entity = submission(uid);
+        entities.put(uid, entity);
+        when(mapper.toEntity(request)).thenReturn(entity);
+        when(assignmentRepository.findByUid(entity.getAssignment()))
+            .thenReturn(Optional.of(assignment));
+        when(templateVersionResolver.resolveByUid(
+            entity.getForm(),
+            entity.getFormVersion()))
+            .thenReturn(templateContext);
         return request;
     }
 
-    private DataSubmission submission(DataSubmissionUploadV1Dto request) {
+    // DataSubmission equality is by database id, which is null for every unsaved
+    // submission here, so matchers compare uids instead.
+    private static DataSubmission submissionWithUid(String uid) {
+        return argThat(submission -> submission != null && uid.equals(submission.getUid()));
+    }
+
+    private static List<DataSubmission> submissionsWithUids(String... uids) {
+        return argThat(list -> list != null
+            && list.stream().map(DataSubmission::getUid).toList().equals(List.of(uids)));
+    }
+
+    private DataSubmission entity(String uid) {
+        return entities.get(uid);
+    }
+
+    private DataSubmission submission(String uid) {
         DataSubmission submission = new DataSubmission();
-        submission.setUid(request.getUid());
+        submission.setUid(uid);
         submission.setForm("formUid0001");
         submission.setFormVersion("version0001");
         submission.setAssignment("assignment1");

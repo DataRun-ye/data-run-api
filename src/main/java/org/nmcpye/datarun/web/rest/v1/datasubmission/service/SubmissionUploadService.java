@@ -3,7 +3,9 @@ package org.nmcpye.datarun.web.rest.v1.datasubmission.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
+import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
@@ -22,11 +24,24 @@ import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.mapper.DataSubmissionUploadV1Mapper;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
+/**
+ * Saves uploaded submissions one at a time, each in its own transaction, and
+ * reports failures per submission: one rejected row no longer fails the rest of
+ * the request (DataRun-ye/data-run-api#37). A submission and the Reference
+ * entries it defines still commit or roll back together. Phones already apply
+ * the per-row created/updated/failed result (mobile 5.3.0 and 6.0.x).
+ */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SubmissionUploadService {
@@ -38,37 +53,99 @@ public class SubmissionUploadService {
     private final AssignmentFormAccessService formAccessService;
     private final TemplateVersionResolver templateVersionResolver;
     private final ReferenceSubmissionResolver referenceResolver;
+    private final PlatformTransactionManager transactionManager;
 
-    @Transactional
+    /** The versioned upload route (`referenceVersion=1`). */
     public EntitySaveSummaryVM upsertAll(
         List<DataSubmissionUploadV1Dto> requests) {
-        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         if (requests == null || requests.isEmpty()) {
-            return summary;
+            return new EntitySaveSummaryVM();
         }
 
         var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
-        List<DataSubmission> submissions = new ArrayList<>(requests.size());
-        for (DataSubmissionUploadV1Dto request : requests) {
-            DataSubmission submission = mapper.toEntity(request);
-            Assignment assignment = assignmentFor(submission);
-            TemplateVersionContext template = templateFor(submission);
-            canonicalizeContext(
-                submission,
-                assignment,
-                template.getTemplate());
-            authorize(submission, assignment, currentUser);
-            generateMissingRepeatIds(submission, template);
-            referenceResolver.resolve(
-                submission,
-                assignment,
-                template.getTemplate(),
-                request.getReferenceDefinitions());
-            submissions.add(submission);
+        return saveEach(
+            requests,
+            DataSubmissionUploadV1Dto::getUid,
+            (request, summary) -> upsertOne(request, currentUser, summary));
+    }
+
+    /**
+     * The legacy upload route used by apps before 6.0.2: the same isolation,
+     * with the route's own validation applied to each submission.
+     */
+    public EntitySaveSummaryVM upsertAllLegacy(
+        List<DataSubmission> submissions,
+        UnaryOperator<DataSubmission> validate) {
+        if (submissions == null || submissions.isEmpty()) {
+            return new EntitySaveSummaryVM();
         }
 
-        submissionService.upsertAll(submissions, summary);
+        return saveEach(
+            submissions,
+            DataSubmission::getUid,
+            (submission, summary) -> submissionService.upsertAll(
+                List.of(validate.apply(submission)),
+                summary));
+    }
+
+    private void upsertOne(
+        DataSubmissionUploadV1Dto request,
+        CurrentUserDetails currentUser,
+        EntitySaveSummaryVM summary) {
+        DataSubmission submission = mapper.toEntity(request);
+        Assignment assignment = assignmentFor(submission);
+        TemplateVersionContext template = templateFor(submission);
+        canonicalizeContext(
+            submission,
+            assignment,
+            template.getTemplate());
+        authorize(submission, assignment, currentUser);
+        generateMissingRepeatIds(submission, template);
+        referenceResolver.resolve(
+            submission,
+            assignment,
+            template.getTemplate(),
+            request.getReferenceDefinitions());
+        submissionService.upsertAll(List.of(submission), summary);
+    }
+
+    private <T> EntitySaveSummaryVM saveEach(
+        List<T> items,
+        Function<T, String> uidOf,
+        BiConsumer<T, EntitySaveSummaryVM> save) {
+        TransactionTemplate perSubmission = new TransactionTemplate(transactionManager);
+        perSubmission.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
+        for (int index = 0; index < items.size(); index++) {
+            T item = items.get(index);
+            EntitySaveSummaryVM itemSummary = new EntitySaveSummaryVM();
+            try {
+                perSubmission.executeWithoutResult(status -> save.accept(item, itemSummary));
+                summary.getCreated().addAll(itemSummary.getCreated());
+                summary.getUpdated().addAll(itemSummary.getUpdated());
+                summary.getFailed().putAll(itemSummary.getFailed());
+            } catch (RuntimeException failure) {
+                String uid = Optional.ofNullable(uidOf.apply(item)).orElse("#" + index);
+                summary.getFailed().put(uid, failureMessage(failure));
+                if (failure instanceof ErrorCodeException) {
+                    log.warn("Submission {} rejected: {}", uid, failure.getMessage());
+                } else {
+                    log.error("Submission {} failed unexpectedly", uid, failure);
+                }
+            }
+        }
         return summary;
+    }
+
+    private static String failureMessage(RuntimeException failure) {
+        String message = Optional.ofNullable(failure.getMessage())
+            .filter(text -> !text.isBlank())
+            .orElse(failure.getClass().getSimpleName());
+        if (failure instanceof ErrorCodeException coded && coded.getErrorCode() != null) {
+            return coded.getErrorCode().name() + ": " + message;
+        }
+        return message;
     }
 
     private Assignment assignmentFor(DataSubmission submission) {

@@ -120,9 +120,9 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     @Override
     public ResponseEntity<EntitySaveSummaryVM> saveAll(List<DataSubmission> entities) {
         requireResourceApiAccess(SecurityUtils.getCurrentUserDetailsOrThrow());
-        EntitySaveSummaryVM summaryVM = new EntitySaveSummaryVM();
-        submissionService.upsertAll(preProcess(entities), summaryVM);
-        return ResponseEntity.ok(summaryVM);
+        return ResponseEntity.ok(uploadService.upsertAllLegacy(
+            entities,
+            submission -> preProcess(List.of(submission)).get(0)));
     }
 
     @PostMapping(value = "/bulk", params = "referenceVersion=1")

@@ -47,10 +47,13 @@ The migration is
 `src/main/resources/config/liquibase/changelog/reference-entry/20260725-create-reference-entry.xml`
 and is included by `master.xml`.
 
-Production (`main`, `v6.4.1`) still routes Reference uploads through
-`ReferenceSubmissionUploadService` and checks catalog access per form;
-`develop` merges both upload routes into `SubmissionUploadService` and scopes
-catalog access to the assignment. Judge production behaviour on `main`.
+Production (`main`, `v6.4.1`) routes Reference uploads through
+`ReferenceSubmissionUploadService`, checks catalog access per form, and saves
+each upload request all-or-nothing. On `develop` the versioned route uses
+`SubmissionUploadService`, the legacy `/bulk` route keeps its own validation in
+`DataSubmissionResource`, catalog access is scoped to the assignment, and both
+routes save each submission in its own transaction, reporting failures per row
+(api #37). Judge production behaviour on `main` until `develop` is released.
 
 ## Compatibility Boundary
 
