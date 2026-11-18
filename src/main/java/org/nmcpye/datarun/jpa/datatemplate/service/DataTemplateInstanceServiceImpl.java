@@ -127,13 +127,16 @@ public class DataTemplateInstanceServiceImpl
             )));
     }
 
+    // allEntries: these caches are keyed by uids and numbers, never by the DTO
+    // argument, so a key-based eviction kept the previous version as current
+    // for up to the cache lifetime after a publish.
     @CacheEvict(cacheNames = {
         DataTemplateRepository.TEMPLATE_BY_UID_CACHE,
         TemplateVersionResolver.TEMPLATE_VERSION_CONTEXT_CACHE,
         TemplateVersionRepository.TEMPLATE_UID_VERSION_UID_JPA_CACHE,
         TemplateVersionRepository.TEMPLATE_UID_VERSION_NO_JPA_CACHE,
         TemplateVersionRepository.TEMPLATE_UID_LATEST_VERSION_JPA_CACHE,
-    })
+    }, allEntries = true)
     @Override
     public DataTemplateInstanceDto publishVersion(
         DataTemplateInstanceDto dataTemplateInstanceDto) {
