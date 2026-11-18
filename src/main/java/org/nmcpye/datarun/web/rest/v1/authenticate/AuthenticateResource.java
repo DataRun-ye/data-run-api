@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nmcpye.datarun.common.LatinDigits;
 import org.nmcpye.datarun.jpa.userrefreshtoken.dto.RefreshTokenDto;
 import org.nmcpye.datarun.jpa.userrefreshtoken.service.TokenService;
 import org.nmcpye.datarun.web.rest.common.ApiVersion;
@@ -37,9 +38,10 @@ public class AuthenticateResource {
 
     @PostMapping("/authenticate")
     public ResponseEntity<?> authorize(@Valid @RequestBody LoginVM loginVM, HttpServletRequest request) {
+        // Phones with an Arabic keyboard type ٠-٩; stored credentials use 0-9.
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-            loginVM.getUsername(),
-            loginVM.getPassword()
+            LatinDigits.normalize(loginVM.getUsername()),
+            LatinDigits.normalize(loginVM.getPassword())
         );
 
         // attach remote address and other web details so listeners/events can read them

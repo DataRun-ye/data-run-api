@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.jpa.user.service;
 
 import org.apache.commons.lang3.StringUtils;
+import org.nmcpye.datarun.common.LatinDigits;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.config.Constants;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
@@ -85,7 +86,7 @@ public class UserService
             .findOneByResetKey(key)
             .filter(user -> user.getResetDate().isAfter(Instant.now().minus(1, ChronoUnit.DAYS)))
             .map(user -> {
-                user.setPassword(passwordEncoder.encode(newPassword));
+                user.setPassword(encodePassword(newPassword));
                 user.setResetKey(null);
                 user.setResetDate(null);
                 this.clearUserCaches(user);
@@ -163,7 +164,7 @@ public class UserService
             user.setLangKey(userDTO.getLangKey());
         }
 //        String encryptedPassword = passwordEncoder.encode(password);
-        user.setPassword(passwordEncoder.encode(password));
+        user.setPassword(encodePassword(password));
         user.setResetKey(RandomUtil.generateResetKey());
         user.setResetDate(Instant.now());
         user.setActivated(userDTO.isActivated());
@@ -291,7 +292,7 @@ public class UserService
                 if (isPasswordLengthInvalid(password)) {
                     throw new InvalidPasswordException();
                 }
-                String encryptedPassword = passwordEncoder.encode(password);
+                String encryptedPassword = encodePassword(password);
                 user.setPassword(encryptedPassword);
                 Set<Authority> managedAuthorities = user.getAuthorities();
                 managedAuthorities.clear();
@@ -353,10 +354,10 @@ public class UserService
             .flatMap(userRepository::findOneByLogin)
             .ifPresent(user -> {
                 String currentEncryptedPassword = user.getPassword();
-                if (!passwordEncoder.matches(currentClearTextPassword, currentEncryptedPassword)) {
+                if (!passwordEncoder.matches(LatinDigits.normalize(currentClearTextPassword), currentEncryptedPassword)) {
                     throw new InvalidPasswordException();
                 }
-                String encryptedPassword = passwordEncoder.encode(newPassword);
+                String encryptedPassword = encodePassword(newPassword);
                 user.setPassword(encryptedPassword);
                 this.clearUserCaches(user);
                 log.debug("Changed password for User: {}", user);
@@ -408,6 +409,11 @@ public class UserService
     @Transactional(readOnly = true)
     public List<String> getAuthorities() {
         return authorityRepository.findAll().stream().map(Authority::getName).toList();
+    }
+
+    /** Passwords are stored with Latin digits; see {@link LatinDigits}. */
+    private String encodePassword(String rawPassword) {
+        return passwordEncoder.encode(LatinDigits.normalize(rawPassword));
     }
 
     private void clearUserCaches(User user) {

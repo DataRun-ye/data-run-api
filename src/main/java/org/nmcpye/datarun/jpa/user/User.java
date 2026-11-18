@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.nmcpye.datarun.common.LatinDigits;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
@@ -129,9 +130,9 @@ public class User extends JpaIdentifiableObject {
         return getFirstName();
     }
 
-    // Lowercase the login before saving it in database
+    // Lowercase the login, with Latin digits, before saving it in database
     public void setLogin(String login) {
-        this.login = StringUtils.lowerCase(login, Locale.ENGLISH);
+        this.login = StringUtils.lowerCase(LatinDigits.normalize(login), Locale.ENGLISH);
     }
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
