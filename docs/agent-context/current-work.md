@@ -10,13 +10,15 @@ or deployment authority.
 - ITN 2026 household lists (campaign from the week of 2026-11-23; Reference
   form already assigned in production, see `reference-boundary.md`). Load the
   lists with `scripts/reference`: staging first, then production only with
-  explicit approval and before campaign users are linked to teams. No
-  production code change before the campaign. Shared status:
+  explicit approval and before campaign users are linked to teams. Server and
+  mobile releases may ship before or during the campaign when they fix real
+  field problems; each goes through the staging rehearsal first. Shared status:
   [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34).
-- After the campaign, ship with the `develop` release: record the client app
-  version with last-seen; retire Reference entries instead of deleting them
-  (the phone list serves active entries only); a per-field "allow Add new"
-  setting next to `ScannedCodeProperties`.
+- Server additions, scheduled by need rather than by the campaign: record the
+  client app version with last-seen; retire Reference entries instead of
+  deleting them (the phone list serves active entries only); a per-field
+  "allow Add new" setting next to `ScannedCodeProperties`. Backlog: #37, #38,
+  #39; mobile #34, #35.
 - Define the product-policy cutover for same-UID submission mutation,
   synchronized edit/delete, and conflict behavior. The released app currently
   creates and idempotently retries submissions; compatibility reachability is
