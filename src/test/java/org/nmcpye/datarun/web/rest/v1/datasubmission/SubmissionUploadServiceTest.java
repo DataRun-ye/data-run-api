@@ -145,6 +145,29 @@ class SubmissionUploadServiceTest {
     }
 
     @Test
+    void practiceUploadIsCheckedAndSavedThenRolledBack() {
+        DataSubmissionUploadV1Dto firstRequest = stubbedRequest("firstSub01");
+        DataSubmissionUploadV1Dto secondRequest = stubbedRequest("secondSub1");
+
+        EntitySaveSummaryVM summary =
+            upload(List.of(firstRequest, secondRequest), true);
+
+        verify(resolver, times(2)).resolve(any(), eq(assignment), eq(template), any());
+        verify(submissionService, times(2)).upsertAll(
+            anyList(), any(EntitySaveSummaryVM.class));
+        verify(transactionStatus, times(2)).setRollbackOnly();
+        assertEquals(List.of("firstSub01", "secondSub1"), summary.getCreated());
+        assertTrue(summary.getFailed().isEmpty());
+    }
+
+    @Test
+    void ordinaryUploadIsNeverRolledBackOnPurpose() {
+        upload(List.of(stubbedRequest("firstSub01")));
+
+        verify(transactionStatus, never()).setRollbackOnly();
+    }
+
+    @Test
     void persistsEachSubmissionInItsOwnCall() {
         DataSubmissionUploadV1Dto firstRequest = stubbedRequest("firstSub01");
         DataSubmissionUploadV1Dto secondRequest = stubbedRequest("secondSub1");
@@ -269,12 +292,18 @@ class SubmissionUploadServiceTest {
     }
 
     private EntitySaveSummaryVM upload(List<DataSubmissionUploadV1Dto> requests) {
+        return upload(requests, false);
+    }
+
+    private EntitySaveSummaryVM upload(
+        List<DataSubmissionUploadV1Dto> requests,
+        boolean practice) {
         AtomicReference<EntitySaveSummaryVM> result = new AtomicReference<>();
         try (MockedStatic<SecurityUtils> security =
                  org.mockito.Mockito.mockStatic(SecurityUtils.class)) {
             security.when(SecurityUtils::getCurrentUserDetailsOrThrow)
                 .thenReturn(user);
-            result.set(service.upsertAll(requests));
+            result.set(service.upsertAll(requests, practice));
         }
         return result.get();
     }

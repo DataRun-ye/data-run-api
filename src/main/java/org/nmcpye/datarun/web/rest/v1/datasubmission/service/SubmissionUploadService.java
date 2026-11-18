@@ -58,15 +58,32 @@ public class SubmissionUploadService {
     /** The versioned upload route (`referenceVersion=1`). */
     public EntitySaveSummaryVM upsertAll(
         List<DataSubmissionUploadV1Dto> requests) {
+        return upsertAll(requests, false);
+    }
+
+    /**
+     * The versioned upload route. In a practice session (app 6.1.0+) every
+     * submission is checked and saved exactly as usual, then rolled back: the
+     * phone gets the real result, and nothing is stored, including household
+     * names the submission defines.
+     */
+    public EntitySaveSummaryVM upsertAll(
+        List<DataSubmissionUploadV1Dto> requests,
+        boolean practice) {
         if (requests == null || requests.isEmpty()) {
             return new EntitySaveSummaryVM();
         }
 
         var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
+        if (practice) {
+            log.info("Practice upload by {}: {} submissions checked, none stored",
+                currentUser.getUsername(), requests.size());
+        }
         return saveEach(
             requests,
             DataSubmissionUploadV1Dto::getUid,
-            (request, summary) -> upsertOne(request, currentUser, summary));
+            (request, summary) -> upsertOne(request, currentUser, summary),
+            practice);
     }
 
     /**
@@ -85,7 +102,8 @@ public class SubmissionUploadService {
             DataSubmission::getUid,
             (submission, summary) -> submissionService.upsertAll(
                 List.of(validate.apply(submission)),
-                summary));
+                summary),
+            false);
     }
 
     private void upsertOne(
@@ -112,7 +130,8 @@ public class SubmissionUploadService {
     private <T> EntitySaveSummaryVM saveEach(
         List<T> items,
         Function<T, String> uidOf,
-        BiConsumer<T, EntitySaveSummaryVM> save) {
+        BiConsumer<T, EntitySaveSummaryVM> save,
+        boolean practice) {
         TransactionTemplate perSubmission = new TransactionTemplate(transactionManager);
         perSubmission.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
@@ -121,7 +140,12 @@ public class SubmissionUploadService {
             T item = items.get(index);
             EntitySaveSummaryVM itemSummary = new EntitySaveSummaryVM();
             try {
-                perSubmission.executeWithoutResult(status -> save.accept(item, itemSummary));
+                perSubmission.executeWithoutResult(status -> {
+                    save.accept(item, itemSummary);
+                    if (practice) {
+                        status.setRollbackOnly();
+                    }
+                });
                 summary.getCreated().addAll(itemSummary.getCreated());
                 summary.getUpdated().addAll(itemSummary.getUpdated());
                 summary.getFailed().putAll(itemSummary.getFailed());

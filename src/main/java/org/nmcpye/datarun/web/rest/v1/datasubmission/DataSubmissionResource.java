@@ -133,6 +133,23 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
         return ResponseEntity.ok(uploadService.upsertAll(requests));
     }
 
+    /**
+     * Uploads from a practice session (app 6.1.0+): every submission is checked
+     * and saved exactly as by {@link #saveVersionedUpload}, then rolled back, so
+     * nothing is stored.
+     * <p>
+     * A route of its own rather than a flag on the ordinary route: a server
+     * without practice support answers 404 here, where it would ignore a flag
+     * and store the practice data.
+     */
+    @PostMapping(value = "/bulk/practice", params = "referenceVersion=1")
+    public ResponseEntity<EntitySaveSummaryVM> savePracticeUpload(
+        @RequestBody List<DataSubmissionUploadV1Dto> requests) {
+        requireResourceApiAccess(
+            SecurityUtils.getCurrentUserDetailsOrThrow());
+        return ResponseEntity.ok(uploadService.upsertAll(requests, true));
+    }
+
     @Override
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
