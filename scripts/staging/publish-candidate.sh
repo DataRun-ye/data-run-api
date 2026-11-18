@@ -33,7 +33,9 @@ image_log="target/staging/image.log"
 cp "$verify_log_temp" "$verify_log"
 
 echo "Publishing immutable staging candidate $image_ref."
-if ! ./mvnw -Pprod -DskipTests \
+# Build through the lifecycle, as scripts/release/build-image.sh does, so the
+# git-commit-id properties used by the image labels are resolved.
+if ! ./mvnw -Pprod -DskipTests verify \
     -Djib.to.image="$image_ref" \
     jib:build >"$image_log" 2>&1; then
     tail -n 80 "$image_log" >&2
