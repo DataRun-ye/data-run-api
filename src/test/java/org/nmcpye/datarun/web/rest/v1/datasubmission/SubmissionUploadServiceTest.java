@@ -13,6 +13,13 @@ import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
+import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.jpa.intake.GoLiveRule;
+import org.nmcpye.datarun.jpa.intake.GoLiveRuleRepository;
+import org.nmcpye.datarun.jpa.intake.HeldContext;
+import org.nmcpye.datarun.jpa.intake.HeldSubmissionRepository;
+import org.nmcpye.datarun.jpa.intake.HoldReason;
+import org.nmcpye.datarun.jpa.intake.SubmissionIntake;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
@@ -29,6 +36,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -61,6 +70,9 @@ class SubmissionUploadServiceTest {
     private ReferenceSubmissionResolver resolver;
     private PlatformTransactionManager transactionManager;
     private TransactionStatus transactionStatus;
+    private GoLiveRuleRepository goLiveRules;
+    private HeldSubmissionRepository heldSubmissions;
+    private DataSubmissionRepository submissionRepository;
     private SubmissionUploadService service;
     private TemplateVersionContext templateContext;
     private DataTemplateInstanceDto template;
@@ -78,6 +90,9 @@ class SubmissionUploadServiceTest {
         resolver = mock(ReferenceSubmissionResolver.class);
         transactionManager = mock(PlatformTransactionManager.class);
         transactionStatus = mock(TransactionStatus.class);
+        goLiveRules = mock(GoLiveRuleRepository.class);
+        heldSubmissions = mock(HeldSubmissionRepository.class);
+        submissionRepository = mock(DataSubmissionRepository.class);
         when(transactionManager.getTransaction(any(TransactionDefinition.class)))
             .thenReturn(transactionStatus);
         service = new SubmissionUploadService(
@@ -88,7 +103,8 @@ class SubmissionUploadServiceTest {
             formAccessService,
             templateVersionResolver,
             resolver,
-            transactionManager);
+            transactionManager,
+            new SubmissionIntake(goLiveRules, heldSubmissions, submissionRepository));
 
         templateContext = mock(TemplateVersionContext.class);
         template = mock(DataTemplateInstanceDto.class);
@@ -156,8 +172,72 @@ class SubmissionUploadServiceTest {
         verify(submissionService, times(2)).upsertAll(
             anyList(), any(EntitySaveSummaryVM.class));
         verify(transactionStatus, times(2)).setRollbackOnly();
+        verify(heldSubmissions).hold(eq("firstSub01"), eq(HoldReason.PRACTICE), eq(null), any(), any());
+        verify(heldSubmissions).hold(eq("secondSub1"), eq(HoldReason.PRACTICE), eq(null), any(), any());
         assertEquals(List.of("firstSub01", "secondSub1"), summary.getCreated());
         assertTrue(summary.getFailed().isEmpty());
+    }
+
+    @Test
+    void anUploadStartedBeforeItsCampaignsGoLiveIsCheckedThenHeld() {
+        GoLiveRule rule = goLiveIn(Duration.ofDays(1));
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
+
+        EntitySaveSummaryVM summary = upload(List.of(request));
+
+        verify(submissionService).upsertAll(submissionsWithUids("firstSub01"), any(EntitySaveSummaryVM.class));
+        verify(transactionStatus).setRollbackOnly();
+        ArgumentCaptor<HeldContext> context = ArgumentCaptor.forClass(HeldContext.class);
+        verify(heldSubmissions).hold(eq("firstSub01"), eq(HoldReason.BEFORE_GO_LIVE), eq(rule), context.capture(), any());
+        assertEquals("activity001", context.getValue().activity());
+        assertEquals("orgUnit0001", context.getValue().orgUnit());
+        assertEquals(List.of("firstSub01"), summary.getCreated(), "the phone sees it as sent");
+    }
+
+    @Test
+    void anUploadAfterItsCampaignsGoLiveIsSaved() {
+        goLiveIn(Duration.ofDays(-1));
+
+        EntitySaveSummaryVM summary = upload(List.of(stubbedRequest("firstSub01")));
+
+        verify(transactionStatus, never()).setRollbackOnly();
+        verify(heldSubmissions, never()).hold(any(), any(), any(), any(), any());
+        assertEquals(List.of("firstSub01"), summary.getCreated());
+    }
+
+    @Test
+    void aHoldThatCannotBeKeptIsReportedAsFailedSoThePhoneSendsAgain() {
+        goLiveIn(Duration.ofDays(1));
+        doThrow(new IllegalStateException("database unavailable"))
+            .when(heldSubmissions).hold(eq("firstSub01"), any(), any(), any(), any());
+
+        EntitySaveSummaryVM summary = upload(List.of(stubbedRequest("firstSub01"), stubbedRequest("secondSub1")));
+
+        assertEquals(SubmissionUploadService.UNEXPECTED_FAILURE, summary.getFailed().get("firstSub01"));
+        assertEquals(List.of("secondSub1"), summary.getCreated());
+    }
+
+    @Test
+    void aReleasedUploadIsSavedEvenBeforeTheGoLive() {
+        goLiveIn(Duration.ofDays(1));
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
+
+        AtomicReference<EntitySaveSummaryVM> result = new AtomicReference<>();
+        try (MockedStatic<SecurityUtils> security = org.mockito.Mockito.mockStatic(SecurityUtils.class)) {
+            security.when(SecurityUtils::getCurrentUserDetailsOrThrow).thenReturn(user);
+            result.set(service.release(request));
+        }
+
+        verify(transactionStatus, never()).setRollbackOnly();
+        verify(heldSubmissions, never()).hold(any(), any(), any(), any(), any());
+        assertEquals(List.of("firstSub01"), result.get().getCreated());
+    }
+
+    private GoLiveRule goLiveIn(Duration fromNow) {
+        GoLiveRule rule = new GoLiveRule("goLiveRule1", "activity001", null, null,
+            Instant.now().plus(fromNow), null, "admin", Instant.now());
+        when(goLiveRules.findByActivity("activity001")).thenReturn(List.of(rule));
+        return rule;
     }
 
     @Test

@@ -116,6 +116,9 @@ Liquibase contraction.
 | Status | Route | Server owner |
 | --- | --- | --- |
 | CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveVersionedUpload` -> `SubmissionUploadService` -> `DefaultDataSubmissionService.upsertAll` |
+| CORE-ACTIVE (app 6.1.0+) | `POST /api/v1/dataSubmission/bulk/practice?referenceVersion=1` | `DataSubmissionResource.savePracticeUpload` -> `SubmissionUploadService` (practice: always held) |
+| ADMIN | `GET`/`PUT /api/v1/admin/goLiveRules`, `DELETE /{uid}`, `GET /effective` | `GoLiveRuleResource` -> `GoLiveRuleService` -> `GoLiveRuleRepository` (`go_live_rule`) |
+| ADMIN | `GET /api/v1/admin/heldSubmissions`, `GET /summary`, `GET /{uid}`, `POST /release`, `POST /discard` | `HeldSubmissionResource` -> `HeldSubmissionReview` / `HeldSubmissionRepository` (`held_submission`) |
 | LEGACY-RISK / UNKNOWN | `GET /api/v1/dataSubmission`, `GET /byLastModified`, `POST /query`, `GET /{id}` | inherited generic read surface |
 | LEGACY-RISK / UNKNOWN | `POST /api/v1/dataSubmission/bulk` without the version parameter, `POST /`, `POST /return` | inherited/overridden compatibility write surface |
 | LEGACY-RISK / UNKNOWN | `GET|POST /api/v1/dataSubmission/objects` | deprecated flattened read surface |
@@ -134,6 +137,20 @@ Submission access and assignment-form projection use the same
 from the assignment are rejected.
 `DataSubmissionService` receives canonical submissions and a result summary,
 not a security principal; authorization must complete before persistence.
+
+After authorization, `SubmissionIntake` decides per submission whether it is
+saved or held (DataRun-ye/data-run-api#42): practice uploads are always held,
+and a new submission started before the go-live rule that applies to it
+(`GoLivePolicy`: the nearest org unit first, a form rule before that level's
+rule for every form; the earlier of phone start and server receipt) is held.
+A held submission runs the same checks, Reference resolution and upsert, then
+its transaction is rolled back and the upload is stored as received in
+`held_submission`, so nothing reaches `data_submission`, the outbox or the
+Reference lists. An admin release replays it through this same path as its
+original submitter; a held copy of a uid already in the real data is marked
+superseded. The unversioned legacy writes are never held. The connection pool
+does not auto-commit, so JDBC writes outside a transaction are lost: intake
+writes are `@Transactional`.
 
 The unversioned generic writes still use the separate validator/enrichment
 pipeline in `DataSubmissionResource.preProcess`. They are not used by the

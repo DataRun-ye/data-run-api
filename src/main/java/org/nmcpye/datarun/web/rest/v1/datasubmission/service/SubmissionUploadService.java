@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.web.rest.v1.datasubmission.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,9 @@ import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenera
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
+import org.nmcpye.datarun.jpa.intake.IntakeDecision;
+import org.nmcpye.datarun.jpa.intake.IntakeMode;
+import org.nmcpye.datarun.jpa.intake.SubmissionIntake;
 import org.nmcpye.datarun.jpa.reference.ReferenceSubmissionResolver;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -28,9 +32,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -61,6 +65,7 @@ public class SubmissionUploadService {
     private final TemplateVersionResolver templateVersionResolver;
     private final ReferenceSubmissionResolver referenceResolver;
     private final PlatformTransactionManager transactionManager;
+    private final SubmissionIntake intake;
 
     /** The versioned upload route (`referenceVersion=1`). */
     public EntitySaveSummaryVM upsertAll(
@@ -69,33 +74,50 @@ public class SubmissionUploadService {
     }
 
     /**
-     * The versioned upload route. In a practice session (app 6.1.0+) every
-     * submission is checked and saved exactly as usual, then rolled back: the
-     * phone gets the real result, and nothing is stored, including household
-     * names the submission defines.
+     * The versioned upload route. Every submission is checked and saved as
+     * usual; when {@link SubmissionIntake} holds it (a practice upload, or one
+     * started before its campaign's go-live, #42) the save is rolled back and
+     * the upload kept aside instead. Either way the phone gets the result of
+     * the checked save, so held submissions show as sent.
      */
     public EntitySaveSummaryVM upsertAll(
         List<DataSubmissionUploadV1Dto> requests,
         boolean practice) {
+        return upsertVersioned(requests, practice ? IntakeMode.PRACTICE : IntakeMode.LIVE);
+    }
+
+    /**
+     * Saves a held upload an admin released, through the same path as a live
+     * upload. The caller runs it as the upload's original submitter.
+     */
+    public EntitySaveSummaryVM release(DataSubmissionUploadV1Dto request) {
+        return upsertVersioned(List.of(request), IntakeMode.RELEASE);
+    }
+
+    private EntitySaveSummaryVM upsertVersioned(
+        List<DataSubmissionUploadV1Dto> requests,
+        IntakeMode mode) {
         if (requests == null || requests.isEmpty()) {
             return new EntitySaveSummaryVM();
         }
 
         var currentUser = SecurityUtils.getCurrentUserDetailsOrThrow();
-        if (practice) {
-            log.info("Practice upload by {}: {} submissions checked, none stored",
+        Instant receivedAt = Instant.now();
+        if (mode == IntakeMode.PRACTICE) {
+            log.info("Practice upload by {}: {} submissions checked, kept apart",
                 currentUser.getUsername(), requests.size());
         }
         return saveEach(
             requests,
             DataSubmissionUploadV1Dto::getUid,
-            (request, summary) -> upsertOne(request, currentUser, summary),
-            practice);
+            (request, summary) -> upsertOne(request, currentUser, summary, mode, receivedAt),
+            objectMapper::valueToTree);
     }
 
     /**
      * The legacy upload route used by apps before 6.0.2: the same isolation,
-     * with the route's own validation applied to each submission.
+     * with the route's own validation applied to each submission. These apps
+     * cannot open Reference forms, and their uploads are never held (#42).
      */
     public EntitySaveSummaryVM upsertAllLegacy(
         List<DataSubmission> submissions,
@@ -107,16 +129,19 @@ public class SubmissionUploadService {
         return saveEach(
             submissions,
             DataSubmission::getUid,
-            (submission, summary) -> submissionService.upsertAll(
-                List.of(validate.apply(submission)),
-                summary),
-            false);
+            (submission, summary) -> {
+                submissionService.upsertAll(List.of(validate.apply(submission)), summary);
+                return IntakeDecision.save();
+            },
+            submission -> null);
     }
 
-    private void upsertOne(
+    private IntakeDecision upsertOne(
         DataSubmissionUploadV1Dto request,
         CurrentUserDetails currentUser,
-        EntitySaveSummaryVM summary) {
+        EntitySaveSummaryVM summary,
+        IntakeMode mode,
+        Instant receivedAt) {
         DataSubmission submission = mapper.toEntity(request);
         Assignment assignment = assignmentFor(submission);
         TemplateVersionContext template = templateFor(submission);
@@ -125,6 +150,12 @@ public class SubmissionUploadService {
             assignment,
             template.getTemplate());
         authorize(submission, assignment, currentUser);
+        IntakeDecision decision = intake.decide(
+            mode,
+            submission,
+            assignment.getOrgUnit().getPath(),
+            currentUser.getUsername(),
+            receivedAt);
         generateMissingRepeatIds(submission, template);
         referenceResolver.resolve(
             submission,
@@ -132,13 +163,20 @@ public class SubmissionUploadService {
             template.getTemplate(),
             request.getReferenceDefinitions());
         submissionService.upsertAll(List.of(submission), summary);
+        return decision;
+    }
+
+    /** Saves one item and says whether to keep it (see {@link SubmissionIntake}). */
+    @FunctionalInterface
+    private interface SaveOne<T> {
+        IntakeDecision save(T item, EntitySaveSummaryVM summary);
     }
 
     private <T> EntitySaveSummaryVM saveEach(
         List<T> items,
         Function<T, String> uidOf,
-        BiConsumer<T, EntitySaveSummaryVM> save,
-        boolean practice) {
+        SaveOne<T> save,
+        Function<T, JsonNode> payloadOf) {
         TransactionTemplate perSubmission = new TransactionTemplate(transactionManager);
         perSubmission.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
@@ -147,12 +185,16 @@ public class SubmissionUploadService {
             T item = items.get(index);
             EntitySaveSummaryVM itemSummary = new EntitySaveSummaryVM();
             try {
-                perSubmission.executeWithoutResult(status -> {
-                    save.accept(item, itemSummary);
-                    if (practice) {
+                IntakeDecision decision = perSubmission.execute(status -> {
+                    IntakeDecision outcome = save.save(item, itemSummary);
+                    if (outcome.held()) {
                         status.setRollbackOnly();
                     }
+                    return outcome;
                 });
+                if (decision != null && decision.held()) {
+                    intake.hold(uidOf.apply(item), payloadOf.apply(item), decision);
+                }
                 summary.getCreated().addAll(itemSummary.getCreated());
                 summary.getUpdated().addAll(itemSummary.getUpdated());
                 summary.getFailed().putAll(itemSummary.getFailed());

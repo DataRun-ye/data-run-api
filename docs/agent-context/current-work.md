@@ -1,6 +1,6 @@
 # Current Work
 
-Updated: 2026-11-17
+Updated: 2026-11-19
 
 Purpose: accepted server work only. This file is not code, API, architecture,
 or deployment authority.
@@ -14,6 +14,10 @@ or deployment authority.
   mobile releases may ship before or during the campaign when they fix real
   field problems; each goes through the staging rehearsal first. Shared status:
   [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34).
+- Go-live and held uploads (#42): the server holds practice uploads and uploads
+  started before a campaign's go-live until an admin releases or discards them.
+  First slice is admin API only; a screen, a phone indicator, a closing time
+  and holding data stored before a go-live existed come later.
 - Server additions, scheduled by need rather than by the campaign: record the
   client app version with last-seen; retire Reference entries instead of
   deleting them (the phone list serves active entries only); a per-field
