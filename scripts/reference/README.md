@@ -67,6 +67,23 @@ on their next sync. Undo a load only before any phone has synced:
 
 ## Daily review during the campaign
 
+Campaign users whose phone cannot show the Reference form (server 6.5.0+).
+`reference_version` comes from the user's last assignments sync: 0 means an app
+before 6.0.2; null means no assignments sync since the release. `app_version` is
+reported by app 6.1.0+.
+
+```sql
+SELECT u.login, t.code AS team, ls.app_version, ls.reference_version, ls.last_seen
+FROM team_user tu
+JOIN team t ON t.id = tu.team_id
+JOIN activity ac ON ac.id = t.activity_id
+JOIN app_user u ON u.id = tu.user_id
+LEFT JOIN user_last_seen ls ON ls.user_id = u.id
+WHERE ac.uid = 'xuWrotiHywD'
+  AND coalesce(ls.reference_version, 0) < 1
+ORDER BY ls.last_seen DESC NULLS LAST;
+```
+
 Names added by teams, per user per day (Yemen time):
 
 ```sql

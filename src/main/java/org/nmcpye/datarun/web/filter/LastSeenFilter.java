@@ -14,11 +14,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Component
 @RequiredArgsConstructor
 public class LastSeenFilter extends OncePerRequestFilter {
+
+    static final String APP_VERSION_HEADER = "X-App-Version";
+    private static final String ASSIGNMENTS_SYNC_PATH = "/assignments/forms";
+    private static final Pattern APP_VERSION = Pattern.compile("[0-9A-Za-z.+_-]{1,32}");
 
     private final LastSeenService lastSeenService;
 
@@ -53,12 +59,46 @@ public class LastSeenFilter extends OncePerRequestFilter {
                 auth.getPrincipal() instanceof CurrentUserDetails userDetails) {
 
                 // No DB call here, just a fast map put
-                lastSeenService.touch(userDetails.getId(), Instant.now());
+                lastSeenService.touch(
+                    userDetails.getId(),
+                    Instant.now(),
+                    appVersion(request),
+                    referenceVersion(request));
             }
         } catch (Exception e) {
             // Fail silently so user experience isn't affected by logging logic
         }
 
         chain.doFilter(request, response);
+    }
+
+    /** The app version a phone reports (app 6.1.0+), if well formed. */
+    static String appVersion(HttpServletRequest request) {
+        String value = request.getHeader(APP_VERSION_HEADER);
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return APP_VERSION.matcher(trimmed).matches() ? trimmed : null;
+    }
+
+    /**
+     * On the app's assignments sync, the {@code referenceVersion} it asked for
+     * (0 when absent: apps before 6.0.2); null for every other request.
+     */
+    static Integer referenceVersion(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        if (path == null || !path.toLowerCase(Locale.ROOT).endsWith(ASSIGNMENTS_SYNC_PATH)) {
+            return null;
+        }
+        String value = request.getParameter("referenceVersion");
+        if (value == null || value.isBlank()) {
+            return 0;
+        }
+        try {
+            return Math.max(0, Integer.parseInt(value.trim()));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 }
