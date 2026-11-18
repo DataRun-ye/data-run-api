@@ -4,6 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.util.List;
@@ -20,6 +22,7 @@ class SubmissionIntakeTest {
     private static final Instant BEFORE = Instant.parse("2026-11-19T10:00:00Z");
     private static final Instant AFTER = Instant.parse("2026-11-22T10:00:00Z");
     private static final String PATH = ",country0001,districtX01,village00001";
+    private static final List<String> CHAIN = List.of("village00001", "districtX01", "country0001");
 
     private GoLiveRuleRepository rules;
     private DataSubmissionRepository submissions;
@@ -48,7 +51,7 @@ class SubmissionIntakeTest {
 
     @Test
     void anUploadStartedBeforeTheGoLiveIsHeldWithItsContext() {
-        IntakeDecision decision = intake.decide(IntakeMode.LIVE, submission, PATH, "field-user", AFTER);
+        IntakeDecision decision = intake.decide(IntakeMode.LIVE, submission, CHAIN, "field-user", AFTER);
 
         assertThat(decision.held()).isTrue();
         assertThat(decision.holdReason()).isEqualTo(HoldReason.BEFORE_GO_LIVE);
@@ -62,21 +65,21 @@ class SubmissionIntakeTest {
     void anUploadStartedAfterTheGoLiveIsSaved() {
         submission.setStartEntryTime(AFTER);
 
-        assertThat(intake.decide(IntakeMode.LIVE, submission, PATH, "field-user", AFTER).held()).isFalse();
+        assertThat(intake.decide(IntakeMode.LIVE, submission, CHAIN, "field-user", AFTER).held()).isFalse();
     }
 
     @Test
     void anUpdateOfRealDataIsNeverHeld() {
         when(submissions.existsByUid("submission1")).thenReturn(true);
 
-        assertThat(intake.decide(IntakeMode.LIVE, submission, PATH, "field-user", AFTER).held()).isFalse();
+        assertThat(intake.decide(IntakeMode.LIVE, submission, CHAIN, "field-user", AFTER).held()).isFalse();
     }
 
     @Test
     void aCampaignWithoutRulesSavesEverything() {
         when(rules.findByActivity("campaign001")).thenReturn(List.of());
 
-        assertThat(intake.decide(IntakeMode.LIVE, submission, PATH, "field-user", AFTER).held()).isFalse();
+        assertThat(intake.decide(IntakeMode.LIVE, submission, CHAIN, "field-user", AFTER).held()).isFalse();
         verify(submissions, never()).existsByUid("submission1");
     }
 
@@ -84,12 +87,31 @@ class SubmissionIntakeTest {
     void practiceIsAlwaysHeldAndReleaseAlwaysSaved() {
         submission.setStartEntryTime(AFTER);
 
-        IntakeDecision practice = intake.decide(IntakeMode.PRACTICE, submission, PATH, "field-user", AFTER);
+        IntakeDecision practice = intake.decide(IntakeMode.PRACTICE, submission, CHAIN, "field-user", AFTER);
         assertThat(practice.holdReason()).isEqualTo(HoldReason.PRACTICE);
         assertThat(practice.rule()).isNull();
 
         submission.setStartEntryTime(BEFORE);
-        assertThat(intake.decide(IntakeMode.RELEASE, submission, PATH, "field-user", AFTER).held()).isFalse();
+        assertThat(intake.decide(IntakeMode.RELEASE, submission, CHAIN, "field-user", AFTER).held()).isFalse();
+    }
+
+    @Test
+    void theAreaChainIsReadFromParentsWithoutTouchingTheStoredPath() {
+        OrgUnit country = new OrgUnit();
+        country.setUid("country0001");
+        OrgUnit district = new OrgUnit();
+        district.setUid("districtX01");
+        district.setParent(country);
+        OrgUnit village = new OrgUnit();
+        village.setUid("village00001");
+        village.setParent(district);
+        village.setPath("stale-path");
+
+        assertThat(SubmissionIntake.areaChainOf(village)).isEqualTo(CHAIN);
+        assertThat(ReflectionTestUtils.getField(village, "path"))
+            .as("OrgUnit.getPath() would overwrite this and Hibernate would write it back")
+            .isEqualTo("stale-path");
+        assertThat(SubmissionIntake.areaChainOf(null)).isEmpty();
     }
 
     @Test

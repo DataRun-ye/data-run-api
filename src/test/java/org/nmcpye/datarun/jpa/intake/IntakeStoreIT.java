@@ -91,18 +91,36 @@ class IntakeStoreIT {
         assertThat(row.startedAt()).isEqualTo(FRIDAY);
         assertThat(row.submittedBy()).isEqualTo("field-user");
 
-        held.markDecided("heldSub0001", HeldState.DISCARDED, "admin", "training");
+        decide("heldSub0001", HeldState.DISCARDED, "training");
         held.hold("heldSub0001", HoldReason.PRACTICE, null, context("village00X1", ",country0001,districtX01,village00X1", FRIDAY), payload(3));
         row = held.findByUid("heldSub0001").orElseThrow();
         assertThat(row.state()).isEqualTo(HeldState.DISCARDED);
         assertThat(row.note()).isEqualTo("training");
         assertThat(row.payload().get("edit").asInt()).isEqualTo(3);
 
-        held.markDecided("heldSub0001", HeldState.RELEASED, "admin", null);
+        decide("heldSub0001", HeldState.RELEASED, null);
         held.hold("heldSub0001", HoldReason.PRACTICE, null, context("village00X1", ",country0001,districtX01,village00X1", FRIDAY), payload(4));
         row = held.findByUid("heldSub0001").orElseThrow();
-        assertThat(row.state()).as("released, then its real copy removed and sent again").isEqualTo(HeldState.HELD);
-        assertThat(row.decidedBy()).isNull();
+        assertThat(row.state()).as("a released upload is final, even when sent again").isEqualTo(HeldState.RELEASED);
+        assertThat(row.payload().get("edit").asInt()).as("the released payload is kept").isEqualTo(3);
+        assertThat(row.decidedBy()).isEqualTo("admin");
+    }
+
+    @Test
+    void aDecisionAppliesOnlyToTheUploadAsItWasRead() {
+        held.hold("heldSub0001", HoldReason.BEFORE_GO_LIVE, null, context("village00X1", ",country0001,districtX01,village00X1", FRIDAY), payload(1));
+        HeldSubmissionRow read = held.findByUid("heldSub0001").orElseThrow();
+        held.hold("heldSub0001", HoldReason.BEFORE_GO_LIVE, null, context("village00X1", ",country0001,districtX01,village00X1", FRIDAY), payload(2));
+
+        assertThat(held.markDecided("heldSub0001", HeldState.RELEASED, EnumSet.of(HeldState.HELD),
+            read.lastModifiedDate(), "admin", null))
+            .as("sent again after it was read").isFalse();
+        decide("heldSub0001", HeldState.RELEASED, null);
+        HeldSubmissionRow released = held.findByUid("heldSub0001").orElseThrow();
+        assertThat(held.markDecided("heldSub0001", HeldState.SUPERSEDED, EnumSet.of(HeldState.HELD, HeldState.DISCARDED),
+            released.lastModifiedDate(), "admin", null))
+            .as("a released upload is not relabelled").isFalse();
+        assertThat(held.findByUid("heldSub0001").orElseThrow().state()).isEqualTo(HeldState.RELEASED);
     }
 
     @Test
@@ -116,7 +134,7 @@ class IntakeStoreIT {
             context("village00Y1", ",country0001,districtY01,village00Y1", FRIDAY), payload(1));
         held.hold("practice001", HoldReason.PRACTICE, null,
             context("village00X1", ",country0001,districtX01,village00X1", SUNDAY), payload(1));
-        held.markDecided("inXFriday02", HeldState.DISCARDED, "admin", null);
+        decide("inXFriday02", HeldState.DISCARDED, null);
 
         assertThat(held.findAll(filter("districtX01", null, null, null, null)))
             .extracting(HeldSubmissionRow::uid)
@@ -154,6 +172,13 @@ class IntakeStoreIT {
         mockMvc.perform(get("/api/v1/admin/heldSubmissions").param("state", "HELD", "DISCARDED"))
             .andExpect(status().isOk());
         mockMvc.perform(get("/api/v1/admin/heldSubmissions/unknown0001")).andExpect(status().isNotFound());
+    }
+
+    /** Records a decision as an admin would, against the row as it is now. */
+    private void decide(String uid, HeldState state, String note) {
+        HeldSubmissionRow row = held.findByUid(uid).orElseThrow();
+        assertThat(held.markDecided(uid, state, EnumSet.of(HeldState.HELD, HeldState.DISCARDED),
+            row.lastModifiedDate(), "admin", note)).isTrue();
     }
 
     private static HeldFilter filter(

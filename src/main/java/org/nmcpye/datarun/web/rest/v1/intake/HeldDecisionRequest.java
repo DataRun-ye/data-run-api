@@ -8,8 +8,10 @@ import java.util.List;
 /**
  * Which held uploads to release or discard: either {@code uids}, or a
  * {@code filter} on one campaign. {@code note} is recorded with the decision.
+ * {@code limit} caps one call (default 200, at most 500); the result reports
+ * how many matching uploads remain.
  */
-public record HeldDecisionRequest(List<String> uids, Filter filter, String note) {
+public record HeldDecisionRequest(List<String> uids, Filter filter, String note, Integer limit) {
 
     /**
      * @param orgUnit                the org unit and everything under it

@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
-import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.stereotype.Service;
@@ -77,16 +76,15 @@ public class GoLiveRuleService {
     /**
      * For every form of the campaign, the go-live that applies in {@code orgUnit}
      * (null: anywhere without an area rule). Read-only transaction: an org
-     * unit's path is built from its lazily loaded parents.
+     * unit's ancestors are its lazily loaded parents.
      */
     @Transactional(readOnly = true)
     public List<EffectiveGoLive> effective(String activity, String orgUnit) {
         requireActivity(activity);
         List<String> areaChain = List.of();
         if (orgUnit != null) {
-            String path = orgUnits.findByUid(orgUnit).map(OrgUnit::getPath)
+            areaChain = orgUnits.findByUid(orgUnit).map(SubmissionIntake::areaChainOf)
                 .orElseThrow(() -> new IllegalQueryException("Org unit not found: " + orgUnit));
-            areaChain = SubmissionIntake.areaChain(orgUnit, path);
         }
         List<GoLiveRule> campaignRules = rules.findByActivity(activity);
         TreeSet<String> campaignForms = new TreeSet<>(rules.formsOfActivity(activity));

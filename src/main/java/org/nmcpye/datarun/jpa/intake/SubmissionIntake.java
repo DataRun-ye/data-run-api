@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,8 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Decides what happens to an upload the server has checked, and keeps the
@@ -35,19 +38,18 @@ public class SubmissionIntake {
      * unless the submission is already in the real data: an update of real
      * data is never held.
      *
-     * @param submission  the submission with its context set from its assignment
-     * @param orgUnitPath the path of the assignment's org unit
+     * @param submission the submission with its context set from its assignment
+     * @param areaChain  the assignment's org unit and its ancestors, nearest first; see {@link #areaChainOf}
      */
     public IntakeDecision decide(
         IntakeMode mode,
         DataSubmission submission,
-        String orgUnitPath,
+        List<String> areaChain,
         String submittedBy,
         Instant receivedAt) {
         if (mode == IntakeMode.RELEASE) {
             return IntakeDecision.save();
         }
-        List<String> areaChain = areaChain(submission.getOrgUnit(), orgUnitPath);
         HeldContext context = new HeldContext(
             submission.getActivity(),
             submission.getOrgUnit(),
@@ -77,6 +79,20 @@ public class SubmissionIntake {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void hold(String uid, JsonNode payload, IntakeDecision decision) {
         held.hold(uid, decision.holdReason(), decision.rule(), decision.context(), payload);
+    }
+
+    /**
+     * An org unit and its ancestors, nearest first, read from its parents.
+     * Not {@link OrgUnit#getPath()}: that getter assigns the mapped path, so
+     * calling it in a committing transaction can rewrite the org unit's row.
+     */
+    public static List<String> areaChainOf(OrgUnit orgUnit) {
+        List<String> chain = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (OrgUnit unit = orgUnit; unit != null && seen.add(unit.getUid()); unit = unit.getParent()) {
+            chain.add(unit.getUid());
+        }
+        return chain;
     }
 
     /** The org unit and its ancestors, nearest first, whether or not the path lists the unit itself. */

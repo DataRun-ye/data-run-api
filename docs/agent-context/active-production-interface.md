@@ -148,9 +148,17 @@ its transaction is rolled back and the upload is stored as received in
 `held_submission`, so nothing reaches `data_submission`, the outbox or the
 Reference lists. An admin release replays it through this same path as its
 original submitter; a held copy of a uid already in the real data is marked
-superseded. The unversioned legacy writes are never held. The connection pool
-does not auto-commit, so JDBC writes outside a transaction are lost: intake
-writes are `@Transactional`.
+superseded. A release by filter takes only uploads still held before a
+go-live; discarded and practice uploads are released only by uid. Releases
+and discards work in batches (at most 500 per call, reporting what remains),
+and every decision applies only if the upload is unchanged since it was read;
+released and superseded uploads are final. The area chain is read by walking
+parents, never through `OrgUnit.getPath()`, which writes the org unit when
+called in a committing transaction. The unversioned legacy writes are never
+held. The connection pool does not auto-commit, so JDBC writes outside a
+transaction are lost: intake writes are `@Transactional`. Never run the
+Liquibase rollback of `held_submission` once uploads were held: it would
+delete uploads that phones report as sent.
 
 The unversioned generic writes still use the separate validator/enrichment
 pipeline in `DataSubmissionResource.preProcess`. They are not used by the

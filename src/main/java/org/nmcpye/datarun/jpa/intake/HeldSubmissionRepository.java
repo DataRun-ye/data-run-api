@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -39,8 +40,8 @@ public class HeldSubmissionRepository {
 
     /**
      * Keeps a held upload, or refreshes it when the same submission is sent
-     * again. A refresh keeps an admin's discard; a submission held again after
-     * being released or superseded (its real copy was removed) waits again.
+     * again while it is held or discarded (a refresh keeps an admin's discard).
+     * A released or superseded upload is final and is left as it is.
      */
     @Transactional
     public void hold(String uid, HoldReason reason, GoLiveRule rule, HeldContext context, JsonNode payload) {
@@ -51,7 +52,7 @@ public class HeldSubmissionRepository {
                      payload, last_modified_date)
                 VALUES (:uid, :reason, 'HELD', :activity, :orgUnit, :orgUnitPath, :form, :formVersion,
                         :team, :assignment, :submittedBy, :startedAt, :receivedAt, :rule, :liveFrom,
-                        CAST(:payload AS jsonb), now())
+                        CAST(:payload AS jsonb), clock_timestamp())
                 ON CONFLICT (uid) DO UPDATE SET
                     reason = EXCLUDED.reason,
                     activity_uid = EXCLUDED.activity_uid,
@@ -67,10 +68,8 @@ public class HeldSubmissionRepository {
                     go_live_rule_uid = EXCLUDED.go_live_rule_uid,
                     live_from = EXCLUDED.live_from,
                     payload = EXCLUDED.payload,
-                    state = CASE WHEN h.state IN ('RELEASED', 'SUPERSEDED') THEN 'HELD' ELSE h.state END,
-                    decided_by = CASE WHEN h.state IN ('RELEASED', 'SUPERSEDED') THEN NULL ELSE h.decided_by END,
-                    decided_at = CASE WHEN h.state IN ('RELEASED', 'SUPERSEDED') THEN NULL ELSE h.decided_at END,
-                    last_modified_date = now()
+                    last_modified_date = clock_timestamp()
+                WHERE h.state IN ('HELD', 'DISCARDED')
                 """,
             new MapSqlParameterSource()
                 .addValue("uid", uid)
@@ -114,14 +113,6 @@ public class HeldSubmissionRepository {
             params, rows(false));
     }
 
-    /** With payloads, for a release. */
-    public List<HeldSubmissionRow> findWithPayload(HeldFilter filter) {
-        MapSqlParameterSource params = new MapSqlParameterSource();
-        return jdbc.query("SELECT " + COLUMNS + ", h.payload FROM held_submission h" + where(filter, params)
-                + " ORDER BY h.received_at, h.uid",
-            params, rows(true));
-    }
-
     /** With payloads, for a release, chosen by uid. */
     public List<HeldSubmissionRow> findWithPayload(Collection<String> uids, Collection<HeldState> states) {
         if (uids.isEmpty()) {
@@ -159,26 +150,35 @@ public class HeldSubmissionRepository {
                 instant(rs, "last_entered")));
     }
 
-    /** Records an admin's decision on one held upload. */
+    /**
+     * Records an admin's decision on one held upload, only if it is still in one
+     * of {@code from} and unchanged since it was read ({@code seenLastModified}).
+     * Returns false when another decision or a re-send got there first, so
+     * retried or overlapping decisions never relabel an upload.
+     */
     @Transactional
-    public void markDecided(String uid, HeldState state, String decidedBy, String note) {
-        jdbc.update("""
-                UPDATE held_submission SET state = :state, decided_by = :decidedBy, decided_at = now(),
-                    note = COALESCE(:note, note), last_release_error = NULL, last_modified_date = now()
-                WHERE uid = :uid
+    public boolean markDecided(
+        String uid, HeldState state, Collection<HeldState> from, Instant seenLastModified,
+        String decidedBy, String note) {
+        return jdbc.update("""
+                UPDATE held_submission SET state = :state, decided_by = :decidedBy, decided_at = clock_timestamp(),
+                    note = COALESCE(:note, note), last_release_error = NULL, last_modified_date = clock_timestamp()
+                WHERE uid = :uid AND state IN (:from) AND last_modified_date = :seen
                 """,
             new MapSqlParameterSource()
                 .addValue("uid", uid)
                 .addValue("state", state.name())
+                .addValue("from", from.stream().map(Enum::name).toList())
+                .addValue("seen", utc(seenLastModified))
                 .addValue("decidedBy", decidedBy)
-                .addValue("note", note));
+                .addValue("note", note)) > 0;
     }
 
     /** Records why a release failed; the upload stays where it was. */
     @Transactional
     public void recordReleaseError(String uid, String error) {
         jdbc.update("""
-                UPDATE held_submission SET last_release_error = :error, last_modified_date = now()
+                UPDATE held_submission SET last_release_error = :error
                 WHERE uid = :uid
                 """,
             new MapSqlParameterSource().addValue("uid", uid).addValue("error", error));

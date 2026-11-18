@@ -153,7 +153,7 @@ public class SubmissionUploadService {
         IntakeDecision decision = intake.decide(
             mode,
             submission,
-            assignment.getOrgUnit().getPath(),
+            SubmissionIntake.areaChainOf(assignment.getOrgUnit()),
             currentUser.getUsername(),
             receivedAt);
         generateMissingRepeatIds(submission, template);
