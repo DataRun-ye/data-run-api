@@ -258,13 +258,15 @@ class SubmissionUploadServiceTest {
     void reportsAnUnexpectedFailureWithoutAbortingTheRequest() {
         DataSubmissionUploadV1Dto firstRequest = stubbedRequest("firstSub01");
         DataSubmissionUploadV1Dto secondRequest = stubbedRequest("secondSub1");
-        doThrow(new IllegalStateException("database unavailable"))
+        doThrow(new IllegalStateException(
+            "could not execute statement; SQL [insert into data_submission (uid) values (?)]"))
             .when(resolver)
             .resolve(submissionWithUid("firstSub01"), any(), any(), any());
 
         EntitySaveSummaryVM summary = upload(List.of(firstRequest, secondRequest));
 
-        assertEquals("database unavailable", summary.getFailed().get("firstSub01"));
+        assertEquals(SubmissionUploadService.UNEXPECTED_FAILURE, summary.getFailed().get("firstSub01"),
+            "the phone must not show the server's internal error text");
         assertEquals(List.of("secondSub1"), summary.getCreated());
     }
 

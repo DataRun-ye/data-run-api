@@ -46,6 +46,13 @@ import java.util.function.UnaryOperator;
 @RequiredArgsConstructor
 public class SubmissionUploadService {
 
+    /**
+     * What the phone shows for a submission that failed for an unexpected
+     * reason; see {@link #failureMessage}.
+     */
+    public static final String UNEXPECTED_FAILURE =
+        "Server error: this submission was not saved. Send it again later; if it keeps failing, tell your supervisor.";
+
     private final DataSubmissionService submissionService;
     private final DataSubmissionUploadV1Mapper mapper;
     private final ObjectMapper objectMapper;
@@ -162,14 +169,23 @@ public class SubmissionUploadService {
         return summary;
     }
 
+    /**
+     * The text the phone shows for a submission that was not saved. A refusal
+     * the server means (an {@link ErrorCodeException}: no access, an invalid
+     * household, a missing assignment) keeps its message. Anything else gets
+     * {@link #UNEXPECTED_FAILURE}, because its own message can carry SQL,
+     * table names or submitted values; the log line in {@link #saveEach}
+     * keeps the details under the submission uid. Production 6.4.1 hid such
+     * details in the same way when a whole upload failed.
+     */
     private static String failureMessage(RuntimeException failure) {
-        String message = Optional.ofNullable(failure.getMessage())
-            .filter(text -> !text.isBlank())
-            .orElse(failure.getClass().getSimpleName());
-        if (failure instanceof ErrorCodeException coded && coded.getErrorCode() != null) {
-            return coded.getErrorCode().name() + ": " + message;
+        if (!(failure instanceof ErrorCodeException coded)) {
+            return UNEXPECTED_FAILURE;
         }
-        return message;
+        String message = Optional.ofNullable(coded.getMessage())
+            .filter(text -> !text.isBlank())
+            .orElse(coded.getClass().getSimpleName());
+        return coded.getErrorCode() != null ? coded.getErrorCode().name() + ": " + message : message;
     }
 
     private Assignment assignmentFor(DataSubmission submission) {
