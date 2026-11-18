@@ -159,10 +159,11 @@ public class SubmissionUploadService {
             } catch (RuntimeException failure) {
                 String uid = Optional.ofNullable(uidOf.apply(item)).orElse("#" + index);
                 summary.getFailed().put(uid, failureMessage(failure));
+                String user = SecurityUtils.getCurrentUserLogin().orElse("unknown user");
                 if (failure instanceof ErrorCodeException) {
-                    log.warn("Submission {} rejected: {}", uid, failure.getMessage());
+                    log.warn("Submission {} from {} rejected: {}", uid, user, failure.getMessage());
                 } else {
-                    log.error("Submission {} failed unexpectedly", uid, failure);
+                    log.error("Submission {} from {} failed unexpectedly", uid, user, failure);
                 }
             }
         }
@@ -175,7 +176,8 @@ public class SubmissionUploadService {
      * household, a missing assignment) keeps its message. Anything else gets
      * {@link #UNEXPECTED_FAILURE}, because its own message can carry SQL,
      * table names or submitted values; the log line in {@link #saveEach}
-     * keeps the details under the submission uid. Production 6.4.1 hid such
+     * keeps the details under the submission uid and the user's login,
+     * which is what a supervisor will report. Production 6.4.1 hid such
      * details in the same way when a whole upload failed.
      */
     private static String failureMessage(RuntimeException failure) {
