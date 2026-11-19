@@ -8,8 +8,10 @@ Status: ACTIVE
 
 - `pom.xml` is the sole release-version owner.
 - A release commit on `main` has tag `v<project.version>`.
-- The application image is:
-  `kaswarah/datarunapi:<version>-<12-character-commit>`.
+- The application image is built once, as the staging candidate
+  `kaswarah/datarunapi:<version>-staging-<12-character-commit>`. Release adds
+  the tag `kaswarah/datarunapi:<version>-<12-character-commit>` to the same
+  digest, and production pins that digest.
 - Never build or deploy the application as `latest`.
 - `/management/info` must report the Maven version and release commit after
   deployment.
@@ -80,15 +82,30 @@ configuration reads, and one ordinary idempotent submission upload.
 
 ## Release
 
-1. Merge the verified candidate to `main` and tag `v<version>`.
-2. Run `scripts/release/build-image.sh --push`.
-3. Record the pushed image tag/digest and the currently running rollback image
-   in the GitHub release or deployment record.
-4. Back up PostgreSQL and set `DATARUN_API_IMAGE` in the production host
-   environment.
-5. Validate Compose, then pull and replace only `app`.
-6. Verify health and `/management/info`; smoke login, configuration sync, and
+Promote the rehearsed staging image by digest; never rebuild it for release.
+The image carries its build time (`/management/info` reports it as `built`),
+so a rebuild of the same commit is a different, untested image.
+
+1. Fast-forward `main` to the candidate's commit (named in its tag and in
+   `target/staging/candidate.env`) and tag `v<version>` there.
+2. Add the release tag to the candidate's digest, then check that the tag
+   resolves to that digest:
+
+   ```bash
+   docker buildx imagetools create --prefer-index=false \
+     --tag kaswarah/datarunapi:<version>-<commit> kaswarah/datarunapi@<digest>
+   docker buildx imagetools inspect kaswarah/datarunapi:<version>-<commit>
+   ```
+
+   Without `--prefer-index=false`, buildx wraps the image in a new index with
+   a different digest.
+3. Back up PostgreSQL. On the production host, keep the current `.env` as the
+   rollback copy and set `DATARUN_API_IMAGE` to
+   `kaswarah/datarunapi:<version>-<commit>@<digest>`.
+4. Validate Compose, then pull and replace only `app`.
+5. Verify health and `/management/info`; smoke login, configuration sync, and
    one ordinary submission.
+6. Publish the GitHub release with the digest and the rollback image.
 
 Required host values are documented in `deploy/production/.env.example`.
 Keep the existing `DATARUN_JWT_BASE64_SECRET` unchanged unless key rotation and

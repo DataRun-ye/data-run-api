@@ -5,9 +5,13 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
+# Builds a local image tar for the release gate. Nothing is pushed from here:
+# a release promotes the rehearsed staging candidate by digest
+# (docs/agent-context/release-boundary.md).
 mode="${1:---tar}"
-if [[ "$mode" != "--tar" && "$mode" != "--push" ]]; then
-    echo "Usage: $0 [--tar|--push]" >&2
+if [[ "$mode" != "--tar" ]]; then
+    echo "Usage: $0 [--tar]" >&2
+    echo "Releases promote the rehearsed staging candidate by digest; see docs/agent-context/release-boundary.md." >&2
     exit 1
 fi
 
@@ -22,30 +26,12 @@ short_commit="$(git rev-parse --short=12 HEAD)"
 repository="${DATARUN_IMAGE_REPOSITORY:-kaswarah/datarunapi}"
 image_ref="${repository}:${version}-${short_commit}"
 
-if [[ "$mode" == "--push" ]]; then
-    branch="$(git branch --show-current)"
-    if [[ "$branch" != "main" ]]; then
-        echo "Publishing requires the main branch; current branch is ${branch:-detached}." >&2
-        exit 1
-    fi
-
-    if ! git tag --points-at HEAD | grep -Fxq "v${version}"; then
-        echo "Publishing requires tag v${version} on HEAD." >&2
-        exit 1
-    fi
-fi
-
 mkdir -p target/release
 log_path="target/release/image-build.log"
 
-goal="jib:buildTar"
-if [[ "$mode" == "--push" ]]; then
-    goal="jib:build"
-fi
-
 ./mvnw -Pprod -DskipTests verify \
     -Djib.to.image="$image_ref" \
-    "$goal" | tee "$log_path"
+    jib:buildTar | tee "$log_path"
 
 manifest_path="target/release/${version}-${short_commit}.env"
 {
@@ -54,19 +40,7 @@ manifest_path="target/release/${version}-${short_commit}.env"
     printf 'DATARUN_API_IMAGE=%s\n' "$image_ref"
 } > "$manifest_path"
 
-if [[ "$mode" == "--tar" ]]; then
-    sha256sum target/jib-image.tar > target/release/jib-image.tar.sha256
-else
-    digest=""
-    if [[ -s target/jib-image.digest ]]; then
-        digest="$(tr -d '\r\n' < target/jib-image.digest)"
-    fi
-    if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-        echo "Jib did not report the pushed image digest." >&2
-        exit 1
-    fi
-    printf 'DATARUN_API_IMAGE_DIGEST=%s\n' "$digest" >> "$manifest_path"
-fi
+sha256sum target/jib-image.tar > target/release/jib-image.tar.sha256
 
 echo "Image ready: ${image_ref}"
 echo "Release manifest: ${manifest_path}"
