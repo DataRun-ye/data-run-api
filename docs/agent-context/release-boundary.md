@@ -23,10 +23,10 @@ Status: ACTIVE
   - API: `datarun-prod.lab` (192.168.1.110), project directory
     `/home/nmcp/datarun`. This Compose project owns exactly one container,
     `app`/`datarunapi`. There are no bundled database, nginx, or certificate
-    services, and no named volumes. The VM additionally runs containers that
-    this repository does not own; verified 2026-11-16: datarun-local-app-*,
-    datarun-reference-server-1, datarun-prometheus, datarun-node-exporter,
-    datarun-blackbox-exporter.
+    services, and no named volumes. `datarunapi` is the only container on the
+    VM: the leftovers inherited when it was cloned from the staging VM
+    (local app, reference server, monitoring, local registry) were removed on
+    2026-11-19. Their volumes, images and directories remain on disk.
   - Database: `datarun-prod-db.lab` (192.168.1.111), PostgreSQL 16 as a
     managed VM service with database and role `nmcpdb`, reached over TLS
     (`sslmode=require`). It is not containerized and `compose.yml` does not

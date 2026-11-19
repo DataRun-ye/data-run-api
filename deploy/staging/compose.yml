@@ -3,7 +3,7 @@ name: datarun-staging
 services:
   app:
     image: "${DATARUN_API_IMAGE:?Set DATARUN_API_IMAGE to an immutable DataRun API image}"
-    restart: unless-stopped
+    restart: always
     environment:
       - _JAVA_OPTIONS=-Xms512m -Xmx1200m -XX:MaxMetaspaceSize=256m -XX:+UseG1GC
       - SPRING_PROFILES_ACTIVE=prod,api-docs
