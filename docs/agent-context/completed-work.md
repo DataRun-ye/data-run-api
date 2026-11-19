@@ -1,6 +1,6 @@
 # Completed Work
 
-Updated: 2026-07-28
+Updated: 2026-11-19
 
 Purpose: compact historical outcomes only. This file is not current runtime or
 deployment authority.
@@ -107,6 +107,12 @@ deployment authority.
   removed. They held every failing test in the suite (48 across 53 runs) and
   cost over five minutes. The remaining suite is green: 127 unit and 41
   integration tests.
+- `v6.5.0` / `a9609da0`, deployed 2026-11-19 (Yemen time): every form version
+  synced, per-submission saves, Arabic-Indic digit logins, client app version
+  in last-seen, kept form versions and publish-time cache eviction, and go-live
+  rules with held uploads (#42). Promoted by digest from the rehearsed staging
+  candidate; the ITN 2026 household lists (162,610 entries) were loaded in
+  production the same day.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

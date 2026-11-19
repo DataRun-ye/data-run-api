@@ -7,22 +7,20 @@ or deployment authority.
 
 ## Now
 
-- ITN 2026 household lists (campaign from the week of 2026-11-23; Reference
-  form already assigned in production, see `reference-boundary.md`). Load the
-  lists with `scripts/reference`: staging first, then production only with
-  explicit approval and before campaign users are linked to teams. Server and
-  mobile releases may ship before or during the campaign when they fix real
-  field problems; each goes through the staging rehearsal first. Shared status:
+- ITN 2026 campaign (from the week of 2026-11-23) on server 6.5.0 and app
+  6.1.0, with the household lists loaded in production (see
+  `reference-boundary.md`). A campaign-wide go-live rule holds every upload
+  until operations set the real start; operations own the campaign's dates,
+  districts and forms. Field fixes may still ship during the campaign, each
+  through the staging rehearsal first. Shared status:
   [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34).
-- Go-live and held uploads (#42): the server holds practice uploads and uploads
-  started before a campaign's go-live until an admin releases or discards them.
-  First slice is admin API only; a screen, a phone indicator, a closing time
-  and holding data stored before a go-live existed come later.
-- Server additions, scheduled by need rather than by the campaign: record the
-  client app version with last-seen; retire Reference entries instead of
-  deleting them (the phone list serves active entries only); a per-field
-  "allow Add new" setting next to `ScannedCodeProperties`. Backlog: #37, #38,
-  #39; mobile #34, #35.
+- Go-live and held uploads (#42): the first slice, admin API only, shipped in
+  6.5.0. Next: an admin screen, a phone indicator, a closing time, and holding
+  data stored before a go-live existed.
+- Server additions, scheduled by need rather than by the campaign: retire
+  Reference entries instead of deleting them (the phone list serves active
+  entries only); a per-field "allow Add new" setting next to
+  `ScannedCodeProperties`. Backlog: #38, #39.
 - Define the product-policy cutover for same-UID submission mutation,
   synchronized edit/delete, and conflict behavior. The released app currently
   creates and idempotently retries submissions; compatibility reachability is

@@ -2,8 +2,8 @@
 
 Role: implemented server contract and activation boundary
 
-Status: DEPLOYED; ASSIGNED IN PRODUCTION SINCE 2026-11-10 (ITN 2026); CATALOG
-IMPORT THROUGH `scripts/reference`
+Status: ACTIVE IN PRODUCTION FOR ITN 2026 (server 6.5.0, app 6.1.0); CATALOG
+LOADED 2026-11-19 THROUGH `scripts/reference`
 
 The durable end-to-end product contract is owned by the mobile repository's
 [bounded Reference plan](https://github.com/DataRun-ye/data-run-mobile/blob/develop/docs/agent-context/10-bounded-reference-field-plan.md).
@@ -47,13 +47,13 @@ The migration is
 `src/main/resources/config/liquibase/changelog/reference-entry/20260725-create-reference-entry.xml`
 and is included by `master.xml`.
 
-Production (`main`, `v6.4.1`) routes Reference uploads through
-`ReferenceSubmissionUploadService`, checks catalog access per form, and saves
-each upload request all-or-nothing. On `develop` the versioned route uses
+Since `v6.5.0` the versioned route (`referenceVersion=1`, apps 6.0.2+) uses
 `SubmissionUploadService`, the legacy `/bulk` route keeps its own validation in
 `DataSubmissionResource`, catalog access is scoped to the assignment, and both
 routes save each submission in its own transaction, reporting failures per row
-(api #37). Judge production behaviour on `main` until `develop` is released.
+(api #37). The versioned route also applies go-live rules (api #42): an upload
+held before a go-live, or sent from a practice session, creates no Reference
+entries until an admin releases it. The legacy route is never held.
 
 ## Compatibility Boundary
 
@@ -109,5 +109,7 @@ Staging, 2026-11-17 (production image, 2026-11-16 production clone): the import
 loaded 162,610 households on 9,287 of the 13,860 ITN 2026 villages; re-runs
 inserted nothing. As a linked field user, a `referenceVersion=1` client saw the
 form on its 20 team assignments and an old client on none, and the catalog
-endpoint returned each village's full list. The production load needs explicit
-approval and must precede linking campaign users to teams.
+endpoint returned each village's full list.
+
+Production, 2026-11-19 (after `v6.5.0`): the same import loaded 162,610
+households on 9,287 villages.
