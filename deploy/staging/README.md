@@ -161,9 +161,10 @@ Candidate preparation applies Liquibase, runs the exact assignment bootstrap,
 and validates that the assignment projection rebuilds from immutable facts.
 The API remains stopped during this sequence. Before startup, staging replaces
 all copied password hashes, reset credentials, email logins, and refresh
-tokens. It provisions only `staging-admin` and `staging-field`; the field
+tokens. It provisions only `staging-admin` and the field account, whose login
+is digits only (`9000000001`) because the app logs it in; the field
 identity retains the selected source user's UID and team memberships so mobile
-access remains realistic. Passwords are generated once and retained only in
+access remains realistic. Both logins are read from the user file below. Passwords are generated once and retained only in
 the staging DB host's mode-`0600` user file. Deployment pulls the digest-pinned
 candidate image, stops any previous staging API before replay, rotates the
 staging JWT key, and starts it only after preparation and identity sanitization

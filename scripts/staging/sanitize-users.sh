@@ -37,7 +37,7 @@ ssh "$staging_db_ssh" "
         {
             printf 'STAGING_ADMIN_LOGIN=staging-admin\\n'
             printf 'STAGING_ADMIN_PASSWORD=%s\\n' \"\$(openssl rand -hex 24)\"
-            printf 'STAGING_FIELD_LOGIN=staging-field\\n'
+            printf 'STAGING_FIELD_LOGIN=9000000001\\n'
             printf 'STAGING_FIELD_PASSWORD=%s\\n' \"\$(openssl rand -hex 24)\"
             printf 'STAGING_FIELD_TEMPLATE_LOGIN=%s\\n' \
                 '${DATARUN_STAGING_FIELD_TEMPLATE_LOGIN:-}'
@@ -78,7 +78,7 @@ ssh "$staging_db_ssh" "
         --dbname='$staging_database' \
         --tuples-only --no-align \
         --command=\"SELECT count(*) FROM app_user
-            WHERE login IN ('staging-admin', 'staging-field')\")
+            WHERE login IN ('\$STAGING_ADMIN_LOGIN', '\$STAGING_FIELD_LOGIN')\")
     refresh_token_count=\$(sudo -n -u postgres psql \
         --dbname='$staging_database' \
         --tuples-only --no-align \
