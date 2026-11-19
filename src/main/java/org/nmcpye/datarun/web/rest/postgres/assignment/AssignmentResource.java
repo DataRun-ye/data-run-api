@@ -69,6 +69,9 @@ public class AssignmentResource
         return "assignments";
     }
 
+    // Recomputes stored paths across the whole table: admins only. The class
+    // allows field users, who must not trigger a table-wide rewrite.
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @GetMapping("/updatePaths")
     public ResponseEntity<String> updatePaths(
         @RequestParam(name = "forceUpdate", required = false, defaultValue = "false") boolean forceUpdate,

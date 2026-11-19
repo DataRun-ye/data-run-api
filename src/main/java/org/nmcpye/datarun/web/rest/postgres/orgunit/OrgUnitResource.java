@@ -54,6 +54,9 @@ public class OrgUnitResource extends JpaBaseResource<OrgUnit> {
      *
      * @param forceUpdate force update paths of all.
      */
+    // Recomputes stored paths across the whole table: admins only. The class
+    // allows field users, who must not trigger a table-wide rewrite.
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @GetMapping("/updatePaths")
     public ResponseEntity<String> updateTeam(
         @RequestParam(name = "forceUpdate", required = false, defaultValue = "false") boolean forceUpdate) {
