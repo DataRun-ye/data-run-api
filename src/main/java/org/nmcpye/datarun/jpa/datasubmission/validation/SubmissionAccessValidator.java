@@ -29,7 +29,7 @@ public class SubmissionAccessValidator {
                 .orElseThrow(() -> new DomainValidationException("Assignment is required"));
 
             final var incomingTeam = assignment.getTeam().getUid();
-            if (!user.getUserTeamsUIDs().contains(incomingTeam)) {
+            if (!AssignmentFormAccessService.isInTeamScope(user, assignment)) {
                 log.error("User {}, with team {} cannot submit data", user.getUsername(), incomingTeam);
                 throw new IllegalQueryException(ErrorCode.E4114, submission.getTeam(), submission.getUid());
             }

@@ -31,7 +31,8 @@ class OrgUnitFilterTest {
             assignment("disabled-activity", false, true, false)
         ));
 
-        Set<OrgUnit> result = new OrgUnitFilter(repository).getDirectOrgUnits(user, false);
+        Set<OrgUnit> result = new OrgUnitFilter(repository, mock(ManagedAssignmentScope.class))
+            .getDirectOrgUnits(user, false);
 
         assertThat(result).extracting(OrgUnit::getUid)
             .containsExactly("enabled");
@@ -50,11 +51,31 @@ class OrgUnitFilterTest {
             assignment("disabled-activity", false, true, false)
         ));
 
-        Set<OrgUnit> result = new OrgUnitFilter(repository).getDirectOrgUnits(user, true);
+        Set<OrgUnit> result = new OrgUnitFilter(repository, mock(ManagedAssignmentScope.class))
+            .getDirectOrgUnits(user, true);
 
         assertThat(result).extracting(OrgUnit::getUid)
             .containsExactlyInAnyOrder("enabled", "disabled-team", "disabled-activity");
         verify(repository).findAllByTeamUidIn(Set.of("direct"));
+    }
+
+    @Test
+    void addsTheOrgUnitsOfManagedAssignmentsInScope() {
+        AssignmentRepository repository = mock(AssignmentRepository.class);
+        ManagedAssignmentScope managedScope = mock(ManagedAssignmentScope.class);
+        CurrentUserDetails user = mock(CurrentUserDetails.class);
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of("direct"));
+        when(repository.findAllByTeamUidIn(anySet())).thenReturn(List.of(
+            assignment("own-village", false, false, false)
+        ));
+        when(managedScope.findAccessible(user, false)).thenReturn(List.of(
+            assignment("team-village", false, false, false)
+        ));
+
+        Set<OrgUnit> result = new OrgUnitFilter(repository, managedScope).getScopeOrgUnits(user, false);
+
+        assertThat(result).extracting(OrgUnit::getUid)
+            .containsExactlyInAnyOrder("own-village", "team-village");
     }
 
     private Assignment assignment(String uid, boolean teamDisabled, boolean activityDisabled, boolean deleted) {

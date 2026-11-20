@@ -281,7 +281,7 @@ public class SubmissionUploadService {
         }
 
         String teamUid = assignment.getTeam().getUid();
-        if (!user.getUserTeamsUIDs().contains(teamUid)) {
+        if (!AssignmentFormAccessService.isInTeamScope(user, assignment)) {
             throw new IllegalQueryException(
                 ErrorCode.E4114,
                 teamUid,

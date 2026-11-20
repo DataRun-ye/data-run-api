@@ -50,8 +50,10 @@ request succeeds.
   administrator flag.
 - `CurrentUserDetailsService` rebuilds one request-scoped authorization
   snapshot from enabled direct teams, their enabled managed teams, activities,
-  and team-scoped form grants. It is intentionally not cached across requests;
-  access changes must not depend on four independently invalidated caches.
+  and team-scoped form grants. A team's grants also apply to the enabled teams
+  it manages, so a supervisor's team grants reach his teams' assignments. It is
+  intentionally not cached across requests; access changes must not depend on
+  four independently invalidated caches.
 - `CurrentUserProfileV1` adapts that principal to the released
   `/api/v1/myDetails` response. Legacy count and `userGroupsUIDs` fields are
   V1 wire compatibility only and retire when older supported mobile clients no
@@ -67,10 +69,12 @@ request succeeds.
   exit through an explicit domain filter or route removal.
 - `AssignmentFormAccessService` is the shared authorization owner for the
   actor, assignment team, assigned form, and requested form action.
-- Organization-unit sync is scoped to direct-team assignments and their
-  ancestors. Managed teams remain active mobile selector/summary data, but
-  managed-team assignments are not synchronized and do not expand org-unit
-  visibility.
+- Assignment and organization-unit sync cover direct-team assignments and
+  the managed teams' assignments that carry a form the user may use there
+  (`ManagedAssignmentScope`), with org-unit ancestors. Other managed-team
+  assignments are not synchronized. Managed teams also remain mobile
+  selector/summary data. Apps up to 6.1.1 cannot list a managed team's
+  assignment (they expect every assignment's team among the user's own).
 - Legacy role, privilege, and Spring ACL tables have no source policy owner and
   remain schema-only until a bounded Liquibase contraction.
 - User groups do not participate in the active authentication or work-scope
@@ -134,7 +138,9 @@ metadata for compatibility; resolves Reference definitions; upserts whole
 submission JSON; and writes the current `outbox` row in the same transaction.
 Submission access and assignment-form projection use the same
 `AssignmentFormAccessService`; permissions from another team and forms absent
-from the assignment are rejected.
+from the assignment are rejected. A manager may submit on a managed team's
+assignment with his own team's grant; the submission keeps the assignment's
+team.
 `DataSubmissionService` receives canonical submissions and a result summary,
 not a security principal; authorization must complete before persistence.
 

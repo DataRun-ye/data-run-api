@@ -8,6 +8,7 @@ import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -19,16 +20,19 @@ import java.util.stream.Stream;
 @Component
 public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
     private final AssignmentRepository flowInstanceRepository;
+    private final ManagedAssignmentScope managedAssignmentScope;
 
-    public OrgUnitFilter(AssignmentRepository flowInstanceRepository) {
+    public OrgUnitFilter(AssignmentRepository flowInstanceRepository,
+                         ManagedAssignmentScope managedAssignmentScope) {
         this.flowInstanceRepository = flowInstanceRepository;
+        this.managedAssignmentScope = managedAssignmentScope;
     }
 
     @Override
     public Specification<OrgUnit> getAccessSpecification(CurrentUserDetails user,
                                                          QueryRequest queryRequest) {
         final boolean includeDisabled = queryRequest != null && queryRequest.isIncludeDisabled();
-        final var directOrgUnits = getDirectOrgUnits(user, includeDisabled);
+        final var directOrgUnits = getScopeOrgUnits(user, includeDisabled);
         final var directUids = directOrgUnits.stream().map(OrgUnit::getUid).collect(Collectors.toSet());
 
         final Set<String> ancestorsUids = directOrgUnits
@@ -63,6 +67,18 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
 //                    teamNotDisabled);
             }
         };
+    }
+
+    /**
+     * Org units of the user's own assignments and of the managed teams'
+     * assignments in his scope (those carrying a form he may use there).
+     */
+    Set<OrgUnit> getScopeOrgUnits(CurrentUserDetails user, boolean includeDisabled) {
+        Set<OrgUnit> orgUnits = new HashSet<>(getDirectOrgUnits(user, includeDisabled));
+        managedAssignmentScope.findAccessible(user, includeDisabled).stream()
+            .map(Assignment::getOrgUnit)
+            .forEach(orgUnits::add);
+        return orgUnits;
     }
 
     Set<OrgUnit> getDirectOrgUnits(CurrentUserDetails user, boolean includeDisabled) {

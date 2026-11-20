@@ -21,6 +21,7 @@ class AssignmentFormAccessServiceTest {
 
     private static final String TEAM_A = "team0000001";
     private static final String TEAM_B = "team0000002";
+    private static final String MANAGED = "team0000009";
     private static final String FORM_A = "form0000001";
     private static final String FORM_B = "form0000002";
     private static final String FORM_C = "form0000003";
@@ -75,6 +76,35 @@ class AssignmentFormAccessServiceTest {
                 FormPermission.ADD_SUBMISSIONS)));
 
         assertThat(service.canSubmitData(user, assignment, FORM_B)).isFalse();
+    }
+
+    @Test
+    void teamScopeCoversOwnAndManagedTeamsOnly() {
+        CurrentUserDetails user = mock(CurrentUserDetails.class);
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of(TEAM_A));
+        when(user.getManagedTeamsUIDs()).thenReturn(Set.of(MANAGED));
+
+        assertThat(AssignmentFormAccessService.isInTeamScope(
+            user, assignment(TEAM_A, Set.of(FORM_A)))).isTrue();
+        assertThat(AssignmentFormAccessService.isInTeamScope(
+            user, assignment(MANAGED, Set.of(FORM_A)))).isTrue();
+        assertThat(AssignmentFormAccessService.isInTeamScope(
+            user, assignment(TEAM_B, Set.of(FORM_A)))).isFalse();
+    }
+
+    @Test
+    void aManagerTeamsGrantOffersOnlyThatFormOnTheManagedTeamsAssignment() {
+        // The snapshot copies a manager team's grants to each team it manages.
+        Assignment managed = assignment(MANAGED, Set.of(FORM_A, FORM_B));
+        CurrentUserDetails supervisor = user(
+            false,
+            List.of(access(MANAGED, FORM_A, FormPermission.ADD_SUBMISSIONS)));
+
+        assertThat(service.getAccessibleForms(managed, supervisor))
+            .extracting(AssignmentFormDto::getForm)
+            .containsExactly(FORM_A);
+        assertThat(service.canSubmitData(supervisor, managed, FORM_A)).isTrue();
+        assertThat(service.canSubmitData(supervisor, managed, FORM_B)).isFalse();
     }
 
     @Test

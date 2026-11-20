@@ -317,6 +317,25 @@ class SubmissionUploadServiceTest {
     }
 
     @Test
+    void aManagerPassesTheTeamScopeOnAManagedTeamsAssignment() {
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
+        when(user.isSuper()).thenReturn(false);
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of("supervisor1"));
+        when(user.getManagedTeamsUIDs()).thenReturn(Set.of("team0000001"));
+        when(formAccessService.canSubmitData(
+            user,
+            assignment,
+            "formUid0001"))
+            .thenReturn(true);
+
+        EntitySaveSummaryVM summary = upload(List.of(request));
+
+        assertTrue(summary.getFailed().isEmpty());
+        assertTrue(summary.getCreated().contains("firstSub01"));
+        verify(formAccessService).canSubmitData(user, assignment, "formUid0001");
+    }
+
+    @Test
     void oneRejectedSubmissionDoesNotBlockTheOthers() {
         DataSubmissionUploadV1Dto firstRequest = stubbedRequest("firstSub01");
         DataSubmissionUploadV1Dto secondRequest = stubbedRequest("secondSub1");

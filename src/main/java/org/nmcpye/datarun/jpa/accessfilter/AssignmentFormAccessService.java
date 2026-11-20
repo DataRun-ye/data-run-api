@@ -27,6 +27,23 @@ import static org.nmcpye.datarun.common.enumeration.FormPermission.EDIT_SUBMISSI
 @Transactional(readOnly = true)
 public class AssignmentFormAccessService {
 
+    /**
+     * Whether the assignment belongs to one of the user's teams or to a team
+     * that one of them manages. The form grants then decide what is allowed.
+     */
+    public static boolean isInTeamScope(CurrentUserDetails user, Assignment assignment) {
+        if (user == null || assignment == null || assignment.getTeam() == null) {
+            return false;
+        }
+        String teamUid = assignment.getTeam().getUid();
+        return contains(user.getUserTeamsUIDs(), teamUid)
+            || contains(user.getManagedTeamsUIDs(), teamUid);
+    }
+
+    private static boolean contains(Set<String> uids, String uid) {
+        return uids != null && uids.contains(uid);
+    }
+
     public boolean canSubmitData(
         CurrentUserDetails user,
         Assignment assignment,

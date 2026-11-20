@@ -8,12 +8,14 @@ import org.nmcpye.datarun.jpa.team.TeamFormPermissions;
 import org.nmcpye.datarun.jpa.team.repository.TeamRepository;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.userauthority.Authority;
+import org.nmcpye.datarun.userdetail.UserFormAccess;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,11 +40,11 @@ class CurrentUserDetailsServiceTest {
         assertThat(details.getManagedTeamsUIDs()).containsExactly("managed0001");
         assertThat(details.getActivityUIDs()).containsExactly("activity01");
         assertThat(details.getUserFormsUIDs()).containsExactly("form0000001");
-        assertThat(details.getFormAccess()).singleElement().satisfies(access -> {
-            assertThat(access.getUser()).isEqualTo("user0000001");
-            assertThat(access.getTeam()).isEqualTo("direct00001");
-            assertThat(access.getForm()).isEqualTo("form0000001");
-        });
+        assertThat(details.getFormAccess())
+            .extracting(UserFormAccess::getUser, UserFormAccess::getTeam, UserFormAccess::getForm)
+            .containsExactlyInAnyOrder(
+                tuple("user0000001", "direct00001", "form0000001"),
+                tuple("user0000001", "managed0001", "form0000001"));
         assertThat(details.getAuthorities())
             .extracting(GrantedAuthority::getAuthority)
             .containsExactlyInAnyOrder(AuthoritiesConstants.USER, AuthoritiesConstants.ADMIN);
@@ -62,6 +64,32 @@ class CurrentUserDetailsServiceTest {
 
         assertThat(service.createUserDetails(user).getUserTeamsUIDs()).containsExactly("team0000001");
         assertThat(service.createUserDetails(user).getUserTeamsUIDs()).containsExactly("team0000002");
+    }
+
+    @Test
+    void aManagerTeamsGrantsReachOnlyItsEnabledManagedTeams() {
+        TeamRepository teamRepository = mock(TeamRepository.class);
+        User user = activeUser();
+        Activity activity = activity("activity01", false);
+        Team directTeam = team("direct00001", activity, false);
+        directTeam.setFormPermissions(Set.of(
+            new TeamFormPermissions("supervise01", Set.of(FormPermission.ADD_SUBMISSIONS))
+        ));
+        directTeam.setManagedTeams(Set.of(
+            team("managed0001", activity, false),
+            team("disabled001", activity, true),
+            team("disabled002", activity("disabledAct", true), false)
+        ));
+        when(teamRepository.findAllByUserLogin("worker", false)).thenReturn(List.of(directTeam));
+
+        CurrentUserDetails details = new CurrentUserDetailsService(teamRepository).createUserDetails(user);
+
+        assertThat(details.getFormAccess())
+            .extracting(UserFormAccess::getTeam, UserFormAccess::getForm)
+            .containsExactlyInAnyOrder(
+                tuple("direct00001", "supervise01"),
+                tuple("managed0001", "supervise01"));
+        assertThat(details.getUserFormsUIDs()).containsExactly("supervise01");
     }
 
     @Test

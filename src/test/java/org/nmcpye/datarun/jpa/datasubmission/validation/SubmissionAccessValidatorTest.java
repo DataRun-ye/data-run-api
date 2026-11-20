@@ -61,6 +61,54 @@ class SubmissionAccessValidatorTest {
             .isSameAs(submission);
     }
 
+    @Test
+    void acceptsAManagerWithAGrantOnTheManagedTeamsAssignment() {
+        Assignment assignment = assignment();
+        AssignmentRepository repository = mock(AssignmentRepository.class);
+        when(repository.findByUid(ASSIGNMENT))
+            .thenReturn(Optional.of(assignment));
+        CurrentUserDetails supervisor = manager(FORM);
+
+        var validator = new SubmissionAccessValidator(
+            new AssignmentFormAccessService(),
+            repository);
+
+        assertThat(validator.validateAccess(submission(), supervisor))
+            .isNotNull();
+    }
+
+    @Test
+    void rejectsAManagerWithoutAGrantForTheForm() {
+        Assignment assignment = assignment();
+        AssignmentRepository repository = mock(AssignmentRepository.class);
+        when(repository.findByUid(ASSIGNMENT))
+            .thenReturn(Optional.of(assignment));
+        CurrentUserDetails supervisor = manager("form0000009");
+
+        var validator = new SubmissionAccessValidator(
+            new AssignmentFormAccessService(),
+            repository);
+
+        assertThatThrownBy(() -> validator.validateAccess(submission(), supervisor))
+            .isInstanceOf(IllegalQueryException.class);
+    }
+
+    /** A supervisor whose team manages TEAM_A; the snapshot copied his grant to TEAM_A. */
+    private CurrentUserDetails manager(String grantedForm) {
+        CurrentUserDetails user = mock(CurrentUserDetails.class);
+        when(user.isSuper()).thenReturn(false);
+        when(user.getUsername()).thenReturn("supervisor");
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of(TEAM_B));
+        when(user.getManagedTeamsUIDs()).thenReturn(Set.of(TEAM_A));
+        when(user.getFormAccess()).thenReturn(List.of(
+            UserFormAccess.builder()
+                .team(TEAM_A)
+                .form(grantedForm)
+                .permissions(Set.of(FormPermission.ADD_SUBMISSIONS))
+                .build()));
+        return user;
+    }
+
     private Assignment assignment() {
         Team team = new Team();
         team.setUid(TEAM_A);
