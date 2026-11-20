@@ -20,6 +20,7 @@ import static org.nmcpye.datarun.common.enumeration.FormPermission.ADD_SUBMISSIO
 import static org.nmcpye.datarun.common.enumeration.FormPermission.DELETE_SUBMISSIONS;
 import static org.nmcpye.datarun.common.enumeration.FormPermission.DELETE_SUBMISSIONS_FROM_USERS;
 import static org.nmcpye.datarun.common.enumeration.FormPermission.EDIT_SUBMISSIONS;
+import static org.nmcpye.datarun.common.enumeration.FormPermission.EDIT_SUBMISSIONS_FROM_USERS;
 
 /**
  * @author Hamza Assada 25/04/2025 (7amza.it@gmail.com)
@@ -64,6 +65,24 @@ public class AssignmentFormAccessService {
         String formUid
     ) {
         return hasAnyPermission(user, assignment, formUid, DELETE_SUBMISSIONS, DELETE_SUBMISSIONS_FROM_USERS);
+    }
+
+    /** Changing a submission another user made ("from users"). */
+    public boolean canEditOthersSubmissions(
+        CurrentUserDetails user,
+        Assignment assignment,
+        String formUid
+    ) {
+        return hasAnyPermission(user, assignment, formUid, EDIT_SUBMISSIONS_FROM_USERS);
+    }
+
+    /** Deleting a submission another user made ("from users"). */
+    public boolean canDeleteOthersSubmissions(
+        CurrentUserDetails user,
+        Assignment assignment,
+        String formUid
+    ) {
+        return hasAnyPermission(user, assignment, formUid, DELETE_SUBMISSIONS_FROM_USERS);
     }
 
     public boolean canAddSubmissions(

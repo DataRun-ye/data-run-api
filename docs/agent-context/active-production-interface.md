@@ -147,7 +147,10 @@ team. An upload that names an existing submission is also checked against the
 stored record (`StoredSubmissionGuard`, both upload routes): a record never
 changes form (E4123), the user must be allowed on the stored assignment and
 form as well (E4124; a move needs both), and deleting needs a delete
-permission there (E4125). Administrators are not checked.
+permission there (E4125). A record another user made (its creator is the
+login that first sent it) needs `EDIT_SUBMISSIONS_FROM_USERS` to change
+(E4126) or `DELETE_SUBMISSIONS_FROM_USERS` to delete; no active team holds
+either (2026-11-20). Administrators are not checked.
 `DataSubmissionService` receives canonical submissions and a result summary,
 not a security principal; authorization must complete before persistence.
 

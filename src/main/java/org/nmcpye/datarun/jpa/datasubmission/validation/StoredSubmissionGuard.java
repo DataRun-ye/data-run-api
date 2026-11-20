@@ -20,8 +20,10 @@ import java.util.Objects;
  * <p>The callers have already checked that the user may submit the incoming
  * form on the incoming assignment. Here: a record never changes form; the user
  * must also be allowed on the stored record's assignment and form (so a record
- * can still be moved by someone allowed on both places); and deleting needs the
- * delete permission there. Admins are not checked, as on the upload itself.</p>
+ * can still be moved by someone allowed on both places); deleting needs the
+ * delete permission there; and a record another user made (its creator is the
+ * login that first sent it) needs the "from users" edit or delete permission.
+ * Admins are not checked, as on the upload itself.</p>
  */
 @Component
 @RequiredArgsConstructor
@@ -49,9 +51,24 @@ public class StoredSubmissionGuard {
             || !formAccess.canSubmitData(user, storedAssignment, stored.getForm())) {
             throw new IllegalQueryException(ErrorCode.E4124, incoming.getUid());
         }
-        if (Boolean.TRUE.equals(incoming.getDeleted())
-            && !formAccess.canDeleteSubmissions(user, storedAssignment, stored.getForm())) {
-            throw new IllegalQueryException(ErrorCode.E4125, incoming.getUid());
+        boolean madeByOthers = !madeBy(stored, user);
+        if (Boolean.TRUE.equals(incoming.getDeleted())) {
+            boolean mayDelete = madeByOthers
+                ? formAccess.canDeleteOthersSubmissions(user, storedAssignment, stored.getForm())
+                : formAccess.canDeleteSubmissions(user, storedAssignment, stored.getForm());
+            if (!mayDelete) {
+                throw new IllegalQueryException(ErrorCode.E4125, incoming.getUid());
+            }
+        } else if (madeByOthers
+            && !formAccess.canEditOthersSubmissions(user, storedAssignment, stored.getForm())) {
+            throw new IllegalQueryException(ErrorCode.E4126, incoming.getUid());
         }
+    }
+
+    /** A record whose creator is unknown counts as another user's. */
+    private static boolean madeBy(DataSubmission stored, CurrentUserDetails user) {
+        return stored.getCreatedBy() != null
+            && user.getUsername() != null
+            && stored.getCreatedBy().equalsIgnoreCase(user.getUsername());
     }
 }

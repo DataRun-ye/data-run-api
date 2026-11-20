@@ -83,6 +83,7 @@ public enum ErrorCode {
     E4123("Submission `{0}` is a `{1}` record; it cannot be sent as another form"),
     E4124("You may not change submission `{0}`: it is not in an assignment and form you may submit"),
     E4125("You may not delete submission `{0}`"),
+    E4126("You may not change submission `{0}`: another user made it"),
 
     /* Users */
     E6201("User account not found"),

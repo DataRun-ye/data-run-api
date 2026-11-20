@@ -97,6 +97,48 @@ class StoredSubmissionGuardTest {
     }
 
     @Test
+    void changingAnotherUsersRecordNeedsEditFromUsers() {
+        stored(FORM, assignment("assignOwn01", OWN_TEAM), "teammate");
+
+        assertThatThrownBy(() -> guard.check(incoming(FORM, false), user(FormPermission.ADD_SUBMISSIONS)))
+            .isInstanceOf(IllegalQueryException.class)
+            .extracting("errorCode").isEqualTo(ErrorCode.E4126);
+        assertThatCode(() -> guard.check(incoming(FORM, false),
+            user(FormPermission.ADD_SUBMISSIONS, FormPermission.EDIT_SUBMISSIONS_FROM_USERS)))
+            .doesNotThrowAnyException();
+    }
+
+    @Test
+    void deletingAnotherUsersRecordNeedsDeleteFromUsers() {
+        stored(FORM, assignment("assignOwn01", OWN_TEAM), "teammate");
+
+        assertThatThrownBy(() -> guard.check(incoming(FORM, true),
+            user(FormPermission.ADD_SUBMISSIONS, FormPermission.DELETE_SUBMISSIONS)))
+            .isInstanceOf(IllegalQueryException.class)
+            .extracting("errorCode").isEqualTo(ErrorCode.E4125);
+        assertThatCode(() -> guard.check(incoming(FORM, true),
+            user(FormPermission.ADD_SUBMISSIONS, FormPermission.DELETE_SUBMISSIONS_FROM_USERS)))
+            .doesNotThrowAnyException();
+    }
+
+    @Test
+    void aRecordWithoutAKnownCreatorCountsAsAnotherUsers() {
+        stored(FORM, assignment("assignOwn01", OWN_TEAM), null);
+
+        assertThatThrownBy(() -> guard.check(incoming(FORM, false), user(FormPermission.ADD_SUBMISSIONS)))
+            .isInstanceOf(IllegalQueryException.class)
+            .extracting("errorCode").isEqualTo(ErrorCode.E4126);
+    }
+
+    @Test
+    void theCreatorMatchesTheLoginWhateverItsCase() {
+        stored(FORM, assignment("assignOwn01", OWN_TEAM), "WORKER");
+
+        assertThatCode(() -> guard.check(incoming(FORM, false), user(FormPermission.ADD_SUBMISSIONS)))
+            .doesNotThrowAnyException();
+    }
+
+    @Test
     void administratorsAreNotChecked() {
         CurrentUserDetails administrator = mock(CurrentUserDetails.class);
         when(administrator.isSuper()).thenReturn(true);
@@ -107,9 +149,14 @@ class StoredSubmissionGuardTest {
     }
 
     private void stored(String form, Assignment assignment) {
+        stored(form, assignment, "worker");
+    }
+
+    private void stored(String form, Assignment assignment, String createdBy) {
         DataSubmission stored = new DataSubmission();
         stored.setUid(SUBMISSION);
         stored.setForm(form);
+        stored.setCreatedBy(createdBy);
         stored.setAssignment(assignment.getUid());
         when(submissions.findByUid(SUBMISSION)).thenReturn(Optional.of(stored));
         when(assignments.findByUid(assignment.getUid())).thenReturn(Optional.of(assignment));
@@ -135,6 +182,7 @@ class StoredSubmissionGuardTest {
 
     private CurrentUserDetails user(FormPermission... permissions) {
         CurrentUserDetails user = mock(CurrentUserDetails.class);
+        when(user.getUsername()).thenReturn("worker");
         when(user.getUserTeamsUIDs()).thenReturn(Set.of(OWN_TEAM));
         when(user.getFormAccess()).thenReturn(List.of(access(FORM, permissions)));
         return user;
