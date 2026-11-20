@@ -79,6 +79,9 @@ public class TeamResource extends JpaBaseResource<Team> {
      * or with status {@code 500 (Internal Server Error)} if the team couldn't be updated.
      * @throws URISyntaxException if the Location URI syntax is incorrect.
      */
+    // Replaces a team's members and settings: admins only. The class allows
+    // field users, who must not add themselves to a team or disable one.
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @PatchMapping(value = "/teams/{uid}", consumes = {"application/json", "application/merge-patch+json"})
     public ResponseEntity<Team> partialUpdateTeam(
         @PathVariable(value = "uid", required = false) final String uid,
