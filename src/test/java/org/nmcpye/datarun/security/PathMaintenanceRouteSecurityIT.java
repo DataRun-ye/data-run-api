@@ -11,8 +11,9 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * The path recompute endpoints rewrite stored paths across a whole table. Their
- * resources admit field users for ordinary reads; the recompute must not.
+ * The maintenance endpoints rewrite a whole table: stored paths, or every
+ * team's form permissions. Their resources admit field users for ordinary
+ * reads; the maintenance must not.
  */
 @AutoConfigureMockMvc
 @IntegrationTest
@@ -21,6 +22,8 @@ class PathMaintenanceRouteSecurityIT {
     private static final String[] PATH_RECOMPUTE_URLS = {
         "/api/v1/orgUnits/updatePaths?forceUpdate=true",
         "/api/v1/assignments/updatePaths?forceUpdate=true",
+        "/api/v1/teams/migrate",
+        "/api/custom/teams/migrate",
     };
 
     @Autowired

@@ -105,6 +105,9 @@ public class TeamResource extends JpaBaseResource<Team> {
         );
     }
 
+    // Rewrites the form permissions of every team: admins only. The class
+    // allows field users, who must not trigger a table-wide rewrite.
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     @GetMapping("/migrate")
     public ResponseEntity<String> updatePaths() throws Exception {
         log.info("REST request to migrate team form permissions");
