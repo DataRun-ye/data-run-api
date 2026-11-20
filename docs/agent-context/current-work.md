@@ -1,6 +1,6 @@
 # Current Work
 
-Updated: 2026-11-19
+Updated: 2026-11-20
 
 Purpose: accepted server work only. This file is not code, API, architecture,
 or deployment authority.
@@ -14,6 +14,10 @@ or deployment authority.
   districts and forms. Field fixes may still ship during the campaign, each
   through the staging rehearsal first. Shared status:
   [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34).
+- Managed-team access (#45) before the ITN 2026 campaign, shipped with the
+  app's digits-only login (mobile #37): a manager also receives the
+  assignments of the teams it manages that carry a form its own team may
+  fill, and may submit them. New campaign forms need it. Keep it minimal.
 - Go-live and held uploads (#42): the first slice, admin API only, shipped in
   6.5.0. Next: an admin screen, a phone indicator, a closing time, and holding
   data stored before a go-live existed.
