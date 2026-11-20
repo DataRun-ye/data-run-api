@@ -79,6 +79,7 @@ public enum ErrorCode {
     E4119("Reference `{0}` is not available in the assignment organization unit"),
     E4120("Unknown Reference `{0}` requires a valid definition"),
     E4121("Submission `{0}` includes unused Reference definition `{1}`"),
+    E4122("You may not submit form `{0}` for assignment `{1}`"),
 
     /* Users */
     E6201("User account not found"),

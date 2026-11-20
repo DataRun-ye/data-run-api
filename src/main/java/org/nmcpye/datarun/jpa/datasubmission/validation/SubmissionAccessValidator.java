@@ -43,8 +43,9 @@ public class SubmissionAccessValidator {
                     submission.getForm(),
                     submission.getAssignment());
                 throw new IllegalQueryException(
-                    ErrorCode.E1112,
-                    submission.getTeam());
+                    ErrorCode.E4122,
+                    submission.getForm(),
+                    submission.getAssignment());
             }
         }
 

@@ -3,6 +3,7 @@ package org.nmcpye.datarun.jpa.datasubmission.validation;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.common.enumeration.FormPermission;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
@@ -90,7 +91,9 @@ class SubmissionAccessValidatorTest {
             repository);
 
         assertThatThrownBy(() -> validator.validateAccess(submission(), supervisor))
-            .isInstanceOf(IllegalQueryException.class);
+            .isInstanceOf(IllegalQueryException.class)
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.E4122);
     }
 
     /** A supervisor whose team manages TEAM_A; the snapshot copied his grant to TEAM_A. */

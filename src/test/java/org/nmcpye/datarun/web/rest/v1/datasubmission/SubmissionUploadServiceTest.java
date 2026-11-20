@@ -336,6 +336,25 @@ class SubmissionUploadServiceTest {
     }
 
     @Test
+    void aFormTheTeamMayNotSubmitIsReportedAsSuch() {
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
+        when(user.isSuper()).thenReturn(false);
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of("team0000001"));
+        when(formAccessService.canSubmitData(
+            user,
+            assignment,
+            "formUid0001"))
+            .thenReturn(false);
+
+        EntitySaveSummaryVM summary = upload(List.of(request));
+
+        assertEquals(
+            "E4122: You may not submit form `formUid0001` for assignment `assignment1`",
+            summary.getFailed().get("firstSub01"));
+        verify(submissionService, never()).upsertAll(any(), any());
+    }
+
+    @Test
     void oneRejectedSubmissionDoesNotBlockTheOthers() {
         DataSubmissionUploadV1Dto firstRequest = stubbedRequest("firstSub01");
         DataSubmissionUploadV1Dto secondRequest = stubbedRequest("secondSub1");

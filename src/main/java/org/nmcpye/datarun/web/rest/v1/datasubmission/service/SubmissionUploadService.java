@@ -291,7 +291,10 @@ public class SubmissionUploadService {
             user,
             assignment,
             submission.getForm())) {
-            throw new IllegalQueryException(ErrorCode.E1112, teamUid);
+            throw new IllegalQueryException(
+                ErrorCode.E4122,
+                submission.getForm(),
+                assignment.getUid());
         }
     }
 
