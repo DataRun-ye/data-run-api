@@ -109,6 +109,9 @@ deployment authority.
   integration tests.
 - `v6.5.0` / `a9609da0`: deployed 2026-11-19 (Yemen time), the rehearsed
   staging candidate promoted by digest (GitHub release `v6.5.0`).
+- `v6.5.1` / `0dad7e85`: deployed 2026-11-20, managed-team access (#45), the
+  stored-record upload guard and admin-only maintenance and team routes
+  (GitHub release `v6.5.1`).
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

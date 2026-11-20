@@ -7,17 +7,16 @@ or deployment authority.
 
 ## Now
 
-- ITN 2026 campaign (from the week of 2026-11-23) on server 6.5.0 and app
-  6.1.0, with the household lists loaded in production (see
+- ITN 2026 campaign (from the week of 2026-11-23) on server 6.5.1 and app
+  6.1.2, with the household lists loaded in production (see
   `reference-boundary.md`). A campaign-wide go-live rule holds every upload
   until operations set the real start; operations own the campaign's dates,
   districts and forms. Field fixes may still ship during the campaign, each
   through the staging rehearsal first. Shared status:
   [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34).
-- Managed-team access (#45) before the ITN 2026 campaign, shipped with the
-  app's digits-only login (mobile #37): a manager also receives the
-  assignments of the teams it manages that carry a form its own team may
-  fill, and may submit them. New campaign forms need it. Keep it minimal.
+- Access (#46) and the submission lifecycle (#47) are framed for the
+  access-scope work; the generic submission reads that return every team's
+  submissions are the first item to restrict.
 - Go-live and held uploads (#42): the first slice, admin API only, shipped in
   6.5.0. Next: an admin screen, a phone indicator, a closing time, and holding
   data stored before a go-live existed.
