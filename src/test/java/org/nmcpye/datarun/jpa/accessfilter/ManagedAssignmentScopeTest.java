@@ -1,19 +1,22 @@
 package org.nmcpye.datarun.jpa.accessfilter;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.common.enumeration.FormPermission;
-import org.nmcpye.datarun.jpa.activity.Activity;
-import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
-import org.nmcpye.datarun.jpa.team.Team;
+import org.nmcpye.datarun.jpa.assignment.repository.ManagedAssignmentRef;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.userdetail.UserFormAccess;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -22,83 +25,120 @@ import static org.mockito.Mockito.when;
 class ManagedAssignmentScopeTest {
 
     private static final String MANAGED = "managed0001";
+    private static final String OTHER_MANAGED = "managed0002";
     private static final String SUPERVISION = "form0000001";
     private static final String HOUSEHOLD = "form0000002";
+    private static final String MOVEMENT = "form0000003";
 
     private final AssignmentRepository repository = mock(AssignmentRepository.class);
-    private final ManagedAssignmentScope scope =
-        new ManagedAssignmentScope(repository, new AssignmentFormAccessService());
+    private final ManagedAssignmentScope scope = new ManagedAssignmentScope(repository);
 
-    @Test
-    void keepsManagedAssignmentsThatCarryAFormTheUserMayUse() {
-        CurrentUserDetails supervisor = supervisor();
-        when(repository.findAllByTeamUidInCarryingAnyForm(Set.of(MANAGED), Set.of(SUPERVISION)))
-            .thenReturn(List.of(
-                assignment("with-form", Set.of(SUPERVISION, HOUSEHOLD), false, false, false),
-                assignment("household-only", Set.of(HOUSEHOLD), false, false, false),
-                assignment("retired", Set.of(SUPERVISION), false, false, true),
-                assignment("disabled-team", Set.of(SUPERVISION), true, false, false),
-                assignment("disabled-activity", Set.of(SUPERVISION), false, true, false)
-            ));
-
-        assertThat(scope.findAccessible(supervisor, false))
-            .extracting(Assignment::getUid)
-            .containsExactly("with-form");
-        assertThat(scope.findAccessible(supervisor, true))
-            .extracting(Assignment::getUid)
-            .containsExactlyInAnyOrder("with-form", "disabled-team", "disabled-activity");
+    @AfterEach
+    void clearRequest() {
+        RequestContextHolder.resetRequestAttributes();
     }
 
     @Test
-    void usersWithoutManagedTeamsReachNothingAndQueryNothing() {
+    void asksForTheManagedTeamsAssignmentsCarryingAFormTheUserMaySubmit() {
+        fromApp("6.1.2+57");
+        CurrentUserDetails supervisor = user(Set.of(MANAGED), List.of(
+            access(MANAGED, SUPERVISION, FormPermission.ADD_SUBMISSIONS),
+            access(MANAGED, HOUSEHOLD, FormPermission.VIEW_SUBMISSIONS)));
+        ManagedAssignmentRef village = new Ref("assign00001", "village0001", ",district001,village0001");
+        when(repository.findManagedScope(Set.of(MANAGED), Set.of(SUPERVISION), false))
+            .thenReturn(List.of(village));
+
+        assertThat(scope.findAccessible(supervisor, false)).containsExactly(village);
+    }
+
+    @Test
+    void groupsManagedTeamsByTheirForms() {
+        fromApp("6.1.2+57");
+        CurrentUserDetails supervisor = user(Set.of(MANAGED, OTHER_MANAGED), List.of(
+            access(MANAGED, SUPERVISION, FormPermission.ADD_SUBMISSIONS),
+            access(OTHER_MANAGED, MOVEMENT, FormPermission.EDIT_SUBMISSIONS)));
+
+        scope.findAccessible(supervisor, true);
+
+        verify(repository).findManagedScope(Set.of(MANAGED), Set.of(SUPERVISION), true);
+        verify(repository).findManagedScope(Set.of(OTHER_MANAGED), Set.of(MOVEMENT), true);
+    }
+
+    @Test
+    void appsThatCannotListManagedAssignmentsReceiveNone() {
+        CurrentUserDetails supervisor = user(Set.of(MANAGED), List.of(
+            access(MANAGED, SUPERVISION, FormPermission.ADD_SUBMISSIONS)));
+
+        assertThat(scope.findAccessible(supervisor, false)).isEmpty();
+        fromApp("6.1.1+56");
+        assertThat(scope.findAccessible(supervisor, false)).isEmpty();
+        verify(repository, never()).findManagedScope(any(), any(), anyBoolean());
+    }
+
+    @Test
+    void managersWithoutASubmittableGrantQueryNothing() {
+        fromApp("6.1.2+57");
+        CurrentUserDetails viewer = user(Set.of(MANAGED), List.of(
+            access(MANAGED, HOUSEHOLD, FormPermission.VIEW_SUBMISSIONS)));
+        CurrentUserDetails worker = user(Set.of(), List.of());
+
+        assertThat(scope.findAccessible(viewer, false)).isEmpty();
+        assertThat(scope.findAccessible(worker, false)).isEmpty();
+        verify(repository, never()).findManagedScope(any(), any(), anyBoolean());
+    }
+
+    @Test
+    void readsTheAppVersionFromItsHeader() {
+        assertThat(ManagedAssignmentScope.listsManagedAssignments("6.1.2")).isTrue();
+        assertThat(ManagedAssignmentScope.listsManagedAssignments("6.1.2+57")).isTrue();
+        assertThat(ManagedAssignmentScope.listsManagedAssignments("6.2.0+60")).isTrue();
+        assertThat(ManagedAssignmentScope.listsManagedAssignments("10.0.0")).isTrue();
+        assertThat(ManagedAssignmentScope.listsManagedAssignments("6.1.1+56")).isFalse();
+        assertThat(ManagedAssignmentScope.listsManagedAssignments("5.3.0")).isFalse();
+        assertThat(ManagedAssignmentScope.listsManagedAssignments("next")).isFalse();
+        assertThat(ManagedAssignmentScope.listsManagedAssignments(null)).isFalse();
+    }
+
+    @Test
+    void readsTheOrgUnitAndItsAncestorsFromThePath() {
+        assertThat(new Ref("a", "village0001", ",gov00000001,district001,village0001")
+            .orgUnitAndAncestorUids())
+            .containsExactly("gov00000001", "district001", "village0001");
+        assertThat(new Ref("a", "village0001", null).orgUnitAndAncestorUids())
+            .containsExactly("village0001");
+    }
+
+    private void fromApp(String version) {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader(ManagedAssignmentScope.APP_VERSION_HEADER, version);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    }
+
+    private CurrentUserDetails user(Set<String> managedTeams, List<UserFormAccess> formAccess) {
         CurrentUserDetails user = mock(CurrentUserDetails.class);
-        when(user.getManagedTeamsUIDs()).thenReturn(Set.of());
-
-        assertThat(scope.findAccessible(user, false)).isEmpty();
-        verify(repository, never()).findAllByTeamUidInCarryingAnyForm(any(), any());
-    }
-
-    @Test
-    void managersWithoutAnyGrantQueryNothing() {
-        CurrentUserDetails manager = mock(CurrentUserDetails.class);
-        when(manager.getManagedTeamsUIDs()).thenReturn(Set.of(MANAGED));
-        when(manager.getFormAccess()).thenReturn(List.of());
-
-        assertThat(scope.findAccessible(manager, false)).isEmpty();
-        verify(repository, never()).findAllByTeamUidInCarryingAnyForm(any(), any());
-    }
-
-    private CurrentUserDetails supervisor() {
-        CurrentUserDetails user = mock(CurrentUserDetails.class);
-        when(user.getManagedTeamsUIDs()).thenReturn(Set.of(MANAGED));
-        when(user.getFormAccess()).thenReturn(List.of(UserFormAccess.builder()
-            .team(MANAGED)
-            .form(SUPERVISION)
-            .permissions(Set.of(FormPermission.ADD_SUBMISSIONS))
-            .build()));
+        when(user.getManagedTeamsUIDs()).thenReturn(managedTeams);
+        when(user.getFormAccess()).thenReturn(formAccess);
         return user;
     }
 
-    private Assignment assignment(
-        String uid,
-        Set<String> forms,
-        boolean teamDisabled,
-        boolean activityDisabled,
-        boolean deleted
-    ) {
-        Activity activity = new Activity();
-        activity.setUid(uid + "-activity");
-        activity.setDisabled(activityDisabled);
-        Team team = new Team();
-        team.setUid(MANAGED);
-        team.setDisabled(teamDisabled);
-        team.setActivity(activity);
-        Assignment assignment = new Assignment();
-        assignment.setUid(uid);
-        assignment.setTeam(team);
-        assignment.setActivity(activity);
-        assignment.setForms(forms);
-        assignment.setDeleted(deleted);
-        return assignment;
+    private UserFormAccess access(String team, String form, FormPermission permission) {
+        return UserFormAccess.builder().team(team).form(form).permissions(Set.of(permission)).build();
+    }
+
+    private record Ref(String uid, String orgUnitUid, String orgUnitPath) implements ManagedAssignmentRef {
+        @Override
+        public String getUid() {
+            return uid;
+        }
+
+        @Override
+        public String getOrgUnitUid() {
+            return orgUnitUid;
+        }
+
+        @Override
+        public String getOrgUnitPath() {
+            return orgUnitPath;
+        }
     }
 }

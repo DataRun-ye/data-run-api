@@ -93,6 +93,59 @@ class CurrentUserDetailsServiceTest {
     }
 
     @Test
+    void aManagerDoesNotReceiveTheManagedTeamsOwnGrants() {
+        TeamRepository teamRepository = mock(TeamRepository.class);
+        User user = activeUser();
+        Activity activity = activity("activity01", false);
+        Team managed = team("managed0001", activity, false);
+        managed.setFormPermissions(Set.of(
+            new TeamFormPermissions("household1", Set.of(FormPermission.ADD_SUBMISSIONS))
+        ));
+        Team supervisor = team("direct00001", activity, false);
+        supervisor.setManagedTeams(Set.of(managed));
+        supervisor.setFormPermissions(Set.of(
+            new TeamFormPermissions("supervise01", Set.of(FormPermission.ADD_SUBMISSIONS))
+        ));
+        when(teamRepository.findAllByUserLogin("worker", false)).thenReturn(List.of(supervisor));
+
+        CurrentUserDetails details = new CurrentUserDetailsService(teamRepository).createUserDetails(user);
+
+        assertThat(details.getFormAccess())
+            .extracting(UserFormAccess::getTeam, UserFormAccess::getForm)
+            .containsExactlyInAnyOrder(
+                tuple("direct00001", "supervise01"),
+                tuple("managed0001", "supervise01"));
+    }
+
+    @Test
+    void eachManagerTeamsGrantsReachOnlyTheTeamsItManages() {
+        TeamRepository teamRepository = mock(TeamRepository.class);
+        User user = activeUser();
+        Activity activity = activity("activity01", false);
+        Team first = team("manager0001", activity, false);
+        first.setManagedTeams(Set.of(team("managed0001", activity, false)));
+        first.setFormPermissions(Set.of(
+            new TeamFormPermissions("formOne0001", Set.of(FormPermission.ADD_SUBMISSIONS))
+        ));
+        Team second = team("manager0002", activity, false);
+        second.setManagedTeams(Set.of(team("managed0002", activity, false)));
+        second.setFormPermissions(Set.of(
+            new TeamFormPermissions("formTwo0001", Set.of(FormPermission.ADD_SUBMISSIONS))
+        ));
+        when(teamRepository.findAllByUserLogin("worker", false)).thenReturn(List.of(first, second));
+
+        CurrentUserDetails details = new CurrentUserDetailsService(teamRepository).createUserDetails(user);
+
+        assertThat(details.getFormAccess())
+            .extracting(UserFormAccess::getTeam, UserFormAccess::getForm)
+            .containsExactlyInAnyOrder(
+                tuple("manager0001", "formOne0001"),
+                tuple("managed0001", "formOne0001"),
+                tuple("manager0002", "formTwo0001"),
+                tuple("managed0002", "formTwo0001"));
+    }
+
+    @Test
     void excludesDisabledManagedTeamsAndToleratesLegacyNullPermissions() {
         TeamRepository teamRepository = mock(TeamRepository.class);
         User user = activeUser();

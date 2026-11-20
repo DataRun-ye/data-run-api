@@ -32,8 +32,10 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
     public Specification<OrgUnit> getAccessSpecification(CurrentUserDetails user,
                                                          QueryRequest queryRequest) {
         final boolean includeDisabled = queryRequest != null && queryRequest.isIncludeDisabled();
-        final var directOrgUnits = getScopeOrgUnits(user, includeDisabled);
-        final var directUids = directOrgUnits.stream().map(OrgUnit::getUid).collect(Collectors.toSet());
+        final var directOrgUnits = getDirectOrgUnits(user, includeDisabled);
+        final Set<String> directUids = directOrgUnits.stream().map(OrgUnit::getUid)
+            .collect(Collectors.toCollection(HashSet::new));
+        directUids.addAll(managedOrgUnitUids(user, includeDisabled));
 
         final Set<String> ancestorsUids = directOrgUnits
             .stream()
@@ -70,15 +72,13 @@ public class OrgUnitFilter extends DefaultJpaFilter<OrgUnit> {
     }
 
     /**
-     * Org units of the user's own assignments and of the managed teams'
-     * assignments in his scope (those carrying a form he may use there).
+     * Org units, with their ancestors, of the managed teams' assignments in the
+     * user's scope (those carrying a form he may submit there).
      */
-    Set<OrgUnit> getScopeOrgUnits(CurrentUserDetails user, boolean includeDisabled) {
-        Set<OrgUnit> orgUnits = new HashSet<>(getDirectOrgUnits(user, includeDisabled));
-        managedAssignmentScope.findAccessible(user, includeDisabled).stream()
-            .map(Assignment::getOrgUnit)
-            .forEach(orgUnits::add);
-        return orgUnits;
+    Set<String> managedOrgUnitUids(CurrentUserDetails user, boolean includeDisabled) {
+        return managedAssignmentScope.findAccessible(user, includeDisabled).stream()
+            .flatMap(assignment -> assignment.orgUnitAndAncestorUids().stream())
+            .collect(Collectors.toSet());
     }
 
     Set<OrgUnit> getDirectOrgUnits(CurrentUserDetails user, boolean includeDisabled) {

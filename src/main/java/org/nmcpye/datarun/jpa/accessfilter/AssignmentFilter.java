@@ -5,6 +5,7 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
+import org.nmcpye.datarun.jpa.assignment.repository.ManagedAssignmentRef;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.apiquery.QueryRequest;
@@ -45,7 +46,7 @@ public class AssignmentFilter extends DefaultJpaFilter<Assignment> {
         final Set<String> managedAssignmentUids = user.isSuper()
             ? Set.of()
             : managedAssignmentScope.findAccessible(user, includeDisabled).stream()
-                .map(Assignment::getUid)
+                .map(ManagedAssignmentRef::getUid)
                 .collect(Collectors.toSet());
 
         Specification<Assignment> spec = (root, query, cb) -> {

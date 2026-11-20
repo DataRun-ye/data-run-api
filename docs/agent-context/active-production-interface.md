@@ -51,7 +51,8 @@ request succeeds.
 - `CurrentUserDetailsService` rebuilds one request-scoped authorization
   snapshot from enabled direct teams, their enabled managed teams, activities,
   and team-scoped form grants. A team's grants also apply to the enabled teams
-  it manages, so a supervisor's team grants reach his teams' assignments. It is
+  it manages (also when the user belongs to both), so a supervisor's team
+  grants reach his teams' assignments. It is
   intentionally not cached across requests; access changes must not depend on
   four independently invalidated caches.
 - `CurrentUserProfileV1` adapts that principal to the released
@@ -69,12 +70,13 @@ request succeeds.
   exit through an explicit domain filter or route removal.
 - `AssignmentFormAccessService` is the shared authorization owner for the
   actor, assignment team, assigned form, and requested form action.
-- Assignment and organization-unit sync cover direct-team assignments and
-  the managed teams' assignments that carry a form the user may use there
-  (`ManagedAssignmentScope`), with org-unit ancestors. Other managed-team
-  assignments are not synchronized. Managed teams also remain mobile
-  selector/summary data. Apps up to 6.1.1 cannot list a managed team's
-  assignment (they expect every assignment's team among the user's own).
+- Assignment and organization-unit sync cover direct-team assignments and,
+  for app 6.1.2 and later (`X-App-Version`), the managed teams' assignments
+  that carry a form the user may submit there (a grant with add or edit;
+  `ManagedAssignmentScope`, one id-only query), with org-unit ancestors. Older
+  apps receive none: one such assignment stops them listing the activity.
+  Other managed-team assignments are not synchronized. Managed teams also
+  remain mobile selector/summary data.
 - Legacy role, privilege, and Spring ACL tables have no source policy owner and
   remain schema-only until a bounded Liquibase contraction.
 - User groups do not participate in the active authentication or work-scope

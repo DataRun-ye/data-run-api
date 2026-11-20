@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.assignment.repository.ManagedAssignmentRef;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.security.CurrentUserDetails;
@@ -60,22 +61,17 @@ class OrgUnitFilterTest {
     }
 
     @Test
-    void addsTheOrgUnitsOfManagedAssignmentsInScope() {
-        AssignmentRepository repository = mock(AssignmentRepository.class);
+    void addsManagedAssignmentsOrgUnitsWithTheirAncestors() {
         ManagedAssignmentScope managedScope = mock(ManagedAssignmentScope.class);
         CurrentUserDetails user = mock(CurrentUserDetails.class);
-        when(user.getUserTeamsUIDs()).thenReturn(Set.of("direct"));
-        when(repository.findAllByTeamUidIn(anySet())).thenReturn(List.of(
-            assignment("own-village", false, false, false)
-        ));
-        when(managedScope.findAccessible(user, false)).thenReturn(List.of(
-            assignment("team-village", false, false, false)
-        ));
+        ManagedAssignmentRef village = mock(ManagedAssignmentRef.class);
+        when(village.orgUnitAndAncestorUids()).thenReturn(List.of("district001", "village0001"));
+        when(managedScope.findAccessible(user, false)).thenReturn(List.of(village));
 
-        Set<OrgUnit> result = new OrgUnitFilter(repository, managedScope).getScopeOrgUnits(user, false);
+        Set<String> result = new OrgUnitFilter(mock(AssignmentRepository.class), managedScope)
+            .managedOrgUnitUids(user, false);
 
-        assertThat(result).extracting(OrgUnit::getUid)
-            .containsExactlyInAnyOrder("own-village", "team-village");
+        assertThat(result).containsExactlyInAnyOrder("district001", "village0001");
     }
 
     private Assignment assignment(String uid, boolean teamDisabled, boolean activityDisabled, boolean deleted) {
