@@ -84,6 +84,8 @@ class ManagedAssignmentScopeIT {
             .extracting(ManagedAssignmentRef::getUid, ManagedAssignmentRef::getOrgUnitUid,
                 ManagedAssignmentRef::getOrgUnitPath)
             .containsExactly(tuple("itAssign001", "itVillage01", ",itDistrict1,itVillage01"));
+        // The default method works on the query's projection proxy.
+        assertThat(scope.get(0).orgUnitAndAncestorUids()).containsExactly("itDistrict1", "itVillage01");
     }
 
     @Test

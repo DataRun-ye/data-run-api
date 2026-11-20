@@ -2,6 +2,7 @@ package org.nmcpye.datarun.jpa.assignment.repository;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * A managed team's assignment in a manager's scope: its uid and its org unit,
@@ -15,14 +16,14 @@ public interface ManagedAssignmentRef {
     /** The org unit's stored path: root first, the unit itself last. */
     String getOrgUnitPath();
 
-    /** The org unit and its ancestors, from the stored path. */
+    /** The org unit itself, always, and its ancestors from the stored path. */
     default List<String> orgUnitAndAncestorUids() {
-        String path = getOrgUnitPath();
-        if (path == null || path.isBlank()) {
-            return getOrgUnitUid() == null ? List.of() : List.of(getOrgUnitUid());
-        }
-        return Arrays.stream(path.split(","))
+        Stream<String> ancestors = getOrgUnitPath() == null
+            ? Stream.empty()
+            : Arrays.stream(getOrgUnitPath().split(","));
+        return Stream.concat(ancestors, Stream.ofNullable(getOrgUnitUid()))
             .filter(uid -> !uid.isBlank())
+            .distinct()
             .toList();
     }
 }

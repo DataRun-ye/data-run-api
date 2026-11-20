@@ -73,7 +73,8 @@ request succeeds.
 - Assignment and organization-unit sync cover direct-team assignments and,
   for app 6.1.2 and later (`X-App-Version`), the managed teams' assignments
   that carry a form the user may submit there (a grant with add or edit;
-  `ManagedAssignmentScope`, one id-only query), with org-unit ancestors. Older
+  `ManagedAssignmentScope`: one query per group of managed teams with the same
+  forms, returning ids only), with org-unit ancestors. Older
   apps receive none: one such assignment stops them listing the activity.
   Other managed-team assignments are not synchronized. Managed teams also
   remain mobile selector/summary data.

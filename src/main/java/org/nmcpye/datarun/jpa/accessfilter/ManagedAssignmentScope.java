@@ -41,7 +41,7 @@ public class ManagedAssignmentScope {
     /** Sent by the app (6.1.0+) with every request, for example {@code 6.1.2+57}. */
     static final String APP_VERSION_HEADER = "X-App-Version";
     /** The first app that lists the assignments of managed teams. */
-    static final int[] FIRST_LISTING_APP = {6, 1, 2};
+    private static final int[] FIRST_LISTING_APP = {6, 1, 2};
     private static final Pattern VERSION = Pattern.compile("(\\d{1,4})\\.(\\d{1,4})\\.(\\d{1,4})");
 
     private final AssignmentRepository assignmentRepository;

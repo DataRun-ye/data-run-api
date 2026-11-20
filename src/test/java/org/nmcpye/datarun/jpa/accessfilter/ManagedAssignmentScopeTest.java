@@ -65,6 +65,29 @@ class ManagedAssignmentScopeTest {
     }
 
     @Test
+    void managedTeamsWithTheSameFormsShareOneQuery() {
+        fromApp("6.1.2+57");
+        CurrentUserDetails supervisor = user(Set.of(MANAGED, OTHER_MANAGED), List.of(
+            access(MANAGED, SUPERVISION, FormPermission.ADD_SUBMISSIONS),
+            access(OTHER_MANAGED, SUPERVISION, FormPermission.ADD_SUBMISSIONS)));
+
+        scope.findAccessible(supervisor, false);
+
+        verify(repository).findManagedScope(Set.of(MANAGED, OTHER_MANAGED), Set.of(SUPERVISION), false);
+    }
+
+    @Test
+    void administratorsNeedNoManagedScope() {
+        fromApp("6.1.2+57");
+        CurrentUserDetails administrator = user(Set.of(MANAGED), List.of(
+            access(MANAGED, SUPERVISION, FormPermission.ADD_SUBMISSIONS)));
+        when(administrator.isSuper()).thenReturn(true);
+
+        assertThat(scope.findAccessible(administrator, false)).isEmpty();
+        verify(repository, never()).findManagedScope(any(), any(), anyBoolean());
+    }
+
+    @Test
     void appsThatCannotListManagedAssignmentsReceiveNone() {
         CurrentUserDetails supervisor = user(Set.of(MANAGED), List.of(
             access(MANAGED, SUPERVISION, FormPermission.ADD_SUBMISSIONS)));
@@ -106,6 +129,8 @@ class ManagedAssignmentScopeTest {
             .containsExactly("gov00000001", "district001", "village0001");
         assertThat(new Ref("a", "village0001", null).orgUnitAndAncestorUids())
             .containsExactly("village0001");
+        assertThat(new Ref("a", "village0001", ",gov00000001,district001").orgUnitAndAncestorUids())
+            .containsExactly("gov00000001", "district001", "village0001");
     }
 
     private void fromApp(String version) {
