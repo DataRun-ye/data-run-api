@@ -143,7 +143,11 @@ Submission access and assignment-form projection use the same
 `AssignmentFormAccessService`; permissions from another team and forms absent
 from the assignment are rejected. A manager may submit on a managed team's
 assignment with his own team's grant; the submission keeps the assignment's
-team.
+team. An upload that names an existing submission is also checked against the
+stored record (`StoredSubmissionGuard`, both upload routes): a record never
+changes form (E4123), the user must be allowed on the stored assignment and
+form as well (E4124; a move needs both), and deleting needs a delete
+permission there (E4125). Administrators are not checked.
 `DataSubmissionService` receives canonical submissions and a result summary,
 not a security principal; authorization must complete before persistence.
 

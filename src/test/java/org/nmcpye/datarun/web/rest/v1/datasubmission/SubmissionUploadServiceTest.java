@@ -8,6 +8,8 @@ import org.mockito.MockedStatic;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+import org.nmcpye.datarun.jpa.datasubmission.validation.StoredSubmissionGuard;
 import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
@@ -66,6 +68,7 @@ class SubmissionUploadServiceTest {
     private DataSubmissionUploadV1Mapper mapper;
     private AssignmentRepository assignmentRepository;
     private AssignmentFormAccessService formAccessService;
+    private StoredSubmissionGuard storedSubmissionGuard;
     private TemplateVersionResolver templateVersionResolver;
     private ReferenceSubmissionResolver resolver;
     private PlatformTransactionManager transactionManager;
@@ -86,6 +89,7 @@ class SubmissionUploadServiceTest {
         mapper = mock(DataSubmissionUploadV1Mapper.class);
         assignmentRepository = mock(AssignmentRepository.class);
         formAccessService = mock(AssignmentFormAccessService.class);
+        storedSubmissionGuard = mock(StoredSubmissionGuard.class);
         templateVersionResolver = mock(TemplateVersionResolver.class);
         resolver = mock(ReferenceSubmissionResolver.class);
         transactionManager = mock(PlatformTransactionManager.class);
@@ -104,7 +108,8 @@ class SubmissionUploadServiceTest {
             templateVersionResolver,
             resolver,
             transactionManager,
-            new SubmissionIntake(goLiveRules, heldSubmissions, submissionRepository));
+            new SubmissionIntake(goLiveRules, heldSubmissions, submissionRepository),
+            storedSubmissionGuard);
 
         templateContext = mock(TemplateVersionContext.class);
         template = mock(DataTemplateInstanceDto.class);
@@ -351,6 +356,21 @@ class SubmissionUploadServiceTest {
         assertEquals(
             "E4122: You may not submit form `formUid0001` for assignment `assignment1`",
             summary.getFailed().get("firstSub01"));
+        verify(submissionService, never()).upsertAll(any(), any());
+    }
+
+    @Test
+    void anUploadThatReachesAnotherTeamsRecordIsReportedAndNotSaved() {
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
+        when(user.isSuper()).thenReturn(false);
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of("team0000001"));
+        when(formAccessService.canSubmitData(user, assignment, "formUid0001")).thenReturn(true);
+        doThrow(new IllegalQueryException(ErrorCode.E4124, "firstSub01"))
+            .when(storedSubmissionGuard).check(any(), any());
+
+        EntitySaveSummaryVM summary = upload(List.of(request));
+
+        assertTrue(summary.getFailed().get("firstSub01").startsWith("E4124: "));
         verify(submissionService, never()).upsertAll(any(), any());
     }
 

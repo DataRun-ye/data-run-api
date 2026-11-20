@@ -80,6 +80,9 @@ public enum ErrorCode {
     E4120("Unknown Reference `{0}` requires a valid definition"),
     E4121("Submission `{0}` includes unused Reference definition `{1}`"),
     E4122("You may not submit form `{0}` for assignment `{1}`"),
+    E4123("Submission `{0}` is a `{1}` record; it cannot be sent as another form"),
+    E4124("You may not change submission `{0}`: it is not in an assignment and form you may submit"),
+    E4125("You may not delete submission `{0}`"),
 
     /* Users */
     E6201("User account not found"),

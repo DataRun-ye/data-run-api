@@ -22,6 +22,7 @@ import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
 import org.nmcpye.datarun.jpa.intake.IntakeDecision;
 import org.nmcpye.datarun.jpa.intake.IntakeMode;
 import org.nmcpye.datarun.jpa.intake.SubmissionIntake;
+import org.nmcpye.datarun.jpa.datasubmission.validation.StoredSubmissionGuard;
 import org.nmcpye.datarun.jpa.reference.ReferenceSubmissionResolver;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -66,6 +67,7 @@ public class SubmissionUploadService {
     private final ReferenceSubmissionResolver referenceResolver;
     private final PlatformTransactionManager transactionManager;
     private final SubmissionIntake intake;
+    private final StoredSubmissionGuard storedSubmissionGuard;
 
     /** The versioned upload route (`referenceVersion=1`). */
     public EntitySaveSummaryVM upsertAll(
@@ -296,6 +298,7 @@ public class SubmissionUploadService {
                 submission.getForm(),
                 assignment.getUid());
         }
+        storedSubmissionGuard.check(submission, user);
     }
 
     private void generateMissingRepeatIds(

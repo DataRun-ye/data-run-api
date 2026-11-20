@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 
 import static org.nmcpye.datarun.common.enumeration.FormPermission.ADD_SUBMISSIONS;
 import static org.nmcpye.datarun.common.enumeration.FormPermission.DELETE_SUBMISSIONS;
+import static org.nmcpye.datarun.common.enumeration.FormPermission.DELETE_SUBMISSIONS_FROM_USERS;
 import static org.nmcpye.datarun.common.enumeration.FormPermission.EDIT_SUBMISSIONS;
 
 /**
@@ -55,6 +56,14 @@ public class AssignmentFormAccessService {
             formUid,
             ADD_SUBMISSIONS,
             EDIT_SUBMISSIONS);
+    }
+
+    public boolean canDeleteSubmissions(
+        CurrentUserDetails user,
+        Assignment assignment,
+        String formUid
+    ) {
+        return hasAnyPermission(user, assignment, formUid, DELETE_SUBMISSIONS, DELETE_SUBMISSIONS_FROM_USERS);
     }
 
     public boolean canAddSubmissions(

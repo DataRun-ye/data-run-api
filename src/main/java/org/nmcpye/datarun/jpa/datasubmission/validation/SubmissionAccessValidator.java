@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 public class SubmissionAccessValidator {
     private final AssignmentFormAccessService formAccessService;
     private final AssignmentRepository assignmentRepository;
+    private final StoredSubmissionGuard storedSubmissionGuard;
 
     public DataSubmission validateAccess(DataSubmission submission, CurrentUserDetails user) {
         if (!user.isSuper()) {
@@ -47,6 +48,7 @@ public class SubmissionAccessValidator {
                     submission.getForm(),
                     submission.getAssignment());
             }
+            storedSubmissionGuard.check(submission, user);
         }
 
         return submission;

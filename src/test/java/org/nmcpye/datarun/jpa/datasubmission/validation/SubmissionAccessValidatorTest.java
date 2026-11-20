@@ -7,6 +7,7 @@ import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
+import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.security.CurrentUserDetails;
@@ -39,7 +40,8 @@ class SubmissionAccessValidatorTest {
 
         var validator = new SubmissionAccessValidator(
             new AssignmentFormAccessService(),
-            repository);
+            repository,
+            noStoredRecords(repository));
 
         assertThatThrownBy(() -> validator.validateAccess(submission, user))
             .isInstanceOf(IllegalQueryException.class);
@@ -56,7 +58,8 @@ class SubmissionAccessValidatorTest {
 
         var validator = new SubmissionAccessValidator(
             new AssignmentFormAccessService(),
-            repository);
+            repository,
+            noStoredRecords(repository));
 
         assertThat(validator.validateAccess(submission, user))
             .isSameAs(submission);
@@ -72,7 +75,8 @@ class SubmissionAccessValidatorTest {
 
         var validator = new SubmissionAccessValidator(
             new AssignmentFormAccessService(),
-            repository);
+            repository,
+            noStoredRecords(repository));
 
         assertThat(validator.validateAccess(submission(), supervisor))
             .isNotNull();
@@ -88,7 +92,8 @@ class SubmissionAccessValidatorTest {
 
         var validator = new SubmissionAccessValidator(
             new AssignmentFormAccessService(),
-            repository);
+            repository,
+            noStoredRecords(repository));
 
         assertThatThrownBy(() -> validator.validateAccess(submission(), supervisor))
             .isInstanceOf(IllegalQueryException.class)
@@ -110,6 +115,12 @@ class SubmissionAccessValidatorTest {
                 .permissions(Set.of(FormPermission.ADD_SUBMISSIONS))
                 .build()));
         return user;
+    }
+
+    /** A guard for uploads of new submissions: no stored record exists. */
+    private StoredSubmissionGuard noStoredRecords(AssignmentRepository repository) {
+        return new StoredSubmissionGuard(
+            mock(DataSubmissionRepository.class), repository, new AssignmentFormAccessService());
     }
 
     private Assignment assignment() {
