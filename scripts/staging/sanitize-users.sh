@@ -38,7 +38,7 @@ ssh "$staging_db_ssh" "
             printf 'STAGING_ADMIN_LOGIN=staging-admin\\n'
             printf 'STAGING_ADMIN_PASSWORD=%s\\n' \"\$(openssl rand -hex 24)\"
             printf 'STAGING_FIELD_LOGIN=9000000001\\n'
-            printf 'STAGING_FIELD_PASSWORD=%s\\n' \"\$(openssl rand -hex 24)\"
+            printf 'STAGING_FIELD_PASSWORD=%s\\n' \"\$(tr -dc 0-9 < /dev/urandom | head -c 16)\"
             printf 'STAGING_FIELD_TEMPLATE_LOGIN=%s\\n' \
                 '${DATARUN_STAGING_FIELD_TEMPLATE_LOGIN:-}'
         } > '$remote_config'
@@ -55,6 +55,13 @@ ssh "$staging_db_ssh" "
     case \"\$STAGING_ADMIN_PASSWORD:\$STAGING_FIELD_PASSWORD\" in
         *[!0-9a-f:]*)
             echo 'Staging passwords must be generated hexadecimal values.' >&2
+            exit 2
+            ;;
+    esac
+    # The app takes digits only for login and password.
+    case \"\$STAGING_FIELD_PASSWORD\" in
+        ''|*[!0-9]*)
+            echo 'The staging field password must be digits only.' >&2
             exit 2
             ;;
     esac

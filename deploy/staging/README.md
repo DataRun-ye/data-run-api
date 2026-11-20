@@ -164,7 +164,7 @@ all copied password hashes, reset credentials, email logins, and refresh
 tokens. It provisions only `staging-admin` and the field account, whose login
 is digits only (`9000000001`) because the app logs it in; the field
 identity retains the selected source user's UID and team memberships so mobile
-access remains realistic. Both logins are read from the user file below. Passwords are generated once and retained only in
+access remains realistic. Both logins are read from the user file below. The field password is digits only, as the app requires. Passwords are generated once and retained only in
 the staging DB host's mode-`0600` user file. Deployment pulls the digest-pinned
 candidate image, stops any previous staging API before replay, rotates the
 staging JWT key, and starts it only after preparation and identity sanitization
@@ -187,7 +187,9 @@ DATARUN_STAGING_IDENTITY=all scripts/staging/smoke.sh
 ```
 
 This checks login, current-user lookup, and refresh-token rotation for both
-staging identities. To enter credentials in a mobile or administrator client,
+staging identities. To change an identity on a running staging API, edit the user file and run
+`scripts/staging/sanitize-users.sh`, then restart the API container: it caches
+user records, so the old password keeps working until then. To enter credentials in a mobile or administrator client,
 inspect the host-only file in your own terminal. Never put its values in chat,
 repository files, or command history. Explicit
 `DATARUN_STAGING_LOGIN`/`DATARUN_STAGING_PASSWORD` variables remain available
