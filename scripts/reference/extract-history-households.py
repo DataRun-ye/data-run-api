@@ -62,10 +62,13 @@ def main():
                         help="write only rows whose village code is listed in FILE, one per line")
     parser.add_argument("--skip-key", action="append", default=[], metavar="KEY",
                         help="leave out the row with this source key (repeatable)")
+    parser.add_argument("--recode", action="append", default=[], metavar="OLD=NEW",
+                        help="write village code NEW where the history has OLD (repeatable)")
     args = parser.parse_args()
     if not households.LABEL_PATTERN.match(args.label):
         raise SystemExit("--label may contain only letters, digits, dot, dash and underscore.")
     skip_keys = {key.strip() for key in args.skip_key} - {""}
+    recodes = households.parse_recodes(args.recode)
     villages = households.read_villages(args.villages) if args.villages else None
 
     try:
@@ -91,6 +94,7 @@ def main():
     removed_rows = 0
     excluded_rows = 0
     excluded_by_column = Counter()
+    recoded = Counter()
     skip_key_rows = Counter()
     outside_rows = 0
     outside_codes = set()
@@ -120,6 +124,9 @@ def main():
 
         code = households.village_code(row["org_unit_code"])
         name = households.display_name(row["household_name"])
+        if code in recodes:
+            recoded[code] += 1
+            code = recodes[code]
         if key in skip_keys:
             skip_key_rows[key] += 1
         if villages is not None and code and code not in villages:
@@ -137,9 +144,10 @@ def main():
             continue
         kept.append((number, code, name, key, row["household_row_id"].strip()))
 
-    unmatched = sorted(skip_keys - set(skip_key_rows))
+    # A typo in a key or code would otherwise change nothing, silently.
+    unmatched = sorted(skip_keys - set(skip_key_rows)) + sorted(set(recodes) - set(recoded))
     if unmatched:
-        raise SystemExit("These --skip-key values match no row outside the removed or excluded ones: "
+        raise SystemExit("These --skip-key/--recode values match no row outside the removed or excluded ones: "
                          + ", ".join(unmatched))
 
     repeats = 0
@@ -165,6 +173,8 @@ def main():
     print(f"Excluded rows: {excluded_rows}")
     for (column, reason), count in sorted(excluded_by_column.items()):
         print(f"  {column} ({reason}): {count}")
+    for old, count in sorted(recoded.items()):
+        print(f"Re-coded {old} -> {recodes[old]}: {count} rows")
     if villages is not None:
         print(f"Outside --villages (not written): {outside_rows} rows on {len(outside_codes)} village codes")
     print(f"Skipped rows: {len(skipped)}")

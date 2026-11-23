@@ -62,7 +62,8 @@ list into `reference_entry`, scoped to the villages of one activity.
    repeating another row of their `household_row_id` with the same
    village and name. Names, limits, uids and skip reasons follow
    `extract-households.py`. The source key, and so the uid, is the row's
-   lineage `_src_file|_src_object|_src_row`; `--skip-key` takes one. Always
+   lineage `_src_file|_src_object|_src_row`; `--skip-key` takes one.
+   `--recode OLD=NEW` and `--villages` work as in the loader. Always
    extract from the same history files: rebuilt files may number rows
    differently, and their rows would load as new households. The input's
    sha256 is printed for that check.
