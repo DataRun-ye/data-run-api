@@ -202,8 +202,13 @@ def entries(by_key, skipped, villages=None):
 
 def read_villages(path):
     """The village codes of a text file, one per line."""
-    with open(path, encoding="utf-8") as handle:
-        codes = {village_code(line) for line in handle} - {""}
+    try:
+        with open(path, encoding="utf-8") as handle:
+            codes = {village_code(line) for line in handle} - {""}
+    except OSError as error:
+        raise SystemExit(f"Cannot read the --villages file {path}: {error.strerror}.")
+    except UnicodeDecodeError:
+        raise SystemExit(f"The --villages file {path} is not UTF-8 text.")
     if not codes:
         raise SystemExit(f"No village codes in {path}.")
     return codes
