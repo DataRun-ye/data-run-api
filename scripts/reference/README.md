@@ -96,7 +96,8 @@ list into `reference_entry`, scoped to the villages of one activity.
 - Each entry's uid is derived from its source key (`house_uuid`, or a
   history row's lineage), so re-running loads only new households and later
   district lists can be added the same way. The `id` column is a new ULID on
-  every extraction; the other columns repeat exactly.
+  every extraction; the other columns repeat exactly. The loaded entries keep
+  the file's ids, so only the file that was loaded can undo it (below).
 - If a uid already exists with a different village or name, nothing is loaded.
 - Loaded entries have `created_by = 'reference-import'` and no
   `first_registered_activity_id`; entries added by teams carry the user and the
@@ -124,12 +125,16 @@ scripts/reference/load-households.sh --undo \
     --csv target/reference/<label>.csv --activity xuWrotiHywD
 ```
 
-It deletes only the entries whose uid is in that file, that sit on the file
-row's own village and that an import created (`created_by =
-'reference-import'`). Entries of other files, entries moved since, and names
-teams added stay, and the counts show them. Dry run unless `--apply`;
-production needs `DATARUN_REFERENCE_PRODUCTION=true` and `--target
-production`, as for the load.
+It works only with the exact file that was loaded. The load stores the
+file's `id` column as each entry's id, and the undo deletes only entries that
+match a file row on both id and uid, still sit on that row's village and were
+created by an import (`created_by = 'reference-import'`). An earlier load's
+entry with the same uid, entries moved since and names teams added therefore
+stay, and the counts show them. Extracting the file again gives every row a
+new id, so an undo with the new copy deletes nothing: keep the loaded file
+unchanged until the undo window closes, when phones sync those villages. Dry
+run unless `--apply`; production needs `DATARUN_REFERENCE_PRODUCTION=true`
+and `--target production`, as for the load.
 
 ## Daily review during the campaign
 
