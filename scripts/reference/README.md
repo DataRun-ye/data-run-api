@@ -69,7 +69,8 @@ list into `reference_entry`, scoped to the villages of one activity.
        --csv target/reference/amran-hajjah-2026.csv --activity xuWrotiHywD
    ```
 
-3. Load on staging: repeat with `--apply`.
+3. Load on staging: right before, repeat with `--check` (below), then with
+   `--apply`.
 
 4. Production, only with explicit approval and **before users are linked to
    the campaign teams**:
@@ -80,7 +81,13 @@ list into `reference_entry`, scoped to the villages of one activity.
        --csv target/reference/amran-hajjah-2026.csv --activity xuWrotiHywD
    ```
 
-   Then repeat with `--apply`.
+   Then, right before applying, repeat with `--check`, then with `--apply`.
+
+   `--check` changes nothing. It counts the entries the database already
+   holds on the file's villages, split into earlier imports and names teams
+   added. For a file meant for villages without a list, the line "entries
+   already on those villages" must read 0 right before `--apply`; otherwise
+   the load adds a second list there. The dry run does not show this.
 
 ## Behaviour
 

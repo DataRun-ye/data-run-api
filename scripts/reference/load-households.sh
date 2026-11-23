@@ -2,7 +2,8 @@
 # Import an extracted household CSV into reference_entry for one activity's
 # villages, or with --undo delete that file's own entries again (only until a
 # phone has synced those villages). Staging by default; dry run (rolled back)
-# unless --apply.
+# unless --apply. --check is read-only: it counts the entries the database
+# already holds on the file's villages.
 #
 # The CSV is uploaded first (compressed, private to the ssh user, removed
 # afterwards), then loaded from that host-local copy, so a slow or stalled
@@ -15,7 +16,7 @@ ssh_opts=(-o BatchMode=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=8)
 upload_timeout="${DATARUN_REFERENCE_UPLOAD_TIMEOUT:-900}"
 
 usage() {
-    echo "Usage: $0 --csv FILE --activity UID [--target staging|production] [--undo] [--apply]" >&2
+    echo "Usage: $0 --csv FILE --activity UID [--target staging|production] [--check | --undo] [--apply]" >&2
     exit 2
 }
 
@@ -31,9 +32,14 @@ while [[ $# -gt 0 ]]; do
         --target) target="${2:-}"; shift 2 ;;
         --apply) apply="true"; shift ;;
         --undo) [[ "$action" == "load" ]] || usage; action="undo"; shift ;;
+        --check) [[ "$action" == "load" ]] || usage; action="check"; shift ;;
         *) usage ;;
     esac
 done
+if [[ "$action" == "check" && "$apply" == "true" ]]; then
+    echo "--check is read-only; it takes no --apply." >&2
+    exit 2
+fi
 sql_file="$repo_root/scripts/reference/$action-households.sql"
 
 if [[ ! -s "$csv" ]]; then
@@ -68,6 +74,7 @@ fi
 mode="dry run"
 [[ "$apply" == "true" ]] && mode="APPLY"
 [[ "$action" == "undo" ]] && mode="UNDO, $mode"
+[[ "$action" == "check" ]] && mode="read-only check"
 echo "Target: $target ($db_ssh, database $database), activity $activity, $mode"
 
 run_id="$$-$(date +%s)"
