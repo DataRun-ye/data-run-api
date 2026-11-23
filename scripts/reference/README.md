@@ -36,6 +36,11 @@ list into `reference_entry`, scoped to the villages of one activity.
      It applies after every other rule: a row is written or skipped exactly
      as without it, so a `house_uuid` shared with another village is still
      skipped.
+   - `--drop-placeholders` leaves out a row whose name contains one of these
+     words as a whole word: `نازح`, `مغترب`, `فارغ`, `خالية`, `تجريبي`,
+     `مجهول`. `ة`/`ه` and `ى`/`ي` count as one letter, so `خاليه` matches
+     too. Such a row is no household's name. The history extractor always
+     applies the same list (`PLACEHOLDER_WORDS` in `extract-households.py`).
 
    A `--skip-key` or `--recode` OLD that matches no row outside the excluded
    ones stops the run, so a typo cannot pass unnoticed.
@@ -52,9 +57,9 @@ list into `reference_entry`, scoped to the villages of one activity.
 
    It leaves out rows the review removed (`removed_by_review` = yes) or that
    a column whose header contains `exclu` marks (Dec 2023's
-   `planning_exclude`), names containing a placeholder word as a whole word
-   (ة and ه count as one letter; `--placeholder` replaces the default words),
-   and rows repeating another row of their `household_row_id` with the same
+   `planning_exclude`), names containing a placeholder word (the
+   `--drop-placeholders` list above, always applied here), and rows
+   repeating another row of their `household_row_id` with the same
    village and name. Names, limits, uids and skip reasons follow
    `extract-households.py`. The source key, and so the uid, is the row's
    lineage `_src_file|_src_object|_src_row`; `--skip-key` takes one. Always

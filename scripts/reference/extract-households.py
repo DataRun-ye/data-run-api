@@ -12,10 +12,11 @@ another), `hname` (household name), `house_uuid` (stable source key) and
 every header containing "exclu". A row is excluded when any exclusion
 column holds a number above zero, or unexpected text. Rows repeating a
 house_uuid with the same village and name are kept once; a house_uuid on
-different rows skips all of them.
+different rows skips all of them. With --drop-placeholders, a name that
+contains a placeholder word (PLACEHOLDER_WORDS) is left out too.
 
-extract-history-households.py imports the name, uid and output rules from
-here, so both scripts write the same format.
+extract-history-households.py imports the name, placeholder, uid and output
+rules from here, so both scripts apply them alike and write the same format.
 """
 
 import argparse
@@ -49,6 +50,13 @@ UID_REST = string.ascii_letters + string.digits
 CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 WHITESPACE = re.compile(r"\s+")
 LABEL_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
+
+# A name containing one of these as a whole word is no household's name. ة/ه and
+# ى/ي count as one letter, so خالية also matches خاليه.
+PLACEHOLDER_WORDS = ("نازح", "مغترب", "فارغ", "خالية", "تجريبي", "مجهول")
+SPELLING = str.maketrans({"ة": "ه", "ى": "ي"})
+PLACEHOLDER_PATTERNS = [(word, re.compile(r"(?<!\w)" + re.escape(word.translate(SPELLING)) + r"(?!\w)"))
+                        for word in PLACEHOLDER_WORDS]
 
 
 def column_of(reference):
@@ -170,6 +178,12 @@ def skip_reason(key, code, name):
             else "empty name" if not name else "name too long" if len(name) > MAX_NAME_LENGTH else None)
 
 
+def placeholder_word(name):
+    """The placeholder word the name contains as a whole word, or None."""
+    folded = name.translate(SPELLING)
+    return next((word for word, pattern in PLACEHOLDER_PATTERNS if pattern.search(folded)), None)
+
+
 def entries(by_key, skipped, villages=None):
     """Turn {source key: [(row, code, name)]} into CSV rows (id, uid, code, name, key).
 
@@ -256,6 +270,8 @@ def main():
                         help="write village code NEW where the sheet has OLD (repeatable)")
     parser.add_argument("--villages", metavar="FILE",
                         help="write only rows whose village code (after --recode) is listed in FILE, one per line")
+    parser.add_argument("--drop-placeholders", action="store_true",
+                        help="leave out names containing a placeholder word: " + ", ".join(PLACEHOLDER_WORDS))
     args = parser.parse_args()
     if not LABEL_PATTERN.match(args.label):
         raise SystemExit("--label may contain only letters, digits, dot, dash and underscore.")
@@ -305,6 +321,7 @@ def main():
     skip_key_rows = Counter()
     outside_rows = 0
     outside_codes = set()
+    placeholders = Counter()
     for number, cells in rows:
         reasons = {column: exclusion(cell_text(cells.get(column), strings)) for column in exclude_columns}
         flagged = [column for column, reason in reasons.items() if reason]
@@ -329,6 +346,12 @@ def main():
             outside_rows += 1
             outside_codes.add(code)
         reason = "listed by --skip-key" if key in skip_keys else skip_reason(key, code, name)
+        if not reason and args.drop_placeholders:
+            word = placeholder_word(name)
+            if word:
+                reason = "placeholder name"
+                if not outside:
+                    placeholders[word] += 1
         if reason:
             if not outside:
                 skipped.append((number, reason, code, key, name))
@@ -359,6 +382,9 @@ def main():
     print(f"Skipped rows: {len(skipped)}")
     for reason, count in sorted(Counter(row[1] for row in skipped).items()):
         print(f"  {reason}: {count}")
+    if args.drop_placeholders:
+        print("Placeholder words matched: "
+              + (", ".join(f"{word} {count}" for word, count in placeholders.items()) or "none"))
     print(f"Written: {len(written)} households, {len({row[2] for row in written})} village codes")
     print(f"Output: {output}")
     print(f"Skipped list: {skipped_output}")

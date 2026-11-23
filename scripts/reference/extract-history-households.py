@@ -5,7 +5,7 @@ a CSV that load-households.sh imports as Reference entries.
 Standard library only; run with `python3 -I`. Counts are printed; household
 names are written only to files under target/, never to the terminal.
 
-The name, village code, uid and output rules are imported from
+The name, placeholder, village code, uid and output rules are imported from
 extract-households.py, so the CSV and the skipped list have the same columns
 and limits. The source key of a row is its lineage, `_src_file|_src_object|
 _src_row`: unique, but only stable while it is computed from the same
@@ -13,16 +13,16 @@ history files, so the input's sha256 is printed.
 
 A row is left out when the review removed it (`removed_by_review` = yes),
 when any column whose header contains "exclu" holds a number above zero or
-unexpected text, when its name contains a placeholder word as a whole word
-(ة and ه count as one letter), or when it repeats another row of its
-`household_row_id` with the same village and name (the first row is kept).
+unexpected text, when its name contains one of the loader's
+PLACEHOLDER_WORDS as a whole word (always, here), or when it repeats another
+row of its `household_row_id` with the same village and name (the first row
+is kept).
 """
 
 import argparse
 import csv
 import hashlib
 import importlib.util
-import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -43,17 +43,6 @@ households = _load_loader()
 KEY_COLUMNS = ("_src_file", "_src_object", "_src_row")
 KEY_SEPARATOR = "|"
 REQUIRED_COLUMNS = ("org_unit_code", "household_name", "household_row_id", "removed_by_review", *KEY_COLUMNS)
-PLACEHOLDER_WORDS = ("مجهول", "فارغ", "مغترب", "نازح", "تجريبي", "خاليه")
-SPELLING = str.maketrans({"ة": "ه"})
-
-
-def placeholder_patterns(words):
-    return [(word, re.compile(r"(?<!\w)" + re.escape(word.translate(SPELLING)) + r"(?!\w)")) for word in words]
-
-
-def placeholder_in(name, patterns):
-    folded = name.translate(SPELLING)
-    return next((word for word, pattern in patterns if pattern.search(folded)), None)
 
 
 def sha256_of(path):
@@ -73,14 +62,11 @@ def main():
                         help="write only rows whose village code is listed in FILE, one per line")
     parser.add_argument("--skip-key", action="append", default=[], metavar="KEY",
                         help="leave out the row with this source key (repeatable)")
-    parser.add_argument("--placeholder", action="append", metavar="WORD",
-                        help="placeholder word (repeatable; default: " + ", ".join(PLACEHOLDER_WORDS) + ")")
     args = parser.parse_args()
     if not households.LABEL_PATTERN.match(args.label):
         raise SystemExit("--label may contain only letters, digits, dot, dash and underscore.")
     skip_keys = {key.strip() for key in args.skip_key} - {""}
     villages = households.read_villages(args.villages) if args.villages else None
-    patterns = placeholder_patterns(args.placeholder or PLACEHOLDER_WORDS)
 
     try:
         with open(args.tsv, newline="", encoding="utf-8") as handle:
@@ -142,7 +128,7 @@ def main():
             continue
         reason = "listed by --skip-key" if key in skip_keys else households.skip_reason(key, code, name)
         if not reason:
-            word = placeholder_in(name, patterns)
+            word = households.placeholder_word(name)
             if word:
                 placeholders[word] += 1
                 reason = "placeholder name"
