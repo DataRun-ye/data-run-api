@@ -13,6 +13,9 @@ every header containing "exclu". A row is excluded when any exclusion
 column holds a number above zero, or unexpected text. Rows repeating a
 house_uuid with the same village and name are kept once; a house_uuid on
 different rows skips all of them.
+
+extract-history-households.py imports the name, uid and output rules from
+here, so both scripts write the same format.
 """
 
 import argparse

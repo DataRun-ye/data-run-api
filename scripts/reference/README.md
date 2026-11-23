@@ -1,7 +1,7 @@
 # Household list import (Reference entries)
 
 The server has no API to load a Reference list: entries are otherwise
-created only by phone uploads. These two scripts load a campaign's household
+created only by phone uploads. These scripts load a campaign's household
 list into `reference_entry`, scoped to the villages of one activity.
 
 ## Steps
@@ -37,6 +37,28 @@ list into `reference_entry`, scoped to the villages of one activity.
    A `--skip-key` or `--recode` OLD that matches no row outside the excluded
    ones stops the run, so a typo cannot pass unnoticed.
 
+   A campaign's conformed household history (`households.tsv`) is extracted
+   into the same CSV format:
+
+   ```bash
+   python3 -I scripts/reference/extract-history-households.py \
+       --tsv "/path/to/history/dec2021/households.tsv" \
+       --villages target/reference/villages-without-list.txt \
+       --label history-dec2021
+   ```
+
+   It leaves out rows the review removed (`removed_by_review` = yes) or that
+   a column whose header contains `exclu` marks (Dec 2023's
+   `planning_exclude`), names containing a placeholder word as a whole word
+   (ة and ه count as one letter; `--placeholder` replaces the default words),
+   and rows repeating another row of their `household_row_id` with the same
+   village and name. Names, limits, uids and skip reasons follow
+   `extract-households.py`. The source key, and so the uid, is the row's
+   lineage `_src_file|_src_object|_src_row`; `--skip-key` takes one. Always
+   extract from the same history files: rebuilt files may number rows
+   differently, and their rows would load as new households. The input's
+   sha256 is printed for that check.
+
 2. Dry run on staging (loads inside a transaction, prints counts, rolls back):
 
    ```bash
@@ -61,9 +83,10 @@ list into `reference_entry`, scoped to the villages of one activity.
 
 - Only rows whose code matches a village assigned in the activity are loaded;
   the rest are counted as "other villages".
-- Each entry's uid is derived from `house_uuid`, so re-running loads only new
-  households and later district lists can be added the same way. The `id`
-  column is a new ULID on every extraction; the other columns repeat exactly.
+- Each entry's uid is derived from its source key (`house_uuid`, or a
+  history row's lineage), so re-running loads only new households and later
+  district lists can be added the same way. The `id` column is a new ULID on
+  every extraction; the other columns repeat exactly.
 - If a uid already exists with a different village or name, nothing is loaded.
 - Loaded entries have `created_by = 'reference-import'` and no
   `first_registered_activity_id`; entries added by teams carry the user and the
