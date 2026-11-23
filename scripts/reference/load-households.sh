@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Import an extracted household CSV into reference_entry for one activity's
-# villages. Staging by default; dry run (rolled back) unless --apply.
+# villages, or with --undo delete that file's own entries again (only until a
+# phone has synced those villages). Staging by default; dry run (rolled back)
+# unless --apply.
 #
 # The CSV is uploaded first (compressed, private to the ssh user, removed
 # afterwards), then loaded from that host-local copy, so a slow or stalled
@@ -9,12 +11,11 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-sql_file="$repo_root/scripts/reference/load-households.sql"
 ssh_opts=(-o BatchMode=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=8)
 upload_timeout="${DATARUN_REFERENCE_UPLOAD_TIMEOUT:-900}"
 
 usage() {
-    echo "Usage: $0 --csv FILE --activity UID [--target staging|production] [--apply]" >&2
+    echo "Usage: $0 --csv FILE --activity UID [--target staging|production] [--undo] [--apply]" >&2
     exit 2
 }
 
@@ -22,15 +23,18 @@ csv=""
 activity=""
 target="staging"
 apply="false"
+action="load"
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --csv) csv="${2:-}"; shift 2 ;;
         --activity) activity="${2:-}"; shift 2 ;;
         --target) target="${2:-}"; shift 2 ;;
         --apply) apply="true"; shift ;;
+        --undo) [[ "$action" == "load" ]] || usage; action="undo"; shift ;;
         *) usage ;;
     esac
 done
+sql_file="$repo_root/scripts/reference/$action-households.sql"
 
 if [[ ! -s "$csv" ]]; then
     echo "CSV not found or empty: $csv" >&2
@@ -63,11 +67,12 @@ fi
 
 mode="dry run"
 [[ "$apply" == "true" ]] && mode="APPLY"
+[[ "$action" == "undo" ]] && mode="UNDO, $mode"
 echo "Target: $target ($db_ssh, database $database), activity $activity, $mode"
 
 run_id="$$-$(date +%s)"
 remote_data="\$HOME/.cache/datarun-reference/households-$run_id.csv.gz"
-remote_sql="/tmp/datarun-reference-load-$run_id.sql"
+remote_sql="/tmp/datarun-reference-$action-$run_id.sql"
 
 cleanup() {
     ssh "${ssh_opts[@]}" "$db_ssh" "rm -f $remote_data '$remote_sql'" >/dev/null 2>&1 || true

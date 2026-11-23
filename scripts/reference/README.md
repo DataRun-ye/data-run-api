@@ -104,8 +104,25 @@ list into `reference_entry`, scoped to the villages of one activity.
   when the name fails the 4-part rule.
 
 Renaming is safe: `UPDATE reference_entry SET display_name = …` reaches phones
-on their next sync. Undo a load only before any phone has synced:
-`DELETE FROM reference_entry WHERE created_by = 'reference-import'`.
+on their next sync. Undo a load only with `--undo` (below), never with a
+`DELETE` on `created_by`, which would also remove every earlier load.
+
+## Undo a load
+
+Only until a phone has synced the file's villages, and never after: phones
+keep the entries the server deletes (see above).
+
+```bash
+scripts/reference/load-households.sh --undo \
+    --csv target/reference/<label>.csv --activity xuWrotiHywD
+```
+
+It deletes only the entries whose uid is in that file, that sit on the file
+row's own village and that an import created (`created_by =
+'reference-import'`). Entries of other files, entries moved since, and names
+teams added stay, and the counts show them. Dry run unless `--apply`;
+production needs `DATARUN_REFERENCE_PRODUCTION=true` and `--target
+production`, as for the load.
 
 ## Daily review during the campaign
 
