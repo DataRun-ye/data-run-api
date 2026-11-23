@@ -22,6 +22,21 @@ list into `reference_entry`, scoped to the villages of one activity.
    Review `target/reference/<label>.skipped.csv` (rows with no key, no code,
    no name, or a name over 255 characters).
 
+   Options, all off by default:
+
+   - `--code-header NAME` reads the village code from another column, for
+     example `ppcupdated`.
+   - `--skip-key KEY` leaves out the row whose `house_uuid` is KEY, for a row
+     a review deleted that no exclusion column marks (repeatable).
+   - `--recode OLD=NEW` writes village code NEW where the sheet has OLD
+     (repeatable).
+   - `--villages FILE` writes only rows whose village code, after `--recode`,
+     is listed in FILE, one code per line. The load adds rows to a village
+     that already has a list, so use it to load only villages that have none.
+
+   A `--skip-key` or `--recode` OLD that matches no row outside the excluded
+   ones stops the run, so a typo cannot pass unnoticed.
+
 2. Dry run on staging (loads inside a transaction, prints counts, rolls back):
 
    ```bash
@@ -47,7 +62,8 @@ list into `reference_entry`, scoped to the villages of one activity.
 - Only rows whose code matches a village assigned in the activity are loaded;
   the rest are counted as "other villages".
 - Each entry's uid is derived from `house_uuid`, so re-running loads only new
-  households and later district lists can be added the same way.
+  households and later district lists can be added the same way. The `id`
+  column is a new ULID on every extraction; the other columns repeat exactly.
 - If a uid already exists with a different village or name, nothing is loaded.
 - Loaded entries have `created_by = 'reference-import'` and no
   `first_registered_activity_id`; entries added by teams carry the user and the

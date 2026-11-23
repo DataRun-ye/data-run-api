@@ -7,11 +7,12 @@ Standard library only; run with `python3 -I`. The sheet is streamed twice
 Counts are printed; household names are written only to files under
 target/, never to the terminal.
 
-Columns are found by header: `ppcc` (village code), `hname` (household
-name), `house_uuid` (stable source key) and every header containing
-"exclu". A row is excluded when any exclusion column holds a number above
-zero, or unexpected text. Rows repeating a house_uuid with the same village
-and name are kept once; a house_uuid on different rows skips all of them.
+Columns are found by header: `ppcc` (village code; --code-header picks
+another), `hname` (household name), `house_uuid` (stable source key) and
+every header containing "exclu". A row is excluded when any exclusion
+column holds a number above zero, or unexpected text. Rows repeating a
+house_uuid with the same village and name are kept once; a house_uuid on
+different rows skips all of them.
 """
 
 import argparse
@@ -155,15 +156,99 @@ def new_ulid():
     return "".join(reversed(characters))
 
 
+def display_name(text):
+    """The name as loaded: runs of whitespace become one space, ends trimmed."""
+    return WHITESPACE.sub(" ", text or "").strip()
+
+
+def skip_reason(key, code, name):
+    """Why a row cannot become an entry, or None when it can."""
+    return ("no house_uuid" if not key else "no village code" if not code
+            else "empty name" if not name else "name too long" if len(name) > MAX_NAME_LENGTH else None)
+
+
+def entries(by_key, skipped):
+    """Turn {source key: [(row, code, name)]} into CSV rows (id, uid, code, name, key).
+
+    Rows repeating a key with the same village and name are kept once; a key
+    on rows with different villages or names is added to `skipped` with all
+    its rows. Returns the CSV rows and the number of repeated rows dropped.
+    """
+    duplicate_rows = 0
+    written = []
+    seen_uids = {}
+    for key, group in by_key.items():
+        if len({(code, name) for _, code, name in group}) > 1:
+            skipped.extend((number, "house_uuid on different rows", code, key, name)
+                           for number, code, name in group)
+            continue
+        duplicate_rows += len(group) - 1
+        number, code, name = group[0]
+        uid = stable_uid(key)
+        if uid in seen_uids:
+            raise SystemExit(f"uid collision between rows {seen_uids[uid]} and {number}; change UID_SALT.")
+        seen_uids[uid] = number
+        written.append((new_ulid(), uid, code, name, key))
+    return written, duplicate_rows
+
+
+def read_villages(path):
+    """The village codes of a text file, one per line."""
+    with open(path, encoding="utf-8") as handle:
+        codes = {village_code(line) for line in handle} - {""}
+    if not codes:
+        raise SystemExit(f"No village codes in {path}.")
+    return codes
+
+
+def parse_recodes(pairs):
+    """{old code: new code} from OLD=NEW arguments."""
+    recodes = {}
+    for pair in pairs:
+        old, separator, new = pair.partition("=")
+        old, new = village_code(old), village_code(new)
+        if not separator or not old or not new or old == new or recodes.get(old, new) != new:
+            raise SystemExit(f"--recode expects OLD=NEW with two different codes, once per OLD; got {pair!r}.")
+        recodes[old] = new
+    return recodes
+
+
+def write_outputs(out_dir, label, written, skipped):
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    output = out_dir / f"{label}.csv"
+    skipped_output = out_dir / f"{label}.skipped.csv"
+    with output.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["id", "uid", "org_unit_code", "display_name", "source_key"])
+        writer.writerows(written)
+    with skipped_output.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["sheet_row", "reason", "org_unit_code", "source_key", "display_name"])
+        writer.writerows(skipped)
+    return output, skipped_output
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--xlsx", required=True, help="workbook path")
     parser.add_argument("--sheet", required=True, help="sheet name")
     parser.add_argument("--label", required=True, help="output name, e.g. amran-hajjah-2026")
     parser.add_argument("--out-dir", default=str(Path(__file__).resolve().parents[2] / "target" / "reference"))
+    parser.add_argument("--code-header", default=CODE_HEADER,
+                        help=f"header of the village code column (default {CODE_HEADER})")
+    parser.add_argument("--skip-key", action="append", default=[], metavar="KEY",
+                        help="leave out the row with this house_uuid (repeatable)")
+    parser.add_argument("--recode", action="append", default=[], metavar="OLD=NEW",
+                        help="write village code NEW where the sheet has OLD (repeatable)")
+    parser.add_argument("--villages", metavar="FILE",
+                        help="write only rows whose village code (after --recode) is listed in FILE, one per line")
     args = parser.parse_args()
     if not LABEL_PATTERN.match(args.label):
         raise SystemExit("--label may contain only letters, digits, dot, dash and underscore.")
+    skip_keys = {key.strip() for key in args.skip_key} - {""}
+    recodes = parse_recodes(args.recode)
+    villages = read_villages(args.villages) if args.villages else None
 
     with zipfile.ZipFile(args.xlsx) as workbook:
         path = sheet_path(workbook, args.sheet)
@@ -180,7 +265,7 @@ def main():
                 raise SystemExit(f"Expected exactly one {name!r} column, found {len(matches)}.")
             return matches[0]
 
-        code_column = column_named(CODE_HEADER)
+        code_column = column_named(args.code_header.strip().lower())
         name_column = column_named(NAME_HEADER)
         key_column = column_named(KEY_HEADER)
         exclude_columns = sorted(column for column, header in headers.items()
@@ -197,6 +282,10 @@ def main():
     excluded_rows = 0
     skipped = []
     by_key = {}
+    recoded = Counter()
+    skip_key_rows = Counter()
+    outside_rows = 0
+    outside_codes = set()
     for number, cells in rows:
         reasons = {column: exclusion(cell_text(cells.get(column), strings)) for column in exclude_columns}
         flagged = [column for column, reason in reasons.items() if reason]
@@ -207,49 +296,43 @@ def main():
             continue
 
         code = village_code(cell_text(cells.get(code_column), strings))
-        name = WHITESPACE.sub(" ", cell_text(cells.get(name_column), strings) or "").strip()
+        name = display_name(cell_text(cells.get(name_column), strings))
         key = (cell_text(cells.get(key_column), strings) or "").strip()
-        reason = ("no house_uuid" if not key else "no village code" if not code
-                  else "empty name" if not name else "name too long" if len(name) > MAX_NAME_LENGTH else None)
+        if code in recodes:
+            recoded[code] += 1
+            code = recodes[code]
+        if key in skip_keys:
+            skip_key_rows[key] += 1
+        if villages is not None and code and code not in villages:
+            outside_rows += 1
+            outside_codes.add(code)
+            continue
+        reason = "listed by --skip-key" if key in skip_keys else skip_reason(key, code, name)
         if reason:
             skipped.append((number, reason, code, key, name))
             continue
         by_key.setdefault(key, []).append((number, code, name))
 
-    duplicate_rows = 0
-    written = []
-    seen_uids = {}
-    for key, group in by_key.items():
-        if len({(code, name) for _, code, name in group}) > 1:
-            skipped.extend((number, "house_uuid on different rows", code, key, name)
-                           for number, code, name in group)
-            continue
-        duplicate_rows += len(group) - 1
-        number, code, name = group[0]
-        uid = stable_uid(key)
-        if uid in seen_uids:
-            raise SystemExit(f"uid collision between rows {seen_uids[uid]} and {number}; change UID_SALT.")
-        seen_uids[uid] = number
-        written.append((new_ulid(), uid, code, name, key))
+    # A typo in a key or code would otherwise change nothing, silently.
+    unmatched = sorted(skip_keys - set(skip_key_rows)) + sorted(set(recodes) - set(recoded))
+    if unmatched:
+        raise SystemExit("These --skip-key/--recode values match no row outside the excluded ones: "
+                         + ", ".join(unmatched))
 
-    out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    output = out_dir / f"{args.label}.csv"
-    skipped_output = out_dir / f"{args.label}.skipped.csv"
-    with output.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(["id", "uid", "org_unit_code", "display_name", "source_key"])
-        writer.writerows(written)
-    with skipped_output.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(["sheet_row", "reason", "org_unit_code", "source_key", "display_name"])
-        writer.writerows(skipped)
+    written, duplicate_rows = entries(by_key, skipped)
+    output, skipped_output = write_outputs(args.out_dir, args.label, written, skipped)
 
     print(f"Sheet: {args.sheet}  data rows: {len(rows)}")
+    if args.code_header.strip().lower() != CODE_HEADER:
+        print(f"Village code column: {headers[code_column]}")
     print("Exclusion columns: " + ", ".join(headers[column] for column in exclude_columns))
     print(f"Excluded rows: {excluded_rows}")
     for (header, reason), count in sorted(excluded_by_column.items()):
         print(f"  {header} ({reason}): {count}")
+    for old, count in sorted(recoded.items()):
+        print(f"Re-coded {old} -> {recodes[old]}: {count} rows")
+    if villages is not None:
+        print(f"Outside --villages (not written): {outside_rows} rows on {len(outside_codes)} village codes")
     print(f"Duplicate rows dropped (same house_uuid, village and name): {duplicate_rows}")
     print(f"Skipped rows: {len(skipped)}")
     for reason, count in sorted(Counter(row[1] for row in skipped).items()):
