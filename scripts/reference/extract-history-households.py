@@ -82,17 +82,24 @@ def main():
     villages = households.read_villages(args.villages) if args.villages else None
     patterns = placeholder_patterns(args.placeholder or PLACEHOLDER_WORDS)
 
-    with open(args.tsv, newline="", encoding="utf-8") as handle:
-        reader = csv.reader(handle, delimiter="\t", quoting=csv.QUOTE_NONE)
-        header = next(reader)
-        missing = [column for column in REQUIRED_COLUMNS if column not in header]
-        if missing:
-            raise SystemExit(f"Missing columns: {', '.join(missing)}")
-        rows = []
-        for number, values in enumerate(reader, start=2):
-            if len(values) != len(header):
-                raise SystemExit(f"Line {number} has {len(values)} fields, the header {len(header)}.")
-            rows.append((number, dict(zip(header, values))))
+    try:
+        with open(args.tsv, newline="", encoding="utf-8") as handle:
+            reader = csv.reader(handle, delimiter="\t", quoting=csv.QUOTE_NONE)
+            header = next(reader, None)
+            if header is None:
+                raise SystemExit(f"The --tsv file {args.tsv} is empty.")
+            missing = [column for column in REQUIRED_COLUMNS if column not in header]
+            if missing:
+                raise SystemExit(f"Missing columns: {', '.join(missing)}")
+            rows = []
+            for number, values in enumerate(reader, start=2):
+                if len(values) != len(header):
+                    raise SystemExit(f"Line {number} has {len(values)} fields, the header {len(header)}.")
+                rows.append((number, dict(zip(header, values))))
+    except OSError as error:
+        raise SystemExit(f"Cannot read the --tsv file {args.tsv}: {error.strerror}.")
+    except UnicodeDecodeError:
+        raise SystemExit(f"The --tsv file {args.tsv} is not UTF-8 text.")
     exclude_columns = sorted(column for column in header if households.EXCLUDE_MARK in column.lower())
 
     removed_rows = 0

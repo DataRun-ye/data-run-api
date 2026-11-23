@@ -263,7 +263,13 @@ def main():
     recodes = parse_recodes(args.recode)
     villages = read_villages(args.villages) if args.villages else None
 
-    with zipfile.ZipFile(args.xlsx) as workbook:
+    try:
+        workbook = zipfile.ZipFile(args.xlsx)
+    except OSError as error:
+        raise SystemExit(f"Cannot read the --xlsx file {args.xlsx}: {error.strerror}.")
+    except zipfile.BadZipFile:
+        raise SystemExit(f"The --xlsx file {args.xlsx} is not an xlsx workbook.")
+    with workbook:
         path = sheet_path(workbook, args.sheet)
 
         header_row, header_cells = next(iter_rows(workbook, path))
