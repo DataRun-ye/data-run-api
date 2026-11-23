@@ -67,6 +67,8 @@ public class DataRunSecurityConfig {
 
                         .requestMatchers(mvc.pattern("/api/admin/**")).hasAuthority(AuthoritiesConstants.ADMIN)
                         .requestMatchers(mvc.pattern("/api/v1/admin/**")).hasAuthority(AuthoritiesConstants.ADMIN)
+                        // Pivot builds drop, create and rename tables in the pivot schema.
+                        .requestMatchers(mvc.pattern("/api/v1/pivot/**")).hasAuthority(AuthoritiesConstants.ADMIN)
                         .requestMatchers(mvc.pattern("/api/custom/**")).authenticated()
                         .requestMatchers(mvc.pattern("/api/**")).authenticated()
                         .requestMatchers(mvc.pattern("/v3/api-docs/**")).hasAuthority(AuthoritiesConstants.ADMIN)
