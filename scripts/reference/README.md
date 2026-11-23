@@ -98,7 +98,9 @@ list into `reference_entry`, scoped to the villages of one activity.
   district lists can be added the same way. The `id` column is a new ULID on
   every extraction; the other columns repeat exactly. The loaded entries keep
   the file's ids, so only the file that was loaded can undo it (below).
-- If a uid already exists with a different village or name, nothing is loaded.
+- If a row on one of the activity's villages has a uid that already exists
+  with a different village or name, nothing is loaded. Rows on other villages
+  are neither loaded nor checked.
 - Loaded entries have `created_by = 'reference-import'` and no
   `first_registered_activity_id`; entries added by teams carry the user and the
   campaign activity, so the two stay distinguishable.
