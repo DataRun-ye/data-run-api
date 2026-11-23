@@ -138,11 +138,12 @@ file's `id` column as each entry's id, and the undo deletes only entries that
 match a file row on both id and uid, still sit on that row's village and were
 created by an import (`created_by = 'reference-import'`). An earlier load's
 entry with the same uid, entries moved since and names teams added therefore
-stay, and the counts show them. Extracting the file again gives every row a
-new id, so an undo with the new copy deletes nothing: keep the loaded file
-unchanged until the undo window closes, when phones sync those villages. Dry
-run unless `--apply`; production needs `DATARUN_REFERENCE_PRODUCTION=true`
-and `--target production`, as for the load.
+stay, and the counts show them; a renamed entry is still the file's own and
+is deleted. Extracting the file again gives every row a new id, so an undo
+with the new copy deletes nothing: keep the loaded file unchanged until the
+undo window closes, when phones sync those villages. Dry run unless
+`--apply`; production needs `DATARUN_REFERENCE_PRODUCTION=true` and
+`--target production`, as for the load.
 
 ## Daily review during the campaign
 

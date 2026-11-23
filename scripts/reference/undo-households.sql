@@ -60,7 +60,7 @@ SELECT '  inserted from this file (to delete)', count(*) FROM file_entry;
 SELECT '  same uid, other id: an earlier load, a regenerated file or a team (kept)', count(*)
 FROM import_household i JOIN reference_entry r ON r.uid = i.uid
 WHERE r.id <> i.id;
-SELECT '  same uid and id, but moved, unassigned or edited since (kept)', count(*)
+SELECT '  same uid and id, but moved, its village unassigned, or created_by changed (kept)', count(*)
 FROM import_household i JOIN reference_entry r ON r.uid = i.uid AND r.id = i.id
 WHERE NOT EXISTS (SELECT 1 FROM file_entry f WHERE f.id = r.id);
 SELECT 'entries loaded by an import, not from this file (kept)', count(*)
