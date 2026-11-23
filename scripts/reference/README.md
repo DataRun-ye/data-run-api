@@ -33,6 +33,9 @@ list into `reference_entry`, scoped to the villages of one activity.
    - `--villages FILE` writes only rows whose village code, after `--recode`,
      is listed in FILE, one code per line. The load adds rows to a village
      that already has a list, so use it to load only villages that have none.
+     It applies after every other rule: a row is written or skipped exactly
+     as without it, so a `house_uuid` shared with another village is still
+     skipped.
 
    A `--skip-key` or `--recode` OLD that matches no row outside the excluded
    ones stops the run, so a typo cannot pass unnoticed.

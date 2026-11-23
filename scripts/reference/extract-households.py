@@ -170,12 +170,14 @@ def skip_reason(key, code, name):
             else "empty name" if not name else "name too long" if len(name) > MAX_NAME_LENGTH else None)
 
 
-def entries(by_key, skipped):
+def entries(by_key, skipped, villages=None):
     """Turn {source key: [(row, code, name)]} into CSV rows (id, uid, code, name, key).
 
     Rows repeating a key with the same village and name are kept once; a key
     on rows with different villages or names is added to `skipped` with all
-    its rows. Returns the CSV rows and the number of repeated rows dropped.
+    its rows. With `villages`, those rules still see every row, and only then
+    are the keys and skipped rows of other villages left out. Returns the CSV
+    rows and the number of repeated rows dropped.
     """
     duplicate_rows = 0
     written = []
@@ -183,14 +185,17 @@ def entries(by_key, skipped):
     for key, group in by_key.items():
         if len({(code, name) for _, code, name in group}) > 1:
             skipped.extend((number, "house_uuid on different rows", code, key, name)
-                           for number, code, name in group)
+                           for number, code, name in group
+                           if villages is None or code in villages)
             continue
-        duplicate_rows += len(group) - 1
         number, code, name = group[0]
         uid = stable_uid(key)
         if uid in seen_uids:
             raise SystemExit(f"uid collision between rows {seen_uids[uid]} and {number}; change UID_SALT.")
         seen_uids[uid] = number
+        if villages is not None and code not in villages:
+            continue
+        duplicate_rows += len(group) - 1
         written.append((new_ulid(), uid, code, name, key))
     return written, duplicate_rows
 
@@ -306,13 +311,16 @@ def main():
             code = recodes[code]
         if key in skip_keys:
             skip_key_rows[key] += 1
-        if villages is not None and code and code not in villages:
+        # --villages comes last: rows of other villages still meet every rule,
+        # so a key shared with another village is skipped as without it.
+        outside = bool(villages is not None and code and code not in villages)
+        if outside:
             outside_rows += 1
             outside_codes.add(code)
-            continue
         reason = "listed by --skip-key" if key in skip_keys else skip_reason(key, code, name)
         if reason:
-            skipped.append((number, reason, code, key, name))
+            if not outside:
+                skipped.append((number, reason, code, key, name))
             continue
         by_key.setdefault(key, []).append((number, code, name))
 
@@ -322,7 +330,7 @@ def main():
         raise SystemExit("These --skip-key/--recode values match no row outside the excluded ones: "
                          + ", ".join(unmatched))
 
-    written, duplicate_rows = entries(by_key, skipped)
+    written, duplicate_rows = entries(by_key, skipped, villages)
     output, skipped_output = write_outputs(args.out_dir, args.label, written, skipped)
 
     print(f"Sheet: {args.sheet}  data rows: {len(rows)}")
