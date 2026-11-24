@@ -144,6 +144,8 @@ class ErrorReportingConfigurationTest {
         assertThat(options.isTracingEnabled()).isFalse();
         assertThat(options.getTracePropagationTargets()).isEmpty();
         assertThat(options.getLogs().isEnabled()).isFalse();
+        assertThat(options.isPrintUncaughtStackTrace()).isTrue();
+        assertThat(options.getFlushTimeoutMillis()).isEqualTo(2000);
         assertThat(options.getLogging().getMinimumEventLevel()).isEqualTo(Level.ERROR);
         assertThat(options.getRelease()).isEqualTo("6.5.3");
     }

@@ -64,6 +64,11 @@ public class ErrorReportingConfiguration {
             options.setTracesSampler(null);
             options.setTracePropagationTargets(List.of()); // no trace headers on outgoing requests
             options.getLogs().setEnabled(false); // log lines are not shipped; ERROR lines become events
+            // Sentry becomes the JVM's default uncaught exception handler and, unlike the JVM's own, prints nothing;
+            // the event carries no message, so the stack trace must still reach the container log.
+            options.setPrintUncaughtStackTrace(true);
+            // How long a dying thread waits for its report to start going out, and shutdown for reports to leave.
+            options.setFlushTimeoutMillis(2000);
             if (options instanceof SentryProperties properties) {
                 properties.getLogging().setMinimumEventLevel(Level.ERROR);
             }

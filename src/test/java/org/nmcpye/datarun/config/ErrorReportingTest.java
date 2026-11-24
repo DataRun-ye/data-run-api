@@ -15,6 +15,9 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -145,6 +148,45 @@ class ErrorReportingTest {
             assertThat(glitchTip.events()).filteredOn(event -> event.has("exception")).singleElement()
                 .satisfies(event -> assertThat(event.path("exception").path("values").get(0).path("type").asText())
                     .isEqualTo("IllegalStateException"));
+        }
+    }
+
+    /**
+     * With a DSN, Sentry is the JVM's default uncaught exception handler. The container log must still show the
+     * stack trace, since the event carries none of the exception's message.
+     */
+    @Test
+    void anUncaughtExceptionReachesTheLogInFullAndGlitchTipWithoutItsMessage() {
+        Thread.UncaughtExceptionHandler before = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler(null);
+        PrintStream stderr = System.err;
+        ByteArrayOutputStream printed = new ByteArrayOutputStream();
+        try (FakeGlitchTip glitchTip = FakeGlitchTip.start()) {
+            runner.withPropertyValues("sentry.dsn=" + glitchTip.dsn()).run(context -> {
+                System.setErr(new PrintStream(printed, true, StandardCharsets.UTF_8));
+                try {
+                    Thread dying = new Thread(() -> {
+                        throw new IllegalStateException("household name");
+                    }, "dying-thread");
+                    dying.start();
+                    dying.join(5000);
+                } finally {
+                    System.setErr(stderr);
+                }
+                Sentry.flush(5000);
+            });
+
+            assertThat(printed.toString(StandardCharsets.UTF_8))
+                .contains("java.lang.IllegalStateException: household name");
+            assertThat(String.join("\n", glitchTip.envelopes())).doesNotContain("household name");
+            assertThat(glitchTip.events()).singleElement().satisfies(event -> {
+                assertThat(event.path("level").asText()).isEqualTo("fatal");
+                JsonNode exception = event.path("exception").path("values").get(0);
+                assertThat(exception.path("type").asText()).isEqualTo("IllegalStateException");
+                assertThat(exception.has("value")).isFalse();
+            });
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(before);
         }
     }
 
