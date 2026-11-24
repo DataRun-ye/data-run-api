@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!-- How long the purge may wait for its lock; a Liquibase parameter of the same name overrides it. -->
+    <property name="errorEventPurgeLockTimeout" value="30s"/>
+
+    <!--
+      Empties error_event, once, at the 6.5.5 deploy: owner's decision of 2026-11-25 ("purge"). Its rows hold raw
+      exception messages that quote submitted values and database rows, and the logins that failed logins tried; on
+      the staging clone of production, 24,549 rows and 35 MB. Since 6.5.5 nothing writes or reads the table. It stays,
+      empty, because 6.5.4, the rollback target, still writes it; a later release drops it.
+
+      TRUNCATE frees the space at once and takes an ACCESS EXCLUSIVE lock on error_event only, which nothing holds
+      during a deploy: lock_timeout makes the deploy fail visibly instead of waiting if a reader does.
+
+      IRREVERSIBLE: the rollback does nothing, so rolling back to 6.5.4 leaves the table empty and 6.5.4 writes new
+      rows into it. The purged rows survive only in the nightly Proxmox backups, kept 7 to 14 days.
+    -->
+    <changeSet id="20261125-04-purge-error-event" author="datarun">
+        <sql>SET LOCAL lock_timeout = '${errorEventPurgeLockTimeout}'</sql>
+        <sql>TRUNCATE TABLE error_event</sql>
+        <rollback>
+            <!-- Empty on purpose: the purged rows are not restored (see above). -->
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

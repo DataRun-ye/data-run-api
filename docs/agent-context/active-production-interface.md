@@ -382,7 +382,9 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     `http.server.requests` metrics, where Prometheus export is on.
   - `error_event` is no longer written or read (6.5.5). The table stays for
     one release, because 6.5.4, the rollback target, still writes it; a later
-    release drops it.
+    release drops it. The 6.5.5 deploy empties it once (changeset
+    `20261125-04`, owner's decision of 2026-11-25). That is irreversible: the
+    purged rows survive only in the nightly Proxmox backups (7 to 14 days).
   - Heartbeat (`DATARUN_ETL_HEARTBEAT_URL`, `datarun.etl.heartbeat-url`):
     after a poll that succeeded, the ETL sends a POST to the monitor, at most
     once a minute, and gives up after 5 s. A failure is logged at DEBUG and
