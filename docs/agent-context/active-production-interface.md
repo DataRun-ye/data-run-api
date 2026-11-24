@@ -198,6 +198,53 @@ migration-error entity, repository, service, and skip/listener chain had no
 registered batch job or caller and is source-dead; its physical table remains
 a later schema-migration concern.
 
+### Outbox Consumer (ETL)
+
+The ETL (`etl/`) is the only consumer of the current `outbox`. For each row it
+re-reads the submission and projects it into `analytics.tall_canonical` and
+`analytics.events`. What a projection writes or leaves behind (removed rows,
+voids, delete markers) belongs to the projector work, not to this runtime.
+
+- **Polling.** `ScheduledOrchestratorRunner` starts a poll
+  `datarun.etl.poll-delay` after the previous one ends. When a row is due, it
+  takes a transaction-scoped advisory lock on one connection kept for the whole
+  run, then claims batches of `datarun.etl.batch-size` while they come back
+  full, for at most `datarun.etl.max-poll-duration`. `datarun.etl.enabled=false`
+  stops an instance from polling. Scheduling is off in the test profiles.
+- **Claims.** A claim takes `pending` or `failed` rows whose `next_attempt_at`
+  is empty or past, in submission-serial then outbox-id order. It counts the
+  claim in `attempt` and leases the row by moving `next_attempt_at` forward by
+  `datarun.etl.claim-lease`, so a run that dies frees its rows when the lease
+  ends.
+- **Outcomes.** Each row is projected and marked `success` in one transaction,
+  which gives up after `datarun.etl.row-timeout`. A failure is recorded after
+  that transaction has rolled back:
+  - before the last attempt, the row becomes `failed`. It keeps a
+    `last_error`: the database's first error line or the root cause, never
+    bound values. It is retried after `datarun.etl.retry-delay`, doubling up
+    to `datarun.etl.max-retry-delay`.
+  - It becomes `dead` on attempt `datarun.etl.max-attempts`, when its
+    submission is gone, or when it was claimed more often than it may be
+    tried.
+
+  `outbox_processing` keeps one audit row per run and row: `success`,
+  `failure` or `dead`.
+- **Dead rows.** A dead row is not claimed again. Put one back only after its
+  cause is fixed, and reset its attempts, or the next claim marks it dead again:
+  `UPDATE outbox SET status = 'pending', attempt = 0, next_attempt_at = NULL
+  WHERE outbox_id IN (...)`.
+- **Metrics.** Micrometer meters are served at `/management/prometheus` where
+  Prometheus export is on:
+  - `datarun_etl_outbox_rows{status}`: the backlog by status;
+  - `datarun_etl_outbox_oldest_age_seconds`: the age of the oldest change not
+    yet projected;
+  - `datarun_etl_last_success_seconds`: when a poll last ended without error;
+  - `datarun_etl_outbox_processed_total{outcome}`: rows processed, by outcome;
+  - `datarun_etl_outbox_processing_seconds`: the time per row.
+- **Index.** The partial index `idx_outbox_unfinished` (pending, failed and
+  dead rows, in claim order) keeps the due check, the claim and the backlog
+  gauges off the processed history.
+
 ## Cleanup Cycle
 
 For each domain: map contract, remove source-dead alternatives, reconcile
