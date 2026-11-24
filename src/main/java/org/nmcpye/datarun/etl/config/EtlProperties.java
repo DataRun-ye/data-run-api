@@ -20,6 +20,12 @@ public class EtlProperties {
     /** The pause between the end of one poll and the start of the next. */
     private Duration pollDelay = Duration.ofSeconds(30);
 
+    /**
+     * After a poll that stopped (lost connection, interrupt) or failed, the next one waits twice as long as the
+     * last pause, up to this; a poll that succeeds brings the pause back to {@link #pollDelay}.
+     */
+    private Duration maxPollDelay = Duration.ofMinutes(5);
+
     /** Rows claimed in one batch; each batch is one etl_runs row. */
     private int batchSize = 100;
 

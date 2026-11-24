@@ -7,21 +7,24 @@ import org.nmcpye.datarun.etl.orchestrator.EtlRunResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.scheduling.TriggerContext;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
-import org.springframework.scheduling.config.FixedDelayTask;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Polls the outbox for the ETL: {@code datarun.etl.poll-delay} after one poll ends, the next one starts. A poll
  * that finds a row due takes the run lock and claims batches of {@code datarun.etl.batch-size} until a batch
  * comes back short, a batch stops on a lost connection or an interrupt, or the poll has run for
- * {@code datarun.etl.max-poll-duration}. Scheduling is enabled outside the test profiles;
- * {@code datarun.etl.enabled=false} stops this instance from polling.
+ * {@code datarun.etl.max-poll-duration}. A poll that stops or fails is not a success, and the pause before the next
+ * one doubles, up to {@code datarun.etl.max-poll-delay}, until a poll succeeds. Scheduling is enabled outside the
+ * test profiles; {@code datarun.etl.enabled=false} stops this instance from polling.
  */
 @Service
 public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
@@ -43,6 +46,9 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
     private final EtlRunLock lock;
     private final EtlMetrics metrics;
     private final EtlProperties properties;
+    private final AtomicReference<Duration> pause = new AtomicReference<>();
+
+    private enum PollOutcome { SUCCEEDED, STOPPED, SKIPPED }
 
     public ScheduledOrchestratorRunner(NamedParameterJdbcTemplate jdbc, EtlOrchestrator orchestrator, EtlRunLock lock,
                                        EtlMetrics metrics, EtlProperties properties) {
@@ -51,6 +57,7 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
         this.lock = lock;
         this.metrics = metrics;
         this.properties = properties;
+        this.pause.set(properties.getPollDelay());
     }
 
     @Override
@@ -59,33 +66,66 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
             log.warn("The ETL does not poll the outbox on this instance (datarun.etl.enabled=false)");
             return;
         }
-        Duration delay = properties.getPollDelay();
-        registrar.addFixedDelayTask(new FixedDelayTask(this::scheduledRun, delay, delay));
+        registrar.addTriggerTask(this::scheduledRun, this::nextPoll);
         log.info("The ETL polls the outbox {} after each poll, {} rows a batch, for at most {} a poll",
-            delay, properties.getBatchSize(), properties.getMaxPollDuration());
+            properties.getPollDelay(), properties.getBatchSize(), properties.getMaxPollDuration());
+    }
+
+    /** When the next poll starts: the current pause after the last poll ended, or after start-up. */
+    Instant nextPoll(TriggerContext context) {
+        Instant last = context.lastCompletion();
+        return (last != null ? last : context.getClock().instant()).plus(pause.get());
     }
 
     /** One poll. */
     public void scheduledRun() {
-        if (Boolean.TRUE.equals(jdbc.queryForObject(DUE_SQL, Map.of(), Boolean.class))) {
-            Optional<Integer> claimed = lock.callExclusively(this::drain);
-            if (claimed.isEmpty()) {
-                log.info("Another ETL run holds the lock; skipping this poll");
-                return;
-            }
+        PollOutcome outcome;
+        try {
+            outcome = poll();
+        } catch (RuntimeException e) {
+            metrics.pollFailed();
+            lengthenPause();
+            throw e;
         }
-        metrics.pollSucceeded();
+        if (outcome == PollOutcome.STOPPED) {
+            metrics.pollStopped();
+            lengthenPause();
+        } else if (outcome == PollOutcome.SUCCEEDED) {
+            metrics.pollSucceeded();
+            pause.set(properties.getPollDelay());
+        }
     }
 
-    private int drain() {
+    private PollOutcome poll() {
+        if (!Boolean.TRUE.equals(jdbc.queryForObject(DUE_SQL, Map.of(), Boolean.class))) {
+            return PollOutcome.SUCCEEDED;
+        }
+        Optional<Boolean> stopped = lock.callExclusively(this::drain);
+        if (stopped.isEmpty()) {
+            log.info("Another ETL run holds the lock; skipping this poll");
+            return PollOutcome.SKIPPED;
+        }
+        return stopped.get() ? PollOutcome.STOPPED : PollOutcome.SUCCEEDED;
+    }
+
+    private void lengthenPause() {
+        Duration longest = properties.getMaxPollDelay().compareTo(properties.getPollDelay()) > 0
+            ? properties.getMaxPollDelay() : properties.getPollDelay();
+        Duration next = pause.updateAndGet(current -> {
+            Duration doubled = current.multipliedBy(2);
+            return doubled.compareTo(longest) > 0 ? longest : doubled;
+        });
+        log.warn("The next ETL poll waits {}", next);
+    }
+
+    /** Claims batches; true when one stopped on a lost connection or an interrupt. */
+    private boolean drain() {
         int batchSize = Math.max(1, properties.getBatchSize());
         long deadline = System.nanoTime() + properties.getMaxPollDuration().toNanos();
-        int claimed = 0;
         EtlRunResult batch;
         do {
             batch = orchestrator.runOnce(PIPELINE, batchSize);
-            claimed += batch.claimed();
         } while (!batch.stopped() && batch.claimed() >= batchSize && System.nanoTime() - deadline < 0);
-        return claimed;
+        return batch.stopped();
     }
 }

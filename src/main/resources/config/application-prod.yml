@@ -115,6 +115,7 @@ datarun:
   # The outbox consumer that feeds analytics.tall_canonical and analytics.events (EtlProperties).
   etl:
     poll-delay: 30s          # pause after one poll before the next
+    max-poll-delay: 5m       # after a stopped or failed poll the pause doubles, up to this
     batch-size: 100          # rows claimed per batch (one etl_runs row each)
     max-poll-duration: 60s   # a poll claims batches while they come back full, for at most this long
     claim-lease: 15m         # a claimed row is reserved this long; a run that dies frees its rows after it

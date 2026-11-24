@@ -5,9 +5,12 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.core.read.ListAppender;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.nmcpye.datarun.etl.admin.EtlRunLock;
+import org.nmcpye.datarun.etl.admin.ScheduledOrchestratorRunner;
 import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
@@ -33,6 +36,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -409,8 +413,8 @@ class EtlOutboxProcessingIT {
     }
 
     /**
-     * A lost connection says nothing about the row: the batch stops at once and releases the rows it did not
-     * finish, which keep their attempts, instead of waiting for the pool row after row.
+     * A lost connection stops the batch at once, instead of waiting for the pool row after row. The row that met
+     * it is recorded as failed with the usual retry wait; the rows not started are released with no attempt lost.
      */
     @Test
     void aBatchThatLosesItsConnectionStopsAndReleasesTheRowsItDidNotFinish() {
@@ -425,8 +429,11 @@ class EtlOutboxProcessingIT {
         assertThat(result.stopped()).isTrue();
         assertThat(result.succeeded()).isEqualTo(1);
         assertThat(fixture.outboxRow(rows.get(0))).containsEntry("status", "success");
-        assertThat(fixture.outboxRow(rows.get(1))).as("the row that met it keeps the attempt it started")
-            .containsEntry("status", "pending").containsEntry("attempt", 1).containsEntry("next_attempt_at", null);
+        assertThat(fixture.outboxRow(rows.get(1))).as("the row that met it is failed with its retry wait")
+            .containsEntry("status", "failed").containsEntry("attempt", 1);
+        assertThat(fixture.leaseSecondsLeft(rows.get(1))).isBetween(50.0, 60.0);
+        assertThat((String) fixture.outboxRow(rows.get(1)).get("last_error"))
+            .isEqualTo("Connection is not available, request timed out [SQLState 08003]");
         for (int i : new int[]{2, 3, 4}) {
             assertThat(fixture.outboxRow(rows.get(i))).containsEntry("status", "pending").containsEntry("attempt", 0)
                 .containsEntry("next_attempt_at", null);
@@ -434,7 +441,49 @@ class EtlOutboxProcessingIT {
         assertThat(fixture.runs()).singleElement().satisfies(r -> assertThat(r).containsEntry("status", "stopped"));
 
         orchestrator.runOnce("test", 10);
+        assertThat(fixture.outboxRow(rows.get(1))).as("still waiting its retry").containsEntry("status", "failed");
+        fixture.endLease(rows.get(1));
+        orchestrator.runOnce("test", 10);
         assertThat(rows).allSatisfy(id -> assertThat(fixture.outboxRow(id)).containsEntry("status", "success"));
+    }
+
+    /**
+     * A pool that keeps timing out, poll after poll: each poll charges only the row at the head one attempt and
+     * gives it the usual retry wait, so no row can hold the head of the queue or die before its normal schedule
+     * (pinned before: the head row was released with no wait, charged on every poll, and dead on the 11th).
+     * No poll counts as a success.
+     */
+    @Test
+    void aPoolThatKeepsTimingOutKillsNoRowBeforeItsSchedule() {
+        List<Long> rows = new ArrayList<>();
+        for (int i = 1; i <= 20; i++) {
+            String uid = "poolSub" + String.format("%04d", i);
+            fixture.submission(uid, TEMPLATE, 1);
+            rows.add(fixture.outbox(uid, "SAVE"));
+        }
+        EtlOrchestrator poolTimingOut = orchestratorFailing(uid -> true, () -> {
+            throw new CannotCreateTransactionException("Could not open JPA EntityManager for transaction",
+                new SQLTransientConnectionException("Hikari - Connection is not available, request timed out after 30000ms."));
+        });
+        SimpleMeterRegistry polled = new SimpleMeterRegistry();
+        ScheduledOrchestratorRunner runner = new ScheduledOrchestratorRunner(jdbc, poolTimingOut, new EtlRunLock(dataSource),
+            new EtlMetrics(polled, dataSource, etlProperties), etlProperties);
+
+        for (int poll = 1; poll <= 12; poll++) {
+            runner.scheduledRun();
+        }
+
+        assertThat(rows).noneSatisfy(id -> assertThat(fixture.outboxRow(id)).containsEntry("status", "dead"));
+        for (int i = 0; i < 12; i++) {
+            assertThat(fixture.outboxRow(rows.get(i))).containsEntry("status", "failed").containsEntry("attempt", 1);
+            assertThat(fixture.leaseSecondsLeft(rows.get(i))).as("waits its retry").isGreaterThan(50.0);
+        }
+        for (int i = 12; i < 20; i++) {
+            assertThat(fixture.outboxRow(rows.get(i))).containsEntry("status", "pending").containsEntry("attempt", 0);
+        }
+        assertThat(polled.get("datarun.etl.last.success").gauge().value()).as("no poll succeeded").isNaN();
+        assertThat(polled.get("datarun.etl.polls").tag("outcome", "stopped").counter().count()).isEqualTo(12);
+        assertThat(polled.get("datarun.etl.polls").tag("outcome", "succeeded").counter().count()).isZero();
     }
 
     /** An interrupt, as at shutdown, stops the batch the same way and is still set afterwards. */
@@ -451,7 +500,9 @@ class EtlOutboxProcessingIT {
 
         assertThat(stillInterrupted).isTrue();
         assertThat(result.stopped()).isTrue();
-        for (int i : new int[]{1, 2, 3, 4}) {
+        assertThat(fixture.outboxRow(rows.get(1))).containsEntry("status", "failed").containsEntry("attempt", 1);
+        assertThat(fixture.isLeased(rows.get(1))).isTrue();
+        for (int i : new int[]{2, 3, 4}) {
             assertThat(fixture.outboxRow(rows.get(i))).containsEntry("status", "pending").containsEntry("next_attempt_at", null);
         }
     }
@@ -481,13 +532,18 @@ class EtlOutboxProcessingIT {
 
     /** The application's orchestrator, except that projecting {@code submissionUid} runs {@code failure}. */
     private EtlOrchestrator orchestratorWhere(String submissionUid, Runnable failure) {
-        EventProcessorService failingOnOneRow = (runId, outbox, ingestId) -> {
-            if (submissionUid.equals(outbox.getSubmissionUid())) {
+        return orchestratorFailing(submissionUid::equals, failure);
+    }
+
+    /** The application's orchestrator, except that projecting a submission the predicate picks runs {@code failure}. */
+    private EtlOrchestrator orchestratorFailing(Predicate<String> submissionUids, Runnable failure) {
+        EventProcessorService failingOnSomeRows = (runId, outbox, ingestId) -> {
+            if (submissionUids.test(outbox.getSubmissionUid())) {
                 failure.run();
             }
             eventProcessor.processEvent(runId, outbox, ingestId);
         };
-        return new EtlOrchestrator(etlRunService, claimService, processingService, failingOnOneRow, transactionManager,
+        return new EtlOrchestrator(etlRunService, claimService, processingService, failingOnSomeRows, transactionManager,
             etlProperties, metrics);
     }
 

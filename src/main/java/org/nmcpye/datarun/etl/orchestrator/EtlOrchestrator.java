@@ -28,8 +28,9 @@ import java.util.UUID;
  * Each claimed row first has its attempt counted, in a transaction of its own, then is projected in another,
  * which saves the projection and the row's success together. A failure of any kind is recorded only after that
  * transaction has rolled back, in a new one: the row is marked failed and tried again after a growing wait, or
- * dead once its tries are used up. A lost connection or an interrupt stops the batch instead, and the rows not
- * finished are released for the next run without losing an attempt.
+ * dead once its tries are used up. A lost connection or an interrupt also stops the batch: the row that met it is
+ * recorded like any failure, with the usual retry wait, so it can neither hold the head of the queue nor die before
+ * its normal schedule, and the rows not started are released for the next run without losing an attempt.
  */
 @Component
 public class EtlOrchestrator {
@@ -92,8 +93,9 @@ public class EtlOrchestrator {
             int done = 0;
             boolean stopped = false;
             for (OutboxDto outbox : claimed) {
-                RowResult result = Thread.currentThread().isInterrupted() ? RowResult.STOP : process(runId, outbox, ingestId);
-                if (result == RowResult.STOP) {
+                RowResult result = Thread.currentThread().isInterrupted()
+                    ? RowResult.STOP_BEFORE_START : process(runId, outbox, ingestId);
+                if (result == RowResult.STOP_BEFORE_START) {
                     stopped = true;
                     break;
                 }
@@ -102,6 +104,10 @@ public class EtlOrchestrator {
                     successCount++;
                 } else if (result != RowResult.SKIPPED) {
                     failureCount++;
+                }
+                if (result.stopsTheBatch) {
+                    stopped = true;
+                    break;
                 }
             }
             if (stopped) {
@@ -130,16 +136,21 @@ public class EtlOrchestrator {
     }
 
     private enum RowResult {
-        SUCCESS(Outcome.SUCCESS), FAILED(Outcome.FAILED), DEAD(Outcome.DEAD),
+        SUCCESS(Outcome.SUCCESS, false), FAILED(Outcome.FAILED, false), DEAD(Outcome.DEAD, false),
         /** A newer claim holds the row; that run owns it. */
-        SKIPPED(null),
-        /** The connection is lost or the thread interrupted: the batch stops. */
-        STOP(null);
+        SKIPPED(null, false),
+        /** The row could not be started (or the thread was interrupted first): the batch stops before it. */
+        STOP_BEFORE_START(null, true),
+        /** The row met a lost connection or an interrupt; it is recorded as failed and the batch stops after it. */
+        FAILED_AND_STOP(Outcome.FAILED, true),
+        DEAD_AND_STOP(Outcome.DEAD, true);
 
         private final Outcome outcome;
+        private final boolean stopsTheBatch;
 
-        RowResult(Outcome outcome) {
+        RowResult(Outcome outcome, boolean stopsTheBatch) {
             this.outcome = outcome;
+            this.stopsTheBatch = stopsTheBatch;
         }
     }
 
@@ -164,7 +175,7 @@ public class EtlOrchestrator {
         } catch (Throwable e) {
             // Not even the start could be written: nothing in this batch can be.
             log.warn("Could not start outbox row {}; the batch stops: {}", outbox.getOutboxId(), EtlFailures.describe(e));
-            return RowResult.STOP;
+            return RowResult.STOP_BEFORE_START;
         }
         outbox.setAttempt(attempt);
         if (retryPolicy.startedTooOften(attempt)) {
@@ -184,32 +195,52 @@ public class EtlOrchestrator {
             if (EtlFailures.stopsTheBatch(e)) {
                 log.warn("Outbox row {} met a lost connection or an interrupt on attempt {}; the batch stops: {}",
                     outbox.getOutboxId(), attempt, error);
-                return RowResult.STOP;
+                // Recorded like any failure, so the row waits its turn instead of heading the next claim.
+                boolean[] dead = new boolean[1];
+                withInterruptSetAside(() -> dead[0] = recordFailure(runId, outbox, attempt, error));
+                return dead[0] ? RowResult.DEAD_AND_STOP : RowResult.FAILED_AND_STOP;
             }
             if (log.isDebugEnabled()) {
                 log.debug("Outbox row {} failed on attempt {}", outbox.getOutboxId(), attempt, EtlFailures.withoutMessages(e));
             }
-            if (retryPolicy.isLastAttempt(attempt)) {
-                recordDead(runId, outbox, error);
-                return RowResult.DEAD;
-            }
-            recordRetry(runId, outbox, error, retryPolicy.delayAfter(attempt));
-            return RowResult.FAILED;
+            return recordFailure(runId, outbox, attempt, error) ? RowResult.DEAD : RowResult.FAILED;
         }
     }
 
+    /** Records a failed row: dead on its last attempt, else failed with the usual retry wait. True when dead. */
+    private boolean recordFailure(UUID runId, OutboxDto outbox, int attempt, String error) {
+        if (retryPolicy.isLastAttempt(attempt)) {
+            recordDead(runId, outbox, error);
+            return true;
+        }
+        recordRetry(runId, outbox, error, retryPolicy.delayAfter(attempt));
+        return false;
+    }
+
     /**
-     * Ends the lease of the rows a stopped batch did not finish, so the next run takes them at once; the row that
-     * stopped it keeps the attempt it started. An interrupt is set aside for the release and then restored.
+     * Ends the lease of the rows a stopped batch did not start, so the next run takes them at once; they lose no
+     * attempt. The row that stopped the batch was recorded as failed, with its retry wait.
      */
     private void release(UUID runId, UUID ingestId, List<OutboxDto> rows) {
+        if (rows.isEmpty()) {
+            return;
+        }
+        withInterruptSetAside(() -> {
+            try {
+                int released = outboxClaimService.release(ingestId, rows.stream().map(OutboxDto::getOutboxId).toList());
+                log.warn("Run {} stopped; released {} of its claimed rows for the next run", runId, released);
+            } catch (RuntimeException e) {
+                log.warn("Run {} stopped and could not release its {} unstarted rows; they are claimed again when "
+                    + "their lease ends: {}", runId, rows.size(), EtlFailures.describe(e));
+            }
+        });
+    }
+
+    /** Runs a short write with the thread's interrupt set aside, so the pool hands out a connection; restores it. */
+    private static void withInterruptSetAside(Runnable write) {
         boolean interrupted = Thread.interrupted();
         try {
-            int released = outboxClaimService.release(ingestId, rows.stream().map(OutboxDto::getOutboxId).toList());
-            log.warn("Run {} stopped; released {} of its claimed rows for the next run", runId, released);
-        } catch (RuntimeException e) {
-            log.warn("Run {} stopped and could not release its {} unfinished rows; they are claimed again when their "
-                + "lease ends: {}", runId, rows.size(), EtlFailures.describe(e));
+            write.run();
         } finally {
             if (interrupted) {
                 Thread.currentThread().interrupt();

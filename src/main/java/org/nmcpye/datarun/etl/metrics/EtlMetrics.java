@@ -25,8 +25,10 @@ import java.util.concurrent.atomic.AtomicLong;
  *   waiting to be tried again, or dead;</li>
  *   <li>{@code datarun.etl.outbox.oldest.age}: seconds since the oldest change not yet projected (pending or
  *   failed) was written, 0 when there is none;</li>
- *   <li>{@code datarun.etl.last.success}: when the ETL last finished a poll without error, in seconds since
- *   the epoch; empty until the first one since the application started;</li>
+ *   <li>{@code datarun.etl.last.success}: when the ETL last finished a poll without error or stop, in seconds
+ *   since the epoch; empty until the first one since the application started;</li>
+ *   <li>{@code datarun.etl.polls{outcome}}: polls that succeeded, stopped on a lost connection or an interrupt,
+ *   or failed;</li>
  *   <li>{@code datarun.etl.outbox.processed{outcome}}: rows projected ({@code success}), failed to be tried
  *   again ({@code failed}) or given up ({@code dead});</li>
  *   <li>{@code datarun.etl.outbox.processing}: the time each row took.</li>
@@ -62,6 +64,9 @@ public class EtlMetrics implements SchedulingConfigurer {
     private final EtlProperties properties;
     private final long refreshNanos;
     private final Map<Outcome, Counter> processed;
+    private final Counter pollsSucceeded;
+    private final Counter pollsStopped;
+    private final Counter pollsFailed;
     private final Timer processing;
     private final AtomicLong lastSuccessMillis = new AtomicLong();
 
@@ -98,6 +103,9 @@ public class EtlMetrics implements SchedulingConfigurer {
             Outcome.SUCCESS, outcomeCounter(registry, "success"),
             Outcome.FAILED, outcomeCounter(registry, "failed"),
             Outcome.DEAD, outcomeCounter(registry, "dead"));
+        this.pollsSucceeded = pollCounter(registry, "succeeded");
+        this.pollsStopped = pollCounter(registry, "stopped");
+        this.pollsFailed = pollCounter(registry, "failed");
         this.processing = Timer.builder("datarun.etl.outbox.processing")
             .description("Time the ETL took to process one outbox row")
             .register(registry);
@@ -110,13 +118,30 @@ public class EtlMetrics implements SchedulingConfigurer {
             .register(registry);
     }
 
+    private static Counter pollCounter(MeterRegistry registry, String outcome) {
+        return Counter.builder("datarun.etl.polls")
+            .description("ETL polls, by outcome")
+            .tag("outcome", outcome)
+            .register(registry);
+    }
+
     public void rowProcessed(Outcome outcome, Duration took) {
         processed.get(outcome).increment();
         processing.record(took);
     }
 
     public void pollSucceeded() {
+        pollsSucceeded.increment();
         lastSuccessMillis.set(System.currentTimeMillis());
+    }
+
+    /** A poll whose batch stopped on a lost connection or an interrupt: not a success. */
+    public void pollStopped() {
+        pollsStopped.increment();
+    }
+
+    public void pollFailed() {
+        pollsFailed.increment();
     }
 
     private double backlog(String status) {

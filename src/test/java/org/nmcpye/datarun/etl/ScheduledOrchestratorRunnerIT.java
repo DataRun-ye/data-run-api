@@ -19,13 +19,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
+import org.springframework.scheduling.support.SimpleTriggerContext;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -246,20 +252,70 @@ class ScheduledOrchestratorRunnerIT {
 
         List<String> enabledLog = runnerLogOf(() -> runner(countingOrchestrator(), properties).configureTasks(registrar));
 
-        assertThat(registrar.getFixedDelayTaskList()).singleElement().satisfies(task -> {
-            assertThat(task.getIntervalDuration()).isEqualTo(Duration.ofSeconds(45));
-            assertThat(task.getInitialDelayDuration()).isEqualTo(Duration.ofSeconds(45));
+        assertThat(registrar.getTriggerTaskList()).singleElement().satisfies(task -> {
+            assertThat(nextPollAfter(task.getTrigger(), null)).isEqualTo(NOW.plusSeconds(45));
+            assertThat(nextPollAfter(task.getTrigger(), NOW.plusSeconds(100))).isEqualTo(NOW.plusSeconds(145));
         });
 
         properties.setEnabled(false);
         ScheduledTaskRegistrar disabled = new ScheduledTaskRegistrar();
         List<String> disabledLog = runnerLogOf(() -> runner(countingOrchestrator(), properties).configureTasks(disabled));
-        assertThat(disabled.getFixedDelayTaskList()).isEmpty();
+        assertThat(disabled.getTriggerTaskList()).isEmpty();
 
         // scripts/staging/prepare-candidate.sh checks for these lines: keep them in step.
         assertThat(enabledLog).anySatisfy(line -> assertThat(line).startsWith("The ETL polls the outbox"));
         assertThat(disabledLog).anySatisfy(line -> assertThat(line).startsWith("The ETL does not poll the outbox on this instance"));
         assertThat(disabledLog).noneSatisfy(line -> assertThat(line).startsWith("The ETL polls the outbox"));
+    }
+
+    private static final Instant NOW = Instant.parse("2026-11-24T12:00:00Z");
+
+    /** When the trigger starts the next poll, the previous one having ended at {@code lastCompletion}. */
+    private static Instant nextPollAfter(Trigger trigger, Instant lastCompletion) {
+        SimpleTriggerContext context = new SimpleTriggerContext(Clock.fixed(NOW, ZoneOffset.UTC));
+        if (lastCompletion != null) {
+            context.update(lastCompletion, lastCompletion, lastCompletion);
+        }
+        return trigger.nextExecution(context);
+    }
+
+    /**
+     * A poll that stops is not a success: it is counted as stopped, and the pause before the next poll doubles up
+     * to the cap. A poll that succeeds counts, and brings the pause back.
+     */
+    @Test
+    void aStoppedPollIsNotASuccessAndLengthensThePauseUntilAPollSucceeds() {
+        outboxRow("pending", null);
+        EtlProperties properties = new EtlProperties();
+        properties.setPollDelay(Duration.ofSeconds(30));
+        properties.setMaxPollDelay(Duration.ofMinutes(5));
+        boolean[] stopping = {true};
+        EtlOrchestrator orchestrator = new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null) {
+            @Override
+            public EtlRunResult runOnce(String pipelineName, int batchSize) {
+                return new EtlRunResult(1, 0, stopping[0] ? 1 : 0, stopping[0]);
+            }
+        };
+        ScheduledOrchestratorRunner runner = runner(orchestrator, properties);
+        ScheduledTaskRegistrar registrar = new ScheduledTaskRegistrar();
+        runner.configureTasks(registrar);
+        Trigger trigger = registrar.getTriggerTaskList().get(0).getTrigger();
+
+        List<Long> pauses = new ArrayList<>();
+        for (int poll = 1; poll <= 5; poll++) {
+            runner.scheduledRun();
+            pauses.add(Duration.between(NOW, nextPollAfter(trigger, NOW)).toSeconds());
+        }
+
+        assertThat(pauses).containsExactly(60L, 120L, 240L, 300L, 300L);
+        assertThat(lastSuccess()).as("a stopped poll is not a success").isNaN();
+        assertThat(registry.get("datarun.etl.polls").tag("outcome", "stopped").counter().count()).isEqualTo(5);
+
+        stopping[0] = false;
+        runner.scheduledRun();
+        assertThat(Duration.between(NOW, nextPollAfter(trigger, NOW)).toSeconds()).isEqualTo(30);
+        assertThat(lastSuccess()).isCloseTo(System.currentTimeMillis() / 1000.0, within(5.0));
+        assertThat(registry.get("datarun.etl.polls").tag("outcome", "succeeded").counter().count()).isEqualTo(1);
     }
 
     private static List<String> runnerLogOf(Runnable action) {

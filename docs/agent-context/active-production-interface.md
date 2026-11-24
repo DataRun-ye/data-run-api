@@ -209,8 +209,11 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   `datarun.etl.poll-delay` after the previous one ends. When a row is due, it
   takes a transaction-scoped advisory lock on one connection kept for the whole
   run, then claims batches of `datarun.etl.batch-size` while they come back
-  full, for at most `datarun.etl.max-poll-duration`. `datarun.etl.enabled=false`
-  stops an instance from polling. Scheduling is off in the test profiles.
+  full, for at most `datarun.etl.max-poll-duration`. A poll that stops or fails
+  is not a success. The pause before the next poll then doubles, up to
+  `datarun.etl.max-poll-delay`, until a poll succeeds.
+  `datarun.etl.enabled=false` stops an instance from polling. Scheduling is off
+  in the test profiles.
 - **Claims.** A claim takes `pending` or `failed` rows whose `next_attempt_at`
   is empty or past, in submission-serial then outbox-id order. It leases the
   row by moving `next_attempt_at` forward by `datarun.etl.claim-lease`, so a run
@@ -228,9 +231,11 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     submission is gone, or when it was started more often than it may be
     tried (a row that kills its batch).
 
-  A lost connection, a database shutdown or an interrupt stops the batch
-  instead. Its unfinished rows are released for the next run without losing
-  an attempt, and `etl_runs` records the run as `stopped`.
+  A lost connection, a database shutdown or an interrupt also stops the batch.
+  The row that met it is recorded as failed with the usual retry wait, so
+  neither an outage nor a poison row can hold the head of the queue. A row dies
+  only on the normal schedule. The rows not started are released for the next
+  run without losing an attempt, and `etl_runs` records the run as `stopped`.
 
   `outbox_processing` keeps one audit row per run and row: `success`,
   `failure` or `dead`.
@@ -243,7 +248,9 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   - `datarun_etl_outbox_rows{status}`: the backlog by status;
   - `datarun_etl_outbox_oldest_age_seconds`: the age of the oldest change not
     yet projected;
-  - `datarun_etl_last_success_seconds`: when a poll last ended without error;
+  - `datarun_etl_last_success_seconds`: when a poll last ended without error or
+    stop;
+  - `datarun_etl_polls_total{outcome}`: polls that succeeded, stopped or failed;
   - `datarun_etl_outbox_processed_total{outcome}`: rows processed, by outcome;
   - `datarun_etl_outbox_processing_seconds`: the time per row.
 
