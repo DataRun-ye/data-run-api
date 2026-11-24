@@ -9,19 +9,23 @@ import io.sentry.protocol.SentryException;
 import io.sentry.spring.boot.jakarta.SentryProperties;
 import io.sentry.spring.jakarta.tracing.SpringMvcTransactionNameProvider;
 import io.sentry.spring.jakarta.tracing.TransactionNameProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 
 /**
  * Error reporting to GlitchTip through the Sentry SDK (sentry-spring-boot-starter-jakarta and sentry-logback).
  * <p>
  * It is off unless {@code SENTRY_DSN} is set. Without a DSN the SDK's auto-configuration does not load; with an
- * empty one the SDK stays disabled. Either way nothing is sent. With a DSN, every ERROR log line and every
+ * empty or malformed one the SDK stays disabled. Either way nothing is sent. With a DSN, every ERROR log line and every
  * uncaught exception becomes an event. {@code SENTRY_ENVIRONMENT} names the deployment, and the release is the
  * build's version. Request errors are not reported: {@code ExceptionTranslator} answers all of them and records
  * them in {@code error_event}, so none reaches Sentry's exception resolver.
@@ -38,6 +42,8 @@ public class ErrorReportingConfiguration {
     /** Loggers whose ERROR patterns this code base writes, with values only in {@code {}} arguments. */
     static final String OWN_LOGGERS = "org.nmcpye.datarun.";
 
+    private static final Logger log = LoggerFactory.getLogger(ErrorReportingConfiguration.class);
+
     /**
      * Errors only, and nothing collected about the user or the request. No traces sample rate is set: any rate, 0
      * included, turns tracing on, and the SDK then follows an incoming {@code sentry-trace} header that says
@@ -46,6 +52,11 @@ public class ErrorReportingConfiguration {
     @Bean
     public Sentry.OptionsConfiguration<SentryOptions> errorReportingOptions(ObjectProvider<BuildProperties> build) {
         return options -> {
+            if (options.getDsn() != null && !options.getDsn().isEmpty() && !isDsn(options.getDsn())) {
+                log.warn("SENTRY_DSN is not a DSN of the form https://<public key>@<host>/<project id>; "
+                    + "error reporting stays off");
+                options.setDsn("");
+            }
             options.setSendDefaultPii(false); // no user, IP address or cookies
             options.setMaxRequestBodySize(SentryOptions.RequestSize.NONE);
             options.setMaxBreadcrumbs(0); // breadcrumbs repeat earlier log lines, and a WARN line can carry a login
@@ -63,6 +74,30 @@ public class ErrorReportingConfiguration {
     @Bean
     public SentryOptions.BeforeSendCallback errorReportingWithoutValues() {
         return ErrorReportingConfiguration::withoutValues;
+    }
+
+    /**
+     * Whether a value is a DSN the SDK accepts: http(s), a public key, a host, and a numeric project id as the last
+     * path segment. The SDK throws on a malformed DSN while the context starts, and compose restarts the application
+     * after every failed start, so anything this accepts must also pass the SDK's own parser; it is the stricter.
+     */
+    static boolean isDsn(String dsn) {
+        try {
+            URI uri = new URI(dsn.trim());
+            String scheme = uri.getScheme();
+            String userInfo = uri.getRawUserInfo();
+            String path = uri.getRawPath();
+            if (!("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))
+                || userInfo == null || userInfo.isEmpty() || userInfo.startsWith(":")
+                || uri.getHost() == null || path == null) {
+                return false;
+            }
+            String withoutSlash = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+            String projectId = withoutSlash.substring(withoutSlash.lastIndexOf('/') + 1);
+            return !projectId.isEmpty() && projectId.chars().allMatch(c -> c >= '0' && c <= '9');
+        } catch (URISyntaxException e) {
+            return false;
+        }
     }
 
     /**

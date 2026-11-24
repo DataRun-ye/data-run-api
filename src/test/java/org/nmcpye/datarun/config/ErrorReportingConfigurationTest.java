@@ -1,7 +1,11 @@
 package org.nmcpye.datarun.config;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import io.sentry.Breadcrumb;
 import io.sentry.Hint;
+import io.sentry.Sentry;
 import io.sentry.SentryEvent;
 import io.sentry.SentryOptions;
 import io.sentry.protocol.Message;
@@ -12,6 +16,7 @@ import io.sentry.protocol.SentryStackTrace;
 import io.sentry.protocol.User;
 import io.sentry.spring.boot.jakarta.SentryProperties;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.boot.info.BuildProperties;
@@ -21,6 +26,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 class ErrorReportingConfigurationTest {
 
@@ -140,6 +146,54 @@ class ErrorReportingConfigurationTest {
         assertThat(options.getLogs().isEnabled()).isFalse();
         assertThat(options.getLogging().getMinimumEventLevel()).isEqualTo(Level.ERROR);
         assertThat(options.getRelease()).isEqualTo("6.5.3");
+    }
+
+    @Test
+    void aDsnIsAcceptedOnlyInAShapeTheSdkParses() {
+        assertThat(List.of(
+            "https://abc123@glitchtip.example/1",
+            " https://abc:def@glitchtip.example:8443/sub/42/ ",
+            "http://abc@127.0.0.1:9000/7"))
+            .allSatisfy(dsn -> {
+                assertThat(ErrorReportingConfiguration.isDsn(dsn)).as(dsn).isTrue();
+                assertThatCode(() -> Sentry.init(options -> options.setDsn(dsn))).as("the SDK takes " + dsn)
+                    .doesNotThrowAnyException();
+                Sentry.close();
+            });
+        assertThat(List.of(
+            "not-a-dsn",
+            "https://glitchtip.example/1",
+            "https://:secret@glitchtip.example/1",
+            "ftp://abc@glitchtip.example/1",
+            "https://abc@/1",
+            "https://abc@glitchtip.example",
+            "https://abc@glitchtip.example/",
+            "https://abc@glitchtip.example/project",
+            "https://abc@glitch tip.example/1"))
+            .noneMatch(ErrorReportingConfiguration::isDsn);
+    }
+
+    @Test
+    void aMalformedDsnTurnsReportingOffWithAWarningThatHidesIt() {
+        ListAppender<ILoggingEvent> logged = new ListAppender<>();
+        logged.start();
+        Logger logger = (Logger) LoggerFactory.getLogger(ErrorReportingConfiguration.class);
+        logger.addAppender(logged);
+        try {
+            SentryProperties options = new SentryProperties();
+            options.setDsn("https://secret-key@glitchtip.example/project");
+
+            configuration.errorReportingOptions(build("6.5.3")).configure(options);
+
+            assertThat(options.getDsn()).isEmpty();
+            assertThat(logged.list).singleElement().satisfies(line -> {
+                assertThat(line.getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);
+                assertThat(line.getFormattedMessage()).contains("error reporting stays off")
+                    .doesNotContain("secret-key", "glitchtip.example");
+            });
+        } finally {
+            logger.detachAppender(logged);
+        }
     }
 
     @Test

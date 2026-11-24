@@ -273,7 +273,7 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     never carries the line's arguments, exception messages, the request, the
     user or breadcrumbs, and nothing is traced. Request errors that the REST
     layer answers stay in `error_event` and are not reported. A malformed DSN
-    stops the application at startup; empty it to start without reporting.
+    leaves reporting off, with one WARN at startup that does not repeat it.
     The container log keeps every line in full. Database errors there leave
     out the failing row only because the pool and both JDBC URLs set
     `logServerErrorDetail=false`; PostgreSQL's own message can still quote an

@@ -65,6 +65,17 @@ class ErrorReportingTest {
         });
     }
 
+    /** The SDK would throw on it while the context starts, and compose would restart the application forever. */
+    @Test
+    void aMalformedDsnLeavesTheSdkOffAndTheApplicationUp() {
+        assumeNoDsnInTheEnvironment();
+
+        runner.withPropertyValues("sentry.dsn=not-a-dsn").run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(Sentry.isEnabled()).isFalse();
+        });
+    }
+
     @Test
     void anErrorLineArrivesWithoutItsValuesAndNothingElseIsSent() {
         try (FakeGlitchTip glitchTip = FakeGlitchTip.start()) {
@@ -126,11 +137,11 @@ class ErrorReportingTest {
             });
 
             assertThat(String.join("\n", glitchTip.envelopes())).doesNotContain("777000111", "household name");
-            assertThat(glitchTip.events())
-                .extracting(event -> event.path("logger").asText() + " | " + event.path("message").path("formatted").asText())
-                .containsExactlyInAnyOrder(
-                    "org.hibernate.engine.jdbc.spi.SqlExceptionHelper | org.hibernate.engine.jdbc.spi.SqlExceptionHelper",
-                    "io.undertow.request | io.undertow.request");
+            assertThat(glitchTip.events()).as("each line's text is its logger's name")
+                .allSatisfy(event -> assertThat(event.path("message").path("formatted").asText())
+                    .isEqualTo(event.path("logger").asText()))
+                .extracting(event -> event.path("logger").asText())
+                .containsExactlyInAnyOrder("org.hibernate.engine.jdbc.spi.SqlExceptionHelper", "io.undertow.request");
             assertThat(glitchTip.events()).filteredOn(event -> event.has("exception")).singleElement()
                 .satisfies(event -> assertThat(event.path("exception").path("values").get(0).path("type").asText())
                     .isEqualTo("IllegalStateException"));
