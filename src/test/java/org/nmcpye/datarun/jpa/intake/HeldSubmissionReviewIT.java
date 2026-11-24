@@ -88,12 +88,10 @@ class HeldSubmissionReviewIT {
     @BeforeEach
     void setUp() {
         uploads = mock(SubmissionUploads.class);
-        when(uploads.save(anyList(), any(), eq(org.nmcpye.datarun.jpa.intake.IntakeMode.RELEASE))).thenAnswer(invocation -> {
-            String uid = invocation.<List<DataSubmissionUploadV1Dto>>getArgument(0).get(0).getUid();
-            replayed.add(uid);
-            EntitySaveSummaryVM saved = new EntitySaveSummaryVM();
-            saved.getCreated().add(uid);
-            return saved;
+        when(uploads.saveReleased(any(), any(), any())).thenAnswer(invocation -> {
+            replayed.add(invocation.<DataSubmissionUploadV1Dto>getArgument(0).getUid());
+            return new SubmissionUploads.Released(null,
+                invocation.<java.util.function.BooleanSupplier>getArgument(2).getAsBoolean());
         });
         users = mock(DomainUserDetailsService.class);
         when(users.loadUserByUsername(any())).thenAnswer(invocation -> user(invocation.getArgument(0)));

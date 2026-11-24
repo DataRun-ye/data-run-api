@@ -225,11 +225,42 @@ class SubmissionUploadsTest {
         goLiveIn(Duration.ofDays(1));
         DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
 
-        EntitySaveSummaryVM result = service.save(List.of(request), SubmissionActor.of(user), IntakeMode.RELEASE);
+        SubmissionUploads.Released result = service.saveReleased(request, SubmissionActor.of(user), () -> true);
 
         verify(transactionStatus, never()).setRollbackOnly();
+        verify(transactionManager).commit(transactionStatus);
         verify(heldSubmissions, never()).hold(any(), any(), any(), any(), any());
-        assertEquals(List.of("firstSub01"), result.getCreated());
+        assertEquals(new SubmissionUploads.Released(null, true), result);
+    }
+
+    /** The release race (A2 S4): a decision that no longer applies takes the release's save back with it. */
+    @Test
+    void aReleaseWhoseDecisionNoLongerAppliesSavesNothing() {
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
+
+        SubmissionUploads.Released result = service.saveReleased(request, SubmissionActor.of(user), () -> false);
+
+        verify(submissionService).upsertAll(submissionsWithUids("firstSub01"), any(EntitySaveSummaryVM.class));
+        verify(transactionStatus).setRollbackOnly();
+        verify(heldSubmissions, never()).hold(any(), any(), any(), any(), any());
+        assertEquals(new SubmissionUploads.Released(null, false), result);
+    }
+
+    @Test
+    void aRefusedReleaseIsNotDecided() {
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
+        when(user.isSuper()).thenReturn(false);
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of("otherTeam01"));
+        java.util.concurrent.atomic.AtomicBoolean asked = new java.util.concurrent.atomic.AtomicBoolean();
+
+        SubmissionUploads.Released result = service.saveReleased(request, SubmissionActor.of(user), () -> {
+            asked.set(true);
+            return true;
+        });
+
+        assertTrue(result.failure().startsWith("E4114: "));
+        assertEquals(false, result.decided());
+        assertEquals(false, asked.get(), "no decision is recorded for a refused release");
     }
 
     private GoLiveRule goLiveIn(Duration fromNow) {

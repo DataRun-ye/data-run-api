@@ -3,7 +3,6 @@ package org.nmcpye.datarun.jpa.datasubmission.command;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.intake.GoLiveRuleService;
@@ -12,7 +11,6 @@ import org.nmcpye.datarun.jpa.intake.HeldState;
 import org.nmcpye.datarun.jpa.intake.HeldSubmissionRepository;
 import org.nmcpye.datarun.jpa.intake.HeldSubmissionRow;
 import org.nmcpye.datarun.jpa.intake.HoldReason;
-import org.nmcpye.datarun.jpa.intake.IntakeMode;
 import org.nmcpye.datarun.security.DomainUserDetailsService;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
 import org.nmcpye.datarun.web.rest.v1.intake.HeldDecisionRequest;
@@ -60,6 +58,10 @@ public class HeldSubmissionDecisions {
      * held because they came before a go-live: discarded uploads and practice
      * uploads are never released in bulk. At most one batch per call; the
      * result says how many matching uploads remain.
+     *
+     * <p>Each upload's data and the decision that released it commit together: when the held upload changed after
+     * it was read (a phone sent it again), nothing is saved and it is reported as changed, so the next release
+     * applies the newer copy.</p>
      */
     public HeldDecisionResult release(SubmissionActor admin, HeldDecisionRequest request) {
         Selection selection = select(request, UNDECIDED_OR_DISCARDED, UNDECIDED, true);
@@ -71,19 +73,23 @@ public class HeldSubmissionDecisions {
             }
             String failure;
             String failureShape;
+            boolean decided = false;
             try {
                 DataSubmissionUploadV1Dto upload =
                     objectMapper.treeToValue(row.payload(), DataSubmissionUploadV1Dto.class);
-                EntitySaveSummaryVM saved = onBehalfOf(row.submittedBy(),
-                    submitter -> uploads.save(List.of(upload), submitter, IntakeMode.RELEASE));
-                failure = saved.getFailed().values().stream().findFirst().orElse(null);
+                SubmissionUploads.Released released = onBehalfOf(row.submittedBy(),
+                    submitter -> uploads.saveReleased(upload, submitter, () -> held.markDecided(row.uid(),
+                        HeldState.RELEASED, UNDECIDED_OR_DISCARDED, row.lastModifiedDate(), admin.login(),
+                        request.note())));
+                failure = released.failure();
+                decided = released.decided();
                 failureShape = failure == null ? null : SubmissionLog.refusal(failure);
             } catch (Exception e) {
                 failure = "Cannot release as " + row.submittedBy() + ": " + e.getMessage();
                 failureShape = SubmissionLog.failure(e);
             }
             if (failure == null) {
-                record(result, row, HeldState.RELEASED, admin, request.note(), result.released());
+                (decided ? result.released() : result.changed()).add(row.uid());
             } else {
                 // The admin and the API keep the full text; the log keeps identifiers and shapes (SubmissionLog).
                 held.recordReleaseError(row.uid(), failure);

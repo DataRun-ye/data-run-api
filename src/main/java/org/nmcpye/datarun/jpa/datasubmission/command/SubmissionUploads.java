@@ -30,11 +30,14 @@ import org.nmcpye.datarun.web.rest.v1.datasubmission.mapper.DataSubmissionUpload
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 /**
@@ -75,12 +78,15 @@ public class SubmissionUploads {
      * started before its campaign's go-live, #42) the save is rolled back and
      * the upload kept aside instead. Either way the phone gets the result of
      * the checked save, so held submissions show as sent. A released upload
-     * ({@link IntakeMode#RELEASE}) is always saved.
+     * goes through {@link #saveReleased} instead.
      */
     public EntitySaveSummaryVM save(
         List<DataSubmissionUploadV1Dto> requests,
         SubmissionActor actor,
         IntakeMode mode) {
+        if (mode == IntakeMode.RELEASE) {
+            throw new IllegalArgumentException("A released upload is saved with its decision: use saveReleased");
+        }
         if (requests == null || requests.isEmpty()) {
             return new EntitySaveSummaryVM();
         }
@@ -95,8 +101,49 @@ public class SubmissionUploads {
             actor,
             DataSubmissionUploadV1Dto::getUid,
             DataSubmissionUploadV1Dto::getForm,
-            (request, summary) -> upsertOne(request, actor, summary, mode, receivedAt),
+            (request, summary, transaction) -> upsertOne(request, actor, summary, mode, receivedAt),
             objectMapper::valueToTree);
+    }
+
+    /**
+     * A released upload's outcome.
+     *
+     * @param failure the per-row text when the checks refused the upload, else null
+     * @param decided whether the decision that released it applied; when it did not, nothing was saved
+     */
+    public record Released(String failure, boolean decided) {
+    }
+
+    /**
+     * Saves a held upload an admin released, through the same checks and save as a live upload (never held), and
+     * records the release in the same transaction: {@code decide} runs after the save and returns false when the
+     * held upload changed since the release read it (a re-send refreshed it, or another decision came first). Then
+     * the save is rolled back, so the data a release saves is always the copy its decision released.
+     */
+    public Released saveReleased(
+        DataSubmissionUploadV1Dto upload,
+        SubmissionActor submitter,
+        BooleanSupplier decide) {
+        AtomicBoolean decided = new AtomicBoolean();
+        Instant receivedAt = Instant.now();
+        EntitySaveSummaryVM summary = saveEach(
+            List.of(upload),
+            submitter,
+            DataSubmissionUploadV1Dto::getUid,
+            DataSubmissionUploadV1Dto::getForm,
+            (request, itemSummary, transaction) -> {
+                IntakeDecision decision = upsertOne(
+                    request, submitter, itemSummary, IntakeMode.RELEASE, receivedAt);
+                if (decide.getAsBoolean()) {
+                    decided.set(true);
+                } else {
+                    transaction.setRollbackOnly();
+                }
+                return decision;
+            },
+            objectMapper::valueToTree);
+        String failure = summary.getFailed().values().stream().findFirst().orElse(null);
+        return new Released(failure, failure == null && decided.get());
     }
 
     /**
@@ -127,7 +174,7 @@ public class SubmissionUploads {
             actor,
             DataSubmission::getUid,
             DataSubmission::getForm,
-            (submission, summary) -> {
+            (submission, summary, transaction) -> {
                 checkLegacy(submission, actor);
                 submissionService.upsertAll(List.of(submission), summary);
                 return IntakeDecision.save();
@@ -189,10 +236,13 @@ public class SubmissionUploads {
         canonicalizeContext(submission, assignment, template.getTemplate());
     }
 
-    /** Saves one item and says whether to keep it (see {@link SubmissionIntake}). */
+    /**
+     * Saves one item inside its transaction and says whether to keep it (see {@link SubmissionIntake}); it may also
+     * mark the transaction rollback-only.
+     */
     @FunctionalInterface
     private interface SaveOne<T> {
-        IntakeDecision save(T item, EntitySaveSummaryVM summary);
+        IntakeDecision save(T item, EntitySaveSummaryVM summary, TransactionStatus transaction);
     }
 
     private <T> EntitySaveSummaryVM saveEach(
@@ -211,7 +261,7 @@ public class SubmissionUploads {
             EntitySaveSummaryVM itemSummary = new EntitySaveSummaryVM();
             try {
                 IntakeDecision decision = perSubmission.execute(status -> {
-                    IntakeDecision outcome = save.save(item, itemSummary);
+                    IntakeDecision outcome = save.save(item, itemSummary, status);
                     if (outcome.held()) {
                         status.setRollbackOnly();
                     }

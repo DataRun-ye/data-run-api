@@ -31,6 +31,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -86,11 +87,11 @@ class HeldSubmissionDecisionsTest {
         AtomicReference<String> replayedAs = new AtomicReference<>();
         AtomicReference<String> replayedFor = new AtomicReference<>();
         AtomicReference<String> replayedUid = new AtomicReference<>();
-        when(uploads.save(anyList(), any(), eq(IntakeMode.RELEASE))).thenAnswer(invocation -> {
+        when(uploads.saveReleased(any(), any(), any())).thenAnswer(invocation -> {
             replayedAs.set(SecurityContextHolder.getContext().getAuthentication().getName());
             replayedFor.set(invocation.<SubmissionActor>getArgument(1).login());
-            replayedUid.set(invocation.<List<DataSubmissionUploadV1Dto>>getArgument(0).get(0).getUid());
-            return saved("heldSub0001");
+            replayedUid.set(invocation.<DataSubmissionUploadV1Dto>getArgument(0).getUid());
+            return saved(invocation);
         });
 
         HeldDecisionResult result = decisions.release(admin,
@@ -119,16 +120,31 @@ class HeldSubmissionDecisionsTest {
 
         assertThat(result.superseded()).isEmpty();
         assertThat(result.changed()).containsExactly("heldSub0001");
-        verify(uploads, never()).save(any(), any(), any());
+        verify(uploads, never()).saveReleased(any(), any(), any());
+    }
+
+    /** The release race (A2 S4): a re-send changed the held upload after the release read it. */
+    @Test
+    void aReleaseWhoseHeldUploadChangedMeanwhileIsReportedAsChanged() {
+        when(held.findWithPayload(List.of("heldSub0001"), HELD_OR_DISCARDED))
+            .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
+        when(held.markDecided(eq("heldSub0001"), eq(HeldState.RELEASED), any(), any(), any(), any())).thenReturn(false);
+        when(uploads.saveReleased(any(), any(), any())).thenAnswer(HeldSubmissionDecisionsTest::saved);
+
+        HeldDecisionResult result =
+            decisions.release(admin, new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
+
+        assertThat(result.released()).isEmpty();
+        assertThat(result.changed()).containsExactly("heldSub0001");
+        verify(held, never()).recordReleaseError(anyString(), anyString());
     }
 
     @Test
     void aRefusedReleaseKeepsTheUploadAndRecordsWhy() {
         when(held.findWithPayload(List.of("heldSub0001"), HELD_OR_DISCARDED))
             .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
-        EntitySaveSummaryVM refused = new EntitySaveSummaryVM();
-        refused.getFailed().put("heldSub0001", "E4114: not in the team");
-        when(uploads.save(anyList(), any(), eq(IntakeMode.RELEASE))).thenReturn(refused);
+        when(uploads.saveReleased(any(), any(), any()))
+            .thenReturn(new SubmissionUploads.Released("E4114: not in the team", false));
 
         HeldDecisionResult result =
             decisions.release(admin, new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
@@ -162,9 +178,8 @@ class HeldSubmissionDecisionsTest {
                 row("heldSub0002", HoldReason.BEFORE_GO_LIVE, "gone-user")));
         when(users.loadUserByUsername("gone-user"))
             .thenThrow(new UsernameNotFoundException("User gone-user was not found in the database"));
-        EntitySaveSummaryVM refused = new EntitySaveSummaryVM();
-        refused.getFailed().put("heldSub0001", "E4122: You may not submit form `household1` for assignment `assignment1`");
-        when(uploads.save(anyList(), any(), eq(IntakeMode.RELEASE))).thenReturn(refused);
+        when(uploads.saveReleased(any(), any(), any())).thenReturn(new SubmissionUploads.Released(
+            "E4122: You may not submit form `household1` for assignment `assignment1`", false));
 
         try (LogCapture logs = new LogCapture(HeldSubmissionDecisions.class)) {
             HeldDecisionResult result = decisions.release(admin,
@@ -187,7 +202,7 @@ class HeldSubmissionDecisionsTest {
         when(goLiveRules.acceptedByCurrentRules()).thenReturn(r -> r.uid().equals("heldSub0001"));
         when(held.findWithPayload(List.of("heldSub0001"), HELD))
             .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
-        when(uploads.save(anyList(), any(), eq(IntakeMode.RELEASE))).thenReturn(saved("heldSub0001"));
+        when(uploads.saveReleased(any(), any(), any())).thenAnswer(HeldSubmissionDecisionsTest::saved);
 
         HeldDecisionResult result = decisions.release(admin, new HeldDecisionRequest(null,
             new HeldDecisionRequest.Filter("campaign001", null, null, null, null, null, true), null, null));
@@ -259,10 +274,9 @@ class HeldSubmissionDecisionsTest {
             .build();
     }
 
-    private static EntitySaveSummaryVM saved(String uid) {
-        EntitySaveSummaryVM saved = new EntitySaveSummaryVM();
-        saved.getCreated().add(uid);
-        return saved;
+    /** A release the checks accept: the decision it is given runs, as inside the release's transaction. */
+    private static SubmissionUploads.Released saved(org.mockito.invocation.InvocationOnMock invocation) {
+        return new SubmissionUploads.Released(null, invocation.<BooleanSupplier>getArgument(2).getAsBoolean());
     }
 
     private HeldSubmissionRow row(String uid, HoldReason reason) {

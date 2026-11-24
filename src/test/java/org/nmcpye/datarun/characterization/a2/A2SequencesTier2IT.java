@@ -84,14 +84,17 @@ class A2SequencesTier2IT extends A2GoldenSupport {
             .verify();
     }
 
+    /**
+     * Fixed in B1: a release saves an upload only together with the decision that released it, so the re-send's
+     * newer copy is not lost (it was until B1: the old copy was saved and the next release marked the newer one
+     * superseded).
+     */
     @Test
-    @PinnedBug(changeBy = "B1/E4",
-        what = "a re-send that lands between a release's read and its replay is lost: the old held copy is saved and "
-            + "the next release marks the newer one superseded")
     void s4_resendDuringARelease() {
         String uid = uid("s4");
         Scenario scenario = scenario("S4",
-            "A re-send lands between a release's read and its replay: the old copy is applied, the new one superseded");
+            "A re-send lands between a release's read and its replay: that release saves nothing and reports it "
+                + "changed; the next release applies the newer copy");
         HeldSubmissionRepository hooked = new HeldSubmissionRepository(jdbc, objectMapper) {
             @Override
             public List<HeldSubmissionRow> findWithPayload(Collection<String> uids, Collection<HeldState> states) {
