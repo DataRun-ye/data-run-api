@@ -18,7 +18,6 @@ logging:
     ROOT: INFO
     tech.jhipster: INFO
     org.nmcpye.datarun: INFO
-    org.springframework.security.authentication: TRACE
     org.springframework.security: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{requestId}] %logger{36} - %msg%n"
