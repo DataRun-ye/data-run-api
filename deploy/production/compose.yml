@@ -29,6 +29,10 @@ services:
       - SPRING_LIQUIBASE_USER=nmcpdb
       - SPRING_LIQUIBASE_PASSWORD=${NMCPDB_PASSWORD:?Set NMCPDB_PASSWORD}
       - DATARUN_JWT_BASE64_SECRET=${DATARUN_JWT_BASE64_SECRET:?Set DATARUN_JWT_BASE64_SECRET}
+      # Monitoring through GlitchTip, each part off while its value is empty (.env.example).
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-}
+      - DATARUN_ETL_HEARTBEAT_URL=${DATARUN_ETL_HEARTBEAT_URL:-}
     ports:
       - "192.168.1.110:8080:8080"
     healthcheck:
