@@ -349,6 +349,53 @@ class SubmissionRevisionMigrationIT {
             gapped, untouched, createdIn654)).as("the next start finds no gap").isEqualTo(4);
     }
 
+    /**
+     * A rollback to 6.5.4 keeps the migrated schema: its changelog, which is this one without step C's includes,
+     * runs on it without error and changes nothing, and the outbox rows 6.5.4 writes (no version) are accepted.
+     */
+    @Test
+    void theReleaseBeforeStepCRunsItsChangelogOnTheMigratedSchema() throws Exception {
+        java.nio.file.Path dir = java.nio.file.Files.createTempDirectory("changelog-654");
+        try {
+            String master = new String(SubmissionRevisionMigrationIT.class.getClassLoader()
+                .getResourceAsStream(MASTER).readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            String before = master.lines()
+                .filter(line -> !line.contains("20261124-submission-revision") && !line.contains("20261124-outbox-")
+                    && !line.contains("Runs on every start"))
+                .collect(java.util.stream.Collectors.joining("\n"));
+            assertThat(before).doesNotContain("20261124-c").contains("20261124-drop-duplicate-events-indexes.xml");
+            java.nio.file.Files.writeString(dir.resolve("master-6.5.4.xml"), before);
+            long ranBefore = count("SELECT count(*) FROM databasechangelog");
+            long revisionsBefore = count("SELECT count(*) FROM submission_revision");
+
+            ChangeLogHistoryServiceFactory.getInstance().resetAll();
+            Scope.getCurrentScope().getSingleton(FastCheckService.class).clearCache();
+            try (Connection connection = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())) {
+                Database database = DatabaseFactory.getInstance()
+                    .findCorrectDatabaseImplementation(new JdbcConnection(connection));
+                Liquibase liquibase = new Liquibase("master-6.5.4.xml", new liquibase.resource.CompositeResourceAccessor(
+                    new liquibase.resource.DirectoryResourceAccessor(dir), new ClassLoaderResourceAccessor()), database);
+                assertThat(liquibase.listUnrunChangeSets(new Contexts(), new LabelExpression()))
+                    .as("6.5.4 finds nothing to run").isEmpty();
+                liquibase.update(new Contexts(), new LabelExpression());
+            }
+
+            assertThat(count("SELECT count(*) FROM databasechangelog")).isEqualTo(ranBefore);
+            assertThat(count("SELECT count(*) FROM submission_revision")).isEqualTo(revisionsBefore);
+            String id = submission(0, false);
+            legacyOutboxRow(id, "SAVE");
+            assertThat(count("SELECT count(*) FROM outbox WHERE submission_id = ? AND submission_version IS NULL", id))
+                .as("6.5.4's outbox row, without a version").isEqualTo(1);
+        } finally {
+            try (var files = java.nio.file.Files.list(dir)) {
+                for (java.nio.file.Path file : files.toList()) {
+                    java.nio.file.Files.delete(file);
+                }
+            }
+            java.nio.file.Files.delete(dir);
+        }
+    }
+
     // ---------------------------------------------------------------- the table and its constraints
 
     @Test
