@@ -167,7 +167,8 @@ Every submission write goes through `SubmissionCommandService`
 `SubmissionCommand` (upload, practice upload, legacy upload, admin delete,
 held release, held discard) naming the acting `SubmissionActor`: the durable
 user id, plus the login that today's audit columns store. Each submission is
-written in a transaction of its own, with its `outbox` row, and
+written in a transaction of its own, with the revision that records each
+change and the `outbox` row that announces it (Change Record below), and
 `SubmissionWriteOwnershipTest` (ArchUnit) fails the build when any other class
 calls the write methods of the persistence layer (`DataSubmissionService`, the
 submission repository, `SubmissionIntake.hold`, `HeldSubmissionRepository`,
@@ -270,9 +271,10 @@ transaction are lost: intake writes are `@Transactional`. Never run the
 Liquibase rollback of `held_submission` once uploads were held: it would
 delete uploads that phones report as sent.
 
-The admin delete marks the submission deleted and writes its `DELETE`
-event in one transaction. Deleting a deleted submission writes nothing, as an
-upload's `deleted=true` does, and an unknown uid answers 404.
+The admin delete marks the submission deleted, flushes it, and then writes its
+`DELETE` revision and event at the new version, in one transaction. Deleting a
+deleted submission writes nothing, as an upload's `deleted=true` does, and an
+unknown uid answers 404.
 
 The unversioned writes are not used by the released mobile and remain
 `LEGACY-RISK` pending the recorded endpoint-use decision; their reachability
@@ -284,9 +286,10 @@ The separate `jpa/datasubmissionoutbox` tree targets the legacy
 `outbox_event` table; it has no active producer or enabled worker and is not
 the current `outbox` owner.
 
-Mixed update/delete batches persist their classified collections separately
-and emit `UPDATE` and `DELETE` through the current outbox; this boundary has
-a focused regression test. Submission pulling, inherited CRUD/read routes,
+Mixed update/delete batches persist their classified collections separately;
+each submission whose version moved then gets its revision and its outbox
+row, `DELETE` whenever it is deleted afterwards; this boundary has a focused
+regression test. Submission pulling, inherited CRUD/read routes,
 deprecated `objects`, and the admin delete route still require independent
 API-use classification.
 
@@ -295,11 +298,106 @@ migration-error entity, repository, service, and skip/listener chain had no
 registered batch job or caller and is source-dead; its physical table remains
 a later schema-migration concern.
 
+### Change Record (submission_revision)
+
+Every committed change of a submission is one row of `submission_revision`,
+an append-only journal keyed by `(submission_id, version)`: the submission's
+internal id (`data_submission.id`) and its `lock_version` after the change.
+A revision is written if and only if the version moves: creation stores
+version 0 and each flushed change raises it by one (JPA `@Version`, which
+counts changes only because `SubmissionCommandService` is the only writer).
+Whatever a write persists is a change, copied labels included (a re-send
+after a village rename is an `UPDATE` with the new name); an unchanged
+re-send writes nothing. `DefaultDataSubmissionService` reads the versions
+back after each flush and writes, in the same transaction, the revision and
+then one outbox row naming it (`SubmissionRevisionWriter`, the only writer).
+
+A revision holds `kind` (`BASELINE`, `CREATE`, `UPDATE`, `DELETE`),
+`command`, `previous_version`, exactly one of `actor_user_id` (an
+`app_user.id`) and `actor_system` (`MIGRATION`), `on_behalf_of_user_id`,
+`reason`, `recorded_at` (the database's transaction time, `timestamptz`),
+and the state after the change: `form_data` and `metadata`, the row's other
+columns as `submission_revision_metadata()` renders them (form version label,
+placement uids and the labels copied with them, status, deleted state, and
+`last_modified_date`; times as UTC instants). The writer, the baseline, the
+gap repair and the reconciliation all use that one function. Keys are ids,
+never uids; a reader joins `data_submission` for the uid and for what never
+changes after creation (form, entry times, creation time).
+
+| Command and case | Revision | Actor | On behalf of | Reason | Outbox event |
+| --- | --- | --- | --- | --- | --- |
+| Upload or legacy upload, new uid | `CREATE` at 0, `UPLOAD` or `LEGACY_UPLOAD` | uploader | | | `SAVE` 0, or `DELETE` 0 if sent deleted |
+| Re-send that changes anything persisted | `UPDATE` v+1 | uploader | | | `UPDATE`, or `DELETE` if the record stays deleted |
+| `deleted=true` on a live record | `DELETE` v+1 | uploader | | | `DELETE` |
+| Unchanged re-send, or `deleted=true` on a deleted record | none | | | | none |
+| Admin delete | `DELETE` v+1, `ADMIN_DELETE` | admin | | | `DELETE` |
+| Held release | `CREATE` at 0, `HELD_RELEASE` | admin | uploader | release note | `SAVE` 0 |
+| Held or practice upload, discard, superseded or changed release | none | | | | none |
+| Baseline (Liquibase, once) | `BASELINE` at `lock_version`, `MIGRATION` | system `MIGRATION` | | | none |
+| Gap repair (Liquibase, each start) | `BASELINE` jumping to `lock_version`, `GAP_REPAIR` | system `MIGRATION` | | | none |
+
+The outbox contract:
+- `submission_version`: the version after the change. `(submission_id,
+  submission_version)` references the revision (`fk_outbox_submission_revision`);
+  rows written before step C, or by 6.5.4 after a rollback, keep NULL and are
+  not checked.
+- `created_at`: the database's transaction time in UTC (column default);
+  readers treat it as UTC (`EtlMetrics`, integrity checks 1 and 10).
+- `event_type` follows the state after the change: `DELETE` whenever the
+  submission is deleted afterwards, else `SAVE` for a creation and `UPDATE`.
+- Actor, kind and state are not copied into the outbox: the key names the
+  revision. Per-consumer progress is not built; the ETL keeps its claim state
+  on the row.
+
+The version is what a later correction's `ETag` will carry: `ETag:
+"<version>"` on a read, `If-Match: "<version>"` on a correction (412 when
+stale), for a submission's `lock_version`, which its head revision equals. A
+delete, and later a restore, is a version too. Never the form version
+(`template_version_uid`, `template_version_no`, the outbox `topic`) and never
+the unmapped `data_submission.submission_version` column (1 on every row).
+Phones see no version; the v1 shapes are unchanged.
+
+Guards: the primary key; foreign keys to `data_submission` and `app_user`;
+checks on each kind's versions and commands, one actor of the right kind, and
+a release's uploader; triggers that refuse `UPDATE`, `DELETE` and `TRUNCATE`
+of revisions (`submission_revision_append_only`) and any revision that does
+not name the submission's head as `previous_version`
+(`submission_revision_no_gap`); ArchUnit and the SQL tripwire for the one
+writer; failure-injection tests for the single transaction; and
+`JournalReconciliation` after every A2 golden. In production, integrity check
+11 compares the journal with the rows (counts only). Only a superuser session
+that sets the replica replication role passes the triggers: the tests' purge
+(`SubmissionTestPurge`), never main code. A database trigger requiring a
+revision for every write is deferred: it would stop 6.5.4 from writing after
+a rollback.
+
+Deploy, rollback and history:
+- History starts at the baseline: one `BASELINE` per submission stored before
+  step C (deleted ones and the 4,628 never sent to the outbox included), with
+  no outbox rows. Changes before it are not reconstructed.
+- Rehearsed on 67,176 synthetic submissions sized like staging's (form data
+  59 MB stored; staging holds 50 MB), on a container with default settings:
+  the baseline took 4.1 to 6.3 s and wrote 173 MB of WAL; the journal is
+  105 MB with its key; the triggers 25 ms each, the outbox key 79 ms. The
+  gap repair runs at every start: 0.2 to 0.5 s with nothing to repair, about
+  0.4 s for 1,001 gaps. Check 11 took 6 s on that dataset.
+- 6.5.4 runs on the migrated schema: it names its outbox columns (the version
+  stays NULL, `created_at` is its JVM's UTC), never touches the journal, and
+  ignores applied changesets it does not know. Its writes raise versions
+  without revisions; the next start of a release with the journal records one
+  `GAP_REPAIR` per submission it wrote (check 11g counts them).
+- Never run the Liquibase rollback of the journal once the application wrote
+  a revision: it is their only record, and its rollback refuses.
+- The analytics copy may pick up `submission_revision` if it takes new tables
+  on its own; nothing in `data_submission`, tall or events changed.
+
 ### Outbox Consumer (ETL)
 
 The ETL (`etl/`) is the only consumer of the current `outbox`. For each row it
 re-reads the submission and projects it into `analytics.tall_canonical` and
-`analytics.events`. What a projection writes or leaves behind (removed rows,
+`analytics.events`; a `DELETE` row marks the submission's events deleted. It
+does not read `submission_version` or the journal yet: the projector step
+moves it onto the revision each row names. What a projection writes or leaves behind (removed rows,
 voids, delete markers) belongs to the projector work, not to this runtime.
 
 - **Polling.** `ScheduledOrchestratorRunner` starts a poll
