@@ -1,19 +1,28 @@
 # Current Work
 
-Updated: 2026-11-20
+Updated: 2026-11-24
 
 Purpose: accepted server work only. This file is not code, API, architecture,
 or deployment authority.
 
 ## Now
 
-- ITN 2026 campaign (from the week of 2026-11-23) on server 6.5.1 and app
+- ITN 2026 campaign (from the week of 2026-11-23) on server 6.5.2 and app
   6.1.2, with the household lists loaded in production (see
   `reference-boundary.md`). A campaign-wide go-live rule holds every upload
   until operations set the real start; operations own the campaign's dates,
   districts and forms. Field fixes may still ship during the campaign, each
   through the staging rehearsal first. Shared status:
   [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34).
+- Data chain before any correction feature, in order:
+  - `scripts/integrity/check.sh` measures the gaps between submissions, the outbox, tall rows, events and pivots;
+  - characterization goldens pin today's submission behaviour for each installed phone contract (merging next);
+  - then one submission write path, the change record as a contract, a projector that follows the truth, and a
+    published read contract for tall and events, which downstream analytics builds on;
+  - then corrections.
+
+  Pivots stay admin-only and on request until downstream no longer reads them; the 12 unread materialized views are
+  to be dropped.
 - Access (#46) and the submission lifecycle (#47) are framed for the
   access-scope work; the generic submission reads that return every team's
   submissions are the first item to restrict.

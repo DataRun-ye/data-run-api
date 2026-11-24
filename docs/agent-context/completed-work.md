@@ -112,6 +112,11 @@ deployment authority.
 - `v6.5.1` / `0dad7e85`: deployed 2026-11-20, managed-team access (#45), the
   stored-record upload guard and admin-only maintenance and team routes
   (GitHub release `v6.5.1`).
+- `v6.5.2` / `7537454f`: deployed 2026-11-24 (GitHub release `v6.5.2`). Three changes:
+  - the analytics ETL runtime fix: failed and dead rows with retry backoff, no self-wait hang, lease and lock fixes,
+    burst capacity, metrics, no submitted values in logs, and a partial outbox index;
+  - admin-only pivot builds;
+  - the read-only integrity check.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.
