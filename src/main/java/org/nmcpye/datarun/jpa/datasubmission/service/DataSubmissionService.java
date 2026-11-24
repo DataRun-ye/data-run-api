@@ -14,11 +14,6 @@ import java.util.List;
 public interface DataSubmissionService
     extends JpaIdentifiableObjectService<DataSubmission> {
     @Transactional
-    DataSubmission upsert(
-        DataSubmission entity,
-        EntitySaveSummaryVM summary);
-
-    @Transactional
     List<DataSubmission> upsertAll(
         Collection<DataSubmission> entities,
         EntitySaveSummaryVM summary);

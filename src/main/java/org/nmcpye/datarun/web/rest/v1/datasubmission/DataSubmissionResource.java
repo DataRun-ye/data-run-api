@@ -46,7 +46,6 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
     protected static final String V1 = ApiVersion.API_V1 + NAME;
     private final ObjectMapper objectMapper;
-    final private DataSubmissionService submissionService;
     private final SubmissionCommandService commands;
 
     public DataSubmissionResource(DataSubmissionService submissionService,
@@ -54,7 +53,6 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
                                   ObjectMapper objectMapper,
                                   SubmissionCommandService commands) {
         super(submissionService, submissionRepository);
-        this.submissionService = submissionService;
         this.objectMapper = objectMapper;
         this.commands = commands;
     }

@@ -43,23 +43,6 @@ public class DefaultDataSubmissionService
         this.outboxRepo = outboxRepo;
     }
 
-    @Transactional
-    @Override
-    public DataSubmission upsert(
-        DataSubmission entity,
-        EntitySaveSummaryVM summary) {
-        // Absolutely minimal logic here. All actual work is delegated.
-        // upsertAll will validate for null entity or null UID within the list.
-        List<DataSubmission> results = upsertAll(List.of(entity), summary);
-
-        // This check is a safeguard for unexpected behavior from upsertAll,
-        // rather than input validation.
-        if (results.isEmpty()) {
-            throw new IllegalStateException("UpsertAll returned an empty list when processing a single entity. This indicates an internal logic error.");
-        }
-        return results.get(0);
-    }
-
     private boolean mutableFieldsMatch(DataSubmission existingEntity, DataSubmission incomingEntity) {
         return Objects.equals(existingEntity.getFormData(), incomingEntity.getFormData())
             && Objects.equals(existingEntity.getActivity(), incomingEntity.getActivity())
