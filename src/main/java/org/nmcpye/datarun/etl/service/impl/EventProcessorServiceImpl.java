@@ -10,6 +10,7 @@ import org.nmcpye.datarun.etl.model.TemplateContext;
 import org.nmcpye.datarun.etl.repository.EventEntityJdbcRepository;
 import org.nmcpye.datarun.etl.repository.TallCanonicalJdbcRepository;
 import org.nmcpye.datarun.etl.service.EventProcessorService;
+import org.nmcpye.datarun.etl.service.SubmissionNotFoundException;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
 import org.nmcpye.datarun.jpa.datatemplate.repository.CanonicalElementRepository;
@@ -59,11 +60,8 @@ public class EventProcessorServiceImpl implements EventProcessorService {
             return;
         }
 
-        final var submissionOptional = submissionRepository.findByUid(outbox.getSubmissionUid());
-
-        if (submissionOptional.isEmpty()) return;
-
-        final var submission = submissionOptional.get();
+        final var submission = submissionRepository.findByUid(outbox.getSubmissionUid())
+            .orElseThrow(SubmissionNotFoundException::new);
         JsonNode payload = submission.getFormData();
 
         final SubmissionContext submissionContext = dataSubmissionMapper.toDto(submission)

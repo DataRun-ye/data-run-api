@@ -6,6 +6,7 @@ import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.etl.entity.EtlRun;
 import org.nmcpye.datarun.etl.service.EtlRunService;
 import org.nmcpye.datarun.etl.service.EventProcessorService;
+import org.nmcpye.datarun.etl.service.SubmissionNotFoundException;
 import org.nmcpye.datarun.outbox.service.OutboxClaimService;
 import org.nmcpye.datarun.outbox.service.OutboxProcessingService;
 import org.slf4j.Logger;
@@ -115,6 +116,10 @@ public class EtlOrchestrator {
         try {
             txTemplate.executeWithoutResult(status -> eventProcessorService.processEvent(runId, outbox, ingestId));
             return true;
+        } catch (SubmissionNotFoundException e) {
+            // No later try can find it: the submission was removed outside the application.
+            recordDead(runId, outbox, e.getMessage());
+            return false;
         } catch (RuntimeException e) {
             // The row's transaction has rolled back: nothing of it is left to wait on.
             String error = EtlFailures.describe(e);

@@ -216,22 +216,24 @@ class EtlOutboxProcessingIT {
     }
 
     /**
-     * Today: a row whose submission is gone is counted as a success but stays pending; only the claim's lease
-     * keeps it from being claimed again at once.
+     * A row whose submission is gone is dead at once, saying so: no later try can find it (pinned before as
+     * counted a success and left pending, to be claimed forever).
      */
     @Test
-    void today_aRowWhoseSubmissionIsGoneCountsAsSuccessButStaysPending() {
+    void aRowWhoseSubmissionIsGoneIsDeadAtOnce() {
         long gone = fixture.outboxWithoutSubmission("goneSub0001", 1);
 
         orchestrator.runOnce("test", 10);
         orchestrator.runOnce("test", 10);
 
-        assertThat(fixture.outboxRow(gone)).containsEntry("status", "pending").containsEntry("attempt", 1);
-        assertThat(fixture.outboxRow(gone).get("last_error")).isNull();
-        assertThat(fixture.isLeased(gone)).isTrue();
-        assertThat(fixture.runs()).extracting(r -> r.get("submitted_count"), r -> r.get("success_count"))
-            .containsExactly(tuple(1L, 1L), tuple(0L, 0L));
-        assertThat(fixture.auditRows(gone)).isEmpty();
+        Map<String, Object> row = fixture.outboxRow(gone);
+        assertThat(row).containsEntry("status", "dead").containsEntry("attempt", 1)
+            .containsEntry("last_error", "submission not found");
+        assertThat(row.get("next_attempt_at")).isNull();
+        assertThat(fixture.runs())
+            .extracting(r -> r.get("submitted_count"), r -> r.get("success_count"), r -> r.get("failure_count"))
+            .containsExactly(tuple(1L, 0L, 1L), tuple(0L, 0L, 0L));
+        assertThat(fixture.auditRows(gone)).extracting(r -> r.get("status")).containsExactly("dead");
         assertThat(watchdog.cancelled()).isEmpty();
     }
 
