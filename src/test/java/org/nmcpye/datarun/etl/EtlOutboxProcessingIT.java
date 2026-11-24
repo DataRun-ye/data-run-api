@@ -68,6 +68,13 @@ class EtlOutboxProcessingIT {
     }
 
     @Test
+    void theMigratedSchemaHasAValidIndexOfUnfinishedOutboxRows() {
+        assertThat(jdbc.queryForObject("""
+            SELECT i.indisvalid FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
+            WHERE c.relname = 'idx_outbox_unfinished'""", Map.of(), Boolean.class)).isTrue();
+    }
+
+    @Test
     void aSavedSubmissionIsProjectedAndItsRowMarkedSuccess() {
         fixture.submission("okSub000001", TEMPLATE, 2);
         long outboxId = fixture.outbox("okSub000001", "SAVE");

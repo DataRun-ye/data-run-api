@@ -98,6 +98,7 @@
     <include file="/config/liquibase/changelog/reference-entry/20260725-create-reference-entry.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/app-user-constraints/20261118-add-user-last-seen-client.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/intake/20261119-go-live-and-held-submission.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/etl/20261124-outbox-unfinished-index.xml" relativeToChangelogFile="false"/>
 
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>
