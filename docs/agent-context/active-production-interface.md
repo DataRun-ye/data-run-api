@@ -298,11 +298,17 @@ migration-error entity, repository, service, and skip/listener chain had no
 registered batch job or caller and is source-dead; its physical table remains
 a later schema-migration concern.
 
-### Change Record (submission_revision)
+### Change Record (journal.submission_revision)
 
-Every committed change of a submission is one row of `submission_revision`,
-an append-only journal keyed by `(submission_id, version)`: the submission's
-internal id (`data_submission.id`) and its `lock_version` after the change.
+Every committed change of a submission is one row of
+`journal.submission_revision`, an append-only journal keyed by
+`(submission_id, version)`: the submission's internal id
+(`data_submission.id`) and its `lock_version` after the change. The journal
+has its own schema, `journal`, because downstream analytics reads the current
+state only and its copy syncs the `public` and `analytics` schemas: a table
+in `journal` is never copied unless someone adds the schema to that source.
+Its foreign keys to `public` tables, and the outbox's key to it, cross
+schemas; every reference names the schema.
 A revision is written if and only if the version moves: creation stores
 version 0 and each flushed change raises it by one (JPA `@Version`, which
 counts changes only because `SubmissionCommandService` is the only writer).
@@ -317,7 +323,7 @@ A revision holds `kind` (`BASELINE`, `CREATE`, `UPDATE`, `DELETE`),
 `app_user.id`) and `actor_system` (`MIGRATION`), `on_behalf_of_user_id`,
 `reason`, `recorded_at` (the database's transaction time, `timestamptz`),
 and the state after the change: `form_data` and `metadata`, the row's other
-columns as `submission_revision_metadata()` renders them (form version label,
+columns as `journal.submission_revision_metadata()` renders them (form version label,
 placement uids and the labels copied with them, status, deleted state, and
 `last_modified_date`; times as UTC instants). The writer, the baseline, the
 gap repair and the reconciliation all use that one function. Keys are ids,
@@ -391,8 +397,10 @@ Deploy, rollback and history:
   `GAP_REPAIR` per submission it wrote (check 11g counts them).
 - Never run the Liquibase rollback of the journal once the application wrote
   a revision: it is their only record, and its rollback refuses.
-- The analytics copy may pick up `submission_revision` if it takes new tables
-  on its own; nothing in `data_submission`, tall or events changed.
+- The analytics copy does not see the journal: its schema is not one the copy
+  syncs. Nothing in `data_submission`, tall or events changed.
+- Production's migration role must be able to create a schema. On staging
+  (2026-11-25) it owns the database and is not a superuser, so it can.
 
 ### Outbox Consumer (ETL)
 

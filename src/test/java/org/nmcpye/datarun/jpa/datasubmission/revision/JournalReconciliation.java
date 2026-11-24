@@ -23,20 +23,20 @@ public final class JournalReconciliation {
         jdbc.query("""
             SELECT s.uid, h.version AS head, s.lock_version,
                    h.form_data IS NOT DISTINCT FROM s.form_data
-                       AND h.metadata = submission_revision_metadata(s) AS same_state,
-                   (SELECT count(*) FROM submission_revision r
+                       AND h.metadata = journal.submission_revision_metadata(s) AS same_state,
+                   (SELECT count(*) FROM journal.submission_revision r
                     WHERE r.submission_id = s.id AND r.kind <> 'BASELINE'
                       AND (SELECT count(*) FROM outbox o
                            WHERE o.submission_id = r.submission_id AND o.submission_version = r.version) <> 1)
                        AS unannounced,
                    (SELECT count(*) FROM outbox o
-                    JOIN submission_revision r ON r.submission_id = o.submission_id AND r.version = o.submission_version
+                    JOIN journal.submission_revision r ON r.submission_id = o.submission_id AND r.version = o.submission_version
                     WHERE o.submission_id = s.id
                       AND (o.event_type = 'DELETE') IS DISTINCT FROM (r.metadata ->> 'deleted')::boolean) AS mistyped,
                    (SELECT count(*) FROM outbox o WHERE o.submission_id = s.id AND o.submission_version IS NULL)
                        AS unversioned
             FROM data_submission s
-            LEFT JOIN LATERAL (SELECT r.version, r.form_data, r.metadata FROM submission_revision r
+            LEFT JOIN LATERAL (SELECT r.version, r.form_data, r.metadata FROM journal.submission_revision r
                                WHERE r.submission_id = s.id ORDER BY r.version DESC LIMIT 1) h ON true
             WHERE %s
             ORDER BY s.serial_number""".formatted(where), params, rs -> {

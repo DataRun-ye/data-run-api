@@ -26,7 +26,7 @@ public final class SubmissionTestPurge {
         jdbc.update("DELETE FROM outbox o USING data_submission s WHERE o.submission_id = s.id AND (" + where + ")",
             params);
         jdbc.update("""
-            DELETE FROM submission_revision r USING data_submission s
+            DELETE FROM journal.submission_revision r USING data_submission s
             WHERE r.submission_id = s.id AND (%s)""".formatted(where), params);
         jdbc.update("DELETE FROM data_submission s WHERE " + where, params);
         jdbc.getJdbcTemplate().execute("SET LOCAL session_replication_role = DEFAULT");

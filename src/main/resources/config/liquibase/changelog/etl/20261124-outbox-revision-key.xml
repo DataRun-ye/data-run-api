@@ -27,14 +27,14 @@
         <sql>SET LOCAL lock_timeout = '${outboxRevisionLockTimeout}'</sql>
         <sql>
             ALTER TABLE outbox ADD CONSTRAINT fk_outbox_submission_revision
-                FOREIGN KEY (submission_id, submission_version) REFERENCES submission_revision (submission_id, version)
+                FOREIGN KEY (submission_id, submission_version) REFERENCES journal.submission_revision (submission_id, version)
         </sql>
         <rollback>
             <sql splitStatements="false"><![CDATA[
                 DO $$
                 BEGIN
-                    IF EXISTS (SELECT 1 FROM submission_revision WHERE kind <> 'BASELINE') THEN
-                        RAISE EXCEPTION 'submission_revision holds revisions the application wrote: never roll it back';
+                    IF EXISTS (SELECT 1 FROM journal.submission_revision WHERE kind <> 'BASELINE') THEN
+                        RAISE EXCEPTION 'journal.submission_revision holds revisions the application wrote: never roll it back';
                     END IF;
                 END $$
             ]]></sql>

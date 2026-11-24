@@ -68,7 +68,7 @@ class SubmissionRevisionMigrationIT {
         db = new JdbcTemplate(dataSource);
         named = new NamedParameterJdbcTemplate(dataSource);
         migrate(true);
-        assertThat(db.queryForObject("SELECT to_regclass('public.submission_revision') IS NULL", Boolean.class))
+        assertThat(db.queryForObject("SELECT to_regclass('journal.submission_revision') IS NULL", Boolean.class))
             .as("the first phase stops before step C").isTrue();
 
         live = submission(0, false);
@@ -86,7 +86,7 @@ class SubmissionRevisionMigrationIT {
 
         migrate(false);
         outboxAfterStepC = count("SELECT count(*) FROM outbox");
-        revisionsAfterStepC = count("SELECT count(*) FROM submission_revision");
+        revisionsAfterStepC = count("SELECT count(*) FROM journal.submission_revision");
         integrityAfterStepC = integrityCheck("01-outbox.sql", "11-revisions.sql");
     }
 
@@ -140,11 +140,11 @@ class SubmissionRevisionMigrationIT {
     static List<String> headsDifferingFromTheRow(List<String> ids) {
         return named.queryForList("""
             SELECT s.id FROM data_submission s
-            LEFT JOIN LATERAL (SELECT r.version, r.form_data, r.metadata FROM submission_revision r
+            LEFT JOIN LATERAL (SELECT r.version, r.form_data, r.metadata FROM journal.submission_revision r
                                WHERE r.submission_id = s.id ORDER BY r.version DESC LIMIT 1) h ON true
             WHERE s.id IN (:ids)
               AND (h.version IS DISTINCT FROM s.lock_version OR h.form_data IS DISTINCT FROM s.form_data
-                   OR h.metadata IS DISTINCT FROM submission_revision_metadata(s))""",
+                   OR h.metadata IS DISTINCT FROM journal.submission_revision_metadata(s))""",
             Map.of("ids", ids), String.class);
     }
 
@@ -228,11 +228,11 @@ class SubmissionRevisionMigrationIT {
     static void revision(String submissionId, long version, Long previousVersion, String kind, String command,
                          String actorUserId, String actorSystem, String onBehalfOf, String reason) {
         named.update("""
-                INSERT INTO submission_revision (submission_id, version, previous_version, kind, command,
+                INSERT INTO journal.submission_revision (submission_id, version, previous_version, kind, command,
                                                  actor_user_id, actor_system, on_behalf_of_user_id, reason,
                                                  form_data, metadata)
                 SELECT s.id, :version, :previousVersion, :kind, :command, :actorUserId, :actorSystem, :onBehalfOf,
-                       :reason, s.form_data, submission_revision_metadata(s)
+                       :reason, s.form_data, journal.submission_revision_metadata(s)
                 FROM data_submission s WHERE s.id = :id""",
             new MapSqlParameterSource()
                 .addValue("id", submissionId)
@@ -276,7 +276,7 @@ class SubmissionRevisionMigrationIT {
             SELECT s.lock_version || ' ' || r.version || ' ' || r.kind || ' ' || r.command || ' '
                    || r.actor_system || ' ' || coalesce(r.actor_user_id, '-') || ' '
                    || coalesce(r.previous_version::text, '-') || ' ' || coalesce(r.reason, '-')
-            FROM data_submission s JOIN submission_revision r ON r.submission_id = s.id
+            FROM data_submission s JOIN journal.submission_revision r ON r.submission_id = s.id
             WHERE s.id IN (:ids) AND r.command = 'MIGRATION' ORDER BY s.lock_version, s.id""",
             Map.of("ids", seeded), String.class);
         assertThat(baselines).containsExactly(
@@ -286,7 +286,7 @@ class SubmissionRevisionMigrationIT {
         assertThat(headsDifferingFromTheRow(seeded))
             .as("each head is its row, deleted ones, ones never sent and one without data included").isEmpty();
         assertThat(db.queryForObject("""
-                SELECT r.metadata ->> 'deleted' FROM submission_revision r WHERE r.submission_id = ?""",
+                SELECT r.metadata ->> 'deleted' FROM journal.submission_revision r WHERE r.submission_id = ?""",
             String.class, deleted)).isEqualTo("true");
     }
 
@@ -308,14 +308,14 @@ class SubmissionRevisionMigrationIT {
     @Test
     void theBaselineRunAgainRepeatsNothing() throws Exception {
         List<Map<String, Object>> before = db.queryForList("""
-            SELECT submission_id, count(*) AS revisions FROM submission_revision
+            SELECT submission_id, count(*) AS revisions FROM journal.submission_revision
             GROUP BY submission_id ORDER BY submission_id""");
         db.update("DELETE FROM databasechangelog WHERE id = '20261124-c04-submission-revision-baseline'");
 
         migrate(false);
 
         List<Map<String, Object>> after = db.queryForList("""
-            SELECT submission_id, count(*) AS revisions FROM submission_revision
+            SELECT submission_id, count(*) AS revisions FROM journal.submission_revision
             GROUP BY submission_id ORDER BY submission_id""");
         assertThat(after).as("a submission that had revisions gets no other").containsAll(before);
         assertThat(count("SELECT count(*) FROM databasechangelog WHERE id = '20261124-c04-submission-revision-baseline'"))
@@ -347,16 +347,16 @@ class SubmissionRevisionMigrationIT {
         assertThat(named.query("""
                 SELECT s.id = :gapped AS gapped, r.version || ' ' || coalesce(r.previous_version::text, '-') || ' '
                        || r.kind || ' ' || r.command || ' ' || r.actor_system
-                FROM submission_revision r JOIN data_submission s ON s.id = r.submission_id
+                FROM journal.submission_revision r JOIN data_submission s ON s.id = r.submission_id
                 WHERE s.id IN (:ids) AND r.command = 'GAP_REPAIR' ORDER BY 1""",
             Map.of("gapped", gapped, "ids", List.of(gapped, untouched, createdIn654)),
             (rs, i) -> rs.getString(2)))
             .containsExactly("0 - BASELINE GAP_REPAIR MIGRATION", "5 3 BASELINE GAP_REPAIR MIGRATION");
         assertThat(headsDifferingFromTheRow(List.of(gapped, untouched, createdIn654))).isEmpty();
-        assertThat(count("SELECT count(*) FROM submission_revision WHERE submission_id = ?", untouched)).isEqualTo(1);
+        assertThat(count("SELECT count(*) FROM journal.submission_revision WHERE submission_id = ?", untouched)).isEqualTo(1);
 
         migrate(false);
-        assertThat(count("SELECT count(*) FROM submission_revision WHERE submission_id IN (?, ?, ?)",
+        assertThat(count("SELECT count(*) FROM journal.submission_revision WHERE submission_id IN (?, ?, ?)",
             gapped, untouched, createdIn654)).as("the next start finds no gap").isEqualTo(4);
     }
 
@@ -377,7 +377,7 @@ class SubmissionRevisionMigrationIT {
             assertThat(before).doesNotContain("20261124-c").contains("20261124-drop-duplicate-events-indexes.xml");
             java.nio.file.Files.writeString(dir.resolve("master-6.5.4.xml"), before);
             long ranBefore = count("SELECT count(*) FROM databasechangelog");
-            long revisionsBefore = count("SELECT count(*) FROM submission_revision");
+            long revisionsBefore = count("SELECT count(*) FROM journal.submission_revision");
 
             ChangeLogHistoryServiceFactory.getInstance().resetAll();
             Scope.getCurrentScope().getSingleton(FastCheckService.class).clearCache();
@@ -392,7 +392,7 @@ class SubmissionRevisionMigrationIT {
             }
 
             assertThat(count("SELECT count(*) FROM databasechangelog")).isEqualTo(ranBefore);
-            assertThat(count("SELECT count(*) FROM submission_revision")).isEqualTo(revisionsBefore);
+            assertThat(count("SELECT count(*) FROM journal.submission_revision")).isEqualTo(revisionsBefore);
             String id = submission(0, false);
             legacyOutboxRow(id, "SAVE");
             assertThat(count("SELECT count(*) FROM outbox WHERE submission_id = ? AND submission_version IS NULL", id))
@@ -419,18 +419,18 @@ class SubmissionRevisionMigrationIT {
         migrate(false);
         assertThat(db.queryForObject("SELECT id FROM databasechangelog ORDER BY orderexecuted DESC LIMIT 1",
             String.class)).as("the gap repair is the latest changeset run").isEqualTo(GAP_REPAIR);
-        long revisions = count("SELECT count(*) FROM submission_revision");
+        long revisions = count("SELECT count(*) FROM journal.submission_revision");
         int stepC = (int) count("SELECT count(*) FROM databasechangelog WHERE id LIKE '" + STEP_C + "%'");
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> rollback(stepC))
             .hasStackTraceContaining("never roll it back");
 
         assertThat(count("""
-            SELECT count(*) FROM pg_trigger WHERE tgrelid = 'submission_revision'::regclass AND NOT tgisinternal"""))
+            SELECT count(*) FROM pg_trigger WHERE tgrelid = 'journal.submission_revision'::regclass AND NOT tgisinternal"""))
             .as("the append-only, truncate and no-gap triggers").isEqualTo(3);
         assertThat(count("SELECT count(*) FROM pg_constraint WHERE conname = 'fk_outbox_submission_revision'"))
             .as("the outbox's key").isEqualTo(1);
-        assertThat(count("SELECT count(*) FROM submission_revision")).isEqualTo(revisions);
+        assertThat(count("SELECT count(*) FROM journal.submission_revision")).isEqualTo(revisions);
         assertThat(db.queryForList("SELECT id FROM databasechangelog WHERE id LIKE '" + STEP_C + "%' ORDER BY id",
             String.class)).as("only the gap repair was rolled back").hasSize(stepC - 1).doesNotContain(GAP_REPAIR);
 
@@ -451,7 +451,7 @@ class SubmissionRevisionMigrationIT {
                    m ->> 'status' AS status, m ->> 'deleted' AS deleted, m ->> 'deleted_at' AS deleted_at,
                    m ->> 'last_modified_date' AS last_modified_date,
                    (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(m) AS k)::text AS keys
-            FROM (SELECT submission_revision_metadata(s) AS m FROM data_submission s WHERE s.id = ?) x""", id);
+            FROM (SELECT journal.submission_revision_metadata(s) AS m FROM data_submission s WHERE s.id = ?) x""", id);
 
         assertThat(metadata)
             .containsEntry("template_version_uid", "migVers0001")
@@ -473,12 +473,12 @@ class SubmissionRevisionMigrationIT {
              var statement = connection.createStatement()) {
             statement.execute("SET TimeZone = 'Asia/Aden'");
             var aden = statement.executeQuery(
-                "SELECT submission_revision_metadata(s)::text FROM data_submission s WHERE s.id = '" + id + "'");
+                "SELECT journal.submission_revision_metadata(s)::text FROM data_submission s WHERE s.id = '" + id + "'");
             aden.next();
             String inAden = aden.getString(1);
             statement.execute("SET TimeZone = 'UTC'");
             var utc = statement.executeQuery(
-                "SELECT submission_revision_metadata(s)::text FROM data_submission s WHERE s.id = '" + id + "'");
+                "SELECT journal.submission_revision_metadata(s)::text FROM data_submission s WHERE s.id = '" + id + "'");
             utc.next();
             assertThat(inAden).isEqualTo(utc.getString(1))
                 .contains("\"last_modified_date\": \"2026-11-22T09:30:00.500000Z\"");
@@ -500,13 +500,13 @@ class SubmissionRevisionMigrationIT {
 
         assertThat(db.queryForList("""
                 SELECT version || ' ' || kind || ' ' || command || ' ' || coalesce(previous_version::text, '-')
-                FROM submission_revision WHERE submission_id IN (?, ?) ORDER BY submission_id = ?, version""",
+                FROM journal.submission_revision WHERE submission_id IN (?, ?) ORDER BY submission_id = ?, version""",
             String.class, created, baselined, baselined))
             .containsExactly("0 CREATE HELD_RELEASE -", "1 UPDATE UPLOAD 0", "2 DELETE ADMIN_DELETE 1",
                 "4 BASELINE MIGRATION -", "7 BASELINE GAP_REPAIR 4");
         assertThat(db.queryForObject("""
                 SELECT recorded_at BETWEEN now() - interval '1 minute' AND now()
-                FROM submission_revision WHERE submission_id = ? AND version = 0""", Boolean.class, created))
+                FROM journal.submission_revision WHERE submission_id = ? AND version = 0""", Boolean.class, created))
             .as("recorded_at is the database's time").isTrue();
     }
 
@@ -520,7 +520,7 @@ class SubmissionRevisionMigrationIT {
         String id = submission(1, false);
         revision(id, 0, null, "CREATE", "UPLOAD", uploader, null, null, null);
         String insert = """
-            INSERT INTO submission_revision (submission_id, version, previous_version, kind, command, actor_user_id,
+            INSERT INTO journal.submission_revision (submission_id, version, previous_version, kind, command, actor_user_id,
                                              metadata)
             VALUES ('%s', 1, 0, 'UPDATE', 'UPLOAD', '%s', '{}')""".formatted(id, uploader);
         try (Connection first = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword());
@@ -551,7 +551,7 @@ class SubmissionRevisionMigrationIT {
         String id = submission(0, false);
 
         assertThat(refusal(() -> named.update("""
-                INSERT INTO submission_revision (submission_id, version, kind, command, actor_user_id, metadata)
+                INSERT INTO journal.submission_revision (submission_id, version, kind, command, actor_user_id, metadata)
                 VALUES ('01NOSUCHSUBMISSION00000000', 0, 'CREATE', 'UPLOAD', :actor, '{}')""",
             Map.of("actor", uploader))))
             .isEqualTo("23503 fk_submission_revision_submission");
@@ -617,7 +617,7 @@ class SubmissionRevisionMigrationIT {
             .as("an update as a first revision").isEqualTo("23514 ck_submission_revision_version");
         assertThat(refusal(() -> revision(unrecorded, 5, null, "DELETE", "ADMIN_DELETE", user, null, null, null)))
             .as("a delete as a first revision").isEqualTo("23514 ck_submission_revision_version");
-        assertThat(count("SELECT count(*) FROM submission_revision WHERE submission_id = ?", unrecorded)).isZero();
+        assertThat(count("SELECT count(*) FROM journal.submission_revision WHERE submission_id = ?", unrecorded)).isZero();
     }
 
     // ---------------------------------------------------------------- the guards
@@ -628,15 +628,15 @@ class SubmissionRevisionMigrationIT {
         String id = submission(0, false);
         revision(id, 0, null, "CREATE", "UPLOAD", uploader, null, null, null);
 
-        assertThat(refusal(() -> db.update("UPDATE submission_revision SET reason = 'edited' WHERE submission_id = ?", id)))
+        assertThat(refusal(() -> db.update("UPDATE journal.submission_revision SET reason = 'edited' WHERE submission_id = ?", id)))
             .isEqualTo("23000 submission_revision_append_only");
-        assertThat(refusal(() -> db.update("DELETE FROM submission_revision WHERE submission_id = ?", id)))
+        assertThat(refusal(() -> db.update("DELETE FROM journal.submission_revision WHERE submission_id = ?", id)))
             .isEqualTo("23000 submission_revision_append_only");
-        assertThat(refusal(() -> db.execute("TRUNCATE submission_revision")))
+        assertThat(refusal(() -> db.execute("TRUNCATE journal.submission_revision")))
             .as("the outbox's key refuses it first").isEqualTo("0A000");
-        assertThat(refusal(() -> db.execute("TRUNCATE submission_revision CASCADE")))
+        assertThat(refusal(() -> db.execute("TRUNCATE journal.submission_revision CASCADE")))
             .isEqualTo("23000 submission_revision_append_only");
-        assertThat(count("SELECT count(*) FROM submission_revision WHERE submission_id = ? AND reason IS NULL", id))
+        assertThat(count("SELECT count(*) FROM journal.submission_revision WHERE submission_id = ? AND reason IS NULL", id))
             .isEqualTo(1);
     }
 
@@ -661,7 +661,7 @@ class SubmissionRevisionMigrationIT {
         revision(created, 1, 0L, "UPDATE", "UPLOAD", user, null, null, null);
         revision(baselined, 4, 3L, "DELETE", "ADMIN_DELETE", user, null, null, null);
         revision(baselined, 6, 4L, "BASELINE", "GAP_REPAIR", null, "MIGRATION", null, null);
-        assertThat(count("SELECT count(*) FROM submission_revision WHERE submission_id IN (?, ?)", created, baselined))
+        assertThat(count("SELECT count(*) FROM journal.submission_revision WHERE submission_id IN (?, ?)", created, baselined))
             .isEqualTo(5);
     }
 

@@ -136,15 +136,18 @@ class SubmissionWriteOwnershipTest {
     /** Where JPQL may name the DataSubmission entity. */
     private static final String ENTITY_NAMED_IN = "org/nmcpye/datarun/jpa/datasubmission/";
 
-    /** A table, bare, schema-qualified or quoted: the word boundaries hold at the dot and the quote. */
+    /**
+     * A table, bare, schema-qualified (the journal lives in the schema journal) or quoted: the word boundaries hold
+     * at the dot and the quote.
+     */
     private static final Pattern TABLE =
         Pattern.compile("(?i)\\b(data_submission|held_submission|submission_revision|outbox)\\b");
     /** A literal that is just a table name, for SQL assembled from pieces. */
     private static final Pattern WHOLE_TABLE = Pattern.compile(
-        "(?i)^\\s*(?:public\\s*\\.\\s*)?(?:\\\\?\")?(data_submission|held_submission|submission_revision|outbox)"
+        "(?i)^\\s*(?:\\w+\\s*\\.\\s*)?(?:\\\\?\")?(data_submission|held_submission|submission_revision|outbox)"
             + "(?:\\\\?\")?\\s*$");
     private static final Pattern WRITE = Pattern.compile("(?i)\\b(insert\\s+into|update|delete\\s+from|merge\\s+into"
-        + "|truncate(?:\\s+table)?|copy)\\s+(?:only\\s+)?(?:public\\s*\\.\\s*)?(?:\\\\?\")?"
+        + "|truncate(?:\\s+table)?|copy)\\s+(?:only\\s+)?(?:\\w+\\s*\\.\\s*)?(?:\\\\?\")?"
         + "(data_submission|held_submission|submission_revision|outbox)\\b");
     /**
      * "outbox" is an ordinary word in log and metric texts, so it counts as a table only beside an SQL word or as a
@@ -272,6 +275,14 @@ class SubmissionWriteOwnershipTest {
             "String write = \"INSERT INTO submission_revision VALUES (1)\";"))
             .contains("outside org/nmcpye/datarun/jpa/datasubmission/revision/Reader.java: writes submission_revision "
                 + "in \"INSERT INTO submission_revision VALUES (1)\"");
+        assertThat(sourceFindings("org/nmcpye/datarun/web/X.java",
+            "String write = \"DELETE FROM journal.submission_revision WHERE true\";"))
+            .as("a schema-qualified write")
+            .contains("outside org/nmcpye/datarun/web/X.java: writes submission_revision "
+                + "in \"DELETE FROM journal.submission_revision WHERE true\"");
+        assertThat(sourceFindings("org/nmcpye/datarun/web/X.java", "String piece = \"journal.submission_revision\";"))
+            .as("a schema-qualified name on its own")
+            .contains("outside org/nmcpye/datarun/web/X.java: names submission_revision in \"journal.submission_revision\"");
         assertThat(sourceFindings("org/nmcpye/datarun/etl/X.java", "String read = \"SELECT submission_revision_metadata(s)\";"))
             .as("the metadata function is not the table").isEmpty();
         assertThat(resourceFindings("config/application.yml", String.join("\n",

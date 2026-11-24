@@ -154,7 +154,7 @@ SELECT (SELECT count(*)
         LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
         WHERE l.locktype = 'relation' AND l.mode = 'AccessExclusiveLock'
           AND l.database = (SELECT oid FROM pg_database WHERE datname = current_database())
-          AND (c.oid IS NULL OR n.nspname IN ('public', 'analytics', 'pivot')))
+          AND (c.oid IS NULL OR n.nspname IN ('public', 'analytics', 'pivot', 'journal')))
        || ' ' ||
        (SELECT count(*) FROM public.databasechangeloglock WHERE locked);
 ROLLBACK;

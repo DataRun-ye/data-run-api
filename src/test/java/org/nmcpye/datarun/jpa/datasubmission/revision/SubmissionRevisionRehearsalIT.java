@@ -126,17 +126,17 @@ class SubmissionRevisionRehearsalIT {
             report(String.format("%-48s %7.2f s  WAL %6.1f MB", id, seconds(start), walSince(lsn) / 1048576.0));
         }
         report(String.format("step C in all: %.2f s, WAL %.1f MB", seconds(all), walSince(before) / 1048576.0));
-        report("journal: " + db.queryForObject("SELECT count(*) FROM submission_revision", Long.class) + " rows, "
-            + db.queryForObject("SELECT pg_size_pretty(pg_total_relation_size('submission_revision'))", String.class)
+        report("journal: " + db.queryForObject("SELECT count(*) FROM journal.submission_revision", Long.class) + " rows, "
+            + db.queryForObject("SELECT pg_size_pretty(pg_total_relation_size('journal.submission_revision'))", String.class)
             + " with its key (heap " + db.queryForObject(
-            "SELECT pg_size_pretty(pg_relation_size('submission_revision'))", String.class) + ", TOAST "
+            "SELECT pg_size_pretty(pg_relation_size('journal.submission_revision'))", String.class) + ", TOAST "
             + db.queryForObject("SELECT pg_size_pretty(pg_total_relation_size(reltoastrelid)) FROM pg_class "
-            + "WHERE relname = 'submission_revision'", String.class) + ")");
-        assertThat(db.queryForObject("SELECT count(*) FROM submission_revision", Long.class)).isEqualTo(rows);
+            + "WHERE oid = 'journal.submission_revision'::regclass", String.class) + ")");
+        assertThat(db.queryForObject("SELECT count(*) FROM journal.submission_revision", Long.class)).isEqualTo(rows);
 
         report("a start right after, nothing to repair (Liquibase run, the gap repair the only changeset): "
             + startAgain() + " s; its statement " + gapRepairPlanTime() + " ms");
-        db.execute("VACUUM ANALYZE submission_revision");
+        db.execute("VACUUM ANALYZE journal.submission_revision");
         report("the same once the journal is vacuumed: " + startAgain() + " s; its statement "
             + gapRepairPlanTime() + " ms (EXPLAIN ANALYZE of its read)");
 
@@ -154,13 +154,13 @@ class SubmissionRevisionRehearsalIT {
             FROM generate_series(1, 500) AS i""");
         long gaps = db.queryForObject("""
             SELECT count(*) FROM data_submission s WHERE NOT EXISTS (
-              SELECT 1 FROM submission_revision r WHERE r.submission_id = s.id AND r.version >= s.lock_version)""",
+              SELECT 1 FROM journal.submission_revision r WHERE r.submission_id = s.id AND r.version >= s.lock_version)""",
             Long.class);
         String lsn = wal();
         report("the gap repair after a 6.5.4 window with " + gaps + " gaps: " + startAgain() + " s, WAL "
             + String.format("%.1f MB", walSince(lsn) / 1048576.0) + "; GAP_REPAIR revisions: "
-            + db.queryForObject("SELECT count(*) FROM submission_revision WHERE command = 'GAP_REPAIR'", Long.class));
-        assertThat(db.queryForObject("SELECT count(*) FROM submission_revision WHERE command = 'GAP_REPAIR'", Long.class))
+            + db.queryForObject("SELECT count(*) FROM journal.submission_revision WHERE command = 'GAP_REPAIR'", Long.class));
+        assertThat(db.queryForObject("SELECT count(*) FROM journal.submission_revision WHERE command = 'GAP_REPAIR'", Long.class))
             .isEqualTo(gaps);
         report("and the start after that: " + startAgain() + " s");
 
@@ -196,10 +196,10 @@ class SubmissionRevisionRehearsalIT {
         List<String> plan = db.queryForList("""
             EXPLAIN (ANALYZE, TIMING OFF, SUMMARY ON)
             SELECT s.id, s.lock_version,
-                   (SELECT max(h.version) FROM submission_revision h WHERE h.submission_id = s.id),
-                   s.form_data, submission_revision_metadata(s)
+                   (SELECT max(h.version) FROM journal.submission_revision h WHERE h.submission_id = s.id),
+                   s.form_data, journal.submission_revision_metadata(s)
             FROM data_submission s
-            WHERE NOT EXISTS (SELECT 1 FROM submission_revision r
+            WHERE NOT EXISTS (SELECT 1 FROM journal.submission_revision r
                               WHERE r.submission_id = s.id AND r.version >= s.lock_version)""", String.class);
         return plan.stream().filter(line -> line.startsWith("Execution Time"))
             .map(line -> line.replaceAll("[^0-9.]", "")).findFirst().orElse("?");

@@ -51,10 +51,10 @@ class A2RevisionTransactionIT extends A2GoldenSupport {
                     END IF;
                     RETURN NEW;
                 END $$""");
-            jdbc.getJdbcTemplate().execute("DROP TRIGGER IF EXISTS a2_injected_failure ON submission_revision");
+            jdbc.getJdbcTemplate().execute("DROP TRIGGER IF EXISTS a2_injected_failure ON journal.submission_revision");
             jdbc.getJdbcTemplate().execute("DROP TRIGGER IF EXISTS a2_injected_failure ON outbox");
             jdbc.getJdbcTemplate().execute("""
-                CREATE TRIGGER a2_injected_failure AFTER INSERT ON submission_revision
+                CREATE TRIGGER a2_injected_failure AFTER INSERT ON journal.submission_revision
                 FOR EACH ROW EXECUTE FUNCTION a2_injected_failure()""");
             jdbc.getJdbcTemplate().execute("""
                 CREATE TRIGGER a2_injected_failure AFTER INSERT ON outbox
@@ -66,13 +66,13 @@ class A2RevisionTransactionIT extends A2GoldenSupport {
     void removeInjectedFailures() {
         inTransaction(() -> {
             jdbc.getJdbcTemplate().execute("DROP TRIGGER IF EXISTS a2_injected_failure ON outbox");
-            jdbc.getJdbcTemplate().execute("DROP TRIGGER IF EXISTS a2_injected_failure ON submission_revision");
+            jdbc.getJdbcTemplate().execute("DROP TRIGGER IF EXISTS a2_injected_failure ON journal.submission_revision");
             jdbc.getJdbcTemplate().execute("DROP FUNCTION IF EXISTS a2_injected_failure()");
             jdbc.getJdbcTemplate().execute("DROP TABLE IF EXISTS a2_injected_failure");
         });
     }
 
-    /** The next write of the submission fails right after its row in {@code table}. */
+    /** The next write of the submission fails right after its row in {@code table}, named as TG_TABLE_NAME names it. */
     private void failAfter(String uid, String table) {
         inTransaction(() -> jdbc.update("INSERT INTO a2_injected_failure (uid, at) VALUES (:uid, :at)",
             Map.of("uid", uid, "at", table)));
@@ -83,7 +83,7 @@ class A2RevisionTransactionIT extends A2GoldenSupport {
         List<String> row = jdbc.queryForList(
             "SELECT lock_version || ' ' || deleted FROM data_submission WHERE uid = :uid", Map.of("uid", uid), String.class);
         List<String> revisions = jdbc.queryForList("""
-            SELECT r.version || ' ' || r.kind FROM submission_revision r JOIN data_submission s ON s.id = r.submission_id
+            SELECT r.version || ' ' || r.kind FROM journal.submission_revision r JOIN data_submission s ON s.id = r.submission_id
             WHERE s.uid = :uid ORDER BY r.version""", Map.of("uid", uid), String.class);
         List<String> events = jdbc.queryForList("""
             SELECT event_type || ' ' || submission_version FROM outbox WHERE submission_uid = :uid ORDER BY outbox_id""",

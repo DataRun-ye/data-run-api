@@ -9,10 +9,10 @@
     <!--
       The journal's starting point: one BASELINE revision for every submission stored before step C, deleted ones
       and those never sent to the outbox included, at its current lock_version, by the system actor MIGRATION. Its
-      state is the row's, through submission_revision_metadata(); last_modified_date there says when that state was
+      state is the row's, through journal.submission_revision_metadata(); last_modified_date there says when that state was
       reached. History starts here: changes before the journal are not reconstructed.
 
-      It writes only to submission_revision: no outbox row (the ETL is not flooded; re-projection is a later step's
+      It writes only to journal.submission_revision: no outbox row (the ETL is not flooded; re-projection is a later step's
       decision) and no existing row is changed. It reads data_submission under ACCESS SHARE, which blocks no reader.
       The application is stopped while Liquibase runs, so no write races it; every submission has a head revision
       from the first request on.
@@ -25,23 +25,23 @@
     -->
     <changeSet id="20261124-c04-submission-revision-baseline" author="datarun">
         <sql>
-            INSERT INTO submission_revision (submission_id, version, previous_version, kind, command, actor_system,
+            INSERT INTO journal.submission_revision (submission_id, version, previous_version, kind, command, actor_system,
                                              form_data, metadata)
             SELECT s.id, s.lock_version, NULL, 'BASELINE', 'MIGRATION', 'MIGRATION', s.form_data,
-                   submission_revision_metadata(s)
+                   journal.submission_revision_metadata(s)
             FROM data_submission s
-            WHERE NOT EXISTS (SELECT 1 FROM submission_revision r WHERE r.submission_id = s.id)
+            WHERE NOT EXISTS (SELECT 1 FROM journal.submission_revision r WHERE r.submission_id = s.id)
         </sql>
         <rollback>
             <sql splitStatements="false"><![CDATA[
                 DO $$
                 BEGIN
-                    IF EXISTS (SELECT 1 FROM submission_revision WHERE kind <> 'BASELINE') THEN
-                        RAISE EXCEPTION 'submission_revision holds revisions the application wrote: never roll it back';
+                    IF EXISTS (SELECT 1 FROM journal.submission_revision WHERE kind <> 'BASELINE') THEN
+                        RAISE EXCEPTION 'journal.submission_revision holds revisions the application wrote: never roll it back';
                     END IF;
                 END $$
             ]]></sql>
-            <sql>DELETE FROM submission_revision WHERE command = 'MIGRATION'</sql>
+            <sql>DELETE FROM journal.submission_revision WHERE command = 'MIGRATION'</sql>
         </rollback>
     </changeSet>
 </databaseChangeLog>

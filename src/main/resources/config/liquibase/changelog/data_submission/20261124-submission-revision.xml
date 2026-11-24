@@ -15,6 +15,10 @@
       version) is the natural key of a per-submission append-only log, so there is no surrogate id; the outbox names
       the revision it announces by that same pair.
 
+      The journal has a schema of its own, journal. Downstream analytics reads the current state only, and its copy
+      syncs the public and analytics schemas: a table here is never copied unless someone adds the schema to that
+      source. Its keys to public tables cross schemas.
+
       A revision holds:
       - version: data_submission.lock_version after the change (0 at creation, +1 per change);
       - previous_version: the version before it (NULL for a creation, and for the first baseline of a submission);
@@ -26,15 +30,20 @@
         admin's note on a release;
       - recorded_at: the database's transaction time;
       - the state after the change: form_data, and metadata, the row's other columns as
-        submission_revision_metadata() renders them.
+        journal.submission_revision_metadata() renders them.
 
       Rollback: allowed only while the journal holds baselines only. Once a real revision exists it is the only
       record of who changed what, and the rollback refuses (as with held_submission, never drop it then). Every
       rollback that removes a guard refuses first, in the same way, so a refused rollback leaves the journal guarded.
+      The schema is dropped last, and only if nothing else was left in it.
     -->
     <changeSet id="20261124-c01-submission-revision-table" author="datarun">
+        <sql>CREATE SCHEMA journal</sql>
         <sql>
-            CREATE TABLE submission_revision (
+            COMMENT ON SCHEMA journal IS 'The submission change record (step C). History, not current state: never part of the analytics copy.'
+        </sql>
+        <sql>
+            CREATE TABLE journal.submission_revision (
                 submission_id        varchar(26)  NOT NULL,
                 version              bigint       NOT NULL,
                 previous_version     bigint,
@@ -49,11 +58,11 @@
                 metadata             jsonb        NOT NULL,
                 CONSTRAINT pk_submission_revision PRIMARY KEY (submission_id, version),
                 CONSTRAINT fk_submission_revision_submission
-                    FOREIGN KEY (submission_id) REFERENCES data_submission (id),
+                    FOREIGN KEY (submission_id) REFERENCES public.data_submission (id),
                 CONSTRAINT fk_submission_revision_actor
-                    FOREIGN KEY (actor_user_id) REFERENCES app_user (id),
+                    FOREIGN KEY (actor_user_id) REFERENCES public.app_user (id),
                 CONSTRAINT fk_submission_revision_on_behalf_of
-                    FOREIGN KEY (on_behalf_of_user_id) REFERENCES app_user (id),
+                    FOREIGN KEY (on_behalf_of_user_id) REFERENCES public.app_user (id),
                 CONSTRAINT ck_submission_revision_kind
                     CHECK (kind IN ('BASELINE', 'CREATE', 'UPDATE', 'DELETE')),
                 CONSTRAINT ck_submission_revision_command
@@ -88,12 +97,13 @@
             <sql splitStatements="false"><![CDATA[
                 DO $$
                 BEGIN
-                    IF EXISTS (SELECT 1 FROM submission_revision WHERE kind <> 'BASELINE') THEN
-                        RAISE EXCEPTION 'submission_revision holds revisions the application wrote: never roll it back';
+                    IF EXISTS (SELECT 1 FROM journal.submission_revision WHERE kind <> 'BASELINE') THEN
+                        RAISE EXCEPTION 'journal.submission_revision holds revisions the application wrote: never roll it back';
                     END IF;
                 END $$
             ]]></sql>
-            <sql>DROP TABLE submission_revision</sql>
+            <sql>DROP TABLE journal.submission_revision</sql>
+            <sql>DROP SCHEMA journal</sql>
         </rollback>
     </changeSet>
 
@@ -122,7 +132,7 @@
     -->
     <changeSet id="20261124-c02-submission-revision-metadata" author="datarun">
         <sql splitStatements="false"><![CDATA[
-            CREATE OR REPLACE FUNCTION submission_revision_metadata(s data_submission)
+            CREATE OR REPLACE FUNCTION journal.submission_revision_metadata(s public.data_submission)
             RETURNS jsonb
             LANGUAGE sql
             STABLE
@@ -145,7 +155,7 @@
             END
         ]]></sql>
         <rollback>
-            <sql>DROP FUNCTION IF EXISTS submission_revision_metadata(data_submission)</sql>
+            <sql>DROP FUNCTION IF EXISTS journal.submission_revision_metadata(public.data_submission)</sql>
         </rollback>
     </changeSet>
 </databaseChangeLog>

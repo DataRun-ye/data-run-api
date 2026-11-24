@@ -10,12 +10,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.Types;
 
 /**
- * Appends revisions to the submission change record ({@code submission_revision}). Only the submission persistence
+ * Appends revisions to the submission change record ({@code journal.submission_revision}). Only the submission persistence
  * layer calls it, after it has flushed a change, in the transaction of that change: the revision commits or rolls
  * back with the row it records.
  *
  * <p>The state is copied from the row as stored, by the database: {@code form_data} as it is, and the other columns
- * through {@code submission_revision_metadata()}, the definition the baseline and the reconciliation check use too.
+ * through {@code journal.submission_revision_metadata()}, the definition the baseline and the reconciliation check use too.
  * Nothing the application holds in memory can differ from what the revision records.</p>
  */
 @Repository
@@ -23,10 +23,10 @@ import java.sql.Types;
 public class SubmissionRevisionWriter {
 
     private static final String APPEND_SQL = """
-        INSERT INTO submission_revision (submission_id, version, previous_version, kind, command, actor_user_id,
+        INSERT INTO journal.submission_revision (submission_id, version, previous_version, kind, command, actor_user_id,
                                          on_behalf_of_user_id, reason, form_data, metadata)
         SELECT s.id, s.lock_version, :previousVersion, :kind, :command, :actorUserId, :onBehalfOf, :reason,
-               s.form_data, submission_revision_metadata(s)
+               s.form_data, journal.submission_revision_metadata(s)
         FROM data_submission s
         WHERE s.id = :submissionId AND s.lock_version = :version
         """;

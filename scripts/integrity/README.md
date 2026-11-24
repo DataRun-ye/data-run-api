@@ -63,7 +63,7 @@ the output was not understood.
     (`DATARUN_INTEGRITY_MIN_FREE_DISK_MB`, default 10240); sorts and hashes
     that pass `work_mem` spill to temporary files there;
   - an `AccessExclusiveLock` is held or waited for on a table in `public`,
-    `analytics` or `pivot`, or on a table not committed yet (the long
+    `analytics`, `pivot` or `journal`, or on a table not committed yet (the long
     `CREATE TABLE ..._new AS` of a pivot build), the sign of a migration or a
     pivot build;
   - `databasechangeloglock.locked` is true: a migration is running, or stopped
@@ -303,18 +303,18 @@ check reads only the `status` and `created_at` columns that exist today.
 - **10d** Dead rows: given up after failing, never projected. Each one is a
   change analytics will never see until someone acts.
 
-### 11. The change record (submission_revision)
+### 11. The change record (journal.submission_revision)
 
 Since step C every committed change of a submission is a revision in
-`submission_revision`, written in the same transaction as the change, and
+`journal.submission_revision`, written in the same transaction as the change, and
 every revision the application writes has one outbox row naming it by
 `(submission_id, submission_version)`. Liquibase wrote one `BASELINE`
 revision per submission when the journal started (`MIGRATION`), and writes
 one at each start for every submission whose version rose without a revision
 (`GAP_REPAIR`, after a rollback to a release without the journal). A
 revision's state is `form_data` and the row's other columns as
-`submission_revision_metadata()` renders them. On a database without the
-journal every line reads -1.
+`journal.submission_revision_metadata()` renders them. On a database without
+the journal every line reads -1.
 
 - **11a** Submissions with no revision. Should stay 0.
 - **11b** Submissions whose head revision (highest version) is behind their

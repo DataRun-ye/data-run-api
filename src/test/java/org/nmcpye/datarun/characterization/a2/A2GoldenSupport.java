@@ -280,7 +280,8 @@ abstract class A2GoldenSupport {
         }
 
         /**
-         * Snapshots include the scenario's revisions ({@code submission_revision}), in version order per submission.
+         * Snapshots include the scenario's revisions ({@code journal.submission_revision}), in version order per
+         * submission.
          * The A2 goldens written before step C leave them out, so that they changed only where the outbox did.
          */
         public Scenario withRevisions() {
@@ -483,7 +484,7 @@ abstract class A2GoldenSupport {
                            r.actor_system, r.on_behalf_of_user_id, r.reason,
                            extract(epoch FROM r.recorded_at) AS recorded_at, r.form_data::text AS form_data,
                            r.metadata::text AS metadata
-                    FROM submission_revision r JOIN data_submission s ON s.id = r.submission_id
+                    FROM journal.submission_revision r JOIN data_submission s ON s.id = r.submission_id
                     WHERE s.uid LIKE 'a2%' OR s.assignment_uid IN (:assignments)
                     ORDER BY s.serial_number, r.version""", scope));
             }
