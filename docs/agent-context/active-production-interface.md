@@ -246,6 +246,11 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   - `datarun_etl_last_success_seconds`: when a poll last ended without error;
   - `datarun_etl_outbox_processed_total{outcome}`: rows processed, by outcome;
   - `datarun_etl_outbox_processing_seconds`: the time per row.
+
+  A scheduled task reads the backlog every `datarun.etl.backlog-refresh`
+  (15 s), so a scrape never waits on the database, even when the pool is
+  exhausted. The application serves `/management/prometheus` without a login.
+  Operations should limit `/management/` at nginx to the monitoring host.
 - **Index.** The partial index `idx_outbox_unfinished` (pending, failed and
   dead rows, in claim order) keeps the due check, the claim and the backlog
   gauges off the processed history. Liquibase builds it at startup with a plain

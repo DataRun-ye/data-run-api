@@ -8,6 +8,9 @@ import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.config.FixedDelayTask;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
@@ -28,11 +31,14 @@ import java.util.concurrent.atomic.AtomicLong;
  *   again ({@code failed}) or given up ({@code dead});</li>
  *   <li>{@code datarun.etl.outbox.processing}: the time each row took.</li>
  * </ul>
- * The backlog gauges read the outbox at most once per {@code datarun.etl.backlog-refresh}, on the thread that
- * reads them, so they stay true when the ETL itself is stuck.
+ * The backlog gauges show a reading of the outbox that a scheduled task takes every
+ * {@code datarun.etl.backlog-refresh}, apart from the ETL's own runs, so they stay true when the ETL itself is
+ * stuck, and a scrape never waits on the database: when the pool is exhausted, a scrape still answers with the
+ * last reading. Where nothing schedules that task (the test profiles, or an instance with the ETL switched off),
+ * the gauges read the outbox when scraped, at most once per {@code datarun.etl.backlog-refresh}.
  */
 @Component
-public class EtlMetrics {
+public class EtlMetrics implements SchedulingConfigurer {
 
     private static final Logger log = LoggerFactory.getLogger(EtlMetrics.class);
 
@@ -53,6 +59,7 @@ public class EtlMetrics {
     }
 
     private final JdbcTemplate jdbc;
+    private final EtlProperties properties;
     private final long refreshNanos;
     private final Map<Outcome, Counter> processed;
     private final Timer processing;
@@ -61,10 +68,12 @@ public class EtlMetrics {
     private volatile Backlog backlog = Backlog.UNKNOWN;
     private volatile long readAtNanos;
     private volatile boolean read;
+    private volatile boolean refreshedInBackground;
 
     public EtlMetrics(MeterRegistry registry, DataSource dataSource, EtlProperties properties) {
         this.jdbc = new JdbcTemplate(dataSource);
         this.jdbc.setQueryTimeout(5);
+        this.properties = properties;
         this.refreshNanos = properties.getBacklogRefresh().toNanos();
 
         for (String status : new String[]{"pending", "failed", "dead"}) {
@@ -119,19 +128,34 @@ public class EtlMetrics {
         };
     }
 
+    @Override
+    public void configureTasks(ScheduledTaskRegistrar registrar) {
+        Duration every = properties.getBacklogRefresh();
+        if (!properties.isEnabled() || every.isZero() || every.isNegative()) {
+            return;
+        }
+        refreshedInBackground = true;
+        registrar.addFixedDelayTask(new FixedDelayTask(this::refreshBacklog, every, Duration.ZERO));
+    }
+
+    /** Reads the outbox backlog now; the gauges show this reading until the next one. */
+    public synchronized void refreshBacklog() {
+        try {
+            backlog = jdbc.queryForObject(BACKLOG_SQL, (rs, rowNum) -> new Backlog(
+                rs.getLong("pending"), rs.getLong("failed"), rs.getLong("dead"), rs.getDouble("oldest_age")));
+        } catch (RuntimeException e) {
+            // Keep the last reading; last.success still shows whether the ETL itself is getting through.
+            log.warn("Could not read the outbox backlog: {}", e.getMessage());
+        }
+        readAtNanos = System.nanoTime();
+        read = true;
+    }
+
     private Backlog currentBacklog() {
-        if (!read || System.nanoTime() - readAtNanos >= refreshNanos) {
+        if (!refreshedInBackground && (!read || System.nanoTime() - readAtNanos >= refreshNanos)) {
             synchronized (this) {
                 if (!read || System.nanoTime() - readAtNanos >= refreshNanos) {
-                    try {
-                        backlog = jdbc.queryForObject(BACKLOG_SQL, (rs, rowNum) -> new Backlog(
-                            rs.getLong("pending"), rs.getLong("failed"), rs.getLong("dead"), rs.getDouble("oldest_age")));
-                    } catch (RuntimeException e) {
-                        // Keep the last reading; last.success still shows whether the ETL itself is getting through.
-                        log.warn("Could not read the outbox backlog: {}", e.getMessage());
-                    }
-                    readAtNanos = System.nanoTime();
-                    read = true;
+                    refreshBacklog();
                 }
             }
         }

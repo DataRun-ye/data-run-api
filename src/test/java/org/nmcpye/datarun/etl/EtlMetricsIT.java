@@ -1,14 +1,21 @@
 package org.nmcpye.datarun.etl;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.nmcpye.datarun.etl.config.EtlProperties;
+import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.transaction.PlatformTransactionManager;
+
+import javax.sql.DataSource;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
@@ -32,6 +39,9 @@ class EtlMetricsIT {
 
     @Autowired
     private TestRestTemplate http;
+
+    @Autowired
+    private DataSource dataSource;
 
     private EtlFixture fixture;
 
@@ -116,5 +126,41 @@ class EtlMetricsIT {
             "datarun_etl_last_success_seconds ",
             "datarun_etl_outbox_processed_total{outcome=\"success\",}",
             "datarun_etl_outbox_processing_seconds_count ");
+    }
+
+    /**
+     * Scheduled, the backlog gauges show the last background reading: a scrape never waits on the database, so it
+     * still answers when the pool is exhausted. With the ETL switched off nothing is scheduled.
+     */
+    @Test
+    void whenScheduledAScrapeShowsTheLastBackgroundReadingAndNeverReadsTheOutbox() {
+        EtlProperties properties = new EtlProperties();
+        SimpleMeterRegistry scraped = new SimpleMeterRegistry();
+        EtlMetrics background = new EtlMetrics(scraped, dataSource, properties);
+        ScheduledTaskRegistrar registrar = new ScheduledTaskRegistrar();
+
+        background.configureTasks(registrar);
+
+        assertThat(registrar.getFixedDelayTaskList()).singleElement().satisfies(task -> {
+            assertThat(task.getIntervalDuration()).isEqualTo(Duration.ofSeconds(15));
+            assertThat(task.getInitialDelayDuration()).isZero();
+        });
+        fixture.outboxRow("pending", 10, null);
+        assertThat(pendingIn(scraped)).as("no reading taken yet").isNaN();
+
+        background.refreshBacklog();
+        assertThat(pendingIn(scraped)).isEqualTo(1);
+
+        fixture.outboxRow("pending", 5, null);
+        assertThat(pendingIn(scraped)).as("a scrape shows the last reading").isEqualTo(1);
+
+        properties.setEnabled(false);
+        ScheduledTaskRegistrar disabled = new ScheduledTaskRegistrar();
+        new EtlMetrics(new SimpleMeterRegistry(), dataSource, properties).configureTasks(disabled);
+        assertThat(disabled.getFixedDelayTaskList()).isEmpty();
+    }
+
+    private static double pendingIn(SimpleMeterRegistry scraped) {
+        return scraped.get("datarun.etl.outbox.rows").tag("status", "pending").gauge().value();
     }
 }
