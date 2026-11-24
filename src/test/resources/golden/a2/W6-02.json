@@ -1,8 +1,4 @@
 {
-  "pinnedBug" : {
-    "changeBy" : "B1/C1",
-    "what" : "a second admin delete of a deleted record writes a second DELETE event and moves deleted_at"
-  },
   "scenario" : "W6-02",
   "steps" : [
     {
@@ -312,7 +308,7 @@
             "created_by" : "a2-field1",
             "created_date" : "<created_date:1>",
             "deleted" : true,
-            "deleted_at" : "<deleted_at:2>",
+            "deleted_at" : "<deleted_at:1>",
             "finished_entry_time" : "2026-11-20T05:10:00Z",
             "form_data" : {
               "main" : {
@@ -339,8 +335,8 @@
             },
             "id" : "<ulid:1>",
             "last_modified_by" : "admin",
-            "last_modified_date" : "<last_modified_date:3>",
-            "lock_version" : 2,
+            "last_modified_date" : "<last_modified_date:2>",
+            "lock_version" : 1,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
             "org_unit_uid" : "a2Village01",
@@ -425,40 +421,6 @@
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2w602xxxxx",
             "topic" : "<FORM_A.v1>"
-          },
-          {
-            "attempt" : 0,
-            "created_at" : "<created_at:3>",
-            "event_type" : "DELETE",
-            "last_error" : null,
-            "payload" : {
-              "main" : {
-                "a2_name" : "first",
-                "rows" : [
-                  {
-                    "_id" : "01HA2000000000000000000001",
-                    "_index" : 1,
-                    "_parentId" : "a2w602xxxxx",
-                    "_submissionUid" : "a2w602xxxxx",
-                    "a2_item" : "r1",
-                    "subrows" : [
-                      {
-                        "_id" : "01HA2000000000000000000002",
-                        "_index" : 1,
-                        "_parentId" : "01HA2000000000000000000001",
-                        "_submissionUid" : "a2w602xxxxx",
-                        "a2_sub" : "s1"
-                      }
-                    ]
-                  }
-                ]
-              }
-            },
-            "status" : "pending",
-            "submission_id" : "<ulid:1>",
-            "submission_serial_number" : "<serial:1>",
-            "submission_uid" : "a2w602xxxxx",
-            "topic" : "<FORM_A.v1>"
           }
         ],
         "reference_entry" : [ ]
@@ -480,5 +442,5 @@
       "step" : 3
     }
   ],
-  "title" : "A second admin delete writes a second DELETE event and moves deleted_at"
+  "title" : "A second admin delete of a deleted record answers 204 and changes nothing"
 }

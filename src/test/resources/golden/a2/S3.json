@@ -1,7 +1,7 @@
 {
   "pinnedBug" : {
-    "changeBy" : "E3/E4, C1, B1",
-    "what" : "a phone re-send after an admin delete is absorbed into the deleted record, and a second admin delete writes a second DELETE event"
+    "changeBy" : "E3/E4, C1",
+    "what" : "a phone re-send after an admin delete is absorbed into the deleted record"
   },
   "scenario" : "S3",
   "steps" : [
@@ -536,7 +536,7 @@
             "created_by" : "a2-field1",
             "created_date" : "<created_date:1>",
             "deleted" : true,
-            "deleted_at" : "<deleted_at:2>",
+            "deleted_at" : "<deleted_at:1>",
             "finished_entry_time" : "2026-11-20T05:10:00Z",
             "form_data" : {
               "main" : {
@@ -562,9 +562,9 @@
               }
             },
             "id" : "<ulid:1>",
-            "last_modified_by" : "admin",
-            "last_modified_date" : "<last_modified_date:4>",
-            "lock_version" : 3,
+            "last_modified_by" : "a2-field1",
+            "last_modified_date" : "<last_modified_date:3>",
+            "lock_version" : 2,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
             "org_unit_uid" : "a2Village01",
@@ -654,40 +654,6 @@
             "attempt" : 0,
             "created_at" : "<created_at:3>",
             "event_type" : "UPDATE",
-            "last_error" : null,
-            "payload" : {
-              "main" : {
-                "a2_name" : "changed",
-                "rows" : [
-                  {
-                    "_id" : "01HA2000000000000000000001",
-                    "_index" : 1,
-                    "_parentId" : "a2s3xxxxxxx",
-                    "_submissionUid" : "a2s3xxxxxxx",
-                    "a2_item" : "r1",
-                    "subrows" : [
-                      {
-                        "_id" : "01HA2000000000000000000002",
-                        "_index" : 1,
-                        "_parentId" : "01HA2000000000000000000001",
-                        "_submissionUid" : "a2s3xxxxxxx",
-                        "a2_sub" : "s1"
-                      }
-                    ]
-                  }
-                ]
-              }
-            },
-            "status" : "pending",
-            "submission_id" : "<ulid:1>",
-            "submission_serial_number" : "<serial:1>",
-            "submission_uid" : "a2s3xxxxxxx",
-            "topic" : "<FORM_A.v1>"
-          },
-          {
-            "attempt" : 0,
-            "created_at" : "<created_at:4>",
-            "event_type" : "DELETE",
             "last_error" : null,
             "payload" : {
               "main" : {

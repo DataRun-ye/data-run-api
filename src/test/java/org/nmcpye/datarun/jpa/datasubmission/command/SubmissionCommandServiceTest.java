@@ -50,6 +50,20 @@ class SubmissionCommandServiceTest {
         verify(transactionManager).commit(transaction);
     }
 
+    /** A2 W6-02: a second delete used to write a second DELETE event and move deleted_at. */
+    @Test
+    void deletingAnAlreadyDeletedSubmissionWritesNothing() {
+        DataSubmission deleted = new DataSubmission();
+        deleted.setUid("deletedSub1");
+        deleted.setDeleted(true);
+        when(submissions.findByUid("deletedSub1")).thenReturn(Optional.of(deleted));
+
+        service.delete(new SubmissionCommand.Delete(actor(true), "deletedSub1"));
+
+        verify(submissionService, never()).softDelete(any());
+        verify(transactionManager).commit(transaction);
+    }
+
     @Test
     void deletingAnUnknownUidWritesNothing() {
         when(submissions.findByUid("noSuchSub01")).thenReturn(Optional.empty());

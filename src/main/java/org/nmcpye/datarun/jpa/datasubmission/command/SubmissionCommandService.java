@@ -2,6 +2,7 @@ package org.nmcpye.datarun.jpa.datasubmission.command;
 
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
+import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.intake.IntakeMode;
@@ -51,15 +52,20 @@ public class SubmissionCommandService {
 
     /**
      * An admin's delete, in one transaction: the submission is marked deleted, and its DELETE event, carrying its
-     * last data, is written to the outbox. Only an admin may delete. An unknown uid fails with
-     * {@link java.util.NoSuchElementException} and writes nothing.
+     * last data, is written to the outbox. A submission already deleted is left as it is, with no second event and
+     * its first delete time, the rule an upload's {@code deleted=true} already follows. Only an admin may delete. An
+     * unknown uid fails with {@link java.util.NoSuchElementException} and writes nothing.
      */
     public void delete(SubmissionCommand.Delete command) {
         if (!command.actor().admin()) {
             throw new AccessDeniedException("Only an admin may delete a submission");
         }
-        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
-            submissionService.softDelete(submissions.findByUid(command.uid()).orElseThrow()));
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            DataSubmission submission = submissions.findByUid(command.uid()).orElseThrow();
+            if (!Boolean.TRUE.equals(submission.getDeleted())) {
+                submissionService.softDelete(submission);
+            }
+        });
     }
 
     /**

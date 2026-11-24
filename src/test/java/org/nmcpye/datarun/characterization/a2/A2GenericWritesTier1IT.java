@@ -71,12 +71,11 @@ class A2GenericWritesTier1IT extends A2GoldenSupport {
             .verify();
     }
 
+    /** Fixed in B1: until then a second delete wrote a second DELETE event and moved deleted_at. */
     @Test
-    @PinnedBug(changeBy = "B1/C1",
-        what = "a second admin delete of a deleted record writes a second DELETE event and moves deleted_at")
     void w6_02_adminDeleteTwice() {
         String uid = uid("w602");
-        scenario("W6-02", "A second admin delete writes a second DELETE event and moves deleted_at")
+        scenario("W6-02", "A second admin delete of a deleted record answers 204 and changes nothing")
             .upload("field1 creates", G3, FIELD_1, formA(uid, "first"))
             .call("admin deletes", "DELETE", "/api/v1/dataSubmission/" + uid, ADMIN, null)
             .call("admin deletes again", "DELETE", "/api/v1/dataSubmission/" + uid, ADMIN, null)
