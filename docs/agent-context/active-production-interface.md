@@ -371,7 +371,9 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     input value (`invalid input syntax for type integer: "…"`).
   - Request errors: `ExceptionTranslator` logs one line for each error it
     answers (6.5.5). A server fault (5xx) is an ERROR line, so GlitchTip gets
-    its pattern, the route and the request id: `Request GET /api/v1/... failed
+    its pattern, the route and the request id, one issue per method and route,
+    outermost exception type and SQLState (a fingerprint taken from the line's
+    arguments before they are dropped): `Request GET /api/v1/... failed
     with 500 (error.http.500): DataIntegrityViolationException <
     PSQLException, SQLState 23505, at ..., request <id>`. Any other error
     (4xx), an unreadable body included, is an INFO line: `Request POST

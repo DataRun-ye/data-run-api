@@ -11,6 +11,7 @@ import io.sentry.spring.jakarta.tracing.SpringMvcTransactionNameProvider;
 import io.sentry.spring.jakarta.tracing.TransactionNameProvider;
 import jakarta.servlet.Filter;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.web.rest.errors.ExceptionTranslator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
@@ -23,7 +24,10 @@ import org.springframework.context.annotation.Configuration;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Error reporting to GlitchTip through the Sentry SDK (sentry-spring-boot-starter-jakarta and sentry-logback).
@@ -52,6 +56,8 @@ public class ErrorReportingConfiguration {
 
     /** Loggers whose ERROR patterns this code base writes, with values only in {@code {}} arguments. */
     static final String OWN_LOGGERS = "org.nmcpye.datarun.";
+
+    private static final Pattern SQL_STATE = Pattern.compile("SQLState (\\w+)");
 
     /** Where Hibernate logs the database's error text, at ERROR, for every failed statement. */
     static final String HIBERNATE_SQL_ERRORS = "org.hibernate.engine.jdbc.spi.SqlExceptionHelper";
@@ -176,6 +182,9 @@ public class ErrorReportingConfiguration {
         if (message != null && logger == null) {
             event.setMessage(null);
         } else if (message != null) {
+            if (isHandledServerFault(logger, message)) {
+                event.setFingerprints(handledServerFaultFingerprint(message.getParams()));
+            }
             if (!logger.startsWith(OWN_LOGGERS)) {
                 message.setMessage(logger);
                 message.setFormatted(logger);
@@ -189,6 +198,32 @@ public class ErrorReportingConfiguration {
             exceptions.forEach(exception -> exception.setValue(null));
         }
         return event;
+    }
+
+    /** ExceptionTranslator's line for a handled server fault (5xx), with at least its first five arguments. */
+    private static boolean isHandledServerFault(String logger, Message message) {
+        return ExceptionTranslator.class.getName().equals(logger)
+            && ExceptionTranslator.SERVER_FAULT_LINE.equals(message.getMessage())
+            && message.getParams() != null && message.getParams().size() >= 5;
+    }
+
+    /**
+     * How GlitchTip groups handled server faults. Their line carries no exception (the container log stays free of
+     * exception messages), so without a fingerprint every fault would share its one pattern and one issue. The
+     * fingerprint is the method and route pattern and the outermost exception type, with the SQLState when there is
+     * one, read from the line's arguments (method, route, status, error code, failure shape, request id) before they
+     * are dropped. The route pattern is already the event's transaction; the type and the SQLState name code, never
+     * a value. The request id and the frames stay out, so one fault keeps one issue across requests and releases.
+     */
+    static List<String> handledServerFaultFingerprint(List<String> params) {
+        String shape = params.get(4);
+        List<String> fingerprint = new ArrayList<>(List.of(
+            "handled-server-fault", params.get(0) + " " + params.get(1), shape.split(" < |,", 2)[0]));
+        Matcher sqlState = SQL_STATE.matcher(shape);
+        if (sqlState.find()) {
+            fingerprint.add("SQLState " + sqlState.group(1));
+        }
+        return fingerprint;
     }
 
     /**

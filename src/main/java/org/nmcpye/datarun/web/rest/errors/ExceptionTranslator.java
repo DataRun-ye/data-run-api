@@ -60,6 +60,9 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     private static final String PATH_KEY = "path";
     private static final boolean CASUAL_CHAIN_ENABLED = false;
 
+    /** The pattern of a handled server fault's line; ErrorReportingConfiguration groups its GlitchTip events. */
+    public static final String SERVER_FAULT_LINE = "Request {} {} failed with {} ({}): {}, request {}";
+
     @Value("${jhipster.clientApp.name}")
     private String applicationName;
     private final Environment env;
@@ -122,7 +125,8 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     /**
      * One log line for each request error this advice answers, since 6.5.5 its only record (error_event is no longer
      * written). A server fault (5xx) is an ERROR line, so GlitchTip gets it under the reporting filter: its pattern,
-     * the route and the request id. Anything else (4xx) is an INFO line. Each names the method, the matched route
+     * the route and the request id, grouped by route, exception type and SQLState. Anything else (4xx) is an INFO
+     * line. Each names the method, the matched route
      * pattern, the status, the error code and the exception types (for a fault also its SQLState and first
      * application frames, {@link FailureShape}) and the request id, all as arguments; never a message, a body or a
      * value. A failed login logs nothing here: its WARN line from AuthenticationFailureListener is its only record.
@@ -135,7 +139,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         }
         String requestId = MDC.get(RequestIdFilter.MDC_REQUEST_ID_KEY);
         if (status >= 500) {
-            log.error("Request {} {} failed with {} ({}): {}, request {}",
+            log.error(SERVER_FAULT_LINE,
                 method(request), route(request), status, errorCode(ex, status), FailureShape.of(ex), requestId);
         } else {
             log.info("Request {} {} answered {} ({}): {}, request {}",

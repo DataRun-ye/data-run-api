@@ -17,6 +17,7 @@ import io.sentry.protocol.User;
 import io.sentry.spring.boot.jakarta.SentryProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.nmcpye.datarun.web.rest.errors.ExceptionTranslator;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -148,6 +149,63 @@ class ErrorReportingConfigurationTest {
         ownLine.setLogger("org.nmcpye.datarun.example.Writer");
         assertThat(ErrorReportingConfiguration.withoutValues(ownLine, new Hint()))
             .as("only Hibernate's line is dropped").isNotNull();
+    }
+
+    /**
+     * A handled server fault carries no exception, so its events are grouped by a fingerprint: the route, the
+     * outermost exception type and the SQLState. The same fault from two requests (and other frames) is one issue;
+     * another route, type or SQLState is another. The arguments are still dropped.
+     */
+    @Test
+    void handledServerFaultsAreGroupedByRouteTypeAndSqlState() {
+        String unique = "DataIntegrityViolationException < PSQLException, SQLState 23505, at AssignmentService.save:%d";
+        SentryEvent first = withoutValues(serverFault("POST", "/api/v1/assignments", unique.formatted(41), "req-1"));
+        SentryEvent again = withoutValues(serverFault("POST", "/api/v1/assignments", unique.formatted(43), "req-2"));
+        SentryEvent otherState = withoutValues(serverFault("POST", "/api/v1/assignments",
+            "DataIntegrityViolationException < PSQLException, SQLState 23503, at AssignmentService.save:41", "req-3"));
+        SentryEvent otherRoute = withoutValues(serverFault("POST", "/api/v1/teams", unique.formatted(41), "req-4"));
+        SentryEvent otherType = withoutValues(serverFault("POST", "/api/v1/assignments",
+            "NullPointerException, at AssignmentService.save:12", "req-5"));
+
+        assertThat(first.getFingerprints()).containsExactly("handled-server-fault", "POST /api/v1/assignments",
+            "DataIntegrityViolationException", "SQLState 23505");
+        assertThat(again.getFingerprints()).as("the same fault from another request").isEqualTo(first.getFingerprints());
+        assertThat(List.of(otherState, otherRoute, otherType)).allSatisfy(other ->
+            assertThat(other.getFingerprints()).isNotEqualTo(first.getFingerprints()));
+        assertThat(otherType.getFingerprints())
+            .containsExactly("handled-server-fault", "POST /api/v1/assignments", "NullPointerException");
+        assertThat(first.getMessage().getParams()).as("nothing more is sent").isNull();
+        assertThat(first.getMessage().getFormatted()).isEqualTo(ExceptionTranslator.SERVER_FAULT_LINE);
+    }
+
+    /** Any other line keeps GlitchTip's own grouping. */
+    @Test
+    void otherLinesHaveNoFingerprint() {
+        SentryEvent other = new SentryEvent();
+        other.setLogger("org.nmcpye.datarun.jpa.datasubmission.command.SubmissionUploads");
+        Message message = new Message();
+        message.setMessage("Submission {} (form {}) from user {} failed unexpectedly: {}");
+        message.setParams(List.of("sub00000001", "form0000001", "01JUSER0000000000000000007", "IllegalStateException"));
+        other.setMessage(message);
+
+        assertThat(withoutValues(other).getFingerprints()).isNull();
+    }
+
+    /** The event the logback appender of the Sentry SDK makes of ExceptionTranslator's line for a 5xx. */
+    private static SentryEvent serverFault(String method, String route, String shape, String requestId) {
+        SentryEvent event = new SentryEvent();
+        event.setLogger(ExceptionTranslator.class.getName());
+        Message message = new Message();
+        message.setMessage(ExceptionTranslator.SERVER_FAULT_LINE);
+        message.setParams(List.of(method, route, "500", "error.http.500", shape, requestId));
+        message.setFormatted("Request " + method + " " + route + " failed with 500 (error.http.500): " + shape
+            + ", request " + requestId);
+        event.setMessage(message);
+        return event;
+    }
+
+    private static SentryEvent withoutValues(SentryEvent event) {
+        return ErrorReportingConfiguration.withoutValues(event, new Hint());
     }
 
     private static SentryEvent hibernateLine(String text) {

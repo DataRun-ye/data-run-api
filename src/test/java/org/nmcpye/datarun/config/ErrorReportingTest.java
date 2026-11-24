@@ -10,6 +10,7 @@ import io.sentry.spring.boot.jakarta.SentryAutoConfiguration;
 import io.sentry.spring.boot.jakarta.SentryLogbackAppenderAutoConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.nmcpye.datarun.web.rest.errors.ExceptionTranslator;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.info.BuildProperties;
@@ -210,6 +211,32 @@ class ErrorReportingTest {
             assertThat(glitchTip.events()).as("only the other constraint's line")
                 .singleElement().satisfies(event -> assertThat(event.path("logger").asText())
                     .isEqualTo("org.hibernate.engine.jdbc.spi.SqlExceptionHelper"));
+        }
+    }
+
+    /** Handled server faults reach GlitchTip grouped by route, exception type and SQLState, with no argument. */
+    @Test
+    void handledServerFaultsArriveFingerprintedWithoutTheirArguments() {
+        try (FakeGlitchTip glitchTip = FakeGlitchTip.start()) {
+            runner.withPropertyValues("sentry.dsn=" + glitchTip.dsn()).run(context -> {
+                org.slf4j.Logger translator = LoggerFactory.getLogger(ExceptionTranslator.class);
+                String duplicate = "DataIntegrityViolationException < PSQLException, SQLState 23505, at A.b:1";
+                translator.error(ExceptionTranslator.SERVER_FAULT_LINE, "POST", "/api/v1/assignments", 500,
+                    "error.http.500", duplicate, "6f1c0b0e-0000-4000-8000-000000000001");
+                translator.error(ExceptionTranslator.SERVER_FAULT_LINE, "POST", "/api/v1/assignments", 500,
+                    "error.http.500", duplicate, "6f1c0b0e-0000-4000-8000-000000000002");
+                translator.error(ExceptionTranslator.SERVER_FAULT_LINE, "GET", "/api/v1/teams/{id}", 500,
+                    "error.http.500", "NullPointerException, at T.c:9", "6f1c0b0e-0000-4000-8000-000000000003");
+                Sentry.flush(5000);
+            });
+
+            assertThat(String.join("\n", glitchTip.envelopes())).doesNotContain("6f1c0b0e-0000-4000-8000");
+            assertThat(glitchTip.events()).hasSize(3)
+                .extracting(event -> event.path("fingerprint").toString())
+                .containsExactlyInAnyOrder(
+                    "[\"handled-server-fault\",\"POST /api/v1/assignments\",\"DataIntegrityViolationException\",\"SQLState 23505\"]",
+                    "[\"handled-server-fault\",\"POST /api/v1/assignments\",\"DataIntegrityViolationException\",\"SQLState 23505\"]",
+                    "[\"handled-server-fault\",\"GET /api/v1/teams/{id}\",\"NullPointerException\"]");
         }
     }
 
