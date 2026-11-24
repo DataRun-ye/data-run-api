@@ -7,6 +7,8 @@ import io.sentry.SentryOptions;
 import io.sentry.protocol.Message;
 import io.sentry.protocol.SentryException;
 import io.sentry.spring.boot.jakarta.SentryProperties;
+import io.sentry.spring.jakarta.tracing.SpringMvcTransactionNameProvider;
+import io.sentry.spring.jakarta.tracing.TransactionNameProvider;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.info.BuildProperties;
@@ -61,6 +63,16 @@ public class ErrorReportingConfiguration {
     @Bean
     public SentryOptions.BeforeSendCallback errorReportingWithoutValues() {
         return ErrorReportingConfiguration::withoutValues;
+    }
+
+    /**
+     * Names an event's transaction by the matched route only ({@code GET /api/v1/users/{login}}), or not at all.
+     * The SDK's default falls back to the raw request path while no route has matched, as for a line a filter logs,
+     * and a path can hold a login.
+     */
+    @Bean
+    public TransactionNameProvider errorReportingRouteNames() {
+        return new SpringMvcTransactionNameProvider();
     }
 
     /**

@@ -263,8 +263,9 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   - Errors (`SENTRY_DSN`, `SENTRY_ENVIRONMENT`): every ERROR log line and
     uncaught exception of the application becomes an event in the GlitchTip
     project `datarun-api` (Sentry Java SDK, `ErrorReportingConfiguration`).
-    An event carries the logger, exception types, stack frames, the request
-    id, the release and the environment, and for the application's own lines
+    An event carries the logger, exception types, stack frames, the matched
+    route (none before routing, never the raw path), the request id, the
+    release and the environment, and for the application's own lines
     (`org.nmcpye.datarun`) the line's pattern, so those lines pass values only
     as `{}` arguments. Another library's line arrives as its logger's name:
     Hibernate and Undertow format values into the text (Undertow's UT005023

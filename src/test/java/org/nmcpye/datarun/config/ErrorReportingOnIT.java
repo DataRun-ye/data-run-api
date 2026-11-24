@@ -3,7 +3,10 @@ package org.nmcpye.datarun.config;
 import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.sentry.Sentry;
+import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.IntegrationTest;
@@ -22,8 +25,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -35,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @IntegrationTest
 @AutoConfigureMockMvc
 @DirtiesContext
-@Import(ErrorReportingOnIT.FailingResource.class)
+@Import({ErrorReportingOnIT.FailingResource.class, ErrorReportingOnIT.UsersPathFilter.class})
 class ErrorReportingOnIT {
 
     private static final FakeGlitchTip GLITCHTIP = FakeGlitchTip.start();
@@ -74,7 +81,7 @@ class ErrorReportingOnIT {
 
         assertThat(String.join("\n", GLITCHTIP.envelopes()))
             .doesNotContain("777000111", "sub00000001", "household name", "secret-header", "secret-cookie");
-        assertThat(GLITCHTIP.events()).singleElement().satisfies(event -> {
+        assertThat(eventsFrom(FailingResource.class)).singleElement().satisfies(event -> {
             assertThat(event.path("message").path("formatted").asText())
                 .isEqualTo("Submission {} from {} failed unexpectedly");
             assertThat(event.path("transaction").asText()).as("the request was in scope")
@@ -91,6 +98,27 @@ class ErrorReportingOnIT {
         });
     }
 
+    /** Before a route matches, the SDK's default transaction name would be the raw path, here with a login. */
+    @Test
+    @WithMockUser("777000111")
+    void anErrorBeforeRoutingCarriesNoRawPath() throws Exception {
+        mockMvc.perform(get("/api/v1/test/users/777000111")).andExpect(status().isNoContent());
+        Sentry.flush(5000);
+
+        assertThat(String.join("\n", GLITCHTIP.envelopes())).doesNotContain("777000111");
+        assertThat(eventsFrom(UsersPathFilter.class)).singleElement().satisfies(event -> {
+            assertThat(event.path("message").path("formatted").asText()).isEqualTo("A filter failed before routing");
+            assertThat(event.has("transaction")).isFalse();
+            assertThat(event.has("request")).isFalse();
+        });
+    }
+
+    private static List<JsonNode> eventsFrom(Class<?> source) {
+        return GLITCHTIP.events().stream()
+            .filter(event -> event.path("logger").asText().equals(source.getName()))
+            .toList();
+    }
+
     /** Logs as the upload path does when one submission fails unexpectedly. */
     @RestController
     static class FailingResource {
@@ -102,6 +130,24 @@ class ErrorReportingOnIT {
         void failOneSubmission(@RequestBody String body) {
             log.error("Submission {} from {} failed unexpectedly", "sub00000001", "777000111",
                 new IllegalStateException("For input string: \"household name\""));
+        }
+    }
+
+    /** Logs an ERROR line for a user's path before any route has matched, as the JWT decoder can. */
+    static class UsersPathFilter extends OncePerRequestFilter {
+
+        private static final org.slf4j.Logger log = LoggerFactory.getLogger(UsersPathFilter.class);
+
+        @Override
+        protected boolean shouldNotFilter(HttpServletRequest request) {
+            return !request.getRequestURI().startsWith("/api/v1/test/users/");
+        }
+
+        @Override
+        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                        FilterChain chain) {
+            log.error("A filter failed before routing");
+            response.setStatus(HttpStatus.NO_CONTENT.value());
         }
     }
 }
