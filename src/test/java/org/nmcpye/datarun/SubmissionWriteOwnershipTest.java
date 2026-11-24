@@ -105,8 +105,9 @@ class SubmissionWriteOwnershipTest {
     private static final Map<String, List<String>> NAMED_IN = Map.of(
         "data_submission", List.of("org/nmcpye/datarun/jpa/datasubmission/"),
         "held_submission", List.of("org/nmcpye/datarun/jpa/intake/"),
-        "outbox", List.of("org/nmcpye/datarun/outbox/repository/", "org/nmcpye/datarun/etl/admin/",
-            "org/nmcpye/datarun/etl/metrics/"));
+        "outbox", List.of("org/nmcpye/datarun/outbox/repository/",
+            "org/nmcpye/datarun/etl/admin/ScheduledOrchestratorRunner.java",
+            "org/nmcpye/datarun/etl/metrics/EtlMetrics.java"));
     /** Where SQL may write each table: data_submission nowhere. */
     private static final Map<String, List<String>> WRITTEN_IN = Map.of(
         "data_submission", List.of(),
@@ -206,8 +207,10 @@ class SubmissionWriteOwnershipTest {
                 "outside org/nmcpye/datarun/web/X.java: writes data_submission in \"COPY \\\"data_submission\\\" FROM STDIN\"",
                 "outside org/nmcpye/datarun/web/X.java: names outbox in \"outbox\"",
                 "outside org/nmcpye/datarun/web/X.java: names the DataSubmission entity in \"update DataSubmission s set s.status = null\"");
+        assertThat(sourceFindings("org/nmcpye/datarun/etl/metrics/EtlMetrics.java", "String read = \"SELECT count(*) FROM outbox\";"))
+            .containsExactly("allowed org/nmcpye/datarun/etl/metrics/EtlMetrics.java: names outbox in \"SELECT count(*) FROM outbox\"");
         assertThat(sourceFindings("org/nmcpye/datarun/etl/metrics/X.java", "String read = \"SELECT count(*) FROM outbox\";"))
-            .containsExactly("allowed org/nmcpye/datarun/etl/metrics/X.java: names outbox in \"SELECT count(*) FROM outbox\"");
+            .containsExactly("outside org/nmcpye/datarun/etl/metrics/X.java: names outbox in \"SELECT count(*) FROM outbox\"");
         assertThat(sourceFindings("org/nmcpye/datarun/etl/metrics/X.java", "String sneak = \"UPDATE outbox SET x = 1\";"))
             .contains("outside org/nmcpye/datarun/etl/metrics/X.java: writes outbox in \"UPDATE outbox SET x = 1\"");
         assertThat(resourceFindings("config/application.yml", String.join("\n",
