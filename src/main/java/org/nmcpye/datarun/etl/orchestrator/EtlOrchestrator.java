@@ -62,7 +62,7 @@ public class EtlOrchestrator {
      * - start run -> claim batch -> for each outbox: per-outbox TX { processEvent }, failures recorded after it
      * - finish run and persist counters
      */
-    public void runOnce(String pipelineName, int batchSize) {
+    public EtlRunResult runOnce(String pipelineName, int batchSize) {
         String createdBy = "etl-orchestrator";
         String codeVersion = System.getenv().getOrDefault("CODE_VERSION", "unknown");
 
@@ -97,6 +97,7 @@ public class EtlOrchestrator {
                 .successCount(successCount).failureCount(failureCount).minSubmissionSerial(minSerial).maxSubmissionSerial(maxSerial)
                 .build());
             log.info("Finished run {}: submitted={}, success={}, failure={}", runId, submittedCount, successCount, failureCount);
+            return new EtlRunResult((int) submittedCount, (int) successCount, (int) failureCount);
         } catch (Exception topEx) {
             // best-effort mark run as failed
             try {

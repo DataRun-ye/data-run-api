@@ -97,20 +97,6 @@ datarun:
         token-validity-in-seconds: 86400 # Token is valid 24 hours
         refresh-token-validity-in-seconds: 2592000 # 30 days
         token-validity-in-seconds-for-remember-me: 2592000
-outbox:
-  relay:
-    poll-interval-ms: 2000   # polling delay between polls (ms)
-    batch-size: 20           # how many to claim per poll
-    worker-threads: 8        # number of concurrent worker threads
-    max-attempts: 5
-    visibility-timeout-seconds: 600   # reclaim if processing_started older than this
-    reclaim-interval-ms: 60000
-backoff:
-  base-seconds: 30
-  jitter-seconds: 5
-  max-seconds: 3600
-
-
 pilot:
   repeat:
     uids: RPT_aaf9a7ade8ad8535,RPT_0cb69bd7ed22c6d5
@@ -120,9 +106,6 @@ pilot:
     backfill: true
     projection: true
 
-migration:
-  size: 200
-  cron: "0 */1 * * * *"
 
 jhipster:
   client-app:

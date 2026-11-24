@@ -14,6 +14,21 @@ import java.time.Duration;
 @ConfigurationProperties(prefix = "datarun.etl")
 public class EtlProperties {
 
+    /** Whether this instance polls the outbox at all. */
+    private boolean enabled = true;
+
+    /** The pause between the end of one poll and the start of the next. */
+    private Duration pollDelay = Duration.ofSeconds(30);
+
+    /** Rows claimed in one batch; each batch is one etl_runs row. */
+    private int batchSize = 100;
+
+    /**
+     * How long one poll keeps claiming batches while full batches come back. It bounds how long the ETL works
+     * without a pause, so it shares the database with uploads; with {@link #pollDelay} it caps its duty cycle.
+     */
+    private Duration maxPollDuration = Duration.ofSeconds(60);
+
     /**
      * How long a claimed row stays reserved for the run that claimed it. A run that dies mid-batch leaves its
      * rows to be claimed again once this has passed; it must exceed the time one batch takes.

@@ -5,6 +5,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.nmcpye.datarun.etl.admin.ScheduledOrchestratorRunner;
+import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -12,6 +14,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -23,7 +26,8 @@ import static org.nmcpye.datarun.etl.EtlFixture.TEMPLATE;
  * {@code -Detl.throughput=true}, and optionally {@code -Detl.throughput.rows}, {@code .members} (repeat rows
  * per submission), {@code .extraFields} (field definitions absent from the payload, as optional fields are),
  * {@code .batch} and {@code .history} (already processed outbox rows, which the claim reads past).
- * Prints one {@code ETL_THROUGHPUT} line with counts and timings only.
+ * {@link #drainABurst} prints one {@code ETL_THROUGHPUT} line, {@link #simulatedPeak} one {@code ETL_PEAK} line,
+ * with counts and timings only.
  */
 @EtlIntegrationTest
 @EnabledIfSystemProperty(named = "etl.throughput", matches = "true")
@@ -39,6 +43,12 @@ class EtlThroughputIT {
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private ScheduledOrchestratorRunner runner;
+
+    @Autowired
+    private EtlProperties properties;
 
     private EtlFixture fixture;
 
@@ -86,6 +96,78 @@ class EtlThroughputIT {
             rows, members, tallRows / (WARM_UP_ROWS + rows), extraFields, batch, history, seconds,
             seconds * 1000 / rows, rows / seconds * 3600);
         assertThat(outcome).containsEntry("succeeded", (long) (WARM_UP_ROWS + rows)).containsEntry("other", 0L);
+    }
+
+    /**
+     * A burst written at once and cleared by the scheduled runner as production runs it: polls with the
+     * configured delay between them, each draining batches for up to the poll duration. {@code .pollDelay} and
+     * {@code .maxPoll} (seconds) and {@code .batch} override the configuration. {@code .slowerMsPerRow} makes
+     * each row take that much longer inside the database, standing in for a slower database than the local one.
+     * The first poll starts at once; in production a burst may wait up to one poll delay more.
+     */
+    @Test
+    @Timeout(value = 60, unit = TimeUnit.MINUTES)
+    void simulatedPeak() throws InterruptedException {
+        int rows = setting("rows", 2000);
+        int members = setting("members", 6);
+        int history = setting("history", 0);
+        Duration pollDelay = Duration.ofSeconds(setting("pollDelay", (int) properties.getPollDelay().toSeconds()));
+        int configuredBatch = properties.getBatchSize();
+        Duration configuredMaxPoll = properties.getMaxPollDuration();
+        properties.setBatchSize(setting("batch", configuredBatch));
+        properties.setMaxPollDuration(Duration.ofSeconds(setting("maxPoll", (int) configuredMaxPoll.toSeconds())));
+        try {
+            fixture.defineTemplate(TEMPLATE);
+            defineExtraFields(setting("extraFields", 100));
+            insertHistory(history);
+            insertBurst(rows, members);
+            slowEachRowBy(setting("slowerMsPerRow", 0));
+
+            long start = System.nanoTime();
+            int polls = 0;
+            while (true) {
+                runner.scheduledRun();
+                polls++;
+                if (pending() == 0) {
+                    break;
+                }
+                Thread.sleep(pollDelay.toMillis());
+            }
+            double seconds = (System.nanoTime() - start) / 1e9;
+
+            Map<String, Object> lag = jdbc.queryForMap("""
+                SELECT max(extract(epoch FROM p.processed_at - o.created_at)) AS max_lag,
+                       percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM p.processed_at - o.created_at))
+                           AS median_lag
+                FROM outbox o JOIN outbox_processing p ON p.outbox_id = o.outbox_id AND p.status = 'success'
+                WHERE o.submission_id NOT LIKE 'history%'""", Map.of());
+            System.out.printf("ETL_PEAK rows=%d members=%d batch=%d maxPollSeconds=%d pollDelaySeconds=%d "
+                    + "history=%d slowerMsPerRow=%d polls=%d clearedInSeconds=%.1f medianLagSeconds=%.1f "
+                    + "maxLagSeconds=%.1f%n",
+                rows, members, properties.getBatchSize(), properties.getMaxPollDuration().toSeconds(),
+                pollDelay.toSeconds(), history, setting("slowerMsPerRow", 0), polls, seconds,
+                ((Number) lag.get("median_lag")).doubleValue(), ((Number) lag.get("max_lag")).doubleValue());
+        } finally {
+            properties.setBatchSize(configuredBatch);
+            properties.setMaxPollDuration(configuredMaxPoll);
+            slowEachRowBy(0);
+        }
+    }
+
+    /** Each processed row writes one audit row; a trigger on it adds the given time inside the database. */
+    private void slowEachRowBy(int millis) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            jdbc.getJdbcTemplate().execute("DROP TRIGGER IF EXISTS etl_test_slow ON outbox_processing");
+            jdbc.getJdbcTemplate().execute("DROP FUNCTION IF EXISTS etl_test_slow()");
+            if (millis > 0) {
+                jdbc.getJdbcTemplate().execute("""
+                    CREATE FUNCTION etl_test_slow() RETURNS trigger LANGUAGE plpgsql AS $$
+                    BEGIN PERFORM pg_sleep(%s); RETURN NEW; END $$""".formatted(millis / 1000.0));
+                jdbc.getJdbcTemplate().execute("""
+                    CREATE TRIGGER etl_test_slow BEFORE INSERT ON outbox_processing
+                    FOR EACH ROW EXECUTE FUNCTION etl_test_slow()""");
+            }
+        });
     }
 
     /** Runs batches until {@code limit} rows are done or nothing is pending. */

@@ -112,16 +112,15 @@ datarun:
 #        token-validity-in-seconds: 900 # 15 minutes
         refresh-token-validity-in-seconds: 2592000 # 30 days
         token-validity-in-seconds-for-remember-me: 2592000
-outbox:
-  relay:
-    poll-interval-ms: 10000   # polling delay between polls (ms)
-    batch-size: 50           # how many to claim per poll
-    worker-threads: 6        # number of concurrent worker threads
-    max-attempts: 10
-
-migration:
-  size: 50
-  cron: "0 */5 * * * *"
+  # The outbox consumer that feeds analytics.tall_canonical and analytics.events (EtlProperties).
+  etl:
+    poll-delay: 30s          # pause after one poll before the next
+    batch-size: 100          # rows claimed per batch (one etl_runs row each)
+    max-poll-duration: 60s   # a poll claims batches while they come back full, for at most this long
+    claim-lease: 15m         # a claimed row is reserved this long; a run that dies frees its rows after it
+    max-attempts: 10         # tries before a failing row is dead
+    retry-delay: 1m          # first wait after a failure, doubled per failure
+    max-retry-delay: 1h
 
 jhipster:
   client-app:

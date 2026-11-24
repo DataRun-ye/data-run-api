@@ -11,14 +11,17 @@ import org.nmcpye.datarun.etl.admin.ScheduledOrchestratorRunner;
 import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
+import org.nmcpye.datarun.etl.orchestrator.EtlRunResult;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,18 +93,29 @@ class ScheduledOrchestratorRunnerIT {
             status, nextAttemptAt);
     }
 
-    private EtlOrchestrator countingOrchestrator() {
+    /** An orchestrator that claims the given batch sizes in turn, then nothing. */
+    private EtlOrchestrator orchestratorClaiming(int... batches) {
         return new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null) {
             @Override
-            public void runOnce(String pipelineName, int batchSize) {
-                runs.incrementAndGet();
+            public EtlRunResult runOnce(String pipelineName, int batchSize) {
+                int run = runs.getAndIncrement();
+                int claimed = run < batches.length ? batches[run] : 0;
+                return new EtlRunResult(claimed, claimed, 0);
             }
         };
     }
 
-    private ScheduledOrchestratorRunner runner(EtlOrchestrator orchestrator) {
+    private EtlOrchestrator countingOrchestrator() {
+        return orchestratorClaiming(1);
+    }
+
+    private ScheduledOrchestratorRunner runner(EtlOrchestrator orchestrator, EtlProperties properties) {
         return new ScheduledOrchestratorRunner(new NamedParameterJdbcTemplate(pool), orchestrator, new EtlRunLock(pool),
-            new EtlMetrics(registry, pool, new EtlProperties()));
+            new EtlMetrics(registry, pool, properties), properties);
+    }
+
+    private ScheduledOrchestratorRunner runner(EtlOrchestrator orchestrator) {
+        return runner(orchestrator, new EtlProperties());
     }
 
     private ScheduledOrchestratorRunner runner() {
@@ -183,7 +197,7 @@ class ScheduledOrchestratorRunnerIT {
         outboxRow("pending", null);
         EtlOrchestrator failing = new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null) {
             @Override
-            public void runOnce(String pipelineName, int batchSize) {
+            public EtlRunResult runOnce(String pipelineName, int batchSize) {
                 throw new IllegalStateException("run failed");
             }
         };
@@ -194,5 +208,47 @@ class ScheduledOrchestratorRunnerIT {
         assertThat(heldLocks()).isZero();
         runner(countingOrchestrator()).scheduledRun();
         assertThat(runs).hasValue(1);
+    }
+
+    @Test
+    void aPollClaimsBatchesUntilOneComesBackShort() {
+        outboxRow("pending", null);
+        EtlProperties properties = new EtlProperties();
+        properties.setBatchSize(100);
+
+        runner(orchestratorClaiming(100, 100, 100, 40), properties).scheduledRun();
+
+        assertThat(runs).hasValue(4);
+    }
+
+    @Test
+    void aPollStopsClaimingOnceItHasRunForItsMaximumDuration() {
+        outboxRow("pending", null);
+        EtlProperties properties = new EtlProperties();
+        properties.setBatchSize(100);
+        properties.setMaxPollDuration(Duration.ZERO);
+
+        runner(orchestratorClaiming(100, 100, 100), properties).scheduledRun();
+
+        assertThat(runs).as("one batch, then the next poll").hasValue(1);
+    }
+
+    @Test
+    void thePollIsScheduledWithTheConfiguredDelayUnlessTheEtlIsDisabled() {
+        EtlProperties properties = new EtlProperties();
+        properties.setPollDelay(Duration.ofSeconds(45));
+        ScheduledTaskRegistrar registrar = new ScheduledTaskRegistrar();
+
+        runner(countingOrchestrator(), properties).configureTasks(registrar);
+
+        assertThat(registrar.getFixedDelayTaskList()).singleElement().satisfies(task -> {
+            assertThat(task.getIntervalDuration()).isEqualTo(Duration.ofSeconds(45));
+            assertThat(task.getInitialDelayDuration()).isEqualTo(Duration.ofSeconds(45));
+        });
+
+        properties.setEnabled(false);
+        ScheduledTaskRegistrar disabled = new ScheduledTaskRegistrar();
+        runner(countingOrchestrator(), properties).configureTasks(disabled);
+        assertThat(disabled.getFixedDelayTaskList()).isEmpty();
     }
 }

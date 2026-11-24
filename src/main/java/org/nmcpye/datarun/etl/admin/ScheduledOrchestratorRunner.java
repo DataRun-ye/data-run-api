@@ -1,60 +1,90 @@
 package org.nmcpye.datarun.etl.admin;
 
+import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
+import org.nmcpye.datarun.etl.orchestrator.EtlRunResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.config.FixedDelayTask;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
+
+/**
+ * Polls the outbox for the ETL: {@code datarun.etl.poll-delay} after one poll ends, the next one starts. A poll
+ * that finds a row due takes the run lock and claims batches of {@code datarun.etl.batch-size} until a batch
+ * comes back short or the poll has run for {@code datarun.etl.max-poll-duration}. Scheduling is enabled outside
+ * the test profiles; {@code datarun.etl.enabled=false} stops this instance from polling.
+ */
 @Service
-public class ScheduledOrchestratorRunner {
+public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
 
     private static final Logger log = LoggerFactory.getLogger(ScheduledOrchestratorRunner.class);
+
+    static final String PIPELINE = "scheduled";
+
+    /** Whether a claim would find a row: pending or failed, and due (not leased, its retry time come). */
+    private static final String DUE_SQL = """
+        SELECT EXISTS (
+          SELECT 1 FROM outbox
+          WHERE status IN ('pending', 'failed')
+            AND (next_attempt_at IS NULL OR next_attempt_at <= now()))
+        """;
 
     private final NamedParameterJdbcTemplate jdbc;
     private final EtlOrchestrator orchestrator;
     private final EtlRunLock lock;
     private final EtlMetrics metrics;
-
-    @Value("${migration.size:100}")
-    private int SCHEDULE_BATCH_SIZE;
+    private final EtlProperties properties;
 
     public ScheduledOrchestratorRunner(NamedParameterJdbcTemplate jdbc, EtlOrchestrator orchestrator, EtlRunLock lock,
-                                       EtlMetrics metrics) {
+                                       EtlMetrics metrics, EtlProperties properties) {
         this.jdbc = jdbc;
         this.orchestrator = orchestrator;
         this.lock = lock;
         this.metrics = metrics;
+        this.properties = properties;
     }
 
-    /** Whether a claim would find a row: pending or failed, and due (not leased, its retry time come). */
-    private static final String CLAIMABLE_SQL = """
-        SELECT count(*) FROM outbox
-        WHERE status IN ('pending', 'failed')
-          AND (next_attempt_at IS NULL OR next_attempt_at <= now())
-        """;
+    @Override
+    public void configureTasks(ScheduledTaskRegistrar registrar) {
+        if (!properties.isEnabled()) {
+            log.warn("The ETL does not poll the outbox on this instance (datarun.etl.enabled=false)");
+            return;
+        }
+        Duration delay = properties.getPollDelay();
+        registrar.addFixedDelayTask(new FixedDelayTask(this::scheduledRun, delay, delay));
+        log.info("The ETL polls the outbox {} after each poll, {} rows a batch, for at most {} a poll",
+            delay, properties.getBatchSize(), properties.getMaxPollDuration());
+    }
 
-    @Scheduled(cron = "${migration.cron:0 */1 * * * *}")
+    /** One poll. */
     public void scheduledRun() {
-        log.info("Checking for pending outbox events...");
-        Integer countPending = jdbc.queryForObject(CLAIMABLE_SQL, new MapSqlParameterSource(), Integer.class);
-        if (countPending != null && countPending > 0) {
-            log.info("{} outbox events due, starting orchestrator run ...", countPending);
-            boolean ran = lock.callExclusively(() -> {
-                orchestrator.runOnce("scheduled", SCHEDULE_BATCH_SIZE);
-                return true;
-            }).isPresent();
-            if (!ran) {
-                log.info("Another ETL run holds the lock; skipping this run");
+        if (Boolean.TRUE.equals(jdbc.queryForObject(DUE_SQL, Map.of(), Boolean.class))) {
+            Optional<Integer> claimed = lock.callExclusively(this::drain);
+            if (claimed.isEmpty()) {
+                log.info("Another ETL run holds the lock; skipping this poll");
                 return;
             }
-        } else {
-            log.info("No pending outbox even");
         }
         metrics.pollSucceeded();
+    }
+
+    private int drain() {
+        int batchSize = Math.max(1, properties.getBatchSize());
+        long deadline = System.nanoTime() + properties.getMaxPollDuration().toNanos();
+        int claimed = 0;
+        EtlRunResult batch;
+        do {
+            batch = orchestrator.runOnce(PIPELINE, batchSize);
+            claimed += batch.claimed();
+        } while (batch.claimed() >= batchSize && System.nanoTime() - deadline < 0);
+        return claimed;
     }
 }
