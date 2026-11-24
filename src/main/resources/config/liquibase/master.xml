@@ -99,6 +99,7 @@
     <include file="/config/liquibase/changelog/intake/20261119-go-live-and-held-submission.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20261124-outbox-unfinished-index.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/analytics_dims/20261124-drop-unread-materialized-views.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/etl/20261124-drop-ledger-leftovers.xml" relativeToChangelogFile="false"/>
 
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

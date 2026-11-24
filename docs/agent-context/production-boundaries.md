@@ -46,8 +46,8 @@ When evidence conflicts:
   current task; remove them only in a separately approved Liquibase slice.
 - This classification does not apply to the separate analytics ETL tables
   still referenced by active source. The ledger source was removed from
-  `develop` too; its empty `analytics.processing_issues` table and the unset
-  ledger columns on `analytics.events` are schema residue of the same kind.
+  `develop` too, and Liquibase changeset `20261124-05-drop-ledger-leftovers`
+  drops its tables and its columns on `analytics.events`.
 
 ## Migration Rules
 

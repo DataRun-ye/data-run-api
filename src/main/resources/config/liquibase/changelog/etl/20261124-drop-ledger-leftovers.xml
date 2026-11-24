@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!--
+      Drops what the ledger left after its source was removed: the tables analytics.processing_issues (created with
+      the columns below by add-event-supply-claiming-cols), analytics.supply_ledger and analytics.monthly_consumption
+      (made by hand), and the five ledger columns of analytics.events; idx_events_processed goes with
+      processed_to_ledger. The owner decided they go: nobody uses them.
+
+      Production, measured for release 6.5.3: all are owned by nmcpdb, the Liquibase role; nothing has written to the
+      tables since 2026-11-03, and their only reads match the backup dumps. The dumps taken before the release hold
+      the data. On staging's production copy nothing depends on them but their own indexes, defaults, sequence and
+      key, and no view, function body or trigger names them. No code and no entity uses them.
+
+      No CASCADE: an unexpected dependent fails the deploy instead of going with them. lock_timeout because Airbyte
+      reads analytics.events: a lock held longer fails the deploy instead of stalling it, and readers do not queue
+      behind the ALTER for long.
+    -->
+    <changeSet id="20261124-05-drop-ledger-leftovers" author="datarun">
+        <sql>SET LOCAL lock_timeout = '30s'</sql>
+        <sql>DROP TABLE IF EXISTS analytics.processing_issues</sql>
+        <sql>DROP TABLE IF EXISTS analytics.supply_ledger</sql>
+        <sql>DROP TABLE IF EXISTS analytics.monthly_consumption</sql>
+        <sql>DROP INDEX IF EXISTS analytics.idx_events_processed</sql>
+        <sql>
+            ALTER TABLE IF EXISTS analytics.events
+                DROP COLUMN IF EXISTS ledger_claimed_by,
+                DROP COLUMN IF EXISTS ledger_claimed_at,
+                DROP COLUMN IF EXISTS ledger_failures_count,
+                DROP COLUMN IF EXISTS last_ledger_failure,
+                DROP COLUMN IF EXISTS processed_to_ledger
+        </sql>
+        <rollback>
+            <!--
+              Empty on purpose. The tables made by hand cannot be recreated from this repository, and nothing reads
+              any of it. If the data is ever needed, it is in the dumps taken before release 6.5.3.
+            -->
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
