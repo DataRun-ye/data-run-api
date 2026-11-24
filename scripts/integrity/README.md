@@ -22,8 +22,9 @@ scripts/integrity/check.sh --detail   # also each count split by template or piv
 **Never run it during a deploy or a pivot build.** Its read locks last until
 it finishes, so a migration's DDL or a pivot swap would wait behind it, and the
 application behind them; and a pivot rebuilt after it started reads as empty.
-It refuses to start while an exclusive lock is held or waited for, but it
-cannot stop one from starting during the run.
+It refuses to start while an exclusive lock is held or waited for, or while
+Liquibase holds its changelog lock, but it cannot stop one from starting
+during the run.
 
 To gate a repair step, save a run before the step and one after, then compare:
 
@@ -62,7 +63,11 @@ the output was not understood.
     (`DATARUN_INTEGRITY_MIN_FREE_DISK_MB`, default 10240); sorts and hashes
     that pass `work_mem` spill to temporary files there;
   - an `AccessExclusiveLock` is held or waited for on a table in `public`,
-    `analytics` or `pivot`, the sign of a migration or a pivot swap.
+    `analytics` or `pivot`, or on a table not committed yet (the long
+    `CREATE TABLE ..._new AS` of a pivot build), the sign of a migration or a
+    pivot build;
+  - `databasechangeloglock.locked` is true: a migration is running, or stopped
+    between changesets.
 - It lists the templates in a short read-only transaction (1-minute statement
   timeout, 5-second lock timeout), and stops if there are none.
 - All checks then run in one `BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY`
@@ -77,10 +82,18 @@ the output was not understood.
   per template), and the pivot checks one pivot table at a time.
 - The SQL is copied to the database host first and run there with
   `sudo -n -u postgres psql`, as the reference scripts do, so a stalled tunnel
-  cannot leave the transaction waiting for input. psql is stopped after 15
-  minutes (`DATARUN_INTEGRITY_TIMEOUT_S`, default 900): an interrupt first,
-  which cancels the running query, then a kill 30 seconds later. The copy is
-  removed afterwards.
+  cannot leave the transaction waiting for input. The copy is removed
+  afterwards.
+- psql runs under `timeout` inside `sudo`, as postgres, so the stop reaches
+  it (from outside `sudo` it would not). After 15 minutes
+  (`DATARUN_INTEGRITY_TIMEOUT_S`, default 900) an interrupt cancels the running
+  query and ends psql; a kill follows 30 seconds later if needed, and
+  `client_connection_check_interval = '10s'` makes the server notice a killed
+  client within seconds. Each session is named `datarun-integrity-check` in
+  `pg_stat_activity`, so it can be found and cancelled by name. Tested on
+  staging (2026-11-24) with `DATARUN_INTEGRITY_TIMEOUT_S=5`: psql sent its
+  cancel and stopped, the runner exited 4 saying psql was stopped, and no
+  psql process and no `datarun-integrity-check` session remained.
 
 On staging (2026-11-24, about 66,000 submissions) a full run takes about a
 minute, almost all of it in the payload walks. It wrote 132 temporary files,
@@ -315,6 +328,11 @@ expected row of a projected submission is missing (7a = 0), and none of the
 A **value** is a non-empty string, a number, a boolean or a non-empty
 multi-select. Keys starting with `_` (`_id`, `_index`, `_parentId`,
 `_submissionUid`, `_status`) are system keys, not values.
+
+An active submission whose form data is not a JSON object (5c) yields no
+values, so any tall rows and events it still has count as left behind: in 2a,
+2b and 3a, and its pivot repeat rows in 8g. Today the two such submissions have
+none.
 
 If the ETL's resolution rules change, change this file with them.
 

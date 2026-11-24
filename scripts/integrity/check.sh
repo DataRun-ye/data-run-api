@@ -26,7 +26,9 @@ sql_dir="$repo_root/scripts/integrity/sql"
 ssh_opts=(-o BatchMode=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=8)
 min_available_mb="${DATARUN_INTEGRITY_MIN_AVAILABLE_MB:-1024}"
 min_free_disk_mb="${DATARUN_INTEGRITY_MIN_FREE_DISK_MB:-10240}"
+# How long psql may run. Lower it to a few seconds to test the stop.
 run_timeout_s="${DATARUN_INTEGRITY_TIMEOUT_S:-900}"
+app_name="datarun-integrity-check"
 
 # Every line the check prints. A missing one means a check did not run.
 expected_keys=(
@@ -90,18 +92,34 @@ refuse() {
     exit 3
 }
 
-# psql on the database host as postgres, stopped after $1 seconds: SIGINT
-# first, which cancels the running query, then SIGKILL 30 seconds later.
+# The command that runs psql on the database host as postgres, stopped after
+# $1 seconds: SIGINT first, which cancels the running query and ends psql,
+# then SIGKILL 30 seconds later. timeout runs inside sudo, as postgres, so its
+# signals reach psql; outside sudo they would not. Every session is named
+# $app_name, so it can be found in pg_stat_activity and cancelled.
+psql_command() {
+    local limit="$1"
+    shift
+    printf '%s' "sudo -n -u postgres timeout -s INT -k 30 $limit psql -X -q -A -t -v ON_ERROR_STOP=1 -d 'dbname=$database application_name=$app_name' $*"
+}
+
+# psql with its SQL on stdin.
+remote_psql_stdin() {
+    local limit="$1"
+    shift
+    ssh "${ssh_opts[@]}" "$db_ssh" "$(psql_command "$limit" "$@")"
+}
+
+# psql with nothing on stdin.
 remote_psql() {
     local limit="$1"
     shift
-    ssh "${ssh_opts[@]}" "$db_ssh" \
-        "timeout -s INT -k 30 $limit sudo -n -u postgres psql -X -q -A -t -v ON_ERROR_STOP=1 -d '$database' $*"
+    ssh -n "${ssh_opts[@]}" "$db_ssh" "$(psql_command "$limit" "$@")"
 }
 
 # Guard: memory. One heavy query once stopped the whole staging database
 # (2026-11-23).
-available_mb="$(ssh "${ssh_opts[@]}" "$db_ssh" \
+available_mb="$(ssh -n "${ssh_opts[@]}" "$db_ssh" \
     "awk '/^MemAvailable:/ { print int(\$2 / 1024) }' /proc/meminfo")" || available_mb=""
 [[ "$available_mb" =~ ^[0-9]+$ ]] || refuse "Could not read the database host's memory"
 (( available_mb >= min_available_mb )) \
@@ -111,38 +129,47 @@ available_mb="$(ssh "${ssh_opts[@]}" "$db_ssh" \
 # under the data directory.
 data_dir="$(remote_psql 60 "-c 'SHOW data_directory'")" || data_dir=""
 [[ "$data_dir" =~ ^/[A-Za-z0-9_./-]+$ ]] || refuse "Could not read the data directory"
-free_disk_mb="$(ssh "${ssh_opts[@]}" "$db_ssh" \
+free_disk_mb="$(ssh -n "${ssh_opts[@]}" "$db_ssh" \
     "df -Pk '$data_dir' | awk 'NR == 2 { print int(\$4 / 1024) }'")" || free_disk_mb=""
 [[ "$free_disk_mb" =~ ^[0-9]+$ ]] || refuse "Could not read the free space under the data directory"
 (( free_disk_mb >= min_free_disk_mb )) \
     || refuse "The data directory's disk has $free_disk_mb MB free (minimum $min_free_disk_mb)"
 
-# Guard: exclusive locks. The check's read locks last until its rollback, so
-# a deploy's DDL or a pivot swap would queue behind it, and the application
-# behind that. Do not start while one is held or waited for.
-exclusive_locks="$(remote_psql 60 <<'SQL'
+# Guard: exclusive locks and migrations. The check's read locks last until its
+# rollback, so a deploy's DDL or a pivot swap would queue behind it, and the
+# application behind that. Do not start while an exclusive lock is held or
+# waited for on a table the check reads, or on a table not committed yet (the
+# long CREATE TABLE ..._new AS of a pivot build; its OID matches no class we
+# can see), or while Liquibase holds its changelog lock (a migration, even one
+# paused between changesets).
+lock_reading="$(remote_psql_stdin 60 <<'SQL'
 BEGIN TRANSACTION READ ONLY;
 SET LOCAL statement_timeout = '30s';
 SET LOCAL lock_timeout = '5s';
 SET LOCAL ROLE pg_read_all_data;
-SELECT count(*)
-FROM pg_locks l
-JOIN pg_class c ON c.oid = l.relation
-JOIN pg_namespace n ON n.oid = c.relnamespace
-WHERE l.locktype = 'relation' AND l.mode = 'AccessExclusiveLock'
-  AND l.database = (SELECT oid FROM pg_database WHERE datname = current_database())
-  AND n.nspname IN ('public', 'analytics', 'pivot');
+SELECT (SELECT count(*)
+        FROM pg_locks l
+        LEFT JOIN pg_class c ON c.oid = l.relation
+        LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE l.locktype = 'relation' AND l.mode = 'AccessExclusiveLock'
+          AND l.database = (SELECT oid FROM pg_database WHERE datname = current_database())
+          AND (c.oid IS NULL OR n.nspname IN ('public', 'analytics', 'pivot')))
+       || ' ' ||
+       (SELECT count(*) FROM public.databasechangeloglock WHERE locked);
 ROLLBACK;
 SQL
-)" || exclusive_locks=""
-[[ "$exclusive_locks" =~ ^[0-9]+$ ]] || refuse "Could not read the database's locks"
+)" || lock_reading=""
+[[ "$lock_reading" =~ ^[0-9]+\ [0-9]+$ ]] || refuse "Could not read the database's locks"
+read -r exclusive_locks changelog_locked <<< "$lock_reading"
 (( exclusive_locks == 0 )) \
-    || refuse "$exclusive_locks exclusive locks are held or waited for on tables the check reads (a deploy or a pivot build?)"
+    || refuse "$exclusive_locks exclusive locks are held or waited for on tables the check reads or on new tables (a deploy or a pivot build?)"
+(( changelog_locked == 0 )) \
+    || refuse "Liquibase holds its changelog lock (databasechangeloglock.locked): a migration is running or stopped half-way"
 
-echo "Database host: $available_mb MB memory available, $free_disk_mb MB disk free, no exclusive locks" >&2
+echo "Database host: $available_mb MB memory available, $free_disk_mb MB disk free, no exclusive locks, no migration lock" >&2
 
 # The payload walks run one template at a time. List the templates first.
-if ! listing="$(remote_psql 120 <<'SQL'
+if ! listing="$(remote_psql_stdin 120 <<'SQL'
 BEGIN TRANSACTION READ ONLY;
 SET LOCAL statement_timeout = '1min';
 SET LOCAL lock_timeout = '5s';
@@ -169,7 +196,7 @@ local_out="$(mktemp)"
 
 cleanup() {
     rm -f "$local_sql" "$local_out"
-    ssh "${ssh_opts[@]}" "$db_ssh" "rm -f '$remote_sql'" >/dev/null 2>&1 || true
+    ssh -n "${ssh_opts[@]}" "$db_ssh" "rm -f '$remote_sql'" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
@@ -184,6 +211,7 @@ trap cleanup EXIT
     echo "SET LOCAL lock_timeout = '5s';"
     echo "SET LOCAL idle_in_transaction_session_timeout = '2min';"
     echo "SET LOCAL jit = off;"
+    echo "SET LOCAL client_connection_check_interval = '10s';"
     echo "SET LOCAL temp_file_limit = '1GB';"
     echo "SET LOCAL ROLE pg_read_all_data;"
     echo '\timing on'
@@ -202,17 +230,22 @@ trap cleanup EXIT
 } > "$local_sql"
 
 temp_stats() {
-    remote_psql 60 <<'SQL' || true
+    remote_psql_stdin 60 <<'SQL' || true
 SELECT temp_files || ' ' || temp_bytes FROM pg_stat_database WHERE datname = current_database();
 SQL
 }
 
 scp -q "${ssh_opts[@]}" "$local_sql" "$db_ssh:$remote_sql"
-ssh "${ssh_opts[@]}" "$db_ssh" "chmod 0644 '$remote_sql'"
+ssh -n "${ssh_opts[@]}" "$db_ssh" "chmod 0644 '$remote_sql'"
 temp_before="$(temp_stats)"
 started="$(date +%s)"
-if ! remote_psql "$run_timeout_s" "-f '$remote_sql'" > "$local_out"; then
-    echo "The check failed in psql (a query error, a timeout or a lost connection); see the message above." >&2
+status=0
+remote_psql "$run_timeout_s" "-f '$remote_sql'" > "$local_out" || status=$?
+if (( status == 124 || status == 137 )); then
+    echo "psql was stopped after $run_timeout_s s (DATARUN_INTEGRITY_TIMEOUT_S); the check did not finish." >&2
+    exit 4
+elif (( status != 0 )); then
+    echo "The check failed in psql (a query error or a lost connection); see the message above." >&2
     exit 4
 fi
 echo "Finished in $(( $(date +%s) - started )) s" >&2
