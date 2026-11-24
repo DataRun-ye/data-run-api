@@ -3,7 +3,6 @@ package org.nmcpye.datarun.web.rest.v1.datasubmission;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
@@ -12,10 +11,6 @@ import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommand;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
-import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
-import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidator;
-import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
 import org.nmcpye.datarun.security.AuthoritiesConstants;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
@@ -38,7 +33,6 @@ import tech.jhipster.web.util.HeaderUtil;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * REST controller for managing {@link DataSubmission}.
@@ -53,23 +47,15 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     protected static final String V1 = ApiVersion.API_V1 + NAME;
     private final ObjectMapper objectMapper;
     final private DataSubmissionService submissionService;
-    private final CompositeSubmissionValidator compositeValidator;
-    private final SubmissionAccessValidator submissionAccessValidator;
-    private final TemplateVersionResolver templateVersionResolver;
     private final SubmissionCommandService commands;
 
     public DataSubmissionResource(DataSubmissionService submissionService,
                                   DataSubmissionRepository submissionRepository,
-                                  ObjectMapper objectMapper, CompositeSubmissionValidator compositeValidator,
-                                  SubmissionAccessValidator submissionAccessValidator,
-                                  TemplateVersionResolver templateVersionResolver,
+                                  ObjectMapper objectMapper,
                                   SubmissionCommandService commands) {
         super(submissionService, submissionRepository);
         this.submissionService = submissionService;
         this.objectMapper = objectMapper;
-        this.compositeValidator = compositeValidator;
-        this.submissionAccessValidator = submissionAccessValidator;
-        this.templateVersionResolver = templateVersionResolver;
         this.commands = commands;
     }
 
@@ -172,28 +158,6 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
             .noContent()
             .headers(HeaderUtil
                 .createEntityDeletionAlert(applicationName, true, getName(), id)).build();
-    }
-
-    @Override
-    protected List<DataSubmission> preProcess(List<DataSubmission> payLoadEntities) {
-        // Compatibility path for the unversioned generic write routes. The
-        // released mobile uses saveVersionedUpload instead.
-        return payLoadEntities.stream()
-            .peek(payLoadEntity -> {
-                ObjectNode root = (ObjectNode) (payLoadEntity.getFormData() == null ? objectMapper.createObjectNode() : payLoadEntity.getFormData().deepCopy());
-                final var migrationRepeatIdGenerator =
-                    new MigrationRepeatIdGenerator(templateVersionResolver
-                        .resolveByUid(payLoadEntity.getForm(),
-                            payLoadEntity.getFormVersion()));
-                int generated = migrationRepeatIdGenerator
-                    .generateMissingIdsForMigration(root, payLoadEntity.getUid());
-                if (generated > 0) {
-                    payLoadEntity.setFormData(root);
-                }
-
-                compositeValidator.validateAndEnrich(submissionAccessValidator.validateAccess(payLoadEntity,
-                    SecurityUtils.getCurrentUserDetailsOrThrow()));
-            }).collect(Collectors.toList());
     }
 
     @Override

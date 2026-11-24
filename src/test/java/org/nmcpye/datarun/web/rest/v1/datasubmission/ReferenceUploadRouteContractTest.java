@@ -7,9 +7,6 @@ import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommand;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
-import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
-import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidator;
-import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.authorization.ResourceApiAuthorization;
 import org.springframework.http.MediaType;
@@ -123,9 +120,6 @@ class ReferenceUploadRouteContractTest {
             mock(DataSubmissionService.class),
             mock(DataSubmissionRepository.class),
             new ObjectMapper(),
-            mock(CompositeSubmissionValidator.class),
-            mock(SubmissionAccessValidator.class),
-            mock(TemplateVersionResolver.class),
             commands);
         ResourceApiAuthorization authorization = mock(ResourceApiAuthorization.class);
         when(authorization.canRead(any())).thenReturn(true);
