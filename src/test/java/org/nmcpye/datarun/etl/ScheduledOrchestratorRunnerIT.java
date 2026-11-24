@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.etl.admin.EtlRunLock;
 import org.nmcpye.datarun.etl.admin.ScheduledOrchestratorRunner;
 import org.nmcpye.datarun.etl.config.EtlProperties;
+import org.nmcpye.datarun.etl.metrics.EtlHeartbeat;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.nmcpye.datarun.etl.orchestrator.EtlRunResult;
@@ -122,7 +123,7 @@ class ScheduledOrchestratorRunnerIT {
 
     private ScheduledOrchestratorRunner runner(EtlOrchestrator orchestrator, EtlProperties properties) {
         return new ScheduledOrchestratorRunner(new NamedParameterJdbcTemplate(pool), orchestrator, new EtlRunLock(pool),
-            new EtlMetrics(registry, pool, properties), properties);
+            new EtlMetrics(registry, pool, properties), properties, new EtlHeartbeat(properties));
     }
 
     private ScheduledOrchestratorRunner runner(EtlOrchestrator orchestrator) {

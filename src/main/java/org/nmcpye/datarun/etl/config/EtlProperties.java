@@ -58,4 +58,10 @@ public class EtlProperties {
 
     /** How long the backlog gauges reuse one reading of the outbox, however often they are scraped. */
     private Duration backlogRefresh = Duration.ofSeconds(15);
+
+    /**
+     * A heartbeat monitor's URL, sent a POST after a poll that succeeded, at most once a minute
+     * ({@code EtlHeartbeat}). Empty: no heartbeat.
+     */
+    private String heartbeatUrl = "";
 }

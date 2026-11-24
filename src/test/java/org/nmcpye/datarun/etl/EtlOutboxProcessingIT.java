@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.etl.admin.EtlRunLock;
 import org.nmcpye.datarun.etl.admin.ScheduledOrchestratorRunner;
 import org.nmcpye.datarun.etl.config.EtlProperties;
+import org.nmcpye.datarun.etl.metrics.EtlHeartbeat;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.nmcpye.datarun.etl.orchestrator.EtlRunResult;
@@ -467,7 +468,7 @@ class EtlOutboxProcessingIT {
         });
         SimpleMeterRegistry polled = new SimpleMeterRegistry();
         ScheduledOrchestratorRunner runner = new ScheduledOrchestratorRunner(jdbc, poolTimingOut, new EtlRunLock(dataSource),
-            new EtlMetrics(polled, dataSource, etlProperties), etlProperties);
+            new EtlMetrics(polled, dataSource, etlProperties), etlProperties, new EtlHeartbeat(etlProperties));
 
         for (int poll = 1; poll <= 12; poll++) {
             runner.scheduledRun();

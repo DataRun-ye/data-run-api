@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.etl.admin;
 
 import org.nmcpye.datarun.etl.config.EtlProperties;
+import org.nmcpye.datarun.etl.metrics.EtlHeartbeat;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.nmcpye.datarun.etl.orchestrator.EtlRunResult;
@@ -23,8 +24,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * that finds a row due takes the run lock and claims batches of {@code datarun.etl.batch-size} until a batch
  * comes back short, a batch stops on a lost connection or an interrupt, or the poll has run for
  * {@code datarun.etl.max-poll-duration}. A poll that stops or fails is not a success, and the pause before the next
- * one doubles, up to {@code datarun.etl.max-poll-delay}, until a poll succeeds. Scheduling is enabled outside the
- * test profiles; {@code datarun.etl.enabled=false} stops this instance from polling.
+ * one doubles, up to {@code datarun.etl.max-poll-delay}, until a poll succeeds. A poll that succeeds also pings the
+ * heartbeat monitor ({@link EtlHeartbeat}). Scheduling is enabled outside the test profiles;
+ * {@code datarun.etl.enabled=false} stops this instance from polling.
  */
 @Service
 public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
@@ -46,17 +48,19 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
     private final EtlRunLock lock;
     private final EtlMetrics metrics;
     private final EtlProperties properties;
+    private final EtlHeartbeat heartbeat;
     private final AtomicReference<Duration> pause = new AtomicReference<>();
 
     private enum PollOutcome { SUCCEEDED, STOPPED, SKIPPED }
 
     public ScheduledOrchestratorRunner(NamedParameterJdbcTemplate jdbc, EtlOrchestrator orchestrator, EtlRunLock lock,
-                                       EtlMetrics metrics, EtlProperties properties) {
+                                       EtlMetrics metrics, EtlProperties properties, EtlHeartbeat heartbeat) {
         this.jdbc = jdbc;
         this.orchestrator = orchestrator;
         this.lock = lock;
         this.metrics = metrics;
         this.properties = properties;
+        this.heartbeat = heartbeat;
         this.pause.set(properties.getPollDelay());
     }
 
@@ -93,6 +97,7 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
         } else if (outcome == PollOutcome.SUCCEEDED) {
             metrics.pollSucceeded();
             pause.set(properties.getPollDelay());
+            heartbeat.pollSucceeded();
         }
     }
 

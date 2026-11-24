@@ -123,6 +123,7 @@ datarun:
     max-attempts: 10         # tries before a failing row is dead
     retry-delay: 1m          # first wait after a failure, doubled per failure
     max-retry-delay: 1h
+    heartbeat-url: ${DATARUN_ETL_HEARTBEAT_URL:}  # monitor sent a POST after a successful poll, at most once a minute; empty: none
 
 jhipster:
   client-app:
