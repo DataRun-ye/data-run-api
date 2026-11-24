@@ -111,6 +111,7 @@ about 0.5 GB, under the 1 GB limit.
 | `sql/08-pivots.sql` | 8 |
 | `sql/09-version-labels.sql` | 9 |
 | `sql/10-etl-lag.sql` | 10 |
+| `sql/11-revisions.sql` | 11 |
 | `sql/payload-by-template.sql` | 2, 3, 5a–5b, 6, 7 |
 
 Each SQL statement returns rows of `key|count|description`, optionally with a
@@ -137,11 +138,16 @@ transaction. The ETL learns about changes only through these events.
   C1).
 - **1c** Active submissions whose latest event is a DELETE. Should stay 0.
 - **1d** Submissions changed after their latest event: the stored payload
-  differs from the latest event's payload, or the record was modified later.
-  The upload saves the record before it stamps the event, so its event is
-  never older; the admin delete stamps the DELETE event first and saves the
-  record in the same transaction, so a deleted record up to a minute newer
-  than its DELETE event is not counted. Should stay 0; a rise means some write
+  differs from the latest event's payload, or the record moved on. Since step
+  C an event names the version it announces (`outbox.submission_version`),
+  and the record must still be at that version; the event's time now comes
+  from the database and the record's from the application, so their times are
+  not compared. Events without a version (written before step C, or by a
+  rolled-back 6.5.4) are compared by time, as before: the upload saved the
+  record before it stamped the event, so its event was never older; the admin
+  delete stamped the DELETE event first, so a deleted record up to a minute
+  newer than its DELETE event is not counted. On a database before step C
+  every event is compared by time. Should stay 0; a rise means some write
   skipped the outbox (the generic PUT, or SQL).
 - **1e, 1f** UPDATE events whose form data equals the previous event's, and
   their submissions. An UPDATE is also written when only the status, team,
@@ -296,6 +302,40 @@ check reads only the `status` and `created_at` columns that exist today.
 - **10c** Of 10a, the rows that failed and wait to be tried again.
 - **10d** Dead rows: given up after failing, never projected. Each one is a
   change analytics will never see until someone acts.
+
+### 11. The change record (submission_revision)
+
+Since step C every committed change of a submission is a revision in
+`submission_revision`, written in the same transaction as the change, and
+every revision the application writes has one outbox row naming it by
+`(submission_id, submission_version)`. Liquibase wrote one `BASELINE`
+revision per submission when the journal started (`MIGRATION`), and writes
+one at each start for every submission whose version rose without a revision
+(`GAP_REPAIR`, after a rollback to a release without the journal). A
+revision's state is `form_data` and the row's other columns as
+`submission_revision_metadata()` renders them. On a database without the
+journal every line reads -1.
+
+- **11a** Submissions with no revision. Should stay 0.
+- **11b** Submissions whose head revision (highest version) is behind their
+  `lock_version`: a write that left no revision. 6.5.4 running after a
+  rollback does this until the next start of a release with the journal
+  records a gap; anything else (SQL raising the version) is a fault. Should
+  stay 0.
+- **11c** Submissions whose head revision is ahead of their `lock_version`.
+  Cannot happen through the application. Should stay 0.
+- **11d** Submissions whose head revision, at their version, is not their
+  stored state: a change made without raising the version (hand-written SQL).
+  The gap repair cannot record these. Should stay 0.
+- **11e** Revisions the application wrote (`CREATE`, `UPDATE`, `DELETE`)
+  without exactly one outbox row naming them. Should stay 0 until outbox
+  retention prunes delivered rows; then this check must change with it.
+- **11f** Outbox rows whose event type does not follow their revision's
+  state: `DELETE` whenever the submission is deleted after the change.
+  Should stay 0.
+- **11g** Reference: gap revisions. Rises only after a rollback window, by
+  the number of submissions written meanwhile.
+- **11h** Reference: revisions in all.
 
 ## How the payload checks read a submission
 

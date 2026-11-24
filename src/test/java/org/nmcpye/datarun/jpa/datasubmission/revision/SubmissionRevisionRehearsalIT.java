@@ -163,6 +163,24 @@ class SubmissionRevisionRehearsalIT {
         assertThat(db.queryForObject("SELECT count(*) FROM submission_revision WHERE command = 'GAP_REPAIR'", Long.class))
             .isEqualTo(gaps);
         report("and the start after that: " + startAgain() + " s");
+
+        PG.copyFileToContainer(org.testcontainers.utility.MountableFile.forHostPath(
+            Path.of("scripts", "integrity", "sql", "11-revisions.sql")), "/tmp/11-revisions.sql");
+        PG.copyFileToContainer(org.testcontainers.images.builder.Transferable.of("""
+            BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;
+            SET LOCAL work_mem = '8MB';
+            SET LOCAL max_parallel_workers_per_gather = 0;
+            SET LOCAL ROLE pg_read_all_data;
+            \\timing on
+            \\i /tmp/11-revisions.sql
+            ROLLBACK;
+            """), "/tmp/check-11.sql");
+        var check = PG.execInContainer("psql", "-X", "-q", "-A", "-t", "-v", "ON_ERROR_STOP=1",
+            "-U", PG.getUsername(), "-d", PG.getDatabaseName(), "-f", "/tmp/check-11.sql");
+        assertThat(check.getExitCode()).as(check.getStderr()).isZero();
+        report("integrity check 11 on this dataset: " + check.getStdout().lines()
+            .filter(line -> line.startsWith("Time: ") || line.matches("11[a-h]\\|.*"))
+            .map(line -> line.replaceAll("\\|[^|]*$", "")).toList());
     }
 
     /** One Liquibase run of the whole changelog, timed: only the run-always gap repair has anything to do. */

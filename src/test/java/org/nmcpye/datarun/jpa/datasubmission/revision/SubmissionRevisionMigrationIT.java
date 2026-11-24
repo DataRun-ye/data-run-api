@@ -56,6 +56,8 @@ class SubmissionRevisionMigrationIT {
     private static long outboxBeforeStepC;
     private static long outboxAfterStepC;
     private static long revisionsAfterStepC;
+    private static Map<String, Long> integrityBeforeStepC;
+    private static Map<String, Long> integrityAfterStepC;
 
     @BeforeAll
     static void migrateThroughStepC() throws Exception {
@@ -79,10 +81,44 @@ class SubmissionRevisionMigrationIT {
             legacyOutboxRow(id, "SAVE");
         }
         outboxBeforeStepC = count("SELECT count(*) FROM outbox");
+        integrityBeforeStepC = integrityCheck("01-outbox.sql", "11-revisions.sql");
 
         migrate(false);
         outboxAfterStepC = count("SELECT count(*) FROM outbox");
         revisionsAfterStepC = count("SELECT count(*) FROM submission_revision");
+        integrityAfterStepC = integrityCheck("01-outbox.sql", "11-revisions.sql");
+    }
+
+    /**
+     * Runs files of {@code scripts/integrity/sql} with psql in the database's container, the way the integrity check
+     * runs them: in a read-only transaction as {@code pg_read_all_data}. Returns each line's count by key.
+     */
+    static Map<String, Long> integrityCheck(String... files) throws Exception {
+        StringBuilder script = new StringBuilder("""
+            \\set ON_ERROR_STOP 1
+            BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;
+            SET LOCAL work_mem = '8MB';
+            SET LOCAL max_parallel_workers_per_gather = 0;
+            SET LOCAL ROLE pg_read_all_data;
+            """);
+        for (String file : files) {
+            PG.copyFileToContainer(org.testcontainers.utility.MountableFile.forHostPath(
+                java.nio.file.Path.of("scripts", "integrity", "sql", file)), "/tmp/" + file);
+            script.append("\\i /tmp/").append(file).append('\n');
+        }
+        script.append("ROLLBACK;\n");
+        PG.copyFileToContainer(org.testcontainers.images.builder.Transferable.of(script.toString()), "/tmp/integrity.sql");
+        var result = PG.execInContainer("psql", "-X", "-q", "-A", "-t", "-v", "ON_ERROR_STOP=1",
+            "-U", PG.getUsername(), "-d", PG.getDatabaseName(), "-f", "/tmp/integrity.sql");
+        assertThat(result.getExitCode()).as(result.getStderr()).isZero();
+        Map<String, Long> counts = new java.util.TreeMap<>();
+        for (String line : result.getStdout().split("\n")) {
+            String[] cells = line.split("\\|");
+            if (cells.length >= 3 && cells[0].matches("\\d+[a-z]")) {
+                counts.put(cells[0], Long.parseLong(cells[1]));
+            }
+        }
+        return counts;
     }
 
     private static long count(String sql, Object... args) {
@@ -241,6 +277,20 @@ class SubmissionRevisionMigrationIT {
         assertThat(db.queryForObject("""
                 SELECT r.metadata ->> 'deleted' FROM submission_revision r WHERE r.submission_id = ?""",
             String.class, deleted)).isEqualTo("true");
+    }
+
+    /** The integrity check reads the journal once it exists, and reads -1 for it before. */
+    @Test
+    void theIntegrityCheckReadsTheJournal() {
+        assertThat(integrityBeforeStepC)
+            .containsEntry("11a", -1L).containsEntry("11d", -1L).containsEntry("11h", -1L)
+            .as("check 1 runs on the outbox without a version column").containsEntry("1d", 0L)
+            .containsEntry("1a", 1L);
+        assertThat(integrityAfterStepC)
+            .containsEntry("11a", 0L).containsEntry("11b", 0L).containsEntry("11c", 0L).containsEntry("11d", 0L)
+            .containsEntry("11e", 0L).containsEntry("11f", 0L).containsEntry("11g", 0L)
+            .containsEntry("11h", (long) seeded.size())
+            .containsEntry("1d", 0L).containsEntry("1a", 1L);
     }
 
     /** If the changelog history were lost, the baseline runs again and repeats nothing. */

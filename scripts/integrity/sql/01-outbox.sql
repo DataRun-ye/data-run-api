@@ -5,16 +5,26 @@
 -- record: its type (DELETE for a deleted record) and its payload (the stored
 -- form_data). "Latest" means the highest outbox_id, the order rows were written.
 --
--- 1d also flags a record modified after its latest event. Each application
--- write saves the record and its event in one transaction. The upload flushes
--- the record before it stamps the event (DefaultDataSubmissionService.upsertAll),
--- so its event is never older than the record. The admin delete stamps the
--- DELETE event first and saves the record afterwards (softDelete), so a deleted
--- record may be a few milliseconds newer than its DELETE event; up to a minute
--- is taken as that same transaction. Any other later modification is flagged,
--- and a changed payload is flagged however close in time.
+-- 1d also flags a record changed after its latest event. Since step C an event
+-- names the version it announces (outbox.submission_version), and the record
+-- must still be at that version. Events written before step C, or by a
+-- rolled-back 6.5.4, carry no version and are compared by time, as before: the
+-- upload flushed the record before it stamped the event, so its event was never
+-- older than the record, and the admin delete stamped its DELETE event first and
+-- saved the record afterwards, so a deleted record up to a minute newer than its
+-- DELETE event is taken as that same transaction. (Since step C the event's time
+-- comes from the database and the record's from the application, so times are
+-- not compared for versioned events.) A changed payload is flagged in both cases.
+--
+-- On a database before step C the outbox has no submission_version: the
+-- version is read as NULL there, and every event is compared by time.
+SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns
+                         WHERE table_schema = 'public' AND table_name = 'outbox'
+                           AND column_name = 'submission_version')
+            THEN 'o.submission_version' ELSE 'NULL::bigint' END AS outbox_version \gset
 WITH latest AS MATERIALIZED (
-    SELECT DISTINCT ON (o.submission_id) o.submission_id, o.outbox_id, o.event_type, o.created_at
+    SELECT DISTINCT ON (o.submission_id) o.submission_id, o.outbox_id, o.event_type, o.created_at,
+           :outbox_version AS submission_version
     FROM outbox o
     ORDER BY o.submission_id, o.outbox_id DESC
 ),
@@ -23,9 +33,11 @@ per_submission AS (
            l.outbox_id IS NULL AS no_event,
            l.outbox_id IS NOT NULL
              AND (coalesce(s.form_data, 'null'::jsonb) IS DISTINCT FROM coalesce(o.payload, 'null'::jsonb)
-                  OR (s.last_modified_date > l.created_at
-                      AND NOT (l.event_type = 'DELETE' AND coalesce(s.deleted, false)
-                               AND s.last_modified_date <= l.created_at + interval '1 minute'))) AS changed_after_event
+                  OR CASE WHEN l.submission_version IS NOT NULL THEN l.submission_version <> s.lock_version
+                          ELSE s.last_modified_date > l.created_at
+                               AND NOT (l.event_type = 'DELETE' AND coalesce(s.deleted, false)
+                                        AND s.last_modified_date <= l.created_at + interval '1 minute')
+                     END) AS changed_after_event
     FROM data_submission s
     LEFT JOIN latest l ON l.submission_id = s.id
     LEFT JOIN outbox o ON o.outbox_id = l.outbox_id

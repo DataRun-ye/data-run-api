@@ -42,6 +42,7 @@ expected_keys=(
     8a 8b 8c 8d 8e 8f 8g 8h
     9a 9b 9c 9d
     10a 10b 10c 10d
+    11a 11b 11c 11d 11e 11f 11g 11h
 )
 
 usage() {
