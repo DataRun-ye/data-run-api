@@ -13,8 +13,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.UUID;
 
 @Repository
@@ -27,7 +29,8 @@ public class OutboxClaimReader implements OutboxClaimPort {
     /**
      * Claims the next rows that are due, oldest submission first and outbox id on a tie, and leases them:
      * {@code next_attempt_at} moves to the end of the lease, so no other claim takes them meanwhile and a run
-     * that dies leaves them to be claimed again afterwards. Each claim counts as an attempt.
+     * that dies leaves them to be claimed again afterwards. A claim is not an attempt: a row's attempt is counted
+     * when its processing starts, so rows a dying batch never reached lose nothing.
      */
     private static final String CLAIM_SQL = """
         WITH due AS (
@@ -40,8 +43,7 @@ public class OutboxClaimReader implements OutboxClaimPort {
           FOR UPDATE SKIP LOCKED
         )
         UPDATE outbox o
-        SET attempt = COALESCE(o.attempt, 0) + 1,
-            ingest_id = :ingestId,
+        SET ingest_id = :ingestId,
             claimed_at = now(),
             claimed_by = :claimedBy,
             next_attempt_at = now() + make_interval(secs => :leaseSeconds)
@@ -53,6 +55,19 @@ public class OutboxClaimReader implements OutboxClaimPort {
     private static final Comparator<OutboxDto> CLAIM_ORDER = Comparator
         .comparing(OutboxDto::getSubmissionSerialNumber)
         .thenComparing(OutboxDto::getOutboxId);
+
+    /** Counts an attempt as the row's processing starts, for the claim that holds it. */
+    private static final String START_ATTEMPT_SQL = """
+        UPDATE outbox SET attempt = COALESCE(attempt, 0) + 1
+        WHERE outbox_id = :outboxId AND ingest_id = :ingestId
+        RETURNING attempt
+        """;
+
+    /** Ends the lease of rows a stopped batch did not finish, so the next run can take them at once. */
+    private static final String RELEASE_SQL = """
+        UPDATE outbox SET next_attempt_at = NULL
+        WHERE ingest_id = :ingestId AND outbox_id IN (:outboxIds) AND status IN ('pending', 'failed')
+        """;
 
     private static final String MARK_SUCCESS_SQL =
         "UPDATE outbox " +
@@ -111,6 +126,25 @@ public class OutboxClaimReader implements OutboxClaimPort {
         // UPDATE ... RETURNING does not keep the claim order.
         claimed.sort(CLAIM_ORDER);
         return claimed;
+    }
+
+    @Override
+    @Transactional
+    public OptionalInt startAttempt(long outboxId, UUID ingestId) {
+        List<Integer> attempts = cloudJdbc.query(START_ATTEMPT_SQL,
+            new MapSqlParameterSource().addValue("outboxId", outboxId).addValue("ingestId", ingestId),
+            (rs, rowNum) -> rs.getInt("attempt"));
+        return attempts.isEmpty() ? OptionalInt.empty() : OptionalInt.of(attempts.get(0));
+    }
+
+    @Override
+    @Transactional
+    public int release(UUID ingestId, Collection<Long> outboxIds) {
+        if (outboxIds.isEmpty()) {
+            return 0;
+        }
+        return cloudJdbc.update(RELEASE_SQL,
+            new MapSqlParameterSource().addValue("ingestId", ingestId).addValue("outboxIds", outboxIds));
     }
 
     // --- claim processor

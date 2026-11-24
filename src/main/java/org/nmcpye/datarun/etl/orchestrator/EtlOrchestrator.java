@@ -19,14 +19,17 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.UUID;
 
 /**
  * Orchestrator that runs one ETL cycle.
  * <p>
- * Each claimed row is projected in a transaction of its own, which saves the projection and the row's success
- * together. A failure is recorded only after that transaction has rolled back, in a new one: the row is marked
- * failed and tried again after a growing wait, or dead once its tries are used up.
+ * Each claimed row first has its attempt counted, in a transaction of its own, then is projected in another,
+ * which saves the projection and the row's success together. A failure of any kind is recorded only after that
+ * transaction has rolled back, in a new one: the row is marked failed and tried again after a growing wait, or
+ * dead once its tries are used up. A lost connection or an interrupt stops the batch instead, and the rows not
+ * finished are released for the next run without losing an attempt.
  */
 @Component
 public class EtlOrchestrator {
@@ -86,20 +89,32 @@ public class EtlOrchestrator {
             submittedCount = claimed.size();
             log.info("Run {} claimed {} rows (ingestId={})", runId, submittedCount, ingestId);
 
+            int done = 0;
+            boolean stopped = false;
             for (OutboxDto outbox : claimed) {
-                if (process(runId, outbox, ingestId)) {
+                RowResult result = Thread.currentThread().isInterrupted() ? RowResult.STOP : process(runId, outbox, ingestId);
+                if (result == RowResult.STOP) {
+                    stopped = true;
+                    break;
+                }
+                done++;
+                if (result == RowResult.SUCCESS) {
                     successCount++;
-                } else {
+                } else if (result != RowResult.SKIPPED) {
                     failureCount++;
                 }
             }
+            if (stopped) {
+                release(runId, ingestId, claimed.subList(done, claimed.size()));
+            }
 
             // finalize run
-            etlRunService.finishRun(EtlRunCompletion.builder().etlRunId(runId).status("finished").submittedCount(submittedCount)
+            String status = stopped ? "stopped" : "finished";
+            etlRunService.finishRun(EtlRunCompletion.builder().etlRunId(runId).status(status).submittedCount(submittedCount)
                 .successCount(successCount).failureCount(failureCount).minSubmissionSerial(minSerial).maxSubmissionSerial(maxSerial)
                 .build());
-            log.info("Finished run {}: submitted={}, success={}, failure={}", runId, submittedCount, successCount, failureCount);
-            return new EtlRunResult((int) submittedCount, (int) successCount, (int) failureCount);
+            log.info("Run {} {}: submitted={}, success={}, failure={}", runId, status, submittedCount, successCount, failureCount);
+            return new EtlRunResult((int) submittedCount, (int) successCount, (int) failureCount, stopped);
         } catch (Exception topEx) {
             // best-effort mark run as failed
             try {
@@ -114,37 +129,89 @@ public class EtlOrchestrator {
         }
     }
 
-    /** Projects one claimed row; true when it succeeded. */
-    private boolean process(UUID runId, OutboxDto outbox, UUID ingestId) {
-        long start = System.nanoTime();
-        Outcome outcome = project(runId, outbox, ingestId);
-        metrics.rowProcessed(outcome, Duration.ofNanos(System.nanoTime() - start));
-        return outcome == Outcome.SUCCESS;
+    private enum RowResult {
+        SUCCESS(Outcome.SUCCESS), FAILED(Outcome.FAILED), DEAD(Outcome.DEAD),
+        /** A newer claim holds the row; that run owns it. */
+        SKIPPED(null),
+        /** The connection is lost or the thread interrupted: the batch stops. */
+        STOP(null);
+
+        private final Outcome outcome;
+
+        RowResult(Outcome outcome) {
+            this.outcome = outcome;
+        }
     }
 
-    private Outcome project(UUID runId, OutboxDto outbox, UUID ingestId) {
-        int attempt = outbox.getAttempt();
-        if (retryPolicy.wasClaimedTooOften(attempt)) {
-            recordDead(runId, outbox, "claimed " + attempt + " times without an outcome");
-            return Outcome.DEAD;
+    private RowResult process(UUID runId, OutboxDto outbox, UUID ingestId) {
+        long start = System.nanoTime();
+        RowResult result = project(runId, outbox, ingestId);
+        if (result.outcome != null) {
+            metrics.rowProcessed(result.outcome, Duration.ofNanos(System.nanoTime() - start));
+        }
+        return result;
+    }
+
+    private RowResult project(UUID runId, OutboxDto outbox, UUID ingestId) {
+        int attempt;
+        try {
+            OptionalInt started = outboxClaimService.startAttempt(outbox.getOutboxId(), ingestId);
+            if (started.isEmpty()) {
+                log.warn("Outbox row {} was claimed again by a newer run; leaving it to that run", outbox.getOutboxId());
+                return RowResult.SKIPPED;
+            }
+            attempt = started.getAsInt();
+        } catch (Throwable e) {
+            // Not even the start could be written: nothing in this batch can be.
+            log.warn("Could not start outbox row {}; the batch stops: {}", outbox.getOutboxId(), EtlFailures.describe(e));
+            return RowResult.STOP;
+        }
+        outbox.setAttempt(attempt);
+        if (retryPolicy.startedTooOften(attempt)) {
+            recordDead(runId, outbox, "started " + attempt + " times without an outcome");
+            return RowResult.DEAD;
         }
         try {
             txTemplate.executeWithoutResult(status -> eventProcessorService.processEvent(runId, outbox, ingestId));
-            return Outcome.SUCCESS;
+            return RowResult.SUCCESS;
         } catch (SubmissionNotFoundException e) {
             // No later try can find it: the submission was removed outside the application.
             recordDead(runId, outbox, e.getMessage());
-            return Outcome.DEAD;
-        } catch (RuntimeException e) {
+            return RowResult.DEAD;
+        } catch (Throwable e) {
             // The row's transaction has rolled back: nothing of it is left to wait on.
             String error = EtlFailures.describe(e);
+            if (EtlFailures.stopsTheBatch(e)) {
+                log.warn("Outbox row {} met a lost connection or an interrupt on attempt {}; the batch stops: {}",
+                    outbox.getOutboxId(), attempt, error);
+                return RowResult.STOP;
+            }
             log.debug("Outbox row {} failed on attempt {}", outbox.getOutboxId(), attempt, EtlFailures.withoutMessages(e));
             if (retryPolicy.isLastAttempt(attempt)) {
                 recordDead(runId, outbox, error);
-                return Outcome.DEAD;
+                return RowResult.DEAD;
             }
             recordRetry(runId, outbox, error, retryPolicy.delayAfter(attempt));
-            return Outcome.FAILED;
+            return RowResult.FAILED;
+        }
+    }
+
+    /**
+     * Ends the lease of the rows a stopped batch did not finish, so the next run takes them at once; the row that
+     * stopped it keeps the attempt it started. An interrupt is set aside for the release and then restored.
+     */
+    private void release(UUID runId, UUID ingestId, List<OutboxDto> rows) {
+        boolean interrupted = Thread.interrupted();
+        try {
+            int released = outboxClaimService.release(ingestId, rows.stream().map(OutboxDto::getOutboxId).toList());
+            log.warn("Run {} stopped; released {} of its claimed rows for the next run", runId, released);
+        } catch (RuntimeException e) {
+            log.warn("Run {} stopped and could not release its {} unfinished rows; they are claimed again when their "
+                + "lease ends: {}", runId, rows.size(), EtlFailures.describe(e));
+        } finally {
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 

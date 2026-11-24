@@ -100,7 +100,7 @@ class ScheduledOrchestratorRunnerIT {
             public EtlRunResult runOnce(String pipelineName, int batchSize) {
                 int run = runs.getAndIncrement();
                 int claimed = run < batches.length ? batches[run] : 0;
-                return new EtlRunResult(claimed, claimed, 0);
+                return new EtlRunResult(claimed, claimed, 0, false);
             }
         };
     }
@@ -250,5 +250,23 @@ class ScheduledOrchestratorRunnerIT {
         ScheduledTaskRegistrar disabled = new ScheduledTaskRegistrar();
         runner(countingOrchestrator(), properties).configureTasks(disabled);
         assertThat(disabled.getFixedDelayTaskList()).isEmpty();
+    }
+
+    @Test
+    void aPollStopsClaimingAfterABatchThatStopped() {
+        outboxRow("pending", null);
+        EtlProperties properties = new EtlProperties();
+        properties.setBatchSize(100);
+        EtlOrchestrator stopping = new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null) {
+            @Override
+            public EtlRunResult runOnce(String pipelineName, int batchSize) {
+                runs.incrementAndGet();
+                return new EtlRunResult(100, 40, 0, true);
+            }
+        };
+
+        runner(stopping, properties).scheduledRun();
+
+        assertThat(runs).as("a full batch that stopped ends the poll").hasValue(1);
     }
 }

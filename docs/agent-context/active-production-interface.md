@@ -212,20 +212,25 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   full, for at most `datarun.etl.max-poll-duration`. `datarun.etl.enabled=false`
   stops an instance from polling. Scheduling is off in the test profiles.
 - **Claims.** A claim takes `pending` or `failed` rows whose `next_attempt_at`
-  is empty or past, in submission-serial then outbox-id order. It counts the
-  claim in `attempt` and leases the row by moving `next_attempt_at` forward by
-  `datarun.etl.claim-lease`, so a run that dies frees its rows when the lease
-  ends.
-- **Outcomes.** Each row is projected and marked `success` in one transaction,
-  which gives up after `datarun.etl.row-timeout`. A failure is recorded after
-  that transaction has rolled back:
+  is empty or past, in submission-serial then outbox-id order. It leases the
+  row by moving `next_attempt_at` forward by `datarun.etl.claim-lease`, so a run
+  that dies frees its rows when the lease ends. A claim is not an attempt.
+- **Outcomes.** When a row's processing starts, its `attempt` is counted in a
+  transaction of its own. The row is then projected and marked `success` in
+  one transaction, which gives up after `datarun.etl.row-timeout`. A failure of
+  any kind, errors included, is recorded after that transaction has rolled
+  back:
   - before the last attempt, the row becomes `failed`. It keeps a
     `last_error`: the database's first error line or the root cause, never
     bound values. It is retried after `datarun.etl.retry-delay`, doubling up
     to `datarun.etl.max-retry-delay`.
   - It becomes `dead` on attempt `datarun.etl.max-attempts`, when its
-    submission is gone, or when it was claimed more often than it may be
-    tried.
+    submission is gone, or when it was started more often than it may be
+    tried (a row that kills its batch).
+
+  A lost connection, a database shutdown or an interrupt stops the batch
+  instead. Its unfinished rows are released for the next run without losing
+  an attempt, and `etl_runs` records the run as `stopped`.
 
   `outbox_processing` keeps one audit row per run and row: `success`,
   `failure` or `dead`.

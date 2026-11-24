@@ -5,8 +5,8 @@ import org.nmcpye.datarun.etl.config.EtlProperties;
 import java.time.Duration;
 
 /**
- * When a failed outbox row is tried again, and when it is given up as dead. Attempts count claims: a row on
- * attempt {@code n} has been claimed {@code n} times.
+ * When a failed outbox row is tried again, and when it is given up as dead. Attempts count starts: a row on
+ * attempt {@code n} has begun processing {@code n} times. A claim alone is not an attempt.
  */
 final class EtlRetryPolicy {
 
@@ -26,10 +26,10 @@ final class EtlRetryPolicy {
     }
 
     /**
-     * Whether a row was claimed more often than it may be tried. A row only gets there when runs ended on it
-     * without recording any outcome, for instance a process that died while projecting it.
+     * Whether a row has begun processing more often than it may be tried. A row only gets there when runs ended
+     * on it without recording any outcome, for instance a process that died while projecting it.
      */
-    boolean wasClaimedTooOften(int attempt) {
+    boolean startedTooOften(int attempt) {
         return attempt > maxAttempts;
     }
 

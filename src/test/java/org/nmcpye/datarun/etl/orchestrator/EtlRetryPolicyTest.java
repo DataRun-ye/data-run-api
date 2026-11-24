@@ -19,11 +19,11 @@ class EtlRetryPolicyTest {
     }
 
     @Test
-    void theTenthAttemptIsTheLastAndAnEleventhClaimIsTooMany() {
+    void theTenthAttemptIsTheLastAndAnEleventhStartIsTooMany() {
         assertThat(defaults.isLastAttempt(9)).isFalse();
         assertThat(defaults.isLastAttempt(10)).isTrue();
-        assertThat(defaults.wasClaimedTooOften(10)).isFalse();
-        assertThat(defaults.wasClaimedTooOften(11)).isTrue();
+        assertThat(defaults.startedTooOften(10)).isFalse();
+        assertThat(defaults.startedTooOften(11)).isTrue();
     }
 
     @Test

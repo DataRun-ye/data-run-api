@@ -1,7 +1,12 @@
 package org.nmcpye.datarun.etl.orchestrator;
 
+import java.io.InterruptedIOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.sql.BatchUpdateException;
 import java.sql.SQLException;
+import java.sql.SQLNonTransientConnectionException;
+import java.sql.SQLRecoverableException;
+import java.sql.SQLTransientConnectionException;
 
 /**
  * Describes why an outbox row failed, in a form that may be stored and logged without submitted values. The JDBC
@@ -33,6 +38,33 @@ final class EtlFailures {
             text = root.getClass().getSimpleName() + where(root, failure);
         }
         return text.length() > MAX_LENGTH ? text.substring(0, MAX_LENGTH) : text;
+    }
+
+    /**
+     * Whether the failure says nothing about the row: the database connection is lost or refused (SQLState class
+     * 08, or the driver's or pool's connection exceptions), the database is shutting down (57P01 to 57P03), or the
+     * thread was interrupted. Every following row would meet the same, so the batch stops.
+     */
+    static boolean stopsTheBatch(Throwable failure) {
+        if (Thread.currentThread().isInterrupted()) {
+            return true;
+        }
+        int depth = 0;
+        for (Throwable t = failure; t != null && depth++ < MAX_CAUSES; t = next(t)) {
+            if (t instanceof InterruptedException || t instanceof InterruptedIOException
+                || t instanceof ClosedByInterruptException
+                || t instanceof SQLTransientConnectionException || t instanceof SQLNonTransientConnectionException
+                || t instanceof SQLRecoverableException) {
+                return true;
+            }
+            if (t instanceof SQLException sql && sql.getSQLState() != null) {
+                String state = sql.getSQLState();
+                if (state.startsWith("08") || state.equals("57P01") || state.equals("57P02") || state.equals("57P03")) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**

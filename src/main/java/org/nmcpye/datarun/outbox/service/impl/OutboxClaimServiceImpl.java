@@ -9,7 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.UUID;
 
 /**
@@ -49,5 +51,15 @@ public class OutboxClaimServiceImpl implements OutboxClaimService {
         int n = (claimed == null) ? 0 : claimed.size();
         log.debug("Claimed {} outbox rows with ingestId={}", n, ingestId);
         return (claimed == null) ? List.of() : claimed;
+    }
+
+    @Override
+    public OptionalInt startAttempt(long outboxId, UUID ingestId) {
+        return outboxJdbcRepository.startAttempt(outboxId, ingestId);
+    }
+
+    @Override
+    public int release(UUID ingestId, Collection<Long> outboxIds) {
+        return outboxJdbcRepository.release(ingestId, outboxIds);
     }
 }

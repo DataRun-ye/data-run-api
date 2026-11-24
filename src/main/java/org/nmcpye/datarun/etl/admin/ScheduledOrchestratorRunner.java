@@ -19,8 +19,9 @@ import java.util.Optional;
 /**
  * Polls the outbox for the ETL: {@code datarun.etl.poll-delay} after one poll ends, the next one starts. A poll
  * that finds a row due takes the run lock and claims batches of {@code datarun.etl.batch-size} until a batch
- * comes back short or the poll has run for {@code datarun.etl.max-poll-duration}. Scheduling is enabled outside
- * the test profiles; {@code datarun.etl.enabled=false} stops this instance from polling.
+ * comes back short, a batch stops on a lost connection or an interrupt, or the poll has run for
+ * {@code datarun.etl.max-poll-duration}. Scheduling is enabled outside the test profiles;
+ * {@code datarun.etl.enabled=false} stops this instance from polling.
  */
 @Service
 public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
@@ -84,7 +85,7 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
         do {
             batch = orchestrator.runOnce(PIPELINE, batchSize);
             claimed += batch.claimed();
-        } while (batch.claimed() >= batchSize && System.nanoTime() - deadline < 0);
+        } while (!batch.stopped() && batch.claimed() >= batchSize && System.nanoTime() - deadline < 0);
         return claimed;
     }
 }

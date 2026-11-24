@@ -8,17 +8,25 @@ import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.nmcpye.datarun.etl.config.EtlProperties;
+import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
+import org.nmcpye.datarun.etl.orchestrator.EtlRunResult;
+import org.nmcpye.datarun.etl.service.EtlRunService;
+import org.nmcpye.datarun.etl.service.EventProcessorService;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.outbox.service.OutboxClaimService;
+import org.nmcpye.datarun.outbox.service.OutboxProcessingService;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.SQLTransientConnectionException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +63,21 @@ class EtlOutboxProcessingIT {
 
     @Autowired
     private DataSource dataSource;
+
+    @Autowired
+    private EventProcessorService eventProcessor;
+
+    @Autowired
+    private EtlRunService etlRunService;
+
+    @Autowired
+    private OutboxProcessingService processingService;
+
+    @Autowired
+    private EtlProperties etlProperties;
+
+    @Autowired
+    private EtlMetrics metrics;
 
     private EtlFixture fixture;
     private AuditInsertWatchdog watchdog;
@@ -294,9 +317,9 @@ class EtlOutboxProcessingIT {
         return lines;
     }
 
-    /** A row claimed more often than it may be tried, each run ending without an outcome, is dead unprojected. */
+    /** A row started more often than it may be tried, each run ending without an outcome, is dead unprojected. */
     @Test
-    void aRowClaimedMoreOftenThanItMayBeTriedIsDeadWithoutBeingProjected() {
+    void aRowStartedMoreOftenThanItMayBeTriedIsDeadWithoutBeingProjected() {
         fixture.submission("okSub000004", TEMPLATE, 1);
         long outboxId = fixture.outbox("okSub000004", "SAVE");
         fixture.setAttempt(outboxId, 10);
@@ -305,8 +328,115 @@ class EtlOutboxProcessingIT {
 
         Map<String, Object> row = fixture.outboxRow(outboxId);
         assertThat(row).containsEntry("status", "dead").containsEntry("attempt", 11)
-            .containsEntry("last_error", "claimed 11 times without an outcome");
+            .containsEntry("last_error", "started 11 times without an outcome");
         assertThat(fixture.tallRows("okSub000004")).isZero();
+    }
+
+    /**
+     * An error (not an exception) on one row fails only that row: the rows behind it are projected in the same
+     * run, and only the failing row ends dead after its tries (pinned before: the error escaped the batch, and
+     * the rows behind it lost an attempt on every claim until they were dead without ever being tried).
+     */
+    @Test
+    void anErrorOnOneRowFailsOnlyThatRowAndTheRowsBehindItAreProjected() {
+        List<Long> rows = fiveRows("errSub0000");
+        EtlOrchestrator throwingOnRow2 = orchestratorWhere("errSub00002", () -> {
+            throw new StackOverflowError();
+        });
+
+        for (int run = 1; run <= 11; run++) {
+            throwingOnRow2.runOnce("test", 10);
+            fixture.endLease(rows.get(1));
+        }
+
+        assertThat(fixture.outboxRow(rows.get(1))).containsEntry("status", "dead").containsEntry("attempt", 10);
+        assertThat((String) fixture.outboxRow(rows.get(1)).get("last_error")).startsWith("StackOverflowError at ");
+        for (int i : new int[]{0, 2, 3, 4}) {
+            assertThat(fixture.outboxRow(rows.get(i))).containsEntry("status", "success").containsEntry("attempt", 1);
+        }
+    }
+
+    /**
+     * A lost connection says nothing about the row: the batch stops at once and releases the rows it did not
+     * finish, which keep their attempts, instead of waiting for the pool row after row.
+     */
+    @Test
+    void aBatchThatLosesItsConnectionStopsAndReleasesTheRowsItDidNotFinish() {
+        List<Long> rows = fiveRows("lostSub000");
+        EtlOrchestrator losingItsConnection = orchestratorWhere("lostSub0002", () -> {
+            throw new CannotCreateTransactionException("Could not open JPA EntityManager for transaction",
+                new SQLTransientConnectionException("Connection is not available, request timed out", "08003"));
+        });
+
+        EtlRunResult result = losingItsConnection.runOnce("test", 10);
+
+        assertThat(result.stopped()).isTrue();
+        assertThat(result.succeeded()).isEqualTo(1);
+        assertThat(fixture.outboxRow(rows.get(0))).containsEntry("status", "success");
+        assertThat(fixture.outboxRow(rows.get(1))).as("the row that met it keeps the attempt it started")
+            .containsEntry("status", "pending").containsEntry("attempt", 1).containsEntry("next_attempt_at", null);
+        for (int i : new int[]{2, 3, 4}) {
+            assertThat(fixture.outboxRow(rows.get(i))).containsEntry("status", "pending").containsEntry("attempt", 0)
+                .containsEntry("next_attempt_at", null);
+        }
+        assertThat(fixture.runs()).singleElement().satisfies(r -> assertThat(r).containsEntry("status", "stopped"));
+
+        orchestrator.runOnce("test", 10);
+        assertThat(rows).allSatisfy(id -> assertThat(fixture.outboxRow(id)).containsEntry("status", "success"));
+    }
+
+    /** An interrupt, as at shutdown, stops the batch the same way and is still set afterwards. */
+    @Test
+    void anInterruptStopsTheBatchAndReleasesTheRowsItDidNotFinish() {
+        List<Long> rows = fiveRows("intSub0000");
+        EtlOrchestrator interrupted = orchestratorWhere("intSub00002", () -> {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("interrupted mid-row");
+        });
+
+        EtlRunResult result = interrupted.runOnce("test", 10);
+        boolean stillInterrupted = Thread.interrupted();
+
+        assertThat(stillInterrupted).isTrue();
+        assertThat(result.stopped()).isTrue();
+        for (int i : new int[]{1, 2, 3, 4}) {
+            assertThat(fixture.outboxRow(rows.get(i))).containsEntry("status", "pending").containsEntry("next_attempt_at", null);
+        }
+    }
+
+    /** A claim is not an attempt: rows claimed by a run that died before reaching them have lost nothing. */
+    @Test
+    void rowsClaimedByARunThatDiedBeforeReachingThemHaveLostNoAttempt() {
+        List<Long> rows = fiveRows("deadRun000");
+        claimService.claimBatchWithIngestId(UUID.randomUUID(), "died", 10);
+        rows.forEach(fixture::endLease);
+
+        orchestrator.runOnce("test", 10);
+
+        assertThat(rows).allSatisfy(id ->
+            assertThat(fixture.outboxRow(id)).containsEntry("status", "success").containsEntry("attempt", 1));
+    }
+
+    /** Five submissions and their SAVE rows, uids {@code prefix + 1..5}; their outbox ids in claim order. */
+    private List<Long> fiveRows(String prefix) {
+        List<Long> ids = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) {
+            fixture.submission(prefix + i, TEMPLATE, 1);
+            ids.add(fixture.outbox(prefix + i, "SAVE"));
+        }
+        return ids;
+    }
+
+    /** The application's orchestrator, except that projecting {@code submissionUid} runs {@code failure}. */
+    private EtlOrchestrator orchestratorWhere(String submissionUid, Runnable failure) {
+        EventProcessorService failingOnOneRow = (runId, outbox, ingestId) -> {
+            if (submissionUid.equals(outbox.getSubmissionUid())) {
+                failure.run();
+            }
+            eventProcessor.processEvent(runId, outbox, ingestId);
+        };
+        return new EtlOrchestrator(etlRunService, claimService, processingService, failingOnOneRow, transactionManager,
+            etlProperties, metrics);
     }
 
     /**
@@ -331,7 +461,7 @@ class EtlOutboxProcessingIT {
         assertThat(watchdog.cancelled()).isEmpty();
     }
 
-    /** A claim leases its rows: a second claim skips them until the lease ends, then takes them as a new attempt. */
+    /** A claim leases its rows without counting an attempt: a second claim skips them until the lease ends. */
     @Test
     void aClaimLeasesItsRowsUntilTheLeaseEnds() {
         fixture.submission("okSub000003", TEMPLATE, 1);
@@ -341,14 +471,14 @@ class EtlOutboxProcessingIT {
         List<OutboxDto> second = claimService.claimBatchWithIngestId(UUID.randomUUID(), "second", 10);
 
         assertThat(first).extracting(OutboxDto::getOutboxId).containsExactly(outboxId);
-        assertThat(first).extracting(OutboxDto::getAttempt).containsExactly(1);
+        assertThat(first).extracting(OutboxDto::getAttempt).containsExactly(0);
         assertThat(second).isEmpty();
         assertThat(fixture.outboxRow(outboxId)).containsEntry("status", "pending").containsEntry("claimed_by", "first");
         assertThat(fixture.leaseSecondsLeft(outboxId)).isBetween(14 * 60.0, 15 * 60.0);
 
         fixture.endLease(outboxId);
         List<OutboxDto> third = claimService.claimBatchWithIngestId(UUID.randomUUID(), "third", 10);
-        assertThat(third).extracting(OutboxDto::getOutboxId, OutboxDto::getAttempt).containsExactly(tuple(outboxId, 2));
+        assertThat(third).extracting(OutboxDto::getOutboxId, OutboxDto::getAttempt).containsExactly(tuple(outboxId, 0));
     }
 
     @Test

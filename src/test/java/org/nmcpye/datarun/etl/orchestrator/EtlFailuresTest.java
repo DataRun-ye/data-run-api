@@ -6,6 +6,7 @@ import org.springframework.jdbc.UncategorizedSQLException;
 
 import java.sql.BatchUpdateException;
 import java.sql.SQLException;
+import java.sql.SQLTransientConnectionException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -80,5 +81,22 @@ class EtlFailuresTest {
         }
         assertThat(types).hasSize(3);
         assertThat(String.join(" ", types)).doesNotContain("a person");
+    }
+
+    @Test
+    void aLostConnectionADatabaseShutdownOrAnInterruptStopsTheBatchAndARowErrorDoesNot() {
+        assertThat(EtlFailures.stopsTheBatch(new UncategorizedSQLException("t", "s", new SQLException("I/O error", "08006")))).isTrue();
+        assertThat(EtlFailures.stopsTheBatch(new IllegalStateException(new SQLException("terminating", "57P01")))).isTrue();
+        assertThat(EtlFailures.stopsTheBatch(new IllegalStateException(new SQLTransientConnectionException("pool")))).isTrue();
+        assertThat(EtlFailures.stopsTheBatch(new IllegalStateException(new SQLException("x", new InterruptedException())))).isTrue();
+        assertThat(EtlFailures.stopsTheBatch(new UncategorizedSQLException("t", "s", new SQLException("ERROR: x", "P0001")))).isFalse();
+        assertThat(EtlFailures.stopsTheBatch(new StackOverflowError())).isFalse();
+
+        Thread.currentThread().interrupt();
+        try {
+            assertThat(EtlFailures.stopsTheBatch(new IllegalStateException("anything"))).isTrue();
+        } finally {
+            Thread.interrupted();
+        }
     }
 }
