@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.intake.GoLiveRuleService;
 import org.nmcpye.datarun.jpa.intake.HeldFilter;
 import org.nmcpye.datarun.jpa.intake.HeldState;
@@ -91,10 +92,12 @@ class HeldSubmissionDecisionsTest {
         AtomicReference<String> replayedAs = new AtomicReference<>();
         AtomicReference<String> replayedFor = new AtomicReference<>();
         AtomicReference<String> replayedUid = new AtomicReference<>();
-        when(uploads.saveReleased(any(), any(), any())).thenAnswer(invocation -> {
+        AtomicReference<RevisionContext> revision = new AtomicReference<>();
+        when(uploads.saveReleased(any(), any(), any(), any())).thenAnswer(invocation -> {
             replayedAs.set(SecurityContextHolder.getContext().getAuthentication().getName());
             replayedFor.set(invocation.<SubmissionActor>getArgument(1).login());
             replayedUid.set(invocation.<DataSubmissionUploadV1Dto>getArgument(0).getUid());
+            revision.set(invocation.getArgument(2));
             return saved(invocation);
         });
 
@@ -104,6 +107,8 @@ class HeldSubmissionDecisionsTest {
         assertThat(replayedAs.get()).as("the audit columns name the submitter").isEqualTo("field-user");
         assertThat(replayedFor.get()).as("the checks read the submitter's access").isEqualTo("field-user");
         assertThat(replayedUid.get()).isEqualTo("heldSub0001");
+        assertThat(revision.get()).as("the revision: the admin acts for the uploader, with the note")
+            .isEqualTo(RevisionContext.heldRelease(idOf("admin"), idOf("field-user"), "district started early"));
         assertThat(SecurityContextHolder.getContext().getAuthentication().getName())
             .as("the admin's context is back after the replay").isEqualTo("admin");
         assertThat(result.released()).containsExactly("heldSub0001");
@@ -125,7 +130,7 @@ class HeldSubmissionDecisionsTest {
 
         assertThat(result.superseded()).isEmpty();
         assertThat(result.changed()).containsExactly("heldSub0001");
-        verify(uploads, never()).saveReleased(any(), any(), any());
+        verify(uploads, never()).saveReleased(any(), any(), any(), any());
     }
 
     /** The release race (A2 S4): a re-send changed the held upload after the release read it. */
@@ -134,7 +139,7 @@ class HeldSubmissionDecisionsTest {
         when(held.findWithPayload(List.of("heldSub0001"), HELD_OR_DISCARDED))
             .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
         when(held.markDecided(eq("heldSub0001"), eq(HeldState.RELEASED), any(), any(), any(), any())).thenReturn(false);
-        when(uploads.saveReleased(any(), any(), any())).thenAnswer(HeldSubmissionDecisionsTest::saved);
+        when(uploads.saveReleased(any(), any(), any(), any())).thenAnswer(HeldSubmissionDecisionsTest::saved);
 
         HeldDecisionResult result =
             decisions.release(admin, new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
@@ -151,7 +156,7 @@ class HeldSubmissionDecisionsTest {
     void aReleaseWhoseUidBecameRealDataDuringTheReplayIsSuperseded() {
         when(held.findWithPayload(List.of("heldSub0001"), HELD_OR_DISCARDED))
             .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
-        when(uploads.saveReleased(any(), any(), any()))
+        when(uploads.saveReleased(any(), any(), any(), any()))
             .thenReturn(new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.SUPERSEDED, null));
 
         HeldDecisionResult result = decisions.release(admin,
@@ -167,7 +172,7 @@ class HeldSubmissionDecisionsTest {
     void aRefusedReleaseKeepsTheUploadAndRecordsWhy() {
         when(held.findWithPayload(List.of("heldSub0001"), HELD_OR_DISCARDED))
             .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
-        when(uploads.saveReleased(any(), any(), any())).thenReturn(
+        when(uploads.saveReleased(any(), any(), any(), any())).thenReturn(
             new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.FAILED, "E4114"));
 
         HeldDecisionResult result =
@@ -206,7 +211,7 @@ class HeldSubmissionDecisionsTest {
                 row("heldSub0002", HoldReason.BEFORE_GO_LIVE, "gone-user")));
         when(users.loadUserByUsername("gone-user"))
             .thenThrow(new UsernameNotFoundException("User gone-user was not found in the database"));
-        when(uploads.saveReleased(any(), any(), any()))
+        when(uploads.saveReleased(any(), any(), any(), any()))
             .thenReturn(new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.FAILED, "E4122"));
 
         try (LogCapture logs = new LogCapture(HeldSubmissionDecisions.class)) {
@@ -230,7 +235,7 @@ class HeldSubmissionDecisionsTest {
             .thenReturn(List.of(row("heldSub0003", HoldReason.BEFORE_GO_LIVE)));
         when(held.findWithPayload(List.of("heldSub0003"), HELD_OR_DISCARDED))
             .thenReturn(List.of(row("heldSub0003", HoldReason.BEFORE_GO_LIVE)));
-        when(uploads.saveReleased(any(), any(), any())).thenAnswer(HeldSubmissionDecisionsTest::saved);
+        when(uploads.saveReleased(any(), any(), any(), any())).thenAnswer(HeldSubmissionDecisionsTest::saved);
 
         HeldDecisionResult result = decisions.release(admin,
             new HeldDecisionRequest(List.of("heldSub0001", "heldSub0002", "heldSub0003"), null, null, 2));
@@ -250,7 +255,7 @@ class HeldSubmissionDecisionsTest {
         HeldSubmissionRow untried = row("heldSub0002", HoldReason.BEFORE_GO_LIVE);
         when(held.findAll(any())).thenReturn(List.of(failedBefore, untried));
         when(held.findWithPayload(List.of("heldSub0002"), HELD)).thenReturn(List.of(untried));
-        when(uploads.saveReleased(any(), any(), any())).thenAnswer(HeldSubmissionDecisionsTest::saved);
+        when(uploads.saveReleased(any(), any(), any(), any())).thenAnswer(HeldSubmissionDecisionsTest::saved);
 
         HeldDecisionResult first = decisions.release(admin, new HeldDecisionRequest(null,
             new HeldDecisionRequest.Filter("campaign001", null, null, null, null, null, null), null, 1));
@@ -261,7 +266,7 @@ class HeldSubmissionDecisionsTest {
         when(held.findAll(any())).thenReturn(List.of(failedBefore));
         when(held.findWithPayload(List.of("heldSub0001"), HELD)).thenReturn(List.of(failedBefore));
         doReturn(new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.FAILED, "E4122"))
-            .when(uploads).saveReleased(any(), any(), any());
+            .when(uploads).saveReleased(any(), any(), any(), any());
 
         HeldDecisionResult second = decisions.release(admin, new HeldDecisionRequest(null,
             new HeldDecisionRequest.Filter("campaign001", null, null, null, null, null, null), null, 1));
@@ -279,7 +284,7 @@ class HeldSubmissionDecisionsTest {
         when(goLiveRules.acceptedByCurrentRules()).thenReturn(r -> r.uid().equals("heldSub0001"));
         when(held.findWithPayload(List.of("heldSub0001"), HELD))
             .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
-        when(uploads.saveReleased(any(), any(), any())).thenAnswer(HeldSubmissionDecisionsTest::saved);
+        when(uploads.saveReleased(any(), any(), any(), any())).thenAnswer(HeldSubmissionDecisionsTest::saved);
 
         HeldDecisionResult result = decisions.release(admin, new HeldDecisionRequest(null,
             new HeldDecisionRequest.Filter("campaign001", null, null, null, null, null, true), null, null));
@@ -359,7 +364,7 @@ class HeldSubmissionDecisionsTest {
 
     /** A release the checks accept: the decision it is given runs, as inside the release's transaction. */
     private static SubmissionUploads.Released saved(org.mockito.invocation.InvocationOnMock invocation) {
-        return new SubmissionUploads.Released(invocation.<BooleanSupplier>getArgument(2).getAsBoolean()
+        return new SubmissionUploads.Released(invocation.<BooleanSupplier>getArgument(3).getAsBoolean()
             ? SubmissionUploads.ReleaseOutcome.RELEASED : SubmissionUploads.ReleaseOutcome.CHANGED, null);
     }
 

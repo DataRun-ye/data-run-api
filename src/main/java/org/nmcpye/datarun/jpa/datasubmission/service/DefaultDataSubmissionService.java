@@ -10,6 +10,9 @@ import org.nmcpye.datarun.jpa.common.DefaultJpaSoftDeleteService;
 import org.nmcpye.datarun.jpa.common.JpaSoftDeleteObject;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
+import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionKind;
+import org.nmcpye.datarun.jpa.datasubmission.revision.SubmissionRevisionWriter;
 import org.nmcpye.datarun.outbox.repository.OutboxWritePort;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Primary;
@@ -22,7 +25,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Service Implementation for managing {@link DataSubmission}.
+ * The submission persistence layer behind {@code SubmissionCommandService}: it stores submissions and, in the same
+ * transaction, records each change as a revision ({@link SubmissionRevisionWriter}) and announces it in the outbox.
+ *
+ * <p>A revision is written if and only if the submission's version moves: creation stores version 0, and every
+ * flushed change of a stored submission raises {@code lock_version} by one (JPA's {@code @Version}). The versions
+ * are read back after each flush, so whatever this layer persists is recorded, and an unchanged re-send, which
+ * writes nothing, records nothing.</p>
  */
 @Service
 @Primary
@@ -32,15 +41,22 @@ public class DefaultDataSubmissionService
     implements DataSubmissionService {
     private final ObjectMapper objectMapper;
     private final OutboxWritePort outboxRepo;
+    private final SubmissionRevisionWriter revisions;
 
     public DefaultDataSubmissionService(
         DataSubmissionRepository repository,
         CacheManager cacheManager,
         UserAccessService userAccessService,
-        ObjectMapper objectMapper, OutboxWritePort outboxRepo) {
+        ObjectMapper objectMapper, OutboxWritePort outboxRepo,
+        SubmissionRevisionWriter revisions) {
         super(repository, cacheManager, userAccessService);
         this.objectMapper = objectMapper;
         this.outboxRepo = outboxRepo;
+        this.revisions = revisions;
+    }
+
+    /** A stored submission's version and deleted state as loaded, before this write changed anything. */
+    private record Stored(Long version, boolean deleted) {
     }
 
     private boolean mutableFieldsMatch(DataSubmission existingEntity, DataSubmission incomingEntity) {
@@ -73,7 +89,9 @@ public class DefaultDataSubmissionService
     @Override
     public List<DataSubmission> upsertAll(
         Collection<DataSubmission> entities,
-        EntitySaveSummaryVM summary) {
+        EntitySaveSummaryVM summary,
+        RevisionContext revision) {
+        Objects.requireNonNull(revision, "revision");
         if (entities == null || entities.isEmpty()) {
             return List.of();
         }
@@ -90,6 +108,9 @@ public class DefaultDataSubmissionService
         List<DataSubmission> existingEntitiesFromDb = jpaAuditableObjectRepository.findAllByUidIn(new ArrayList<>(incomingUids));
         Map<String, DataSubmission> existingEntitiesMap = existingEntitiesFromDb.stream()
             .collect(Collectors.toMap(JpaSoftDeleteObject::getUid, Function.identity()));
+        Map<DataSubmission, Stored> stored = new IdentityHashMap<>();
+        existingEntitiesFromDb.forEach(existing ->
+            stored.put(existing, new Stored(existing.getLockVersion(), Boolean.TRUE.equals(existing.getDeleted()))));
 
         List<DataSubmission> entitiesToPersist = new ArrayList<>();
         List<DataSubmission> entitiesToUpdate = new ArrayList<>();
@@ -148,6 +169,10 @@ public class DefaultDataSubmissionService
             outboxRepo.insertByEventType(outboxEvents, "DELETE");
         }
 
+        persistedResults.forEach(created ->
+            revisions.append(created.getId(), created.getLockVersion(), null, RevisionKind.CREATE, revision));
+        recordChanges(entities, existingEntitiesMap, stored, revision);
+
         summary.getUpdated().addAll(normalResults.stream().map(DataSubmission::getUid).toList());
         summary.getUpdated().addAll(deleteResults.stream().map(DataSubmission::getUid).toList());
 
@@ -158,12 +183,53 @@ public class DefaultDataSubmissionService
     }
 
 
+    /**
+     * Records a revision for every stored submission of this write whose version moved, in the order the write
+     * received them: the flushes above raised it for each one they changed.
+     */
+    private void recordChanges(
+        Collection<DataSubmission> incoming,
+        Map<String, DataSubmission> existingByUid,
+        Map<DataSubmission, Stored> stored,
+        RevisionContext revision) {
+        Set<DataSubmission> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (DataSubmission entity : incoming) {
+            DataSubmission existing = existingByUid.get(entity.getUid());
+            if (existing != null && seen.add(existing)) {
+                Stored before = stored.get(existing);
+                if (!Objects.equals(before.version(), existing.getLockVersion())) {
+                    revisions.append(existing.getId(), existing.getLockVersion(), before.version(),
+                        kindOf(before, existing), revision);
+                }
+            }
+        }
+    }
+
+    private static RevisionKind kindOf(Stored before, DataSubmission after) {
+        return !before.deleted() && Boolean.TRUE.equals(after.getDeleted()) ? RevisionKind.DELETE : RevisionKind.UPDATE;
+    }
+
     @Transactional
     @Override
-    public void softDelete(DataSubmission object) {
-        var outbox = enqueueSubmissionsOutbox(object);
+    public void softDelete(DataSubmission submission, RevisionContext revision) {
+        Objects.requireNonNull(revision, "revision");
+        Long before = submission.getLockVersion();
+        var outbox = enqueueSubmissionsOutbox(submission);
         outboxRepo.insertByEventType(List.of(outbox), "DELETE");
-        super.softDelete(object);
+        super.softDelete(submission);
+        jpaAuditableObjectRepository.flush();
+        revisions.append(submission.getId(), submission.getLockVersion(), before, RevisionKind.DELETE, revision);
+    }
+
+    /**
+     * Not for submissions: a submission is deleted only through {@code SubmissionCommandService}, which names who
+     * deleted it ({@link #softDelete(DataSubmission, RevisionContext)}). The generic delete paths that reach this
+     * method have no submission route.
+     */
+    @Override
+    public void softDelete(DataSubmission submission) {
+        throw new UnsupportedOperationException(
+            "A submission is deleted only through SubmissionCommandService, which records who deleted it");
     }
 
     private OutboxWritePort.OutboxInsert enqueueSubmissionsOutbox(DataSubmission s) {

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.intake.GoLiveRuleService;
 import org.nmcpye.datarun.jpa.intake.HeldFilter;
 import org.nmcpye.datarun.jpa.intake.HeldState;
@@ -85,9 +86,10 @@ public class HeldSubmissionDecisions {
                     objectMapper.treeToValue(row.payload(), DataSubmissionUploadV1Dto.class);
                 SubmissionUploads.Released released = onBehalfOf(row.submittedBy(), submitter -> {
                     uploader[0] = submitter.userId();
-                    return uploads.saveReleased(upload, submitter, () -> held.markDecided(row.uid(),
-                        HeldState.RELEASED, UNDECIDED_OR_DISCARDED, row.lastModifiedDate(), admin.login(),
-                        request.note()));
+                    return uploads.saveReleased(upload, submitter,
+                        RevisionContext.heldRelease(admin.userId(), submitter.userId(), request.note()),
+                        () -> held.markDecided(row.uid(), HeldState.RELEASED, UNDECIDED_OR_DISCARDED,
+                            row.lastModifiedDate(), admin.login(), request.note()));
                 });
                 outcome = released.outcome();
                 failure = released.failure();

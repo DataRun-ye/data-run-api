@@ -15,6 +15,9 @@ import org.nmcpye.datarun.common.enumeration.FlowStatus;
 import org.nmcpye.datarun.jpa.accessfilter.UserAccessService;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
+import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionKind;
+import org.nmcpye.datarun.jpa.datasubmission.revision.SubmissionRevisionWriter;
 import org.nmcpye.datarun.outbox.repository.OutboxWritePort;
 import org.springframework.cache.CacheManager;
 
@@ -40,23 +43,34 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+/**
+ * The persistence layer with its repository mocked. The mocks do what Hibernate does to the version: a persist stores
+ * version 0, and a flush raises the version of each submission it updates by one.
+ */
 class DefaultDataSubmissionServiceTest {
+
+    private static final RevisionContext UPLOAD = RevisionContext.upload("01JUSER0000000000000000001");
+    /** The version every stored submission of these tests is at. */
+    private static final long STORED = 4L;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private DataSubmissionRepository repository;
     private OutboxWritePort outbox;
+    private SubmissionRevisionWriter revisions;
     private DefaultDataSubmissionService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(DataSubmissionRepository.class);
         outbox = mock(OutboxWritePort.class);
+        revisions = mock(SubmissionRevisionWriter.class);
         service = new DefaultDataSubmissionService(
             repository,
             mock(CacheManager.class),
             mock(UserAccessService.class),
             objectMapper,
-            outbox);
+            outbox,
+            revisions);
     }
 
     @Test
@@ -68,14 +82,14 @@ class DefaultDataSubmissionServiceTest {
         findExisting(existing);
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary);
+        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
 
         assertEquals(List.of("unchang0001"), summary.getUpdated());
         assertEquals(1, results.size());
         assertSame(existing, results.get(0));
         verify(repository, never()).persistAllAndFlush(anyList());
         verify(repository, never()).updateAllAndFlush(anyList());
-        verifyNoInteractions(outbox);
+        verifyNoInteractions(outbox, revisions);
     }
 
     @ParameterizedTest(name = "{0} change is persisted")
@@ -92,7 +106,7 @@ class DefaultDataSubmissionServiceTest {
         updateReturnsInput();
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary);
+        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
 
         assertEquals(List.of("mutable0001"), summary.getUpdated(), field);
         assertSame(existing, results.get(0));
@@ -121,12 +135,12 @@ class DefaultDataSubmissionServiceTest {
         findExisting(existing);
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary);
+        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
 
         assertEquals(List.of("ignored0001"), summary.getUpdated());
         assertSame(existing, results.get(0));
         verify(repository, never()).updateAllAndFlush(anyList());
-        verifyNoInteractions(outbox);
+        verifyNoInteractions(outbox, revisions);
     }
 
     @Test
@@ -148,7 +162,7 @@ class DefaultDataSubmissionServiceTest {
         findExisting(existing);
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary);
+        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
 
         assertEquals(List.of("deleted0001"), summary.getUpdated());
         assertSame(existing, results.get(0));
@@ -156,7 +170,7 @@ class DefaultDataSubmissionServiceTest {
         assertEquals(originalFormData, existing.getFormData());
         assertEquals(originalActivity, existing.getActivity());
         verify(repository, never()).updateAllAndFlush(anyList());
-        verifyNoInteractions(outbox);
+        verifyNoInteractions(outbox, revisions);
     }
 
     @ParameterizedTest(name = "already deleted with deleted={0} is unchanged")
@@ -173,14 +187,14 @@ class DefaultDataSubmissionServiceTest {
         findExisting(existing);
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary);
+        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
 
         assertEquals(List.of("delkeep0001"), summary.getUpdated());
         assertSame(existing, results.get(0));
         assertTrue(existing.getDeleted());
         assertEquals(deletedAt, existing.getDeletedAt());
         verify(repository, never()).updateAllAndFlush(anyList());
-        verifyNoInteractions(outbox);
+        verifyNoInteractions(outbox, revisions);
     }
 
     @ParameterizedTest(name = "already deleted with deleted={0} can update mutable state")
@@ -199,7 +213,7 @@ class DefaultDataSubmissionServiceTest {
         updateReturnsInput();
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary);
+        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
 
         assertEquals(List.of("delupdt0001"), summary.getUpdated());
         assertSame(existing, results.get(0));
@@ -227,7 +241,7 @@ class DefaultDataSubmissionServiceTest {
         Instant beforeDelete = Instant.now();
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary);
+        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
 
         assertEquals(List.of("delete00001"), summary.getUpdated());
         assertSame(existing, results.get(0));
@@ -277,8 +291,7 @@ class DefaultDataSubmissionServiceTest {
             existingUnchanged,
             existingFirstDelete,
             existingDeletedRetry));
-        when(repository.persistAllAndFlush(anyList()))
-            .thenAnswer(invocation -> invocation.getArgument(0));
+        persistStoresVersionZero();
         updateReturnsInput();
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
@@ -287,7 +300,7 @@ class DefaultDataSubmissionServiceTest {
             incomingChanged,
             incomingUnchanged,
             incomingFirstDelete,
-            incomingDeletedRetry), summary);
+            incomingDeletedRetry), summary, UPLOAD);
 
         ArgumentCaptor<List<DataSubmission>> persistCaptor =
             ArgumentCaptor.forClass((Class) List.class);
@@ -311,6 +324,12 @@ class DefaultDataSubmissionServiceTest {
         assertEquals("changed0001", outboxCaptor.getAllValues().get(1).get(0).submissionUid);
         assertEquals("delete00001", outboxCaptor.getAllValues().get(2).get(0).submissionUid);
 
+        var recorded = org.mockito.Mockito.inOrder(revisions);
+        recorded.verify(revisions).append(newSubmission.getId(), 0L, null, RevisionKind.CREATE, UPLOAD);
+        recorded.verify(revisions).append("01CHANGED0000000000000001", STORED + 1, STORED, RevisionKind.UPDATE, UPLOAD);
+        recorded.verify(revisions).append("01DELETE000000000000000001", STORED + 1, STORED, RevisionKind.DELETE, UPLOAD);
+        org.mockito.Mockito.verifyNoMoreInteractions(revisions);
+
         assertEquals(List.of("new00000001"), summary.getCreated());
         assertEquals(List.of(
             "changed0001",
@@ -324,6 +343,35 @@ class DefaultDataSubmissionServiceTest {
         assertSame(existingFirstDelete, results.get(3));
         assertSame(existingDeletedRetry, results.get(4));
         assertEquals(deletedAt, existingDeletedRetry.getDeletedAt());
+    }
+
+    @Test
+    void anAdminDeleteIsFlushedThenRecordedAtItsNewVersion() {
+        DataSubmission stored = persistedSubmission("delete00002", "01DELETE000000000000000002");
+        org.mockito.Mockito.doAnswer(invocation -> {
+            stored.setLockVersion(stored.getLockVersion() + 1);
+            return null;
+        }).when(repository).flush();
+        RevisionContext delete = RevisionContext.adminDelete("01JADMIN000000000000000001");
+
+        service.softDelete(stored, delete);
+
+        assertTrue(stored.getDeleted());
+        assertNotNull(stored.getDeletedAt());
+        verify(revisions).append("01DELETE000000000000000002", STORED + 1, STORED, RevisionKind.DELETE, delete);
+        verify(outbox).insertByEventType(anyList(), org.mockito.ArgumentMatchers.eq("DELETE"));
+    }
+
+    /** Every delete names who made it: the generic delete without a revision context is refused. */
+    @Test
+    void aDeleteThatNamesNoOneIsRefused() {
+        DataSubmission stored = persistedSubmission("delete00003", "01DELETE000000000000000003");
+
+        org.junit.jupiter.api.Assertions.assertThrows(UnsupportedOperationException.class,
+            () -> service.softDelete(stored));
+
+        assertFalse(stored.getDeleted());
+        verifyNoInteractions(outbox, revisions);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -343,7 +391,7 @@ class DefaultDataSubmissionServiceTest {
         updateReturnsInput();
 
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
-        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary);
+        List<DataSubmission> results = service.upsertAll(List.of(incoming), summary, UPLOAD);
 
         assertEquals(List.of("jsonnull001"), summary.getUpdated(), transition);
         assertSame(existing, results.get(0));
@@ -357,7 +405,7 @@ class DefaultDataSubmissionServiceTest {
             }
         } else {
             verify(repository, never()).updateAllAndFlush(anyList());
-            verifyNoInteractions(outbox);
+            verifyNoInteractions(outbox, revisions);
         }
     }
 
@@ -411,9 +459,22 @@ class DefaultDataSubmissionServiceTest {
         when(repository.findAllByUidIn(any())).thenReturn(List.of(existing));
     }
 
+    /** A flush raises the version of each submission it updates, as Hibernate does. */
     private void updateReturnsInput() {
-        when(repository.updateAllAndFlush(anyList()))
-            .thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.updateAllAndFlush(anyList())).thenAnswer(invocation -> {
+            List<DataSubmission> updated = invocation.getArgument(0);
+            updated.forEach(submission -> submission.setLockVersion(submission.getLockVersion() + 1));
+            return updated;
+        });
+    }
+
+    /** A persist stores version 0, as Hibernate does. */
+    private void persistStoresVersionZero() {
+        when(repository.persistAllAndFlush(anyList())).thenAnswer(invocation -> {
+            List<DataSubmission> persisted = invocation.getArgument(0);
+            persisted.forEach(submission -> submission.setLockVersion(0L));
+            return persisted;
+        });
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -429,12 +490,17 @@ class DefaultDataSubmissionServiceTest {
             org.mockito.ArgumentMatchers.eq(eventType));
         assertEquals(1, outboxCaptor.getValue().size());
         assertEquals(expected.getUid(), outboxCaptor.getValue().get(0).submissionUid);
+
+        verify(revisions).append(expected.getId(), STORED + 1, STORED,
+            "DELETE".equals(eventType) ? RevisionKind.DELETE : RevisionKind.UPDATE, UPLOAD);
+        org.mockito.Mockito.verifyNoMoreInteractions(revisions);
     }
 
     private DataSubmission persistedSubmission(String uid, String id) {
         DataSubmission submission = incomingSubmission(uid);
         submission.setId(id);
         submission.setSerialNumber((long) uid.hashCode());
+        submission.setLockVersion(STORED);
         return submission;
     }
 

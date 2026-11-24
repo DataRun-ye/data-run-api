@@ -13,6 +13,7 @@ import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
 import org.nmcpye.datarun.jpa.datasubmission.validation.StoredSubmissionGuard;
@@ -98,12 +99,13 @@ public class SubmissionUploads {
             log.info("Practice upload by user {}: {} submissions checked, kept apart",
                 actor.userId(), requests.size());
         }
+        RevisionContext revision = RevisionContext.upload(actor.userId());
         return saveEach(
             requests,
             actor,
             DataSubmissionUploadV1Dto::getUid,
             DataSubmissionUploadV1Dto::getForm,
-            (request, summary, transaction) -> upsertOne(request, actor, summary, mode, receivedAt),
+            (request, summary, transaction) -> upsertOne(request, actor, summary, mode, receivedAt, revision),
             objectMapper::valueToTree,
             failure -> { });
     }
@@ -138,10 +140,14 @@ public class SubmissionUploads {
      * <p>A released copy only ever creates its submission. When the save finds the uid already in the real data (a
      * live upload landed after the release last looked), it is rolled back and the outcome is
      * {@link ReleaseOutcome#SUPERSEDED}: the older held copy never overwrites real data.</p>
+     *
+     * @param submitter the uploader, whose access the checks read and whom the records name
+     * @param release   the release's revision: the admin acting for the uploader, with the admin's note
      */
     public Released saveReleased(
         DataSubmissionUploadV1Dto upload,
         SubmissionActor submitter,
+        RevisionContext release,
         BooleanSupplier decide) {
         AtomicReference<ReleaseOutcome> outcome = new AtomicReference<>(ReleaseOutcome.FAILED);
         AtomicReference<RuntimeException> failed = new AtomicReference<>();
@@ -153,7 +159,7 @@ public class SubmissionUploads {
             DataSubmissionUploadV1Dto::getForm,
             (request, itemSummary, transaction) -> {
                 IntakeDecision decision = upsertOne(
-                    request, submitter, itemSummary, IntakeMode.RELEASE, receivedAt);
+                    request, submitter, itemSummary, IntakeMode.RELEASE, receivedAt, release);
                 if (!itemSummary.getCreated().contains(request.getUid())) {
                     transaction.setRollbackOnly();
                     outcome.set(ReleaseOutcome.SUPERSEDED);
@@ -195,6 +201,7 @@ public class SubmissionUploads {
             return new EntitySaveSummaryVM();
         }
 
+        RevisionContext revision = RevisionContext.legacyUpload(actor.userId());
         return saveEach(
             submissions,
             actor,
@@ -202,7 +209,7 @@ public class SubmissionUploads {
             DataSubmission::getForm,
             (submission, summary, transaction) -> {
                 checkLegacy(submission, actor);
-                submissionService.upsertAll(List.of(submission), summary);
+                submissionService.upsertAll(List.of(submission), summary, revision);
                 return IntakeDecision.save();
             },
             submission -> null,
@@ -214,7 +221,8 @@ public class SubmissionUploads {
         SubmissionActor actor,
         EntitySaveSummaryVM summary,
         IntakeMode mode,
-        Instant receivedAt) {
+        Instant receivedAt,
+        RevisionContext revision) {
         DataSubmission submission = mapper.toEntity(request);
         Assignment assignment = assignmentFor(submission);
         TemplateVersionContext template = templateFor(submission);
@@ -235,7 +243,7 @@ public class SubmissionUploads {
             assignment,
             template.getTemplate(),
             request.getReferenceDefinitions());
-        submissionService.upsertAll(List.of(submission), summary);
+        submissionService.upsertAll(List.of(submission), summary, revision);
         return decision;
     }
 

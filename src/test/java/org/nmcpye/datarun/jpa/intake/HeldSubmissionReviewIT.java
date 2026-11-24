@@ -88,10 +88,10 @@ class HeldSubmissionReviewIT {
     @BeforeEach
     void setUp() {
         uploads = mock(SubmissionUploads.class);
-        when(uploads.saveReleased(any(), any(), any())).thenAnswer(invocation -> {
+        when(uploads.saveReleased(any(), any(), any(), any())).thenAnswer(invocation -> {
             replayed.add(invocation.<DataSubmissionUploadV1Dto>getArgument(0).getUid());
             return new SubmissionUploads.Released(
-                invocation.<java.util.function.BooleanSupplier>getArgument(2).getAsBoolean()
+                invocation.<java.util.function.BooleanSupplier>getArgument(3).getAsBoolean()
                     ? SubmissionUploads.ReleaseOutcome.RELEASED : SubmissionUploads.ReleaseOutcome.CHANGED, null);
         });
         users = mock(DomainUserDetailsService.class);

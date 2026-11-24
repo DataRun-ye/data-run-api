@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.intake.IntakeMode;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,7 +15,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * The one place where submissions are created, changed, deleted, held or released. Controllers adapt their routes to
  * a {@link SubmissionCommand}; every command runs one set of checks, writes each submission in a transaction of its
- * own, and writes the submission's outbox row in that same transaction.
+ * own, and records each change in that same transaction: a revision naming the command and who acted
+ * ({@link RevisionContext}), and the outbox row that announces it.
  */
 @Service
 @RequiredArgsConstructor
@@ -73,7 +75,7 @@ public class SubmissionCommandService {
             if (Boolean.TRUE.equals(submission.getDeleted())) {
                 return DeleteOutcome.ALREADY_DELETED;
             }
-            submissionService.softDelete(submission);
+            submissionService.softDelete(submission, RevisionContext.adminDelete(command.actor().userId()));
             return DeleteOutcome.DELETED;
         });
     }

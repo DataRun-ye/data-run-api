@@ -368,7 +368,7 @@ class SubmissionWriteOwnershipTest {
     static class BackDoor {
         void writes(DataSubmissionService submissions, DataSubmissionRepository repository,
                     HeldSubmissionRepository held, OutboxWritePort outbox, ModifyingSubmissions modifying) {
-            submissions.upsertAll(List.of(), new EntitySaveSummaryVM());
+            submissions.upsertAll(List.of(), new EntitySaveSummaryVM(), null);
             repository.deleteAllByUidIn(List.of("a"));
             held.recordReleaseError("a", "b");
             outbox.insertByEventType(List.of(), "SAVE");

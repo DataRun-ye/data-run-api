@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.v1.intake.HeldDecisionRequest;
@@ -49,7 +50,7 @@ class SubmissionCommandServiceTest {
         assertEquals(SubmissionCommandService.DeleteOutcome.DELETED,
             service.delete(new SubmissionCommand.Delete(actor(true), "storedSub01")));
 
-        verify(submissionService).softDelete(stored);
+        verify(submissionService).softDelete(stored, RevisionContext.adminDelete("01JUSER00000000000000000AA"));
         verify(transactionManager).commit(transaction);
     }
 
@@ -64,7 +65,7 @@ class SubmissionCommandServiceTest {
         assertEquals(SubmissionCommandService.DeleteOutcome.ALREADY_DELETED,
             service.delete(new SubmissionCommand.Delete(actor(true), "deletedSub1")));
 
-        verify(submissionService, never()).softDelete(any());
+        verify(submissionService, never()).softDelete(any(), any());
         verify(transactionManager).commit(transaction);
     }
 
@@ -76,7 +77,7 @@ class SubmissionCommandServiceTest {
         assertEquals(SubmissionCommandService.DeleteOutcome.NOT_FOUND,
             service.delete(new SubmissionCommand.Delete(actor(true), "noSuchSub01")));
 
-        verify(submissionService, never()).softDelete(any());
+        verify(submissionService, never()).softDelete(any(), any());
     }
 
     @Test

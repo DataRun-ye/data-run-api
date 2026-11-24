@@ -10,6 +10,7 @@ import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.StoredSubmissionGuard;
@@ -75,7 +76,7 @@ class LegacyUploadAccessTest {
             EntitySaveSummaryVM summary = invocation.getArgument(1);
             saved.forEach(submission -> summary.getCreated().add(submission.getUid()));
             return saved;
-        }).when(submissionService).upsertAll(anyList(), any(EntitySaveSummaryVM.class));
+        }).when(submissionService).upsertAll(anyList(), any(EntitySaveSummaryVM.class), any(RevisionContext.class));
 
         PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
         when(transactionManager.getTransaction(any(TransactionDefinition.class)))
@@ -134,6 +135,7 @@ class LegacyUploadAccessTest {
         CurrentUserDetails user = mock(CurrentUserDetails.class);
         when(user.isSuper()).thenReturn(false);
         when(user.getUsername()).thenReturn("worker");
+        when(user.getId()).thenReturn("01JWORKER00000000000000001");
         when(user.getUserTeamsUIDs()).thenReturn(Set.of(TEAM_A));
         when(user.getFormAccess()).thenReturn(List.of(
             UserFormAccess.builder()
@@ -149,6 +151,7 @@ class LegacyUploadAccessTest {
         CurrentUserDetails user = mock(CurrentUserDetails.class);
         when(user.isSuper()).thenReturn(false);
         when(user.getUsername()).thenReturn("supervisor");
+        when(user.getId()).thenReturn("01JSUPERVISOR0000000000001");
         when(user.getUserTeamsUIDs()).thenReturn(Set.of(TEAM_B));
         when(user.getManagedTeamsUIDs()).thenReturn(Set.of(TEAM_A));
         when(user.getFormAccess()).thenReturn(List.of(
