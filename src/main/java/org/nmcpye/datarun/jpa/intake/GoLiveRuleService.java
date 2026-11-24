@@ -6,6 +6,7 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.activity.repository.ActivityRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,19 +59,25 @@ public class GoLiveRuleService {
         if (liveFrom == null) {
             throw new IllegalQueryException("liveFrom is required");
         }
+        // The rule's last_modified_by column stores the login, as the other audit columns do; the log names the id.
         String modifiedBy = SecurityUtils.getCurrentUserLogin().orElse("system");
         GoLiveRule rule = rules.put(activity, orgUnit, form, liveFrom, note, modifiedBy);
-        log.info("Go-live rule {} set by {}: activity {}, org unit {}, form {}, live from {}",
-            rule.uid(), modifiedBy, activity, orgUnit, form, liveFrom);
+        log.info("Go-live rule {} set by user {}: activity {}, org unit {}, form {}, live from {}",
+            rule.uid(), actingUserId(), activity, orgUnit, form, liveFrom);
         return new PutResult(rule, countHeldNowAccepted(activity));
     }
 
     public boolean delete(String uid) {
         Optional<GoLiveRule> rule = rules.findByUid(uid);
         boolean deleted = rules.delete(uid);
-        rule.ifPresent(removed -> log.info("Go-live rule {} of activity {} removed by {}",
-            uid, removed.activity(), SecurityUtils.getCurrentUserLogin().orElse("system")));
+        rule.ifPresent(removed -> log.info("Go-live rule {} of activity {} removed by user {}",
+            uid, removed.activity(), actingUserId()));
         return deleted;
+    }
+
+    /** The acting user's durable id ({@code app_user.id}) for log lines, never the login; "system" without one. */
+    private static String actingUserId() {
+        return SecurityUtils.getCurrentUserDetails().map(CurrentUserDetails::getId).orElse("system");
     }
 
     /**

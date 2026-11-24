@@ -1,5 +1,8 @@
 package org.nmcpye.datarun.jpa.intake;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
@@ -8,6 +11,10 @@ import org.nmcpye.datarun.jpa.datatemplate.DataTemplate;
 import org.nmcpye.datarun.jpa.datatemplate.repository.DataTemplateRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
+import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Instant;
 import java.util.List;
@@ -130,6 +137,41 @@ class GoLiveRuleServiceTest {
         assertThat(service.effective("campaign001", null))
             .extracting(GoLiveRuleService.EffectiveGoLive::form, GoLiveRuleService.EffectiveGoLive::liveFrom)
             .containsExactly(tuple("household1", null), tuple("warehouse01", FRIDAY));
+    }
+
+    /**
+     * Production keeps these logs: setting or removing a rule names the admin by the durable user id, never by the
+     * login. The rule's own last_modified_by column still stores the login, as the other audit columns do.
+     */
+    @Test
+    void settingAndRemovingARuleLogTheAdminsUserIdNotTheLogin() {
+        CurrentUserDetails admin = mock(CurrentUserDetails.class);
+        when(admin.getUsername()).thenReturn("admin-login-7");
+        when(admin.getId()).thenReturn("01JADMIN000000000000000007");
+        SecurityContextHolder.getContext().setAuthentication(
+            UsernamePasswordAuthenticationToken.authenticated(admin, null, List.of()));
+        GoLiveRule saved = rule("ruleCampain", null, null, THURSDAY);
+        when(rules.put("campaign001", null, null, THURSDAY, null, "admin-login-7")).thenReturn(saved);
+        when(rules.findByUid("ruleCampain")).thenReturn(Optional.of(saved));
+        when(rules.delete("ruleCampain")).thenReturn(true);
+        Logger logger = (Logger) LoggerFactory.getLogger(GoLiveRuleService.class);
+        ListAppender<ILoggingEvent> logs = new ListAppender<>();
+        logs.start();
+        logger.addAppender(logs);
+        try {
+            service.put("campaign001", null, null, THURSDAY, null);
+            service.delete("ruleCampain");
+        } finally {
+            logger.detachAppender(logs);
+            SecurityContextHolder.clearContext();
+        }
+
+        verify(rules).put("campaign001", null, null, THURSDAY, null, "admin-login-7");
+        assertThat(logs.list).extracting(ILoggingEvent::getFormattedMessage)
+            .hasSize(2)
+            .allSatisfy(line -> assertThat(line)
+                .contains("by user 01JADMIN000000000000000007")
+                .doesNotContain("admin-login-7"));
     }
 
     /** An org unit's path is built from its parents, not set. */
