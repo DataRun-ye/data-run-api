@@ -47,9 +47,6 @@ public class QueryRequest {
     @Schema(description = "Page size (default: 20)")
     private int size = 20;
 
-    @Schema(description = "Sort fields in format field,direction, e.g., finishedEntryTime,asc")
-    private String sort;
-
     @Schema(description = "Flag to enable flattening of nested objects")
     private boolean flatten = false;
 

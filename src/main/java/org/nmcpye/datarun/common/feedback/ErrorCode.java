@@ -47,7 +47,6 @@ public enum ErrorCode {
     E2001("At least one data element must be specified"),
 
     E2014("Unable to parse filter `{0}`"),
-    E2015("Unable to parse order param: `{0}`"),
     E2016("Invalid Query Format"),
     E2017("Unable to parse order param: `{0}`"),
     E2018("Value for `{0}` must be `{1}` "),

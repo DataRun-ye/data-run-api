@@ -116,6 +116,20 @@ class SubmissionListBoundsTest {
         verify(submissions).findAllByUser(any(), any());
     }
 
+    /**
+     * There is no sort parameter (6.5.5): it was never applied, and only a format check read it, which refused a
+     * malformed value (E2015) on this route. A client still sending one is ignored like any unknown parameter.
+     */
+    @Test
+    void aSortParameterIsIgnored() throws Exception {
+        as(true);
+
+        mvc.perform(get("/api/v1/dataSubmission/objects").param("sort", "not a sort"))
+            .andExpect(status().isOk());
+
+        verify(submissions).findAllByUser(any(), any());
+    }
+
     private void refused(MockHttpServletRequestBuilder request) throws Exception {
         mvc.perform(request)
             .andExpect(status().isBadRequest())

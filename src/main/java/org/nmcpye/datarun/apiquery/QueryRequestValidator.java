@@ -34,10 +34,6 @@ public class QueryRequestValidator {
             validateValue(operator, value, key);
         });
 
-        if (request.getSort() != null && !request.getSort().matches("^[a-zA-Z0-9._]+,(asc|desc)$")) {
-            throw new QueryRequestValidationException(new ErrorMessage(ErrorCode.E2015, "Invalid sort format"));
-        }
-
         if (request.getFields() != null && !request.getFields().matches("^[a-zA-Z0-9.,_]+$")) {
             throw new QueryRequestValidationException(new ErrorMessage(ErrorCode.E2016));
         }
