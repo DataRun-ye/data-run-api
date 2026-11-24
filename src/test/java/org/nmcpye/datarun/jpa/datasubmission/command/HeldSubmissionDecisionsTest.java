@@ -39,6 +39,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -73,6 +74,9 @@ class HeldSubmissionDecisionsTest {
             admin.access(), null, admin.access().getAuthorities()));
         when(users.loadUserByUsername("field-user")).thenReturn(user("field-user", "ROLE_USER"));
         when(held.markDecided(anyString(), any(), any(), any(), any(), any())).thenReturn(true);
+        // By uid, every uid asked for is still held and untried unless a test says otherwise.
+        when(held.findByUids(any(), any())).thenAnswer(invocation -> invocation.<java.util.Collection<String>>getArgument(0)
+            .stream().map(uid -> row(uid, HoldReason.BEFORE_GO_LIVE)).toList());
     }
 
     @AfterEach
@@ -137,7 +141,8 @@ class HeldSubmissionDecisionsTest {
 
         assertThat(result.released()).isEmpty();
         assertThat(result.changed()).containsExactly("heldSub0001");
-        assertThat(result.runAgain()).as("the changed upload is still held: release again").isTrue();
+        assertThat(result.runAgain()).as("nothing decided: no progress").isFalse();
+        assertThat(result.stopReason()).startsWith("No progress: 1 changed while it ran");
         verify(held, never()).recordReleaseError(anyString(), anyString());
     }
 
@@ -216,6 +221,54 @@ class HeldSubmissionDecisionsTest {
             assertThat(logs.lines()).anySatisfy(line -> assertThat(line)
                 .contains("heldSub0002").contains("UsernameNotFoundException"));
         }
+    }
+
+    /** A repeat of a by-uid call larger than its batch takes only the uploads still undecided (A2 W7-11). */
+    @Test
+    void aByUidSelectionTakesOnlyUndecidedUploads() {
+        when(held.findByUids(List.of("heldSub0001", "heldSub0002", "heldSub0003"), HELD_OR_DISCARDED))
+            .thenReturn(List.of(row("heldSub0003", HoldReason.BEFORE_GO_LIVE)));
+        when(held.findWithPayload(List.of("heldSub0003"), HELD_OR_DISCARDED))
+            .thenReturn(List.of(row("heldSub0003", HoldReason.BEFORE_GO_LIVE)));
+        when(uploads.saveReleased(any(), any(), any())).thenAnswer(HeldSubmissionDecisionsTest::saved);
+
+        HeldDecisionResult result = decisions.release(admin,
+            new HeldDecisionRequest(List.of("heldSub0001", "heldSub0002", "heldSub0003"), null, null, 2));
+
+        assertThat(result.released()).containsExactly("heldSub0003");
+        assertThat(result.remaining()).isZero();
+        assertThat(result.runAgain()).isFalse();
+    }
+
+    /**
+     * Uploads that already failed wait behind untried ones, and a call that only meets uploads failing again makes no
+     * progress: it stops and says why (A2 W7-12).
+     */
+    @Test
+    void failedUploadsWaitBehindUntriedOnesAndRepeatedFailuresStopTheLoop() {
+        HeldSubmissionRow failedBefore = failedRow("heldSub0001");
+        HeldSubmissionRow untried = row("heldSub0002", HoldReason.BEFORE_GO_LIVE);
+        when(held.findAll(any())).thenReturn(List.of(failedBefore, untried));
+        when(held.findWithPayload(List.of("heldSub0002"), HELD)).thenReturn(List.of(untried));
+        when(uploads.saveReleased(any(), any(), any())).thenAnswer(HeldSubmissionDecisionsTest::saved);
+
+        HeldDecisionResult first = decisions.release(admin, new HeldDecisionRequest(null,
+            new HeldDecisionRequest.Filter("campaign001", null, null, null, null, null, null), null, 1));
+
+        assertThat(first.released()).as("the untried upload first").containsExactly("heldSub0002");
+        assertThat(first.runAgain()).isTrue();
+
+        when(held.findAll(any())).thenReturn(List.of(failedBefore));
+        when(held.findWithPayload(List.of("heldSub0001"), HELD)).thenReturn(List.of(failedBefore));
+        doReturn(new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.FAILED, "E4122"))
+            .when(uploads).saveReleased(any(), any(), any());
+
+        HeldDecisionResult second = decisions.release(admin, new HeldDecisionRequest(null,
+            new HeldDecisionRequest.Filter("campaign001", null, null, null, null, null, null), null, 1));
+
+        assertThat(second.failed()).containsOnlyKeys("heldSub0001");
+        assertThat(second.runAgain()).as("it failed before: no progress").isFalse();
+        assertThat(second.stopReason()).startsWith("No progress: 1 failed again");
     }
 
     @Test
@@ -312,6 +365,15 @@ class HeldSubmissionDecisionsTest {
 
     private HeldSubmissionRow row(String uid, HoldReason reason) {
         return row(uid, reason, "field-user");
+    }
+
+    /** A held upload a release already tried, and failed. */
+    private HeldSubmissionRow failedRow(String uid) {
+        HeldSubmissionRow row = row(uid, HoldReason.BEFORE_GO_LIVE);
+        return new HeldSubmissionRow(row.uid(), row.reason(), row.state(), row.activity(), row.orgUnit(),
+            row.orgUnitPath(), row.form(), row.formVersion(), row.team(), row.assignment(), row.submittedBy(),
+            row.startedAt(), row.receivedAt(), row.goLiveRule(), row.liveFrom(), row.decidedBy(), row.decidedAt(),
+            row.note(), "E4122 (uploader 01JTEST)", row.lastModifiedDate(), row.payload());
     }
 
     private HeldSubmissionRow row(String uid, HoldReason reason, String submittedBy) {

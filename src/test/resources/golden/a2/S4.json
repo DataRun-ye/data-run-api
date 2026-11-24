@@ -355,7 +355,8 @@
         "failed" : { },
         "released" : [ ],
         "remaining" : 0,
-        "runAgain" : true,
+        "runAgain" : false,
+        "stopReason" : "No progress: 1 changed while it ran. Look at these uploads before running it again.",
         "superseded" : [ ]
       },
       "step" : 4

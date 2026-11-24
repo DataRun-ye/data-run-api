@@ -115,6 +115,19 @@ public class HeldSubmissionRepository {
             params, rows(false));
     }
 
+    /** Those of the given uids still in one of {@code states}, oldest first, without payloads. */
+    public List<HeldSubmissionRow> findByUids(Collection<String> uids, Collection<HeldState> states) {
+        if (uids.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.query("SELECT " + COLUMNS + " FROM held_submission h"
+                + " WHERE h.uid IN (:uids) AND h.state IN (:states) ORDER BY h.received_at, h.uid",
+            new MapSqlParameterSource()
+                .addValue("uids", uids)
+                .addValue("states", states.stream().map(Enum::name).toList()),
+            rows(false));
+    }
+
     /** With payloads, for a release, chosen by uid. */
     public List<HeldSubmissionRow> findWithPayload(Collection<String> uids, Collection<HeldState> states) {
         if (uids.isEmpty()) {

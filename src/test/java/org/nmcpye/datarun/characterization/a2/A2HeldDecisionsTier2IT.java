@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Item;
 
+import java.util.Map;
+
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.Group.G3;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.NODES;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.item;
@@ -12,11 +14,15 @@ import static org.nmcpye.datarun.characterization.a2.A2Payloads.uid;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.ACTIVITY;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.ADMIN;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.ASSIGN_T1_V1;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.ASSIGN_T4_V4;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.FIELD_1;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.FIELD_4;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.FORM_A;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.TEAM_FOUR;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.TEAM_FOUR_GRANTS;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.version;
 
-/** Tier 2, W7: releases by filter, batches, and refused selections. */
+/** Tier 2, W7: releases by filter, batches, repeated calls, and refused selections. */
 class A2HeldDecisionsTier2IT extends A2GoldenSupport {
 
     private static final String FUTURE = "2099-01-01T00:00:00Z";
@@ -75,5 +81,58 @@ class A2HeldDecisionsTier2IT extends A2GoldenSupport {
             .call("a filter without activity", "POST", RELEASE, ADMIN, noActivity)
             .call("practice uploads by filter", "POST", RELEASE, ADMIN, practice)
             .verify();
+    }
+
+    /**
+     * Fixed in B1: a repeat of a by-uid call that names more uploads than its batch took the same first batch again,
+     * already decided, so it decided nothing and still said runAgain. Now only uploads still undecided are taken.
+     */
+    @Test
+    void w7_11_byUidRepeatTakesOnlyUndecidedUploads() {
+        String a = uid("w711a");
+        String b = uid("w711b");
+        String c = uid("w711c");
+        ObjectNode release = NODES.objectNode().put("limit", 2);
+        release.set("uids", NODES.arrayNode().add(a).add(b).add(c));
+        scenario("W7-11", "A by-uid release larger than its batch, repeated: the repeat takes only uploads still "
+            + "undecided, then says there is nothing left")
+            .goLive("campaign", null, null, FUTURE)
+            .upload("three held before go-live", G3, FIELD_1, formA(a, "a"), formA(b, "b"), formA(c, "c"))
+            .call("admin releases the three uids, limit 2", "POST", RELEASE, ADMIN, release)
+            .call("admin repeats the same call", "POST", RELEASE, ADMIN, release.deepCopy())
+            .verify();
+    }
+
+    /**
+     * Fixed in B1: uploads that keep failing stayed first in every filter batch, so the uploads behind them were
+     * never reached while runAgain stayed true. Now uploads a release already tried and failed wait behind untried
+     * ones, and a call that only meets them failing again makes no progress, stops, and says why.
+     */
+    @Test
+    void w7_12_failingUploadsDoNotBlockTheRest() {
+        String failsFirst = uid("w712a");
+        String failsSecond = uid("w712b");
+        String succeeds = uid("w712c");
+        ObjectNode release = campaignFilter().put("limit", 2);
+        try {
+            scenario("W7-12", "Uploads that keep failing wait behind untried ones; when only they are left, the "
+                + "release makes no progress and says why")
+                .goLive("campaign", null, null, FUTURE)
+                .upload("field4 is held", G3, FIELD_4, item(G3, failsFirst, FORM_A, version("FORM_A.v1"), ASSIGN_T4_V4,
+                    ordinary(G3, failsFirst, "x", "r1", "s1", 1)))
+                .upload("field4 is held again", G3, FIELD_4, item(G3, failsSecond, FORM_A, version("FORM_A.v1"),
+                    ASSIGN_T4_V4, ordinary(G3, failsSecond, "y", "r1", "s1", 1)))
+                .upload("field1 is held", G3, FIELD_1, formA(succeeds, "z"))
+                .sql("team four loses its grant", "UPDATE team SET form_permissions = CAST('[]' AS jsonb) WHERE uid = :team",
+                    Map.of("team", TEAM_FOUR))
+                .call("admin releases the campaign, limit 2: both of field4's fail", "POST", RELEASE, ADMIN, release)
+                .call("again: field1's untried upload comes first", "POST", RELEASE, ADMIN, release.deepCopy())
+                .call("again: only uploads that failed before are left", "POST", RELEASE, ADMIN, release.deepCopy())
+                .verify();
+        } finally {
+            inTransaction(() -> jdbc.update(
+                "UPDATE team SET form_permissions = CAST(:grants AS jsonb) WHERE uid = :team",
+                Map.of("grants", TEAM_FOUR_GRANTS, "team", TEAM_FOUR)));
+        }
     }
 }

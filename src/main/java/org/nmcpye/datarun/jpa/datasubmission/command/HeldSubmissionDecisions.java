@@ -20,6 +20,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -44,6 +46,8 @@ public class HeldSubmissionDecisions {
     private static final Set<HeldState> UNDECIDED = EnumSet.of(HeldState.HELD);
     static final int DEFAULT_BATCH = 200;
     static final int MAX_BATCH = 500;
+    /** Uids per lookup, well under what the driver binds in one statement. */
+    private static final int UID_CHUNK = 1000;
 
     private final HeldSubmissionRepository held;
     private final GoLiveRuleService goLiveRules;
@@ -103,6 +107,9 @@ public class HeldSubmissionDecisions {
             } else {
                 held.recordReleaseError(row.uid(), failure);
                 result.failed().put(row.uid(), failure);
+                if (row.lastReleaseError() == null) {
+                    result.firstFailures().add(row.uid());
+                }
                 log.warn("Held submission {} (form {}) not released by user {}: {}",
                     row.uid(), row.form(), admin.userId(), failure);
             }
@@ -149,8 +156,7 @@ public class HeldSubmissionDecisions {
         }
         int batch = request.limit() == null ? DEFAULT_BATCH : Math.min(Math.max(request.limit(), 1), MAX_BATCH);
         if (byUid) {
-            List<String> uids = request.uids().stream().distinct().toList();
-            return new Selection(uids.stream().limit(batch).toList(), byUidStates, Math.max(uids.size() - batch, 0));
+            return batchOf(undecided(request.uids().stream().distinct().toList(), byUidStates), byUidStates, batch);
         }
 
         HeldDecisionRequest.Filter filter = request.filter();
@@ -170,8 +176,31 @@ public class HeldSubmissionDecisions {
         if (Boolean.TRUE.equals(filter.acceptedByCurrentRules())) {
             matching = matching.stream().filter(goLiveRules.acceptedByCurrentRules()).toList();
         }
-        List<String> uids = matching.stream().limit(batch).map(HeldSubmissionRow::uid).toList();
-        return new Selection(uids, byFilterStates, Math.max(matching.size() - batch, 0));
+        return batchOf(matching, byFilterStates, batch);
+    }
+
+    /**
+     * The next batch of the uploads still to decide, oldest first, except that uploads a release already tried and
+     * failed come after the untried ones, so a batch of uploads that keep failing never keeps the rest out of reach.
+     */
+    private static Selection batchOf(List<HeldSubmissionRow> candidates, Set<HeldState> states, int batch) {
+        List<String> uids = candidates.stream()
+            .sorted(Comparator.comparing(row -> row.lastReleaseError() != null))
+            .limit(batch)
+            .map(HeldSubmissionRow::uid)
+            .toList();
+        return new Selection(uids, states, Math.max(candidates.size() - batch, 0));
+    }
+
+    /** Those of the given uids still in one of {@code states}, oldest first: a decided upload is never taken again. */
+    private List<HeldSubmissionRow> undecided(List<String> uids, Set<HeldState> states) {
+        List<HeldSubmissionRow> rows = new ArrayList<>();
+        for (int from = 0; from < uids.size(); from += UID_CHUNK) {
+            rows.addAll(held.findByUids(uids.subList(from, Math.min(from + UID_CHUNK, uids.size())), states));
+        }
+        rows.sort(Comparator.comparing(HeldSubmissionRow::receivedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(HeldSubmissionRow::uid));
+        return rows;
     }
 
     /**
