@@ -8,7 +8,6 @@ import org.nmcpye.datarun.common.repository.DeleteAccessDeniedException;
 import org.nmcpye.datarun.common.repository.UpdateAccessDeniedException;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
-import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
 import org.nmcpye.datarun.web.rest.errors.BadRequestAlertException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +21,6 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
 
-@ApiVersion({DRunApiVersion.DEFAULT, DRunApiVersion.ALL})
 @Slf4j
 public abstract class BaseReadWriteResource<T extends IdentifiableObject<ID>, ID extends Serializable>
     extends BaseReadResource<T, ID> {

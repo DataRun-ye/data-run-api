@@ -98,7 +98,6 @@ public class DefaultDataSubmissionService
         Set<String> incomingUids = entities.stream()
             .map(entity -> {
                 if (entity.getUid() == null) {
-                    summary.getFailed().put("NULL UID", "Entity in bulk operation must have a UID for upsert operation.");
                     throw new IllegalArgumentException("Entity in bulk operation must have a UID for upsert operation.");
                 }
                 return entity.getUid();

@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.repository.DeleteAccessDeniedException;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
@@ -158,11 +157,7 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
         requireResourceApiAccess(user);
         log.debug("REST request to delete from {}: {}", getName(), id);
         final var entity = identifiableObjectService.findByUid(id).orElseThrow();
-        if (resourceApiAuthorization.canManage(user)) {
-            identifiableObjectService.delete(entity);
-        } else {
-            throw new DeleteAccessDeniedException("");
-        }
+        identifiableObjectService.delete(entity);
 
         return ResponseEntity
             .noContent()

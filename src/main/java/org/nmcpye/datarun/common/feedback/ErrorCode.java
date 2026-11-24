@@ -68,12 +68,7 @@ public enum ErrorCode {
 
     /* Data Submission Validation */
     E4110("Submission validation Error: {0}"),
-    E4111("Submission Normalization Errors: `{0}`"),
-    E4112("Submission `{0}` form and formVersionId must be present"),
-    E4113("Team submitted the data must be present in submission: {0}"),
     E4114("your user is not part of the team {0} that created the submission: {1}"),
-    E4115("updating submission's form version is not allowed: incoming `{0}` required: `{1}`"),
-    E4116("Submission {} not found"),
     E4117("Submission `{0}` contains an invalid Reference value at `{1}`"),
     E4118("Submission `{0}` repeats Reference `{1}` at `{2}`"),
     E4119("Reference `{0}` is not available in the assignment organization unit"),

@@ -69,7 +69,7 @@ public final class MigrationRepeatIdGenerator {
         final int[] generated = {0};
 
         // traverse tree, starting with no parent repeat id (top-level repeats parent -> submissionUid)
-        traverseAndGenerate(rootCopy, null, submissionUid, seenIds, generated);
+        traverseAndGenerate(rootCopy, null, null, submissionUid, seenIds, generated);
 
         if (generated[0] > 0) {
             log.info("Migration generated {} missing repeat IDs for submission {}", generated[0], submissionUid);
@@ -80,24 +80,8 @@ public final class MigrationRepeatIdGenerator {
     }
 
     /**
-     * Recursive traversal that now carries the currentRepeatId (null at root/top-level).
+     * Recursive traversal; the root call passes no current repeat id.
      *
-     * @param node          current JSON node (object)
-     * @param currentPath   dotted path to current node
-     * @param submissionUid top-level submission id (fallback parent)
-     * @param seenIds       set to track generated & existing ids
-     * @param generated     counter holder (mutated in place)
-     */
-    private void traverseAndGenerate(JsonNode node,
-                                     String currentPath,
-                                     String submissionUid,
-                                     Set<String> seenIds,
-                                     int[] generated) {
-
-        traverseAndGenerate(node, currentPath, currentRepeatIdOf(node, currentPath), submissionUid, seenIds, generated);
-    }
-
-    /**
      * @param node            current JSON node (object)
      * @param currentPath     dotted path to current node
      * @param currentRepeatId the repeat id of the immediate parent repeat instance (or null if top-level)
@@ -105,7 +89,6 @@ public final class MigrationRepeatIdGenerator {
      * @param seenIds         set to track generated & existing ids
      * @param generated       counter holder (mutated in place)
      */
-    // helper overload to carry explicit currentRepeatId
     private void traverseAndGenerate(JsonNode node,
                                      String currentPath,
                                      String currentRepeatId,
@@ -199,14 +182,6 @@ public final class MigrationRepeatIdGenerator {
 
             // arrays that are not repeat sections are handled by normalizer; for migration we don't need special handling here
         }
-    }
-
-    // best-effort to discover current repeat id from node if available; used only if caller didn't pass explicit parent
-    // (not strictly necessary but provides some safety for initial call path).
-    private String currentRepeatIdOf(JsonNode node, String currentPath) {
-        // This helper is intentionally simple and returns null.
-        // The primary recursion entrypoint passes explicit parent ids during recursion.
-        return null;
     }
 
     // Collect any existing ids in the form payload so we avoid collisions

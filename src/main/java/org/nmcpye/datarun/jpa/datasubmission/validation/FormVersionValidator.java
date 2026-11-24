@@ -2,14 +2,11 @@ package org.nmcpye.datarun.jpa.datasubmission.validation;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceService;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Objects;
 
 /**
  * @author Hamza Assada
@@ -24,25 +21,15 @@ public class FormVersionValidator implements SubmissionValidator {
     @Override
     @Transactional(readOnly = true)
     public DataSubmission validateAndEnrich(DataSubmission submission) {
+        // DataSubmissionResource.preProcess has already resolved this form and version uid through
+        // TemplateVersionResolver, which refuses a missing or unknown one; this sets the version number,
+        // which phones do not send.
         String form = submission.getForm();
         String formVersionUid = submission.getFormVersion();
-        Integer versionNum = submission.getVersion();
-
-        if (Objects.isNull(submission.getForm()) || (Objects.isNull(submission.getFormVersion()) &&
-            Objects.isNull(submission.getVersion()))) {
-            log.error("Form or FormVersion of submission {} is not set in submission", submission.getUid());
-            throw new DomainValidationException(ErrorCode.E4112, submission.getUid());
-        }
-        DataTemplateInstanceDto resolved = null;
-
-        // try resolve by UID first, then by form & number (your existing helper)
-        if (formVersionUid != null) {
-            resolved = dataTemplateInstanceService.findByTemplateAndVersionUid(form, formVersionUid).orElseThrow(() -> new DomainValidationException(
+        DataTemplateInstanceDto resolved = dataTemplateInstanceService
+            .findByTemplateAndVersionUid(form, formVersionUid)
+            .orElseThrow(() -> new DomainValidationException(
                 "Form/version uid not found: " + form + ":" + formVersionUid));
-        } else {
-            resolved = dataTemplateInstanceService.findByTemplateAndVersionNo(form, versionNum).orElseThrow(() -> new DomainValidationException(
-                "Form/version No not found: " + form + ":" + versionNum));
-        }
 
         // optionally set canonical form template uid if different
         submission.setForm(resolved.getUid());

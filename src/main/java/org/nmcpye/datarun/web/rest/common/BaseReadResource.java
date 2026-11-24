@@ -1,14 +1,12 @@
 package org.nmcpye.datarun.web.rest.common;
 
 
-import org.nmcpye.datarun.common.DRunApiVersion;
 import org.nmcpye.datarun.common.IdentifiableObject;
 import org.nmcpye.datarun.common.IdentifiableObjectRepository;
 import org.nmcpye.datarun.common.IdentifiableObjectService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.security.authorization.ResourceApiAuthorization;
-import org.nmcpye.datarun.web.mvc.annotation.ApiVersion;
 import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.slf4j.Logger;
@@ -37,7 +35,6 @@ import java.util.List;
 import java.util.Optional;
 
 //@RequestMapping("/api")
-@ApiVersion({DRunApiVersion.DEFAULT, DRunApiVersion.ALL})
 public abstract class BaseReadResource<T extends IdentifiableObject<ID>, ID extends Serializable> {
 
     protected final Logger log = LoggerFactory.getLogger(BaseReadResource.class);
