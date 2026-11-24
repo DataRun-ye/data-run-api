@@ -32,10 +32,12 @@ import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.mapper.DataSubmissionUploadV1Mapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -398,6 +400,57 @@ class SubmissionUploadsTest {
         assertEquals(SubmissionUploads.UNEXPECTED_FAILURE, summary.getFailed().get("firstSub01"),
             "the phone must not show the server's internal error text");
         assertEquals(List.of("secondSub1"), summary.getCreated());
+    }
+
+    /**
+     * Production keeps these logs. A failing upload's lines name the submission, its form and the user's id, and
+     * describe the failure by its code or its exception types, never by a login, a submitted value or an exception's
+     * message, which can quote both (a database error quoting the row, a refusal naming the value it refused).
+     */
+    @Test
+    void failingUploadsLogIdentifiersAndShapesOnly() {
+        String login = "field-login-7";
+        String value = "Household of Amina Saleh";
+        when(user.getUsername()).thenReturn(login);
+        when(user.getId()).thenReturn("01JUSER0000000000000000007");
+        DataSubmissionUploadV1Dto broken = stubbedRequest("firstSub01");
+        DataSubmissionUploadV1Dto refused = stubbedRequest("secondSub1");
+        broken.setForm("formUid0001");
+        refused.setForm("formUid0001");
+        doThrow(new DataIntegrityViolationException(
+            "could not execute statement [" + value + "] for " + login,
+            new SQLException("ERROR: duplicate key; Detail: Key (name)=(" + value + ") already exists", "23505")))
+            .when(resolver).resolve(submissionWithUid("firstSub01"), any(), any(), any());
+        doThrow(new DomainValidationException(ErrorCode.E4120, value))
+            .when(resolver).resolve(submissionWithUid("secondSub1"), any(), any(), any());
+
+        try (LogCapture logs = new LogCapture(SubmissionUploads.class)) {
+            EntitySaveSummaryVM summary = upload(List.of(broken, refused));
+
+            assertEquals(SubmissionUploads.UNEXPECTED_FAILURE, summary.getFailed().get("firstSub01"));
+            assertTrue(summary.getFailed().get("secondSub1").startsWith("E4120: "),
+                "the phone still gets the refusal's text");
+            logs.assertNothingLeaks(value, login);
+            assertTrue(logs.lines().stream().anyMatch(line -> line.contains("firstSub01")
+                && line.contains("formUid0001") && line.contains("01JUSER0000000000000000007")
+                && line.contains("DataIntegrityViolationException < SQLException, SQLState 23505")), logs.lines()::toString);
+            assertTrue(logs.lines().stream().anyMatch(line -> line.contains("secondSub1")
+                && line.contains("refused: E4120")), logs.lines()::toString);
+        }
+    }
+
+    @Test
+    void aPracticeUploadIsLoggedWithoutTheLogin() {
+        when(user.getUsername()).thenReturn("field-login-7");
+        when(user.getId()).thenReturn("01JUSER0000000000000000007");
+
+        try (LogCapture logs = new LogCapture(SubmissionUploads.class)) {
+            upload(List.of(stubbedRequest("firstSub01")), true);
+
+            logs.assertNothingLeaks("field-login-7");
+            assertTrue(logs.lines().stream().anyMatch(line -> line.contains("01JUSER0000000000000000007")),
+                logs.lines()::toString);
+        }
     }
 
     @Test

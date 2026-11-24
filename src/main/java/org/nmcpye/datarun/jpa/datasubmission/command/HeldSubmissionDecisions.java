@@ -70,25 +70,30 @@ public class HeldSubmissionDecisions {
                 continue;
             }
             String failure;
+            String failureShape;
             try {
                 DataSubmissionUploadV1Dto upload =
                     objectMapper.treeToValue(row.payload(), DataSubmissionUploadV1Dto.class);
                 EntitySaveSummaryVM saved = onBehalfOf(row.submittedBy(),
                     submitter -> uploads.save(List.of(upload), submitter, IntakeMode.RELEASE));
                 failure = saved.getFailed().values().stream().findFirst().orElse(null);
+                failureShape = failure == null ? null : SubmissionLog.refusal(failure);
             } catch (Exception e) {
                 failure = "Cannot release as " + row.submittedBy() + ": " + e.getMessage();
+                failureShape = SubmissionLog.failure(e);
             }
             if (failure == null) {
                 record(result, row, HeldState.RELEASED, admin, request.note(), result.released());
             } else {
+                // The admin and the API keep the full text; the log keeps identifiers and shapes (SubmissionLog).
                 held.recordReleaseError(row.uid(), failure);
                 result.failed().put(row.uid(), failure);
-                log.warn("Held submission {} not released by {}: {}", row.uid(), admin.login(), failure);
+                log.warn("Held submission {} (form {}) not released by user {}: {}",
+                    row.uid(), row.form(), admin.userId(), failureShape);
             }
         }
         if (!result.released().isEmpty()) {
-            log.info("{} held submissions released by {}", result.released().size(), admin.login());
+            log.info("{} held submissions released by user {}", result.released().size(), admin.userId());
         }
         return result;
     }
@@ -101,7 +106,7 @@ public class HeldSubmissionDecisions {
             record(result, row, HeldState.DISCARDED, admin, request.note(), result.discarded());
         }
         if (!result.discarded().isEmpty()) {
-            log.info("{} held submissions discarded by {}", result.discarded().size(), admin.login());
+            log.info("{} held submissions discarded by user {}", result.discarded().size(), admin.userId());
         }
         return result;
     }

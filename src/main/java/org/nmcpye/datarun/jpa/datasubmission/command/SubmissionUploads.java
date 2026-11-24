@@ -87,13 +87,14 @@ public class SubmissionUploads {
 
         Instant receivedAt = Instant.now();
         if (mode == IntakeMode.PRACTICE) {
-            log.info("Practice upload by {}: {} submissions checked, kept apart",
-                actor.login(), requests.size());
+            log.info("Practice upload by user {}: {} submissions checked, kept apart",
+                actor.userId(), requests.size());
         }
         return saveEach(
             requests,
             actor,
             DataSubmissionUploadV1Dto::getUid,
+            DataSubmissionUploadV1Dto::getForm,
             (request, summary) -> upsertOne(request, actor, summary, mode, receivedAt),
             objectMapper::valueToTree);
     }
@@ -125,6 +126,7 @@ public class SubmissionUploads {
             submissions,
             actor,
             DataSubmission::getUid,
+            DataSubmission::getForm,
             (submission, summary) -> {
                 checkLegacy(submission, actor);
                 submissionService.upsertAll(List.of(submission), summary);
@@ -197,6 +199,7 @@ public class SubmissionUploads {
         List<T> items,
         SubmissionActor actor,
         Function<T, String> uidOf,
+        Function<T, String> formOf,
         SaveOne<T> save,
         Function<T, JsonNode> payloadOf) {
         TransactionTemplate perSubmission = new TransactionTemplate(transactionManager);
@@ -223,11 +226,13 @@ public class SubmissionUploads {
             } catch (RuntimeException failure) {
                 String uid = Optional.ofNullable(uidOf.apply(item)).orElse("#" + index);
                 summary.getFailed().put(uid, failureMessage(failure));
-                String user = Optional.ofNullable(actor.login()).orElse("unknown user");
-                if (failure instanceof ErrorCodeException) {
-                    log.warn("Submission {} from {} rejected: {}", uid, user, failure.getMessage());
+                // Identifiers and shapes only (SubmissionLog): never the login, a value or an exception's message.
+                if (failure instanceof ErrorCodeException refusal) {
+                    log.warn("Submission {} (form {}) from user {} refused: {}",
+                        uid, formOf.apply(item), actor.userId(), SubmissionLog.refusal(refusal));
                 } else {
-                    log.error("Submission {} from {} failed unexpectedly", uid, user, failure);
+                    log.error("Submission {} (form {}) from user {} failed unexpectedly: {}",
+                        uid, formOf.apply(item), actor.userId(), SubmissionLog.failure(failure));
                 }
             }
         }
@@ -239,9 +244,10 @@ public class SubmissionUploads {
      * the server means (an {@link ErrorCodeException}: no access, an invalid
      * household, a missing assignment) keeps its message. Anything else gets
      * {@link #UNEXPECTED_FAILURE}, because its own message can carry SQL,
-     * table names or submitted values; the log line in {@link #saveEach}
-     * keeps the details under the submission uid and the user's login,
-     * which is what a supervisor will report. Production 6.4.1 hid such
+     * table names or submitted values. The log line in {@link #saveEach}
+     * names the submission, its form and the user's id, and describes the
+     * failure by its exception types and where it was thrown, never by its
+     * message (see {@link SubmissionLog}). Production 6.4.1 hid such
      * details in the same way when a whole upload failed.
      */
     private static String failureMessage(RuntimeException failure) {

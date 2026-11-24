@@ -151,6 +151,34 @@ class HeldSubmissionDecisionsTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication().getName()).isEqualTo("admin");
     }
 
+    /**
+     * The admin and the API keep a failed release's full text; the log line keeps identifiers and shapes: no login
+     * (the submitter's appears in that text) and no exception message.
+     */
+    @Test
+    void aFailedReleaseLogsItsCodeOrTypeOnly() {
+        when(held.findWithPayload(List.of("heldSub0001", "heldSub0002"), HELD_OR_DISCARDED))
+            .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE),
+                row("heldSub0002", HoldReason.BEFORE_GO_LIVE, "gone-user")));
+        when(users.loadUserByUsername("gone-user"))
+            .thenThrow(new UsernameNotFoundException("User gone-user was not found in the database"));
+        EntitySaveSummaryVM refused = new EntitySaveSummaryVM();
+        refused.getFailed().put("heldSub0001", "E4122: You may not submit form `household1` for assignment `assignment1`");
+        when(uploads.save(anyList(), any(), eq(IntakeMode.RELEASE))).thenReturn(refused);
+
+        try (LogCapture logs = new LogCapture(HeldSubmissionDecisions.class)) {
+            HeldDecisionResult result = decisions.release(admin,
+                new HeldDecisionRequest(List.of("heldSub0001", "heldSub0002"), null, null, null));
+
+            assertThat(result.failed().get("heldSub0002")).startsWith("Cannot release as gone-user: ");
+            logs.assertNothingLeaks("gone-user", "field-user", "admin", "You may not");
+            assertThat(logs.lines()).anySatisfy(line -> assertThat(line)
+                .contains("heldSub0001").contains("household1").contains(admin.userId()).endsWith(": E4122"));
+            assertThat(logs.lines()).anySatisfy(line -> assertThat(line)
+                .contains("heldSub0002").contains("UsernameNotFoundException"));
+        }
+    }
+
     @Test
     void aFilterReleaseTakesOnlyUploadsStillHeldBeforeAGoLive() {
         HeldFilter expected = new HeldFilter("campaign001", null, null, HoldReason.BEFORE_GO_LIVE, HELD, null, null);
@@ -222,7 +250,7 @@ class HeldSubmissionDecisionsTest {
 
     private static CurrentUserDetails user(String login, String authority) {
         return CurrentUserDetailsImpl.builder()
-            .id("01JTEST" + login)
+            .id("01JTEST" + Integer.toHexString(login.hashCode()))
             .username(login)
             .password("x")
             .enabled(true)
@@ -238,11 +266,15 @@ class HeldSubmissionDecisionsTest {
     }
 
     private HeldSubmissionRow row(String uid, HoldReason reason) {
+        return row(uid, reason, "field-user");
+    }
+
+    private HeldSubmissionRow row(String uid, HoldReason reason, String submittedBy) {
         ObjectNode payload = objectMapper.createObjectNode().put("uid", uid).put("form", "household1");
         Instant received = Instant.parse("2026-11-20T08:00:00Z");
         return new HeldSubmissionRow(uid, reason, HeldState.HELD, "campaign001", "village00001",
             ",country0001,village00001", "household1", "version0001", "team0000001", "assignment1",
-            "field-user", received, received, "goLiveRule1", Instant.parse("2026-11-21T00:00:00Z"),
+            submittedBy, received, received, "goLiveRule1", Instant.parse("2026-11-21T00:00:00Z"),
             null, null, null, null, SEEN, payload);
     }
 }
