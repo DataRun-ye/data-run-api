@@ -23,7 +23,6 @@
     <!-- jhipster-needle-liquibase-add-constraints-changelog - JHipster will add liquibase constraints changelogs here -->
     <include file="config/liquibase/changelog/20240518020044_added_entity_EntityAuditEvent.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20240806201249_updated_entity_constraints_Project.xml" relativeToChangelogFile="false"/>
-<!--    <include file="/config/liquibase/changelog/2024/15-01-changelog-translation-and-drop-audit-not-null.xml" relativeToChangelogFile="false"/>-->
     <include file="/config/liquibase/changelog/security/acl-schema.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/v7-2025-merge/24-01-changelog-last-merge.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/app-user-constraints/app-user-add-omitted-constraints.xml" relativeToChangelogFile="false"/>
