@@ -30,13 +30,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * The outbox index changeset on its own, against PostgreSQL: it builds a valid index, does nothing when run
- * again, rolls back, fails after its lock timeout instead of waiting behind a writer, and only marks itself ran
- * when the index is already there (where the earlier concurrent build ran).
+ * again, rolls back, fails after its lock timeout instead of waiting behind a writer, replaces an invalid
+ * leftover, and only marks itself ran when a valid index is already there.
  */
 class OutboxUnfinishedIndexMigrationIT {
 
     private static final String CHANGELOG = "config/liquibase/changelog/etl/20261124-outbox-unfinished-index.xml";
-    private static final String CHANGESET = "20261124-02-outbox-unfinished-index";
+    private static final String CHANGESET = "20261124-03-outbox-unfinished-index";
 
     private static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16.2");
 
@@ -152,9 +152,24 @@ class OutboxUnfinishedIndexMigrationIT {
         assertThat(index()).isEqualTo("valid");
     }
 
-    /** Where the earlier concurrent build ran, the index exists and this changeset only marks itself ran. */
+    /** An invalid leftover (an interrupted concurrent build) is not taken as done: it is dropped and built again. */
     @Test
-    void itOnlyMarksItselfRanWhenTheIndexIsAlreadyThere() throws Exception {
+    void anInvalidLeftoverIsDroppedAndTheIndexBuiltNormally() throws Exception {
+        db.execute("CREATE INDEX idx_outbox_unfinished ON outbox (outbox_id)");
+        db.update("UPDATE pg_index SET indisvalid = false WHERE indexrelid = 'idx_outbox_unfinished'::regclass");
+        assertThat(index()).isEqualTo("invalid");
+
+        liquibase(false);
+
+        assertThat(index()).isEqualTo("valid");
+        assertThat(db.queryForObject("SELECT pg_get_indexdef('idx_outbox_unfinished'::regclass)", String.class))
+            .contains("(submission_serial_number, outbox_id)").contains("'pending'", "'failed'", "'dead'");
+        assertThat(runs()).containsExactly("EXECUTED");
+    }
+
+    /** Where an earlier build of it ran, the valid index exists and this changeset only marks itself ran. */
+    @Test
+    void itOnlyMarksItselfRanWhenAValidIndexIsAlreadyThere() throws Exception {
         db.execute("""
             CREATE INDEX idx_outbox_unfinished ON outbox (submission_serial_number, outbox_id)
             WHERE status IN ('pending', 'failed', 'dead')""");

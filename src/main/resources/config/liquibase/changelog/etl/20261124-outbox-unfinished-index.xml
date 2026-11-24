@@ -20,18 +20,26 @@
       sync or an idle session could stall startup indefinitely). On production's 64,645 rows it takes tens of
       milliseconds. lock_timeout makes the deploy fail visibly, instead of waiting, if something holds a write lock.
 
-      It replaces 20261124-01-outbox-unfinished-index, a concurrent build that never reached production; where that
-      one ran, the index exists and this changeset only marks itself ran.
+      It runs while no valid index of that name exists, and marks itself ran otherwise. An invalid leftover (an
+      interrupted concurrent build) is dropped and the index built normally.
+
+      It replaces 20261124-01 (a concurrent build) and 20261124-02 (the same build, but accepting an invalid index
+      as done), neither of which reached production; where either ran, the valid index exists and this changeset
+      only marks itself ran.
 
       Rollback drops the index; nothing depends on it but query speed.
     -->
-    <changeSet id="20261124-02-outbox-unfinished-index" author="datarun">
+    <changeSet id="20261124-03-outbox-unfinished-index" author="datarun">
         <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists tableName="outbox" indexName="idx_outbox_unfinished"/>
-            </not>
+            <sqlCheck expectedResult="0">
+                SELECT count(*)
+                FROM pg_index i
+                JOIN pg_class c ON c.oid = i.indexrelid
+                WHERE c.relname = 'idx_outbox_unfinished' AND i.indisvalid
+            </sqlCheck>
         </preConditions>
         <sql>SET LOCAL lock_timeout = '${outboxIndexLockTimeout}'</sql>
+        <sql>DROP INDEX IF EXISTS idx_outbox_unfinished</sql>
         <sql>
             CREATE INDEX idx_outbox_unfinished
                 ON outbox (submission_serial_number, outbox_id)
