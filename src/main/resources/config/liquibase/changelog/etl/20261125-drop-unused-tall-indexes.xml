@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!-- How long the drops may wait for their lock; a Liquibase parameter of the same name overrides it. -->
+    <property name="tallIndexLockTimeout" value="30s"/>
+
+    <!--
+      Drops five indexes on analytics.tall_canonical that nothing reads, while every ETL write maintains them; the one
+      on updated_at, which every upsert sets, also keeps those updates from being HOT.
+
+      Production's statistics, read on 2026-11-24 for the step D design over the 21.6 days since the server started
+      on 2026-11-03 05:37 UTC (never reset), show no scan of any of them, 81 MB in all; the ETL's upsert key had 1.42 M
+      scans, submission_uid 68 K and template_element 1,638 in the same window. None is unique, a primary key or
+      behind a constraint, and none is the upsert's conflict target (uq_tall_instance_canonical, kept). No query in
+      the code filters, joins or orders on their columns: the ETL writer only upserts, the pivots join tall on
+      instance_key, and the integrity checks read submission_uid and template_uid. Changeset 2025-11-15-05-indexes
+      created them with the definitions the rollback below restores; the staging clone of production has exactly
+      these.
+
+      A plain DROP INDEX holds an ACCESS EXCLUSIVE lock on the table for a moment. Airbyte and dumps read tall, so
+      lock_timeout makes the deploy fail visibly instead of waiting behind a long read: check that nothing holds a
+      lock on analytics.tall_canonical just before switching.
+
+      The rollback builds each index again, plainly: each build blocks ETL writes to tall while it runs.
+    -->
+    <changeSet id="20261125-01-drop-unused-tall-indexes" author="datarun">
+        <sql>SET LOCAL lock_timeout = '${tallIndexLockTimeout}'</sql>
+        <sql>DROP INDEX IF EXISTS analytics.idx_tall_canonical_repeat_instance</sql>
+        <sql>DROP INDEX IF EXISTS analytics.idx_tall_canonical_parent_instance</sql>
+        <sql>DROP INDEX IF EXISTS analytics.idx_tall_canonical_template_version_element</sql>
+        <sql>DROP INDEX IF EXISTS analytics.idx_tall_value_ref_uid</sql>
+        <sql>DROP INDEX IF EXISTS analytics.idx_tall_canonical_updated_at</sql>
+        <rollback>
+            <sql>SET LOCAL lock_timeout = '${tallIndexLockTimeout}'</sql>
+            <sql>
+                CREATE INDEX IF NOT EXISTS idx_tall_canonical_repeat_instance
+                    ON analytics.tall_canonical USING btree (repeat_instance_id)
+            </sql>
+            <sql>
+                CREATE INDEX IF NOT EXISTS idx_tall_canonical_parent_instance
+                    ON analytics.tall_canonical USING btree (parent_instance_id)
+            </sql>
+            <sql>
+                CREATE INDEX IF NOT EXISTS idx_tall_canonical_template_version_element
+                    ON analytics.tall_canonical USING btree (template_version_uid, canonical_element_id)
+            </sql>
+            <sql>
+                CREATE INDEX IF NOT EXISTS idx_tall_value_ref_uid
+                    ON analytics.tall_canonical USING btree (value_ref_uid)
+            </sql>
+            <sql>
+                CREATE INDEX IF NOT EXISTS idx_tall_canonical_updated_at
+                    ON analytics.tall_canonical USING btree (updated_at)
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

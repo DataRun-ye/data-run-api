@@ -419,6 +419,14 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   `CREATE INDEX` and `lock_timeout` 30s (Liquibase parameter
   `outboxIndexLockTimeout`), so a held write lock fails the deploy instead of
   stalling it.
+- **Tall's indexes.** `analytics.tall_canonical` keeps its primary key, the
+  upsert's key `uq_tall_instance_canonical`, and the indexes on
+  `submission_uid` and on (`template_uid`, `canonical_element_id`). Changeset
+  `20261125-01` (6.5.5) drops five that production never scanned in 21.6 days
+  (repeat and parent instance, template version and element, `value_ref_uid`,
+  `updated_at`; 81 MB). Its `DROP INDEX` waits at most 30 s for its lock
+  (Liquibase parameter `tallIndexLockTimeout`), so check that no dump or
+  Airbyte read holds `analytics.tall_canonical` right before deploying.
 - **Before a deploy that changes the ETL.** Update the production host's
   `compose.yml` from `deploy/production/compose.yml` (`release-boundary.md`,
   step 3). Both JDBC URLs there carry `logServerErrorDetail=false`. The pool
