@@ -1,5 +1,7 @@
 package org.nmcpye.datarun.jpa.datasubmission.command;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.spi.ILoggingEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,8 @@ import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.mapper.DataSubmissionUploadV1Mapper;
+import org.postgresql.util.PSQLException;
+import org.postgresql.util.ServerErrorMessage;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -527,9 +531,84 @@ class SubmissionUploadsTest {
             assertTrue(logs.lines().stream().anyMatch(line -> line.contains("firstSub01")
                 && line.contains("formUid0001") && line.contains("01JUSER0000000000000000007")
                 && line.contains("DataIntegrityViolationException < SQLException, SQLState 23505")), logs.lines()::toString);
+            assertTrue(logs.events().stream().anyMatch(event -> event.getLevel() == Level.ERROR
+                    && event.getFormattedMessage().contains("firstSub01 (form formUid0001)")),
+                "a unique violation without the uid constraint is unexpected: ERROR");
             assertTrue(logs.lines().stream().anyMatch(line -> line.contains("secondSub1")
                 && line.contains("refused: E4120")), logs.lines()::toString);
         }
+    }
+
+    /**
+     * Two saves of one new submission at once (a phone re-sending while its first request runs, or a held release
+     * meeting a live copy): the later insert hits the uid's unique constraint. That is an expected outcome, logged at
+     * WARN with ids and the SQLState; the phone still gets the same answer and sends again.
+     */
+    @Test
+    void anotherSaveOfTheSameUidComingFirstIsAWarningNotAnError() {
+        when(user.getId()).thenReturn("01JUSER0000000000000000007");
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
+        request.setForm("formUid0001");
+        doThrow(uidRace()).when(submissionService).upsertAll(anyList(), any(EntitySaveSummaryVM.class));
+
+        try (LogCapture logs = new LogCapture(SubmissionUploads.class)) {
+            EntitySaveSummaryVM summary = upload(List.of(request));
+
+            assertEquals(SubmissionUploads.UNEXPECTED_FAILURE, summary.getFailed().get("firstSub01"),
+                "the phone's answer is unchanged");
+            assertEquals(List.of(Level.WARN), logs.events().stream().map(ILoggingEvent::getLevel).toList());
+            assertTrue(logs.lines().get(0).contains("Submission firstSub01 (form formUid0001) from user "
+                    + "01JUSER0000000000000000007 not saved: another save of the same uid came first"),
+                logs.lines()::toString);
+            assertTrue(logs.lines().get(0).contains("PSQLException, SQLState 23505"), logs.lines()::toString);
+            logs.assertNothingLeaks("secret-household");
+        }
+    }
+
+    /** A held release that meets a live copy of its uid fails as before, with its type, and is logged at WARN. */
+    @Test
+    void aReleaseThatMeetsALiveCopyOfItsUidIsAWarningNotAnError() {
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
+        doThrow(uidRace()).when(submissionService).upsertAll(anyList(), any(EntitySaveSummaryVM.class));
+
+        try (LogCapture logs = new LogCapture(SubmissionUploads.class)) {
+            SubmissionUploads.Released result = service.saveReleased(request, SubmissionActor.of(user), () -> true);
+
+            assertEquals(new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.FAILED,
+                "DataIntegrityViolationException"), result);
+            assertEquals(List.of(Level.WARN), logs.events().stream().map(ILoggingEvent::getLevel).toList());
+        }
+    }
+
+    /** Any other unique violation, or one whose constraint is unknown, is not that race: it stays an error. */
+    @Test
+    void anotherUniqueViolationStaysAnError() {
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
+        PSQLException otherConstraint = new PSQLException(serverError("uk_reference_entry_name", "reference_entry"));
+        doThrow(new DataIntegrityViolationException("could not execute statement",
+            new org.hibernate.exception.ConstraintViolationException("could not execute statement", otherConstraint,
+                "uk_reference_entry_name")))
+            .when(submissionService).upsertAll(anyList(), any(EntitySaveSummaryVM.class));
+
+        try (LogCapture logs = new LogCapture(SubmissionUploads.class)) {
+            upload(List.of(request));
+
+            assertEquals(List.of(Level.ERROR), logs.events().stream().map(ILoggingEvent::getLevel).toList());
+        }
+    }
+
+    /** The exception chain Spring and Hibernate build for the race, with PostgreSQL's structured error. */
+    private static DataIntegrityViolationException uidRace() {
+        PSQLException duplicate = new PSQLException(serverError(DataSubmission.UID_CONSTRAINT, "data_submission"));
+        return new DataIntegrityViolationException("could not execute statement [secret-household]",
+            new org.hibernate.exception.ConstraintViolationException("could not execute statement", duplicate,
+                DataSubmission.UID_CONSTRAINT));
+    }
+
+    /** A unique violation as PostgreSQL reports it: severity, SQLState, message, detail, constraint and table. */
+    private static ServerErrorMessage serverError(String constraint, String table) {
+        return new ServerErrorMessage("SERROR\0C23505\0Mduplicate key value violates unique constraint \""
+            + constraint + "\"\0DKey (uid)=(secret-household) already exists.\0n" + constraint + "\0t" + table + "\0");
     }
 
     @Test

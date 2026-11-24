@@ -41,6 +41,12 @@ import java.util.Objects;
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DataSubmission extends JpaSoftDeleteObject {
     /**
+     * The unique constraint on {@code data_submission.uid}, as Liquibase created it (changelog 2025-09-01; the same
+     * name on the staging clone of production).
+     */
+    public static final String UID_CONSTRAINT = "uk_data_submission_uid";
+
+    /**
      * DB-generated serial (bigint sequence + unique).
      * Keep insertable=false if DB default nextval() used.
      */

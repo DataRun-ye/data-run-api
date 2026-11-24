@@ -121,6 +121,45 @@ class ErrorReportingConfigurationTest {
         assertThat(sent.getParams()).isNull();
     }
 
+    /**
+     * Hibernate's line for the expected duplicate-uid race of submissions (logged by the upload at WARN) is not
+     * reported; a line naming any other constraint, or another error, still is.
+     */
+    @Test
+    void hibernatesLineForTheSubmissionUidRaceIsNotReported() {
+        assertThat(ErrorReportingConfiguration.withoutValues(hibernateLine(
+            "ERROR: duplicate key value violates unique constraint \"uk_data_submission_uid\""), new Hint()))
+            .isNull();
+        assertThat(ErrorReportingConfiguration.withoutValues(hibernateLine("Batch entry 0 <unknown> was aborted: "
+            + "ERROR: duplicate key value violates unique constraint \"uk_data_submission_uid\"  Call "
+            + "getNextException to see other errors in the batch."), new Hint())).isNull();
+
+        for (String other : List.of(
+            "ERROR: duplicate key value violates unique constraint \"uk_data_submission_serial\"",
+            "ERROR: duplicate key value violates unique constraint \"uk_data_submission_uid_copy\"",
+            "ERROR: invalid input syntax for type integer: \"uk_data_submission_uid\" is quoted, not a constraint")) {
+            SentryEvent sent = ErrorReportingConfiguration.withoutValues(hibernateLine(other), new Hint());
+            assertThat(sent).as(other).isNotNull();
+            assertThat(sent.getMessage().getFormatted()).isEqualTo("org.hibernate.engine.jdbc.spi.SqlExceptionHelper");
+        }
+
+        SentryEvent ownLine = hibernateLine("ERROR: duplicate key value violates unique constraint "
+            + "\"uk_data_submission_uid\"");
+        ownLine.setLogger("org.nmcpye.datarun.example.Writer");
+        assertThat(ErrorReportingConfiguration.withoutValues(ownLine, new Hint()))
+            .as("only Hibernate's line is dropped").isNotNull();
+    }
+
+    private static SentryEvent hibernateLine(String text) {
+        SentryEvent event = new SentryEvent();
+        event.setLogger("org.hibernate.engine.jdbc.spi.SqlExceptionHelper");
+        Message message = new Message();
+        message.setMessage(text);
+        message.setFormatted(text);
+        event.setMessage(message);
+        return event;
+    }
+
     @Test
     void anOwnLineWithoutAPatternKeepsItsText() {
         SentryEvent event = new SentryEvent();

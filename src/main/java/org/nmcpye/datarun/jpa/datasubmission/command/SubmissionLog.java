@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.jpa.datasubmission.command;
 
+import org.nmcpye.datarun.common.exceptions.DatabaseFailures;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
+import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -23,7 +25,21 @@ final class SubmissionLog {
     private static final String APPLICATION = "org.nmcpye.datarun.";
     private static final int FRAMES = 3;
 
+    /** PostgreSQL's unique_violation. */
+    private static final String UNIQUE_VIOLATION = "23505";
+
     private SubmissionLog() {
+    }
+
+    /**
+     * Whether another save of the same new submission committed first: a phone re-sending a submission while its
+     * first request still runs, or a held release replaying an upload while a live copy of it is saved. Both saves
+     * found no row, both inserted, and the later insert hit the uid's unique constraint. That is an expected outcome,
+     * not a fault: the phone sends again, and the next release marks the held copy superseded.
+     */
+    static boolean isUidRace(Throwable failure) {
+        return DatabaseFailures.sqlState(failure).filter(UNIQUE_VIOLATION::equals).isPresent()
+            && DatabaseFailures.constraint(failure).filter(DataSubmission.UID_CONSTRAINT::equals).isPresent();
     }
 
     /** A refusal the server means: its error code, else its type. */

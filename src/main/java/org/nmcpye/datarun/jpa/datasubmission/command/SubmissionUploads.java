@@ -299,6 +299,9 @@ public class SubmissionUploads {
                 if (failure instanceof ErrorCodeException refusal) {
                     log.warn("Submission {} (form {}) from user {} refused: {}",
                         uid, formOf.apply(item), actor.userId(), SubmissionLog.refusal(refusal));
+                } else if (SubmissionLog.isUidRace(failure)) {
+                    log.warn("Submission {} (form {}) from user {} not saved: another save of the same uid came "
+                        + "first: {}", uid, formOf.apply(item), actor.userId(), SubmissionLog.failure(failure));
                 } else {
                     log.error("Submission {} (form {}) from user {} failed unexpectedly: {}",
                         uid, formOf.apply(item), actor.userId(), SubmissionLog.failure(failure));

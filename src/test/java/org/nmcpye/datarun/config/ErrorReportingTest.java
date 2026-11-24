@@ -189,6 +189,31 @@ class ErrorReportingTest {
     }
 
     /**
+     * The expected duplicate-uid race of submissions: the upload logs it at WARN, and Hibernate's ERROR line for the
+     * same insert does not reach GlitchTip. Another constraint's line still does.
+     */
+    @Test
+    void theSubmissionUidRaceSendsNoEvent() {
+        try (FakeGlitchTip glitchTip = FakeGlitchTip.start()) {
+            runner.withPropertyValues("sentry.dsn=" + glitchTip.dsn()).run(context -> {
+                org.slf4j.Logger hibernate =
+                    LoggerFactory.getLogger("org.hibernate.engine.jdbc.spi.SqlExceptionHelper");
+                hibernate.warn("SQL Error: 0, SQLState: 23505");
+                hibernate.error("ERROR: duplicate key value violates unique constraint \"uk_data_submission_uid\"");
+                LoggerFactory.getLogger("org.nmcpye.datarun.jpa.datasubmission.command.SubmissionUploads").warn(
+                    "Submission {} (form {}) from user {} not saved: another save of the same uid came first: {}",
+                    "sub00000001", "form0000001", "01JUSER0000000000000000007", "SQLState 23505");
+                hibernate.error("ERROR: duplicate key value violates unique constraint \"uc_assignment_activity_id\"");
+                Sentry.flush(5000);
+            });
+
+            assertThat(glitchTip.events()).as("only the other constraint's line")
+                .singleElement().satisfies(event -> assertThat(event.path("logger").asText())
+                    .isEqualTo("org.hibernate.engine.jdbc.spi.SqlExceptionHelper"));
+        }
+    }
+
+    /**
      * With a DSN, Sentry is the JVM's default uncaught exception handler. The container log must still show the
      * stack trace, since the event carries none of the exception's message.
      */

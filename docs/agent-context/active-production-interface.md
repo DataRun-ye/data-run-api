@@ -218,6 +218,12 @@ Releasing a campaign's held uploads:
   failing stays held, with `last_release_error` (an error code or exception
   type, and the uploader's user id), until its cause is fixed or it is
   discarded.
+- That unique-uid failure is expected, as is a phone's re-send that loses the
+  same race to its own first request (the phone is told it failed and sends
+  again). Since 6.5.5 it is logged at WARN, `not saved: another save of the
+  same uid came first`, with the ids and SQLState 23505, and nothing is
+  reported to GlitchTip: Hibernate's ERROR line for the same insert stays in
+  the container log only. Any other failure is still logged at ERROR.
 
 The area chain is read by walking
 parents, never through `OrgUnit.getPath()`, which writes the org unit when
@@ -391,6 +397,9 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     - Any other issue: an ERROR line or uncaught exception. The full line,
       with its values, is in the application's log at that time; an event
       raised during a request carries the request id the log line shows.
+      The one ERROR line kept back on purpose is Hibernate's for the expected
+      duplicate-uid race of submissions (a unique violation of
+      `uk_data_submission_uid`); every other database error is reported.
 - **Index.** The partial index `idx_outbox_unfinished` (pending, failed and
   dead rows, in claim order) keeps the due check, the claim and the backlog
   gauges off the processed history. Liquibase builds it at startup with a plain

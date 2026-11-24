@@ -10,6 +10,7 @@ import io.sentry.spring.boot.jakarta.SentryProperties;
 import io.sentry.spring.jakarta.tracing.SpringMvcTransactionNameProvider;
 import io.sentry.spring.jakarta.tracing.TransactionNameProvider;
 import jakarta.servlet.Filter;
+import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
@@ -29,8 +30,9 @@ import java.util.List;
  * <p>
  * It is off unless {@code SENTRY_DSN} is set. Without a DSN the SDK's auto-configuration does not load; with an
  * empty or malformed one the SDK stays disabled. Either way nothing is sent. With a DSN, every ERROR log line and every
- * uncaught exception becomes an event. {@code SENTRY_ENVIRONMENT} names the deployment, and the release is the
- * build's version. Request errors are not reported: {@code ExceptionTranslator} answers all of them and records
+ * uncaught exception becomes an event, except Hibernate's line for the expected duplicate-uid race of submissions
+ * ({@link #isSubmissionUidRace}). {@code SENTRY_ENVIRONMENT} names the deployment, and the release is the build's
+ * version. Request errors are not reported: {@code ExceptionTranslator} answers all of them and records
  * them in {@code error_event}, so none reaches Sentry's exception resolver.
  * <p>
  * Only the starter's own initialisation may start the SDK, since only it carries these settings: sentry-logback's
@@ -49,6 +51,9 @@ public class ErrorReportingConfiguration {
 
     /** Loggers whose ERROR patterns this code base writes, with values only in {@code {}} arguments. */
     static final String OWN_LOGGERS = "org.nmcpye.datarun.";
+
+    /** Where Hibernate logs the database's error text, at ERROR, for every failed statement. */
+    static final String HIBERNATE_SQL_ERRORS = "org.hibernate.engine.jdbc.spi.SqlExceptionHelper";
 
     private static final Logger log = LoggerFactory.getLogger(ErrorReportingConfiguration.class);
 
@@ -159,6 +164,9 @@ public class ErrorReportingConfiguration {
      * {@code logServerErrorDetail=false}.
      */
     static SentryEvent withoutValues(SentryEvent event, Hint hint) {
+        if (isSubmissionUidRace(event)) {
+            return null;
+        }
         event.setRequest(null);
         event.setUser(null);
         event.setBreadcrumbs(null);
@@ -180,5 +188,23 @@ public class ErrorReportingConfiguration {
             exceptions.forEach(exception -> exception.setValue(null));
         }
         return event;
+    }
+
+    /**
+     * Hibernate's ERROR line for the expected duplicate-uid race of submissions: two saves of one new submission at
+     * once, where the later insert hits {@code data_submission}'s unique uid constraint (a phone re-sending while
+     * its first request runs, or a held release meeting a live copy). The upload logs that outcome at WARN with its
+     * ids and SQLState, so this line is not reported; the container log keeps it. Hibernate logs it before the upload
+     * can tell, and no check before the insert can see a save that is not committed yet. Only a unique violation of
+     * that constraint is dropped, in PostgreSQL's English text (lc_messages C.UTF-8 on the staging clone of
+     * production): every other database error, and this one in any other wording, is still reported.
+     */
+    private static boolean isSubmissionUidRace(SentryEvent event) {
+        Message message = event.getMessage();
+        if (!HIBERNATE_SQL_ERRORS.equals(event.getLogger()) || message == null) {
+            return false;
+        }
+        String text = message.getFormatted() != null ? message.getFormatted() : message.getMessage();
+        return text != null && text.contains("unique constraint \"" + DataSubmission.UID_CONSTRAINT + "\"");
     }
 }
