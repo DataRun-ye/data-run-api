@@ -357,7 +357,7 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     names the request path; Hibernate logs the database's message). An event
     never carries the line's arguments, exception messages, the request, the
     user or breadcrumbs, and nothing is traced. Request errors that the REST
-    layer answers stay in `error_event` (Error records, below) and are not
+    layer answers are log lines (Request errors, below); only a 5xx's is
     reported. Nor is anything before the application context is up: the SDK
     starts during the context's refresh and attaches to the log at its end,
     so a failed startup and the Liquibase migrations, which production runs
@@ -366,28 +366,23 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     The container log keeps every line in full. Database errors there leave
     out the failing row only because the pool and both JDBC URLs set
     `logServerErrorDetail=false`; PostgreSQL's own message can still quote an
-    input value (`invalid input syntax for type integer: "…"`). An unreadable
-    request body is logged at WARN by its method, route pattern and exception
-    types only (`Unreadable request body on POST /api/v1/dataSubmission/bulk:
-    HttpMessageNotReadableException < JsonParseException`), never by the
-    exception's message, which quotes the body.
-  - Error records (`error_event`): one row per request error that the REST
-    layer answers. Since 6.5.5 a row holds no exception message, which
-    quoted submitted values, request bodies and database rows: `message`
-    holds the error's code (the answer's message key, such as
-    `error.validation` or `error.http.401`), `exception` its type, and
-    `stacktrace` the exception types and frames (cut at 4,000 characters).
-    `context_json` holds identifiers: the request id of the log lines and of
-    the `X-Request-ID` answer, the user id, the causes' exception types, and
-    for a database error the SQLState and the constraint. Older rows keep
-    their messages. `username` no longer holds the login a failed login
-    tried (null since 6.5.5; the account's id is the `userId` when the
-    account exists); older rows keep those logins. Other rows still read
-    mostly `anonymous`, because production writes the row on another thread.
-    Nothing in code reads the table. A row that cannot
-    be queued (the queue holds 500) is logged at WARN and leaves the answer as
-    it is; until 6.5.5 Spring's fallback resolver then answered and logged the
-    exception with its message.
+    input value (`invalid input syntax for type integer: "…"`).
+  - Request errors: `ExceptionTranslator` logs one line for each error it
+    answers (6.5.5). A server fault (5xx) is an ERROR line, so GlitchTip gets
+    its pattern, the route and the request id: `Request GET /api/v1/... failed
+    with 500 (error.http.500): DataIntegrityViolationException <
+    PSQLException, SQLState 23505, at ..., request <id>`. Any other error
+    (4xx), an unreadable body included, is an INFO line: `Request POST
+    /api/v1/dataSubmission/bulk answered 400 (error.http.400):
+    HttpMessageNotReadableException < JsonParseException, request <id>`. Both
+    pass every value as an argument and name the method, the route pattern
+    (never the raw path), the status, the error code and the exception types,
+    never a message, a body or a value. A failed login's WARN line
+    (Authentication above) is its only record. Rates come from the
+    `http.server.requests` metrics, where Prometheus export is on.
+  - `error_event` is no longer written or read (6.5.5). The table stays for
+    one release, because 6.5.4, the rollback target, still writes it; a later
+    release drops it.
   - Heartbeat (`DATARUN_ETL_HEARTBEAT_URL`, `datarun.etl.heartbeat-url`):
     after a poll that succeeded, the ETL sends a POST to the monitor, at most
     once a minute, and gives up after 5 s. A failure is logged at DEBUG and

@@ -32,8 +32,9 @@ import java.util.List;
  * empty or malformed one the SDK stays disabled. Either way nothing is sent. With a DSN, every ERROR log line and every
  * uncaught exception becomes an event, except Hibernate's line for the expected duplicate-uid race of submissions
  * ({@link #isSubmissionUidRace}). {@code SENTRY_ENVIRONMENT} names the deployment, and the release is the build's
- * version. Request errors are not reported: {@code ExceptionTranslator} answers all of them and records
- * them in {@code error_event}, so none reaches Sentry's exception resolver.
+ * version. {@code ExceptionTranslator} answers every request error, so none reaches Sentry's exception resolver; it
+ * logs a server fault (5xx) as one ERROR line, which becomes an event like any other ERROR line (its pattern, the
+ * route and the request id), and any other error (4xx) as an INFO line, which is not reported.
  * <p>
  * Only the starter's own initialisation may start the SDK, since only it carries these settings: sentry-logback's
  * appender initialises Sentry from the environment whenever it finds the SDK off, so {@link #errorReportingOptions}

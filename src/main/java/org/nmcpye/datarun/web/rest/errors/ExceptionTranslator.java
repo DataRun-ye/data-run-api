@@ -6,12 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
+import org.nmcpye.datarun.common.exceptions.FailureShape;
 import org.nmcpye.datarun.datatemplateprocessor.validation.validators.TemplateValidationException;
-import org.nmcpye.datarun.jpa.errorevent.service.ErrorEventService;
 import org.nmcpye.datarun.jpa.user.UsernameAlreadyUsedException;
 import org.nmcpye.datarun.jpa.userrefreshtoken.TokenRefreshException;
-import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.filter.RequestIdFilter;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +21,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConversionException;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.lang.Nullable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -67,10 +64,9 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     private String applicationName;
     private final Environment env;
 
-    private final ErrorEventService errorEventService;
-
     @ExceptionHandler(ErrorCodeException.class)
-    public ResponseEntity<?> handleBaseException(ErrorCodeException ex) {
+    public ResponseEntity<?> handleBaseException(ErrorCodeException ex, WebRequest request) {
+        logAnswered(ex, request, HttpStatus.BAD_REQUEST.value());
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         if (ex instanceof TemplateValidationException validationException) {
             summary.getFailed().put("error_code", ex.getErrorCode().toString());
@@ -88,7 +84,8 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(value = TokenRefreshException.class)
-    public ResponseEntity<?> handleTokenRefreshException(TokenRefreshException ex) {
+    public ResponseEntity<?> handleTokenRefreshException(TokenRefreshException ex, WebRequest request) {
+        logAnswered(ex, request, HttpStatus.UNAUTHORIZED.value());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", ex.getMessage()));
     }
 
@@ -97,8 +94,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         // Create the body (ProblemDetail)
         ProblemDetailWithCause pdCause = wrapAndCustomizeProblem(ex, request);
 
-        // Log it (Async)
-        logErrorToDb(ex, request, pdCause.getStatus());
+        logAnswered(ex, request, pdCause.getStatus());
 
         return handleExceptionInternal((Exception) ex, pdCause, buildHeaders(ex),
             HttpStatusCode.valueOf(pdCause.getStatus()), request);
@@ -114,59 +110,37 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
             body = wrapAndCustomizeProblem(ex, (NativeWebRequest) request);
         }
 
-        // Log it (Async) - Ensure we don't log twice if handleAnyException called this
-        // Simple check: most internal Spring exceptions (MethodArgumentNotValid) enter here directly
+        // Logged once: handleAnyException comes here after logging; Spring's own exceptions
+        // (MethodArgumentNotValid) come here directly
         if (!isAlreadyLogged(request)) {
-            logErrorToDb(ex, (NativeWebRequest) request, statusCode.value());
+            logAnswered(ex, request, statusCode.value());
         }
 
         return super.handleExceptionInternal(ex, body, headers, statusCode, request);
     }
 
     /**
-     * Records the error in {@code error_event} by its code and identifiers, never by a message (see
-     * {@link ErrorEventService}). The record is written on another thread, so what only the request's thread knows
-     * is read here: the request id that the log lines and the {@code X-Request-ID} answer carry, and the user's id
-     * (for a failed login, the account's id when the account exists; never the login it tried).
+     * One log line for each request error this advice answers, since 6.5.5 its only record (error_event is no longer
+     * written). A server fault (5xx) is an ERROR line, so GlitchTip gets it under the reporting filter: its pattern,
+     * the route and the request id. Anything else (4xx) is an INFO line. Each names the method, the matched route
+     * pattern, the status, the error code and the exception types (for a fault also its SQLState and first
+     * application frames, {@link FailureShape}) and the request id, all as arguments; never a message, a body or a
+     * value. A failed login logs nothing here: its WARN line from AuthenticationFailureListener is its only record.
+     * Rates come from the http.server.requests metrics.
      */
-    private void logErrorToDb(Throwable ex, NativeWebRequest request, int status) {
-        markAsLogged(request); // prevent double logging
-        try {
-            Map<String, Object> context = new LinkedHashMap<>();
-            String requestId = MDC.get(RequestIdFilter.MDC_REQUEST_ID_KEY);
-            if (requestId != null) {
-                context.put("requestId", requestId);
-            }
-            SecurityUtils.getCurrentUserDetails().map(CurrentUserDetails::getId)
-                .ifPresent(userId -> context.put("userId", userId));
-            Object failedLoginAccount = request.getAttribute(ErrorEventService.ATTR_FAILED_LOGIN_ACCOUNT_ID,
-                RequestAttributes.SCOPE_REQUEST);
-            if (failedLoginAccount != null) {
-                context.putIfAbsent("userId", failedLoginAccount);
-            }
-            if (ex instanceof MethodArgumentNotValidException invalid) {
-                context.put("validationErrors", invalid.getBindingResult().getErrorCount());
-            }
-
-            errorEventService.logError(ex, request, HttpStatus.valueOf(status), errorCode(ex, status), context);
-        } catch (RuntimeException notRecorded) {
-            // A full recording queue (TaskRejectedException) must not fail this handler: Spring's fallback resolver
-            // would then answer instead and log the original exception with its message, which can quote the body.
-            log.warn("Request error ({}, {}) not recorded in error_event: {}",
-                status, ex.getClass().getSimpleName(), notRecorded.getClass().getSimpleName());
+    private void logAnswered(Throwable ex, WebRequest request, int status) {
+        markAsLogged(request);
+        if (ex instanceof BadCredentialsException) {
+            return;
         }
-    }
-
-    /**
-     * An unreadable body (malformed JSON, a value of the wrong type) is logged by its route and exception types
-     * only: the exception's message quotes the body ({@code Unrecognized token 'x'}, {@code from String "y"}). The
-     * answer stays Spring's.
-     */
-    @Override
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(
-        HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        log.warn("Unreadable request body on {} {}: {}", method(request), route(request), types(ex));
-        return super.handleHttpMessageNotReadable(ex, headers, status, request);
+        String requestId = MDC.get(RequestIdFilter.MDC_REQUEST_ID_KEY);
+        if (status >= 500) {
+            log.error("Request {} {} failed with {} ({}): {}, request {}",
+                method(request), route(request), status, errorCode(ex, status), FailureShape.of(ex), requestId);
+        } else {
+            log.info("Request {} {} answered {} ({}): {}, request {}",
+                method(request), route(request), status, errorCode(ex, status), types(ex), requestId);
+        }
     }
 
     private static String method(WebRequest request) {
@@ -199,7 +173,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         return messageKey != null ? messageKey : "error.http." + status;
     }
 
-    private void markAsLogged(NativeWebRequest request) {
+    private void markAsLogged(WebRequest request) {
         request.setAttribute("ERROR_LOGGED", true, RequestAttributes.SCOPE_REQUEST);
     }
 

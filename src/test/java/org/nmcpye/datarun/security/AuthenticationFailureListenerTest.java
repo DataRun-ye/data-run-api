@@ -6,7 +6,6 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.jpa.errorevent.service.ErrorEventService;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.web.filter.RequestIdFilter;
@@ -99,11 +98,11 @@ class AuthenticationFailureListenerTest {
     }
 
     /**
-     * The request keeps the account's id for the error record, when the account exists, and never the login tried
-     * (until 6.5.5 it kept the login, which error_event stored).
+     * The log line is the failed login's only record: the request keeps nothing for another (until 6.5.5 it kept the
+     * login tried, then the account's id, for error_event).
      */
     @Test
-    void theRequestKeepsTheAccountsIdNotTheLogin() {
+    void theRequestKeepsNothing() {
         User account = new User();
         account.setId("01JUSER0000000000000000003");
         caches.getCache(UserRepository.USERS_BY_LOGIN_CACHE).put("7770001112", account);
@@ -114,10 +113,7 @@ class AuthenticationFailureListenerTest {
         within(accountRequest, () -> listener.onApplicationEvent(failure("7770001112")));
         within(unknownRequest, () -> listener.onApplicationEvent(failure("7770001113")));
 
-        assertThat(accountRequest.getAttribute(ErrorEventService.ATTR_FAILED_LOGIN_ACCOUNT_ID))
-            .isEqualTo("01JUSER0000000000000000003");
-        assertThat(Collections.list(accountRequest.getAttributeNames()))
-            .containsExactly(ErrorEventService.ATTR_FAILED_LOGIN_ACCOUNT_ID);
+        assertThat(Collections.list(accountRequest.getAttributeNames())).isEmpty();
         assertThat(Collections.list(unknownRequest.getAttributeNames())).isEmpty();
     }
 

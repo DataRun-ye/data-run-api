@@ -8,42 +8,36 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.IntegrationTest;
-import org.nmcpye.datarun.jpa.errorevent.service.ErrorEventService;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.core.task.TaskRejectedException;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * An unreadable request body never reaches the logs: the exception's message quotes the body (a malformed token, a
- * value of the wrong type), so the one line logged names the route and the exception types only, and the answer
- * stays Spring's 400. Every logger's lines are read, at the levels production logs.
+ * value of the wrong type), so the one line logged, ExceptionTranslator's INFO line for a 4xx, names the route and
+ * the exception types only, and the answer stays Spring's 400. Every logger's lines are read, at the levels
+ * production logs.
  */
 @WithMockUser
 @AutoConfigureMockMvc
 @IntegrationTest
 class UnreadableBodyLoggingIT {
 
-    @Autowired
-    private MockMvc mockMvc;
+    private static final String REQUEST_ID = ", request [0-9a-f-]{36}";
 
     @Autowired
-    private ExceptionTranslator exceptionTranslator;
+    private MockMvc mockMvc;
 
     private final Logger root = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
     private final ListAppender<ILoggingEvent> logs = new ListAppender<>();
@@ -65,8 +59,9 @@ class UnreadableBodyLoggingIT {
         send("/api/exception-translator-test/method-argument", "{\"test\": secrettoken8}");
 
         assertNothingLogged("secrettoken8");
-        assertThat(lines()).contains("WARN Unreadable request body on POST /api/exception-translator-test/method-argument: "
-            + "HttpMessageNotReadableException < JsonParseException");
+        assertThat(lines()).anySatisfy(line -> assertThat(line).matches("INFO Request POST "
+            + "/api/exception-translator-test/method-argument answered 400 \\(error\\.http\\.400\\): "
+            + "HttpMessageNotReadableException < JsonParseException" + REQUEST_ID));
     }
 
     @Test
@@ -74,30 +69,9 @@ class UnreadableBodyLoggingIT {
         send("/api/exception-translator-test/typed-body", "{\"count\": \"secretvalue8\"}");
 
         assertNothingLogged("secretvalue8");
-        assertThat(lines()).contains("WARN Unreadable request body on POST /api/exception-translator-test/typed-body: "
-            + "HttpMessageNotReadableException < InvalidFormatException");
-    }
-
-    /**
-     * When the error record cannot be queued, the handler still answers. Before 6.5.5 it failed, and Spring's
-     * fallback resolver answered instead and logged {@code Resolved [... JSON parse error: Unrecognized token
-     * 'secret...']}.
-     */
-    @Test
-    void anErrorRecordThatCannotBeQueuedChangesNeitherTheAnswerNorTheLogs() throws Exception {
-        ErrorEventService full = mock(ErrorEventService.class);
-        doThrow(new TaskRejectedException("queue full")).when(full).logError(any(), any(), any(), any(), any());
-        Object recorder = ReflectionTestUtils.getField(exceptionTranslator, "errorEventService");
-        ReflectionTestUtils.setField(exceptionTranslator, "errorEventService", full);
-        try {
-            send("/api/exception-translator-test/method-argument", "{\"test\": secrettoken9}");
-        } finally {
-            ReflectionTestUtils.setField(exceptionTranslator, "errorEventService", recorder);
-        }
-
-        assertNothingLogged("secrettoken9");
-        assertThat(lines()).contains("WARN Request error (400, HttpMessageNotReadableException) not recorded in "
-            + "error_event: TaskRejectedException");
+        assertThat(lines()).anySatisfy(line -> assertThat(line).matches("INFO Request POST "
+            + "/api/exception-translator-test/typed-body answered 400 \\(error\\.http\\.400\\): "
+            + "HttpMessageNotReadableException < InvalidFormatException" + REQUEST_ID));
     }
 
     /** The answer is Spring's ProblemDetail for an unreadable body, as phones get it (A2 W1-23). */

@@ -37,17 +37,6 @@ public class AsyncConfiguration implements AsyncConfigurer {
         return t;
     }
 
-    @Bean("errorLoggingExecutor")
-    public Executor errorLoggingExecutor() {
-        ThreadPoolTaskExecutor t = new ThreadPoolTaskExecutor();
-        t.setCorePoolSize(2);
-        t.setMaxPoolSize(5);
-        t.setQueueCapacity(500);    // bounded queue
-        t.setThreadNamePrefix("err-log-");
-        t.initialize();
-        return t;
-    }
-
     @Override
     @Bean(name = "taskExecutor")
     public Executor getAsyncExecutor() {

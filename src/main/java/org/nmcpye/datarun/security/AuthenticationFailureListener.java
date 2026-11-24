@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.security;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nmcpye.datarun.jpa.errorevent.service.ErrorEventService;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.web.filter.RequestIdFilter;
@@ -11,8 +10,6 @@ import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationListener;
 import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -57,14 +54,7 @@ public class AuthenticationFailureListener
         String attemptedUsername = principal instanceof String ? (String) principal : String.valueOf(principal);
         String accountId = cachedAccountId(attemptedUsername).orElse(null);
 
-        // The exception goes on to ExceptionTranslator, which records it in error_event: by the account's id, never
-        // by the login tried.
-        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
-        if (attrs != null && accountId != null) {
-            attrs.setAttribute(
-                ErrorEventService.ATTR_FAILED_LOGIN_ACCOUNT_ID, accountId, RequestAttributes.SCOPE_REQUEST);
-        }
-
+        // The failed login's only record: ExceptionTranslator logs nothing else for it.
         log.warn("Login failed ({}): request {}, login tag {}, account {}",
             event.getException().getClass().getSimpleName(), MDC.get(RequestIdFilter.MDC_REQUEST_ID_KEY),
             tag(attemptedUsername), accountId != null ? accountId : "unknown");

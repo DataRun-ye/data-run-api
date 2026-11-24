@@ -4,7 +4,6 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.core.read.ListAppender;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,15 +24,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * A failed login, through the login route: no log line and no error record names the login it tried, a personal
- * identifier (here phone numbers), for an account that exists and for one that does not.
+ * A failed login, through the login route: no log line names the login it tried, a personal identifier (here phone
+ * numbers), for an account that exists and for one that does not, and the listener's WARN line is its only record.
  * <p>
  * A context of its own (the property only makes its key differ): the login reads the user caches, and when an
  * earlier test class with {@code @DirtiesContext} (ErrorReportingOnIT) closes its context, it closes the JCache
@@ -63,7 +61,6 @@ class FailedLoginPrivacyIT {
     @Autowired
     private CacheManager cacheManager;
 
-    private final ObjectMapper json = new ObjectMapper();
     private final Logger root = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
     private final ListAppender<ILoggingEvent> logs = new ListAppender<>();
 
@@ -109,34 +106,8 @@ class FailedLoginPrivacyIT {
         assertThat(lines()).anySatisfy(line -> assertThat(line)
             .matches("Login failed \\(BadCredentialsException\\): request " + unknownRequest
                 + ", login tag [0-9a-f]{8}, account unknown"));
-    }
-
-    /**
-     * Its error record stores no login either: {@code username} is null (until 6.5.5 it held the login tried), and
-     * the account's id is the record's user id when the account exists.
-     */
-    @Test
-    void aFailedLoginIsRecordedWithoutTheLogin() throws Exception {
-        Map<String, Object> account = record(failLogin(ACCOUNT_LOGIN));
-        Map<String, Object> unknown = record(failLogin(UNKNOWN_LOGIN));
-
-        assertThat(account.get("username")).isNull();
-        assertThat(unknown.get("username")).isNull();
-        assertThat(json.readTree((String) account.get("context_json")).path("userId").asText()).isEqualTo(ACCOUNT_ID);
-        assertThat(json.readTree((String) unknown.get("context_json")).has("userId")).isFalse();
-        for (Map<String, Object> row : List.of(account, unknown)) {
-            assertThat(row).containsEntry("status", 401).containsEntry("message", "error.http.401");
-            row.forEach((column, value) -> assertThat(String.valueOf(value)).as("error_event.%s", column)
-                .doesNotContain(ACCOUNT_LOGIN, UNKNOWN_LOGIN));
-        }
-    }
-
-    private Map<String, Object> record(String requestId) {
-        List<Map<String, Object>> rows = jdbc.queryForList(
-            "SELECT status, username, message, exception, stacktrace, context_json, path FROM error_event "
-                + "WHERE context_json LIKE ?", "%\"requestId\":\"" + requestId + "\"%");
-        assertThat(rows).as("the record of request %s", requestId).hasSize(1);
-        return rows.get(0);
+        assertThat(lines()).as("the WARN line is a failed login's only record")
+            .noneMatch(line -> line.startsWith("Request POST /api/v1/authenticate"));
     }
 
     /** Sends a login with a wrong password and returns the request id the answer carries. */
