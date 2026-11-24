@@ -20,8 +20,8 @@
       It runs once. A re-run writes nothing for a submission that already has a revision, so it is safe if the
       changelog history were ever lost.
 
-      Rollback deletes the baselines, only while no revision written by the application exists (the guard is the
-      table's), and only after the append-only trigger's rollback.
+      Rollback refuses while the journal holds a revision the application wrote; otherwise it deletes the baselines.
+      Liquibase rolls back in reverse order, so the append-only trigger's rollback has run before this one.
     -->
     <changeSet id="20261124-c04-submission-revision-baseline" author="datarun">
         <sql>

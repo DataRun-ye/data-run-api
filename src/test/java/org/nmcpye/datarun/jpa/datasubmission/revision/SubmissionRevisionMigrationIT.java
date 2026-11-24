@@ -40,6 +40,7 @@ class SubmissionRevisionMigrationIT {
     private static final String MASTER = "config/liquibase/master.xml";
     /** Every changeset of step C starts with this id. */
     static final String STEP_C = "20261124-c";
+    static final String GAP_REPAIR = "20261124-c08-submission-revision-gap-repair";
 
     private static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16.2");
 
@@ -173,6 +174,16 @@ class SubmissionRevisionMigrationIT {
             } else {
                 liquibase.update(new Contexts(), new LabelExpression());
             }
+        }
+    }
+
+    /** One Liquibase rollback of the last {@code changes} changesets run, as a fresh process makes it. */
+    static void rollback(int changes) throws Exception {
+        ChangeLogHistoryServiceFactory.getInstance().resetAll();
+        Scope.getCurrentScope().getSingleton(FastCheckService.class).clearCache();
+        try (Connection connection = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())) {
+            Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
+            new Liquibase(MASTER, new ClassLoaderResourceAccessor(), database).rollback(changes, (String) null);
         }
     }
 
@@ -394,6 +405,38 @@ class SubmissionRevisionMigrationIT {
             }
             java.nio.file.Files.delete(dir);
         }
+    }
+
+    /**
+     * Once the application wrote a revision, a Liquibase rollback of step C refuses before it removes anything: the
+     * journal, its triggers and the outbox's key all stay. The gap repair, which runs at every start and so is always
+     * the latest changeset run, is rolled back first; it removes nothing, and the next start runs it again.
+     */
+    @Test
+    void aRollbackOfStepCRefusesWithEveryGuardInPlace() throws Exception {
+        String id = submission(0, false);
+        revision(id, 0, null, "CREATE", "UPLOAD", user(), null, null, null);
+        migrate(false);
+        assertThat(db.queryForObject("SELECT id FROM databasechangelog ORDER BY orderexecuted DESC LIMIT 1",
+            String.class)).as("the gap repair is the latest changeset run").isEqualTo(GAP_REPAIR);
+        long revisions = count("SELECT count(*) FROM submission_revision");
+        int stepC = (int) count("SELECT count(*) FROM databasechangelog WHERE id LIKE '" + STEP_C + "%'");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> rollback(stepC))
+            .hasStackTraceContaining("never roll it back");
+
+        assertThat(count("""
+            SELECT count(*) FROM pg_trigger WHERE tgrelid = 'submission_revision'::regclass AND NOT tgisinternal"""))
+            .as("the append-only, truncate and no-gap triggers").isEqualTo(3);
+        assertThat(count("SELECT count(*) FROM pg_constraint WHERE conname = 'fk_outbox_submission_revision'"))
+            .as("the outbox's key").isEqualTo(1);
+        assertThat(count("SELECT count(*) FROM submission_revision")).isEqualTo(revisions);
+        assertThat(db.queryForList("SELECT id FROM databasechangelog WHERE id LIKE '" + STEP_C + "%' ORDER BY id",
+            String.class)).as("only the gap repair was rolled back").hasSize(stepC - 1).doesNotContain(GAP_REPAIR);
+
+        migrate(false);
+        assertThat(count("SELECT count(*) FROM databasechangelog WHERE id = ?", GAP_REPAIR))
+            .as("the next start runs the gap repair again").isEqualTo(1);
     }
 
     // ---------------------------------------------------------------- the table and its constraints

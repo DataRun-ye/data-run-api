@@ -29,7 +29,8 @@
         submission_revision_metadata() renders them.
 
       Rollback: allowed only while the journal holds baselines only. Once a real revision exists it is the only
-      record of who changed what, and the rollback refuses (as with held_submission, never drop it then).
+      record of who changed what, and the rollback refuses (as with held_submission, never drop it then). Every
+      rollback that removes a guard refuses first, in the same way, so a refused rollback leaves the journal guarded.
     -->
     <changeSet id="20261124-c01-submission-revision-table" author="datarun">
         <sql>
@@ -116,7 +117,8 @@
       row through it. The SQL-standard body records its dependence on each column, so a migration that drops or
       renames one of them must decide what the journal records instead.
 
-      Rollback drops the function; the table's rollback must run first.
+      Rollback drops the function. Liquibase rolls back in reverse order, so this runs before the table's rollback and
+      after those of the changesets that use the function.
     -->
     <changeSet id="20261124-c02-submission-revision-metadata" author="datarun">
         <sql splitStatements="false"><![CDATA[

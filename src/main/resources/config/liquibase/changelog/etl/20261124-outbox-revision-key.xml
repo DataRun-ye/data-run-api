@@ -19,7 +19,9 @@
       holds the outbox. The ETL's own updates of a row never change these columns, so they are never checked. The
       journal is append-only, so no index on the outbox side is needed for deletes.
 
-      Rollback drops the key.
+      Rollback refuses first while the journal holds a revision the application wrote, then drops the key. In a
+      rollback of step C this is the first changeset that removes anything (the gap repair before it removes
+      nothing), so a refused rollback leaves every guard in place.
     -->
     <changeSet id="20261124-c07-outbox-revision-key" author="datarun">
         <sql>SET LOCAL lock_timeout = '${outboxRevisionLockTimeout}'</sql>
@@ -28,6 +30,14 @@
                 FOREIGN KEY (submission_id, submission_version) REFERENCES submission_revision (submission_id, version)
         </sql>
         <rollback>
+            <sql splitStatements="false"><![CDATA[
+                DO $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM submission_revision WHERE kind <> 'BASELINE') THEN
+                        RAISE EXCEPTION 'submission_revision holds revisions the application wrote: never roll it back';
+                    END IF;
+                END $$
+            ]]></sql>
             <sql>SET LOCAL lock_timeout = '${outboxRevisionLockTimeout}'</sql>
             <sql>ALTER TABLE outbox DROP CONSTRAINT fk_outbox_submission_revision</sql>
         </rollback>

@@ -23,7 +23,9 @@
       docs/agent-context/active-production-interface.md). runAlways: Liquibase runs it on every update, in its place
       after the journal's other changesets.
 
-      Rollback: nothing to undo; the gap revisions stay with the journal.
+      Rollback: nothing to undo; the gap revisions stay with the journal. It refuses nothing either: this changeset
+      runs at every start, and Liquibase records each run as the latest, so every later rollback begins here. A
+      refusal here would block those, unrelated ones included; the rollbacks that remove a guard refuse instead.
     -->
     <changeSet id="20261124-c08-submission-revision-gap-repair" author="datarun" runAlways="true">
         <sql>

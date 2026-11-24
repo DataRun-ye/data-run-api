@@ -12,7 +12,9 @@
       so its rows did not pay for a trigger. Only a superuser session that sets the replica replication role, which
       switches every trigger off, gets past it: the tests' purge, never main code.
 
-      Rollback drops the triggers and their function.
+      Rollback refuses first while the journal holds a revision the application wrote, as every rollback that
+      removes a guard or the journal does, so a refused rollback leaves every guard in place; then it drops the
+      triggers and their function.
     -->
     <changeSet id="20261124-c05-submission-revision-append-only" author="datarun">
         <sql splitStatements="false"><![CDATA[
@@ -37,6 +39,14 @@
                 FOR EACH STATEMENT EXECUTE FUNCTION submission_revision_refuse_change()
         </sql>
         <rollback>
+            <sql splitStatements="false"><![CDATA[
+                DO $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM submission_revision WHERE kind <> 'BASELINE') THEN
+                        RAISE EXCEPTION 'submission_revision holds revisions the application wrote: never roll it back';
+                    END IF;
+                END $$
+            ]]></sql>
             <sql>DROP TRIGGER IF EXISTS submission_revision_no_truncate ON submission_revision</sql>
             <sql>DROP TRIGGER IF EXISTS submission_revision_append_only ON submission_revision</sql>
             <sql>DROP FUNCTION IF EXISTS submission_revision_refuse_change()</sql>
@@ -51,7 +61,8 @@
       (SQLSTATE 23000, constraint submission_revision_no_gap). Concurrent writers of one submission are serialized
       by its row and its version check, and the primary key refuses whatever is left.
 
-      The head is read through the primary key: one index probe per insert. Rollback drops the trigger and function.
+      The head is read through the primary key: one index probe per insert. Rollback refuses first while the journal
+      holds a revision the application wrote, then drops the trigger and function.
     -->
     <changeSet id="20261124-c06-submission-revision-no-gap" author="datarun">
         <sql splitStatements="false"><![CDATA[
@@ -79,6 +90,14 @@
                 FOR EACH ROW EXECUTE FUNCTION submission_revision_check_sequence()
         </sql>
         <rollback>
+            <sql splitStatements="false"><![CDATA[
+                DO $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM submission_revision WHERE kind <> 'BASELINE') THEN
+                        RAISE EXCEPTION 'submission_revision holds revisions the application wrote: never roll it back';
+                    END IF;
+                END $$
+            ]]></sql>
             <sql>DROP TRIGGER IF EXISTS submission_revision_no_gap ON submission_revision</sql>
             <sql>DROP FUNCTION IF EXISTS submission_revision_check_sequence()</sql>
         </rollback>
