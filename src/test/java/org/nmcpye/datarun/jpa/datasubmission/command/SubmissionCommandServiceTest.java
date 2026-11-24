@@ -6,11 +6,13 @@ import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.web.rest.v1.intake.HeldDecisionRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,14 +30,14 @@ class SubmissionCommandServiceTest {
     private final DataSubmissionRepository submissions = mock(DataSubmissionRepository.class);
     private final PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
     private final TransactionStatus transaction = mock(TransactionStatus.class);
+    private final HeldSubmissionDecisions decisions = mock(HeldSubmissionDecisions.class);
     private SubmissionCommandService service;
 
     @BeforeEach
     void setUp() {
         when(transactionManager.getTransaction(any(TransactionDefinition.class))).thenReturn(transaction);
         service = new SubmissionCommandService(
-            mock(SubmissionUploads.class), submissionService, submissions, transactionManager,
-            mock(HeldSubmissionDecisions.class));
+            mock(SubmissionUploads.class), submissionService, submissions, transactionManager, decisions);
     }
 
     @Test
@@ -83,6 +85,23 @@ class SubmissionCommandServiceTest {
             () -> service.delete(new SubmissionCommand.Delete(actor(false), "storedSub01")));
 
         verifyNoInteractions(submissions, submissionService, transactionManager);
+    }
+
+    @Test
+    void onlyAnAdminMayReleaseOrDiscardHeldUploads() {
+        HeldDecisionRequest selection = new HeldDecisionRequest(List.of("heldSub0001"), null, null, null);
+
+        assertThrows(AccessDeniedException.class,
+            () -> service.releaseHeld(new SubmissionCommand.ReleaseHeld(actor(false), selection)));
+        assertThrows(AccessDeniedException.class,
+            () -> service.discardHeld(new SubmissionCommand.DiscardHeld(actor(false), selection)));
+        verifyNoInteractions(decisions);
+
+        SubmissionActor admin = actor(true);
+        service.releaseHeld(new SubmissionCommand.ReleaseHeld(admin, selection));
+        service.discardHeld(new SubmissionCommand.DiscardHeld(admin, selection));
+        verify(decisions).release(admin, selection);
+        verify(decisions).discard(admin, selection);
     }
 
     private static SubmissionActor actor(boolean admin) {

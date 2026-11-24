@@ -64,9 +64,7 @@ public class SubmissionCommandService {
      * its first delete time, the rule an upload's {@code deleted=true} already follows. Only an admin may delete.
      */
     public DeleteOutcome delete(SubmissionCommand.Delete command) {
-        if (!command.actor().admin()) {
-            throw new AccessDeniedException("Only an admin may delete a submission");
-        }
+        requireAdmin(command, "Only an admin may delete a submission");
         return new TransactionTemplate(transactionManager).execute(status -> {
             DataSubmission submission = submissions.findByUid(command.uid()).orElse(null);
             if (submission == null) {
@@ -82,18 +80,27 @@ public class SubmissionCommandService {
 
     /**
      * An admin's discard of held uploads: each one is labelled DISCARDED in the admin's name, only if it is unchanged
-     * since it was read (see {@link HeldSubmissionDecisions#discard}).
+     * since it was read (see {@link HeldSubmissionDecisions#discard}). Only an admin may discard.
      */
     public HeldDecisionResult discardHeld(SubmissionCommand.DiscardHeld command) {
+        requireAdmin(command, "Only an admin may discard held uploads");
         return held.discard(command.actor(), command.selection());
     }
 
     /**
      * An admin's release of held uploads: each one is replayed through the upload checks and save on behalf of its
      * original submitter, or marked superseded when its uid is already in the real data, and the decision is
-     * recorded in the admin's name (see {@link HeldSubmissionDecisions#release}).
+     * recorded in the admin's name (see {@link HeldSubmissionDecisions#release}). Only an admin may release.
      */
     public HeldDecisionResult releaseHeld(SubmissionCommand.ReleaseHeld command) {
+        requireAdmin(command, "Only an admin may release held uploads");
         return held.release(command.actor(), command.selection());
+    }
+
+    /** The command's own rule, kept here as well as on its route: this service is what every caller goes through. */
+    private static void requireAdmin(SubmissionCommand command, String refusal) {
+        if (!command.actor().admin()) {
+            throw new AccessDeniedException(refusal);
+        }
     }
 }
