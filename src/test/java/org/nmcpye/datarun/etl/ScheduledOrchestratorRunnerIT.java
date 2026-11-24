@@ -262,7 +262,7 @@ class ScheduledOrchestratorRunnerIT {
         List<String> disabledLog = runnerLogOf(() -> runner(countingOrchestrator(), properties).configureTasks(disabled));
         assertThat(disabled.getTriggerTaskList()).isEmpty();
 
-        // scripts/staging/prepare-candidate.sh checks for these lines: keep them in step.
+        // scripts/staging/prepare-candidate.sh fails preparation on the "polls" line: keep them in step.
         assertThat(enabledLog).anySatisfy(line -> assertThat(line).startsWith("The ETL polls the outbox"));
         assertThat(disabledLog).anySatisfy(line -> assertThat(line).startsWith("The ETL does not poll the outbox on this instance"));
         assertThat(disabledLog).noneSatisfy(line -> assertThat(line).startsWith("The ETL polls the outbox"));

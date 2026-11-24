@@ -44,7 +44,7 @@ grep -Fq -- '"$base_url/api/v1/refresh"' scripts/staging/smoke.sh
 grep -Fq -- '--datarun.transition.capture-live-shadow-enabled=false' \
     scripts/staging/prepare-candidate.sh
 grep -Fq -- '--datarun.etl.enabled=false' scripts/staging/prepare-candidate.sh
-grep -Fq -- 'The ETL does not poll the outbox on this instance' scripts/staging/prepare-candidate.sh
+grep -Fq -- "grep -Fq 'The ETL polls the outbox'" scripts/staging/prepare-candidate.sh
 grep -Fq -- "ssh '\$production_refresh_alias'" \
     scripts/staging/refresh-from-production.sh
 grep -Fq -- "mv -f '\$remote_partial_dump' '\$remote_dump'" \

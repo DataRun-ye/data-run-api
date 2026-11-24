@@ -70,9 +70,9 @@ run_migrations() {
         local logs
         logs="$(docker logs "$active_container" 2>&1 || true)"
         if grep -Fq 'Started DataRunApiApp' <<<"$logs"; then
-            # The runner logs at startup whether this instance polls the outbox.
-            if ! grep -Fq 'The ETL does not poll the outbox on this instance' <<<"$logs" \
-                || grep -Fq 'The ETL polls the outbox' <<<"$logs"; then
+            # A runner that polls says so at startup. Images older than that runner log neither line and pass,
+            # so a production-image baseline or a rollback rehearsal still prepares.
+            if grep -Fq 'The ETL polls the outbox' <<<"$logs"; then
                 echo "The ETL was not switched off during migration preparation." >&2
                 return 1
             fi
