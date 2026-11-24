@@ -5,6 +5,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.nmcpye.datarun.etl.admin.EtlRunLock;
 import org.nmcpye.datarun.etl.admin.ScheduledOrchestratorRunner;
 import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
@@ -13,9 +14,13 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * When the scheduled runner starts a run, and the lock that keeps two runs from overlapping, against
@@ -80,14 +85,21 @@ class ScheduledOrchestratorRunnerIT {
             status, nextAttemptAt);
     }
 
-    private ScheduledOrchestratorRunner runner() {
-        EtlOrchestrator countingOrchestrator = new EtlOrchestrator(null, null, null, null, null, new EtlProperties()) {
+    private EtlOrchestrator countingOrchestrator() {
+        return new EtlOrchestrator(null, null, null, null, null, new EtlProperties()) {
             @Override
             public void runOnce(String pipelineName, int batchSize) {
                 runs.incrementAndGet();
             }
         };
-        return new ScheduledOrchestratorRunner(new NamedParameterJdbcTemplate(pool), countingOrchestrator);
+    }
+
+    private ScheduledOrchestratorRunner runner(EtlOrchestrator orchestrator) {
+        return new ScheduledOrchestratorRunner(new NamedParameterJdbcTemplate(pool), orchestrator, new EtlRunLock(pool));
+    }
+
+    private ScheduledOrchestratorRunner runner() {
+        return runner(countingOrchestrator());
     }
 
     private int heldLocks() {
@@ -119,20 +131,53 @@ class ScheduledOrchestratorRunnerIT {
     }
 
     /**
-     * Today: the session-level lock is taken on one borrowed connection and released on whichever connection
-     * is borrowed next. Released on the other one, it stays held, and later runs are skipped.
+     * The lock is taken and released on one connection kept for the run, whatever connection the pool hands out
+     * next, so each run releases it (pinned before as released on another connection, held for good, and
+     * every later run skipped).
      */
     @Test
-    void today_theLockReleasedOnAnotherConnectionStaysHeldAndLaterRunsAreSkipped() {
+    void eachRunReleasesTheLockWhateverConnectionComesNext() {
         outboxRow("pending", null);
-        ScheduledOrchestratorRunner runner = runner();
+        ScheduledOrchestratorRunner runner = runner(countingOrchestrator());
+
+        for (int run = 1; run <= 3; run++) {
+            runner.scheduledRun();
+            assertThat(heldLocks()).isZero();
+        }
+        assertThat(runs).hasValue(3);
+    }
+
+    @Test
+    void aRunIsSkippedWhileAnotherRunHoldsTheLock() throws Exception {
+        outboxRow("pending", null);
+        ScheduledOrchestratorRunner runner = runner(countingOrchestrator());
+
+        try (Connection otherRun = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword());
+             PreparedStatement lock = otherRun.prepareStatement("SELECT pg_advisory_lock(?)")) {
+            lock.setLong(1, LOCK_KEY);
+            lock.execute();
+            runner.scheduledRun();
+            assertThat(runs).as("skipped while the other run holds the lock").hasValue(0);
+        }
 
         runner.scheduledRun();
+        assertThat(runs).as("runs once the other run has ended").hasValue(1);
+    }
+
+    @Test
+    void aRunThatFailsStillReleasesTheLock() {
+        outboxRow("pending", null);
+        EtlOrchestrator failing = new EtlOrchestrator(null, null, null, null, null, new EtlProperties()) {
+            @Override
+            public void runOnce(String pipelineName, int batchSize) {
+                throw new IllegalStateException("run failed");
+            }
+        };
+
+        assertThatThrownBy(runner(failing)::scheduledRun).hasMessage("run failed");
+
+        assertThat(heldLocks()).isZero();
+        runner(countingOrchestrator()).scheduledRun();
         assertThat(runs).hasValue(1);
-        assertThat(heldLocks()).as("the lock outlives the run").isEqualTo(1);
-
-        runner.scheduledRun();
-        runner.scheduledRun();
-        assertThat(runs).as("each later run finds the lock taken and skips").hasValue(1);
     }
 }

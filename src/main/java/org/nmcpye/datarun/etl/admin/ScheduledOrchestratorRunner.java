@@ -16,19 +16,16 @@ public class ScheduledOrchestratorRunner {
 
     private final NamedParameterJdbcTemplate jdbc;
     private final EtlOrchestrator orchestrator;
-
-    // choose a stable big int lock key (unique per cluster)
-    private static final long ADVISORY_LOCK_KEY = 123456789012345L;
+    private final EtlRunLock lock;
 
     @Value("${migration.size:100}")
     private int SCHEDULE_BATCH_SIZE;
 
-    public ScheduledOrchestratorRunner(NamedParameterJdbcTemplate jdbc, EtlOrchestrator orchestrator) {
+    public ScheduledOrchestratorRunner(NamedParameterJdbcTemplate jdbc, EtlOrchestrator orchestrator, EtlRunLock lock) {
         this.jdbc = jdbc;
         this.orchestrator = orchestrator;
+        this.lock = lock;
     }
-
-    //
 
     /** Whether a claim would find a row: pending or failed, and due (not leased, its retry time come). */
     private static final String CLAIMABLE_SQL = """
@@ -43,26 +40,12 @@ public class ScheduledOrchestratorRunner {
         Integer countPending = jdbc.queryForObject(CLAIMABLE_SQL, new MapSqlParameterSource(), Integer.class);
         if (countPending != null && countPending > 0) {
             log.info("{} outbox events due, starting orchestrator run ...", countPending);
-            Boolean acquired = jdbc.queryForObject(
-                "SELECT pg_try_advisory_lock(:key)",
-                new MapSqlParameterSource("key", ADVISORY_LOCK_KEY),
-                Boolean.class
-            );
-
-            if (!Boolean.TRUE.equals(acquired)) {
-                log.debug("Another instance holds the advisory lock; skipping scheduled run");
-                return;
-            }
-
-            try {
+            boolean ran = lock.callExclusively(() -> {
                 orchestrator.runOnce("scheduled", SCHEDULE_BATCH_SIZE);
-            } finally {
-                Boolean released = jdbc.queryForObject(
-                    "SELECT pg_advisory_unlock(:key)",
-                    new MapSqlParameterSource("key", ADVISORY_LOCK_KEY),
-                    Boolean.class
-                );
-                log.info("Released advisory lock: {}", released);
+                return true;
+            }).isPresent();
+            if (!ran) {
+                log.info("Another ETL run holds the lock; skipping this run");
             }
         } else {
             log.info("No pending outbox even");
