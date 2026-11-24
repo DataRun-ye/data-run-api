@@ -11,6 +11,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -193,6 +195,41 @@ class EtlOutboxProcessingIT {
         assertThat((String) row.get("last_error")).contains("NotASemanticType");
         assertThat(fixture.auditRows(failing)).extracting(r -> r.get("status")).containsExactly("failure");
         assertThat(fixture.runs()).singleElement().satisfies(r -> assertThat(r).containsEntry("failure_count", 1L));
+    }
+
+    /**
+     * A projection waiting on another session's lock gives up when the row timeout (3 s here) runs out, and is
+     * tried again later, instead of holding the ETL for as long as that session stays open.
+     */
+    @Test
+    void aRowWaitingOnAnotherSessionsLockFailsWhenTheRowTimeoutRunsOut() throws Exception {
+        fixture.submission("lockSub0001", TEMPLATE, 1);
+        fixture.outbox("lockSub0001", "SAVE");
+        orchestrator.runOnce("test", 10);
+        long update = fixture.outbox("lockSub0001", "UPDATE");
+
+        double seconds;
+        try (Connection otherSession = dataSource.getConnection()) {
+            otherSession.setAutoCommit(false);
+            try (PreparedStatement hold = otherSession.prepareStatement(
+                "UPDATE analytics.tall_canonical SET updated_at = now() WHERE submission_uid = 'lockSub0001'")) {
+                hold.executeUpdate();
+            }
+            long start = System.nanoTime();
+            orchestrator.runOnce("test", 10);
+            seconds = (System.nanoTime() - start) / 1e9;
+            otherSession.rollback();
+        }
+
+        assertThat(seconds).isBetween(2.5, 8.0);
+        Map<String, Object> row = fixture.outboxRow(update);
+        assertThat(row).containsEntry("status", "failed").containsEntry("attempt", 1);
+        assertThat((String) row.get("last_error")).endsWith("[SQLState 57014]");
+        assertThat(watchdog.cancelled()).isEmpty();
+
+        fixture.endLease(update);
+        orchestrator.runOnce("test", 10);
+        assertThat(fixture.outboxRow(update)).as("tried again once the lock is gone").containsEntry("status", "success");
     }
 
     /** A row claimed more often than it may be tried, each run ending without an outcome, is dead unprojected. */

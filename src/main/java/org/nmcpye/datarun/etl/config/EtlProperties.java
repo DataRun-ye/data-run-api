@@ -35,6 +35,12 @@ public class EtlProperties {
      */
     private Duration claimLease = Duration.ofMinutes(15);
 
+    /**
+     * How long one row's projection may take. A projection waiting on another session's lock then fails, to be
+     * tried again, instead of holding the ETL for as long as that session stays open.
+     */
+    private Duration rowTimeout = Duration.ofSeconds(60);
+
     /** Tries before a failing row is dead-lettered (status {@code dead}) and left for an operator. */
     private int maxAttempts = 10;
 

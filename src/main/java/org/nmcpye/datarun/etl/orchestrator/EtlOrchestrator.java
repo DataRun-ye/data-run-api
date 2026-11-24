@@ -53,6 +53,8 @@ public class EtlOrchestrator {
         this.outboxProcessingService = outboxProcessingService;
         this.eventProcessorService = eventProcessorService;
         this.txTemplate = new TransactionTemplate(txManager);
+        // Statements in a row's transaction are cancelled once it has run this long.
+        this.txTemplate.setTimeout((int) Math.max(1, properties.getRowTimeout().toSeconds()));
         this.retryPolicy = new EtlRetryPolicy(properties);
         this.metrics = metrics;
     }
