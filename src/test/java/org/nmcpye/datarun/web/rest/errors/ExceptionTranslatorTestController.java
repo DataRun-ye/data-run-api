@@ -62,6 +62,22 @@ public class ExceptionTranslatorTestController {
     @PostMapping("/method-argument-size")
     public void methodArgumentSize(@Valid @RequestBody SizedDTO sizedDTO) {}
 
+    @PostMapping("/typed-body")
+    public void typedBody(@RequestBody TypedDTO typedDTO) {}
+
+    public static class TypedDTO {
+
+        private Integer count;
+
+        public Integer getCount() {
+            return count;
+        }
+
+        public void setCount(Integer count) {
+            this.count = count;
+        }
+    }
+
     public static class SizedDTO {
 
         @Size(max = 3)

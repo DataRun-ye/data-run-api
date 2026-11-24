@@ -335,7 +335,11 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     The container log keeps every line in full. Database errors there leave
     out the failing row only because the pool and both JDBC URLs set
     `logServerErrorDetail=false`; PostgreSQL's own message can still quote an
-    input value (`invalid input syntax for type integer: "…"`).
+    input value (`invalid input syntax for type integer: "…"`). An unreadable
+    request body is logged at WARN by its method, route pattern and exception
+    types only (`Unreadable request body on POST /api/v1/dataSubmission/bulk:
+    HttpMessageNotReadableException < JsonParseException`), never by the
+    exception's message, which quotes the body.
   - Error records (`error_event`): one row per request error that the REST
     layer answers. Since 6.5.5 a row holds no exception message, which
     quoted submitted values, request bodies and database rows: `message`
@@ -347,7 +351,10 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     for a database error the SQLState and the constraint. Older rows keep
     their messages. `username` is unchanged: the login a failed login
     attempted, otherwise mostly `anonymous`, because production writes the
-    row on another thread. Nothing in code reads the table.
+    row on another thread. Nothing in code reads the table. A row that cannot
+    be queued (the queue holds 500) is logged at WARN and leaves the answer as
+    it is; until 6.5.5 Spring's fallback resolver then answered and logged the
+    exception with its message.
   - Heartbeat (`DATARUN_ETL_HEARTBEAT_URL`, `datarun.etl.heartbeat-url`):
     after a poll that succeeded, the ETL sends a POST to the monitor, at most
     once a minute, and gives up after 5 s. A failure is logged at DEBUG and

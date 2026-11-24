@@ -2,6 +2,7 @@ package org.nmcpye.datarun.web.rest.errors;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
@@ -22,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConversionException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.lang.Nullable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -33,7 +35,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import tech.jhipster.config.JHipsterConstants;
 import tech.jhipster.web.rest.errors.ProblemDetailWithCause;
@@ -52,6 +56,7 @@ import static org.springframework.core.annotation.AnnotatedElementUtils.findMerg
  */
 @ControllerAdvice
 @RequiredArgsConstructor
+@Slf4j
 public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     private static final String FIELD_ERRORS_KEY = "fieldErrors";
     private static final String MESSAGE_KEY = "message";
@@ -125,18 +130,58 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
      */
     private void logErrorToDb(Throwable ex, NativeWebRequest request, int status) {
         markAsLogged(request); // prevent double logging
-        Map<String, Object> context = new LinkedHashMap<>();
-        String requestId = MDC.get(RequestIdFilter.MDC_REQUEST_ID_KEY);
-        if (requestId != null) {
-            context.put("requestId", requestId);
-        }
-        SecurityUtils.getCurrentUserDetails().map(CurrentUserDetails::getId)
-            .ifPresent(userId -> context.put("userId", userId));
-        if (ex instanceof MethodArgumentNotValidException invalid) {
-            context.put("validationErrors", invalid.getBindingResult().getErrorCount());
-        }
+        try {
+            Map<String, Object> context = new LinkedHashMap<>();
+            String requestId = MDC.get(RequestIdFilter.MDC_REQUEST_ID_KEY);
+            if (requestId != null) {
+                context.put("requestId", requestId);
+            }
+            SecurityUtils.getCurrentUserDetails().map(CurrentUserDetails::getId)
+                .ifPresent(userId -> context.put("userId", userId));
+            if (ex instanceof MethodArgumentNotValidException invalid) {
+                context.put("validationErrors", invalid.getBindingResult().getErrorCount());
+            }
 
-        errorEventService.logError(ex, request, HttpStatus.valueOf(status), errorCode(ex, status), context);
+            errorEventService.logError(ex, request, HttpStatus.valueOf(status), errorCode(ex, status), context);
+        } catch (RuntimeException notRecorded) {
+            // A full recording queue (TaskRejectedException) must not fail this handler: Spring's fallback resolver
+            // would then answer instead and log the original exception with its message, which can quote the body.
+            log.warn("Request error ({}, {}) not recorded in error_event: {}",
+                status, ex.getClass().getSimpleName(), notRecorded.getClass().getSimpleName());
+        }
+    }
+
+    /**
+     * An unreadable body (malformed JSON, a value of the wrong type) is logged by its route and exception types
+     * only: the exception's message quotes the body ({@code Unrecognized token 'x'}, {@code from String "y"}). The
+     * answer stays Spring's.
+     */
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(
+        HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        log.warn("Unreadable request body on {} {}: {}", method(request), route(request), types(ex));
+        return super.handleHttpMessageNotReadable(ex, headers, status, request);
+    }
+
+    private static String method(WebRequest request) {
+        return request instanceof ServletWebRequest servlet ? servlet.getRequest().getMethod() : "UNKNOWN";
+    }
+
+    /** The matched route pattern ({@code /api/v1/users/{login}}), never the raw path, which can hold a value. */
+    private static String route(WebRequest request) {
+        Object pattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE,
+            RequestAttributes.SCOPE_REQUEST);
+        return pattern != null ? pattern.toString() : "(no route matched)";
+    }
+
+    /** For example {@code HttpMessageNotReadableException < JsonParseException}. */
+    private static String types(Throwable ex) {
+        StringJoiner types = new StringJoiner(" < ");
+        Set<Throwable> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (Throwable cause = ex; cause != null && seen.add(cause); cause = cause.getCause()) {
+            types.add(cause.getClass().getSimpleName());
+        }
+        return types.toString();
     }
 
     /** A refusal's code, else the message key the answer carries ({@code error.validation}, {@code error.http.400}). */
