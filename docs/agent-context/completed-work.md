@@ -117,6 +117,15 @@ deployment authority.
     burst capacity, metrics, no submitted values in logs, and a partial outbox index;
   - admin-only pivot builds;
   - the read-only integrity check.
+- `v6.5.3` / `41abb6b8`: deployed 2026-11-24 (GitHub release `v6.5.3`). Three changes:
+  - dead code and database objects removed, among them the 12 unread materialized views, the ledger, the refused
+    `/admin/etl` routes, and duplicate indexes;
+  - GlitchTip error reporting with strict privacy filtering, plus an ETL heartbeat;
+  - characterization goldens.
+- `v6.5.4` / `dfe766fc`: deployed 2026-11-24 (GitHub release `v6.5.4`). One submission write path
+  (`SubmissionCommandService`):
+  - held-release races fixed, plus `runAgain` and `stopReason`;
+  - an architecture test and an SQL tripwire for writers.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.
