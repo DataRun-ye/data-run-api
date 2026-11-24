@@ -17,6 +17,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.nmcpye.datarun.IntegrationTest;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Group;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Item;
+import org.nmcpye.datarun.jpa.datasubmission.revision.SubmissionTestPurge;
 import org.nmcpye.datarun.jpa.intake.GoLiveRule;
 import org.nmcpye.datarun.jpa.intake.GoLiveRuleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -138,7 +139,7 @@ abstract class A2GoldenSupport {
             jdbc.update("""
                 DELETE FROM outbox WHERE submission_uid LIKE 'a2%'
                    OR submission_id IN (SELECT id FROM data_submission WHERE assignment_uid IN (:assignments))""", scope);
-            jdbc.update("DELETE FROM data_submission WHERE uid LIKE 'a2%' OR assignment_uid IN (:assignments)", scope);
+            SubmissionTestPurge.purge(jdbc, "s.uid LIKE 'a2%' OR s.assignment_uid IN (:assignments)", scope.getValues());
             jdbc.update("DELETE FROM held_submission WHERE uid LIKE 'a2%' OR assignment_uid IN (:assignments)", scope);
             jdbc.update("""
                 DELETE FROM reference_entry WHERE created_by <> 'a2-seed'

@@ -179,6 +179,27 @@ class SubmissionWriteOwnershipTest {
             .isEmpty();
     }
 
+    /**
+     * {@code session_replication_role = replica} switches off every trigger and foreign key check of a session: the
+     * journal's guards among them. Only the tests' purge sets it ({@code SubmissionTestPurge}); main code and
+     * resources never name it.
+     */
+    @Test
+    void noMainCodeSwitchesOffTheDatabaseGuards() throws IOException {
+        List<String> naming = new ArrayList<>();
+        for (Path root : List.of(Path.of("src", "main", "java"), Path.of("src", "main", "resources"))) {
+            try (Stream<Path> files = Files.walk(root)) {
+                for (Path file : files.filter(Files::isRegularFile).toList()) {
+                    String text = new String(Files.readAllBytes(file), java.nio.charset.StandardCharsets.ISO_8859_1);
+                    if (text.toLowerCase(Locale.ROOT).contains("session_replication_role")) {
+                        naming.add(relative(root, file));
+                    }
+                }
+            }
+        }
+        assertThat(naming).as("main files naming session_replication_role").isEmpty();
+    }
+
     /** The scan's rules on small sources: what it reads, skips and flags. */
     @Test
     void theSqlScanFlagsWhatItShould() {

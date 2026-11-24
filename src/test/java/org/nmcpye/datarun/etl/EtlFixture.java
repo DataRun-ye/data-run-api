@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.etl;
 
+import org.nmcpye.datarun.jpa.datasubmission.revision.SubmissionTestPurge;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -256,7 +257,7 @@ final class EtlFixture {
             plain.update("DELETE FROM etl_runs");
             plain.update("DELETE FROM analytics.tall_canonical");
             plain.update("DELETE FROM analytics.events");
-            plain.update("DELETE FROM data_submission WHERE created_by = 'etl-test'");
+            SubmissionTestPurge.purge(jdbc, "s.created_by = 'etl-test'", Map.of());
             plain.update("DELETE FROM canonical_element WHERE template_uid LIKE 'etl%'");
         });
     }
