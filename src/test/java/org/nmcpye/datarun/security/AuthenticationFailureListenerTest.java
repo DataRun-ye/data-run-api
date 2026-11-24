@@ -6,6 +6,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.nmcpye.datarun.jpa.errorevent.service.ErrorEventService;
 import org.nmcpye.datarun.jpa.user.User;
 import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.web.filter.RequestIdFilter;
@@ -13,10 +14,14 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -91,6 +96,38 @@ class AuthenticationFailureListenerTest {
 
         assertThat(lines).singleElement().satisfies(line ->
             assertThat(line.getFormattedMessage()).endsWith(", account unknown").doesNotContain("7770001112"));
+    }
+
+    /**
+     * The request keeps the account's id for the error record, when the account exists, and never the login tried
+     * (until 6.5.5 it kept the login, which error_event stored).
+     */
+    @Test
+    void theRequestKeepsTheAccountsIdNotTheLogin() {
+        User account = new User();
+        account.setId("01JUSER0000000000000000003");
+        caches.getCache(UserRepository.USERS_BY_LOGIN_CACHE).put("7770001112", account);
+        AuthenticationFailureListener listener = new AuthenticationFailureListener(caches);
+        MockHttpServletRequest accountRequest = new MockHttpServletRequest();
+        MockHttpServletRequest unknownRequest = new MockHttpServletRequest();
+
+        within(accountRequest, () -> listener.onApplicationEvent(failure("7770001112")));
+        within(unknownRequest, () -> listener.onApplicationEvent(failure("7770001113")));
+
+        assertThat(accountRequest.getAttribute(ErrorEventService.ATTR_FAILED_LOGIN_ACCOUNT_ID))
+            .isEqualTo("01JUSER0000000000000000003");
+        assertThat(Collections.list(accountRequest.getAttributeNames()))
+            .containsExactly(ErrorEventService.ATTR_FAILED_LOGIN_ACCOUNT_ID);
+        assertThat(Collections.list(unknownRequest.getAttributeNames())).isEmpty();
+    }
+
+    private static void within(MockHttpServletRequest request, Runnable work) {
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        try {
+            work.run();
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
     }
 
     /** An email login is looked up as typed, in its own cache. */

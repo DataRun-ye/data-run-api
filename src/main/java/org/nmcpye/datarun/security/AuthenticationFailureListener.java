@@ -55,22 +55,19 @@ public class AuthenticationFailureListener
     public void onApplicationEvent(AuthenticationFailureBadCredentialsEvent event) {
         Object principal = event.getAuthentication().getPrincipal();
         String attemptedUsername = principal instanceof String ? (String) principal : String.valueOf(principal);
+        String accountId = cachedAccountId(attemptedUsername).orElse(null);
 
-        // Bridge the gap: Put this username into the Request Scope
-        // The ExceptionTranslator will pick this up in the Service via request.getAttribute()
+        // The exception goes on to ExceptionTranslator, which records it in error_event: by the account's id, never
+        // by the login tried.
         RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
-        if (attrs != null) {
+        if (attrs != null && accountId != null) {
             attrs.setAttribute(
-                ErrorEventService.ATTR_ATTEMPTED_USERNAME,
-                attemptedUsername,
-                RequestAttributes.SCOPE_REQUEST
-            );
+                ErrorEventService.ATTR_FAILED_LOGIN_ACCOUNT_ID, accountId, RequestAttributes.SCOPE_REQUEST);
         }
 
-        // We do NOT log to DB here. We let the Exception bubble to ExceptionTranslator.
         log.warn("Login failed ({}): request {}, login tag {}, account {}",
             event.getException().getClass().getSimpleName(), MDC.get(RequestIdFilter.MDC_REQUEST_ID_KEY),
-            tag(attemptedUsername), cachedAccountId(attemptedUsername).orElse("unknown"));
+            tag(attemptedUsername), accountId != null ? accountId : "unknown");
     }
 
     /** Eight hex digits of the login's HMAC; logins are matched without regard to case, so the tag is too. */

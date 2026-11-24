@@ -126,7 +126,8 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     /**
      * Records the error in {@code error_event} by its code and identifiers, never by a message (see
      * {@link ErrorEventService}). The record is written on another thread, so what only the request's thread knows
-     * is read here: the request id that the log lines and the {@code X-Request-ID} answer carry, and the user's id.
+     * is read here: the request id that the log lines and the {@code X-Request-ID} answer carry, and the user's id
+     * (for a failed login, the account's id when the account exists; never the login it tried).
      */
     private void logErrorToDb(Throwable ex, NativeWebRequest request, int status) {
         markAsLogged(request); // prevent double logging
@@ -138,6 +139,11 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
             }
             SecurityUtils.getCurrentUserDetails().map(CurrentUserDetails::getId)
                 .ifPresent(userId -> context.put("userId", userId));
+            Object failedLoginAccount = request.getAttribute(ErrorEventService.ATTR_FAILED_LOGIN_ACCOUNT_ID,
+                RequestAttributes.SCOPE_REQUEST);
+            if (failedLoginAccount != null) {
+                context.putIfAbsent("userId", failedLoginAccount);
+            }
             if (ex instanceof MethodArgumentNotValidException invalid) {
                 context.put("validationErrors", invalid.getBindingResult().getErrorCount());
             }

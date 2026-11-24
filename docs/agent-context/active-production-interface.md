@@ -366,9 +366,11 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     `context_json` holds identifiers: the request id of the log lines and of
     the `X-Request-ID` answer, the user id, the causes' exception types, and
     for a database error the SQLState and the constraint. Older rows keep
-    their messages. `username` is unchanged: the login a failed login
-    attempted, otherwise mostly `anonymous`, because production writes the
-    row on another thread. Nothing in code reads the table. A row that cannot
+    their messages. `username` no longer holds the login a failed login
+    tried (null since 6.5.5; the account's id is the `userId` when the
+    account exists); older rows keep those logins. Other rows still read
+    mostly `anonymous`, because production writes the row on another thread.
+    Nothing in code reads the table. A row that cannot
     be queued (the queue holds 500) is logged at WARN and leaves the answer as
     it is; until 6.5.5 Spring's fallback resolver then answered and logged the
     exception with its message.

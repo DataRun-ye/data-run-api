@@ -12,6 +12,7 @@ import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.SecurityUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -38,7 +39,11 @@ import java.util.Set;
 @Slf4j
 @RequiredArgsConstructor
 public class ErrorEventService {
-    public static final String ATTR_ATTEMPTED_USERNAME = "LOGGING_ATTEMPTED_USERNAME";
+    /**
+     * The request attribute in which a failed login leaves its account's durable id, when the account exists; never
+     * the login it tried. {@code ExceptionTranslator} reads it into the record's {@code userId}.
+     */
+    public static final String ATTR_FAILED_LOGIN_ACCOUNT_ID = "LOGGING_FAILED_LOGIN_ACCOUNT_ID";
 
     private static final int MAX_STACKTRACE = 4000;
 
@@ -70,7 +75,7 @@ public class ErrorEventService {
                 .path(extractPath(servletRequest))
                 .method(servletRequest != null ? servletRequest.getMethod() : "UNKNOWN")
                 .clientIp(extractClientIp(servletRequest))
-                .username(resolveUsername(servletRequest))
+                .username(resolveUsername(ex))
                 .message(errorCode)
                 .exception(ex.getClass().getName())
                 .stacktrace(truncate(stackTraceWithoutMessages(ex), MAX_STACKTRACE))
@@ -161,16 +166,16 @@ public class ErrorEventService {
         return (auth != null && auth.isAuthenticated()) ? String.valueOf(auth.getName()) : "anonymous";
     }
 
-    private String resolveUsername(HttpServletRequest request) {
-        // 1. Check if the AuthenticationListener enriched the request with a failed login name
-        if (request != null) {
-            Object attempted = request.getAttribute(ATTR_ATTEMPTED_USERNAME);
-            if (attempted != null) {
-                return String.valueOf(attempted);
-            }
+    /**
+     * Never the login a failed login tried, a personal identifier (until 6.5.5 it was stored): such a record stores
+     * null, and the account's id, when the account exists, goes to {@code context_json}. Otherwise the request's
+     * user, as before; production writes on another thread, where no user is known, so those rows read
+     * {@code anonymous}.
+     */
+    private String resolveUsername(Throwable ex) {
+        if (ex instanceof BadCredentialsException) {
+            return null;
         }
-
-        // 2. Check Security Context (for already logged-in users)
         return SecurityUtils.getCurrentUserDetails()
             .map(CurrentUserDetails::getUsername)
             .orElse(extractUsername());
