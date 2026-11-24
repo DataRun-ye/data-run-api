@@ -46,8 +46,11 @@ When evidence conflicts:
   current task; remove them only in a separately approved Liquibase slice.
 - This classification does not apply to the separate analytics ETL tables
   still referenced by active source. The ledger source was removed from
-  `develop` too, and Liquibase changeset `20261124-05-drop-ledger-leftovers`
-  drops its tables and its columns on `analytics.events`.
+  `develop` too. Liquibase changeset `20261124-05-drop-ledger-leftovers`
+  drops the ledger's `processing_issues` table and its columns on
+  `analytics.events`, together with two unreferenced hand-made tables,
+  `supply_ledger` and `monthly_consumption`. The latter holds one batch run
+  covering December 2025 to March 2026.
 
 ## Migration Rules
 
