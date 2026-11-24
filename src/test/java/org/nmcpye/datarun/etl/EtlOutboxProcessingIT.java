@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.nmcpye.datarun.etl.EtlFixture.TEMPLATE;
 
 /**
@@ -106,11 +107,11 @@ class EtlOutboxProcessingIT {
     }
 
     /**
-     * Today: a database error is audited, but the outbox row keeps no attempt, error or retry time, and the
+     * Today: a database error is audited, but the outbox row keeps no error or retry time of its own, and the
      * audited error is the start of the failed statement, cut before the cause.
      */
     @Test
-    void today_aDatabaseFailureIsAuditedButTheRowStaysPendingWithNoAttemptOrError() {
+    void today_aDatabaseFailureIsAuditedButTheRowStaysPendingWithNoErrorOrRetryTime() {
         fixture.failProjectionsOfFailUids();
         fixture.submission("failSub0001", TEMPLATE, 1);
         long failing = fixture.outbox("failSub0001", "SAVE");
@@ -119,9 +120,9 @@ class EtlOutboxProcessingIT {
 
         assertThat(watchdog.cancelled()).as("a database error ends the transaction at once: no wait").isEmpty();
         Map<String, Object> row = fixture.outboxRow(failing);
-        assertThat(row).containsEntry("status", "pending").containsEntry("attempt", 0);
+        assertThat(row).containsEntry("status", "pending").containsEntry("attempt", 1);
         assertThat(row.get("last_error")).isNull();
-        assertThat(row.get("next_attempt_at")).isNull();
+        assertThat(fixture.isLeased(failing)).as("only the claim's lease keeps it back").isTrue();
         assertThat(fixture.auditRows(failing)).singleElement().satisfies(audit -> {
             assertThat(audit).containsEntry("status", "failure");
             assertThat((String) audit.get("error"))
@@ -133,9 +134,9 @@ class EtlOutboxProcessingIT {
         assertThat(fixture.runs()).singleElement().satisfies(r -> assertThat(r).containsEntry("failure_count", 1L));
     }
 
-    /** Today: a failed row stays at the head of the queue, so rows that keep failing can stall it. */
+    /** A failed row is leased by its claim, so the next run moves on to newer rows instead of stalling. */
     @Test
-    void today_aFailedRowIsClaimedAgainAheadOfNewerRowsOnEveryRun() {
+    void aFailedRowDoesNotKeepNewerRowsWaiting() {
         fixture.failProjectionsOfFailUids();
         fixture.submission("failSub0001", TEMPLATE, 1);
         fixture.submission("okSub000002", TEMPLATE, 1);
@@ -146,11 +147,11 @@ class EtlOutboxProcessingIT {
         orchestrator.runOnce("test", 1);
         orchestrator.runOnce("test", 1);
 
-        assertThat(fixture.outboxRow(failing)).containsEntry("status", "pending").containsEntry("attempt", 0);
-        assertThat(fixture.auditRows(failing)).hasSize(3);
-        assertThat(fixture.outboxRow(newer)).as("a batch of one never reaches the newer row")
-            .containsEntry("status", "pending")
-            .containsEntry("claimed_by", null);
+        assertThat(fixture.outboxRow(failing)).containsEntry("attempt", 1);
+        assertThat(fixture.isLeased(failing)).isTrue();
+        assertThat(fixture.auditRows(failing)).hasSize(1);
+        assertThat(fixture.outboxRow(newer)).containsEntry("status", "success").containsEntry("attempt", 1);
+        assertThat(fixture.runs()).extracting(r -> r.get("submitted_count")).containsExactly(1L, 1L, 0L);
         assertThat(watchdog.cancelled()).isEmpty();
     }
 
@@ -181,13 +182,16 @@ class EtlOutboxProcessingIT {
 
         // Once unblocked, nothing about the failure is kept.
         Map<String, Object> row = fixture.outboxRow(failing);
-        assertThat(row).containsEntry("status", "pending").containsEntry("attempt", 0);
+        assertThat(row).containsEntry("status", "pending").containsEntry("attempt", 1);
         assertThat(row.get("last_error")).isNull();
         assertThat(fixture.auditRows(failing)).isEmpty();
         assertThat(fixture.runs()).singleElement().satisfies(r -> assertThat(r).containsEntry("failure_count", 1L));
     }
 
-    /** Today: a row whose submission is gone is counted as a success but stays pending, so it is claimed forever. */
+    /**
+     * Today: a row whose submission is gone is counted as a success but stays pending; only the claim's lease
+     * keeps it from being claimed again at once.
+     */
     @Test
     void today_aRowWhoseSubmissionIsGoneCountsAsSuccessButStaysPending() {
         long gone = fixture.outboxWithoutSubmission("goneSub0001", 1);
@@ -195,18 +199,18 @@ class EtlOutboxProcessingIT {
         orchestrator.runOnce("test", 10);
         orchestrator.runOnce("test", 10);
 
-        assertThat(fixture.outboxRow(gone)).containsEntry("status", "pending").containsEntry("attempt", 0);
+        assertThat(fixture.outboxRow(gone)).containsEntry("status", "pending").containsEntry("attempt", 1);
         assertThat(fixture.outboxRow(gone).get("last_error")).isNull();
-        assertThat(fixture.runs()).hasSize(2)
-            .allSatisfy(r -> assertThat(r).containsEntry("submitted_count", 1L).containsEntry("success_count", 1L));
-        // Each run commits its "processing" audit row and nothing more.
-        assertThat(fixture.auditRows(gone)).extracting(r -> r.get("status")).containsExactly("processing", "processing");
+        assertThat(fixture.isLeased(gone)).isTrue();
+        assertThat(fixture.runs()).extracting(r -> r.get("submitted_count"), r -> r.get("success_count"))
+            .containsExactly(tuple(1L, 1L), tuple(0L, 0L));
+        assertThat(fixture.auditRows(gone)).extracting(r -> r.get("status")).containsExactly("processing");
         assertThat(watchdog.cancelled()).isEmpty();
     }
 
-    /** Today: a claim does not change a row's status, so a second claimer takes the same rows. */
+    /** A claim leases its rows: a second claim skips them until the lease ends, then takes them as a new attempt. */
     @Test
-    void today_aClaimLeavesRowsPendingSoASecondClaimTakesTheSameRows() {
+    void aClaimLeasesItsRowsUntilTheLeaseEnds() {
         fixture.submission("okSub000003", TEMPLATE, 1);
         long outboxId = fixture.outbox("okSub000003", "SAVE");
 
@@ -214,7 +218,27 @@ class EtlOutboxProcessingIT {
         List<OutboxDto> second = claimService.claimBatchWithIngestId(UUID.randomUUID(), "second", 10);
 
         assertThat(first).extracting(OutboxDto::getOutboxId).containsExactly(outboxId);
-        assertThat(second).extracting(OutboxDto::getOutboxId).containsExactly(outboxId);
-        assertThat(fixture.outboxRow(outboxId)).containsEntry("status", "pending").containsEntry("claimed_by", "second");
+        assertThat(first).extracting(OutboxDto::getAttempt).containsExactly(1);
+        assertThat(second).isEmpty();
+        assertThat(fixture.outboxRow(outboxId)).containsEntry("status", "pending").containsEntry("claimed_by", "first");
+        assertThat(fixture.leaseSecondsLeft(outboxId)).isBetween(14 * 60.0, 15 * 60.0);
+
+        fixture.endLease(outboxId);
+        List<OutboxDto> third = claimService.claimBatchWithIngestId(UUID.randomUUID(), "third", 10);
+        assertThat(third).extracting(OutboxDto::getOutboxId, OutboxDto::getAttempt).containsExactly(tuple(outboxId, 2));
+    }
+
+    @Test
+    void claimsTakeTheOldestSubmissionFirstAndTheOldestRowOnATie() {
+        fixture.submission("olderSub001", TEMPLATE, 1);
+        fixture.submission("newerSub001", TEMPLATE, 1);
+        long newerSave = fixture.outbox("newerSub001", "SAVE");
+        long olderSave = fixture.outbox("olderSub001", "SAVE");
+        long olderUpdate = fixture.outbox("olderSub001", "UPDATE");
+
+        List<OutboxDto> claimed = claimService.claimBatchWithIngestId(UUID.randomUUID(), "test", 10);
+
+        assertThat(claimed).extracting(OutboxDto::getOutboxId).containsExactly(olderSave, olderUpdate, newerSave);
+        assertThat(claimService.claimBatchWithIngestId(UUID.randomUUID(), "test", 10)).isEmpty();
     }
 }

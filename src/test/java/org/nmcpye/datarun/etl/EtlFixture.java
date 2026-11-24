@@ -159,6 +159,25 @@ final class EtlFixture {
         return jdbc.queryForMap("SELECT * FROM outbox WHERE outbox_id = :id", Map.of("id", outboxId));
     }
 
+    /** Whether the row is held back until a time still to come (a claim's lease or a retry time). */
+    boolean isLeased(long outboxId) {
+        return leaseSecondsLeft(outboxId) > 0;
+    }
+
+    double leaseSecondsLeft(long outboxId) {
+        Double left = jdbc.queryForObject(
+            "SELECT extract(epoch FROM next_attempt_at - localtimestamp) FROM outbox WHERE outbox_id = :id",
+            Map.of("id", outboxId), Double.class);
+        return left == null ? 0 : left;
+    }
+
+    /** Ends the row's lease or retry wait, as time passing would. */
+    void endLease(long outboxId) {
+        tx.executeWithoutResult(status -> jdbc.update(
+            "UPDATE outbox SET next_attempt_at = localtimestamp - interval '1 second' WHERE outbox_id = :id",
+            Map.of("id", outboxId)));
+    }
+
     List<Map<String, Object>> auditRows(long outboxId) {
         return jdbc.queryForList(
             "SELECT * FROM outbox_processing WHERE outbox_id = :id ORDER BY id", Map.of("id", outboxId));

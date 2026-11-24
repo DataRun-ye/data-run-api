@@ -12,7 +12,10 @@ import org.springframework.stereotype.Repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,20 +26,35 @@ public class OutboxClaimReader implements OutboxClaimPort {
 
     private final NamedParameterJdbcTemplate cloudJdbc;
 
-    private static final String CLAIM_SQL =
-        "WITH cte AS (" +
-            "  SELECT outbox_id" +
-            "  FROM outbox " +
-            "  WHERE status = 'pending' " +
-            "    AND (next_attempt_at IS NULL OR next_attempt_at <= now()) " +
-            "  ORDER BY submission_serial_number " +
-            "  FOR UPDATE SKIP LOCKED " +
-            "  LIMIT :limit " +
-            ") " +
-            "UPDATE outbox " +
-            "SET ingest_id = :ingestId, claimed_at= now(), claimed_by= :claimedBy " +
-            "WHERE outbox_id IN (SELECT outbox_id FROM cte) " +
-            "RETURNING outbox.*;";
+    /**
+     * Claims the next rows that are due, oldest submission first and outbox id on a tie, and leases them:
+     * {@code next_attempt_at} moves to the end of the lease, so no other claim takes them meanwhile and a run
+     * that dies leaves them to be claimed again afterwards. Each claim counts as an attempt.
+     */
+    private static final String CLAIM_SQL = """
+        WITH due AS (
+          SELECT outbox_id
+          FROM outbox
+          WHERE status IN ('pending', 'failed')
+            AND (next_attempt_at IS NULL OR next_attempt_at <= now())
+          ORDER BY submission_serial_number, outbox_id
+          LIMIT :limit
+          FOR UPDATE SKIP LOCKED
+        )
+        UPDATE outbox o
+        SET attempt = COALESCE(o.attempt, 0) + 1,
+            ingest_id = :ingestId,
+            claimed_at = now(),
+            claimed_by = :claimedBy,
+            next_attempt_at = now() + make_interval(secs => :leaseSeconds)
+        FROM due
+        WHERE o.outbox_id = due.outbox_id
+        RETURNING o.*
+        """;
+
+    private static final Comparator<OutboxDto> CLAIM_ORDER = Comparator
+        .comparing(OutboxDto::getSubmissionSerialNumber)
+        .thenComparing(OutboxDto::getOutboxId);
 
     private static final String MARK_SUCCESS_SQL =
         "UPDATE outbox " +
@@ -80,13 +98,17 @@ public class OutboxClaimReader implements OutboxClaimPort {
 
     @Override
     @Transactional
-    public List<OutboxDto> claimPendingBatch(UUID ingestId, String claimedBy, int limit) {
+    public List<OutboxDto> claimPendingBatch(UUID ingestId, String claimedBy, int limit, Duration lease) {
         MapSqlParameterSource params = new MapSqlParameterSource()
             .addValue("claimedBy", claimedBy)
             .addValue("ingestId", ingestId)
-            .addValue("limit", limit);
+            .addValue("limit", limit)
+            .addValue("leaseSeconds", (double) lease.toSeconds());
 
-        return cloudJdbc.query(CLAIM_SQL, params, OUTBOX_ROW_MAPPER);
+        List<OutboxDto> claimed = new ArrayList<>(cloudJdbc.query(CLAIM_SQL, params, OUTBOX_ROW_MAPPER));
+        // UPDATE ... RETURNING does not keep the claim order.
+        claimed.sort(CLAIM_ORDER);
+        return claimed;
     }
 
     // --- claim processor

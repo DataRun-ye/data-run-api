@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.outbox.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.etl.entity.EtlRun;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.outbox.repository.OutboxClaimPort;
@@ -27,6 +28,7 @@ public class OutboxClaimServiceImpl implements OutboxClaimService {
     private static final Logger log = LoggerFactory.getLogger(OutboxClaimServiceImpl.class);
 
     private final OutboxClaimPort outboxJdbcRepository;
+    private final EtlProperties etlProperties;
 
     /**
      * Claim a batch for the given run. Generates a new ingestId and delegates to claimBatchWithIngestId.
@@ -56,7 +58,8 @@ public class OutboxClaimServiceImpl implements OutboxClaimService {
     public List<OutboxDto> claimBatchWithIngestId(UUID ingestId, String claimedBy, int batchSize) {
         // We intentionally do not persist the ingestId into EtlRun here; caller/ orchestrator manages run metadata.
         log.debug("Attempting to claim up to {} outbox rows with ingestId={}", batchSize, ingestId);
-        List<OutboxDto> claimed = outboxJdbcRepository.claimPendingBatch(ingestId, claimedBy, batchSize);
+        List<OutboxDto> claimed =
+            outboxJdbcRepository.claimPendingBatch(ingestId, claimedBy, batchSize, etlProperties.getClaimLease());
         int n = (claimed == null) ? 0 : claimed.size();
         log.debug("Claimed {} outbox rows with ingestId={}", n, ingestId);
         return (claimed == null) ? List.of() : claimed;
