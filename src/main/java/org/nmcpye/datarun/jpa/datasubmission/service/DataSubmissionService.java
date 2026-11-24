@@ -22,4 +22,11 @@ public interface DataSubmissionService
     List<DataSubmission> upsertAll(
         Collection<DataSubmission> entities,
         EntitySaveSummaryVM summary);
+
+    /**
+     * Marks a stored submission deleted and writes its DELETE event, carrying its last data, to the outbox, in the
+     * caller's transaction.
+     */
+    @Transactional
+    void softDelete(DataSubmission submission);
 }

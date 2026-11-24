@@ -166,8 +166,7 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
                                               @AuthenticationPrincipal CurrentUserDetails user) {
         requireResourceApiAccess(user);
         log.debug("REST request to delete from {}: {}", getName(), id);
-        final var entity = identifiableObjectService.findByUid(id).orElseThrow();
-        identifiableObjectService.delete(entity);
+        commands.delete(new SubmissionCommand.Delete(SubmissionActor.of(user), id));
 
         return ResponseEntity
             .noContent()

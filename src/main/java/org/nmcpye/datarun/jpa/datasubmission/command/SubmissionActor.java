@@ -32,6 +32,10 @@ public record SubmissionActor(String userId, String login, CurrentUserDetails ac
         return of(SecurityUtils.getCurrentUserDetailsOrThrow());
     }
 
+    public boolean admin() {
+        return access.isSuper();
+    }
+
     /** Ids only: the authorization snapshot also holds the password hash. */
     @Override
     public String toString() {

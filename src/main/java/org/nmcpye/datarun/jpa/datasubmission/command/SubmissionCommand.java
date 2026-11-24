@@ -30,4 +30,8 @@ public sealed interface SubmissionCommand {
      */
     record LegacyUpload(SubmissionActor actor, List<DataSubmission> items) implements SubmissionCommand {
     }
+
+    /** An admin's delete of one submission, named by uid ({@code DELETE /dataSubmission/{uid}}). */
+    record Delete(SubmissionActor actor, String uid) implements SubmissionCommand {
+    }
 }

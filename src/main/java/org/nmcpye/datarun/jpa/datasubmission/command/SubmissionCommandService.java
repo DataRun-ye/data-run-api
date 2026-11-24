@@ -2,8 +2,13 @@ package org.nmcpye.datarun.jpa.datasubmission.command;
 
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
+import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.intake.IntakeMode;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * The one place where submissions are created, changed, deleted, held or released. Controllers adapt their routes to
@@ -15,6 +20,9 @@ import org.springframework.stereotype.Service;
 public class SubmissionCommandService {
 
     private final SubmissionUploads uploads;
+    private final DataSubmissionService submissionService;
+    private final DataSubmissionRepository submissions;
+    private final PlatformTransactionManager transactionManager;
 
     /**
      * Phone uploads on the versioned route. Each submission is checked and saved in its own transaction, or held
@@ -38,5 +46,18 @@ public class SubmissionCommandService {
      */
     public EntitySaveSummaryVM uploadLegacy(SubmissionCommand.LegacyUpload command) {
         return uploads.saveLegacy(command.items(), command.actor());
+    }
+
+    /**
+     * An admin's delete, in one transaction: the submission is marked deleted, and its DELETE event, carrying its
+     * last data, is written to the outbox. Only an admin may delete. An unknown uid fails with
+     * {@link java.util.NoSuchElementException} and writes nothing.
+     */
+    public void delete(SubmissionCommand.Delete command) {
+        if (!command.actor().admin()) {
+            throw new AccessDeniedException("Only an admin may delete a submission");
+        }
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+            submissionService.softDelete(submissions.findByUid(command.uid()).orElseThrow()));
     }
 }
