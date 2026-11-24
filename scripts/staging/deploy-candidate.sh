@@ -41,7 +41,7 @@ ssh "$staging_api_ssh" "
         printf 'DATARUN_API_COMMIT=%s\\n' \"\$DATARUN_API_COMMIT\"
         printf 'DATARUN_STAGING_BIND_ADDRESS=0.0.0.0\\n'
         printf 'DATARUN_STAGING_PORT=8080\\n'
-        printf 'STAGING_DATABASE_URL=jdbc:postgresql://192.168.1.221:5432/datarun_staging?sslmode=require\\n'
+        printf 'STAGING_DATABASE_URL=\"jdbc:postgresql://192.168.1.221:5432/datarun_staging?sslmode=require&logServerErrorDetail=false\"\\n'
         printf 'STAGING_DATABASE_USERNAME=datarun_staging\\n'
         printf 'STAGING_DATABASE_PASSWORD=%s\\n' \"\$database_password\"
         printf 'DATARUN_JWT_BASE64_SECRET=%s\\n' \"\$jwt_secret\"

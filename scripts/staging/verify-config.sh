@@ -76,7 +76,7 @@ jq -e '
     .services.app.environment.DATARUN_TRANSITION_CAPTURE_LIVE_SHADOW_ENABLED == "false" and
     .services.app.environment.APPLICATION_LIQUIBASE_ASYNC_START == "false" and
     .services.app.environment.SPRING_DATASOURCE_URL
-        == "jdbc:postgresql://192.168.1.221:5432/datarun_staging?sslmode=require" and
+        == "jdbc:postgresql://192.168.1.221:5432/datarun_staging?sslmode=require&logServerErrorDetail=false" and
     .services.app.ports[0].host_ip == "0.0.0.0" and
     .services.app.ports[0].published == "8080"
 ' <<<"$compose_json" >/dev/null

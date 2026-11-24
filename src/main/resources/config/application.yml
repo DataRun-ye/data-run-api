@@ -101,6 +101,12 @@ management:
 spring:
   application:
     name: datRunApi
+  datasource:
+    hikari:
+      data-source-properties:
+        # The PostgreSQL driver then leaves the failed statement's bound values out of batch errors and the
+        # server's Detail ("Failing row contains ...") out of messages: submitted data must not reach the logs.
+        logServerErrorDetail: false
 #  cloud:
 #    consul:
 #      discovery:

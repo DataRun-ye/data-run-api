@@ -21,6 +21,8 @@ spring:
       auto-commit: false
       poolName: Hikari
       maximum-pool-size: 1
+      data-source-properties:
+        logServerErrorDetail: false
   jpa:
     open-in-view: false
     hibernate:

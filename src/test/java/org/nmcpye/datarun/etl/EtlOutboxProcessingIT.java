@@ -282,7 +282,7 @@ class EtlOutboxProcessingIT {
         fixture.submission("failSub0001", TEMPLATE, 2);
         long failing = fixture.outbox("failSub0001", "SAVE");
 
-        List<String> logged = applicationLogsOf(() -> orchestrator.runOnce("test", 10));
+        List<String> logged = logsOf(() -> orchestrator.runOnce("test", 10), "org.nmcpye.datarun.etl");
 
         // 4 root values and, per member row, the row and its 3 values; 3 instances; 8 field definitions.
         assertThat(logged).anySatisfy(line -> assertThat(line).startsWith(
@@ -291,20 +291,52 @@ class EtlOutboxProcessingIT {
         assertThat(String.join("\n", logged)).doesNotContain("household failSub0001", "first visit", "member 1", "member 2");
     }
 
-    /** What the application logged while {@code action} ran, messages and exception messages, the ETL at DEBUG. */
-    private static List<String> applicationLogsOf(Runnable action) {
-        Logger application = (Logger) LoggerFactory.getLogger("org.nmcpye.datarun");
-        Logger etl = (Logger) LoggerFactory.getLogger("org.nmcpye.datarun.etl");
-        Level etlLevel = etl.getLevel();
+    /**
+     * Whatever is logged anywhere while the projection fails, Spring's transaction and JDBC code at DEBUG
+     * included: when a rollback itself fails, Spring logs the projection's exception at ERROR, and its SQL error
+     * translation logs the driver's message at DEBUG. With logServerErrorDetail=false the driver puts neither
+     * the batch's bound values nor the server's Detail into its messages.
+     */
+    @Test
+    void aFailingProjectionLeavesNoSubmittedValueInAnyLogWithSpringAtDebug() {
+        fixture.failProjectionsOfFailUids();
+        fixture.submission("failSub0001", TEMPLATE, 2);
+        fixture.outbox("failSub0001", "SAVE");
+
+        List<String> logged = logsOf(() -> orchestrator.runOnce("test", 10),
+            "org.springframework.transaction", "org.springframework.jdbc", "org.springframework.orm", "org.nmcpye.datarun");
+
+        assertThat(logged).as("Spring logged the projection's exception itself").anySatisfy(line -> assertThat(line)
+            .contains("Initiating transaction rollback on application exception")
+            .contains("Batch entry 0 <unknown> was aborted"));
+        assertThat(String.join("\n", logged))
+            .doesNotContain("household failSub0001", "first visit", "member 1", "member 2", "Failing row contains");
+    }
+
+    /**
+     * What was logged anywhere (root logger) while {@code action} ran, messages and exception messages, with the
+     * named loggers at DEBUG.
+     */
+    private static List<String> logsOf(Runnable action, String... atDebug) {
+        Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        List<Logger> raised = new ArrayList<>();
+        List<Level> levels = new ArrayList<>();
+        for (String name : atDebug) {
+            Logger logger = (Logger) LoggerFactory.getLogger(name);
+            raised.add(logger);
+            levels.add(logger.getLevel());
+            logger.setLevel(Level.DEBUG);
+        }
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
-        application.addAppender(appender);
-        etl.setLevel(Level.DEBUG);
+        root.addAppender(appender);
         try {
             action.run();
         } finally {
-            etl.setLevel(etlLevel);
-            application.detachAppender(appender);
+            root.detachAppender(appender);
+            for (int i = 0; i < raised.size(); i++) {
+                raised.get(i).setLevel(levels.get(i));
+            }
         }
         List<String> lines = new ArrayList<>();
         for (ILoggingEvent event : appender.list) {

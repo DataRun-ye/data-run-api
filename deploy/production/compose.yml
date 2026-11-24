@@ -24,8 +24,8 @@ services:
       - MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED=true
       - SPRING_DATASOURCE_USERNAME=nmcpdb
       - SPRING_DATASOURCE_PASSWORD=${NMCPDB_PASSWORD:?Set NMCPDB_PASSWORD}
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://192.168.1.111:5432/nmcpdb?sslmode=require
-      - SPRING_LIQUIBASE_URL=jdbc:postgresql://192.168.1.111:5432/nmcpdb?sslmode=require
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://192.168.1.111:5432/nmcpdb?sslmode=require&logServerErrorDetail=false
+      - SPRING_LIQUIBASE_URL=jdbc:postgresql://192.168.1.111:5432/nmcpdb?sslmode=require&logServerErrorDetail=false
       - SPRING_LIQUIBASE_USER=nmcpdb
       - SPRING_LIQUIBASE_PASSWORD=${NMCPDB_PASSWORD:?Set NMCPDB_PASSWORD}
       - DATARUN_JWT_BASE64_SECRET=${DATARUN_JWT_BASE64_SECRET:?Set DATARUN_JWT_BASE64_SECRET}
