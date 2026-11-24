@@ -129,7 +129,8 @@ public class TallCanonicalJdbcRepository {
 
     /** ", first failed row: instance and field definition" when the driver says which batch entry failed. */
     private static String failedRow(Throwable failure, SubmissionContext context, List<TallCanonicalValue> rows) {
-        for (Throwable t = failure; t != null && t.getCause() != t; t = t.getCause()) {
+        int depth = 0;
+        for (Throwable t = failure; t != null && t.getCause() != t && depth++ < 20; t = t.getCause()) {
             if (t instanceof BatchUpdateException batch) {
                 int[] counts = batch.getUpdateCounts();
                 for (int i = 0; i < counts.length && i < rows.size(); i++) {

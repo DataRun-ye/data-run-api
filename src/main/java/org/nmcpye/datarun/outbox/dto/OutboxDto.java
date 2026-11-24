@@ -2,6 +2,7 @@ package org.nmcpye.datarun.outbox.dto;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.ToString;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -23,6 +24,7 @@ public class OutboxDto {
     private String submissionUid;
     private String topic;
     private String eventType;
+    @ToString.Exclude              // the submitted form data: never in logs
     private String payload;        // JSON payload as String (maps to JSONB)
     private String status;
     private Integer attempt;

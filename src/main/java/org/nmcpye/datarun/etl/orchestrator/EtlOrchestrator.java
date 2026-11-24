@@ -186,7 +186,9 @@ public class EtlOrchestrator {
                     outbox.getOutboxId(), attempt, error);
                 return RowResult.STOP;
             }
-            log.debug("Outbox row {} failed on attempt {}", outbox.getOutboxId(), attempt, EtlFailures.withoutMessages(e));
+            if (log.isDebugEnabled()) {
+                log.debug("Outbox row {} failed on attempt {}", outbox.getOutboxId(), attempt, EtlFailures.withoutMessages(e));
+            }
             if (retryPolicy.isLastAttempt(attempt)) {
                 recordDead(runId, outbox, error);
                 return RowResult.DEAD;
