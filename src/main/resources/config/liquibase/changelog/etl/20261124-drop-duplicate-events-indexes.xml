@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!--
+      Keeps one copy of each plain index on analytics.events and drops identical extras.
+
+      Production has three identical copies each of the indexes on assignment_uid, created_by, event_ce_id and
+      template_uid (events_<column>_idx, _idx1, _idx2); only the _idx2 copies were ever scanned. No changelog or code
+      in this repository, in any revision, creates them: they were made by hand, on exactly the columns the hand-made
+      view analytics.events_enriched joins on, with the same unnamed CREATE INDEX run three times.
+
+      The rule holds wherever it runs, whatever the names and counts. Two indexes are identical when they have the
+      same access method, key and included columns, operator classes, collations, options, expressions, predicate
+      and storage parameters; names do not count. Only valid, non-unique indexes take part, so constraints are never
+      touched. Of each identical set it keeps one copy: one something depends on, else the most scanned, else the
+      newest. It drops the rest; a set of one, or a table without duplicates, is left as it is.
+
+      lock_timeout because Airbyte reads analytics.events: a lock held longer fails the deploy instead of stalling it.
+      The rollback is empty: a dropped copy duplicated a kept one, so nothing is lost.
+    -->
+    <changeSet id="20261124-06-drop-duplicate-events-indexes" author="datarun">
+        <sql>SET LOCAL lock_timeout = '30s'</sql>
+        <sql splitStatements="false">
+            DO $$
+            DECLARE
+                extra record;
+            BEGIN
+                FOR extra IN
+                    WITH candidate AS (
+                        SELECT c.oid, n.nspname AS schema_name, c.relname AS index_name,
+                               c.relam, i.indnkeyatts, i.indkey::text AS keys, i.indclass::text AS opclasses,
+                               i.indcollation::text AS collations, i.indoption::text AS options,
+                               pg_get_expr(i.indexprs, i.indrelid) AS expressions,
+                               pg_get_expr(i.indpred, i.indrelid) AS predicate,
+                               c.reloptions::text AS storage,
+                               EXISTS (SELECT 1 FROM pg_constraint k WHERE k.conindid = c.oid)
+                                   OR EXISTS (SELECT 1 FROM pg_depend d
+                                              WHERE d.refclassid = 'pg_class'::regclass AND d.refobjid = c.oid) AS needed,
+                               coalesce(s.idx_scan, 0) AS scans
+                        FROM pg_index i
+                        JOIN pg_class c ON c.oid = i.indexrelid
+                        JOIN pg_namespace n ON n.oid = c.relnamespace
+                        LEFT JOIN pg_stat_all_indexes s ON s.indexrelid = c.oid
+                        WHERE i.indrelid = to_regclass('analytics.events')
+                          AND i.indisvalid AND i.indisready AND i.indislive AND NOT i.indisunique),
+                    ranked AS (
+                        SELECT candidate.*,
+                               row_number() OVER (
+                                   PARTITION BY relam, indnkeyatts, keys, opclasses, collations, options,
+                                                expressions, predicate, storage
+                                   ORDER BY needed DESC, scans DESC, oid DESC) AS copy
+                        FROM candidate)
+                    SELECT schema_name, index_name FROM ranked WHERE copy > 1 AND NOT needed
+                LOOP
+                    RAISE NOTICE 'Dropping duplicate index %.%', extra.schema_name, extra.index_name;
+                    EXECUTE format('DROP INDEX IF EXISTS %I.%I', extra.schema_name, extra.index_name);
+                END LOOP;
+            END
+            $$
+        </sql>
+        <rollback>
+            <!-- Empty on purpose: every dropped index duplicated one that stays. -->
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
