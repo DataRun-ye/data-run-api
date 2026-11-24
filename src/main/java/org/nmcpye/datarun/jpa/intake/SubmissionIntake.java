@@ -75,10 +75,14 @@ public class SubmissionIntake {
         return IntakeDecision.hold(HoldReason.BEFORE_GO_LIVE, rule.get(), context);
     }
 
-    /** Keeps a held upload in its own transaction, after its checked save was rolled back. */
+    /**
+     * Keeps a held upload in its own transaction, after its checked save was rolled back.
+     *
+     * @return false when the held copy was already released or superseded, so nothing was kept
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void hold(String uid, JsonNode payload, IntakeDecision decision) {
-        held.hold(uid, decision.holdReason(), decision.rule(), decision.context(), payload);
+    public boolean hold(String uid, JsonNode payload, IntakeDecision decision) {
+        return held.hold(uid, decision.holdReason(), decision.rule(), decision.context(), payload);
     }
 
     /**

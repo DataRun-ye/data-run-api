@@ -42,10 +42,12 @@ public class HeldSubmissionRepository {
      * Keeps a held upload, or refreshes it when the same submission is sent
      * again while it is held or discarded (a refresh keeps an admin's discard).
      * A released or superseded upload is final and is left as it is.
+     *
+     * @return false when the upload was final, so nothing was kept
      */
     @Transactional
-    public void hold(String uid, HoldReason reason, GoLiveRule rule, HeldContext context, JsonNode payload) {
-        jdbc.update("""
+    public boolean hold(String uid, HoldReason reason, GoLiveRule rule, HeldContext context, JsonNode payload) {
+        return jdbc.update("""
                 INSERT INTO held_submission AS h
                     (uid, reason, state, activity_uid, org_unit_uid, org_unit_path, form_uid, form_version_uid,
                      team_uid, assignment_uid, submitted_by, started_at, received_at, go_live_rule_uid, live_from,
@@ -86,7 +88,7 @@ public class HeldSubmissionRepository {
                 .addValue("receivedAt", utc(context.receivedAt()))
                 .addValue("rule", rule == null ? null : rule.uid())
                 .addValue("liveFrom", rule == null ? null : utc(rule.liveFrom()))
-                .addValue("payload", json(payload)));
+                .addValue("payload", json(payload))) > 0;
     }
 
     public Optional<HeldSubmissionRow> findByUid(String uid) {

@@ -92,14 +92,18 @@ class IntakeStoreIT {
         assertThat(row.submittedBy()).isEqualTo("field-user");
 
         decide("heldSub0001", HeldState.DISCARDED, "training");
-        held.hold("heldSub0001", HoldReason.PRACTICE, null, context("village00X1", ",country0001,districtX01,village00X1", FRIDAY), payload(3));
+        assertThat(held.hold("heldSub0001", HoldReason.PRACTICE, null,
+            context("village00X1", ",country0001,districtX01,village00X1", FRIDAY), payload(3)))
+            .as("a discarded upload is refreshed").isTrue();
         row = held.findByUid("heldSub0001").orElseThrow();
         assertThat(row.state()).isEqualTo(HeldState.DISCARDED);
         assertThat(row.note()).isEqualTo("training");
         assertThat(row.payload().get("edit").asInt()).isEqualTo(3);
 
         decide("heldSub0001", HeldState.RELEASED, null);
-        held.hold("heldSub0001", HoldReason.PRACTICE, null, context("village00X1", ",country0001,districtX01,village00X1", FRIDAY), payload(4));
+        assertThat(held.hold("heldSub0001", HoldReason.PRACTICE, null,
+            context("village00X1", ",country0001,districtX01,village00X1", FRIDAY), payload(4)))
+            .as("it says nothing was kept").isFalse();
         row = held.findByUid("heldSub0001").orElseThrow();
         assertThat(row.state()).as("a released upload is final, even when sent again").isEqualTo(HeldState.RELEASED);
         assertThat(row.payload().get("edit").asInt()).as("the released payload is kept").isEqualTo(3);

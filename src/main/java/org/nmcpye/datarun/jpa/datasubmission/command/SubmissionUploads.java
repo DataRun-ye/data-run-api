@@ -20,6 +20,7 @@ import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenera
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
 import org.nmcpye.datarun.jpa.datatemplate.dto.DataTemplateInstanceDto;
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
+import org.nmcpye.datarun.jpa.intake.HoldReason;
 import org.nmcpye.datarun.jpa.intake.IntakeDecision;
 import org.nmcpye.datarun.jpa.intake.IntakeMode;
 import org.nmcpye.datarun.jpa.intake.SubmissionIntake;
@@ -258,18 +259,8 @@ public class SubmissionUploads {
         EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
         for (int index = 0; index < items.size(); index++) {
             T item = items.get(index);
-            EntitySaveSummaryVM itemSummary = new EntitySaveSummaryVM();
             try {
-                IntakeDecision decision = perSubmission.execute(status -> {
-                    IntakeDecision outcome = save.save(item, itemSummary, status);
-                    if (outcome.held()) {
-                        status.setRollbackOnly();
-                    }
-                    return outcome;
-                });
-                if (decision != null && decision.held()) {
-                    intake.hold(uidOf.apply(item), payloadOf.apply(item), decision);
-                }
+                EntitySaveSummaryVM itemSummary = saveItem(perSubmission, item, actor, uidOf, formOf, save, payloadOf);
                 summary.getCreated().addAll(itemSummary.getCreated());
                 summary.getUpdated().addAll(itemSummary.getUpdated());
                 summary.getFailed().putAll(itemSummary.getFailed());
@@ -287,6 +278,50 @@ public class SubmissionUploads {
             }
         }
         return summary;
+    }
+
+    /**
+     * Saves one item in a transaction of its own, or keeps it held. A hold applies to a held or discarded copy only:
+     * when the held copy was released or superseded after this upload was checked, its uid is real data by now. A
+     * live upload is then saved again, in a second transaction, as the update of real data it has become (never held);
+     * the phone is told the outcome of that save. A practice upload is never saved: it keeps the outcome it was checked
+     * with, and its copy is not kept.
+     */
+    private <T> EntitySaveSummaryVM saveItem(
+        TransactionTemplate perSubmission,
+        T item,
+        SubmissionActor actor,
+        Function<T, String> uidOf,
+        Function<T, String> formOf,
+        SaveOne<T> save,
+        Function<T, JsonNode> payloadOf) {
+        EntitySaveSummaryVM checked = new EntitySaveSummaryVM();
+        IntakeDecision decision = saveInTransaction(perSubmission, item, checked, save);
+        if (decision == null || !decision.held() || intake.hold(uidOf.apply(item), payloadOf.apply(item), decision)) {
+            return checked;
+        }
+        if (decision.holdReason() == HoldReason.PRACTICE) {
+            log.warn("Practice upload {} (form {}) from user {} not kept: its held copy was already decided",
+                uidOf.apply(item), formOf.apply(item), actor.userId());
+            return checked;
+        }
+        EntitySaveSummaryVM saved = new EntitySaveSummaryVM();
+        IntakeDecision again = saveInTransaction(perSubmission, item, saved, save);
+        if (again != null && again.held()) {
+            throw new IllegalStateException("Held again after its held copy was decided");
+        }
+        return saved;
+    }
+
+    private static <T> IntakeDecision saveInTransaction(
+        TransactionTemplate perSubmission, T item, EntitySaveSummaryVM itemSummary, SaveOne<T> save) {
+        return perSubmission.execute(status -> {
+            IntakeDecision outcome = save.save(item, itemSummary, status);
+            if (outcome.held()) {
+                status.setRollbackOnly();
+            }
+            return outcome;
+        });
     }
 
     /**

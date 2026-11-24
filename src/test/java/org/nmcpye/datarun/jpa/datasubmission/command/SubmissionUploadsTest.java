@@ -94,6 +94,7 @@ class SubmissionUploadsTest {
         transactionStatus = mock(TransactionStatus.class);
         goLiveRules = mock(GoLiveRuleRepository.class);
         heldSubmissions = mock(HeldSubmissionRepository.class);
+        when(heldSubmissions.hold(any(), any(), any(), any(), any())).thenReturn(true);
         submissionRepository = mock(DataSubmissionRepository.class);
         when(transactionManager.getTransaction(any(TransactionDefinition.class)))
             .thenReturn(transactionStatus);
@@ -206,6 +207,42 @@ class SubmissionUploadsTest {
         verify(transactionStatus, never()).setRollbackOnly();
         verify(heldSubmissions, never()).hold(any(), any(), any(), any(), any());
         assertEquals(List.of("firstSub01"), summary.getCreated());
+    }
+
+    /**
+     * A re-send checked while its earlier copy was held, kept after an admin released that copy: the uid is real data
+     * by then, so the re-send is saved as an update of it instead of being dropped while the phone is told it was
+     * saved (A2 S5).
+     */
+    @Test
+    void aReSendWhoseHeldCopyWasDecidedMeanwhileIsSavedAsAnUpdate() {
+        goLiveIn(Duration.ofDays(1));
+        when(heldSubmissions.hold(eq("firstSub01"), any(), any(), any(), any())).thenReturn(false);
+        when(submissionRepository.existsByUid("firstSub01")).thenReturn(false, true);
+
+        EntitySaveSummaryVM summary = upload(List.of(stubbedRequest("firstSub01")));
+
+        verify(transactionManager, times(2)).getTransaction(any(TransactionDefinition.class));
+        verify(transactionStatus, times(1)).setRollbackOnly();
+        verify(submissionService, times(2)).upsertAll(submissionsWithUids("firstSub01"), any(EntitySaveSummaryVM.class));
+        assertEquals(List.of("firstSub01"), summary.getCreated(), "the outcome of the second save, once");
+        assertTrue(summary.getFailed().isEmpty());
+    }
+
+    /** A practice upload is never saved: when its held copy was decided meanwhile, it is not kept either. */
+    @Test
+    void aPracticeReSendWhoseHeldCopyWasDecidedIsNotSaved() {
+        when(heldSubmissions.hold(eq("firstSub01"), any(), any(), any(), any())).thenReturn(false);
+
+        try (LogCapture logs = new LogCapture(SubmissionUploads.class)) {
+            EntitySaveSummaryVM summary = upload(List.of(stubbedRequest("firstSub01")), true);
+
+            verify(transactionManager, times(1)).getTransaction(any(TransactionDefinition.class));
+            verify(transactionStatus).setRollbackOnly();
+            assertEquals(List.of("firstSub01"), summary.getCreated(), "the outcome it was checked with");
+            assertTrue(logs.lines().stream().anyMatch(line -> line.contains("firstSub01") && line.contains("not kept")),
+                logs.lines()::toString);
+        }
     }
 
     @Test

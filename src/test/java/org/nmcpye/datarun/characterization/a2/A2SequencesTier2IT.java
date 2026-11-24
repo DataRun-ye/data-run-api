@@ -1,19 +1,35 @@
 package org.nmcpye.datarun.characterization.a2;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Item;
 import org.nmcpye.datarun.jpa.datasubmission.command.HeldSubmissionDecisions;
+import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
+import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommand;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionUploads;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
+import org.nmcpye.datarun.jpa.datasubmission.validation.StoredSubmissionGuard;
+import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
 import org.nmcpye.datarun.jpa.intake.GoLiveRuleService;
 import org.nmcpye.datarun.jpa.intake.HeldState;
 import org.nmcpye.datarun.jpa.intake.HeldSubmissionRepository;
 import org.nmcpye.datarun.jpa.intake.HeldSubmissionRow;
+import org.nmcpye.datarun.jpa.intake.IntakeDecision;
+import org.nmcpye.datarun.jpa.intake.IntakeMode;
+import org.nmcpye.datarun.jpa.intake.SubmissionIntake;
+import org.nmcpye.datarun.jpa.reference.ReferenceSubmissionResolver;
+import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.DomainUserDetailsService;
+import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
+import org.nmcpye.datarun.web.rest.v1.datasubmission.mapper.DataSubmissionUploadV1Mapper;
 import org.nmcpye.datarun.web.rest.v1.intake.HeldDecisionRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -38,7 +54,7 @@ import static org.nmcpye.datarun.characterization.a2.A2Seed.FORM_A;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.VILLAGE_4;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.version;
 
-/** Tier 2, sequences: delete then re-send, the release race, and the catalog's second page. */
+/** Tier 2, sequences: delete then re-send, the release races, and the catalog's second page. */
 class A2SequencesTier2IT extends A2GoldenSupport {
 
     private static final String FUTURE = "2099-01-01T00:00:00Z";
@@ -60,6 +76,30 @@ class A2SequencesTier2IT extends A2GoldenSupport {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private SubmissionCommandService commands;
+
+    @Autowired
+    private DataSubmissionService submissionService;
+
+    @Autowired
+    private DataSubmissionUploadV1Mapper uploadMapper;
+
+    @Autowired
+    private AssignmentRepository assignments;
+
+    @Autowired
+    private AssignmentFormAccessService formAccess;
+
+    @Autowired
+    private TemplateVersionResolver templateVersions;
+
+    @Autowired
+    private ReferenceSubmissionResolver references;
+
+    @Autowired
+    private StoredSubmissionGuard storedSubmissionGuard;
 
     private static Item formA(String uid, String name) {
         return item(G3, uid, FORM_A, version("FORM_A.v1"), ASSIGN_T1_V1, ordinary(G3, uid, name, "r1", "s1", 1));
@@ -131,6 +171,41 @@ class A2SequencesTier2IT extends A2GoldenSupport {
             .verify();
     }
 
+    /**
+     * Fixed in B1: a re-send whose checked save ran while its earlier copy was held, and whose hold came after the
+     * admin's release of that copy had committed, was dropped (the released copy is final), while the phone was told
+     * it was saved. Now the re-send is saved as the update of real data it has become.
+     */
+    @Test
+    void s5_reSendKeptAfterItsHeldCopyWasReleased() {
+        String uid = uid("s5");
+        Scenario scenario = scenario("S5", "A re-send checked while its earlier copy was held, kept after the admin's "
+            + "release of that copy: saved as an update of the released record");
+        SubmissionActor admin = SubmissionActor.of((CurrentUserDetails) users.loadUserByUsername(ADMIN));
+        SubmissionActor field1 = SubmissionActor.of((CurrentUserDetails) users.loadUserByUsername(FIELD_1));
+        SubmissionIntake releasedMeanwhile = new SubmissionIntake(goLiveRules, held, submissions) {
+            @Override
+            public boolean hold(String heldUid, JsonNode payload, IntakeDecision decision) {
+                scenario.action("meanwhile the admin releases the held copy (service call)", () ->
+                    commands.releaseHeld(new SubmissionCommand.ReleaseHeld(admin,
+                        new HeldDecisionRequest(List.of(uid), null, null, null))));
+                return super.hold(heldUid, payload, decision);
+            }
+        };
+        SubmissionUploads hookedUploads = new SubmissionUploads(submissionService, uploadMapper, objectMapper,
+            assignments, formAccess, templateVersions, references, transactionManager, releasedMeanwhile,
+            storedSubmissionGuard);
+
+        scenario
+            .goLive("campaign", null, null, FUTURE)
+            .upload("held before go-live", G3, FIELD_1, formA(uid, "first"))
+            .action("the phone re-sends a changed copy (service call; its hold comes after the release)", () -> {
+                asUser(FIELD_1);
+                return hookedUploads.save(List.of(dto(formA(uid, "changed"))), field1, IntakeMode.LIVE);
+            })
+            .verify();
+    }
+
     @Test
     @PinnedBug(changeBy = "none planned",
         what = "the catalog's nextPage link repeats page (?page=0&page=1&size=500); phones compute page numbers "
@@ -146,8 +221,22 @@ class A2SequencesTier2IT extends A2GoldenSupport {
     }
 
     private void asAdmin() {
-        UserDetails admin = users.loadUserByUsername(ADMIN);
+        asUser(ADMIN);
+    }
+
+    /** The security context a request by {@code login} would have, for direct service calls. */
+    private void asUser(String login) {
+        UserDetails user = users.loadUserByUsername(login);
         SecurityContextHolder.getContext().setAuthentication(
-            UsernamePasswordAuthenticationToken.authenticated(admin, null, admin.getAuthorities()));
+            UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities()));
+    }
+
+    /** An upload item as the versioned route binds it. */
+    private DataSubmissionUploadV1Dto dto(Item item) {
+        try {
+            return objectMapper.treeToValue(item.node, DataSubmissionUploadV1Dto.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }
