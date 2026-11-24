@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!--
+      The submission change record (data-chain plan, step C): one row per committed change of a submission, never
+      updated or deleted. A revision is written if and only if data_submission.lock_version increments, in the same
+      transaction as the change, by the persistence layer of SubmissionCommandService only.
+
+      Keys are internal ids: the submission's data_submission.id and the actor's app_user.id. (submission_id,
+      version) is the natural key of a per-submission append-only log, so there is no surrogate id; the outbox names
+      the revision it announces by that same pair.
+
+      A revision holds:
+      - version: data_submission.lock_version after the change (0 at creation, +1 per change);
+      - previous_version: the version before it (NULL for a creation, and for the first baseline of a submission);
+      - kind: BASELINE (the state when the journal started, or a gap repair), CREATE, UPDATE or DELETE;
+      - command: the command that made it: UPLOAD, LEGACY_UPLOAD, HELD_RELEASE or ADMIN_DELETE from the application;
+        MIGRATION and GAP_REPAIR from Liquibase;
+      - who: exactly one of actor_user_id (a durable user id) and actor_system (a system code, only for the system
+        commands); on_behalf_of_user_id names the uploader when an admin releases a held upload; reason is the
+        admin's note on a release;
+      - recorded_at: the database's transaction time;
+      - the state after the change: form_data, and metadata, the row's other columns as
+        submission_revision_metadata() renders them.
+
+      Rollback: allowed only while the journal holds baselines only. Once a real revision exists it is the only
+      record of who changed what, and the rollback refuses (as with held_submission, never drop it then).
+    -->
+    <changeSet id="20261124-c01-submission-revision-table" author="datarun">
+        <sql>
+            CREATE TABLE submission_revision (
+                submission_id        varchar(26)  NOT NULL,
+                version              bigint       NOT NULL,
+                previous_version     bigint,
+                kind                 varchar(16)  NOT NULL,
+                command              varchar(32)  NOT NULL,
+                actor_user_id        varchar(26),
+                actor_system         varchar(32),
+                on_behalf_of_user_id varchar(26),
+                reason               text,
+                recorded_at          timestamptz  NOT NULL DEFAULT now(),
+                form_data            jsonb,
+                metadata             jsonb        NOT NULL,
+                CONSTRAINT pk_submission_revision PRIMARY KEY (submission_id, version),
+                CONSTRAINT fk_submission_revision_submission
+                    FOREIGN KEY (submission_id) REFERENCES data_submission (id),
+                CONSTRAINT fk_submission_revision_actor
+                    FOREIGN KEY (actor_user_id) REFERENCES app_user (id),
+                CONSTRAINT fk_submission_revision_on_behalf_of
+                    FOREIGN KEY (on_behalf_of_user_id) REFERENCES app_user (id),
+                CONSTRAINT ck_submission_revision_kind
+                    CHECK (kind IN ('BASELINE', 'CREATE', 'UPDATE', 'DELETE')),
+                CONSTRAINT ck_submission_revision_command
+                    CHECK (command IN ('MIGRATION', 'GAP_REPAIR', 'UPLOAD', 'LEGACY_UPLOAD', 'HELD_RELEASE',
+                                       'ADMIN_DELETE')),
+                -- A baseline comes from a system command, and only a baseline does.
+                CONSTRAINT ck_submission_revision_baseline
+                    CHECK ((kind = 'BASELINE') = (command IN ('MIGRATION', 'GAP_REPAIR'))),
+                -- The versions a kind may take. Across rows, the no-gap trigger checks previous_version is the head.
+                CONSTRAINT ck_submission_revision_version CHECK (
+                    version >= 0 AND CASE kind
+                        WHEN 'CREATE' THEN version = 0 AND previous_version IS NULL
+                        WHEN 'UPDATE' THEN previous_version = version - 1
+                        WHEN 'DELETE' THEN previous_version = version - 1
+                        WHEN 'BASELINE' THEN previous_version IS NULL OR previous_version &lt; version
+                        ELSE false
+                    END),
+                -- Exactly one actor: a user, or a system code for the system commands only.
+                CONSTRAINT ck_submission_revision_actor
+                    CHECK (num_nonnulls(actor_user_id, actor_system) = 1),
+                CONSTRAINT ck_submission_revision_system
+                    CHECK ((actor_system IS NOT NULL) = (command IN ('MIGRATION', 'GAP_REPAIR'))
+                           AND (actor_system IS NULL OR actor_system = 'MIGRATION')),
+                -- A release is an admin acting for the uploader, and names both.
+                CONSTRAINT ck_submission_revision_on_behalf_of
+                    CHECK ((on_behalf_of_user_id IS NOT NULL) = (command = 'HELD_RELEASE'))
+            )
+        </sql>
+        <rollback>
+            <sql splitStatements="false"><![CDATA[
+                DO $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM submission_revision WHERE kind <> 'BASELINE') THEN
+                        RAISE EXCEPTION 'submission_revision holds revisions the application wrote: never roll it back';
+                    END IF;
+                END $$
+            ]]></sql>
+            <sql>DROP TABLE submission_revision</sql>
+        </rollback>
+    </changeSet>
+
+    <!--
+      The state a revision records besides form_data: the columns a write can change. That is the form version label
+      (which a label repair may change), the placement (assignment, activity, team, org unit) with the labels copied
+      from it, status, the deleted state, and last_modified_date (for a baseline, when that state was reached).
+      Left out:
+      - the keys (id, uid, serial_number) and the version, which is the revision's own key;
+      - what no write changes after creation: template_uid (a record never changes form), the entry times (a
+        re-send keeps the first ones) and created_date; a reader joins data_submission for them;
+      - the login audit columns: the revision names a durable actor id instead;
+      - columns no code maps (submission_version, translations, properties_map).
+      Times are rendered as UTC instants, which is what Hibernate stores in these timestamp columns; to_char on a
+      timestamp without time zone does not depend on the session, so the application's writes, the baseline and the
+      reconciliation check render the same row identically. On staging's 67,176 rows (2026-11-24) the document is
+      415 bytes on average, 479 at most.
+
+      One definition for every writer and reader: the persistence layer copies the row through it after each change,
+      the baseline and the gap repair use it, and the reconciliation check compares the head revision with the live
+      row through it. The SQL-standard body records its dependence on each column, so a migration that drops or
+      renames one of them must decide what the journal records instead.
+
+      Rollback drops the function; the table's rollback must run first.
+    -->
+    <changeSet id="20261124-c02-submission-revision-metadata" author="datarun">
+        <sql splitStatements="false"><![CDATA[
+            CREATE OR REPLACE FUNCTION submission_revision_metadata(s data_submission)
+            RETURNS jsonb
+            LANGUAGE sql
+            STABLE
+            PARALLEL SAFE
+            BEGIN ATOMIC
+                SELECT jsonb_build_object(
+                    'template_version_uid', s.template_version_uid,
+                    'template_version_no', s.template_version_no,
+                    'assignment_uid', s.assignment_uid,
+                    'activity_uid', s.activity_uid,
+                    'team_uid', s.team_uid,
+                    'team_code', s.team_code,
+                    'org_unit_uid', s.org_unit_uid,
+                    'org_unit_code', s.org_unit_code,
+                    'org_unit_name', s.org_unit_name,
+                    'status', s.status,
+                    'deleted', s.deleted,
+                    'deleted_at', to_char(s.deleted_at, 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                    'last_modified_date', to_char(s.last_modified_date, 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'));
+            END
+        ]]></sql>
+        <rollback>
+            <sql>DROP FUNCTION IF EXISTS submission_revision_metadata(data_submission)</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

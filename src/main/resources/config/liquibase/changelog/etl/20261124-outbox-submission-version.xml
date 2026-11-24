@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!-- How long the outbox's DDL may wait for its lock; a Liquibase parameter of the same name overrides it. -->
+    <property name="outboxRevisionLockTimeout" value="30s"/>
+
+    <!--
+      The outbox row names the revision it announces (data-chain plan, step C):
+      - submission_version: the submission's version after the change. With submission_id it is the revision's
+        key; a later changeset makes the pair a foreign key to submission_revision. Rows written before step C, and
+        rows a rolled-back 6.5.4 writes (it names its columns), keep NULL.
+      - created_at: the database's transaction time in UTC, instead of the JVM clock the writer used to send.
+        A writer that still sends a value (6.5.4 after a rollback, in UTC there) keeps doing so.
+
+      Both are catalog-only changes: no row is rewritten. Each takes a brief exclusive lock on the outbox; the
+      application is stopped while Liquibase runs, and lock_timeout makes the deploy fail visibly, instead of
+      waiting, if something else (a dump, a long read) holds the table.
+
+      Rollback drops the default and the column, after the foreign key's rollback.
+    -->
+    <changeSet id="20261124-c03-outbox-submission-version" author="datarun">
+        <sql>SET LOCAL lock_timeout = '${outboxRevisionLockTimeout}'</sql>
+        <sql>ALTER TABLE outbox ADD COLUMN submission_version bigint</sql>
+        <sql>ALTER TABLE outbox ALTER COLUMN created_at SET DEFAULT timezone('UTC', now())</sql>
+        <rollback>
+            <sql>SET LOCAL lock_timeout = '${outboxRevisionLockTimeout}'</sql>
+            <sql>ALTER TABLE outbox ALTER COLUMN created_at DROP DEFAULT</sql>
+            <sql>ALTER TABLE outbox DROP COLUMN submission_version</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

@@ -106,6 +106,8 @@
     <include file="/config/liquibase/changelog/data_submission/20261125-drop-unused-submission-indexes.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/error-event/20261125-purge-error-event.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20261125-drop-analytics-etl-runs.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/data_submission/20261124-submission-revision.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/etl/20261124-outbox-submission-version.xml" relativeToChangelogFile="false"/>
 
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>
