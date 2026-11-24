@@ -47,6 +47,9 @@ class ErrorReportingOnIT {
 
     private static final FakeGlitchTip GLITCHTIP = FakeGlitchTip.start();
 
+    /** A client's trace id, as a phone with Sentry tracing would send it, with its user named in the baggage. */
+    private static final String CLIENT_TRACE = "771a43a4192642f0b136d5159a501700";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -73,6 +76,9 @@ class ErrorReportingOnIT {
                 .queryParam("login", "777000111")
                 .header("X-Request-ID", "error-reporting-it")
                 .header("X-Secret", "secret-header")
+                .header("sentry-trace", CLIENT_TRACE + "-b5e4c9e8d4c0a1b2-1")
+                .header("baggage", "sentry-trace_id=" + CLIENT_TRACE
+                    + ",sentry-public_key=publickey,sentry-user_id=777000111,sentry-sampled=true")
                 .cookie(new Cookie("SESSION", "secret-cookie"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"household name\"}"))
@@ -80,7 +86,8 @@ class ErrorReportingOnIT {
         Sentry.flush(5000);
 
         assertThat(String.join("\n", GLITCHTIP.envelopes()))
-            .doesNotContain("777000111", "sub00000001", "household name", "secret-header", "secret-cookie");
+            .doesNotContain("777000111", "sub00000001", "household name", "secret-header", "secret-cookie")
+            .as("the client's trace is not continued").doesNotContain(CLIENT_TRACE);
         assertThat(eventsFrom(FailingResource.class)).singleElement().satisfies(event -> {
             assertThat(event.path("message").path("formatted").asText())
                 .isEqualTo("Submission {} from {} failed unexpectedly");

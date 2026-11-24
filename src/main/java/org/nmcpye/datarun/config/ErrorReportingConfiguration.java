@@ -9,11 +9,14 @@ import io.sentry.protocol.SentryException;
 import io.sentry.spring.boot.jakarta.SentryProperties;
 import io.sentry.spring.jakarta.tracing.SpringMvcTransactionNameProvider;
 import io.sentry.spring.jakarta.tracing.TransactionNameProvider;
+import jakarta.servlet.Filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.info.BuildProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -119,6 +122,21 @@ public class ErrorReportingConfiguration {
         } catch (URISyntaxException e) {
             return false;
         }
+    }
+
+    /**
+     * Takes the place of the starter's {@code SentryTracingFilter} (same bean name), unregistered. Tracing is off,
+     * but that filter still continues an incoming {@code sentry-trace} and {@code baggage} header into the request's
+     * scope, and from there into each report's envelope, where a client's baggage can name its user
+     * ({@code sentry-user_id}). Spring Boot asserts a filter even on a disabled registration, hence the no-op one.
+     */
+    @Bean
+    @ConditionalOnProperty(name = "sentry.dsn")
+    public FilterRegistrationBean<Filter> sentryTracingFilter() {
+        FilterRegistrationBean<Filter> registration =
+            new FilterRegistrationBean<>((request, response, chain) -> chain.doFilter(request, response));
+        registration.setEnabled(false);
+        return registration;
     }
 
     /**
