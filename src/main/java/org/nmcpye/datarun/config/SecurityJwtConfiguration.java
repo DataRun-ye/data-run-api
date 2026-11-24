@@ -43,7 +43,9 @@ public class SecurityJwtConfiguration {
                 ) {
                     metersService.trackTokenMalformed();
                 } else {
-                    log.error("Unknown JWT error {}", e.getMessage());
+                    // A token the decoder rejects for another reason (an unexpected algorithm, say) is still the
+                    // client's: anyone can send one, so it is no server error and must not page error reporting.
+                    log.warn("Unknown JWT error {}", e.getMessage());
                 }
                 throw e;
             }
