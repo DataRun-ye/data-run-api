@@ -22,9 +22,10 @@
       Kept: analytics.dim_org_unit, analytics.dim_assignment, analytics.events_enriched and analytics.event_ancestors
       (the chain pivot builds read), analytics.translation_value() and analytics.pivot_manifest.
 
-      Eight of the views come from runOnChange changesets in analytics_dims/20251129-*.xml: editing those files would
-      create them again. dim_assignment_template, dim_org_unit_closure and the two public._mv_* views were made by hand
-      and exist only where they were made, hence IF EXISTS.
+      Eight of the views come from changesets in analytics_dims/20251129-*.xml. Six of those changesets are runOnChange,
+      so editing them would create their views again; 009, which made dim_org_unit_group and dim_org_unit_group_member,
+      is not. dim_assignment_template, dim_org_unit_closure and the two public._mv_* views were made by hand and exist
+      only where they were made, hence IF EXISTS.
     -->
     <changeSet id="20261124-04-drop-unread-materialized-views" author="datarun">
         <sql>SET LOCAL lock_timeout = '30s'</sql>
