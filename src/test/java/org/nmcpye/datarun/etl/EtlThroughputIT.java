@@ -5,12 +5,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
-import org.nmcpye.datarun.IntegrationTest;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -27,8 +25,7 @@ import static org.nmcpye.datarun.etl.EtlFixture.TEMPLATE;
  * {@code .batch} and {@code .history} (already processed outbox rows, which the claim reads past).
  * Prints one {@code ETL_THROUGHPUT} line with counts and timings only.
  */
-@IntegrationTest
-@TestPropertySource(properties = "spring.datasource.hikari.maximum-pool-size=4")
+@EtlIntegrationTest
 @EnabledIfSystemProperty(named = "etl.throughput", matches = "true")
 class EtlThroughputIT {
 

@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.etl;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.etl.admin.EtlRunLock;
 import org.nmcpye.datarun.etl.admin.ScheduledOrchestratorRunner;
 import org.nmcpye.datarun.etl.config.EtlProperties;
+import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -21,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * When the scheduled runner starts a run, and the lock that keeps two runs from overlapping, against
@@ -36,6 +39,7 @@ class ScheduledOrchestratorRunnerIT {
     private static JdbcTemplate observer;
 
     private AlternatingDataSource pool;
+    private SimpleMeterRegistry registry;
     private final AtomicInteger runs = new AtomicInteger();
 
     @BeforeAll
@@ -70,6 +74,7 @@ class ScheduledOrchestratorRunnerIT {
     void openPool() throws Exception {
         observer.update("DELETE FROM outbox");
         pool = new AlternatingDataSource(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword());
+        registry = new SimpleMeterRegistry();
     }
 
     @AfterEach
@@ -86,7 +91,7 @@ class ScheduledOrchestratorRunnerIT {
     }
 
     private EtlOrchestrator countingOrchestrator() {
-        return new EtlOrchestrator(null, null, null, null, null, new EtlProperties()) {
+        return new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null) {
             @Override
             public void runOnce(String pipelineName, int batchSize) {
                 runs.incrementAndGet();
@@ -95,11 +100,16 @@ class ScheduledOrchestratorRunnerIT {
     }
 
     private ScheduledOrchestratorRunner runner(EtlOrchestrator orchestrator) {
-        return new ScheduledOrchestratorRunner(new NamedParameterJdbcTemplate(pool), orchestrator, new EtlRunLock(pool));
+        return new ScheduledOrchestratorRunner(new NamedParameterJdbcTemplate(pool), orchestrator, new EtlRunLock(pool),
+            new EtlMetrics(registry, pool, new EtlProperties()));
     }
 
     private ScheduledOrchestratorRunner runner() {
         return runner(countingOrchestrator());
+    }
+
+    private double lastSuccess() {
+        return registry.get("datarun.etl.last.success").gauge().value();
     }
 
     private int heldLocks() {
@@ -128,6 +138,8 @@ class ScheduledOrchestratorRunnerIT {
         runner().scheduledRun();
 
         assertThat(runs).hasValue(0);
+        assertThat(lastSuccess()).as("a poll with nothing due still succeeds")
+            .isCloseTo(System.currentTimeMillis() / 1000.0, within(5.0));
     }
 
     /**
@@ -158,16 +170,18 @@ class ScheduledOrchestratorRunnerIT {
             lock.execute();
             runner.scheduledRun();
             assertThat(runs).as("skipped while the other run holds the lock").hasValue(0);
+            assertThat(lastSuccess()).as("a skipped poll is not a success").isNaN();
         }
 
         runner.scheduledRun();
         assertThat(runs).as("runs once the other run has ended").hasValue(1);
+        assertThat(lastSuccess()).isCloseTo(System.currentTimeMillis() / 1000.0, within(5.0));
     }
 
     @Test
     void aRunThatFailsStillReleasesTheLock() {
         outboxRow("pending", null);
-        EtlOrchestrator failing = new EtlOrchestrator(null, null, null, null, null, new EtlProperties()) {
+        EtlOrchestrator failing = new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null) {
             @Override
             public void runOnce(String pipelineName, int batchSize) {
                 throw new IllegalStateException("run failed");
@@ -176,6 +190,7 @@ class ScheduledOrchestratorRunnerIT {
 
         assertThatThrownBy(runner(failing)::scheduledRun).hasMessage("run failed");
 
+        assertThat(lastSuccess()).as("a failed poll is not a success").isNaN();
         assertThat(heldLocks()).isZero();
         runner(countingOrchestrator()).scheduledRun();
         assertThat(runs).hasValue(1);

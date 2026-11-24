@@ -3,13 +3,11 @@ package org.nmcpye.datarun.etl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.IntegrationTest;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.outbox.service.OutboxClaimService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
@@ -27,13 +25,10 @@ import static org.nmcpye.datarun.etl.EtlFixture.TEMPLATE;
 /**
  * The outbox consumer (claim, project, record) against PostgreSQL migrated by Liquibase.
  * <p>
- * The pool has four connections, as production's pool has more than one: with a single connection a second
- * transaction would wait for the pool instead of for PostgreSQL. A watchdog cancels an audit insert stuck for
- * 3 s, so no test can hang the build; each test says whether it expects that. Tests named {@code today_} pin
- * behaviour the ETL runtime fix changes.
+ * A watchdog cancels an audit insert stuck for 3 s, so no test can hang the build; each test checks that none
+ * was needed.
  */
-@IntegrationTest
-@TestPropertySource(properties = "spring.datasource.hikari.maximum-pool-size=4")
+@EtlIntegrationTest
 class EtlOutboxProcessingIT {
 
     private static final double STUCK_AFTER_SECONDS = 3.0;

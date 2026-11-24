@@ -4,6 +4,8 @@ import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.etl.dto.EtlRunCompletion;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.etl.entity.EtlRun;
+import org.nmcpye.datarun.etl.metrics.EtlMetrics;
+import org.nmcpye.datarun.etl.metrics.EtlMetrics.Outcome;
 import org.nmcpye.datarun.etl.service.EtlRunService;
 import org.nmcpye.datarun.etl.service.EventProcessorService;
 import org.nmcpye.datarun.etl.service.SubmissionNotFoundException;
@@ -37,19 +39,22 @@ public class EtlOrchestrator {
     private final EventProcessorService eventProcessorService;
     private final TransactionTemplate txTemplate;
     private final EtlRetryPolicy retryPolicy;
+    private final EtlMetrics metrics;
 
     public EtlOrchestrator(EtlRunService etlRunService,
                            OutboxClaimService outboxClaimService,
                            OutboxProcessingService outboxProcessingService,
                            EventProcessorService eventProcessorService,
                            PlatformTransactionManager txManager,
-                           EtlProperties properties) {
+                           EtlProperties properties,
+                           EtlMetrics metrics) {
         this.etlRunService = etlRunService;
         this.outboxClaimService = outboxClaimService;
         this.outboxProcessingService = outboxProcessingService;
         this.eventProcessorService = eventProcessorService;
         this.txTemplate = new TransactionTemplate(txManager);
         this.retryPolicy = new EtlRetryPolicy(properties);
+        this.metrics = metrics;
     }
 
     /**
@@ -108,28 +113,35 @@ public class EtlOrchestrator {
 
     /** Projects one claimed row; true when it succeeded. */
     private boolean process(UUID runId, OutboxDto outbox, UUID ingestId) {
+        long start = System.nanoTime();
+        Outcome outcome = project(runId, outbox, ingestId);
+        metrics.rowProcessed(outcome, Duration.ofNanos(System.nanoTime() - start));
+        return outcome == Outcome.SUCCESS;
+    }
+
+    private Outcome project(UUID runId, OutboxDto outbox, UUID ingestId) {
         int attempt = outbox.getAttempt();
         if (retryPolicy.wasClaimedTooOften(attempt)) {
             recordDead(runId, outbox, "claimed " + attempt + " times without an outcome");
-            return false;
+            return Outcome.DEAD;
         }
         try {
             txTemplate.executeWithoutResult(status -> eventProcessorService.processEvent(runId, outbox, ingestId));
-            return true;
+            return Outcome.SUCCESS;
         } catch (SubmissionNotFoundException e) {
             // No later try can find it: the submission was removed outside the application.
             recordDead(runId, outbox, e.getMessage());
-            return false;
+            return Outcome.DEAD;
         } catch (RuntimeException e) {
             // The row's transaction has rolled back: nothing of it is left to wait on.
             String error = EtlFailures.describe(e);
             log.debug("Outbox row {} failed on attempt {}", outbox.getOutboxId(), attempt, e);
             if (retryPolicy.isLastAttempt(attempt)) {
                 recordDead(runId, outbox, error);
-            } else {
-                recordRetry(runId, outbox, error, retryPolicy.delayAfter(attempt));
+                return Outcome.DEAD;
             }
-            return false;
+            recordRetry(runId, outbox, error, retryPolicy.delayAfter(attempt));
+            return Outcome.FAILED;
         }
     }
 

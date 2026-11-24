@@ -28,4 +28,7 @@ public class EtlProperties {
 
     /** The longest wait between two tries. */
     private Duration maxRetryDelay = Duration.ofHours(1);
+
+    /** How long the backlog gauges reuse one reading of the outbox, however often they are scraped. */
+    private Duration backlogRefresh = Duration.ofSeconds(15);
 }

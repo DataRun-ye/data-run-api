@@ -171,6 +171,24 @@ final class EtlFixture {
         return left == null ? 0 : left;
     }
 
+    /** An outbox row of no particular submission, with the status, age and retry time given (in minutes). */
+    long outboxRow(String status, int createdMinutesAgo, Integer retryInMinutes) {
+        return tx.execute(txStatus -> jdbc.queryForObject("""
+                INSERT INTO outbox (submission_id, submission_serial_number, submission_uid, topic, payload,
+                                    event_type, status, attempt, created_at, next_attempt_at)
+                VALUES ('etl-row', 1, 'etlRow00001', :version, '{}'::jsonb, 'SAVE', :status, 0,
+                        localtimestamp - make_interval(mins => :ago),
+                        localtimestamp + make_interval(mins => :retryIn))
+                RETURNING outbox_id
+                """,
+            new MapSqlParameterSource()
+                .addValue("version", TEMPLATE_VERSION)
+                .addValue("status", status)
+                .addValue("ago", createdMinutesAgo)
+                .addValue("retryIn", retryInMinutes),
+            Long.class));
+    }
+
     /** Sets how often the row was already claimed, as runs that died on it would leave it. */
     void setAttempt(long outboxId, int attempt) {
         tx.executeWithoutResult(status -> jdbc.update(
