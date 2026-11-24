@@ -1,8 +1,4 @@
 {
-  "pinnedBug" : {
-    "changeBy" : "B1",
-    "what" : "an admin delete of an unknown uid answers 500 instead of 404"
-  },
   "scenario" : "W6-03",
   "steps" : [
     {
@@ -21,21 +17,21 @@
       },
       "response" : {
         "body" : {
-          "detail" : "No value present",
+          "detail" : "404 NOT_FOUND",
           "instance" : "/api/v1/dataSubmission/a2nosuchsub",
-          "message" : "error.http.500",
+          "message" : "error.http.404",
           "path" : "/api/v1/dataSubmission/a2nosuchsub",
-          "status" : 500,
-          "title" : "Internal Server Error",
+          "status" : 404,
+          "title" : "Not Found",
           "type" : "https://datarun.nmcpye.org/problem/problem-with-message"
         },
         "headers" : {
           "Content-Type" : "application/problem+json"
         },
-        "status" : 500
+        "status" : 404
       },
       "step" : 1
     }
   ],
-  "title" : "An admin delete of an unknown uid answers 500"
+  "title" : "An admin delete of an unknown uid answers 404 and writes nothing"
 }

@@ -50,21 +50,33 @@ public class SubmissionCommandService {
         return uploads.saveLegacy(command.items(), command.actor());
     }
 
+    /** What an admin delete found. */
+    public enum DeleteOutcome {
+        DELETED,
+        ALREADY_DELETED,
+        /** No submission has that uid; nothing was written. */
+        NOT_FOUND
+    }
+
     /**
      * An admin's delete, in one transaction: the submission is marked deleted, and its DELETE event, carrying its
      * last data, is written to the outbox. A submission already deleted is left as it is, with no second event and
-     * its first delete time, the rule an upload's {@code deleted=true} already follows. Only an admin may delete. An
-     * unknown uid fails with {@link java.util.NoSuchElementException} and writes nothing.
+     * its first delete time, the rule an upload's {@code deleted=true} already follows. Only an admin may delete.
      */
-    public void delete(SubmissionCommand.Delete command) {
+    public DeleteOutcome delete(SubmissionCommand.Delete command) {
         if (!command.actor().admin()) {
             throw new AccessDeniedException("Only an admin may delete a submission");
         }
-        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-            DataSubmission submission = submissions.findByUid(command.uid()).orElseThrow();
-            if (!Boolean.TRUE.equals(submission.getDeleted())) {
-                submissionService.softDelete(submission);
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            DataSubmission submission = submissions.findByUid(command.uid()).orElse(null);
+            if (submission == null) {
+                return DeleteOutcome.NOT_FOUND;
             }
+            if (Boolean.TRUE.equals(submission.getDeleted())) {
+                return DeleteOutcome.ALREADY_DELETED;
+            }
+            submissionService.softDelete(submission);
+            return DeleteOutcome.DELETED;
         });
     }
 

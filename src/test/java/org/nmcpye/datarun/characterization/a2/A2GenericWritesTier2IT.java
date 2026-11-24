@@ -37,12 +37,12 @@ class A2GenericWritesTier2IT extends A2GoldenSupport {
             .verify();
     }
 
+    /** Fixed in B1: until then the delete answered 500. */
     @Test
-    @PinnedBug(changeBy = "B1",
-        what = "an admin delete by the internal id answers 500 instead of 404")
     void w6_04_deleteByInternalId() {
         String uid = uid("w604");
-        var scenario = scenario("W6-04", "An admin delete by the internal id (not the uid) answers 500")
+        var scenario = scenario("W6-04", "An admin delete by the internal id (not the uid) answers 404 and deletes "
+            + "nothing")
             .upload("field1 creates", G3, FIELD_1, formA(uid, "first"));
         String id = jdbc.queryForObject("SELECT id FROM data_submission WHERE uid = :uid", Map.of("uid", uid),
             String.class);

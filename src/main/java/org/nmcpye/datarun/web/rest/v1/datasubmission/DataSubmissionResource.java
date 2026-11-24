@@ -24,10 +24,12 @@ import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1D
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import tech.jhipster.web.util.HeaderUtil;
 
 import java.time.Instant;
@@ -150,7 +152,10 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
                                               @AuthenticationPrincipal CurrentUserDetails user) {
         requireResourceApiAccess(user);
         log.debug("REST request to delete from {}: {}", getName(), id);
-        commands.delete(new SubmissionCommand.Delete(SubmissionActor.of(user), id));
+        if (commands.delete(new SubmissionCommand.Delete(SubmissionActor.of(user), id))
+            == SubmissionCommandService.DeleteOutcome.NOT_FOUND) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND); // as ResponseUtil.wrapOrNotFound on the reads
+        }
 
         return ResponseEntity
             .noContent()

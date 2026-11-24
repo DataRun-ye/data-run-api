@@ -11,9 +11,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -44,7 +44,8 @@ class SubmissionCommandServiceTest {
         stored.setUid("storedSub01");
         when(submissions.findByUid("storedSub01")).thenReturn(Optional.of(stored));
 
-        service.delete(new SubmissionCommand.Delete(actor(true), "storedSub01"));
+        assertEquals(SubmissionCommandService.DeleteOutcome.DELETED,
+            service.delete(new SubmissionCommand.Delete(actor(true), "storedSub01")));
 
         verify(submissionService).softDelete(stored);
         verify(transactionManager).commit(transaction);
@@ -58,21 +59,22 @@ class SubmissionCommandServiceTest {
         deleted.setDeleted(true);
         when(submissions.findByUid("deletedSub1")).thenReturn(Optional.of(deleted));
 
-        service.delete(new SubmissionCommand.Delete(actor(true), "deletedSub1"));
+        assertEquals(SubmissionCommandService.DeleteOutcome.ALREADY_DELETED,
+            service.delete(new SubmissionCommand.Delete(actor(true), "deletedSub1")));
 
         verify(submissionService, never()).softDelete(any());
         verify(transactionManager).commit(transaction);
     }
 
+    /** A2 W6-03 and W6-04: an unknown uid used to end in a NoSuchElementException, a 500. */
     @Test
     void deletingAnUnknownUidWritesNothing() {
         when(submissions.findByUid("noSuchSub01")).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class,
-            () -> service.delete(new SubmissionCommand.Delete(actor(true), "noSuchSub01")));
+        assertEquals(SubmissionCommandService.DeleteOutcome.NOT_FOUND,
+            service.delete(new SubmissionCommand.Delete(actor(true), "noSuchSub01")));
 
         verify(submissionService, never()).softDelete(any());
-        verify(transactionManager).rollback(transaction);
     }
 
     @Test

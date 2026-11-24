@@ -82,11 +82,10 @@ class A2GenericWritesTier1IT extends A2GoldenSupport {
             .verify();
     }
 
+    /** Fixed in B1: until then the delete answered 500. */
     @Test
-    @PinnedBug(changeBy = "B1",
-        what = "an admin delete of an unknown uid answers 500 instead of 404")
     void w6_03_adminDeleteOfAnUnknownUid() {
-        scenario("W6-03", "An admin delete of an unknown uid answers 500")
+        scenario("W6-03", "An admin delete of an unknown uid answers 404 and writes nothing")
             .call("admin deletes an unknown uid", "DELETE", "/api/v1/dataSubmission/a2nosuchsub", ADMIN, null)
             .verify();
     }
