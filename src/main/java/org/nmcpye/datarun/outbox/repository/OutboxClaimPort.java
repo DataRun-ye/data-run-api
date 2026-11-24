@@ -14,11 +14,6 @@ public interface OutboxClaimPort {
     List<OutboxDto> claimPendingBatch(UUID ingestId, String claimedBy, int limit, Duration lease);
 
     /**
-     * Mark outbox row success only if ingest_id matches; returns true if updated.
-     */
-    boolean markSuccessIfIngestMatches(long outboxId, UUID ingestId);
-
-    /**
      * Mark outbox row success (no ingest check).
      */
     void markSuccess(long outboxId);

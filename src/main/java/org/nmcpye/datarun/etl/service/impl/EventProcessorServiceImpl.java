@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public class EventProcessorServiceImpl implements EventProcessorService {
 
     private final DataSubmissionRepository submissionRepository;
-    private final TransformServiceV2 transformServiceRobust;
+    private final TransformServiceV2 transformService;
     private final TallCanonicalJdbcRepository tallRepo;
     private final OutboxProcessingService outboxProcessingService;
     private final DataSubmissionMapper dataSubmissionMapper;
@@ -84,7 +84,7 @@ public class EventProcessorServiceImpl implements EventProcessorService {
 
         // SAVE / UPDATE / REPLACE / BACKFILL -> mapping + upsert
         // JSON Traverse transform
-        FlattenSubmission flattenSubmission = transformServiceRobust.transform(payload,
+        FlattenSubmission flattenSubmission = transformService.transform(payload,
             false, submissionContext.submissionUid(), templateContext);
 
 

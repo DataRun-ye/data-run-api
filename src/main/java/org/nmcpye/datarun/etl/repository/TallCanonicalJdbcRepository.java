@@ -58,7 +58,7 @@ public class TallCanonicalJdbcRepository {
     private static final int VALUE_JSON_MAX = 10000;
 
     /**
-     * Upsert a mixed batch of TallCanonicalRow entries.
+     * Upsert a mixed batch of TallCanonicalValue entries.
      * <p>
      * - Calculates instance_key = COALESCE(repeat_instance_id, submission_uid) and binds it explicitly.
      * - Sanitizes/truncates value_text and value_json to reasonable sizes to avoid extremely large payloads.

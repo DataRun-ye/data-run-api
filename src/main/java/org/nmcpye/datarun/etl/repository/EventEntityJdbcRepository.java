@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.etl.repository;
 
 import lombok.RequiredArgsConstructor;
-import org.nmcpye.datarun.etl.dto.EventDto;
 import org.nmcpye.datarun.etl.dto.EventRow;
 import org.nmcpye.datarun.etl.model.SubmissionContext;
 import org.nmcpye.datarun.utils.UuidUtils;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Repository;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 @SuppressWarnings("ConcatenationWithEmptyString")
 @Repository
@@ -48,38 +46,6 @@ public class EventEntityJdbcRepository {
         + "submission_creation_time = COALESCE(events.submission_creation_time, EXCLUDED.submission_creation_time), "
         + "start_time = COALESCE(events.start_time, EXCLUDED.start_time), "
         + "updated_at = CURRENT_TIMESTAMP";
-
-    public void upsertEventEntity(EventDto eventDto) {
-        MapSqlParameterSource p = new MapSqlParameterSource()
-            .addValue("eventId", eventDto.eventId())
-            .addValue("eventType", eventDto.eventType())
-            .addValue("submissionUid", eventDto.submissionUid())
-            .addValue("submissionId", eventDto.submissionId())
-            .addValue("assignmentUid", eventDto.assignmentUid())
-            .addValue("submissionSerial", eventDto.submissionSerial())
-            .addValue("parentEventId", eventDto.parentEventId())
-            .addValue("eventCeId", eventDto.eventCeId())
-            .addValue("activityUid", eventDto.activityUid())
-            .addValue("orgUnitUid", eventDto.orgUnitUid())
-            .addValue("teamUid", eventDto.teamUid())
-            .addValue("templateUid", eventDto.templateUid())
-            .addValue("submissionCreationTime", getTimestamp(eventDto.submissionCreationTime()))
-            .addValue("startTime", getTimestamp(eventDto.startTime()))
-            .addValue("createdBy", eventDto.createdBy())
-            .addValue("lastModifiedBy", eventDto.lastModifiedBy())
-            .addValue("deletedAt", getTimestamp(eventDto.deletedAt()));
-
-        jdbc.update(sql, p);
-    }
-
-    public Optional<EventDto> findByInstanceKey(String eventId) {
-        if (eventId == null) return Optional.empty();
-        String sql = "SELECT * FROM analytics.events WHERE event_id = :eventId LIMIT 1";
-        MapSqlParameterSource p = new MapSqlParameterSource().addValue("eventId", eventId);
-        List<EventDto> rows = jdbc.query(sql, p, EventDto.ROW_MAPPER);
-        if (rows.isEmpty()) return Optional.empty();
-        return Optional.of(rows.get(0));
-    }
 
     public void patchUpsertEvents(SubmissionContext context, List<EventRow> events) {
         if (events == null || events.isEmpty()) return;

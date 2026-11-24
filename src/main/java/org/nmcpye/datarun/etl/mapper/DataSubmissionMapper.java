@@ -25,11 +25,4 @@ public interface DataSubmissionMapper {
         expression = "java(ds.getDeleted() != null && ds.getDeleted() == true ? java.time.Instant.now() : null)"
     )
     SubmissionContext toDto(DataSubmission ds);
-
-//    @InheritInverseConfiguration(name = "toEntity")
-//    SubmissionContext toEntity(DataSubmission dataSubmission);
-
-    @InheritConfiguration(name = "toEntity")
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    DataSubmission partialUpdate(SubmissionContext submissionContext, @MappingTarget DataSubmission dataSubmission);
 }

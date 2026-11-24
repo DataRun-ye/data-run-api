@@ -59,11 +59,6 @@ public class OutboxClaimReader implements OutboxClaimPort {
             "SET status = 'success', last_error = NULL, next_attempt_at = NULL " +
             "WHERE outbox_id = :outboxId;";
 
-    private static final String MARK_SUCCESS_IF_INGEST_SQL =
-        "UPDATE outbox " +
-            "SET status = 'success', last_error = NULL, next_attempt_at = NULL " +
-            "WHERE outbox_id = :outboxId AND ingest_id = :ingestId;";
-
     // Failure outcomes apply only to the claim they belong to: a row claimed again after its lease ended
     // belongs to the newer claim.
     private static final String MARK_RETRY_SQL = """
@@ -127,18 +122,6 @@ public class OutboxClaimReader implements OutboxClaimPort {
         if (updated == 0) {
             throw new IllegalStateException("markSuccess: no outbox row updated for id=" + outboxId);
         }
-    }
-
-    @Override
-    @Transactional
-    public boolean markSuccessIfIngestMatches(long outboxId, UUID ingestId) {
-        int updated = cloudJdbc.update(
-            MARK_SUCCESS_IF_INGEST_SQL,
-            new MapSqlParameterSource()
-                .addValue("outboxId", outboxId)
-                .addValue("ingestId", ingestId)
-        );
-        return updated > 0;
     }
 
     @Override

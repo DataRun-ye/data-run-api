@@ -12,15 +12,6 @@ import java.util.List;
 public class CeMetadataRepository {
     private final JdbcTemplate jdbc;
 
-    // New: fetch CEs for a specific template_uid
-    public List<CanonicalElement> getElementsForTemplate(String templateUid) {
-        String sql = "SELECT id, safe_name, data_type, semantic_type, parent_repeat_id "
-            + "FROM public.canonical_element WHERE template_uid = ? ORDER BY safe_name";
-        List<CanonicalElement> ces = jdbc.query(sql, new Object[]{templateUid}, CanonicalElement.MAPPER);
-        return ces;
-    }
-
-    //---------------------------
     public List<CanonicalElementWithConfig> getElementsForTemplateWithConfig(String templateUid) {
         String sql = """
             SELECT

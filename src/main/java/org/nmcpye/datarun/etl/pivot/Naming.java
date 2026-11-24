@@ -43,8 +43,4 @@ public final class Naming {
     public static String oldName(String baseFqName) {
         return baseFqName + "_old";
     }
-
-    public static String repeatsTable(String baseFq) {
-        return baseFq + "_repeats";
-    }
 }

@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.outbox.service;
 
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
-import org.nmcpye.datarun.etl.entity.EtlRun;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,19 +16,7 @@ import java.util.UUID;
 public interface OutboxClaimService {
 
     /**
-     * Claim up to batchSize pending rows and associate them with the given EtlRun.
-     * <p>
-     * The method will:
-     * - generate or accept an ingestId
-     * - atomically assign ingestId to selected outbox rows
-     * - return claimed OutboxDto rows
-     * <p>
-     * NOTE: implementers should ensure concurrency-safe semantics (SKIP LOCKED).
-     */
-    List<OutboxDto> claimBatch(EtlRun run, int batchSize);
-
-    /**
-     * Convenience method to claim using an externally supplied ingestId.
+     * Claim up to {@code batchSize} due rows under the given ingestId, leased to the claiming run.
      */
     List<OutboxDto> claimBatchWithIngestId(UUID ingestId, String claimedBy, int batchSize);
 }

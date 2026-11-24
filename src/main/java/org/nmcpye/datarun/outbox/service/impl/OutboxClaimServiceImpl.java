@@ -2,7 +2,6 @@ package org.nmcpye.datarun.outbox.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.etl.config.EtlProperties;
-import org.nmcpye.datarun.etl.entity.EtlRun;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.outbox.repository.OutboxClaimPort;
 import org.nmcpye.datarun.outbox.service.OutboxClaimService;
@@ -29,19 +28,6 @@ public class OutboxClaimServiceImpl implements OutboxClaimService {
 
     private final OutboxClaimPort outboxJdbcRepository;
     private final EtlProperties etlProperties;
-
-    /**
-     * Claim a batch for the given run. Generates a new ingestId and delegates to claimBatchWithIngestId.
-     * <p>
-     * The generated ingestId groups the claimed rows and can be persisted to outbox.ingest_id
-     * so downstream processing can use it as an idempotency/provenance token.
-     */
-    @Override
-    public List<OutboxDto> claimBatch(EtlRun run, int batchSize) {
-        UUID ingestId = UUID.randomUUID();
-        // We intentionally do not persist the ingestId into EtlRun here; caller/ orchestrator manages run metadata.
-        return claimBatchWithIngestId(ingestId, run.getCreatedBy(), batchSize);
-    }
 
     /**
      * Claim up to batchSize pending outbox rows and assign them to ingestId.

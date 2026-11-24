@@ -51,7 +51,7 @@ public class TransformServiceV2 {
             String instanceKey = r.getRepeatInstanceId() != null ? r.getRepeatInstanceId() : submissionUid;
             allInstanceKeys.add(instanceKey);
 
-            String explicitParent = r.getParentInstanceId(); // direct call, assumed present on TallCanonicalRow
+            String explicitParent = r.getParentInstanceId();
             if (explicitParent != null) parentForInstance.put(instanceKey, explicitParent);
 
             String ceId = r.getCanonicalElementId();
