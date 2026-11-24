@@ -326,16 +326,28 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     names the request path; Hibernate logs the database's message). An event
     never carries the line's arguments, exception messages, the request, the
     user or breadcrumbs, and nothing is traced. Request errors that the REST
-    layer answers stay in `error_event` and are not reported. Nor is anything
-    before the application context is up: the SDK starts during the
-    context's refresh and attaches to the log at its end, so a failed
-    startup and the Liquibase migrations, which production runs during the
-    refresh, show in the container log only. A malformed DSN leaves
+    layer answers stay in `error_event` (Error records, below) and are not
+    reported. Nor is anything before the application context is up: the SDK
+    starts during the context's refresh and attaches to the log at its end,
+    so a failed startup and the Liquibase migrations, which production runs
+    during the refresh, show in the container log only. A malformed DSN leaves
     reporting off, with one WARN at startup that does not repeat it.
     The container log keeps every line in full. Database errors there leave
     out the failing row only because the pool and both JDBC URLs set
     `logServerErrorDetail=false`; PostgreSQL's own message can still quote an
     input value (`invalid input syntax for type integer: "…"`).
+  - Error records (`error_event`): one row per request error that the REST
+    layer answers. Since 6.5.5 a row holds no exception message, which
+    quoted submitted values, request bodies and database rows: `message`
+    holds the error's code (the answer's message key, such as
+    `error.validation` or `error.http.401`), `exception` its type, and
+    `stacktrace` the exception types and frames (cut at 4,000 characters).
+    `context_json` holds identifiers: the request id of the log lines and of
+    the `X-Request-ID` answer, the user id, the causes' exception types, and
+    for a database error the SQLState and the constraint. Older rows keep
+    their messages. `username` is unchanged: the login a failed login
+    attempted, otherwise mostly `anonymous`, because production writes the
+    row on another thread. Nothing in code reads the table.
   - Heartbeat (`DATARUN_ETL_HEARTBEAT_URL`, `datarun.etl.heartbeat-url`):
     after a poll that succeeded, the ETL sends a POST to the monitor, at most
     once a minute, and gives up after 5 s. A failure is logged at DEBUG and

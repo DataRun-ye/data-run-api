@@ -9,6 +9,10 @@ import org.nmcpye.datarun.datatemplateprocessor.validation.validators.TemplateVa
 import org.nmcpye.datarun.jpa.errorevent.service.ErrorEventService;
 import org.nmcpye.datarun.jpa.user.UsernameAlreadyUsedException;
 import org.nmcpye.datarun.jpa.userrefreshtoken.TokenRefreshException;
+import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.security.SecurityUtils;
+import org.nmcpye.datarun.web.filter.RequestIdFilter;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.ConcurrencyFailureException;
@@ -114,18 +118,34 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         return super.handleExceptionInternal(ex, body, headers, statusCode, request);
     }
 
-    // --- Helper to keep code clean ---
+    /**
+     * Records the error in {@code error_event} by its code and identifiers, never by a message (see
+     * {@link ErrorEventService}). The record is written on another thread, so what only the request's thread knows
+     * is read here: the request id that the log lines and the {@code X-Request-ID} answer carry, and the user's id.
+     */
     private void logErrorToDb(Throwable ex, NativeWebRequest request, int status) {
         markAsLogged(request); // prevent double logging
-        Map<String, Object> context = new HashMap<>();
-        context.put("requestId", UUID.randomUUID().toString());
-
-        // You can add extra specific details here if needed
-        if (ex instanceof MethodArgumentNotValidException) {
-            context.put("validationErrors", ((MethodArgumentNotValidException) ex).getBindingResult().getErrorCount());
+        Map<String, Object> context = new LinkedHashMap<>();
+        String requestId = MDC.get(RequestIdFilter.MDC_REQUEST_ID_KEY);
+        if (requestId != null) {
+            context.put("requestId", requestId);
+        }
+        SecurityUtils.getCurrentUserDetails().map(CurrentUserDetails::getId)
+            .ifPresent(userId -> context.put("userId", userId));
+        if (ex instanceof MethodArgumentNotValidException invalid) {
+            context.put("validationErrors", invalid.getBindingResult().getErrorCount());
         }
 
-        errorEventService.logError(ex, request, HttpStatus.valueOf(status), context);
+        errorEventService.logError(ex, request, HttpStatus.valueOf(status), errorCode(ex, status), context);
+    }
+
+    /** A refusal's code, else the message key the answer carries ({@code error.validation}, {@code error.http.400}). */
+    private String errorCode(Throwable ex, int status) {
+        if (ex instanceof ErrorCodeException coded && coded.getErrorCode() != null) {
+            return coded.getErrorCode().name();
+        }
+        String messageKey = getMappedMessageKey(ex);
+        return messageKey != null ? messageKey : "error.http." + status;
     }
 
     private void markAsLogged(NativeWebRequest request) {
