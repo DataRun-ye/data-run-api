@@ -103,6 +103,7 @@ class HeldSubmissionDecisionsTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication().getName())
             .as("the admin's context is back after the replay").isEqualTo("admin");
         assertThat(result.released()).containsExactly("heldSub0001");
+        assertThat(result.runAgain()).as("nothing changed meanwhile and nothing remains").isFalse();
         verify(held).markDecided("heldSub0001", HeldState.RELEASED, HELD_OR_DISCARDED, SEEN,
             "admin", "district started early");
     }
@@ -136,6 +137,7 @@ class HeldSubmissionDecisionsTest {
 
         assertThat(result.released()).isEmpty();
         assertThat(result.changed()).containsExactly("heldSub0001");
+        assertThat(result.runAgain()).as("the changed upload is still held: release again").isTrue();
         verify(held, never()).recordReleaseError(anyString(), anyString());
     }
 
@@ -234,6 +236,7 @@ class HeldSubmissionDecisionsTest {
 
         assertThat(result.discarded()).containsExactly("heldSub0001", "heldSub0002");
         assertThat(result.remaining()).isEqualTo(1);
+        assertThat(result.runAgain()).isTrue();
     }
 
     @Test

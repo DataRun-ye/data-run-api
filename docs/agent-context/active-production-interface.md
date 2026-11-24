@@ -198,7 +198,12 @@ superseded. A release by filter takes only uploads still held before a
 go-live; discarded and practice uploads are released only by uid. Releases
 and discards work in batches (at most 500 per call, reporting what remains),
 and every decision applies only if the upload is unchanged since it was read;
-released and superseded uploads are final. The area chain is read by walking
+released and superseded uploads are final. An upload reported `changed` was
+left as it was, with nothing saved: a release is finished only when the call,
+repeated, answers no `changed` and no `remaining` (`runAgain` false) and
+`GET /api/v1/admin/heldSubmissions/summary` for the campaign shows no `HELD`
+`BEFORE_GO_LIVE` rows. Uploads in `failed` stay held, with
+`last_release_error`, until their cause is fixed or they are discarded. The area chain is read by walking
 parents, never through `OrgUnit.getPath()`, which writes the org unit when
 called in a committing transaction. The unversioned legacy writes are never
 held. The connection pool does not auto-commit, so JDBC writes outside a

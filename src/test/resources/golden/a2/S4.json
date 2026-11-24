@@ -355,6 +355,7 @@
         "failed" : { },
         "released" : [ ],
         "remaining" : 0,
+        "runAgain" : true,
         "superseded" : [ ]
       },
       "step" : 4
@@ -533,6 +534,7 @@
             "a2s4xxxxxxx"
           ],
           "remaining" : 0,
+          "runAgain" : false,
           "superseded" : [ ]
         },
         "headers" : {
