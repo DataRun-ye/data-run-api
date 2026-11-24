@@ -439,6 +439,64 @@ class SubmissionRevisionMigrationIT {
             .as("the next start runs the gap repair again").isEqualTo(1);
     }
 
+    /**
+     * The gap repair runs after every other changeset, by construction: it is last in this changelog, and stays last
+     * in a changelog that adds a changeset after it. Such a later changeset, a data repair that raised a version
+     * without a revision, is recorded as a gap in the same Liquibase run.
+     */
+    @Test
+    void theGapRepairRunsLastEvenAfterChangesetsAddedLater() throws Exception {
+        try (Connection connection = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())) {
+            Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
+            List<ChangeSet> all = new Liquibase(MASTER, new ClassLoaderResourceAccessor(), database)
+                .getDatabaseChangeLog().getChangeSets();
+            assertThat(all.get(all.size() - 1).getId()).isEqualTo(GAP_REPAIR);
+        }
+
+        String repaired = submission(2, false);
+        revision(repaired, 2, null, "BASELINE", "MIGRATION", null, "MIGRATION", null, null);
+        java.nio.file.Path dir = java.nio.file.Files.createTempDirectory("changelog-later");
+        String laterChangeset = "later-data-repair-" + repaired;
+        try {
+            java.nio.file.Files.writeString(dir.resolve("later.xml"), """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd">
+                    <include file="config/liquibase/master.xml" relativeToChangelogFile="false"/>
+                    <changeSet id="%s" author="test">
+                        <sql>UPDATE data_submission SET lock_version = lock_version + 1 WHERE id = '%s'</sql>
+                    </changeSet>
+                </databaseChangeLog>""".formatted(laterChangeset, repaired));
+            ChangeLogHistoryServiceFactory.getInstance().resetAll();
+            Scope.getCurrentScope().getSingleton(FastCheckService.class).clearCache();
+            try (Connection connection = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())) {
+                Database database = DatabaseFactory.getInstance()
+                    .findCorrectDatabaseImplementation(new JdbcConnection(connection));
+                Liquibase later = new Liquibase("later.xml", new liquibase.resource.CompositeResourceAccessor(
+                    new liquibase.resource.DirectoryResourceAccessor(dir), new ClassLoaderResourceAccessor()), database);
+                List<ChangeSet> order = later.getDatabaseChangeLog().getChangeSets();
+                assertThat(order.get(order.size() - 1).getId()).as("still last").isEqualTo(GAP_REPAIR);
+                assertThat(order.get(order.size() - 2).getId()).isEqualTo(laterChangeset);
+                later.update(new Contexts(), new LabelExpression());
+            }
+        } finally {
+            try (var files = java.nio.file.Files.list(dir)) {
+                for (java.nio.file.Path file : files.toList()) {
+                    java.nio.file.Files.delete(file);
+                }
+            }
+            java.nio.file.Files.delete(dir);
+        }
+
+        assertThat(db.queryForList("""
+                SELECT version || ' ' || coalesce(previous_version::text, '-') || ' ' || command
+                FROM journal.submission_revision WHERE submission_id = ? ORDER BY version""", String.class, repaired))
+            .as("the later changeset's raised version, recorded in the same run")
+            .containsExactly("2 - MIGRATION", "3 2 GAP_REPAIR");
+    }
+
     // ---------------------------------------------------------------- the table and its constraints
 
     @Test

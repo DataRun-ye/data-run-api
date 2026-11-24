@@ -20,14 +20,18 @@
       reconciliation check reports that too.
 
       Cost: one index probe per submission; with no gap it writes nothing (see the rehearsal numbers in
-      docs/agent-context/active-production-interface.md). runAlways: Liquibase runs it on every update, in its place
-      after the journal's other changesets.
+      docs/agent-context/active-production-interface.md).
+
+      runAlways and runOrder="last": Liquibase runs it on every update, after every other changeset of the changelog,
+      wherever later ones are added. So a later changeset that raises versions without revisions (a data repair that
+      broke the rule in active-production-interface.md) is recorded as a gap at the same start, instead of making
+      every re-send of those submissions fail until the next start.
 
       Rollback: nothing to undo; the gap revisions stay with the journal. It refuses nothing either: this changeset
       runs at every start, and Liquibase records each run as the latest, so every later rollback begins here. A
       refusal here would block those, unrelated ones included; the rollbacks that remove a guard refuse instead.
     -->
-    <changeSet id="20261124-c08-submission-revision-gap-repair" author="datarun" runAlways="true">
+    <changeSet id="20261124-c08-submission-revision-gap-repair" author="datarun" runAlways="true" runOrder="last">
         <sql>
             INSERT INTO journal.submission_revision (submission_id, version, previous_version, kind, command, actor_system,
                                              form_data, metadata)

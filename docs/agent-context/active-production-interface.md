@@ -402,6 +402,27 @@ Deploy, rollback and history:
 - Production's migration role must be able to create a schema. On staging
   (2026-11-25) it owns the database and is not a superuser, so it can.
 
+Data repairs and operations SQL (a rule, not yet a guard):
+- A data repair changes submissions only through revisions. In the
+  transaction of each row it changes, it raises `lock_version` by one and
+  inserts an `UPDATE` revision at the new version, naming the head as
+  `previous_version`, with `actor_system` and a `reason` naming the repair,
+  under a command its own changeset first adds to the journal's checks (for
+  example `DATA_REPAIR`: today a system actor may only write baselines). If
+  downstream must see the change, it also writes the outbox row naming that
+  revision, as the application does.
+- Operations SQL never changes `lock_version`, nor a submission's state
+  outside that pattern.
+- The known case: the repair of the 402 form-version labels that integrity
+  check 9a counts.
+- Why: a version raised without a revision makes every re-send of that
+  submission fail at `submission_revision_no_gap`, and its change is recorded
+  without who or why. A changeset that breaks the rule is still recorded at
+  its own deploy, as a gap revision without its reason, because the gap
+  repair runs after every changeset (`runOrder="last"`). Direct SQL outside a
+  deploy is recorded by nothing until the gap repair statement of changeset
+  c08 is run by hand; check 11b counts the submissions it left behind.
+
 ### Outbox Consumer (ETL)
 
 The ETL (`etl/`) is the only consumer of the current `outbox`. For each row it
