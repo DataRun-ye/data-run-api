@@ -31,32 +31,28 @@ class A2GenericWritesTier1IT extends A2GoldenSupport {
         return body;
     }
 
+    /** Changed in B2 (6.5.5): the route never saved (its required id cannot be bound) and answered 400. */
     @Test
-    @PinnedBug(changeBy = "B2",
-        what = "POST /dataSubmission can never save (its required id cannot be bound) and answers 400 instead of "
-            + "being refused as a method (405)")
-    void w4_01_genericPostAlwaysFailsValidation() {
-        scenario("W4-01", "POST /dataSubmission answers 400 to an admin and to a field user")
+    void w4_01_genericPostIsNotAllowed() {
+        scenario("W4-01", "POST /dataSubmission answers 405 to an admin and to a field user")
             .call("admin", "POST", "/api/v1/dataSubmission", ADMIN, entityBody(uid("w401a"), "a"))
             .call("field user", "POST", "/api/v1/dataSubmission", FIELD_1, entityBody(uid("w401b"), "b"))
             .verify();
     }
 
+    /** Changed in B2 (6.5.5): the route never saved and answered 400. */
     @Test
-    @PinnedBug(changeBy = "B2",
-        what = "POST /dataSubmission/return can never save and answers 400 instead of being refused as a method (405)")
-    void w4_02_genericPostReturnAlwaysFailsValidation() {
-        scenario("W4-02", "POST /dataSubmission/return answers 400")
+    void w4_02_genericPostReturnIsNotAllowed() {
+        scenario("W4-02", "POST /dataSubmission/return answers 405")
             .call("admin", "POST", "/api/v1/dataSubmission/return", ADMIN, entityBody(uid("w402"), "a"))
             .verify();
     }
 
+    /** Changed in B2 (6.5.5): the route never saved and answered 400. */
     @Test
-    @PinnedBug(changeBy = "B2",
-        what = "PUT /dataSubmission/{uid} can never save and answers 400 instead of being refused as a method (405)")
-    void w5_01_adminPutAlwaysFailsValidation() {
+    void w5_01_adminPutIsNotAllowed() {
         String uid = uid("w501");
-        scenario("W5-01", "PUT /dataSubmission/{uid} by an admin answers 400 and changes nothing")
+        scenario("W5-01", "PUT /dataSubmission/{uid} by an admin answers 405 and changes nothing")
             .upload("field1 creates", G3, FIELD_1, formA(uid, "first"))
             .call("admin puts changed data", "PUT", "/api/v1/dataSubmission/" + uid, ADMIN, entityBody(uid, "changed"))
             .verify();

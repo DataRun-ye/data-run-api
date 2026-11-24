@@ -26,9 +26,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class ReferenceUploadRouteContractTest {
@@ -112,6 +114,26 @@ class ReferenceUploadRouteContractTest {
             .andExpect(status().isOk());
         verify(commands).uploadLegacy(any(SubmissionCommand.LegacyUpload.class));
         verifyNoMoreInteractions(commands);
+    }
+
+    /**
+     * B2 (6.5.5): the generic writes that other resources inherit are not routes for submissions, so every body, valid
+     * or not, gets 405 before anything reads it (they answered 400: the body's id cannot be bound).
+     */
+    @Test
+    void theGenericSubmissionWritesAreNotRoutes() throws Exception {
+        SubmissionCommandService commands = mock(SubmissionCommandService.class);
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(resource(commands)).build();
+
+        for (String alias : List.of("/api/v1/dataSubmission", "/api/custom/dataSubmission")) {
+            mvc.perform(post(alias).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isMethodNotAllowed());
+            mvc.perform(post(alias + "/return").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isMethodNotAllowed());
+            mvc.perform(put(alias + "/a2w501xxxxx").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isMethodNotAllowed());
+        }
+        verifyNoInteractions(commands);
     }
 
     private static DataSubmissionResource resource(

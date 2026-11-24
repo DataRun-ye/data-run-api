@@ -129,10 +129,10 @@ Liquibase contraction.
 | ADMIN | `POST /api/v1/admin/heldSubmissions/release`, `POST /discard` | `HeldSubmissionResource` -> `SubmissionCommandService.releaseHeld` / `discardHeld` -> `HeldSubmissionDecisions` |
 | LEGACY-RISK / UNKNOWN | `GET /api/v1/dataSubmission`, `GET /byLastModified`, `POST /query`, `GET /{id}` | inherited generic read surface |
 | LEGACY-RISK / UNKNOWN | `POST /api/v1/dataSubmission/bulk` without the version parameter | `DataSubmissionResource.saveAll` -> `SubmissionCommandService.uploadLegacy` |
-| LEGACY-RISK / UNKNOWN | `POST /api/v1/dataSubmission`, `POST /return` | inherited routes; bean validation answers 400 to every body (the id cannot be bound); their body would go through `uploadLegacy` |
+| RETIRED (6.5.5) | `POST /api/v1/dataSubmission`, `POST /return` | not routes: 405 to every caller (B2). They never saved (bean validation answered 400, the id cannot be bound), and production's access logs of 2026-11-10 to 24 hold no call |
 | LEGACY-RISK / UNKNOWN | `GET|POST /api/v1/dataSubmission/objects` | deprecated flattened read surface |
 | ADMIN / UNKNOWN | `DELETE /api/v1/dataSubmission/{uid}` | `DataSubmissionResource.deleteByIdUid` -> `SubmissionCommandService.delete` |
-| ADMIN / UNKNOWN | `PUT /api/v1/dataSubmission/{uid}` | inherited generic update; bean validation answers 400 before its body runs |
+| RETIRED (6.5.5) | `PUT /api/v1/dataSubmission/{uid}` | not a route: 405 to every caller (B2, owner decision 4). It never saved (bean validation answered 400), and the same logs hold no call |
 
 Every submission write goes through `SubmissionCommandService`
 (`jpa.datasubmission.command`): controllers adapt each route to a
@@ -144,11 +144,12 @@ written in a transaction of its own, with its `outbox` row, and
 calls the write methods of the persistence layer (`DataSubmissionService`, the
 submission repository, `SubmissionIntake.hold`, `HeldSubmissionRepository`,
 `OutboxWriter`); it accepts no violation. The rule cannot see writes through
-the generic `IdentifiableObjectService` types; the inherited `PUT` body is the
-one such path, and it answers 400 before it runs. Log lines on these paths carry
-identifiers and shapes only: submission and form uids, the user id, counts,
-error codes and exception types, never a login, a submitted value or an
-exception message.
+the generic `IdentifiableObjectService` types; `DataSubmissionResource`
+inherits none of the generic writes since 6.5.5 (it extends the read-only
+`BaseReadResource` and declares its own routes), so no route reaches one. Log
+lines on these paths carry identifiers and shapes only: submission and form
+uids, the user id, counts, error codes and exception types, never a login, a
+submitted value or an exception message.
 
 Ordinary and Reference-capable submissions share the versioned upload
 (`SubmissionUploads`, the released mobile's owner). It maps the versioned
@@ -467,6 +468,6 @@ that no external operator or older client uses them.
 | generic assignment/form reads `/byLastModified`, `/query`, and `/{id}` | remove only after access-log/operator confirmation | no released-mobile or in-repo caller | medium / external reads unknown |
 | `GET|POST /api/{v1,custom}/dataSubmission/objects` | remove | deprecated flattened-read endpoint; no released-mobile or in-repo caller | high / older reporting client unknown |
 | generic submission reads `GET /`, `/byLastModified`, `POST /query`, `GET /{id}` | remove only after access-log/operator confirmation | submission pull is disabled; no current mobile caller | medium / older pull/reporting client unknown |
-| unversioned submission writes `POST /bulk`, `POST /`, `POST /return` | retain until old-client compatibility is explicitly retired | current mobile uses `bulk?referenceVersion=1`; older clients may use the unversioned payload | low removal confidence / highest client risk |
-| submission `PUT /{uid}` and `DELETE /{id}` | defer to synced edit/delete policy | no current mobile caller; admin-only route exists, but lifecycle policy is incomplete | low removal confidence / product-policy risk |
+| unversioned submission upload `POST /bulk` (`POST /` and `POST /return` answer 405 since 6.5.5) | retain until old-client compatibility is explicitly retired | current mobile uses `bulk?referenceVersion=1`; production's access logs of 2026-11-10 to 24 hold 214 unversioned `POST /bulk` (192 answered 200) | low removal confidence / highest client risk |
+| submission `DELETE /{id}` (`PUT /{uid}` answers 405 since 6.5.5) | defer to synced edit/delete policy | no current mobile caller; admin-only route exists, but lifecycle policy is incomplete | low removal confidence / product-policy risk |
 | `/api/custom` aliases | replace remaining administrator/operational callers with `/api/v1`, then remove | released mobile uses `/api/v1`; recent production access logs still contain successful custom calls | medium / caller must be identified during administrator smoke |

@@ -1,8 +1,4 @@
 {
-  "pinnedBug" : {
-    "changeBy" : "B2",
-    "what" : "a field user's PUT answers 400 instead of 403: validation runs before method security"
-  },
   "scenario" : "W5-02",
   "steps" : [
     {
@@ -293,28 +289,21 @@
       },
       "response" : {
         "body" : {
-          "detail" : "<framework text>",
-          "fieldErrors" : [
-            {
-              "field" : "id",
-              "message" : "must not be null",
-              "objectName" : "dataSubmission"
-            }
-          ],
+          "detail" : "Request method 'PUT' is not supported",
           "instance" : "/api/v1/dataSubmission/a2w502xxxxx",
-          "message" : "error.validation",
+          "message" : "error.http.405",
           "path" : "/api/v1/dataSubmission/a2w502xxxxx",
-          "status" : 400,
-          "title" : "Method argument not valid",
-          "type" : "https://datarun.nmcpye.org/problem/constraint-violation"
+          "status" : 405,
+          "title" : "Method Not Allowed",
+          "type" : "https://datarun.nmcpye.org/problem/problem-with-message"
         },
         "headers" : {
           "Content-Type" : "application/problem+json"
         },
-        "status" : 400
+        "status" : 405
       },
       "step" : 2
     }
   ],
-  "title" : "A field user's PUT answers 400, not 403: validation runs before method security"
+  "title" : "A field user's PUT answers 405"
 }

@@ -1,8 +1,4 @@
 {
-  "pinnedBug" : {
-    "changeBy" : "B2",
-    "what" : "POST /dataSubmission can never save (its required id cannot be bound) and answers 400 instead of being refused as a method (405)"
-  },
   "scenario" : "W4-01",
   "steps" : [
     {
@@ -55,25 +51,18 @@
       },
       "response" : {
         "body" : {
-          "detail" : "<framework text>",
-          "fieldErrors" : [
-            {
-              "field" : "id",
-              "message" : "must not be null",
-              "objectName" : "dataSubmission"
-            }
-          ],
+          "detail" : "Request method 'POST' is not supported",
           "instance" : "/api/v1/dataSubmission",
-          "message" : "error.validation",
+          "message" : "error.http.405",
           "path" : "/api/v1/dataSubmission",
-          "status" : 400,
-          "title" : "Method argument not valid",
-          "type" : "https://datarun.nmcpye.org/problem/constraint-violation"
+          "status" : 405,
+          "title" : "Method Not Allowed",
+          "type" : "https://datarun.nmcpye.org/problem/problem-with-message"
         },
         "headers" : {
           "Content-Type" : "application/problem+json"
         },
-        "status" : 400
+        "status" : 405
       },
       "step" : 1
     },
@@ -127,28 +116,21 @@
       },
       "response" : {
         "body" : {
-          "detail" : "<framework text>",
-          "fieldErrors" : [
-            {
-              "field" : "id",
-              "message" : "must not be null",
-              "objectName" : "dataSubmission"
-            }
-          ],
+          "detail" : "Request method 'POST' is not supported",
           "instance" : "/api/v1/dataSubmission",
-          "message" : "error.validation",
+          "message" : "error.http.405",
           "path" : "/api/v1/dataSubmission",
-          "status" : 400,
-          "title" : "Method argument not valid",
-          "type" : "https://datarun.nmcpye.org/problem/constraint-violation"
+          "status" : 405,
+          "title" : "Method Not Allowed",
+          "type" : "https://datarun.nmcpye.org/problem/problem-with-message"
         },
         "headers" : {
           "Content-Type" : "application/problem+json"
         },
-        "status" : 400
+        "status" : 405
       },
       "step" : 2
     }
   ],
-  "title" : "POST /dataSubmission answers 400 to an admin and to a field user"
+  "title" : "POST /dataSubmission answers 405 to an admin and to a field user"
 }

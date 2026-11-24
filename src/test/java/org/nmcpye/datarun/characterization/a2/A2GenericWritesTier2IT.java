@@ -23,15 +23,14 @@ class A2GenericWritesTier2IT extends A2GoldenSupport {
         return item(G3, uid, FORM_A, version("FORM_A.v1"), ASSIGN_T1_V1, ordinary(G3, uid, name, "r1", "s1", 1));
     }
 
+    /** Changed in B2 (6.5.5): validation ran before method security, so a field user got 400, not 403. */
     @Test
-    @PinnedBug(changeBy = "B2",
-        what = "a field user's PUT answers 400 instead of 403: validation runs before method security")
     void w5_02_fieldUserPut() {
         String uid = uid("w502");
         ObjectNode body = formA(uid, "changed").node.deepCopy();
         body.remove("lastSyncMassage");
         body.remove("lastSyncDate");
-        scenario("W5-02", "A field user's PUT answers 400, not 403: validation runs before method security")
+        scenario("W5-02", "A field user's PUT answers 405")
             .upload("field1 creates", G3, FIELD_1, formA(uid, "first"))
             .call("field1 puts", "PUT", "/api/v1/dataSubmission/" + uid, FIELD_1, body)
             .verify();

@@ -49,8 +49,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * forbids every other class to call their write methods. What it cannot see:</p>
  * <ul>
  *   <li>writes made through the generic {@code IdentifiableObjectService} or {@code JpaIdentifiableRepository}
- *       types: the inherited {@code PUT /dataSubmission/{uid}} body is one; it answers 400 before its body runs,
- *       and B2 turns the route into a 405;</li>
+ *       types. The submission resource has inherited no generic write since 6.5.5: {@code PUT /dataSubmission/{uid}},
+ *       {@code POST /} and {@code POST /return} answer 405 (B2);</li>
  *   <li>SQL text. A second test scans it, as a tripwire, not proof: SQL built at run time is not seen.</li>
  * </ul>
  * <p>No violation is accepted: the one the rule first met, the unreachable outbox backfill behind

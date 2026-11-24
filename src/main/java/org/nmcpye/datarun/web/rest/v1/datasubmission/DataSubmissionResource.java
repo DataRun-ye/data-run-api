@@ -19,7 +19,7 @@ import org.nmcpye.datarun.web.rest.common.ApiVersion;
 import org.nmcpye.datarun.web.rest.common.PagedResponse;
 import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.nmcpye.datarun.apiquery.QueryRequestValidator;
-import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
+import org.nmcpye.datarun.web.rest.common.BaseReadResource;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.data.domain.Page;
@@ -37,13 +37,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * REST controller for managing {@link DataSubmission}.
+ * REST controller for managing {@link DataSubmission}: the inherited reads, and the writes it declares itself, each
+ * through {@link SubmissionCommandService}.
+ * <p>
+ * It does not inherit the generic writes of {@code BaseReadWriteResource}. Their {@code POST /}, {@code POST /return}
+ * and {@code PUT /{uid}} could never save a submission (its id cannot be bound, so bean validation refused every
+ * body with 400, A2 W4-01 to W5-02), and production's access logs of 2026-11-10 to 24 show no call to them. Since
+ * 6.5.5 they are not routes here, so Spring answers 405 for every body and every user (B2, owner decision 4).
  */
 @RestController
 @RequestMapping(value = {DataSubmissionResource.CUSTOM, DataSubmissionResource.V1})
 @PreAuthorize("hasAnyAuthority(\"" + AuthoritiesConstants.ADMIN + "\", \"" + AuthoritiesConstants.USER + "\")")
 @Slf4j
-public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
+public class DataSubmissionResource extends BaseReadResource<DataSubmission, String> {
     protected static final String NAME = "/dataSubmission";
     protected static final String CUSTOM = ApiVersion.API_CUSTOM + NAME;
     protected static final String V1 = ApiVersion.API_V1 + NAME;
@@ -95,23 +101,11 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     }
 
     /**
-     * The body of the generic {@code POST /} and {@code POST /return}. Unreachable today: bean validation refuses
-     * every body first, because a submission's id cannot be bound (A2 W4-01, W4-02), and B2 refuses both routes as
-     * methods. A body that ever got here would be saved as one legacy upload.
+     * The legacy upload route ({@code POST /bulk} without {@code referenceVersion=1}), used by apps before 6.0.2. Its
+     * body is bound as it was when the route was inherited: as entities, unvalidated.
      */
-    @Override
-    protected void saveEntity(DataSubmission payLoadEntity, EntitySaveSummaryVM summary) {
-        CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
-        requireResourceApiAccess(user);
-        EntitySaveSummaryVM saved = commands.uploadLegacy(
-            new SubmissionCommand.LegacyUpload(SubmissionActor.of(user), List.of(payLoadEntity)));
-        summary.getCreated().addAll(saved.getCreated());
-        summary.getUpdated().addAll(saved.getUpdated());
-        summary.getFailed().putAll(saved.getFailed());
-    }
-
-    @Override
-    public ResponseEntity<EntitySaveSummaryVM> saveAll(List<DataSubmission> entities) {
+    @PostMapping("/bulk")
+    public ResponseEntity<EntitySaveSummaryVM> saveAll(@RequestBody List<DataSubmission> entities) {
         CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
         requireResourceApiAccess(user);
         return ResponseEntity.ok(commands.uploadLegacy(
@@ -145,7 +139,6 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
             new SubmissionCommand.PracticeUpload(SubmissionActor.of(user), requests)));
     }
 
-    @Override
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteByIdUid(@PathVariable("id") String id,
