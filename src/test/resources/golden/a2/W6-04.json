@@ -88,6 +88,7 @@
             "submission_id" : "<internal id>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2w604xxxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           }
         ],
@@ -244,6 +245,7 @@
             "submission_id" : "<internal id>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2w604xxxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           }
         ],

@@ -1,6 +1,6 @@
 {
   "pinnedBug" : {
-    "changeBy" : "E3/E4, C1",
+    "changeBy" : "E3/E4",
     "what" : "a phone re-send after an admin delete is absorbed into the deleted record"
   },
   "scenario" : "S3",
@@ -92,6 +92,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2s3xxxxxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           }
         ],
@@ -248,6 +249,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2s3xxxxxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           },
           {
@@ -282,6 +284,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2s3xxxxxxx",
+            "submission_version" : 1,
             "topic" : "<FORM_A.v1>"
           }
         ],
@@ -390,6 +393,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2s3xxxxxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           },
           {
@@ -424,12 +428,13 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2s3xxxxxxx",
+            "submission_version" : 1,
             "topic" : "<FORM_A.v1>"
           },
           {
             "attempt" : 0,
             "created_at" : "<created_at:3>",
-            "event_type" : "UPDATE",
+            "event_type" : "DELETE",
             "last_error" : null,
             "payload" : {
               "main" : {
@@ -458,6 +463,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2s3xxxxxxx",
+            "submission_version" : 2,
             "topic" : "<FORM_A.v1>"
           }
         ],
@@ -614,6 +620,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2s3xxxxxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           },
           {
@@ -648,12 +655,13 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2s3xxxxxxx",
+            "submission_version" : 1,
             "topic" : "<FORM_A.v1>"
           },
           {
             "attempt" : 0,
             "created_at" : "<created_at:3>",
-            "event_type" : "UPDATE",
+            "event_type" : "DELETE",
             "last_error" : null,
             "payload" : {
               "main" : {
@@ -682,6 +690,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2s3xxxxxxx",
+            "submission_version" : 2,
             "topic" : "<FORM_A.v1>"
           }
         ],

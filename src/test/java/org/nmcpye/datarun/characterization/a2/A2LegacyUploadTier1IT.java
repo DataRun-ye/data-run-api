@@ -181,7 +181,7 @@ class A2LegacyUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
-    @PinnedBug(changeBy = "E3/E4, C1",
+    @PinnedBug(changeBy = "E3/E4",
         what = "a G0 re-send onto a soft-deleted record replaces its data, leaves it deleted and is reported as "
             + "updated")
     void w3_12_g0ResendOntoASoftDeletedRecord() {

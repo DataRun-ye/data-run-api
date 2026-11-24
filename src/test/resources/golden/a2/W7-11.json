@@ -625,6 +625,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2w711axxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           },
           {
@@ -659,6 +660,7 @@
             "submission_id" : "<ulid:2>",
             "submission_serial_number" : "<serial:2>",
             "submission_uid" : "a2w711bxxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           }
         ],
@@ -1051,6 +1053,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2w711axxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           },
           {
@@ -1085,6 +1088,7 @@
             "submission_id" : "<ulid:2>",
             "submission_serial_number" : "<serial:2>",
             "submission_uid" : "a2w711bxxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           },
           {
@@ -1119,6 +1123,7 @@
             "submission_id" : "<ulid:3>",
             "submission_serial_number" : "<serial:3>",
             "submission_uid" : "a2w711cxxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           }
         ],

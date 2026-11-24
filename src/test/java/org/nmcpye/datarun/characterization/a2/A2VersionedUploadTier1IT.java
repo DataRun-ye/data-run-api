@@ -184,18 +184,18 @@ class A2VersionedUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
-    @PinnedBug(changeBy = "C1",
-        what = "a new uid sent with deleted=true is stored as a deleted row, without deleted_at, and gets a SAVE "
-            + "event")
+    @PinnedBug(changeBy = "a later C step",
+        what = "a new uid sent with deleted=true is stored as a deleted row without deleted_at (its event is DELETE "
+            + "since C)")
     void w1_15_newUidAlreadyDeleted() {
         String uid = uid("w115");
-        scenario("W1-15", "A new uid sent with deleted=true is stored deleted, with a SAVE event")
+        scenario("W1-15", "A new uid sent with deleted=true is stored deleted, with a DELETE event")
             .call("new and deleted", "POST", BULK_VERSIONED, FIELD_1, body(formA(uid, "first").set("deleted", true)))
             .verify();
     }
 
     @Test
-    @PinnedBug(changeBy = "E3/E4, C1",
+    @PinnedBug(changeBy = "E3/E4",
         what = "a re-send onto a soft-deleted record replaces its data, leaves it deleted and is reported as updated")
     void w1_16_resendOntoASoftDeletedRecord() {
         String uid = uid("w116");

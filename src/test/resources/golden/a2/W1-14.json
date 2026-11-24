@@ -88,6 +88,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2w114axxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           }
         ],
@@ -244,6 +245,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2w114axxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           }
         ],
@@ -448,6 +450,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2w114axxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           },
           {
@@ -482,6 +485,7 @@
             "submission_id" : "<ulid:2>",
             "submission_serial_number" : "<serial:2>",
             "submission_uid" : "a2w114bxxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           }
         ],
@@ -686,6 +690,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2w114axxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           },
           {
@@ -720,6 +725,7 @@
             "submission_id" : "<ulid:2>",
             "submission_serial_number" : "<serial:2>",
             "submission_uid" : "a2w114bxxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           },
           {
@@ -754,6 +760,7 @@
             "submission_id" : "<ulid:2>",
             "submission_serial_number" : "<serial:2>",
             "submission_uid" : "a2w114bxxxx",
+            "submission_version" : 1,
             "topic" : "<FORM_A.v1>"
           }
         ],

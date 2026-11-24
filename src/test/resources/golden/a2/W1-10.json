@@ -136,6 +136,7 @@
             "submission_id" : "<ulid:1>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2w110axxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           },
           {
@@ -170,6 +171,7 @@
             "submission_id" : "<ulid:2>",
             "submission_serial_number" : "<serial:2>",
             "submission_uid" : "a2w110cxxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           }
         ],

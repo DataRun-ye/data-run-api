@@ -120,7 +120,7 @@ class A2SequencesTier2IT extends A2GoldenSupport {
     }
 
     @Test
-    @PinnedBug(changeBy = "E3/E4, C1",
+    @PinnedBug(changeBy = "E3/E4",
         what = "a phone re-send after an admin delete is absorbed into the deleted record")
     void s3_deleteResendDelete() {
         String uid = uid("s3");

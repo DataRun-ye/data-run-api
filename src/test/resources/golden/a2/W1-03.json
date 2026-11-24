@@ -98,6 +98,7 @@
             "submission_id" : "<ulid:2>",
             "submission_serial_number" : "<serial:1>",
             "submission_uid" : "a2w103xxxxx",
+            "submission_version" : 0,
             "topic" : "<FORM_A.v1>"
           }
         ],
