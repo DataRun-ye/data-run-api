@@ -6,6 +6,8 @@ import org.springframework.jdbc.UncategorizedSQLException;
 
 import java.sql.BatchUpdateException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,16 +39,46 @@ class EtlFailuresTest {
     }
 
     @Test
-    void aFailureOutsideTheDatabaseIsNamedByItsRootCause() {
+    void aFailureOutsideTheDatabaseIsNamedByItsRootCauseTypeAndWhereItWasThrown() {
         IllegalArgumentException root = new IllegalArgumentException("No enum constant SemanticType.NotASemanticType");
 
         assertThat(EtlFailures.describe(new InvalidDataAccessApiUsageException("could not read", root)))
-            .isEqualTo("IllegalArgumentException: No enum constant SemanticType.NotASemanticType");
-        assertThat(EtlFailures.describe(new IllegalStateException())).isEqualTo("IllegalStateException: (no message)");
+            .startsWith("IllegalArgumentException at " + root.getStackTrace()[0])
+            .doesNotContain("NotASemanticType");
     }
 
     @Test
-    void aLongDescriptionIsCut() {
-        assertThat(EtlFailures.describe(new IllegalStateException("x".repeat(5000)))).hasSize(EtlFailures.MAX_LENGTH);
+    void aMessageThatQuotesAnInputIsNeverRepeated() {
+        NumberFormatException root = new NumberFormatException("For input string: \"a person's name\"");
+        root.setStackTrace(new StackTraceElement[]{
+            new StackTraceElement("java.lang.Integer", "parseInt", "Integer.java", 668),
+            new StackTraceElement("org.nmcpye.datarun.etl.SomeStep", "read", "SomeStep.java", 42)});
+
+        assertThat(EtlFailures.describe(new IllegalStateException("wrapped", root)))
+            .isEqualTo("NumberFormatException at java.lang.Integer.parseInt(Integer.java:668), "
+                + "from org.nmcpye.datarun.etl.SomeStep.read(SomeStep.java:42)");
+    }
+
+    @Test
+    void aLongDatabaseErrorLineIsCut() {
+        assertThat(EtlFailures.describe(new SQLException("x".repeat(5000)))).hasSize(EtlFailures.MAX_LENGTH);
+    }
+
+    @Test
+    void withoutMessagesKeepsTheTypesAndFramesOfTheWholeChainAndNoMessage() {
+        SQLException server = new SQLException("ERROR: x\n  Detail: Failing row contains (a person's name).", "23514");
+        BatchUpdateException batch = new BatchUpdateException(STATEMENT_WITH_VALUES, "23514", new int[0], server);
+        UncategorizedSQLException failure = new UncategorizedSQLException("task", "sql", batch);
+
+        Throwable copy = EtlFailures.withoutMessages(failure);
+
+        List<String> types = new ArrayList<>();
+        for (Throwable t = copy, original = failure; t != null; t = t.getCause(), original = original.getCause()) {
+            assertThat(t.getMessage()).isEqualTo(original.getClass().getName() + " (message left out)");
+            assertThat(t.getStackTrace()).isEqualTo(original.getStackTrace());
+            types.add(t.getMessage());
+        }
+        assertThat(types).hasSize(3);
+        assertThat(String.join(" ", types)).doesNotContain("a person");
     }
 }

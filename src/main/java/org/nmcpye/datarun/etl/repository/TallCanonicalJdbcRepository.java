@@ -10,10 +10,10 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.BatchUpdateException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @SuppressWarnings("ConcatenationWithEmptyString")
 @Repository
@@ -115,20 +115,33 @@ public class TallCanonicalJdbcRepository {
         // execute batch
         try {
             jdbc.batchUpdate(sql, params);
-        } catch (Exception ex) {
-            // debug: dump first parameter map to inspect what values caused the DB error
-            try {
-                Map<String, Object> first = params[0].getValues();
-                log.error("Tall upsert failed. first-param keys: {}, sample values (trimmed): {}", first.keySet(),
-                    first.entrySet().stream()
-                        .map(e -> e.getKey() + "=" + (e.getValue() == null ? "null" : String.valueOf(e.getValue()).substring(0, Math.min(200, String.valueOf(e.getValue()).length()))))
-                        .limit(10)
-                        .collect(Collectors.joining(", ")));
-            } catch (Exception e2) {
-                log.error("Failed to dump first params: {}", e2.getMessage());
-            }
-            log.error("Tall upsert SQL error", ex);
+        } catch (RuntimeException ex) {
+            // Identifiers and shapes only. The driver's batch error repeats the statement with its bound values,
+            // which are submitted data, so the exception is left to the caller, which logs it without them.
+            log.error("Tall upsert failed for submission {} (outbox {}): {} rows, {} instances, {} field definitions{}",
+                context.submissionUid(), context.outboxId(), rows.size(),
+                rows.stream().map(r -> InstanceKeyUtil.computeInstanceKey(context.submissionUid(), r)).distinct().count(),
+                rows.stream().map(TallCanonicalValue::getCanonicalElementId).distinct().count(),
+                failedRow(ex, context, rows));
             throw ex;
         }
+    }
+
+    /** ", first failed row: instance and field definition" when the driver says which batch entry failed. */
+    private static String failedRow(Throwable failure, SubmissionContext context, List<TallCanonicalValue> rows) {
+        for (Throwable t = failure; t != null && t.getCause() != t; t = t.getCause()) {
+            if (t instanceof BatchUpdateException batch) {
+                int[] counts = batch.getUpdateCounts();
+                for (int i = 0; i < counts.length && i < rows.size(); i++) {
+                    if (counts[i] == Statement.EXECUTE_FAILED) {
+                        TallCanonicalValue row = rows.get(i);
+                        return ", first failed row: instance " + InstanceKeyUtil.computeInstanceKey(context.submissionUid(), row)
+                            + ", field definition " + row.getCanonicalElementId();
+                    }
+                }
+                return "";
+            }
+        }
+        return "";
     }
 }

@@ -1,11 +1,17 @@
 package org.nmcpye.datarun.etl;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.IThrowableProxy;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.outbox.service.OutboxClaimService;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -199,7 +205,10 @@ class EtlOutboxProcessingIT {
         assertThat(watchdog.cancelled()).isEmpty();
         Map<String, Object> row = fixture.outboxRow(failing);
         assertThat(row).containsEntry("status", "failed").containsEntry("attempt", 1);
-        assertThat((String) row.get("last_error")).contains("NotASemanticType");
+        assertThat((String) row.get("last_error"))
+            .startsWith("IllegalArgumentException at ")
+            .contains(", from org.nmcpye.datarun.")
+            .doesNotContain("NotASemanticType");
         assertThat(fixture.auditRows(failing)).extracting(r -> r.get("status")).containsExactly("failure");
         assertThat(fixture.runs()).singleElement().satisfies(r -> assertThat(r).containsEntry("failure_count", 1L));
     }
@@ -237,6 +246,52 @@ class EtlOutboxProcessingIT {
         fixture.endLease(update);
         orchestrator.runOnce("test", 10);
         assertThat(fixture.outboxRow(update)).as("tried again once the lock is gone").containsEntry("status", "success");
+    }
+
+    /**
+     * A failing projection logs identifiers and shapes, never what was submitted: the driver's batch error repeats
+     * the statement with its values, and those logs end up in the server's container logs. The ETL logs at DEBUG
+     * here, so the debug line is checked too.
+     */
+    @Test
+    void aFailingProjectionLogsIdentifiersAndShapesButNoSubmittedValue() {
+        fixture.failProjectionsOfFailUids();
+        fixture.submission("failSub0001", TEMPLATE, 2);
+        long failing = fixture.outbox("failSub0001", "SAVE");
+
+        List<String> logged = applicationLogsOf(() -> orchestrator.runOnce("test", 10));
+
+        // 4 root values and, per member row, the row and its 3 values; 3 instances; 8 field definitions.
+        assertThat(logged).anySatisfy(line -> assertThat(line).startsWith(
+            "Tall upsert failed for submission failSub0001 (outbox " + failing + "): 12 rows, 3 instances, 8 field definitions"));
+        assertThat(logged).anySatisfy(line -> assertThat(line).contains("(message left out)"));
+        assertThat(String.join("\n", logged)).doesNotContain("household failSub0001", "first visit", "member 1", "member 2");
+    }
+
+    /** What the application logged while {@code action} ran, messages and exception messages, the ETL at DEBUG. */
+    private static List<String> applicationLogsOf(Runnable action) {
+        Logger application = (Logger) LoggerFactory.getLogger("org.nmcpye.datarun");
+        Logger etl = (Logger) LoggerFactory.getLogger("org.nmcpye.datarun.etl");
+        Level etlLevel = etl.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        application.addAppender(appender);
+        etl.setLevel(Level.DEBUG);
+        try {
+            action.run();
+        } finally {
+            etl.setLevel(etlLevel);
+            application.detachAppender(appender);
+        }
+        List<String> lines = new ArrayList<>();
+        for (ILoggingEvent event : appender.list) {
+            StringBuilder line = new StringBuilder(event.getFormattedMessage());
+            for (IThrowableProxy t = event.getThrowableProxy(); t != null; t = t.getCause()) {
+                line.append('\n').append(t.getClassName()).append(": ").append(t.getMessage());
+            }
+            lines.add(line.toString());
+        }
+        return lines;
     }
 
     /** A row claimed more often than it may be tried, each run ending without an outcome, is dead unprojected. */

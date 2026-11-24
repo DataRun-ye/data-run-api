@@ -138,7 +138,7 @@ public class EtlOrchestrator {
         } catch (RuntimeException e) {
             // The row's transaction has rolled back: nothing of it is left to wait on.
             String error = EtlFailures.describe(e);
-            log.debug("Outbox row {} failed on attempt {}", outbox.getOutboxId(), attempt, e);
+            log.debug("Outbox row {} failed on attempt {}", outbox.getOutboxId(), attempt, EtlFailures.withoutMessages(e));
             if (retryPolicy.isLastAttempt(attempt)) {
                 recordDead(runId, outbox, error);
                 return Outcome.DEAD;
