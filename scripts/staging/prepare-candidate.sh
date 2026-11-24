@@ -70,8 +70,10 @@ run_migrations() {
         local logs
         logs="$(docker logs "$active_container" 2>&1 || true)"
         if grep -Fq 'Started DataRunApiApp' <<<"$logs"; then
-            if grep -Fq 'Checking for pending outbox events' <<<"$logs"; then
-                echo "A scheduler ran during migration preparation." >&2
+            # The runner logs at startup whether this instance polls the outbox.
+            if ! grep -Fq 'The ETL does not poll the outbox on this instance' <<<"$logs" \
+                || grep -Fq 'The ETL polls the outbox' <<<"$logs"; then
+                echo "The ETL was not switched off during migration preparation." >&2
                 return 1
             fi
             docker stop --time 30 "$active_container" >/dev/null 2>&1 || true
@@ -98,7 +100,7 @@ common_args=(
     --logging.level.ROOT=WARN
     --logging.level.org.nmcpye.datarun=WARN
     --application.liquibase.async-start=false
-    --datarun.scheduling.enabled=false
+    --datarun.etl.enabled=false
     --datarun.transition.capture-live-shadow-enabled=false
 )
 

@@ -43,6 +43,8 @@ grep -Fq -- 'DATARUN_STAGING_IDENTITY=all scripts/staging/smoke.sh' \
 grep -Fq -- '"$base_url/api/v1/refresh"' scripts/staging/smoke.sh
 grep -Fq -- '--datarun.transition.capture-live-shadow-enabled=false' \
     scripts/staging/prepare-candidate.sh
+grep -Fq -- '--datarun.etl.enabled=false' scripts/staging/prepare-candidate.sh
+grep -Fq -- 'The ETL does not poll the outbox on this instance' scripts/staging/prepare-candidate.sh
 grep -Fq -- "ssh '\$production_refresh_alias'" \
     scripts/staging/refresh-from-production.sh
 grep -Fq -- "mv -f '\$remote_partial_dump' '\$remote_dump'" \
@@ -72,7 +74,7 @@ compose_json="$(
 )"
 
 jq -e '
-    .services.app.environment.DATARUN_SCHEDULING_ENABLED == "false" and
+    .services.app.environment.MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED == "true" and
     .services.app.environment.DATARUN_TRANSITION_CAPTURE_LIVE_SHADOW_ENABLED == "false" and
     .services.app.environment.APPLICATION_LIQUIBASE_ASYNC_START == "false" and
     .services.app.environment.SPRING_DATASOURCE_URL

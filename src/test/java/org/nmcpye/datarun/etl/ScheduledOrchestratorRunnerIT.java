@@ -1,5 +1,8 @@
 package org.nmcpye.datarun.etl;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -12,6 +15,7 @@ import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.nmcpye.datarun.etl.orchestrator.EtlRunResult;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -22,6 +26,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -239,7 +244,7 @@ class ScheduledOrchestratorRunnerIT {
         properties.setPollDelay(Duration.ofSeconds(45));
         ScheduledTaskRegistrar registrar = new ScheduledTaskRegistrar();
 
-        runner(countingOrchestrator(), properties).configureTasks(registrar);
+        List<String> enabledLog = runnerLogOf(() -> runner(countingOrchestrator(), properties).configureTasks(registrar));
 
         assertThat(registrar.getFixedDelayTaskList()).singleElement().satisfies(task -> {
             assertThat(task.getIntervalDuration()).isEqualTo(Duration.ofSeconds(45));
@@ -248,8 +253,26 @@ class ScheduledOrchestratorRunnerIT {
 
         properties.setEnabled(false);
         ScheduledTaskRegistrar disabled = new ScheduledTaskRegistrar();
-        runner(countingOrchestrator(), properties).configureTasks(disabled);
+        List<String> disabledLog = runnerLogOf(() -> runner(countingOrchestrator(), properties).configureTasks(disabled));
         assertThat(disabled.getFixedDelayTaskList()).isEmpty();
+
+        // scripts/staging/prepare-candidate.sh checks for these lines: keep them in step.
+        assertThat(enabledLog).anySatisfy(line -> assertThat(line).startsWith("The ETL polls the outbox"));
+        assertThat(disabledLog).anySatisfy(line -> assertThat(line).startsWith("The ETL does not poll the outbox on this instance"));
+        assertThat(disabledLog).noneSatisfy(line -> assertThat(line).startsWith("The ETL polls the outbox"));
+    }
+
+    private static List<String> runnerLogOf(Runnable action) {
+        Logger logger = (Logger) LoggerFactory.getLogger(ScheduledOrchestratorRunner.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            action.run();
+        } finally {
+            logger.detachAppender(appender);
+        }
+        return appender.list.stream().map(ILoggingEvent::getFormattedMessage).toList();
     }
 
     @Test
