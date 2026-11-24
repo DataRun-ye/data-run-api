@@ -26,6 +26,16 @@ cannot preserve administrator access after the database role changes.
 Deactivated users cannot receive or rotate tokens. All routes outside the
 explicit allowlist fail closed.
 
+A failed login is logged at WARN without the login it tried, a personal
+identifier and often a phone number (`AuthenticationFailureListener`, since
+6.5.5): `Login failed (BadCredentialsException): request <request id>, login
+tag <8 hex digits>, account <user id or unknown>`. The tag is an HMAC under a
+key drawn at each start and never stored: a login repeats its tag until the
+next restart, so repeated failures stand out, and the tag cannot be turned back
+into the login. The account's durable id is named when the account exists; it
+is read from the user cache that the login's own lookup has just filled, never
+by a query.
+
 HTTP Basic and public Prometheus access remain baseline operational
 compatibility pending evidence from the administrator and monitoring smoke.
 They are not canonicalized by this transition.

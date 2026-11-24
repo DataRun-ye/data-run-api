@@ -12,7 +12,6 @@ import org.nmcpye.datarun.web.rest.postgres.authenticate.jwt.TokenRefreshRespons
 import org.nmcpye.datarun.web.rest.vm.LoginVM;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
@@ -48,25 +47,20 @@ public class AuthenticateResource {
         authenticationToken.setDetails(new WebAuthenticationDetails(request));
 
 
-        try {
-            Authentication authentication = authenticationManagerBuilder.getObject()
-                .authenticate(authenticationToken);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+        // A failure (BadCredentialsException) goes on to ExceptionTranslator's 401. AuthenticationFailureListener
+        // logs it without the login, which is a personal identifier, often a phone number.
+        Authentication authentication = authenticationManagerBuilder.getObject()
+            .authenticate(authenticationToken);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
 
-            String accessToken = tokenService.generateAccessToken(authentication.getName());
-            RefreshTokenDto refreshToken = tokenService.createRefreshToken(authentication.getName());
+        String accessToken = tokenService.generateAccessToken(authentication.getName());
+        RefreshTokenDto refreshToken = tokenService.createRefreshToken(authentication.getName());
 
 
-            return ResponseEntity.ok()
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .body(new TokenRefreshResponse(accessToken, refreshToken.getToken()));
-        } catch (BadCredentialsException ex) {
-            // safe logging: DO NOT log passwords or sensitive token data
-            String ip = request.getRemoteAddr();
-            log.warn("Authentication failed for username='{}' from ip='{}'", loginVM.getUsername(), ip);
-            throw ex; // preserve existing exception handling pipeline (ExceptionTranslator)
-        }
+        return ResponseEntity.ok()
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+            .body(new TokenRefreshResponse(accessToken, refreshToken.getToken()));
     }
 
     /**
