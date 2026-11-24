@@ -1,0 +1,234 @@
+{
+  "pinnedBug" : {
+    "changeBy" : "B2",
+    "what" : "the legacy route refuses an unknown assignment as a missing one, and its E4114 names the team the upload claims (null from phones) instead of the assignment's team"
+  },
+  "scenario" : "W3-16",
+  "steps" : [
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "six invalid items",
+      "request" : {
+        "as" : "a2-field1",
+        "body" : [
+          {
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormAAAA1",
+            "formData" : {
+              "main" : {
+                "a2_name" : "a",
+                "rows" : [
+                  {
+                    "_id" : "01HA2000000000000000000001",
+                    "_index" : 1,
+                    "_parentId" : "a2w316axxxx",
+                    "_submissionUid" : "a2w316axxxx",
+                    "a2_item" : "r1",
+                    "subrows" : [
+                      {
+                        "_id" : "01HA2000000000000000000002",
+                        "_index" : 1,
+                        "_parentId" : "01HA2000000000000000000001",
+                        "_submissionUid" : "a2w316axxxx",
+                        "a2_sub" : "s1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_A.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w316axxxx"
+          },
+          {
+            "assignment" : "a2NoSuchAsg",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormAAAA1",
+            "formData" : {
+              "main" : {
+                "a2_name" : "b",
+                "rows" : [
+                  {
+                    "_id" : "01HA2000000000000000000001",
+                    "_index" : 1,
+                    "_parentId" : "a2w316bxxxx",
+                    "_submissionUid" : "a2w316bxxxx",
+                    "a2_item" : "r1",
+                    "subrows" : [
+                      {
+                        "_id" : "01HA2000000000000000000002",
+                        "_index" : 1,
+                        "_parentId" : "01HA2000000000000000000001",
+                        "_submissionUid" : "a2w316bxxxx",
+                        "a2_sub" : "s1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_A.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w316bxxxx"
+          },
+          {
+            "assignment" : "a2AssignT3a",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormAAAA1",
+            "formData" : {
+              "main" : {
+                "a2_name" : "c",
+                "rows" : [
+                  {
+                    "_id" : "01HA2000000000000000000001",
+                    "_index" : 1,
+                    "_parentId" : "a2w316cxxxx",
+                    "_submissionUid" : "a2w316cxxxx",
+                    "a2_item" : "r1",
+                    "subrows" : [
+                      {
+                        "_id" : "01HA2000000000000000000002",
+                        "_index" : 1,
+                        "_parentId" : "01HA2000000000000000000001",
+                        "_submissionUid" : "a2w316cxxxx",
+                        "a2_sub" : "s1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_A.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w316cxxxx"
+          },
+          {
+            "assignment" : "a2AssignT1a",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormXXXX1",
+            "formData" : {
+              "main" : {
+                "a2_note" : "d"
+              }
+            },
+            "formVersion" : "<FORM_X.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w316dxxxx"
+          },
+          {
+            "assignment" : "a2AssignT1a",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormAAAA1",
+            "formData" : {
+              "main" : {
+                "a2_name" : "e",
+                "rows" : [
+                  {
+                    "_id" : "01HA2000000000000000000001",
+                    "_index" : 1,
+                    "_parentId" : "a2w316exxxx",
+                    "_submissionUid" : "a2w316exxxx",
+                    "a2_item" : "r1",
+                    "subrows" : [
+                      {
+                        "_id" : "01HA2000000000000000000002",
+                        "_index" : 1,
+                        "_parentId" : "01HA2000000000000000000001",
+                        "_submissionUid" : "a2w316exxxx",
+                        "a2_sub" : "s1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "formVersion" : null,
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w316exxxx"
+          },
+          {
+            "assignment" : "a2AssignT1a",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormAAAA1",
+            "formData" : {
+              "main" : {
+                "a2_name" : "f",
+                "rows" : [
+                  {
+                    "_id" : "01HA2000000000000000000001",
+                    "_index" : 1,
+                    "_parentId" : "a2w316fxxxx",
+                    "_submissionUid" : "a2w316fxxxx",
+                    "a2_item" : "r1",
+                    "subrows" : [
+                      {
+                        "_id" : "01HA2000000000000000000002",
+                        "_index" : 1,
+                        "_parentId" : "01HA2000000000000000000001",
+                        "_submissionUid" : "a2w316fxxxx",
+                        "a2_sub" : "s1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_A.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : null
+          }
+        ],
+        "method" : "POST",
+        "path" : "/api/v1/dataSubmission/bulk"
+      },
+      "response" : {
+        "body" : {
+          "created" : [ ],
+          "createdCount" : 0,
+          "failed" : {
+            "#5" : "Server error: this submission was not saved. Send it again later; if it keeps failing, tell your supervisor.",
+            "a2w316axxxx" : "E4110: Submission validation Error: Assignment is required",
+            "a2w316bxxxx" : "E4110: Submission validation Error: Assignment is required",
+            "a2w316cxxxx" : "E4114: your user is not part of the team null that created the submission: a2w316cxxxx",
+            "a2w316dxxxx" : "E4122: You may not submit form `a2FormXXXX1` for assignment `a2AssignT1a`",
+            "a2w316exxxx" : "Form version null of form a2FormAAAA1 is not on the server"
+          },
+          "failedCount" : 6,
+          "updated" : [ ],
+          "updatedCount" : 0
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 1
+    }
+  ],
+  "title" : "Legacy refusals for a field user: no assignment, an unknown one, another team's (E4114), a form without a grant (E4122), a null version, a null uid"
+}

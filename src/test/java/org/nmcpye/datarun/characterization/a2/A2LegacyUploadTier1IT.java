@@ -21,6 +21,8 @@ import static org.nmcpye.datarun.characterization.a2.A2Payloads.uid;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.ADMIN;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.ASSIGN_T1_V1;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.ASSIGN_T3_V3;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.ASSIGN_T5_V1;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.DELETER;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.FIELD_1;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.FIELD_2;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.FIELD_3;
@@ -207,6 +209,58 @@ class A2LegacyUploadTier1IT extends A2GoldenSupport {
         scenario("W3-14", "G0: a refused re-send (another user's record) comes back as the string G0 needs")
             .upload("field1 creates", G0, FIELD_1, formA(G0, uid, "first", ASSIGN_T1_V1))
             .upload("field2 re-sends changed", G0, FIELD_2, formA(G0, uid, "changed", ASSIGN_T1_V1))
+            .verify();
+    }
+
+    /**
+     * The legacy route's refusals for a field user, in the route's own order: the version first (W3-07), then the
+     * assignment, the team and the form grant, and only then the context the route fills in. A null uid fails at the
+     * save, as on the versioned route (W1-22).
+     */
+    @Test
+    @PinnedBug(changeBy = "B2",
+        what = "the legacy route refuses an unknown assignment as a missing one, and its E4114 names the team the "
+            + "upload claims (null from phones) instead of the assignment's team")
+    void w3_16_fieldUserRefusals() {
+        scenario("W3-16", "Legacy refusals for a field user: no assignment, an unknown one, another team's (E4114), a "
+            + "form without a grant (E4122), a null version, a null uid")
+            .call("six invalid items", "POST", BULK_LEGACY, FIELD_1, body(
+                formA(G1, uid("w316a"), "a", ASSIGN_T1_V1).remove("assignment"),
+                formA(G1, uid("w316b"), "b", "a2NoSuchAsg"),
+                formA(G1, uid("w316c"), "c", ASSIGN_T3_V3),
+                item(G1, uid("w316d"), FORM_X, version("FORM_X.v1"), ASSIGN_T1_V1, note("d")),
+                formA(G1, uid("w316e"), "e", ASSIGN_T1_V1).set("formVersion", null),
+                formA(G1, uid("w316f"), "f", ASSIGN_T1_V1).set("uid", null)))
+            .verify();
+    }
+
+    @Test
+    void w3_17_adminWithAnUnknownAssignment() {
+        scenario("W3-17", "An admin on the legacy route with an unknown assignment is told it was not found")
+            .call("admin, unknown assignment", "POST", BULK_LEGACY, ADMIN,
+                body(formA(G1, uid("w317"), "a", "a2NoSuchAsg")))
+            .verify();
+    }
+
+    /** No readable phone tag sends deleted=true (it is API-shaped); the legacy route checks it as W1-14 does. */
+    @Test
+    void w3_18_deletedTrueOnTheLegacyRoute() {
+        String own = uid("w318a");
+        String deleters = uid("w318b");
+        scenario("W3-18", "deleted=true on the legacy route: E4125 without a delete grant, a DELETE event with one")
+            .upload("field1 creates", G1, FIELD_1, formA(G1, own, "first", ASSIGN_T1_V1))
+            .call("field1 sends deleted=true", "POST", BULK_LEGACY, FIELD_1,
+                body(formA(G1, own, "first", ASSIGN_T1_V1).set("deleted", true)))
+            .upload("the deleter creates", G1, DELETER, formA(G1, deleters, "first", ASSIGN_T5_V1))
+            .call("the deleter sends deleted=true", "POST", BULK_LEGACY, DELETER,
+                body(formA(G1, deleters, "first", ASSIGN_T5_V1).set("deleted", true)))
+            .verify();
+    }
+
+    @Test
+    void w3_19_emptyBatch() {
+        scenario("W3-19", "An empty legacy batch answers an empty summary")
+            .upload("an empty batch", G0, FIELD_1)
             .verify();
     }
 }

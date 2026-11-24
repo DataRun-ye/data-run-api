@@ -1,0 +1,74 @@
+{
+  "scenario" : "W3-17",
+  "steps" : [
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "admin, unknown assignment",
+      "request" : {
+        "as" : "admin",
+        "body" : [
+          {
+            "assignment" : "a2NoSuchAsg",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormAAAA1",
+            "formData" : {
+              "main" : {
+                "a2_name" : "a",
+                "rows" : [
+                  {
+                    "_id" : "01HA2000000000000000000001",
+                    "_index" : 1,
+                    "_parentId" : "a2w317xxxxx",
+                    "_submissionUid" : "a2w317xxxxx",
+                    "a2_item" : "r1",
+                    "subrows" : [
+                      {
+                        "_id" : "01HA2000000000000000000002",
+                        "_index" : 1,
+                        "_parentId" : "01HA2000000000000000000001",
+                        "_submissionUid" : "a2w317xxxxx",
+                        "a2_sub" : "s1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_A.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w317xxxxx"
+          }
+        ],
+        "method" : "POST",
+        "path" : "/api/v1/dataSubmission/bulk"
+      },
+      "response" : {
+        "body" : {
+          "created" : [ ],
+          "createdCount" : 0,
+          "failed" : {
+            "a2w317xxxxx" : "E4110: Submission validation Error: Assignment not found: a2NoSuchAsg"
+          },
+          "failedCount" : 1,
+          "updated" : [ ],
+          "updatedCount" : 0
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 1
+    }
+  ],
+  "title" : "An admin on the legacy route with an unknown assignment is told it was not found"
+}

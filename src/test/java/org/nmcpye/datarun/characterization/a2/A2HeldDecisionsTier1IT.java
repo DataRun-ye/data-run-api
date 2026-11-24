@@ -90,6 +90,47 @@ class A2HeldDecisionsTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    void w7_08_releaseOfAPracticeUploadByUid() {
+        String uid = uid("w708");
+        scenario("W7-08", "A practice upload released by uid is saved into the real data as its submitter")
+            .practice("practice upload", FIELD_1, formA(uid, "practice", ASSIGN_T1_V1))
+            .call("admin releases it by uid", "POST", RELEASE, ADMIN, uids(uid))
+            .verify();
+    }
+
+    @Test
+    void w7_09_notesAndUidsThatAreNotHeld() {
+        String discarded = uid("w709a");
+        String released = uid("w709b");
+        String superseded = uid("w709c");
+        ObjectNode discard = uids(discarded).put("note", "training day");
+        ObjectNode release = uids(released, superseded, uid("w709z")).put("note", "district started early");
+        scenario("W7-09", "Each decision records the admin's note; a uid that is not held is left out of the result")
+            .goLive("campaign", null, null, FUTURE)
+            .upload("three held before go-live", G3, FIELD_1, formA(discarded, "a", ASSIGN_T1_V1),
+                formA(released, "b", ASSIGN_T1_V1), formA(superseded, "c", ASSIGN_T1_V1))
+            .call("admin discards one, with a note", "POST", DISCARD, ADMIN, discard)
+            .sql("the go-live rule is removed", "DELETE FROM go_live_rule WHERE activity_uid = :activity",
+                Map.of("activity", A2Seed.ACTIVITY))
+            .upload("one is re-sent and now saved", G3, FIELD_1, formA(superseded, "c changed", ASSIGN_T1_V1))
+            .call("admin releases two held uids and one never held, with a note", "POST", RELEASE, ADMIN, release)
+            .verify();
+    }
+
+    /** The release replays an upload as the login stored with it; that login must still load. */
+    @Test
+    void w7_10_releaseWhenTheSubmitterIsGone() {
+        String uid = uid("w710");
+        scenario("W7-10", "A release whose stored submitter is no longer a user fails, is recorded, and stays held")
+            .goLive("campaign", null, null, FUTURE)
+            .upload("held before go-live", G3, FIELD_1, formA(uid, "first", ASSIGN_T1_V1))
+            .sql("the held upload names a login that does not exist",
+                "UPDATE held_submission SET submitted_by = 'a2-ghost' WHERE uid = :uid", Map.of("uid", uid))
+            .call("admin releases it", "POST", RELEASE, ADMIN, uids(uid))
+            .verify();
+    }
+
+    @Test
     void w8_01_discardThenReleaseByUid() {
         String uid = uid("w801");
         scenario("W8-01", "A discard labels the upload; a release by uid still applies it")

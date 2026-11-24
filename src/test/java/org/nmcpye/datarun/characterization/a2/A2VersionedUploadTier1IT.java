@@ -333,6 +333,27 @@ class A2VersionedUploadTier1IT extends A2GoldenSupport {
             .verify();
     }
 
+    /** The version-number branch: no readable phone tag sends {@code version}, so only API callers reach it. */
+    @Test
+    void w1_30_versionNumberInsteadOfVersionUid() {
+        Item byNumber = formA(uid("w130a"), "a").remove("formVersion");
+        byNumber.node.put("version", 1);
+        Item unknownNumber = formA(uid("w130b"), "b").remove("formVersion");
+        unknownNumber.node.put("version", 99);
+        scenario("W1-30", "API-shaped items naming a version number instead of a version uid: resolved by number; "
+            + "an unknown number is refused")
+            .call("two items", "POST", BULK_VERSIONED, FIELD_1, body(byNumber, unknownNumber))
+            .verify();
+    }
+
+    @Test
+    void w1_31_emptyBatches() {
+        scenario("W1-31", "Empty versioned and practice batches answer an empty summary")
+            .upload("an empty versioned batch", G3, FIELD_1)
+            .practice("an empty practice batch", FIELD_1)
+            .verify();
+    }
+
     @Test
     void w2_01_practiceUpload() {
         String uid = uid("w201");

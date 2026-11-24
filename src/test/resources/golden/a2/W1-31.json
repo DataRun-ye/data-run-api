@@ -1,0 +1,76 @@
+{
+  "scenario" : "W1-31",
+  "steps" : [
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "an empty versioned batch",
+      "request" : {
+        "as" : "a2-field1",
+        "body" : [ ],
+        "headers" : {
+          "X-App-Version" : "6.1.2+57"
+        },
+        "method" : "POST",
+        "path" : "/api/v1/dataSubmission/bulk?referenceVersion=1",
+        "phone" : "G3"
+      },
+      "response" : {
+        "body" : {
+          "created" : [ ],
+          "createdCount" : 0,
+          "failed" : { },
+          "failedCount" : 0,
+          "updated" : [ ],
+          "updatedCount" : 0
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 1
+    },
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "an empty practice batch",
+      "request" : {
+        "as" : "a2-field1",
+        "body" : [ ],
+        "headers" : {
+          "X-App-Version" : "6.1.2+57"
+        },
+        "method" : "POST",
+        "path" : "/api/v1/dataSubmission/bulk/practice?referenceVersion=1",
+        "phone" : "G3"
+      },
+      "response" : {
+        "body" : {
+          "created" : [ ],
+          "createdCount" : 0,
+          "failed" : { },
+          "failedCount" : 0,
+          "updated" : [ ],
+          "updatedCount" : 0
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 2
+    }
+  ],
+  "title" : "Empty versioned and practice batches answer an empty summary"
+}

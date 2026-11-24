@@ -1,0 +1,38 @@
+{
+  "scenario" : "W3-19",
+  "steps" : [
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "an empty batch",
+      "request" : {
+        "as" : "a2-field1",
+        "body" : [ ],
+        "method" : "POST",
+        "path" : "/api/v1/dataSubmission/bulk",
+        "phone" : "G0"
+      },
+      "response" : {
+        "body" : {
+          "created" : [ ],
+          "createdCount" : 0,
+          "failed" : { },
+          "failedCount" : 0,
+          "updated" : [ ],
+          "updatedCount" : 0
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 1
+    }
+  ],
+  "title" : "An empty legacy batch answers an empty summary"
+}
