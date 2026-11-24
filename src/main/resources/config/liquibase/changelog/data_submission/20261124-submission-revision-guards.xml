@@ -9,8 +9,9 @@
     <!--
       The journal is never changed once written: UPDATE and DELETE of a revision, and TRUNCATE of the table, raise an
       error naming the guard (SQLSTATE 23000, constraint submission_revision_append_only). Created after the baseline,
-      so its rows did not pay for a trigger. Only a superuser session that sets the replica replication role, which
-      switches every trigger off, gets past it: the tests' purge, never main code.
+      so its rows did not pay for a trigger. Two kinds of session get past it: a superuser that sets the replica
+      replication role, which switches every trigger off (the tests' purge), and the table's owner, the application's
+      own database role, by disabling the trigger. No main code or changelog does either.
 
       Rollback refuses first while the journal holds a revision the application wrote, as every rollback that
       removes a guard or the journal does, so a refused rollback leaves every guard in place; then it drops the

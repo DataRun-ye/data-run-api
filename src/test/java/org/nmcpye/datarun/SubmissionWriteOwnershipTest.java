@@ -205,9 +205,10 @@ class SubmissionWriteOwnershipTest {
     }
 
     /**
-     * {@code session_replication_role = replica} switches off every trigger and foreign key check of a session: the
-     * journal's guards among them. Only the tests' purge sets it ({@code SubmissionTestPurge}); main code and
-     * resources never name it.
+     * Two things switch off the journal's guards: {@code session_replication_role = replica}, which a superuser may set
+     * and which stops every trigger and foreign key check of a session, and {@code DISABLE TRIGGER}, which the table's
+     * owner (the application's own database role) may run. Only the tests' purge sets the first
+     * ({@code SubmissionTestPurge}); main code and resources, the changelogs included, never name either.
      */
     @Test
     void noMainCodeSwitchesOffTheDatabaseGuards() throws IOException {
@@ -215,15 +216,19 @@ class SubmissionWriteOwnershipTest {
         for (Path root : List.of(Path.of("src", "main", "java"), Path.of("src", "main", "resources"))) {
             try (Stream<Path> files = Files.walk(root)) {
                 for (Path file : files.filter(Files::isRegularFile).toList()) {
-                    String text = new String(Files.readAllBytes(file), java.nio.charset.StandardCharsets.ISO_8859_1);
-                    if (text.toLowerCase(Locale.ROOT).contains("session_replication_role")) {
+                    String text = new String(Files.readAllBytes(file), java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .toLowerCase(Locale.ROOT);
+                    if (text.contains("session_replication_role") || DISABLE_TRIGGER.matcher(text).find()) {
                         naming.add(relative(root, file));
                     }
                 }
             }
         }
-        assertThat(naming).as("main files naming session_replication_role").isEmpty();
+        assertThat(naming).as("main files that switch the database guards off").isEmpty();
+        assertThat(DISABLE_TRIGGER.matcher("alter table journal.x disable  trigger all").find()).isTrue();
     }
+
+    private static final Pattern DISABLE_TRIGGER = Pattern.compile("disable\\s+trigger");
 
     /** The scan's rules on small sources: what it reads, skips and flags. */
     @Test

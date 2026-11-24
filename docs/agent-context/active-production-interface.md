@@ -365,11 +365,14 @@ not name the submission's head as `previous_version`
 (`submission_revision_no_gap`); ArchUnit and the SQL tripwire for the one
 writer; failure-injection tests for the single transaction; and
 `JournalReconciliation` after every A2 golden. In production, integrity check
-11 compares the journal with the rows (counts only). Only a superuser session
-that sets the replica replication role passes the triggers: the tests' purge
-(`SubmissionTestPurge`), never main code. A database trigger requiring a
-revision for every write is deferred: it would stop 6.5.4 from writing after
-a rollback.
+11 compares the journal with the rows (counts only). Two kinds of session get
+past the triggers: a superuser, by setting `session_replication_role =
+replica` (the tests' purge, `SubmissionTestPurge`), and the journal's owner,
+by `ALTER TABLE ... DISABLE TRIGGER`. The owner is the application's database
+role, which runs the migrations; it is not a superuser on staging
+(2026-11-25). No main code or changelog does either; the SQL tripwire checks
+both. A database trigger requiring a revision for every write is deferred: it
+would stop 6.5.4 from writing after a rollback.
 
 Deploy, rollback and history:
 - History starts at the baseline: one `BASELINE` per submission stored before
