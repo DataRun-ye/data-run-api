@@ -344,11 +344,7 @@ abstract class A2GoldenSupport {
                     } else if (summarized.contains(name) && value.isArray()) {
                         object.put(name, "<" + value.size() + " items>");
                     } else if ("detail".equals(name) && value.isTextual() && value.asText().contains("ERROR: ")) {
-                        // a database error quotes the failing row: ids, serials and the app clock; keep its cause
-                        String detail = value.asText();
-                        int start = detail.indexOf("ERROR: ");
-                        int end = detail.indexOf('\n', start);
-                        object.put(name, "<database error> " + detail.substring(start, end < 0 ? detail.length() : end));
+                        object.put(name, "<database error>");
                     } else if (List.of("createdDate", "lastModifiedDate", "lastSeen").contains(name) && !value.isNull()) {
                         object.put(name, "<set>");
                     } else if ("serialNumber".equals(name) && value.isNumber()) {

@@ -1,0 +1,260 @@
+{
+  "scenario" : "W2-03",
+  "steps" : [
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [
+          {
+            "activity_uid" : "a2Activity1",
+            "assignment_uid" : "a2AssignT1a",
+            "decided_at" : null,
+            "decided_by" : null,
+            "form_uid" : "a2FormAAAA1",
+            "form_version_uid" : "<FORM_A.v1>",
+            "go_live_rule_uid" : null,
+            "held_last_modified_date" : "<set>",
+            "last_release_error" : null,
+            "live_from" : null,
+            "note" : null,
+            "org_unit_path" : ",a2Country01,a2District1,a2Village01",
+            "org_unit_uid" : "a2Village01",
+            "payload" : {
+              "assignment" : "a2AssignT1a",
+              "deleted" : false,
+              "finishedEntryTime" : "2026-11-20T05:10:00Z",
+              "form" : "a2FormAAAA1",
+              "formData" : {
+                "main" : {
+                  "a2_name" : "first",
+                  "rows" : [
+                    {
+                      "_id" : "01HA2000000000000000000001",
+                      "_index" : 1,
+                      "_parentId" : "a2w203xxxxx",
+                      "_submissionUid" : "a2w203xxxxx",
+                      "a2_item" : "r1",
+                      "subrows" : [
+                        {
+                          "_id" : "01HA2000000000000000000002",
+                          "_index" : 1,
+                          "_parentId" : "01HA2000000000000000000001",
+                          "_submissionUid" : "a2w203xxxxx",
+                          "a2_sub" : "s1"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "formVersion" : "<FORM_A.v1>",
+              "startEntryTime" : "2026-11-20T05:00:00Z",
+              "uid" : "a2w203xxxxx"
+            },
+            "reason" : "PRACTICE",
+            "received_at" : "<set>",
+            "started_at" : "2026-11-20T05:00:00Z",
+            "state" : "HELD",
+            "submitted_by" : "a2-field1",
+            "team_uid" : "a2TeamOne01",
+            "uid" : "a2w203xxxxx"
+          }
+        ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "practice upload",
+      "request" : {
+        "as" : "a2-field1",
+        "body" : [
+          {
+            "assignment" : "a2AssignT1a",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormAAAA1",
+            "formData" : {
+              "main" : {
+                "a2_name" : "first",
+                "rows" : [
+                  {
+                    "_id" : "01HA2000000000000000000001",
+                    "_index" : 1,
+                    "_parentId" : "a2w203xxxxx",
+                    "_submissionUid" : "a2w203xxxxx",
+                    "a2_item" : "r1",
+                    "subrows" : [
+                      {
+                        "_id" : "01HA2000000000000000000002",
+                        "_index" : 1,
+                        "_parentId" : "01HA2000000000000000000001",
+                        "_submissionUid" : "a2w203xxxxx",
+                        "a2_sub" : "s1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_A.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w203xxxxx"
+          }
+        ],
+        "headers" : {
+          "X-App-Version" : "6.1.2+57"
+        },
+        "method" : "POST",
+        "path" : "/api/v1/dataSubmission/bulk/practice?referenceVersion=1",
+        "phone" : "G3"
+      },
+      "response" : {
+        "body" : {
+          "created" : [
+            "a2w203xxxxx"
+          ],
+          "createdCount" : 1,
+          "failed" : { },
+          "failedCount" : 0,
+          "updated" : [ ],
+          "updatedCount" : 0
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 1
+    },
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [
+          {
+            "activity_uid" : "a2Activity1",
+            "assignment_uid" : "a2AssignT1a",
+            "decided_at" : null,
+            "decided_by" : null,
+            "form_uid" : "a2FormAAAA1",
+            "form_version_uid" : "<FORM_A.v1>",
+            "go_live_rule_uid" : null,
+            "held_last_modified_date" : "<set>",
+            "last_release_error" : null,
+            "live_from" : null,
+            "note" : null,
+            "org_unit_path" : ",a2Country01,a2District1,a2Village01",
+            "org_unit_uid" : "a2Village01",
+            "payload" : {
+              "assignment" : "a2AssignT1a",
+              "deleted" : false,
+              "finishedEntryTime" : "2026-11-20T05:10:00Z",
+              "form" : "a2FormAAAA1",
+              "formData" : {
+                "main" : {
+                  "a2_name" : "changed",
+                  "rows" : [
+                    {
+                      "_id" : "01HA2000000000000000000001",
+                      "_index" : 1,
+                      "_parentId" : "a2w203xxxxx",
+                      "_submissionUid" : "a2w203xxxxx",
+                      "a2_item" : "r1",
+                      "subrows" : [
+                        {
+                          "_id" : "01HA2000000000000000000002",
+                          "_index" : 1,
+                          "_parentId" : "01HA2000000000000000000001",
+                          "_submissionUid" : "a2w203xxxxx",
+                          "a2_sub" : "s1"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "formVersion" : "<FORM_A.v1>",
+              "startEntryTime" : "2026-11-20T05:00:00Z",
+              "uid" : "a2w203xxxxx"
+            },
+            "reason" : "PRACTICE",
+            "received_at" : "<set>",
+            "started_at" : "2026-11-20T05:00:00Z",
+            "state" : "HELD",
+            "submitted_by" : "a2-field1",
+            "team_uid" : "a2TeamOne01",
+            "uid" : "a2w203xxxxx"
+          }
+        ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "practice re-send changed",
+      "request" : {
+        "as" : "a2-field1",
+        "body" : [
+          {
+            "assignment" : "a2AssignT1a",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormAAAA1",
+            "formData" : {
+              "main" : {
+                "a2_name" : "changed",
+                "rows" : [
+                  {
+                    "_id" : "01HA2000000000000000000001",
+                    "_index" : 1,
+                    "_parentId" : "a2w203xxxxx",
+                    "_submissionUid" : "a2w203xxxxx",
+                    "a2_item" : "r1",
+                    "subrows" : [
+                      {
+                        "_id" : "01HA2000000000000000000002",
+                        "_index" : 1,
+                        "_parentId" : "01HA2000000000000000000001",
+                        "_submissionUid" : "a2w203xxxxx",
+                        "a2_sub" : "s1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_A.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w203xxxxx"
+          }
+        ],
+        "headers" : {
+          "X-App-Version" : "6.1.2+57"
+        },
+        "method" : "POST",
+        "path" : "/api/v1/dataSubmission/bulk/practice?referenceVersion=1",
+        "phone" : "G3"
+      },
+      "response" : {
+        "body" : {
+          "created" : [
+            "a2w203xxxxx"
+          ],
+          "createdCount" : 1,
+          "failed" : { },
+          "failedCount" : 0,
+          "updated" : [ ],
+          "updatedCount" : 0
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 2
+    }
+  ],
+  "title" : "A practice re-send refreshes the held practice upload"
+}

@@ -1,0 +1,132 @@
+{
+  "scenario" : "W7-06",
+  "steps" : [
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "neither uids nor filter",
+      "request" : {
+        "as" : "admin",
+        "body" : { },
+        "method" : "POST",
+        "path" : "/api/v1/admin/heldSubmissions/release"
+      },
+      "response" : {
+        "body" : {
+          "error" : {
+            "message" : "Give either uids or filter"
+          }
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 400
+      },
+      "step" : 1
+    },
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "both uids and filter",
+      "request" : {
+        "as" : "admin",
+        "body" : {
+          "filter" : {
+            "activity" : "a2Activity1"
+          },
+          "uids" : [
+            "a2w706xxxxx"
+          ]
+        },
+        "method" : "POST",
+        "path" : "/api/v1/admin/heldSubmissions/release"
+      },
+      "response" : {
+        "body" : {
+          "error" : {
+            "message" : "Give either uids or filter"
+          }
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 400
+      },
+      "step" : 2
+    },
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "a filter without activity",
+      "request" : {
+        "as" : "admin",
+        "body" : {
+          "filter" : { }
+        },
+        "method" : "POST",
+        "path" : "/api/v1/admin/heldSubmissions/release"
+      },
+      "response" : {
+        "body" : {
+          "error" : {
+            "message" : "filter.activity is required"
+          }
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 400
+      },
+      "step" : 3
+    },
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "practice uploads by filter",
+      "request" : {
+        "as" : "admin",
+        "body" : {
+          "filter" : {
+            "activity" : "a2Activity1",
+            "reason" : "PRACTICE"
+          }
+        },
+        "method" : "POST",
+        "path" : "/api/v1/admin/heldSubmissions/release"
+      },
+      "response" : {
+        "body" : {
+          "error" : {
+            "message" : "Practice uploads are released only by uid"
+          }
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 400
+      },
+      "step" : 4
+    }
+  ],
+  "title" : "Selections a release refuses with 400"
+}

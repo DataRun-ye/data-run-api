@@ -1,0 +1,67 @@
+{
+  "scenario" : "R2b",
+  "steps" : [
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "page 0",
+      "request" : {
+        "as" : "a2-field1",
+        "method" : "GET",
+        "path" : "/api/v1/assignments/a2AssignPag/referenceEntries?page=0&size=500"
+      },
+      "response" : {
+        "body" : {
+          "nextPage" : "http://localhost/api/v1/assignments/a2AssignPag/referenceEntries?page=0&page=1&size=500",
+          "page" : 0,
+          "paged" : true,
+          "referenceEntries" : "<500 items>",
+          "size" : 500,
+          "totalElements" : 501,
+          "totalPages" : 2
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 1
+    },
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "page 1",
+      "request" : {
+        "as" : "a2-field1",
+        "method" : "GET",
+        "path" : "/api/v1/assignments/a2AssignPag/referenceEntries?page=1&size=500"
+      },
+      "response" : {
+        "body" : {
+          "page" : 1,
+          "paged" : true,
+          "referenceEntries" : "<1 items>",
+          "size" : 500,
+          "totalElements" : 501,
+          "totalPages" : 2
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 2
+    }
+  ],
+  "title" : "A 501-entry catalog is two pages of 500 and 1; the phone walks totalPages"
+}
