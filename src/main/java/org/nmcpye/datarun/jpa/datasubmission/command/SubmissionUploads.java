@@ -36,7 +36,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 /**
  * Saves uploaded submissions for {@link SubmissionCommandService}, one at a time, each in its own transaction, and
@@ -100,14 +99,24 @@ public class SubmissionUploads {
     }
 
     /**
-     * The legacy upload route used by apps before 6.0.2: the same isolation,
-     * with the route's own validation applied to each submission. These apps
-     * cannot open Reference forms, and their uploads are never held (#42).
+     * The legacy upload route ({@code POST /bulk} without {@code referenceVersion=1}), used by apps before 6.0.2 and
+     * by API callers: the same per-submission transactions, with the route's own order of checks.
+     * <ol>
+     *   <li>The form version, by uid only, before anything else: a missing or unknown version is refused even for a
+     *       user who may not submit there.</li>
+     *   <li>Missing repeat-row ids.</li>
+     *   <li>For a non-admin: the assignment (a missing and an unknown one are both "Assignment is required"), the team
+     *       scope (E4114 names the team the upload claims, which phones never send), the form grant (E4122) and the
+     *       stored record ({@link StoredSubmissionGuard}).</li>
+     *   <li>For everyone: the assignment ("Assignment is required", "Assignment not found"), then the context from the
+     *       assignment and the version.</li>
+     * </ol>
+     * Reference values are not resolved and nothing is held (#42): these apps cannot open Reference forms. The A2
+     * goldens pin each difference from the versioned route (W3-*); they end when the route retires (B2).
      */
     public EntitySaveSummaryVM saveLegacy(
         List<DataSubmission> submissions,
-        SubmissionActor actor,
-        UnaryOperator<DataSubmission> validate) {
+        SubmissionActor actor) {
         if (submissions == null || submissions.isEmpty()) {
             return new EntitySaveSummaryVM();
         }
@@ -117,7 +126,8 @@ public class SubmissionUploads {
             actor,
             DataSubmission::getUid,
             (submission, summary) -> {
-                submissionService.upsertAll(List.of(validate.apply(submission)), summary);
+                checkLegacy(submission, actor);
+                submissionService.upsertAll(List.of(submission), summary);
                 return IntakeDecision.save();
             },
             submission -> null);
@@ -136,7 +146,7 @@ public class SubmissionUploads {
             submission,
             assignment,
             template.getTemplate());
-        authorize(submission, assignment, actor.access());
+        authorize(submission, assignment, actor.access(), assignment.getTeam().getUid());
         IntakeDecision decision = intake.decide(
             mode,
             submission,
@@ -151,6 +161,30 @@ public class SubmissionUploads {
             request.getReferenceDefinitions());
         submissionService.upsertAll(List.of(submission), summary);
         return decision;
+    }
+
+    /** The legacy route's checks and context, in that route's order; see {@link #saveLegacy}. */
+    private void checkLegacy(DataSubmission submission, SubmissionActor actor) {
+        TemplateVersionContext template = templateVersionResolver.resolveByUid(
+            submission.getForm(),
+            submission.getFormVersion());
+        generateMissingRepeatIds(submission, template);
+        Assignment assignment = submission.getAssignment() == null
+            ? null
+            : assignmentRepository.findByUid(submission.getAssignment()).orElse(null);
+        if (!actor.access().isSuper()) {
+            if (assignment == null) {
+                throw new DomainValidationException("Assignment is required");
+            }
+            authorize(submission, assignment, actor.access(), submission.getTeam());
+        }
+        if (submission.getAssignment() == null) {
+            throw new DomainValidationException("Assignment is required");
+        }
+        if (assignment == null) {
+            throw new DomainValidationException("Assignment not found: " + submission.getAssignment());
+        }
+        canonicalizeContext(submission, assignment, template.getTemplate());
     }
 
     /** Saves one item and says whether to keep it (see {@link SubmissionIntake}). */
@@ -260,19 +294,26 @@ public class SubmissionUploads {
         submission.setActivity(assignment.getActivity().getUid());
     }
 
+    /**
+     * The upload checks for a non-admin: the assignment's team is in the user's scope (E4114), the user may submit
+     * the form there (E4122), and an existing record may be changed by them ({@link StoredSubmissionGuard}).
+     *
+     * @param teamInRefusal the team E4114 names: the assignment's on the versioned route, the claimed one on the
+     *                      legacy route
+     */
     private void authorize(
         DataSubmission submission,
         Assignment assignment,
-        CurrentUserDetails user) {
+        CurrentUserDetails user,
+        String teamInRefusal) {
         if (user.isSuper()) {
             return;
         }
 
-        String teamUid = assignment.getTeam().getUid();
         if (!AssignmentFormAccessService.isInTeamScope(user, assignment)) {
             throw new IllegalQueryException(
                 ErrorCode.E4114,
-                teamUid,
+                teamInRefusal,
                 submission.getUid());
         }
         if (!formAccessService.canSubmitData(

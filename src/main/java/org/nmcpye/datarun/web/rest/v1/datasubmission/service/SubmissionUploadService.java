@@ -2,7 +2,6 @@ package org.nmcpye.datarun.web.rest.v1.datasubmission.service;
 
 import lombok.RequiredArgsConstructor;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
-import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionUploads;
@@ -11,7 +10,6 @@ import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1D
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.function.UnaryOperator;
 
 /**
  * Transitional: the upload paths not yet moved onto {@link SubmissionCommandService} reach the moved upload code
@@ -29,12 +27,5 @@ public class SubmissionUploadService {
      */
     public EntitySaveSummaryVM release(DataSubmissionUploadV1Dto request) {
         return uploads.save(List.of(request), SubmissionActor.current(), IntakeMode.RELEASE);
-    }
-
-    /** The legacy route; see {@link SubmissionUploads#saveLegacy}. */
-    public EntitySaveSummaryVM upsertAllLegacy(
-        List<DataSubmission> submissions,
-        UnaryOperator<DataSubmission> validate) {
-        return uploads.saveLegacy(submissions, SubmissionActor.current(), validate);
     }
 }

@@ -27,7 +27,6 @@ import org.nmcpye.datarun.apiquery.QueryRequest;
 import org.nmcpye.datarun.apiquery.QueryRequestValidator;
 import org.nmcpye.datarun.web.rest.postgres.JpaBaseResource;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
-import org.nmcpye.datarun.web.rest.v1.datasubmission.service.SubmissionUploadService;
 import org.nmcpye.datarun.web.rest.v1.paging.PagingConfigurator;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -58,7 +57,6 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     private final CompositeSubmissionValidator compositeValidator;
     private final SubmissionAccessValidator submissionAccessValidator;
     private final TemplateVersionResolver templateVersionResolver;
-    private final SubmissionUploadService uploadService;
     private final SubmissionCommandService commands;
 
     public DataSubmissionResource(DataSubmissionService submissionService,
@@ -66,7 +64,6 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
                                   ObjectMapper objectMapper, CompositeSubmissionValidator compositeValidator,
                                   SubmissionAccessValidator submissionAccessValidator,
                                   TemplateVersionResolver templateVersionResolver,
-                                  SubmissionUploadService uploadService,
                                   SubmissionCommandService commands) {
         super(submissionService, submissionRepository);
         this.submissionService = submissionService;
@@ -74,7 +71,6 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
         this.compositeValidator = compositeValidator;
         this.submissionAccessValidator = submissionAccessValidator;
         this.templateVersionResolver = templateVersionResolver;
-        this.uploadService = uploadService;
         this.commands = commands;
     }
 
@@ -124,10 +120,10 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
 
     @Override
     public ResponseEntity<EntitySaveSummaryVM> saveAll(List<DataSubmission> entities) {
-        requireResourceApiAccess(SecurityUtils.getCurrentUserDetailsOrThrow());
-        return ResponseEntity.ok(uploadService.upsertAllLegacy(
-            entities,
-            submission -> preProcess(List.of(submission)).get(0)));
+        CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        requireResourceApiAccess(user);
+        return ResponseEntity.ok(commands.uploadLegacy(
+            new SubmissionCommand.LegacyUpload(SubmissionActor.of(user), entities)));
     }
 
     @PostMapping(value = "/bulk", params = "referenceVersion=1")

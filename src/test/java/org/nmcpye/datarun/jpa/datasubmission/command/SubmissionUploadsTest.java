@@ -42,10 +42,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -405,25 +403,63 @@ class SubmissionUploadsTest {
     @Test
     void legacyRouteSavesEachSubmissionSeparately() {
         DataSubmission first = submission("firstSub01");
+        first.setFormVersion("unknownVer1");
         DataSubmission second = submission("secondSub1");
-        AtomicReference<DataSubmission> validated = new AtomicReference<>();
+        legacyLookups();
 
-        EntitySaveSummaryVM summary = service.saveLegacy(
-            List.of(first, second),
-            SubmissionActor.of(user),
-            candidate -> {
-                if (candidate == first) {
-                    throw new IllegalQueryException("not allowed");
-                }
-                validated.set(candidate);
-                return candidate;
-            });
+        EntitySaveSummaryVM summary = service.saveLegacy(List.of(first, second), SubmissionActor.of(user));
 
         assertEquals(Set.of("firstSub01"), summary.getFailed().keySet());
         assertEquals(List.of("secondSub1"), summary.getCreated());
-        assertSame(second, validated.get());
+        assertEquals("team0000001", second.getTeam(), "the route fills in the context from the assignment");
+        assertEquals(1, second.getVersion(), "and from the version");
         verify(submissionService).upsertAll(submissionsWithUids("secondSub1"), any(EntitySaveSummaryVM.class));
         verify(submissionService, never()).upsertAll(submissionsWithUids("firstSub01"), any(EntitySaveSummaryVM.class));
+        verify(resolver, never()).resolve(any(), any(), any(), any());
+        verify(heldSubmissions, never()).hold(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void legacyRouteChecksTheVersionFirstAndNamesTheClaimedTeam() {
+        when(user.isSuper()).thenReturn(false);
+        when(user.getUserTeamsUIDs()).thenReturn(Set.of("otherTeam01"));
+        DataSubmission unknownVersion = submission("firstSub01");
+        unknownVersion.setFormVersion("unknownVer1");
+        DataSubmission otherTeam = submission("secondSub1");
+        DataSubmission unknownAssignment = submission("thirdSub01");
+        unknownAssignment.setAssignment("noSuchAsgn1");
+        legacyLookups();
+
+        EntitySaveSummaryVM summary = service.saveLegacy(
+            List.of(unknownVersion, otherTeam, unknownAssignment), SubmissionActor.of(user));
+
+        assertEquals("Form version unknownVer1 of form formUid0001 is not on the server",
+            summary.getFailed().get("firstSub01"));
+        assertEquals("E4114: your user is not part of the team null that created the submission: secondSub1",
+            summary.getFailed().get("secondSub1"));
+        assertEquals("E4110: Submission validation Error: Assignment is required",
+            summary.getFailed().get("thirdSub01"));
+        verify(submissionService, never()).upsertAll(any(), any());
+    }
+
+    @Test
+    void legacyRouteTellsAnAdminAnUnknownAssignmentWasNotFound() {
+        DataSubmission unknownAssignment = submission("firstSub01");
+        unknownAssignment.setAssignment("noSuchAsgn1");
+        legacyLookups();
+
+        EntitySaveSummaryVM summary = service.saveLegacy(List.of(unknownAssignment), SubmissionActor.of(user));
+
+        assertEquals("E4110: Submission validation Error: Assignment not found: noSuchAsgn1",
+            summary.getFailed().get("firstSub01"));
+    }
+
+    private void legacyLookups() {
+        when(templateVersionResolver.resolveByUid("formUid0001", "unknownVer1")).thenThrow(
+            new IllegalQueryException("Form version unknownVer1 of form formUid0001 is not on the server"));
+        when(templateVersionResolver.resolveByUid("formUid0001", "version0001")).thenReturn(templateContext);
+        when(assignmentRepository.findByUid("assignment1")).thenReturn(Optional.of(assignment));
+        when(assignmentRepository.findByUid("noSuchAsgn1")).thenReturn(Optional.empty());
     }
 
     private EntitySaveSummaryVM upload(List<DataSubmissionUploadV1Dto> requests) {

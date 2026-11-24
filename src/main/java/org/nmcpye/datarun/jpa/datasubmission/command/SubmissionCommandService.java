@@ -31,4 +31,12 @@ public class SubmissionCommandService {
     public EntitySaveSummaryVM uploadPractice(SubmissionCommand.PracticeUpload command) {
         return uploads.save(command.items(), command.actor(), IntakeMode.PRACTICE);
     }
+
+    /**
+     * Uploads on the legacy route: each submission in its own transaction, with that route's own order of checks
+     * (see {@link SubmissionUploads#saveLegacy}). Never held, and no Reference values are resolved.
+     */
+    public EntitySaveSummaryVM uploadLegacy(SubmissionCommand.LegacyUpload command) {
+        return uploads.saveLegacy(command.items(), command.actor());
+    }
 }

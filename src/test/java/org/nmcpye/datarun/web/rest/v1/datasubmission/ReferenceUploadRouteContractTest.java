@@ -12,7 +12,6 @@ import org.nmcpye.datarun.jpa.datasubmission.validation.SubmissionAccessValidato
 import org.nmcpye.datarun.jpa.datatemplate.service.TemplateVersionResolver;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.authorization.ResourceApiAuthorization;
-import org.nmcpye.datarun.web.rest.v1.datasubmission.service.SubmissionUploadService;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -65,7 +64,7 @@ class ReferenceUploadRouteContractTest {
 
     @Test
     void oldAndVersionedBulkMappingsRegisterWithoutAmbiguity() {
-        DataSubmissionResource resource = resource(mock(SubmissionUploadService.class), mock(SubmissionCommandService.class));
+        DataSubmissionResource resource = resource(mock(SubmissionCommandService.class));
 
         assertDoesNotThrow(
             () -> MockMvcBuilders.standaloneSetup(resource).build());
@@ -78,9 +77,8 @@ class ReferenceUploadRouteContractTest {
      */
     @Test
     void onlyThePracticeRouteUploadsWithoutStoring() throws Exception {
-        SubmissionUploadService uploadService = mock(SubmissionUploadService.class);
         SubmissionCommandService commands = mock(SubmissionCommandService.class);
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(resource(uploadService, commands)).build();
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(resource(commands)).build();
         SecurityContextHolder.getContext().setAuthentication(
             new UsernamePasswordAuthenticationToken(
                 mock(CurrentUserDetails.class), null, List.of()));
@@ -91,7 +89,7 @@ class ReferenceUploadRouteContractTest {
                 .content("[]"))
             .andExpect(status().isOk());
         verify(commands).upload(any(SubmissionCommand.Upload.class));
-        verifyNoMoreInteractions(uploadService, commands);
+        verifyNoMoreInteractions(commands);
 
         mvc.perform(post("/api/v1/dataSubmission/bulk/practice")
                 .param("referenceVersion", "1")
@@ -99,11 +97,28 @@ class ReferenceUploadRouteContractTest {
                 .content("[]"))
             .andExpect(status().isOk());
         verify(commands).uploadPractice(any(SubmissionCommand.PracticeUpload.class));
-        verifyNoMoreInteractions(uploadService, commands);
+        verifyNoMoreInteractions(commands);
+    }
+
+    /** Without referenceVersion=1, /bulk is the legacy route (apps before 6.0.2). */
+    @Test
+    void theUnversionedBulkRouteIsTheLegacyUpload() throws Exception {
+        SubmissionCommandService commands = mock(SubmissionCommandService.class);
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(resource(commands)).build();
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(
+                mock(CurrentUserDetails.class), null, List.of()));
+
+        mvc.perform(post("/api/v1/dataSubmission/bulk")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("[]"))
+            .andExpect(status().isOk());
+        verify(commands).uploadLegacy(any(SubmissionCommand.LegacyUpload.class));
+        verifyNoMoreInteractions(commands);
     }
 
     private static DataSubmissionResource resource(
-        SubmissionUploadService uploadService, SubmissionCommandService commands) {
+        SubmissionCommandService commands) {
         DataSubmissionResource resource = new DataSubmissionResource(
             mock(DataSubmissionService.class),
             mock(DataSubmissionRepository.class),
@@ -111,7 +126,6 @@ class ReferenceUploadRouteContractTest {
             mock(CompositeSubmissionValidator.class),
             mock(SubmissionAccessValidator.class),
             mock(TemplateVersionResolver.class),
-            uploadService,
             commands);
         ResourceApiAuthorization authorization = mock(ResourceApiAuthorization.class);
         when(authorization.canRead(any())).thenReturn(true);

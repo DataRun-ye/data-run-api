@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.jpa.datasubmission.command;
 
+import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
 
 import java.util.List;
@@ -21,5 +22,12 @@ public sealed interface SubmissionCommand {
      * an {@link Upload}, then kept apart as practice instead of saved.
      */
     record PracticeUpload(SubmissionActor actor, List<DataSubmissionUploadV1Dto> items) implements SubmissionCommand {
+    }
+
+    /**
+     * Uploads on the legacy route ({@code /bulk} without {@code referenceVersion=1}): apps before 6.0.2 and API callers.
+     * The items are the bodies as the route bound them.
+     */
+    record LegacyUpload(SubmissionActor actor, List<DataSubmission> items) implements SubmissionCommand {
     }
 }
