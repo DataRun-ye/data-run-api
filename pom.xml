@@ -30,7 +30,7 @@
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>
         <run.addResources>false</run.addResources>
         <spring-boot.version>${project.parent.version}</spring-boot.version>
-        <archunit-junit5.version>1.4.0</archunit-junit5.version>
+        <archunit.version>1.4.0</archunit.version>
         <checkstyle.version>10.23.1</checkstyle.version>
         <config.version>1.4.3</config.version>
         <cucumber-bom.version>7.21.1</cucumber-bom.version>
@@ -232,17 +232,11 @@
             <artifactId>jackson-module-jaxb-annotations</artifactId>
         </dependency>
         <dependency>
+            <!-- The library only: rules run from JUnit 5 tests (rule.check). This build never executed @ArchTest
+                 fields through ArchUnit's JUnit 5 engine (they reported 0 tests run), so that engine is not used. -->
             <groupId>com.tngtech.archunit</groupId>
-            <artifactId>archunit-junit5-api</artifactId>
-            <version>${archunit-junit5.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <!-- Adding the engine dependency to the surefire-plugin unfortunately does not work in the current version. -->
-            <!-- https://www.archunit.org/userguide/html/000_Index.html#_junit_5 -->
-            <groupId>com.tngtech.archunit</groupId>
-            <artifactId>archunit-junit5-engine</artifactId>
-            <version>${archunit-junit5.version}</version>
+            <artifactId>archunit</artifactId>
+            <version>${archunit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
