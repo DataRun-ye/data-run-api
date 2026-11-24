@@ -62,11 +62,13 @@
                 CONSTRAINT ck_submission_revision_baseline
                     CHECK ((kind = 'BASELINE') = (command IN ('MIGRATION', 'GAP_REPAIR'))),
                 -- The versions a kind may take. Across rows, the no-gap trigger checks previous_version is the head.
+                -- Every branch is false, never NULL, when it fails: a CHECK lets NULL pass, so an UPDATE or DELETE
+                -- without a previous version would otherwise be accepted as a submission's first revision.
                 CONSTRAINT ck_submission_revision_version CHECK (
                     version >= 0 AND CASE kind
                         WHEN 'CREATE' THEN version = 0 AND previous_version IS NULL
-                        WHEN 'UPDATE' THEN previous_version = version - 1
-                        WHEN 'DELETE' THEN previous_version = version - 1
+                        WHEN 'UPDATE' THEN previous_version IS NOT NULL AND previous_version = version - 1
+                        WHEN 'DELETE' THEN previous_version IS NOT NULL AND previous_version = version - 1
                         WHEN 'BASELINE' THEN previous_version IS NULL OR previous_version &lt; version
                         ELSE false
                     END),

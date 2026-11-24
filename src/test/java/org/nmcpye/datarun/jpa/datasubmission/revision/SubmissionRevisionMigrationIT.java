@@ -560,6 +560,23 @@ class SubmissionRevisionMigrationIT {
             .as("an unknown kind").isEqualTo("23514 ck_submission_revision_kind");
     }
 
+    /**
+     * An UPDATE or DELETE names the version it follows. Without one, the no-gap trigger sees no head to compare with
+     * on a submission the journal never recorded, so only the version check stands between such a row and a first
+     * revision.
+     */
+    @Test
+    void anUpdateOrDeleteWithoutItsPreviousVersionIsRefused() {
+        String user = user();
+        String unrecorded = submission(5, false);
+
+        assertThat(refusal(() -> revision(unrecorded, 5, null, "UPDATE", "UPLOAD", user, null, null, null)))
+            .as("an update as a first revision").isEqualTo("23514 ck_submission_revision_version");
+        assertThat(refusal(() -> revision(unrecorded, 5, null, "DELETE", "ADMIN_DELETE", user, null, null, null)))
+            .as("a delete as a first revision").isEqualTo("23514 ck_submission_revision_version");
+        assertThat(count("SELECT count(*) FROM submission_revision WHERE submission_id = ?", unrecorded)).isZero();
+    }
+
     // ---------------------------------------------------------------- the guards
 
     @Test
