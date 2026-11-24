@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!-- How long the drop may wait for its lock; a Liquibase parameter of the same name overrides it. -->
+    <property name="analyticsEtlRunsLockTimeout" value="30s"/>
+
+    <!--
+      Drops analytics.etl_runs, an old copy of the ETL's run log that nothing uses: owner's decision of 2026-11-25
+      ("no one actually using it, it can be dropped").
+
+      On the staging clone of production it holds 5 rows, the last started 2026-02-10, in an old layout (run_id,
+      started_at, finished_at, status, row_counts, error_message), and no view, foreign key, function or sequence
+      depends on it. No changelog creates it and no code in this repository names it, in 6.5.4 or later. The ETL's run
+      log is public.etl_runs, which stays, as does public.outbox_processing: the EtlRun entity and EtlRunServiceImpl
+      name etl_runs unqualified, and the application's search_path is "$user", public.
+
+      Airbyte syncs the table but nothing downstream uses it: refresh the source schema if the connection pauses.
+
+      DROP TABLE holds an ACCESS EXCLUSIVE lock on the table, so lock_timeout makes the deploy fail visibly instead of
+      waiting behind an Airbyte read. The changeset drops only a table the migration's role owns: one another role
+      owns is skipped with a warning and tried again at the next start, rather than failing the deploy. The rollback
+      recreates the table with its definition on the staging clone; its 5 old rows are not restored.
+    -->
+    <changeSet id="20261125-05-drop-analytics-etl-runs" author="datarun">
+        <preConditions onFail="CONTINUE" onFailMessage="analytics.etl_runs is owned by another role: not dropped">
+            <sqlCheck expectedResult="0">
+                SELECT count(*) FROM pg_tables
+                WHERE schemaname = 'analytics' AND tablename = 'etl_runs' AND tableowner &lt;&gt; current_user
+            </sqlCheck>
+        </preConditions>
+        <sql>SET LOCAL lock_timeout = '${analyticsEtlRunsLockTimeout}'</sql>
+        <sql>DROP TABLE IF EXISTS analytics.etl_runs</sql>
+        <rollback>
+            <sql>SET LOCAL lock_timeout = '${analyticsEtlRunsLockTimeout}'</sql>
+            <sql>
+                CREATE TABLE IF NOT EXISTS analytics.etl_runs (
+                    run_id        text NOT NULL,
+                    started_at    timestamp with time zone,
+                    finished_at   timestamp with time zone,
+                    status        text,
+                    row_counts    jsonb,
+                    error_message text,
+                    CONSTRAINT etl_runs_pkey PRIMARY KEY (run_id)
+                )
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

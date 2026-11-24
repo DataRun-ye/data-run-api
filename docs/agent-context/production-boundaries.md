@@ -50,7 +50,12 @@ When evidence conflicts:
   drops the ledger's `processing_issues` table and its columns on
   `analytics.events`, together with two unreferenced hand-made tables,
   `supply_ledger` and `monthly_consumption`. The latter holds one batch run
-  covering December 2025 to March 2026.
+  covering December 2025 to March 2026. Changeset
+  `20261125-05-drop-analytics-etl-runs` (6.5.5) drops `analytics.etl_runs`, an
+  old copy of the ETL's run log (5 rows, the last from 2026-02-10) that no
+  changelog creates and no code names; the run log is `public.etl_runs`.
+  Airbyte syncs the dropped table, but nothing downstream uses it: refresh the
+  source schema if the connection pauses.
 
 ## Migration Rules
 
