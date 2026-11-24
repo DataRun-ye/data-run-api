@@ -38,7 +38,7 @@ Reference catalog request
 
 Reference submission upload
 -> DataSubmissionResource
--> SubmissionUploadService
+-> SubmissionCommandService -> SubmissionUploads
 -> ReferenceValueExtractor / ReferenceSubmissionResolver
 -> existing DataSubmissionService transaction
 ```
@@ -47,13 +47,14 @@ The migration is
 `src/main/resources/config/liquibase/changelog/reference-entry/20260725-create-reference-entry.xml`
 and is included by `master.xml`.
 
-Since `v6.5.0` the versioned route (`referenceVersion=1`, apps 6.0.2+) uses
-`SubmissionUploadService`, the legacy `/bulk` route keeps its own validation in
-`DataSubmissionResource`, catalog access is scoped to the assignment, and both
-routes save each submission in its own transaction, reporting failures per row
-(api #37). The versioned route also applies go-live rules (api #42): an upload
-held before a go-live, or sent from a practice session, creates no Reference
-entries until an admin releases it. The legacy route is never held.
+Both upload routes go through `SubmissionCommandService`: the versioned
+route (`referenceVersion=1`, apps 6.0.2+) resolves Reference values, the legacy
+`/bulk` route keeps its own order of checks and resolves none, catalog access
+is scoped to the assignment, and both routes save each submission in its own
+transaction, reporting failures per row (api #37). The versioned route also
+applies go-live rules (api #42): an upload held before a go-live, or sent from
+a practice session, creates no Reference entries until an admin releases it.
+The legacy route is never held.
 
 ## Compatibility Boundary
 

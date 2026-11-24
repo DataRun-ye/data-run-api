@@ -122,21 +122,40 @@ Liquibase contraction.
 
 | Status | Route | Server owner |
 | --- | --- | --- |
-| CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveVersionedUpload` -> `SubmissionUploadService` -> `DefaultDataSubmissionService.upsertAll` |
-| CORE-ACTIVE (app 6.1.0+) | `POST /api/v1/dataSubmission/bulk/practice?referenceVersion=1` | `DataSubmissionResource.savePracticeUpload` -> `SubmissionUploadService` (practice: always held) |
+| CORE-ACTIVE | `POST /api/v1/dataSubmission/bulk?referenceVersion=1` | `DataSubmissionResource.saveVersionedUpload` -> `SubmissionCommandService.upload` -> `SubmissionUploads` -> `DefaultDataSubmissionService.upsertAll` |
+| CORE-ACTIVE (app 6.1.0+) | `POST /api/v1/dataSubmission/bulk/practice?referenceVersion=1` | `DataSubmissionResource.savePracticeUpload` -> `SubmissionCommandService.uploadPractice` (practice: always held) |
 | ADMIN | `GET`/`PUT /api/v1/admin/goLiveRules`, `DELETE /{uid}`, `GET /effective` | `GoLiveRuleResource` -> `GoLiveRuleService` -> `GoLiveRuleRepository` (`go_live_rule`) |
-| ADMIN | `GET /api/v1/admin/heldSubmissions`, `GET /summary`, `GET /{uid}`, `POST /release`, `POST /discard` | `HeldSubmissionResource` -> `HeldSubmissionReview` / `HeldSubmissionRepository` (`held_submission`) |
+| ADMIN | `GET /api/v1/admin/heldSubmissions`, `GET /summary`, `GET /{uid}` | `HeldSubmissionResource` -> `HeldSubmissionRepository` (`held_submission`, reads) |
+| ADMIN | `POST /api/v1/admin/heldSubmissions/release`, `POST /discard` | `HeldSubmissionResource` -> `SubmissionCommandService.releaseHeld` / `discardHeld` -> `HeldSubmissionDecisions` |
 | LEGACY-RISK / UNKNOWN | `GET /api/v1/dataSubmission`, `GET /byLastModified`, `POST /query`, `GET /{id}` | inherited generic read surface |
-| LEGACY-RISK / UNKNOWN | `POST /api/v1/dataSubmission/bulk` without the version parameter, `POST /`, `POST /return` | inherited/overridden compatibility write surface |
+| LEGACY-RISK / UNKNOWN | `POST /api/v1/dataSubmission/bulk` without the version parameter | `DataSubmissionResource.saveAll` -> `SubmissionCommandService.uploadLegacy` |
+| LEGACY-RISK / UNKNOWN | `POST /api/v1/dataSubmission`, `POST /return` | inherited routes; bean validation answers 400 to every body (the id cannot be bound); their body would go through `uploadLegacy` |
 | LEGACY-RISK / UNKNOWN | `GET|POST /api/v1/dataSubmission/objects` | deprecated flattened read surface |
-| ADMIN / UNKNOWN | `DELETE /api/v1/dataSubmission/{id}`, `PUT /{uid}` | inherited/overridden admin surface |
+| ADMIN / UNKNOWN | `DELETE /api/v1/dataSubmission/{uid}` | `DataSubmissionResource.deleteByIdUid` -> `SubmissionCommandService.delete` |
+| ADMIN / UNKNOWN | `PUT /api/v1/dataSubmission/{uid}` | inherited generic update; bean validation answers 400 before its body runs |
 
-The released mobile owner is `SubmissionUploadService`. Ordinary and
-Reference-capable submissions currently share this versioned upload boundary.
-The active upload maps the versioned DTO; resolves assignment and pinned
-template once through `TemplateVersionResolver`; canonicalizes server-owned
-assignment/template context;
-authorizes the canonical assignment/form pair; generates missing repeat
+Every submission write goes through `SubmissionCommandService`
+(`jpa.datasubmission.command`): controllers adapt each route to a
+`SubmissionCommand` (upload, practice upload, legacy upload, admin delete,
+held release, held discard) naming the acting `SubmissionActor`: the durable
+user id, plus the login that today's audit columns store. Each submission is
+written in a transaction of its own, with its `outbox` row, and
+`SubmissionWriteOwnershipTest` (ArchUnit) fails the build when any other class
+calls the write methods of the persistence layer (`DataSubmissionService`, the
+submission repository, `SubmissionIntake.hold`, `HeldSubmissionRepository`,
+`OutboxWriter`). Its frozen store keeps one known violation, the unreachable
+outbox backfill behind `/admin/etl`. The rule cannot see writes through the
+generic `IdentifiableObjectService` types; the inherited `PUT` body is the one
+such path, and it answers 400 before it runs. Log lines on these paths carry
+identifiers and shapes only: submission and form uids, the user id, counts,
+error codes and exception types, never a login, a submitted value or an
+exception message.
+
+Ordinary and Reference-capable submissions share the versioned upload
+(`SubmissionUploads`, the released mobile's owner). It maps the versioned
+DTO; resolves assignment and pinned template once through
+`TemplateVersionResolver`; canonicalizes server-owned assignment/template
+context; authorizes the canonical assignment/form pair; generates missing repeat
 metadata for compatibility; resolves Reference definitions; upserts whole
 submission JSON; and writes the current `outbox` row in the same transaction.
 Submission access and assignment-form projection use the same
@@ -154,6 +173,13 @@ either (2026-11-20). Administrators are not checked.
 `DataSubmissionService` receives canonical submissions and a result summary,
 not a security principal; authorization must complete before persistence.
 
+The legacy route (apps before 6.0.2) runs the same pipeline steps in its own
+order: the form version first, by uid only; repeat ids; for a non-admin, the
+assignment (missing or unknown are both "Assignment is required"), E4114
+naming the team the upload claims, E4122 and the stored-record guard; then
+the context. It resolves no Reference values and is never held. The A2
+goldens pin each difference (W3-*); they end when the route retires (B2).
+
 After authorization, `SubmissionIntake` decides per submission whether it is
 saved or held (DataRun-ye/data-run-api#42): practice uploads are always held,
 and a new submission started before the go-live rule that applies to it
@@ -162,8 +188,12 @@ rule for every form; the earlier of phone start and server receipt) is held.
 A held submission runs the same checks, Reference resolution and upsert, then
 its transaction is rolled back and the upload is stored as received in
 `held_submission`, so nothing reaches `data_submission`, the outbox or the
-Reference lists. An admin release replays it through this same path as its
-original submitter; a held copy of a uid already in the real data is marked
+Reference lists. An admin release replays it through this same path on
+behalf of its original submitter (the checks read that user's access, the
+audit columns name them, and `decided_by` names the admin), saving it in the
+same transaction as the decision that releases it: if a re-send changed the
+held copy after the release read it, nothing is saved and the upload is
+reported as changed. A held copy of a uid already in the real data is marked
 superseded. A release by filter takes only uploads still held before a
 go-live; discarded and practice uploads are released only by uid. Releases
 and discards work in batches (at most 500 per call, reporting what remains),
@@ -176,10 +206,13 @@ transaction are lost: intake writes are `@Transactional`. Never run the
 Liquibase rollback of `held_submission` once uploads were held: it would
 delete uploads that phones report as sent.
 
-The unversioned generic writes still use the separate validator/enrichment
-pipeline in `DataSubmissionResource.preProcess`. They are not used by the
-released mobile and remain `LEGACY-RISK` pending the recorded endpoint-use
-decision; their reachability does not make them a second product authority.
+The admin delete marks the submission deleted and writes its `DELETE`
+event in one transaction. Deleting a deleted submission writes nothing, as an
+upload's `deleted=true` does, and an unknown uid answers 404.
+
+The unversioned writes are not used by the released mobile and remain
+`LEGACY-RISK` pending the recorded endpoint-use decision; their reachability
+does not make them a second product authority.
 
 The disabled submission-history listener and its zero-caller processor/model
 alternatives are source-dead. Their physical table remains a schema concern.
