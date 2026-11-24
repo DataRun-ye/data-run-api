@@ -2,6 +2,7 @@ package org.nmcpye.datarun.jpa.datasubmission.command;
 
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
+import org.nmcpye.datarun.web.rest.v1.intake.HeldDecisionRequest;
 
 import java.util.List;
 
@@ -33,5 +34,12 @@ public sealed interface SubmissionCommand {
 
     /** An admin's delete of one submission, named by uid ({@code DELETE /dataSubmission/{uid}}). */
     record Delete(SubmissionActor actor, String uid) implements SubmissionCommand {
+    }
+
+    /**
+     * An admin's discard of held uploads ({@code POST /admin/heldSubmissions/discard}): either uids, or a filter on one
+     * campaign. A discarded upload stays stored and can still be released by uid.
+     */
+    record DiscardHeld(SubmissionActor actor, HeldDecisionRequest selection) implements SubmissionCommand {
     }
 }

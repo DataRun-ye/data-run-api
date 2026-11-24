@@ -8,17 +8,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.IntegrationTest;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
+import org.nmcpye.datarun.jpa.datasubmission.command.HeldDecisionResult;
+import org.nmcpye.datarun.jpa.datasubmission.command.HeldSubmissionDecisions;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionUploads;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.orgunit.repository.OrgUnitRepository;
+import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.security.CurrentUserDetailsImpl;
 import org.nmcpye.datarun.security.DomainUserDetailsService;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
-import org.nmcpye.datarun.web.rest.v1.datasubmission.service.SubmissionUploadService;
 import org.nmcpye.datarun.web.rest.v1.intake.HeldDecisionRequest;
-import org.nmcpye.datarun.web.rest.v1.intake.HeldSubmissionReview;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -33,6 +39,8 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -73,23 +81,22 @@ class HeldSubmissionReviewIT {
 
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
     private final List<String> replayed = new ArrayList<>();
-    private SubmissionUploadService uploads;
+    private SubmissionUploads uploads;
     private DomainUserDetailsService users;
     private DataSubmissionRepository submissions;
 
     @BeforeEach
     void setUp() {
-        uploads = mock(SubmissionUploadService.class);
-        when(uploads.release(any())).thenAnswer(invocation -> {
-            String uid = invocation.<DataSubmissionUploadV1Dto>getArgument(0).getUid();
+        uploads = mock(SubmissionUploads.class);
+        when(uploads.save(anyList(), any(), eq(org.nmcpye.datarun.jpa.intake.IntakeMode.RELEASE))).thenAnswer(invocation -> {
+            String uid = invocation.<List<DataSubmissionUploadV1Dto>>getArgument(0).get(0).getUid();
             replayed.add(uid);
             EntitySaveSummaryVM saved = new EntitySaveSummaryVM();
             saved.getCreated().add(uid);
             return saved;
         });
         users = mock(DomainUserDetailsService.class);
-        when(users.loadUserByUsername(any())).thenAnswer(invocation ->
-            User.withUsername(invocation.<String>getArgument(0)).password("x").authorities("ROLE_USER").build());
+        when(users.loadUserByUsername(any())).thenAnswer(invocation -> user(invocation.getArgument(0)));
         submissions = mock(DataSubmissionRepository.class);
         asUser("admin");
     }
@@ -114,7 +121,7 @@ class HeldSubmissionReviewIT {
         long nowAccepted = held.findAll(new HeldFilter("campaign001", null, null, HoldReason.BEFORE_GO_LIVE,
                 EnumSet.of(HeldState.HELD), null, null))
             .stream().filter(goLiveRuleService.acceptedByCurrentRules()).count(); // as PutResult.heldNowAccepted
-        HeldSubmissionReview.HeldDecisionResult result = review(held).release(new HeldDecisionRequest(null,
+        HeldDecisionResult result = decisions(held).release(ADMIN, new HeldDecisionRequest(null,
             new HeldDecisionRequest.Filter("campaign001", null, null, null, null, null, true), null, null));
 
         assertThat(nowAccepted).isZero();
@@ -129,7 +136,7 @@ class HeldSubmissionReviewIT {
         held.hold("realEarly01", HoldReason.BEFORE_GO_LIVE, monday, context(SUNDAY_1000), payload("realEarly01"));
         held.hold("practice001", HoldReason.PRACTICE, null, context(TUESDAY), payload("practice001"));
 
-        review(held).release(new HeldDecisionRequest(null,
+        decisions(held).release(ADMIN, new HeldDecisionRequest(null,
             new HeldDecisionRequest.Filter("campaign001", null, null, null, SUNDAY_0800, null, null), null, null));
 
         assertThat(replayed).containsExactly("realEarly01");
@@ -157,8 +164,8 @@ class HeldSubmissionReviewIT {
                 return held.markDecided(uid, state, from, seenLastModified, decidedBy, note);
             }
         };
-        HeldSubmissionReview.HeldDecisionResult second =
-            review(staleSelection).release(new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
+        HeldDecisionResult second =
+            decisions(staleSelection).release(ADMIN, new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
 
         assertThat(second.changed()).containsExactly("heldSub0001");
         assertThat(held.findByUid("heldSub0001").orElseThrow().state()).isEqualTo(HeldState.RELEASED);
@@ -214,8 +221,20 @@ class HeldSubmissionReviewIT {
             row.lastModifiedDate(), "admin", null)).isTrue();
     }
 
-    private HeldSubmissionReview review(HeldSubmissionRepository repository) {
-        return new HeldSubmissionReview(repository, goLiveRuleService, submissions, uploads, users, objectMapper);
+    private HeldSubmissionDecisions decisions(HeldSubmissionRepository repository) {
+        return new HeldSubmissionDecisions(repository, goLiveRuleService, submissions, uploads, users, objectMapper);
+    }
+
+    private static final SubmissionActor ADMIN = SubmissionActor.of(user("admin"));
+
+    private static CurrentUserDetails user(String login) {
+        return CurrentUserDetailsImpl.builder()
+            .id("01JTEST" + login)
+            .username(login)
+            .password("x")
+            .enabled(true)
+            .authorities(List.<GrantedAuthority>of(new SimpleGrantedAuthority("ROLE_USER")))
+            .build();
     }
 
     private static void asUser(String login) {

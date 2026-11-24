@@ -34,7 +34,8 @@ class SubmissionCommandServiceTest {
     void setUp() {
         when(transactionManager.getTransaction(any(TransactionDefinition.class))).thenReturn(transaction);
         service = new SubmissionCommandService(
-            mock(SubmissionUploads.class), submissionService, submissions, transactionManager);
+            mock(SubmissionUploads.class), submissionService, submissions, transactionManager,
+            mock(HeldSubmissionDecisions.class));
     }
 
     @Test

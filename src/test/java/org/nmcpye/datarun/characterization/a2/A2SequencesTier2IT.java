@@ -5,15 +5,16 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Item;
+import org.nmcpye.datarun.jpa.datasubmission.command.HeldSubmissionDecisions;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionUploads;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.intake.GoLiveRuleService;
 import org.nmcpye.datarun.jpa.intake.HeldState;
 import org.nmcpye.datarun.jpa.intake.HeldSubmissionRepository;
 import org.nmcpye.datarun.jpa.intake.HeldSubmissionRow;
 import org.nmcpye.datarun.security.DomainUserDetailsService;
-import org.nmcpye.datarun.web.rest.v1.datasubmission.service.SubmissionUploadService;
 import org.nmcpye.datarun.web.rest.v1.intake.HeldDecisionRequest;
-import org.nmcpye.datarun.web.rest.v1.intake.HeldSubmissionReview;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -52,7 +53,7 @@ class A2SequencesTier2IT extends A2GoldenSupport {
     private DataSubmissionRepository submissions;
 
     @Autowired
-    private SubmissionUploadService uploads;
+    private SubmissionUploads uploads;
 
     @Autowired
     private DomainUserDetailsService users;
@@ -111,8 +112,8 @@ class A2SequencesTier2IT extends A2GoldenSupport {
                 held.recordReleaseError(uid, error);
             }
         };
-        HeldSubmissionReview review =
-            new HeldSubmissionReview(hooked, goLiveRuleService, submissions, uploads, users, objectMapper);
+        HeldSubmissionDecisions decisions =
+            new HeldSubmissionDecisions(hooked, goLiveRuleService, submissions, uploads, users, objectMapper);
         ObjectNode release = NODES.objectNode();
         release.set("uids", NODES.arrayNode().add(uid));
 
@@ -121,7 +122,8 @@ class A2SequencesTier2IT extends A2GoldenSupport {
             .upload("held before go-live", G3, FIELD_1, formA(uid, "first"))
             .action("admin releases it (service call, hooked read)", () -> {
                 asAdmin();
-                return review.release(new HeldDecisionRequest(List.of(uid), null, null, null));
+                return decisions.release(SubmissionActor.current(),
+                    new HeldDecisionRequest(List.of(uid), null, null, null));
             })
             .call("admin releases it again", "POST", "/api/v1/admin/heldSubmissions/release", ADMIN, release)
             .verify();

@@ -23,6 +23,7 @@ public class SubmissionCommandService {
     private final DataSubmissionService submissionService;
     private final DataSubmissionRepository submissions;
     private final PlatformTransactionManager transactionManager;
+    private final HeldSubmissionDecisions held;
 
     /**
      * Phone uploads on the versioned route. Each submission is checked and saved in its own transaction, or held
@@ -59,5 +60,13 @@ public class SubmissionCommandService {
         }
         new TransactionTemplate(transactionManager).executeWithoutResult(status ->
             submissionService.softDelete(submissions.findByUid(command.uid()).orElseThrow()));
+    }
+
+    /**
+     * An admin's discard of held uploads: each one is labelled DISCARDED in the admin's name, only if it is unchanged
+     * since it was read (see {@link HeldSubmissionDecisions#discard}).
+     */
+    public HeldDecisionResult discardHeld(SubmissionCommand.DiscardHeld command) {
+        return held.discard(command.actor(), command.selection());
     }
 }

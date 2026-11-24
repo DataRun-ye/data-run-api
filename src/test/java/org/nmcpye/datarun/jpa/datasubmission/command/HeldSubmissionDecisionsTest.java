@@ -1,4 +1,4 @@
-package org.nmcpye.datarun.web.rest.v1.intake;
+package org.nmcpye.datarun.jpa.datasubmission.command;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -14,12 +14,16 @@ import org.nmcpye.datarun.jpa.intake.HeldState;
 import org.nmcpye.datarun.jpa.intake.HeldSubmissionRepository;
 import org.nmcpye.datarun.jpa.intake.HeldSubmissionRow;
 import org.nmcpye.datarun.jpa.intake.HoldReason;
+import org.nmcpye.datarun.jpa.intake.IntakeMode;
+import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.security.CurrentUserDetailsImpl;
 import org.nmcpye.datarun.security.DomainUserDetailsService;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
-import org.nmcpye.datarun.web.rest.v1.datasubmission.service.SubmissionUploadService;
+import org.nmcpye.datarun.web.rest.v1.intake.HeldDecisionRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.time.Instant;
@@ -31,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -38,7 +43,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class HeldSubmissionReviewTest {
+class HeldSubmissionDecisionsTest {
 
     private static final EnumSet<HeldState> HELD_OR_DISCARDED = EnumSet.of(HeldState.HELD, HeldState.DISCARDED);
     private static final EnumSet<HeldState> HELD = EnumSet.of(HeldState.HELD);
@@ -48,23 +53,24 @@ class HeldSubmissionReviewTest {
     private HeldSubmissionRepository held;
     private GoLiveRuleService goLiveRules;
     private DataSubmissionRepository submissions;
-    private SubmissionUploadService uploads;
+    private SubmissionUploads uploads;
     private DomainUserDetailsService users;
-    private HeldSubmissionReview review;
+    private HeldSubmissionDecisions decisions;
+    private SubmissionActor admin;
 
     @BeforeEach
     void setUp() {
         held = mock(HeldSubmissionRepository.class);
         goLiveRules = mock(GoLiveRuleService.class);
         submissions = mock(DataSubmissionRepository.class);
-        uploads = mock(SubmissionUploadService.class);
+        uploads = mock(SubmissionUploads.class);
         users = mock(DomainUserDetailsService.class);
-        review = new HeldSubmissionReview(held, goLiveRules, submissions, uploads, users, objectMapper);
+        decisions = new HeldSubmissionDecisions(held, goLiveRules, submissions, uploads, users, objectMapper);
 
+        admin = SubmissionActor.of(user("admin", "ROLE_ADMIN"));
         SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
-            User.withUsername("admin").password("x").authorities("ROLE_ADMIN").build(), null, List.of()));
-        when(users.loadUserByUsername("field-user")).thenReturn(
-            User.withUsername("field-user").password("x").authorities("ROLE_USER").build());
+            admin.access(), null, admin.access().getAuthorities()));
+        when(users.loadUserByUsername("field-user")).thenReturn(user("field-user", "ROLE_USER"));
         when(held.markDecided(anyString(), any(), any(), any(), any(), any())).thenReturn(true);
     }
 
@@ -78,17 +84,20 @@ class HeldSubmissionReviewTest {
         when(held.findWithPayload(List.of("heldSub0001"), HELD_OR_DISCARDED))
             .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
         AtomicReference<String> replayedAs = new AtomicReference<>();
+        AtomicReference<String> replayedFor = new AtomicReference<>();
         AtomicReference<String> replayedUid = new AtomicReference<>();
-        when(uploads.release(any())).thenAnswer(invocation -> {
+        when(uploads.save(anyList(), any(), eq(IntakeMode.RELEASE))).thenAnswer(invocation -> {
             replayedAs.set(SecurityContextHolder.getContext().getAuthentication().getName());
-            replayedUid.set(invocation.<DataSubmissionUploadV1Dto>getArgument(0).getUid());
+            replayedFor.set(invocation.<SubmissionActor>getArgument(1).login());
+            replayedUid.set(invocation.<List<DataSubmissionUploadV1Dto>>getArgument(0).get(0).getUid());
             return saved("heldSub0001");
         });
 
-        HeldSubmissionReview.HeldDecisionResult result =
-            review.release(new HeldDecisionRequest(List.of("heldSub0001"), null, "district started early", null));
+        HeldDecisionResult result = decisions.release(admin,
+            new HeldDecisionRequest(List.of("heldSub0001"), null, "district started early", null));
 
-        assertThat(replayedAs.get()).isEqualTo("field-user");
+        assertThat(replayedAs.get()).as("the audit columns name the submitter").isEqualTo("field-user");
+        assertThat(replayedFor.get()).as("the checks read the submitter's access").isEqualTo("field-user");
         assertThat(replayedUid.get()).isEqualTo("heldSub0001");
         assertThat(SecurityContextHolder.getContext().getAuthentication().getName())
             .as("the admin's context is back after the replay").isEqualTo("admin");
@@ -105,12 +114,12 @@ class HeldSubmissionReviewTest {
         when(held.markDecided(eq("heldSub0001"), eq(HeldState.SUPERSEDED), any(), any(), any(), any()))
             .thenReturn(false);
 
-        HeldSubmissionReview.HeldDecisionResult result =
-            review.release(new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
+        HeldDecisionResult result =
+            decisions.release(admin, new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
 
         assertThat(result.superseded()).isEmpty();
         assertThat(result.changed()).containsExactly("heldSub0001");
-        verify(uploads, never()).release(any());
+        verify(uploads, never()).save(any(), any(), any());
     }
 
     @Test
@@ -119,10 +128,10 @@ class HeldSubmissionReviewTest {
             .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
         EntitySaveSummaryVM refused = new EntitySaveSummaryVM();
         refused.getFailed().put("heldSub0001", "E4114: not in the team");
-        when(uploads.release(any())).thenReturn(refused);
+        when(uploads.save(anyList(), any(), eq(IntakeMode.RELEASE))).thenReturn(refused);
 
-        HeldSubmissionReview.HeldDecisionResult result =
-            review.release(new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
+        HeldDecisionResult result =
+            decisions.release(admin, new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
 
         assertThat(result.failed()).isEqualTo(Map.of("heldSub0001", "E4114: not in the team"));
         verify(held).recordReleaseError("heldSub0001", "E4114: not in the team");
@@ -135,8 +144,8 @@ class HeldSubmissionReviewTest {
             .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
         when(users.loadUserByUsername("field-user")).thenThrow(new UsernameNotFoundException("gone"));
 
-        HeldSubmissionReview.HeldDecisionResult result =
-            review.release(new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
+        HeldDecisionResult result =
+            decisions.release(admin, new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
 
         assertThat(result.failed().get("heldSub0001")).startsWith("Cannot release as field-user");
         assertThat(SecurityContextHolder.getContext().getAuthentication().getName()).isEqualTo("admin");
@@ -150,9 +159,9 @@ class HeldSubmissionReviewTest {
         when(goLiveRules.acceptedByCurrentRules()).thenReturn(r -> r.uid().equals("heldSub0001"));
         when(held.findWithPayload(List.of("heldSub0001"), HELD))
             .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
-        when(uploads.release(any())).thenReturn(saved("heldSub0001"));
+        when(uploads.save(anyList(), any(), eq(IntakeMode.RELEASE))).thenReturn(saved("heldSub0001"));
 
-        HeldSubmissionReview.HeldDecisionResult result = review.release(new HeldDecisionRequest(null,
+        HeldDecisionResult result = decisions.release(admin, new HeldDecisionRequest(null,
             new HeldDecisionRequest.Filter("campaign001", null, null, null, null, null, true), null, null));
 
         assertThat(result.released()).containsExactly("heldSub0001");
@@ -161,7 +170,7 @@ class HeldSubmissionReviewTest {
 
     @Test
     void practiceUploadsAreNeverReleasedInBulk() {
-        assertThatThrownBy(() -> review.release(new HeldDecisionRequest(null,
+        assertThatThrownBy(() -> decisions.release(admin, new HeldDecisionRequest(null,
             new HeldDecisionRequest.Filter("campaign001", null, null, HoldReason.PRACTICE, null, null, null),
             null, null)))
             .isInstanceOf(IllegalQueryException.class)
@@ -177,7 +186,7 @@ class HeldSubmissionReviewTest {
         when(held.findAll(any())).thenReturn(many);
         when(held.findWithPayload(List.of("heldSub0001", "heldSub0002"), HELD)).thenReturn(many.subList(0, 2));
 
-        HeldSubmissionReview.HeldDecisionResult result = review.discard(new HeldDecisionRequest(null,
+        HeldDecisionResult result = decisions.discard(admin, new HeldDecisionRequest(null,
             new HeldDecisionRequest.Filter("campaign001", null, null, null, null, null, null), "training", 2));
 
         assertThat(result.discarded()).containsExactly("heldSub0001", "heldSub0002");
@@ -191,7 +200,7 @@ class HeldSubmissionReviewTest {
         when(held.findWithPayload(List.of("heldSub0002"), HELD))
             .thenReturn(List.of(row("heldSub0002", HoldReason.PRACTICE)));
 
-        HeldSubmissionReview.HeldDecisionResult result = review.discard(new HeldDecisionRequest(null,
+        HeldDecisionResult result = decisions.discard(admin, new HeldDecisionRequest(null,
             new HeldDecisionRequest.Filter("campaign001", null, null, HoldReason.PRACTICE, null, null, null),
             "training day", null));
 
@@ -201,14 +210,25 @@ class HeldSubmissionReviewTest {
 
     @Test
     void aSelectionIsEitherUidsOrAFilterOnOneCampaign() {
-        assertThatThrownBy(() -> review.release(new HeldDecisionRequest(null, null, null, null)))
+        assertThatThrownBy(() -> decisions.release(admin, new HeldDecisionRequest(null, null, null, null)))
             .isInstanceOf(IllegalQueryException.class);
-        assertThatThrownBy(() -> review.release(new HeldDecisionRequest(List.of("heldSub0001"),
+        assertThatThrownBy(() -> decisions.release(admin, new HeldDecisionRequest(List.of("heldSub0001"),
             new HeldDecisionRequest.Filter("campaign001", null, null, null, null, null, null), null, null)))
             .isInstanceOf(IllegalQueryException.class);
-        assertThatThrownBy(() -> review.discard(new HeldDecisionRequest(null,
+        assertThatThrownBy(() -> decisions.discard(admin, new HeldDecisionRequest(null,
             new HeldDecisionRequest.Filter(null, null, null, null, null, null, null), null, null)))
             .isInstanceOf(IllegalQueryException.class);
+    }
+
+    private static CurrentUserDetails user(String login, String authority) {
+        return CurrentUserDetailsImpl.builder()
+            .id("01JTEST" + login)
+            .username(login)
+            .password("x")
+            .enabled(true)
+            .authorities(List.<GrantedAuthority>of(new SimpleGrantedAuthority(authority)))
+            .isSuper("ROLE_ADMIN".equals(authority))
+            .build();
     }
 
     private static EntitySaveSummaryVM saved(String uid) {

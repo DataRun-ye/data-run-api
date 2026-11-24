@@ -1,6 +1,10 @@
 package org.nmcpye.datarun.web.rest.v1.intake;
 
 import lombok.RequiredArgsConstructor;
+import org.nmcpye.datarun.jpa.datasubmission.command.HeldDecisionResult;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommand;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
 import org.nmcpye.datarun.jpa.intake.HeldFilter;
 import org.nmcpye.datarun.jpa.intake.HeldState;
 import org.nmcpye.datarun.jpa.intake.HeldSubmissionRepository;
@@ -40,6 +44,7 @@ public class HeldSubmissionResource {
 
     private final HeldSubmissionRepository held;
     private final HeldSubmissionReview review;
+    private final SubmissionCommandService commands;
 
     /** Counts by org unit, form, reason and state, with the first and last entry times. */
     @GetMapping("/summary")
@@ -79,12 +84,12 @@ public class HeldSubmissionResource {
     }
 
     @PostMapping("/release")
-    public HeldSubmissionReview.HeldDecisionResult release(@RequestBody HeldDecisionRequest request) {
+    public HeldDecisionResult release(@RequestBody HeldDecisionRequest request) {
         return review.release(request);
     }
 
     @PostMapping("/discard")
-    public HeldSubmissionReview.HeldDecisionResult discard(@RequestBody HeldDecisionRequest request) {
-        return review.discard(request);
+    public HeldDecisionResult discard(@RequestBody HeldDecisionRequest request) {
+        return commands.discardHeld(new SubmissionCommand.DiscardHeld(SubmissionActor.current(), request));
     }
 }
