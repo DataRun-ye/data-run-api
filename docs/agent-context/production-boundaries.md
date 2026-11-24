@@ -44,8 +44,10 @@ When evidence conflicts:
   confirmed that the legacy Party/assignment tables left by those attempts
   exist but are empty. They are inert schema residue, not an active surface or
   current task; remove them only in a separately approved Liquibase slice.
-- This classification does not apply to the separate analytics ETL/ledger
-  tables still referenced by active source.
+- This classification does not apply to the separate analytics ETL tables
+  still referenced by active source. The ledger source was removed from
+  `develop` too; its empty `analytics.processing_issues` table and the unset
+  ledger columns on `analytics.events` are schema residue of the same kind.
 
 ## Migration Rules
 
