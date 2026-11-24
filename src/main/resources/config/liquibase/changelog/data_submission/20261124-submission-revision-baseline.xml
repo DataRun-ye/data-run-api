@@ -17,10 +17,15 @@
       The application is stopped while Liquibase runs, so no write races it; every submission has a head revision
       from the first request on.
 
-      It runs once. A re-run writes nothing for a submission that already has a revision, so it is safe if the
-      changelog history were ever lost.
+      It also records the outbox's watermark, journal.outbox_watermark: the highest outbox row the journal accounts
+      for. Every row the application writes from now on carries a version; one above the watermark without a version
+      was written by a release without the journal, which is the gap repair's cue to look for gaps.
 
-      Rollback refuses while the journal holds a revision the application wrote; otherwise it deletes the baselines.
+      It runs once. A re-run writes nothing for a submission that already has a revision and keeps the watermark, so
+      it is safe if the changelog history were ever lost.
+
+      Rollback refuses while the journal holds a revision the application wrote; otherwise it deletes the baselines
+      and drops the watermark.
       Liquibase rolls back in reverse order, so the append-only trigger's rollback has run before this one.
     -->
     <changeSet id="20261124-c04-submission-revision-baseline" author="datarun">
@@ -32,6 +37,17 @@
             FROM data_submission s
             WHERE NOT EXISTS (SELECT 1 FROM journal.submission_revision r WHERE r.submission_id = s.id)
         </sql>
+        <sql>
+            CREATE TABLE IF NOT EXISTS journal.outbox_watermark (
+                singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+                outbox_id bigint  NOT NULL
+            )
+        </sql>
+        <sql>
+            INSERT INTO journal.outbox_watermark (outbox_id)
+            SELECT coalesce(max(outbox_id), 0) FROM outbox
+            ON CONFLICT (singleton) DO NOTHING
+        </sql>
         <rollback>
             <sql splitStatements="false"><![CDATA[
                 DO $$
@@ -42,6 +58,7 @@
                 END $$
             ]]></sql>
             <sql>DELETE FROM journal.submission_revision WHERE command = 'MIGRATION'</sql>
+            <sql>DROP TABLE IF EXISTS journal.outbox_watermark</sql>
         </rollback>
     </changeSet>
 </databaseChangeLog>

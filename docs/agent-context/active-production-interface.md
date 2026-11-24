@@ -349,6 +349,9 @@ The outbox contract:
   not checked.
 - `created_at`: the database's transaction time in UTC (column default);
   readers treat it as UTC (`EtlMetrics`, integrity checks 1 and 10).
+- `idx_outbox_unversioned`: the rows without a version (those written before
+  step C, and any a release without the journal writes), which the gap
+  repair probes for its cue. The application's rows are never in it.
 - `event_type` follows the state after the change: `DELETE` whenever the
   submission is deleted afterwards, else `SAVE` for a creation and `UPDATE`.
 - Actor, kind and state are not copied into the outbox: the key names the
@@ -385,16 +388,26 @@ Deploy, rollback and history:
   step C (deleted ones and the 4,628 never sent to the outbox included), with
   no outbox rows. Changes before it are not reconstructed.
 - Rehearsed on 67,176 synthetic submissions sized like staging's (form data
-  59 MB stored; staging holds 50 MB), on a container with default settings:
-  the baseline took 4.1 to 6.3 s and wrote 173 MB of WAL; the journal is
-  105 MB with its key; the triggers 25 ms each, the outbox key 79 ms. The
-  gap repair runs at every start: 0.2 to 0.5 s with nothing to repair, about
-  0.4 s for 1,001 gaps. Check 11 took 6 s on that dataset.
+  59 MB stored; staging holds 50 MB), on a container with default settings,
+  on a busy workstation (2026-11-25): the baseline took 4.8 to 6.8 s and
+  wrote 173 MB of WAL; the journal is 105 MB with its key; the outbox column,
+  default and partial index about 0.1 s, the triggers about 20 ms each, the
+  outbox key about 80 ms. Check 11 took 3.5 to 6 s on that dataset.
+- The gap repair runs at every start, last. It reads every submission only on
+  a cue: an outbox row without a version above `journal.outbox_watermark`
+  (a release without the journal wrote; the newest such row is one probe of
+  `idx_outbox_unversioned`), or a changeset run since it last ran (a deploy).
+  Without a cue its statement takes 0.5 ms and the changeset 13 to 19 ms; on
+  a cue it took 0.4 s on the first deploy and 0.33 s for a 6.5.4 window of
+  1,001 gaps. It moves the watermark to the newest outbox row each time. JIT
+  is off for it: the estimated cost of the full read would otherwise make
+  every start compile it (about 40 ms).
 - 6.5.4 runs on the migrated schema: it names its outbox columns (the version
   stays NULL, `created_at` is its JVM's UTC), never touches the journal, and
   ignores applied changesets it does not know. Its writes raise versions
-  without revisions; the next start of a release with the journal records one
-  `GAP_REPAIR` per submission it wrote (check 11g counts them).
+  without revisions, and its outbox rows, without a version, are the cue: the
+  next start of a release with the journal records one `GAP_REPAIR` per
+  submission it wrote (check 11g counts them).
 - Never run the Liquibase rollback of the journal once the application wrote
   a revision: it is their only record, and its rollback refuses.
 - The analytics copy does not see the journal: its schema is not one the copy
@@ -419,9 +432,10 @@ Data repairs and operations SQL (a rule, not yet a guard):
   submission fail at `submission_revision_no_gap`, and its change is recorded
   without who or why. A changeset that breaks the rule is still recorded at
   its own deploy, as a gap revision without its reason, because the gap
-  repair runs after every changeset (`runOrder="last"`). Direct SQL outside a
-  deploy is recorded by nothing until the gap repair statement of changeset
-  c08 is run by hand; check 11b counts the submissions it left behind.
+  repair runs after every changeset (`runOrder="last"`) and a deploy is its
+  cue. Direct SQL outside a deploy leaves no cue: it is recorded by nothing
+  until the gap repair's `INSERT` (changeset c08) is run by hand without its
+  cue condition, and check 11b counts the submissions it left behind.
 
 ### Outbox Consumer (ETL)
 

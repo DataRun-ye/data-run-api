@@ -320,8 +320,9 @@ the journal every line reads -1.
 - **11b** Submissions whose head revision (highest version) is behind their
   `lock_version`: a write that left no revision. 6.5.4 running after a
   rollback does this until the next start of a release with the journal
-  records a gap; anything else (SQL raising the version) is a fault. Should
-  stay 0.
+  records a gap; anything else (SQL raising the version) is a fault, and the
+  gap repair does not see it, because it leaves no cue (see
+  `active-production-interface.md`). Should stay 0.
 - **11c** Submissions whose head revision is ahead of their `lock_version`.
   Cannot happen through the application. Should stay 0.
 - **11d** Submissions whose head revision, at their version, is not their

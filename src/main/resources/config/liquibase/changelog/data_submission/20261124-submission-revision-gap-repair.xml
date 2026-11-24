@@ -19,8 +19,18 @@
       write that changed a row without raising its version (hand-written SQL) is not a gap this can record; the
       reconciliation check reports that too.
 
-      Cost: one index probe per submission; with no gap it writes nothing (see the rehearsal numbers in
-      docs/agent-context/active-production-interface.md).
+      When it looks: it reads every submission (one index probe each, see the rehearsal numbers in
+      docs/agent-context/active-production-interface.md) only when one of two cheap signals says a gap may exist:
+      - an outbox row without a version above journal.outbox_watermark: a release without the journal wrote since
+        the last start (the newest such row is one backward probe of idx_outbox_unversioned; an EXISTS here would
+        read the whole outbox when no row qualifies, about 0.1 s on 62,000 rows);
+      - a changeset other than this one ran since this one last ran: this deploy applied changesets, and one might
+        have raised versions (one read of databasechangelog, which Liquibase updates for every changeset it runs).
+      Otherwise the statement's one-time filter is false and it reads nothing. The signals are part of the
+      statement, not a Liquibase precondition: a failed precondition on a run-always changeset adds a row to
+      databasechangelog at every start. Afterwards it moves the watermark to the newest outbox row. A version raised
+      by SQL outside a deploy leaves neither signal: check 11b counts it, and running this INSERT by hand without
+      its signals records it.
 
       runAlways and runOrder="last": Liquibase runs it on every update, after every other changeset of the changelog,
       wherever later ones are added. So a later changeset that raises versions without revisions (a data repair that
@@ -32,15 +42,27 @@
       refusal here would block those, unrelated ones included; the rollbacks that remove a guard refuse instead.
     -->
     <changeSet id="20261124-c08-submission-revision-gap-repair" author="datarun" runAlways="true" runOrder="last">
+        <!-- The statement's estimated cost passes jit_above_cost: without this, every start compiles it (about 40 ms)
+             even when the cue lets it read nothing. -->
+        <sql>SET LOCAL jit = off</sql>
         <sql>
-            INSERT INTO journal.submission_revision (submission_id, version, previous_version, kind, command, actor_system,
-                                             form_data, metadata)
+            INSERT INTO journal.submission_revision (submission_id, version, previous_version, kind, command,
+                                                     actor_system, form_data, metadata)
             SELECT s.id, s.lock_version,
                    (SELECT max(h.version) FROM journal.submission_revision h WHERE h.submission_id = s.id),
                    'BASELINE', 'GAP_REPAIR', 'MIGRATION', s.form_data, journal.submission_revision_metadata(s)
             FROM data_submission s
-            WHERE NOT EXISTS (SELECT 1 FROM journal.submission_revision r
+            WHERE (coalesce((SELECT max(o.outbox_id) FROM outbox o WHERE o.submission_version IS NULL), 0)
+                       &gt; coalesce((SELECT w.outbox_id FROM journal.outbox_watermark w), 0)
+                   OR coalesce((SELECT c.id FROM databasechangelog c ORDER BY c.orderexecuted DESC LIMIT 1), '')
+                      &lt;&gt; '20261124-c08-submission-revision-gap-repair')
+              AND NOT EXISTS (SELECT 1 FROM journal.submission_revision r
                               WHERE r.submission_id = s.id AND r.version >= s.lock_version)
+        </sql>
+        <sql>
+            INSERT INTO journal.outbox_watermark (outbox_id)
+            SELECT coalesce(max(outbox_id), 0) FROM outbox
+            ON CONFLICT (singleton) DO UPDATE SET outbox_id = excluded.outbox_id
         </sql>
         <rollback/>
     </changeSet>

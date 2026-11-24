@@ -17,18 +17,27 @@
       - created_at: the database's transaction time in UTC, instead of the JVM clock the writer used to send.
         A writer that still sends a value (6.5.4 after a rollback, in UTC there) keeps doing so.
 
-      Both are catalog-only changes: no row is rewritten. Each takes a brief exclusive lock on the outbox; the
-      application is stopped while Liquibase runs, and lock_timeout makes the deploy fail visibly, instead of
-      waiting, if something else (a dump, a long read) holds the table.
+      - idx_outbox_unversioned: the rows without a version, by outbox_id. The gap repair probes it at every start
+        for a row written since its last run without a version, the mark a release without the journal leaves.
+        The application never writes such a row, so the index holds the rows written before step C and nothing it
+        has to maintain on a write.
 
-      Rollback drops the default and the column, after the foreign key's rollback.
+      The column and the default are catalog-only changes: no row is rewritten. The index is built from the rows
+      written so far (all without a version), as the outbox index of 6.5.2 was: a plain build under lock_timeout.
+      Each statement takes a brief lock on the outbox; the application is stopped while Liquibase runs, and
+      lock_timeout makes the deploy fail visibly, instead of waiting, if something else (a dump, a long read) holds
+      the table.
+
+      Rollback drops the index, the default and the column, after the foreign key's rollback.
     -->
     <changeSet id="20261124-c03-outbox-submission-version" author="datarun">
         <sql>SET LOCAL lock_timeout = '${outboxRevisionLockTimeout}'</sql>
         <sql>ALTER TABLE outbox ADD COLUMN submission_version bigint</sql>
         <sql>ALTER TABLE outbox ALTER COLUMN created_at SET DEFAULT timezone('UTC', now())</sql>
+        <sql>CREATE INDEX idx_outbox_unversioned ON outbox (outbox_id) WHERE submission_version IS NULL</sql>
         <rollback>
             <sql>SET LOCAL lock_timeout = '${outboxRevisionLockTimeout}'</sql>
+            <sql>DROP INDEX IF EXISTS idx_outbox_unversioned</sql>
             <sql>ALTER TABLE outbox ALTER COLUMN created_at DROP DEFAULT</sql>
             <sql>ALTER TABLE outbox DROP COLUMN submission_version</sql>
         </rollback>

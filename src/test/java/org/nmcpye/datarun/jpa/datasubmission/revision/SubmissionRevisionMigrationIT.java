@@ -358,6 +358,45 @@ class SubmissionRevisionMigrationIT {
         migrate(false);
         assertThat(count("SELECT count(*) FROM journal.submission_revision WHERE submission_id IN (?, ?, ?)",
             gapped, untouched, createdIn654)).as("the next start finds no gap").isEqualTo(4);
+        assertThat(count("SELECT outbox_id FROM journal.outbox_watermark"))
+            .as("the watermark moved past 6.5.4's rows").isEqualTo(count("SELECT max(outbox_id) FROM outbox"));
+    }
+
+    /**
+     * The gap repair reads every submission only on a cue: an outbox row without a version above the watermark (a
+     * release without the journal wrote), or a changeset that ran since it last did. A version raised by SQL outside
+     * a deploy gives neither: the next start records nothing, check 11b's reconciliation reports the submission, and
+     * the next cue records it.
+     */
+    @Test
+    void withoutACueTheGapRepairReadsNothingAndCheck11bReportsTheGap() throws Exception {
+        migrate(false);
+        String raisedBySql = submission(1, false);
+        revision(raisedBySql, 1, null, "BASELINE", "MIGRATION", null, "MIGRATION", null, null);
+        db.update("UPDATE data_submission SET lock_version = 2 WHERE id = ?", raisedBySql);
+
+        migrate(false);
+
+        assertThat(count("SELECT count(*) FROM journal.submission_revision WHERE submission_id = ? AND command = 'GAP_REPAIR'",
+            raisedBySql)).as("no cue, no gap revision").isZero();
+        assertThat(JournalReconciliation.findings(named, "s.id = :id", Map.of("id", raisedBySql)))
+            .containsExactly(raisedBySql.substring(15) + ": head revision at 1, row at 2");
+
+        String written654 = submission(0, false);
+        legacyOutboxRow(written654, "SAVE");
+        migrate(false);
+
+        assertThat(named.queryForList("""
+                SELECT r.version || ' ' || coalesce(r.previous_version::text, '-')
+                FROM journal.submission_revision r
+                WHERE r.submission_id IN (:raised, :written) AND r.command = 'GAP_REPAIR'
+                ORDER BY r.submission_id = :raised""",
+            Map.of("raised", raisedBySql, "written", written654), String.class))
+            .as("a 6.5.4 row is the cue: the repair reads every submission and records both")
+            .containsExactly("0 -", "2 1");
+        assertThat(JournalReconciliation.findings(named, "s.id IN (:ids)", Map.of("ids", List.of(raisedBySql, written654))))
+            .as("both heads are their rows; only 6.5.4's own outbox row, without a version, is reported")
+            .containsExactly(written654.substring(15) + ": 1 outbox rows without a version");
     }
 
     /**

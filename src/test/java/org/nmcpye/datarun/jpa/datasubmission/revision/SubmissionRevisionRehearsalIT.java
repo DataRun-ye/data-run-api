@@ -50,6 +50,7 @@ class SubmissionRevisionRehearsalIT {
     private static final String MASTER = "config/liquibase/master.xml";
     private static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16.2");
     private static final List<String> REPORT = new ArrayList<>();
+    private static final List<String> PLAN = new ArrayList<>();
 
     private static JdbcTemplate db;
 
@@ -134,13 +135,15 @@ class SubmissionRevisionRehearsalIT {
             + "WHERE oid = 'journal.submission_revision'::regclass", String.class) + ")");
         assertThat(db.queryForObject("SELECT count(*) FROM journal.submission_revision", Long.class)).isEqualTo(rows);
 
-        report("a start right after, nothing to repair (Liquibase run, the gap repair the only changeset): "
-            + startAgain() + " s; its statement " + gapRepairPlanTime() + " ms");
+        report("a start right after, no cue (Liquibase run, the gap repair the only changeset): " + startAgain()
+            + " s; the gap repair's statement: " + gapRepairPlan(true) + "; if it read every submission: "
+            + gapRepairPlan(false));
         db.execute("VACUUM ANALYZE journal.submission_revision");
-        report("the same once the journal is vacuumed: " + startAgain() + " s; its statement "
-            + gapRepairPlanTime() + " ms (EXPLAIN ANALYZE of its read)");
+        report("the same once the journal is vacuumed: " + startAgain() + " s; statement " + gapRepairPlan(true)
+            + "; reading every submission " + gapRepairPlan(false));
 
-        // A 6.5.4 window: changed re-sends of 500 submissions and 500 new ones, without revisions.
+        // A 6.5.4 window: changed re-sends of about 500 submissions and 500 new ones, without revisions, each with
+        // the outbox row 6.5.4 writes (no version): the cue for the next start.
         db.update("""
             UPDATE data_submission SET lock_version = lock_version + 1, last_modified_date = localtimestamp
             WHERE serial_number % 134 = 0""");
@@ -152,17 +155,62 @@ class SubmissionRevisionRehearsalIT {
                    'rehAsg00001', 'rehActiv001', 'rehTem00001', 'rehOrg00001', '{"main": {}}', 0, 'rehearsal',
                    localtimestamp, 'rehearsal', localtimestamp, false
             FROM generate_series(1, 500) AS i""");
+        db.update("""
+            INSERT INTO outbox (submission_id, submission_serial_number, submission_uid, topic, payload, event_type,
+                                status, attempt, created_at)
+            SELECT id, serial_number, uid, template_version_uid, form_data,
+                   CASE WHEN id LIKE 'W%' THEN 'SAVE' ELSE 'UPDATE' END, 'pending', 0, localtimestamp
+            FROM data_submission WHERE serial_number % 134 = 0 OR id LIKE 'W%'""");
         long gaps = db.queryForObject("""
             SELECT count(*) FROM data_submission s WHERE NOT EXISTS (
               SELECT 1 FROM journal.submission_revision r WHERE r.submission_id = s.id AND r.version >= s.lock_version)""",
             Long.class);
         String lsn = wal();
-        report("the gap repair after a 6.5.4 window with " + gaps + " gaps: " + startAgain() + " s, WAL "
-            + String.format("%.1f MB", walSince(lsn) / 1048576.0) + "; GAP_REPAIR revisions: "
+        report("the start after a 6.5.4 window with " + gaps + " gaps (its outbox rows are the cue): " + startAgain()
+            + " s, WAL " + String.format("%.1f MB", walSince(lsn) / 1048576.0) + "; GAP_REPAIR revisions: "
             + db.queryForObject("SELECT count(*) FROM journal.submission_revision WHERE command = 'GAP_REPAIR'", Long.class));
         assertThat(db.queryForObject("SELECT count(*) FROM journal.submission_revision WHERE command = 'GAP_REPAIR'", Long.class))
             .isEqualTo(gaps);
-        report("and the start after that: " + startAgain() + " s");
+        report("and the start after that, no cue again: " + startAgain() + " s; statement " + gapRepairPlan(true));
+        PLAN.clear();
+        gapRepairPlan(true);
+        report("its plan: " + String.join(" | ", PLAN));
+
+        // A rollback of step C once the application wrote a revision refuses before it removes anything.
+        db.update("""
+            INSERT INTO app_user (id, uid, login, password_hash, activated, lang_key, created_by)
+            VALUES ('01REHEARSALUSER00000000001', 'rehUser0001', 'rehearsal-user', 'x', true, 'en', 'rehearsal')""");
+        db.update("UPDATE data_submission SET lock_version = lock_version + 1 WHERE id = 'R" + "0".repeat(24) + "2'");
+        db.update("""
+            INSERT INTO journal.submission_revision (submission_id, version, previous_version, kind, command,
+                                                     actor_user_id, form_data, metadata)
+            SELECT s.id, s.lock_version, s.lock_version - 1, 'UPDATE', 'UPLOAD', '01REHEARSALUSER00000000001',
+                   s.form_data, journal.submission_revision_metadata(s)
+            FROM data_submission s WHERE s.id = 'R""" + "0".repeat(24) + "2'");
+        long revisions = db.queryForObject("SELECT count(*) FROM journal.submission_revision", Long.class);
+        int stepCRows = db.queryForObject(
+            "SELECT count(*) FROM databasechangelog WHERE id LIKE '" + SubmissionRevisionMigrationIT.STEP_C + "%'",
+            Integer.class);
+        long rollingBack = System.nanoTime();
+        String refusal = "accepted";
+        try (Connection connection = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())) {
+            liquibase(connection).rollback(stepCRows, (String) null);
+        } catch (Exception e) {
+            refusal = e.toString().contains("never roll it back") ? "refused" : "failed otherwise: " + e;
+        }
+        long triggers = db.queryForObject("""
+            SELECT count(*) FROM pg_trigger WHERE tgrelid = 'journal.submission_revision'::regclass
+            AND NOT tgisinternal""", Long.class);
+        long outboxKey = db.queryForObject(
+            "SELECT count(*) FROM pg_constraint WHERE conname = 'fk_outbox_submission_revision'", Long.class);
+        report(String.format("a rollback of step C with an application revision present: %s in %.2f s; afterwards %d "
+                + "triggers, %d outbox key, revisions %s", refusal, seconds(rollingBack), triggers, outboxKey,
+            db.queryForObject("SELECT count(*) FROM journal.submission_revision", Long.class) == revisions
+                ? "unchanged" : "CHANGED"));
+        assertThat(refusal).isEqualTo("refused");
+        assertThat(triggers).isEqualTo(3);
+        assertThat(outboxKey).isEqualTo(1);
+        startAgain();
 
         PG.copyFileToContainer(org.testcontainers.utility.MountableFile.forHostPath(
             Path.of("scripts", "integrity", "sql", "11-revisions.sql")), "/tmp/11-revisions.sql");
@@ -192,17 +240,43 @@ class SubmissionRevisionRehearsalIT {
         return String.format("%.2f", seconds(start));
     }
 
-    private static String gapRepairPlanTime() {
-        List<String> plan = db.queryForList("""
-            EXPLAIN (ANALYZE, TIMING OFF, SUMMARY ON)
+    /**
+     * EXPLAIN ANALYZE of the gap repair's read, as changeset c08 has it: with its cue, as at a start, or without it,
+     * as if it read every submission. Its execution time, and whether the scan of data_submission ran.
+     */
+    private static String gapRepairPlan(boolean withCue) {
+        String cue = withCue ? """
+            (coalesce((SELECT max(o.outbox_id) FROM outbox o WHERE o.submission_version IS NULL), 0)
+                 > coalesce((SELECT w.outbox_id FROM journal.outbox_watermark w), 0)
+             OR coalesce((SELECT c.id FROM databasechangelog c ORDER BY c.orderexecuted DESC LIMIT 1), '')
+                <> '20261124-c08-submission-revision-gap-repair') AND """ : "";
+        String explain = """
+            EXPLAIN (ANALYZE, BUFFERS, SUMMARY ON)
             SELECT s.id, s.lock_version,
                    (SELECT max(h.version) FROM journal.submission_revision h WHERE h.submission_id = s.id),
                    s.form_data, journal.submission_revision_metadata(s)
             FROM data_submission s
-            WHERE NOT EXISTS (SELECT 1 FROM journal.submission_revision r
-                              WHERE r.submission_id = s.id AND r.version >= s.lock_version)""", String.class);
+            WHERE %s NOT EXISTS (SELECT 1 FROM journal.submission_revision r
+                                 WHERE r.submission_id = s.id AND r.version >= s.lock_version)""".formatted(cue);
+        List<String> plan = new ArrayList<>();
+        // As the changeset runs it: without JIT.
+        try (Connection connection = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword());
+             var statement = connection.createStatement()) {
+            statement.execute("SET jit = off");
+            try (var rows = statement.executeQuery(explain)) {
+                while (rows.next()) {
+                    plan.add(rows.getString(1));
+                }
+            }
+        } catch (java.sql.SQLException e) {
+            throw new IllegalStateException(e);
+        }
+        PLAN.addAll(plan);
+        boolean skipped = plan.stream().anyMatch(line -> line.contains("Seq Scan on data_submission")
+            && line.contains("never executed"));
         return plan.stream().filter(line -> line.startsWith("Execution Time"))
-            .map(line -> line.replaceAll("[^0-9.]", "")).findFirst().orElse("?");
+            .map(line -> line.replaceAll("[^0-9.]", "")).findFirst().orElse("?") + " ms"
+            + (skipped ? " (data_submission never read)" : "");
     }
 
     private static double seconds(long startNanos) {
