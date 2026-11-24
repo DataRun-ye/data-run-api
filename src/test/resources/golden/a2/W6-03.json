@@ -1,0 +1,37 @@
+{
+  "scenario" : "W6-03",
+  "steps" : [
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "admin deletes an unknown uid",
+      "request" : {
+        "as" : "admin",
+        "method" : "DELETE",
+        "path" : "/api/v1/dataSubmission/a2nosuchsub"
+      },
+      "response" : {
+        "body" : {
+          "detail" : "No value present",
+          "instance" : "/api/v1/dataSubmission/a2nosuchsub",
+          "message" : "error.http.500",
+          "path" : "/api/v1/dataSubmission/a2nosuchsub",
+          "status" : 500,
+          "title" : "Internal Server Error",
+          "type" : "https://datarun.nmcpye.org/problem/problem-with-message"
+        },
+        "headers" : {
+          "Content-Type" : "application/problem+json"
+        },
+        "status" : 500
+      },
+      "step" : 1
+    }
+  ],
+  "title" : "An admin delete of an unknown uid answers 500"
+}

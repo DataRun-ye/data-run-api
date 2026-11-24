@@ -1,0 +1,237 @@
+{
+  "scenario" : "W7-07",
+  "steps" : [
+    {
+      "form" : null,
+      "label" : "go-live rule campaign",
+      "liveFrom" : "2099-01-01T00:00:00Z",
+      "orgUnit" : null,
+      "step" : 1
+    },
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [
+          {
+            "form_uid" : null,
+            "live_from" : "2099-01-01T00:00:00Z",
+            "org_unit_uid" : null,
+            "uid" : "<rule campaign>"
+          }
+        ],
+        "held_submission" : [
+          {
+            "activity_uid" : "a2Activity1",
+            "assignment_uid" : "a2AssignT1a",
+            "decided_at" : null,
+            "decided_by" : null,
+            "form_uid" : "a2FormAAAA1",
+            "form_version_uid" : "<FORM_A.v1>",
+            "go_live_rule_uid" : "<rule campaign>",
+            "held_last_modified_date" : "<set>",
+            "last_release_error" : null,
+            "live_from" : "2099-01-01T00:00:00Z",
+            "note" : null,
+            "org_unit_path" : ",a2Country01,a2District1,a2Village01",
+            "org_unit_uid" : "a2Village01",
+            "payload" : {
+              "assignment" : "a2AssignT1a",
+              "deleted" : false,
+              "finishedEntryTime" : "2026-11-20T05:10:00Z",
+              "form" : "a2FormAAAA1",
+              "formData" : {
+                "main" : {
+                  "a2_name" : "first",
+                  "rows" : [
+                    {
+                      "_id" : "01HA2000000000000000000001",
+                      "_index" : 1,
+                      "_parentId" : "a2w707xxxxx",
+                      "_submissionUid" : "a2w707xxxxx",
+                      "a2_item" : "r1",
+                      "subrows" : [
+                        {
+                          "_id" : "01HA2000000000000000000002",
+                          "_index" : 1,
+                          "_parentId" : "01HA2000000000000000000001",
+                          "_submissionUid" : "a2w707xxxxx",
+                          "a2_sub" : "s1"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "formVersion" : "<FORM_A.v1>",
+              "startEntryTime" : "2026-11-20T05:00:00Z",
+              "uid" : "a2w707xxxxx"
+            },
+            "reason" : "BEFORE_GO_LIVE",
+            "received_at" : "<set>",
+            "started_at" : "2026-11-20T05:00:00Z",
+            "state" : "HELD",
+            "submitted_by" : "a2-field1",
+            "team_uid" : "a2TeamOne01",
+            "uid" : "a2w707xxxxx"
+          }
+        ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "held before go-live",
+      "request" : {
+        "as" : "a2-field1",
+        "body" : [
+          {
+            "assignment" : "a2AssignT1a",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormAAAA1",
+            "formData" : {
+              "main" : {
+                "a2_name" : "first",
+                "rows" : [
+                  {
+                    "_id" : "01HA2000000000000000000001",
+                    "_index" : 1,
+                    "_parentId" : "a2w707xxxxx",
+                    "_submissionUid" : "a2w707xxxxx",
+                    "a2_item" : "r1",
+                    "subrows" : [
+                      {
+                        "_id" : "01HA2000000000000000000002",
+                        "_index" : 1,
+                        "_parentId" : "01HA2000000000000000000001",
+                        "_submissionUid" : "a2w707xxxxx",
+                        "a2_sub" : "s1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_A.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w707xxxxx"
+          }
+        ],
+        "headers" : {
+          "X-App-Version" : "6.1.2+57"
+        },
+        "method" : "POST",
+        "path" : "/api/v1/dataSubmission/bulk?referenceVersion=1",
+        "phone" : "G3"
+      },
+      "response" : {
+        "body" : {
+          "created" : [
+            "a2w707xxxxx"
+          ],
+          "createdCount" : 1,
+          "failed" : { },
+          "failedCount" : 0,
+          "updated" : [ ],
+          "updatedCount" : 0
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 2
+    },
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [
+          {
+            "form_uid" : null,
+            "live_from" : "2099-01-01T00:00:00Z",
+            "org_unit_uid" : null,
+            "uid" : "<rule campaign>"
+          }
+        ],
+        "held_submission" : [
+          {
+            "activity_uid" : "a2Activity1",
+            "assignment_uid" : "a2AssignT1a",
+            "decided_at" : null,
+            "decided_by" : null,
+            "form_uid" : "a2FormAAAA1",
+            "form_version_uid" : "<FORM_A.v1>",
+            "go_live_rule_uid" : "<rule campaign>",
+            "held_last_modified_date" : "<set>",
+            "last_release_error" : null,
+            "live_from" : "2099-01-01T00:00:00Z",
+            "note" : null,
+            "org_unit_path" : ",a2Country01,a2District1,a2Village01",
+            "org_unit_uid" : "a2Village01",
+            "payload" : {
+              "assignment" : "a2AssignT1a",
+              "deleted" : false,
+              "finishedEntryTime" : "2026-11-20T05:10:00Z",
+              "form" : "a2FormAAAA1",
+              "formData" : {
+                "main" : {
+                  "a2_name" : "first",
+                  "rows" : [
+                    {
+                      "_id" : "01HA2000000000000000000001",
+                      "_index" : 1,
+                      "_parentId" : "a2w707xxxxx",
+                      "_submissionUid" : "a2w707xxxxx",
+                      "a2_item" : "r1",
+                      "subrows" : [
+                        {
+                          "_id" : "01HA2000000000000000000002",
+                          "_index" : 1,
+                          "_parentId" : "01HA2000000000000000000001",
+                          "_submissionUid" : "a2w707xxxxx",
+                          "a2_sub" : "s1"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "formVersion" : "<FORM_A.v1>",
+              "startEntryTime" : "2026-11-20T05:00:00Z",
+              "uid" : "a2w707xxxxx"
+            },
+            "reason" : "BEFORE_GO_LIVE",
+            "received_at" : "<set>",
+            "started_at" : "2026-11-20T05:00:00Z",
+            "state" : "HELD",
+            "submitted_by" : "a2-field1",
+            "team_uid" : "a2TeamOne01",
+            "uid" : "a2w707xxxxx"
+          }
+        ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "field1 releases",
+      "request" : {
+        "as" : "a2-field1",
+        "body" : {
+          "uids" : [
+            "a2w707xxxxx"
+          ]
+        },
+        "method" : "POST",
+        "path" : "/api/v1/admin/heldSubmissions/release"
+      },
+      "response" : {
+        "body" : null,
+        "headers" : {
+          "WWW-Authenticate" : "Bearer"
+        },
+        "status" : 403
+      },
+      "step" : 3
+    }
+  ],
+  "title" : "A field user's release is refused by the filter chain"
+}

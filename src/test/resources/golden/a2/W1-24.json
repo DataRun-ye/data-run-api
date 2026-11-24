@@ -1,0 +1,400 @@
+{
+  "scenario" : "W1-24",
+  "steps" : [
+    {
+      "db" : {
+        "data_submission" : [
+          {
+            "activity_uid" : "a2Activity1",
+            "assignment_uid" : "a2AssignT1a",
+            "created_by" : "a2-field1",
+            "created_date" : "<set>",
+            "deleted" : false,
+            "deleted_at" : null,
+            "finished_entry_time" : "2026-11-20T05:10:00Z",
+            "form_data" : {
+              "main" : {
+                "households" : [
+                  {
+                    "_id" : "01HA2000000000000000000100",
+                    "_index" : 1,
+                    "_parentId" : "a2w124axxxx",
+                    "_submissionUid" : "a2w124axxxx",
+                    "a2_house" : "a2HouseNew1"
+                  }
+                ]
+              }
+            },
+            "id" : "<ulid:1>",
+            "last_modified_by" : "a2-field1",
+            "last_modified_date" : "<set>",
+            "lock_version" : 0,
+            "org_unit_code" : "A2V1",
+            "org_unit_name" : "a2 village 1",
+            "org_unit_uid" : "a2Village01",
+            "serial_number" : "<serial:1>",
+            "start_entry_time" : "2026-11-20T05:00:00Z",
+            "status" : null,
+            "team_code" : "A2T1",
+            "team_uid" : "a2TeamOne01",
+            "template_uid" : "a2FormRefR1",
+            "template_version_no" : 1,
+            "template_version_uid" : "<FORM_R.v1>",
+            "uid" : "a2w124axxxx"
+          }
+        ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [
+          {
+            "attempt" : 0,
+            "created_at" : "<set>",
+            "event_type" : "SAVE",
+            "last_error" : null,
+            "payload" : {
+              "main" : {
+                "households" : [
+                  {
+                    "_id" : "01HA2000000000000000000100",
+                    "_index" : 1,
+                    "_parentId" : "a2w124axxxx",
+                    "_submissionUid" : "a2w124axxxx",
+                    "a2_house" : "a2HouseNew1"
+                  }
+                ]
+              }
+            },
+            "status" : "pending",
+            "submission_id" : "<ulid:1>",
+            "submission_serial_number" : "<serial:1>",
+            "submission_uid" : "a2w124axxxx",
+            "topic" : "<FORM_R.v1>"
+          }
+        ],
+        "reference_entry" : [
+          {
+            "created_by" : "a2-field1",
+            "display_name" : "Alpha Bravo Charlie Delta",
+            "first_registered_activity_uid" : "a2Activity1",
+            "org_unit_uid" : "a2Village01",
+            "uid" : "a2HouseNew1"
+          }
+        ]
+      },
+      "label" : "what a G3 phone can send",
+      "request" : {
+        "as" : "a2-field1",
+        "body" : [
+          {
+            "assignment" : "a2AssignT1a",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormRefR1",
+            "formData" : {
+              "main" : {
+                "households" : [
+                  {
+                    "_id" : "01HA2000000000000000000100",
+                    "_index" : 1,
+                    "_parentId" : "a2w124axxxx",
+                    "_submissionUid" : "a2w124axxxx",
+                    "a2_house" : "a2HouseNew1"
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_R.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "referenceDefinitions" : [
+              {
+                "name" : "Alpha Bravo Charlie Delta",
+                "uid" : "a2HouseNew1"
+              }
+            ],
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w124axxxx"
+          },
+          {
+            "assignment" : "a2AssignT1a",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormRefR1",
+            "formData" : {
+              "main" : {
+                "households" : [
+                  {
+                    "_id" : "01HA2000000000000000000100",
+                    "_index" : 1,
+                    "_parentId" : "a2w124bxxxx",
+                    "_submissionUid" : "a2w124bxxxx",
+                    "a2_house" : "a2HouseV2aa"
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_R.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w124bxxxx"
+          },
+          {
+            "assignment" : "a2AssignT1a",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormRefR1",
+            "formData" : {
+              "main" : {
+                "households" : [
+                  {
+                    "_id" : "01HA2000000000000000000100",
+                    "_index" : 1,
+                    "_parentId" : "a2w124cxxxx",
+                    "_submissionUid" : "a2w124cxxxx",
+                    "a2_house" : "a2HouseUnkn"
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_R.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w124cxxxx"
+          },
+          {
+            "assignment" : "a2AssignT1a",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormRefR1",
+            "formData" : {
+              "main" : {
+                "households" : [
+                  {
+                    "_id" : "01HA2000000000000000000100",
+                    "_index" : 1,
+                    "_parentId" : "a2w124dxxxx",
+                    "_submissionUid" : "a2w124dxxxx",
+                    "a2_house" : "a2HouseV1aa"
+                  },
+                  {
+                    "_id" : "01HA2000000000000000000101",
+                    "_index" : 2,
+                    "_parentId" : "a2w124dxxxx",
+                    "_submissionUid" : "a2w124dxxxx",
+                    "a2_house" : "a2HouseV1aa"
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_R.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "referenceDefinitions" : [
+              {
+                "name" : "House One",
+                "uid" : "a2HouseV1aa"
+              }
+            ],
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w124dxxxx"
+          }
+        ],
+        "headers" : {
+          "X-App-Version" : "6.1.2+57"
+        },
+        "method" : "POST",
+        "path" : "/api/v1/dataSubmission/bulk?referenceVersion=1",
+        "phone" : "G3"
+      },
+      "response" : {
+        "body" : {
+          "created" : [
+            "a2w124axxxx"
+          ],
+          "createdCount" : 1,
+          "failed" : {
+            "a2w124bxxxx" : "E4119: Reference `a2HouseV2aa` is not available in the assignment organization unit",
+            "a2w124cxxxx" : "E4120: Unknown Reference `a2HouseUnkn` requires a valid definition",
+            "a2w124dxxxx" : "E4118: Submission `a2w124dxxxx` repeats Reference `a2HouseV1aa` at `main.households.a2DeHouse01`"
+          },
+          "failedCount" : 3,
+          "updated" : [ ],
+          "updatedCount" : 0
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 1
+    },
+    {
+      "db" : {
+        "data_submission" : [
+          {
+            "activity_uid" : "a2Activity1",
+            "assignment_uid" : "a2AssignT1a",
+            "created_by" : "a2-field1",
+            "created_date" : "<set>",
+            "deleted" : false,
+            "deleted_at" : null,
+            "finished_entry_time" : "2026-11-20T05:10:00Z",
+            "form_data" : {
+              "main" : {
+                "households" : [
+                  {
+                    "_id" : "01HA2000000000000000000100",
+                    "_index" : 1,
+                    "_parentId" : "a2w124axxxx",
+                    "_submissionUid" : "a2w124axxxx",
+                    "a2_house" : "a2HouseNew1"
+                  }
+                ]
+              }
+            },
+            "id" : "<ulid:1>",
+            "last_modified_by" : "a2-field1",
+            "last_modified_date" : "<set>",
+            "lock_version" : 0,
+            "org_unit_code" : "A2V1",
+            "org_unit_name" : "a2 village 1",
+            "org_unit_uid" : "a2Village01",
+            "serial_number" : "<serial:1>",
+            "start_entry_time" : "2026-11-20T05:00:00Z",
+            "status" : null,
+            "team_code" : "A2T1",
+            "team_uid" : "a2TeamOne01",
+            "template_uid" : "a2FormRefR1",
+            "template_version_no" : 1,
+            "template_version_uid" : "<FORM_R.v1>",
+            "uid" : "a2w124axxxx"
+          }
+        ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [
+          {
+            "attempt" : 0,
+            "created_at" : "<set>",
+            "event_type" : "SAVE",
+            "last_error" : null,
+            "payload" : {
+              "main" : {
+                "households" : [
+                  {
+                    "_id" : "01HA2000000000000000000100",
+                    "_index" : 1,
+                    "_parentId" : "a2w124axxxx",
+                    "_submissionUid" : "a2w124axxxx",
+                    "a2_house" : "a2HouseNew1"
+                  }
+                ]
+              }
+            },
+            "status" : "pending",
+            "submission_id" : "<ulid:1>",
+            "submission_serial_number" : "<serial:1>",
+            "submission_uid" : "a2w124axxxx",
+            "topic" : "<FORM_R.v1>"
+          }
+        ],
+        "reference_entry" : [
+          {
+            "created_by" : "a2-field1",
+            "display_name" : "Alpha Bravo Charlie Delta",
+            "first_registered_activity_uid" : "a2Activity1",
+            "org_unit_uid" : "a2Village01",
+            "uid" : "a2HouseNew1"
+          }
+        ]
+      },
+      "label" : "what only an API caller can send",
+      "request" : {
+        "as" : "a2-field1",
+        "body" : [
+          {
+            "assignment" : "a2AssignT1a",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormRefR1",
+            "formData" : {
+              "main" : {
+                "households" : [
+                  {
+                    "_id" : "01HA2000000000000000000100",
+                    "_index" : 1,
+                    "_parentId" : "a2w124exxxx",
+                    "_submissionUid" : "a2w124exxxx",
+                    "a2_house" : "bad-uid"
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_R.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w124exxxx"
+          },
+          {
+            "assignment" : "a2AssignT1a",
+            "deleted" : false,
+            "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+            "form" : "a2FormRefR1",
+            "formData" : {
+              "main" : {
+                "households" : [
+                  {
+                    "_id" : "01HA2000000000000000000100",
+                    "_index" : 1,
+                    "_parentId" : "a2w124fxxxx",
+                    "_submissionUid" : "a2w124fxxxx",
+                    "a2_house" : "a2HouseV1aa"
+                  }
+                ]
+              }
+            },
+            "formVersion" : "<FORM_R.v1>",
+            "lastSyncDate" : null,
+            "lastSyncMassage" : null,
+            "referenceDefinitions" : [
+              {
+                "name" : "House One",
+                "uid" : "a2HouseV1aa"
+              },
+              {
+                "name" : "Unused House",
+                "uid" : "a2HouseUnus"
+              }
+            ],
+            "startEntryTime" : "2026-11-20T05:00:00.000Z",
+            "uid" : "a2w124fxxxx"
+          }
+        ],
+        "method" : "POST",
+        "path" : "/api/v1/dataSubmission/bulk?referenceVersion=1"
+      },
+      "response" : {
+        "body" : {
+          "created" : [ ],
+          "createdCount" : 0,
+          "failed" : {
+            "a2w124exxxx" : "E4117: Submission `a2w124exxxx` contains an invalid Reference value at `main.households.a2DeHouse01`",
+            "a2w124fxxxx" : "E4121: Submission `a2w124fxxxx` includes unused Reference definition `a2HouseUnus`"
+          },
+          "failedCount" : 2,
+          "updated" : [ ],
+          "updatedCount" : 0
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 2
+    }
+  ],
+  "title" : "Reference values: a new entry, and the refusals E4119, E4120, E4118, E4117, E4121"
+}

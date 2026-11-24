@@ -1,0 +1,42 @@
+{
+  "scenario" : "R2",
+  "steps" : [
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "field1 reads village 2's catalog",
+      "request" : {
+        "as" : "a2-field1",
+        "method" : "GET",
+        "path" : "/api/v1/assignments/a2AssignT1b/referenceEntries?page=0&size=500"
+      },
+      "response" : {
+        "body" : {
+          "page" : 0,
+          "paged" : true,
+          "referenceEntries" : [
+            {
+              "name" : "House Two",
+              "orgUnitUid" : "a2Village02",
+              "uid" : "a2HouseV2aa"
+            }
+          ],
+          "size" : 500,
+          "totalElements" : 1,
+          "totalPages" : 1
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 1
+    }
+  ],
+  "title" : "GET assignments/{uid}/referenceEntries: the envelope and entry keys G2 and G3 parse"
+}

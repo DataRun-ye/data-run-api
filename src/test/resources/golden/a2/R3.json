@@ -1,0 +1,202 @@
+{
+  "scenario" : "R3",
+  "steps" : [
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "as G2 and G3 ask",
+      "request" : {
+        "as" : "a2-field1",
+        "method" : "GET",
+        "path" : "/api/v1/assignments/forms?paged=false&referenceVersion=1"
+      },
+      "response" : {
+        "body" : {
+          "assignments" : [
+            {
+              "accessibleForms" : [
+                {
+                  "assignment" : "a2AssignPag",
+                  "canAddSubmissions" : true,
+                  "canDeleteSubmissions" : false,
+                  "canEditSubmissions" : false,
+                  "form" : "a2FormRefR1"
+                }
+              ],
+              "activity" : "a2Activity1",
+              "id" : "a2AssignPag",
+              "orgUnit" : "a2Village04",
+              "progressStatus" : "PLANNED",
+              "team" : "a2TeamOne01"
+            },
+            {
+              "accessibleForms" : [
+                {
+                  "assignment" : "a2AssignRen",
+                  "canAddSubmissions" : true,
+                  "canDeleteSubmissions" : false,
+                  "canEditSubmissions" : false,
+                  "form" : "a2FormAAAA1"
+                }
+              ],
+              "activity" : "a2Activity1",
+              "id" : "a2AssignRen",
+              "orgUnit" : "a2Village05",
+              "progressStatus" : "PLANNED",
+              "team" : "a2TeamOne01"
+            },
+            {
+              "accessibleForms" : [
+                {
+                  "assignment" : "a2AssignT1a",
+                  "canAddSubmissions" : true,
+                  "canDeleteSubmissions" : false,
+                  "canEditSubmissions" : false,
+                  "form" : "a2FormAAAA1"
+                },
+                {
+                  "assignment" : "a2AssignT1a",
+                  "canAddSubmissions" : true,
+                  "canDeleteSubmissions" : false,
+                  "canEditSubmissions" : false,
+                  "form" : "a2FormRefR1"
+                }
+              ],
+              "activity" : "a2Activity1",
+              "id" : "a2AssignT1a",
+              "orgUnit" : "a2Village01",
+              "progressStatus" : "PLANNED",
+              "team" : "a2TeamOne01"
+            },
+            {
+              "accessibleForms" : [
+                {
+                  "assignment" : "a2AssignT1b",
+                  "canAddSubmissions" : true,
+                  "canDeleteSubmissions" : false,
+                  "canEditSubmissions" : false,
+                  "form" : "a2FormAAAA1"
+                },
+                {
+                  "assignment" : "a2AssignT1b",
+                  "canAddSubmissions" : true,
+                  "canDeleteSubmissions" : false,
+                  "canEditSubmissions" : false,
+                  "form" : "a2FormRefR1"
+                }
+              ],
+              "activity" : "a2Activity1",
+              "id" : "a2AssignT1b",
+              "orgUnit" : "a2Village02",
+              "progressStatus" : "PLANNED",
+              "team" : "a2TeamOne01"
+            }
+          ],
+          "page" : 0,
+          "paged" : false,
+          "size" : 4,
+          "totalElements" : 4,
+          "totalPages" : 1
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 1
+    },
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "as G0 and G1 ask",
+      "request" : {
+        "as" : "a2-field1",
+        "method" : "GET",
+        "path" : "/api/v1/assignments/forms?paged=false"
+      },
+      "response" : {
+        "body" : {
+          "assignments" : [
+            {
+              "accessibleForms" : [ ],
+              "activity" : "a2Activity1",
+              "id" : "a2AssignPag",
+              "orgUnit" : "a2Village04",
+              "progressStatus" : "PLANNED",
+              "team" : "a2TeamOne01"
+            },
+            {
+              "accessibleForms" : [
+                {
+                  "assignment" : "a2AssignRen",
+                  "canAddSubmissions" : true,
+                  "canDeleteSubmissions" : false,
+                  "canEditSubmissions" : false,
+                  "form" : "a2FormAAAA1"
+                }
+              ],
+              "activity" : "a2Activity1",
+              "id" : "a2AssignRen",
+              "orgUnit" : "a2Village05",
+              "progressStatus" : "PLANNED",
+              "team" : "a2TeamOne01"
+            },
+            {
+              "accessibleForms" : [
+                {
+                  "assignment" : "a2AssignT1a",
+                  "canAddSubmissions" : true,
+                  "canDeleteSubmissions" : false,
+                  "canEditSubmissions" : false,
+                  "form" : "a2FormAAAA1"
+                }
+              ],
+              "activity" : "a2Activity1",
+              "id" : "a2AssignT1a",
+              "orgUnit" : "a2Village01",
+              "progressStatus" : "PLANNED",
+              "team" : "a2TeamOne01"
+            },
+            {
+              "accessibleForms" : [
+                {
+                  "assignment" : "a2AssignT1b",
+                  "canAddSubmissions" : true,
+                  "canDeleteSubmissions" : false,
+                  "canEditSubmissions" : false,
+                  "form" : "a2FormAAAA1"
+                }
+              ],
+              "activity" : "a2Activity1",
+              "id" : "a2AssignT1b",
+              "orgUnit" : "a2Village02",
+              "progressStatus" : "PLANNED",
+              "team" : "a2TeamOne01"
+            }
+          ],
+          "page" : 0,
+          "paged" : false,
+          "size" : 4,
+          "totalElements" : 4,
+          "totalPages" : 1
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 2
+    }
+  ],
+  "title" : "GET assignments/forms: accessibleForms flags; Reference forms only with referenceVersion=1"
+}

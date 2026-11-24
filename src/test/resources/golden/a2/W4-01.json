@@ -1,0 +1,150 @@
+{
+  "scenario" : "W4-01",
+  "steps" : [
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "admin",
+      "request" : {
+        "as" : "admin",
+        "body" : {
+          "assignment" : "a2AssignT1a",
+          "deleted" : false,
+          "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+          "form" : "a2FormAAAA1",
+          "formData" : {
+            "main" : {
+              "a2_name" : "a",
+              "rows" : [
+                {
+                  "_id" : "01HA2000000000000000000001",
+                  "_index" : 1,
+                  "_parentId" : "a2w401axxxx",
+                  "_submissionUid" : "a2w401axxxx",
+                  "a2_item" : "r1",
+                  "subrows" : [
+                    {
+                      "_id" : "01HA2000000000000000000002",
+                      "_index" : 1,
+                      "_parentId" : "01HA2000000000000000000001",
+                      "_submissionUid" : "a2w401axxxx",
+                      "a2_sub" : "s1"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "formVersion" : "<FORM_A.v1>",
+          "id" : "01HA2000000000000000000099",
+          "lockVersion" : 0,
+          "startEntryTime" : "2026-11-20T05:00:00.000Z",
+          "uid" : "a2w401axxxx"
+        },
+        "method" : "POST",
+        "path" : "/api/v1/dataSubmission"
+      },
+      "response" : {
+        "body" : {
+          "detail" : "Validation failed for argument [0] in public org.springframework.http.ResponseEntity<org.nmcpye.datarun.common.EntitySaveSummaryVM> org.nmcpye.datarun.web.rest.common.BaseReadWriteResource.saveOne(T): [Field error in object 'dataSubmission' on field 'id': rejected value [null]; codes [NotNull.dataSubmission.id,NotNull.id,NotNull.java.lang.String,NotNull]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [dataSubmission.id,id]; arguments []; default message [id]]; default message [must not be null]] ",
+          "fieldErrors" : [
+            {
+              "field" : "id",
+              "message" : "must not be null",
+              "objectName" : "dataSubmission"
+            }
+          ],
+          "instance" : "/api/v1/dataSubmission",
+          "message" : "error.validation",
+          "path" : "/api/v1/dataSubmission",
+          "status" : 400,
+          "title" : "Method argument not valid",
+          "type" : "https://datarun.nmcpye.org/problem/constraint-violation"
+        },
+        "headers" : {
+          "Content-Type" : "application/problem+json"
+        },
+        "status" : 400
+      },
+      "step" : 1
+    },
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "field user",
+      "request" : {
+        "as" : "a2-field1",
+        "body" : {
+          "assignment" : "a2AssignT1a",
+          "deleted" : false,
+          "finishedEntryTime" : "2026-11-20T05:10:00.000Z",
+          "form" : "a2FormAAAA1",
+          "formData" : {
+            "main" : {
+              "a2_name" : "b",
+              "rows" : [
+                {
+                  "_id" : "01HA2000000000000000000001",
+                  "_index" : 1,
+                  "_parentId" : "a2w401bxxxx",
+                  "_submissionUid" : "a2w401bxxxx",
+                  "a2_item" : "r1",
+                  "subrows" : [
+                    {
+                      "_id" : "01HA2000000000000000000002",
+                      "_index" : 1,
+                      "_parentId" : "01HA2000000000000000000001",
+                      "_submissionUid" : "a2w401bxxxx",
+                      "a2_sub" : "s1"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "formVersion" : "<FORM_A.v1>",
+          "id" : "01HA2000000000000000000099",
+          "lockVersion" : 0,
+          "startEntryTime" : "2026-11-20T05:00:00.000Z",
+          "uid" : "a2w401bxxxx"
+        },
+        "method" : "POST",
+        "path" : "/api/v1/dataSubmission"
+      },
+      "response" : {
+        "body" : {
+          "detail" : "Validation failed for argument [0] in public org.springframework.http.ResponseEntity<org.nmcpye.datarun.common.EntitySaveSummaryVM> org.nmcpye.datarun.web.rest.common.BaseReadWriteResource.saveOne(T): [Field error in object 'dataSubmission' on field 'id': rejected value [null]; codes [NotNull.dataSubmission.id,NotNull.id,NotNull.java.lang.String,NotNull]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [dataSubmission.id,id]; arguments []; default message [id]]; default message [must not be null]] ",
+          "fieldErrors" : [
+            {
+              "field" : "id",
+              "message" : "must not be null",
+              "objectName" : "dataSubmission"
+            }
+          ],
+          "instance" : "/api/v1/dataSubmission",
+          "message" : "error.validation",
+          "path" : "/api/v1/dataSubmission",
+          "status" : 400,
+          "title" : "Method argument not valid",
+          "type" : "https://datarun.nmcpye.org/problem/constraint-violation"
+        },
+        "headers" : {
+          "Content-Type" : "application/problem+json"
+        },
+        "status" : 400
+      },
+      "step" : 2
+    }
+  ],
+  "title" : "POST /dataSubmission answers 400 to an admin and to a field user"
+}
