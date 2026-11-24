@@ -267,7 +267,7 @@ class SubmissionUploadsTest {
         verify(transactionStatus, never()).setRollbackOnly();
         verify(transactionManager).commit(transactionStatus);
         verify(heldSubmissions, never()).hold(any(), any(), any(), any(), any());
-        assertEquals(new SubmissionUploads.Released(null, true), result);
+        assertEquals(new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.RELEASED, null), result);
     }
 
     /** The release race (A2 S4): a decision that no longer applies takes the release's save back with it. */
@@ -280,7 +280,32 @@ class SubmissionUploadsTest {
         verify(submissionService).upsertAll(submissionsWithUids("firstSub01"), any(EntitySaveSummaryVM.class));
         verify(transactionStatus).setRollbackOnly();
         verify(heldSubmissions, never()).hold(any(), any(), any(), any(), any());
-        assertEquals(new SubmissionUploads.Released(null, false), result);
+        assertEquals(new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.CHANGED, null), result);
+    }
+
+    /**
+     * A live upload created the uid after the release last looked: the replay's save found it, so the save is rolled
+     * back and the held copy is superseded instead of overwriting real data (A2 S6).
+     */
+    @Test
+    void aReleaseOfAUidThatBecameRealDataMeanwhileOverwritesNothing() {
+        DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
+        doAnswer(invocation -> {
+            List<DataSubmission> saved = invocation.getArgument(0);
+            EntitySaveSummaryVM summary = invocation.getArgument(1);
+            saved.forEach(submission -> summary.getUpdated().add(submission.getUid()));
+            return saved;
+        }).when(submissionService).upsertAll(anyList(), any(EntitySaveSummaryVM.class));
+        java.util.concurrent.atomic.AtomicBoolean asked = new java.util.concurrent.atomic.AtomicBoolean();
+
+        SubmissionUploads.Released result = service.saveReleased(request, SubmissionActor.of(user), () -> {
+            asked.set(true);
+            return true;
+        });
+
+        verify(transactionStatus).setRollbackOnly();
+        assertEquals(new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.SUPERSEDED, null), result);
+        assertEquals(false, asked.get(), "no release decision for a superseded copy");
     }
 
     @Test
@@ -296,7 +321,7 @@ class SubmissionUploadsTest {
         });
 
         assertTrue(result.failure().startsWith("E4114: "));
-        assertEquals(false, result.decided());
+        assertEquals(SubmissionUploads.ReleaseOutcome.FAILED, result.outcome());
         assertEquals(false, asked.get(), "no decision is recorded for a refused release");
     }
 

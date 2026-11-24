@@ -61,7 +61,9 @@ public class HeldSubmissionDecisions {
      *
      * <p>Each upload's data and the decision that released it commit together: when the held upload changed after
      * it was read (a phone sent it again), nothing is saved and it is reported as changed, so the next release
-     * applies the newer copy.</p>
+     * applies the newer copy. Its uid is checked against the real data before the replay and again by the replay's
+     * own save, in the same transaction as the decision: a live upload that landed in between makes the held copy
+     * superseded instead of overwriting it.</p>
      */
     public HeldDecisionResult release(SubmissionActor admin, HeldDecisionRequest request) {
         Selection selection = select(request, UNDECIDED_OR_DISCARDED, UNDECIDED, true);
@@ -73,7 +75,7 @@ public class HeldSubmissionDecisions {
             }
             String failure;
             String failureShape;
-            boolean decided = false;
+            SubmissionUploads.ReleaseOutcome outcome = SubmissionUploads.ReleaseOutcome.FAILED;
             try {
                 DataSubmissionUploadV1Dto upload =
                     objectMapper.treeToValue(row.payload(), DataSubmissionUploadV1Dto.class);
@@ -81,15 +83,18 @@ public class HeldSubmissionDecisions {
                     submitter -> uploads.saveReleased(upload, submitter, () -> held.markDecided(row.uid(),
                         HeldState.RELEASED, UNDECIDED_OR_DISCARDED, row.lastModifiedDate(), admin.login(),
                         request.note())));
+                outcome = released.outcome();
                 failure = released.failure();
-                decided = released.decided();
                 failureShape = failure == null ? null : SubmissionLog.refusal(failure);
             } catch (Exception e) {
                 failure = "Cannot release as " + row.submittedBy() + ": " + e.getMessage();
                 failureShape = SubmissionLog.failure(e);
             }
-            if (failure == null) {
-                (decided ? result.released() : result.changed()).add(row.uid());
+            if (outcome == SubmissionUploads.ReleaseOutcome.SUPERSEDED) {
+                record(result, row, HeldState.SUPERSEDED, admin, request.note(), result.superseded());
+            } else if (failure == null) {
+                (outcome == SubmissionUploads.ReleaseOutcome.RELEASED ? result.released() : result.changed())
+                    .add(row.uid());
             } else {
                 // The admin and the API keep the full text; the log keeps identifiers and shapes (SubmissionLog).
                 held.recordReleaseError(row.uid(), failure);

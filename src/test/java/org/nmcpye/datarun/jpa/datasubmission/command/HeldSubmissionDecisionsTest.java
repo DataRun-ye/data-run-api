@@ -141,12 +141,29 @@ class HeldSubmissionDecisionsTest {
         verify(held, never()).recordReleaseError(anyString(), anyString());
     }
 
+    /** The replay found the uid already in the real data: the held copy is superseded, in the admin's name. */
+    @Test
+    void aReleaseWhoseUidBecameRealDataDuringTheReplayIsSuperseded() {
+        when(held.findWithPayload(List.of("heldSub0001"), HELD_OR_DISCARDED))
+            .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
+        when(uploads.saveReleased(any(), any(), any()))
+            .thenReturn(new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.SUPERSEDED, null));
+
+        HeldDecisionResult result = decisions.release(admin,
+            new HeldDecisionRequest(List.of("heldSub0001"), null, "real work started", null));
+
+        assertThat(result.superseded()).containsExactly("heldSub0001");
+        assertThat(result.released()).isEmpty();
+        verify(held).markDecided("heldSub0001", HeldState.SUPERSEDED, HELD_OR_DISCARDED, SEEN, "admin",
+            "real work started");
+    }
+
     @Test
     void aRefusedReleaseKeepsTheUploadAndRecordsWhy() {
         when(held.findWithPayload(List.of("heldSub0001"), HELD_OR_DISCARDED))
             .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
-        when(uploads.saveReleased(any(), any(), any()))
-            .thenReturn(new SubmissionUploads.Released("E4114: not in the team", false));
+        when(uploads.saveReleased(any(), any(), any())).thenReturn(
+            new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.FAILED, "E4114: not in the team"));
 
         HeldDecisionResult result =
             decisions.release(admin, new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
@@ -181,7 +198,8 @@ class HeldSubmissionDecisionsTest {
         when(users.loadUserByUsername("gone-user"))
             .thenThrow(new UsernameNotFoundException("User gone-user was not found in the database"));
         when(uploads.saveReleased(any(), any(), any())).thenReturn(new SubmissionUploads.Released(
-            "E4122: You may not submit form `household1` for assignment `assignment1`", false));
+            SubmissionUploads.ReleaseOutcome.FAILED,
+            "E4122: You may not submit form `household1` for assignment `assignment1`"));
 
         try (LogCapture logs = new LogCapture(HeldSubmissionDecisions.class)) {
             HeldDecisionResult result = decisions.release(admin,
@@ -279,7 +297,8 @@ class HeldSubmissionDecisionsTest {
 
     /** A release the checks accept: the decision it is given runs, as inside the release's transaction. */
     private static SubmissionUploads.Released saved(org.mockito.invocation.InvocationOnMock invocation) {
-        return new SubmissionUploads.Released(null, invocation.<BooleanSupplier>getArgument(2).getAsBoolean());
+        return new SubmissionUploads.Released(invocation.<BooleanSupplier>getArgument(2).getAsBoolean()
+            ? SubmissionUploads.ReleaseOutcome.RELEASED : SubmissionUploads.ReleaseOutcome.CHANGED, null);
     }
 
     private HeldSubmissionRow row(String uid, HoldReason reason) {

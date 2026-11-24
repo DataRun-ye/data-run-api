@@ -26,7 +26,9 @@ import org.nmcpye.datarun.jpa.intake.IntakeDecision;
 import org.nmcpye.datarun.jpa.intake.IntakeMode;
 import org.nmcpye.datarun.jpa.intake.SubmissionIntake;
 import org.nmcpye.datarun.jpa.reference.ReferenceSubmissionResolver;
+import org.nmcpye.datarun.jpa.user.repository.UserRepository;
 import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.security.CurrentUserDetailsService;
 import org.nmcpye.datarun.security.DomainUserDetailsService;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.mapper.DataSubmissionUploadV1Mapper;
@@ -39,6 +41,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import static org.nmcpye.datarun.characterization.a2.A2PhoneContract.referenceCatalogPage;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.Group.G3;
@@ -100,6 +103,12 @@ class A2SequencesTier2IT extends A2GoldenSupport {
 
     @Autowired
     private StoredSubmissionGuard storedSubmissionGuard;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CurrentUserDetailsService currentUserDetailsService;
 
     private static Item formA(String uid, String name) {
         return item(G3, uid, FORM_A, version("FORM_A.v1"), ASSIGN_T1_V1, ordinary(G3, uid, name, "r1", "s1", 1));
@@ -202,6 +211,40 @@ class A2SequencesTier2IT extends A2GoldenSupport {
             .action("the phone re-sends a changed copy (service call; its hold comes after the release)", () -> {
                 asUser(FIELD_1);
                 return hookedUploads.save(List.of(dto(formA(uid, "changed"))), field1, IntakeMode.LIVE);
+            })
+            .verify();
+    }
+
+    /**
+     * Fixed in B1: a live upload of a held uid that landed after the release checked the uid and before its replay
+     * saved the held copy was overwritten by that older copy. Now the replay's save sees the uid is real data, the
+     * replay is rolled back and the held copy is superseded.
+     */
+    @Test
+    void s6_liveUploadLandsBetweenTheReleaseCheckAndTheReplay() {
+        String uid = uid("s6");
+        Scenario scenario = scenario("S6", "A live re-send lands after the release checked the uid and before the "
+            + "replay: the held copy is superseded and the newer data stays");
+        DomainUserDetailsService lookupHooked = new DomainUserDetailsService(userRepository, currentUserDetailsService) {
+            @Override
+            public UserDetails loadUserByUsername(String login) {
+                scenario.upload("meanwhile the phone re-sends a changed copy, saved: no go-live rule now", G3, FIELD_1,
+                    formA(uid, "changed"));
+                return users.loadUserByUsername(login);
+            }
+        };
+        HeldSubmissionDecisions decisions =
+            new HeldSubmissionDecisions(held, goLiveRuleService, submissions, uploads, lookupHooked, objectMapper);
+
+        scenario
+            .goLive("campaign", null, null, FUTURE)
+            .upload("held before go-live", G3, FIELD_1, formA(uid, "first"))
+            .sql("the go-live rule is removed", "DELETE FROM go_live_rule WHERE activity_uid = :activity",
+                Map.of("activity", A2Seed.ACTIVITY))
+            .action("admin releases it (service call; the submitter's lookup is hooked)", () -> {
+                asAdmin();
+                return decisions.release(SubmissionActor.current(),
+                    new HeldDecisionRequest(List.of(uid), null, null, null));
             })
             .verify();
     }

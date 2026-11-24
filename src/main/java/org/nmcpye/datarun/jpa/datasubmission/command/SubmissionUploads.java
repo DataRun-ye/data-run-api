@@ -37,7 +37,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
@@ -106,13 +106,24 @@ public class SubmissionUploads {
             objectMapper::valueToTree);
     }
 
+    /** What became of a released upload; see {@link #saveReleased}. */
+    public enum ReleaseOutcome {
+        /** Saved, together with the decision that released it. */
+        RELEASED,
+        /** The held upload changed after the release read it; nothing was saved. */
+        CHANGED,
+        /** Its uid was already real data when the replay saved it; nothing was saved. */
+        SUPERSEDED,
+        /** The checks refused it, or the save failed; see the failure. */
+        FAILED
+    }
+
     /**
      * A released upload's outcome.
      *
-     * @param failure the per-row text when the checks refused the upload, else null
-     * @param decided whether the decision that released it applied; when it did not, nothing was saved
+     * @param failure the per-row text when the outcome is {@link ReleaseOutcome#FAILED}, else null
      */
-    public record Released(String failure, boolean decided) {
+    public record Released(ReleaseOutcome outcome, String failure) {
     }
 
     /**
@@ -120,12 +131,16 @@ public class SubmissionUploads {
      * records the release in the same transaction: {@code decide} runs after the save and returns false when the
      * held upload changed since the release read it (a re-send refreshed it, or another decision came first). Then
      * the save is rolled back, so the data a release saves is always the copy its decision released.
+     *
+     * <p>A released copy only ever creates its submission. When the save finds the uid already in the real data (a
+     * live upload landed after the release last looked), it is rolled back and the outcome is
+     * {@link ReleaseOutcome#SUPERSEDED}: the older held copy never overwrites real data.</p>
      */
     public Released saveReleased(
         DataSubmissionUploadV1Dto upload,
         SubmissionActor submitter,
         BooleanSupplier decide) {
-        AtomicBoolean decided = new AtomicBoolean();
+        AtomicReference<ReleaseOutcome> outcome = new AtomicReference<>(ReleaseOutcome.FAILED);
         Instant receivedAt = Instant.now();
         EntitySaveSummaryVM summary = saveEach(
             List.of(upload),
@@ -135,16 +150,20 @@ public class SubmissionUploads {
             (request, itemSummary, transaction) -> {
                 IntakeDecision decision = upsertOne(
                     request, submitter, itemSummary, IntakeMode.RELEASE, receivedAt);
-                if (decide.getAsBoolean()) {
-                    decided.set(true);
+                if (!itemSummary.getCreated().contains(request.getUid())) {
+                    transaction.setRollbackOnly();
+                    outcome.set(ReleaseOutcome.SUPERSEDED);
+                } else if (decide.getAsBoolean()) {
+                    outcome.set(ReleaseOutcome.RELEASED);
                 } else {
                     transaction.setRollbackOnly();
+                    outcome.set(ReleaseOutcome.CHANGED);
                 }
                 return decision;
             },
             objectMapper::valueToTree);
         String failure = summary.getFailed().values().stream().findFirst().orElse(null);
-        return new Released(failure, failure == null && decided.get());
+        return failure != null ? new Released(ReleaseOutcome.FAILED, failure) : new Released(outcome.get(), null);
     }
 
     /**
