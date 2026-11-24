@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!--
+      Records, at every start, what a rolled-back release left unrecorded. Server 6.5.4 writes no revisions: if
+      production runs it again after step C, its uploads raise lock_version without a revision and its new
+      submissions have none. On the next start of a release with the journal, this writes one explicit gap revision
+      for each such submission: kind BASELINE, command GAP_REPAIR, actor MIGRATION, at the current lock_version,
+      with previous_version naming the head it jumps from (NULL for a submission created in the window). The
+      versions in between are recorded as unknown, never as silent.
+
+      It skips a submission that has a revision at or above its lock_version. One whose head is above it cannot
+      happen through the application; the reconciliation check reports it, and so a start never fails on it. A
+      write that changed a row without raising its version (hand-written SQL) is not a gap this can record; the
+      reconciliation check reports that too.
+
+      Cost: one index probe per submission; with no gap it writes nothing (see the rehearsal numbers in
+      docs/agent-context/active-production-interface.md). runAlways: Liquibase runs it on every update, in its place
+      after the journal's other changesets.
+
+      Rollback: nothing to undo; the gap revisions stay with the journal.
+    -->
+    <changeSet id="20261124-c08-submission-revision-gap-repair" author="datarun" runAlways="true">
+        <sql>
+            INSERT INTO submission_revision (submission_id, version, previous_version, kind, command, actor_system,
+                                             form_data, metadata)
+            SELECT s.id, s.lock_version,
+                   (SELECT max(h.version) FROM submission_revision h WHERE h.submission_id = s.id),
+                   'BASELINE', 'GAP_REPAIR', 'MIGRATION', s.form_data, submission_revision_metadata(s)
+            FROM data_submission s
+            WHERE NOT EXISTS (SELECT 1 FROM submission_revision r
+                              WHERE r.submission_id = s.id AND r.version >= s.lock_version)
+        </sql>
+        <rollback/>
+    </changeSet>
+</databaseChangeLog>

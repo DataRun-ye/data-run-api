@@ -46,6 +46,17 @@ class SubmissionRevisionMigrationIT {
     private static JdbcTemplate db;
     private static NamedParameterJdbcTemplate named;
 
+    /** Submissions stored before step C, the way 6.5.4 leaves them. */
+    private static String live;
+    private static String changedThrice;
+    private static String deleted;
+    private static String neverSent;
+    private static String withoutData;
+    private static List<String> seeded;
+    private static long outboxBeforeStepC;
+    private static long outboxAfterStepC;
+    private static long revisionsAfterStepC;
+
     @BeforeAll
     static void migrateThroughStepC() throws Exception {
         PG.start();
@@ -56,7 +67,48 @@ class SubmissionRevisionMigrationIT {
         migrate(true);
         assertThat(db.queryForObject("SELECT to_regclass('public.submission_revision') IS NULL", Boolean.class))
             .as("the first phase stops before step C").isTrue();
+
+        live = submission(0, false);
+        changedThrice = submission(3, false);
+        deleted = submission(1, true);
+        neverSent = submission(0, false);
+        withoutData = submission(0, false);
+        db.update("UPDATE data_submission SET form_data = NULL WHERE id = ?", withoutData);
+        seeded = List.of(live, changedThrice, deleted, neverSent, withoutData);
+        for (String id : List.of(live, changedThrice, deleted, withoutData)) {
+            legacyOutboxRow(id, "SAVE");
+        }
+        outboxBeforeStepC = count("SELECT count(*) FROM outbox");
+
         migrate(false);
+        outboxAfterStepC = count("SELECT count(*) FROM outbox");
+        revisionsAfterStepC = count("SELECT count(*) FROM submission_revision");
+    }
+
+    private static long count(String sql, Object... args) {
+        Long n = db.queryForObject(sql, Long.class, args);
+        return n == null ? 0 : n;
+    }
+
+    /** An outbox row as 6.5.4 writes it: no version, the JVM's clock. */
+    static void legacyOutboxRow(String submissionId, String eventType) {
+        db.update("""
+            INSERT INTO outbox (submission_id, submission_serial_number, submission_uid, topic, payload, event_type,
+                                status, attempt, created_at)
+            SELECT id, serial_number, uid, template_version_uid, form_data, ?, 'success', 0, localtimestamp
+            FROM data_submission WHERE id = ?""", eventType, submissionId);
+    }
+
+    /** Submissions among {@code ids} whose head revision is not their live row: version, data and metadata. */
+    static List<String> headsDifferingFromTheRow(List<String> ids) {
+        return named.queryForList("""
+            SELECT s.id FROM data_submission s
+            LEFT JOIN LATERAL (SELECT r.version, r.form_data, r.metadata FROM submission_revision r
+                               WHERE r.submission_id = s.id ORDER BY r.version DESC LIMIT 1) h ON true
+            WHERE s.id IN (:ids)
+              AND (h.version IS DISTINCT FROM s.lock_version OR h.form_data IS DISTINCT FROM s.form_data
+                   OR h.metadata IS DISTINCT FROM submission_revision_metadata(s))""",
+            Map.of("ids", ids), String.class);
     }
 
     @AfterAll
@@ -163,6 +215,88 @@ class SubmissionRevisionMigrationIT {
             return refusal.getSQLState() + (constraint == null ? "" : " " + constraint);
         }
         throw new AssertionError("the database accepted it");
+    }
+
+    // ---------------------------------------------------------------- the baseline
+
+    @Test
+    void theBaselineRecordsEveryStoredSubmissionAtItsVersionAndWritesNoOutboxRow() {
+        assertThat(revisionsAfterStepC).as("one baseline per submission stored before step C")
+            .isEqualTo(seeded.size());
+        assertThat(outboxAfterStepC).as("the migration writes no outbox row").isEqualTo(outboxBeforeStepC);
+
+        List<String> baselines = named.queryForList("""
+            SELECT s.lock_version || ' ' || r.version || ' ' || r.kind || ' ' || r.command || ' '
+                   || r.actor_system || ' ' || coalesce(r.actor_user_id, '-') || ' '
+                   || coalesce(r.previous_version::text, '-') || ' ' || coalesce(r.reason, '-')
+            FROM data_submission s JOIN submission_revision r ON r.submission_id = s.id
+            WHERE s.id IN (:ids) AND r.command = 'MIGRATION' ORDER BY s.lock_version, s.id""",
+            Map.of("ids", seeded), String.class);
+        assertThat(baselines).containsExactly(
+            "0 0 BASELINE MIGRATION MIGRATION - - -", "0 0 BASELINE MIGRATION MIGRATION - - -",
+            "0 0 BASELINE MIGRATION MIGRATION - - -", "1 1 BASELINE MIGRATION MIGRATION - - -",
+            "3 3 BASELINE MIGRATION MIGRATION - - -");
+        assertThat(headsDifferingFromTheRow(seeded))
+            .as("each head is its row, deleted ones, ones never sent and one without data included").isEmpty();
+        assertThat(db.queryForObject("""
+                SELECT r.metadata ->> 'deleted' FROM submission_revision r WHERE r.submission_id = ?""",
+            String.class, deleted)).isEqualTo("true");
+    }
+
+    /** If the changelog history were lost, the baseline runs again and repeats nothing. */
+    @Test
+    void theBaselineRunAgainRepeatsNothing() throws Exception {
+        List<Map<String, Object>> before = db.queryForList("""
+            SELECT submission_id, count(*) AS revisions FROM submission_revision
+            GROUP BY submission_id ORDER BY submission_id""");
+        db.update("DELETE FROM databasechangelog WHERE id = '20261124-c04-submission-revision-baseline'");
+
+        migrate(false);
+
+        List<Map<String, Object>> after = db.queryForList("""
+            SELECT submission_id, count(*) AS revisions FROM submission_revision
+            GROUP BY submission_id ORDER BY submission_id""");
+        assertThat(after).as("a submission that had revisions gets no other").containsAll(before);
+        assertThat(count("SELECT count(*) FROM databasechangelog WHERE id = '20261124-c04-submission-revision-baseline'"))
+            .isEqualTo(1);
+    }
+
+    /**
+     * Production runs 6.5.4 again for a while after step C: its uploads raise versions without revisions and its new
+     * submissions have none. The next start of step C records each as an explicit gap.
+     */
+    @Test
+    void aWindowUnder654IsRecordedAsGapsAtTheNextStart() throws Exception {
+        String gapped = submission(3, false);
+        revision(gapped, 3, null, "BASELINE", "MIGRATION", null, "MIGRATION", null, null);
+        String untouched = submission(2, false);
+        revision(untouched, 2, null, "BASELINE", "MIGRATION", null, "MIGRATION", null, null);
+
+        // 6.5.4: two changed re-sends of one submission, and a new one; its outbox rows carry no version.
+        db.update("""
+            UPDATE data_submission SET lock_version = 5, form_data = CAST('{"main": {"name": "changed"}}' AS jsonb),
+                                       last_modified_date = TIMESTAMP '2026-12-01 10:00:00'
+            WHERE id = ?""", gapped);
+        legacyOutboxRow(gapped, "UPDATE");
+        String createdIn654 = submission(0, false);
+        legacyOutboxRow(createdIn654, "SAVE");
+
+        migrate(false);
+
+        assertThat(named.query("""
+                SELECT s.id = :gapped AS gapped, r.version || ' ' || coalesce(r.previous_version::text, '-') || ' '
+                       || r.kind || ' ' || r.command || ' ' || r.actor_system
+                FROM submission_revision r JOIN data_submission s ON s.id = r.submission_id
+                WHERE s.id IN (:ids) AND r.command = 'GAP_REPAIR' ORDER BY 1""",
+            Map.of("gapped", gapped, "ids", List.of(gapped, untouched, createdIn654)),
+            (rs, i) -> rs.getString(2)))
+            .containsExactly("0 - BASELINE GAP_REPAIR MIGRATION", "5 3 BASELINE GAP_REPAIR MIGRATION");
+        assertThat(headsDifferingFromTheRow(List.of(gapped, untouched, createdIn654))).isEmpty();
+        assertThat(count("SELECT count(*) FROM submission_revision WHERE submission_id = ?", untouched)).isEqualTo(1);
+
+        migrate(false);
+        assertThat(count("SELECT count(*) FROM submission_revision WHERE submission_id IN (?, ?, ?)",
+            gapped, untouched, createdIn654)).as("the next start finds no gap").isEqualTo(4);
     }
 
     // ---------------------------------------------------------------- the table and its constraints
