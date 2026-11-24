@@ -31,7 +31,8 @@ import java.util.stream.Collectors;
  * <p>A revision is written if and only if the submission's version moves: creation stores version 0, and every
  * flushed change of a stored submission raises {@code lock_version} by one (JPA's {@code @Version}). The versions
  * are read back after each flush, so whatever this layer persists is recorded, and an unchanged re-send, which
- * writes nothing, records nothing.</p>
+ * writes nothing, records nothing. Each revision gets exactly one outbox row, written after it: the outbox
+ * announces revisions and nothing else.</p>
  */
 @Service
 @Primary
@@ -147,30 +148,16 @@ public class DefaultDataSubmissionService
 
         if (!entitiesToPersist.isEmpty()) {
             persistedResults = jpaAuditableObjectRepository.persistAllAndFlush(entitiesToPersist);
-            final var outboxEvents = persistedResults.stream()
-                .map(this::enqueueSubmissionsOutbox)
-                .toList();
-            outboxRepo.insertByEventType(outboxEvents, "SAVE");
             summary.getCreated().addAll(persistedResults.stream().map(DataSubmission::getUid).toList());
         }
         if (!entitiesToUpdate.isEmpty()) {
-            List<DataSubmission> updatedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToUpdate);
-            final var outboxEvents = updatedResults.stream()
-                .map(this::enqueueSubmissionsOutbox)
-                .toList();
-            outboxRepo.insertByEventType(outboxEvents, "UPDATE");
+            jpaAuditableObjectRepository.updateAllAndFlush(entitiesToUpdate);
         }
-
         if (!entitiesToDelete.isEmpty()) {
-            List<DataSubmission> deletedResults = jpaAuditableObjectRepository.updateAllAndFlush(entitiesToDelete);
-            final var outboxEvents = deletedResults.stream()
-                .map(this::enqueueSubmissionsOutbox)
-                .toList();
-            outboxRepo.insertByEventType(outboxEvents, "DELETE");
+            jpaAuditableObjectRepository.updateAllAndFlush(entitiesToDelete);
         }
 
-        persistedResults.forEach(created ->
-            revisions.append(created.getId(), created.getLockVersion(), null, RevisionKind.CREATE, revision));
+        persistedResults.forEach(created -> record(created, null, revision));
         recordChanges(entities, existingEntitiesMap, stored, revision);
 
         summary.getUpdated().addAll(normalResults.stream().map(DataSubmission::getUid).toList());
@@ -198,27 +185,48 @@ public class DefaultDataSubmissionService
             if (existing != null && seen.add(existing)) {
                 Stored before = stored.get(existing);
                 if (!Objects.equals(before.version(), existing.getLockVersion())) {
-                    revisions.append(existing.getId(), existing.getLockVersion(), before.version(),
-                        kindOf(before, existing), revision);
+                    record(existing, before, revision);
                 }
             }
         }
     }
 
-    private static RevisionKind kindOf(Stored before, DataSubmission after) {
-        return !before.deleted() && Boolean.TRUE.equals(after.getDeleted()) ? RevisionKind.DELETE : RevisionKind.UPDATE;
+    /**
+     * Records one flushed change of a submission: its revision, then the outbox row that announces it, which names
+     * the revision by the submission's id and version.
+     *
+     * @param before the submission as loaded, or null when this write created it
+     */
+    private void record(DataSubmission submission, Stored before, RevisionContext revision) {
+        long version = submission.getLockVersion();
+        boolean deleted = Boolean.TRUE.equals(submission.getDeleted());
+        RevisionKind kind = before == null ? RevisionKind.CREATE
+            : !before.deleted() && deleted ? RevisionKind.DELETE : RevisionKind.UPDATE;
+        revisions.append(submission.getId(), version, before == null ? null : before.version(), kind, revision);
+        outboxRepo.insert(List.of(outboxRow(submission, version, eventType(kind, deleted))));
     }
 
+    /**
+     * The event follows the state after the change: DELETE whenever the submission is deleted afterwards (a new
+     * submission sent already deleted, a re-send onto a deleted one), so the ETL never projects a deleted record's
+     * values as live; otherwise SAVE for a creation and UPDATE for a change.
+     */
+    private static String eventType(RevisionKind kind, boolean deletedAfter) {
+        if (deletedAfter) {
+            return "DELETE";
+        }
+        return kind == RevisionKind.CREATE ? "SAVE" : "UPDATE";
+    }
+
+    /** The delete is flushed first, so that its revision and its DELETE event carry the version it gave. */
     @Transactional
     @Override
     public void softDelete(DataSubmission submission, RevisionContext revision) {
         Objects.requireNonNull(revision, "revision");
-        Long before = submission.getLockVersion();
-        var outbox = enqueueSubmissionsOutbox(submission);
-        outboxRepo.insertByEventType(List.of(outbox), "DELETE");
+        Stored before = new Stored(submission.getLockVersion(), Boolean.TRUE.equals(submission.getDeleted()));
         super.softDelete(submission);
         jpaAuditableObjectRepository.flush();
-        revisions.append(submission.getId(), submission.getLockVersion(), before, RevisionKind.DELETE, revision);
+        record(submission, before, revision);
     }
 
     /**
@@ -232,7 +240,7 @@ public class DefaultDataSubmissionService
             "A submission is deleted only through SubmissionCommandService, which records who deleted it");
     }
 
-    private OutboxWritePort.OutboxInsert enqueueSubmissionsOutbox(DataSubmission s) {
+    private OutboxWritePort.OutboxInsert outboxRow(DataSubmission s, long version, String eventType) {
         String payload;
         try {
             payload = objectMapper.writeValueAsString(s.getFormData());
@@ -245,8 +253,9 @@ public class DefaultDataSubmissionService
             s.getUid(),
             s.getFormVersion(),
             payload,
-            Instant.now(),
-            s.getSerialNumber()
+            s.getSerialNumber(),
+            version,
+            eventType
         );
     }
 }

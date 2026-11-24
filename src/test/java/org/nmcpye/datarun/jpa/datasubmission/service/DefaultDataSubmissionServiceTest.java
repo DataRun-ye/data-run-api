@@ -110,7 +110,7 @@ class DefaultDataSubmissionServiceTest {
 
         assertEquals(List.of("mutable0001"), summary.getUpdated(), field);
         assertSame(existing, results.get(0));
-        verifySingleUpdate(existing, "UPDATE");
+        verifySingleUpdate(existing, RevisionKind.UPDATE, "UPDATE");
     }
 
     @Test
@@ -220,7 +220,7 @@ class DefaultDataSubmissionServiceTest {
         assertTrue(existing.getDeleted());
         assertEquals(deletedAt, existing.getDeletedAt());
         assertEquals("changed-act", existing.getActivity());
-        verifySingleUpdate(existing, "UPDATE");
+        verifySingleUpdate(existing, RevisionKind.UPDATE, "DELETE");
     }
 
     @Test
@@ -251,7 +251,7 @@ class DefaultDataSubmissionServiceTest {
         assertNotEquals(suppliedDeletedAt, existing.getDeletedAt());
         assertEquals(originalFormData, existing.getFormData());
         assertEquals(originalActivity, existing.getActivity());
-        verifySingleUpdate(existing, "DELETE");
+        verifySingleUpdate(existing, RevisionKind.DELETE, "DELETE");
     }
 
     @Test
@@ -315,19 +315,19 @@ class DefaultDataSubmissionServiceTest {
 
         ArgumentCaptor<List<OutboxWritePort.OutboxInsert>> outboxCaptor =
             ArgumentCaptor.forClass((Class) List.class);
-        ArgumentCaptor<String> eventTypeCaptor = ArgumentCaptor.forClass(String.class);
-        verify(outbox, times(3)).insertByEventType(
-            outboxCaptor.capture(),
-            eventTypeCaptor.capture());
-        assertEquals(List.of("SAVE", "UPDATE", "DELETE"), eventTypeCaptor.getAllValues());
-        assertEquals("new00000001", outboxCaptor.getAllValues().get(0).get(0).submissionUid);
-        assertEquals("changed0001", outboxCaptor.getAllValues().get(1).get(0).submissionUid);
-        assertEquals("delete00001", outboxCaptor.getAllValues().get(2).get(0).submissionUid);
+        verify(outbox, times(3)).insert(outboxCaptor.capture());
+        List<OutboxWritePort.OutboxInsert> rows = outboxCaptor.getAllValues().stream().flatMap(List::stream).toList();
+        assertEquals(List.of("new00000001 SAVE 0", "changed0001 UPDATE 5", "delete00001 DELETE 5"), rows.stream()
+            .map(row -> row.submissionUid() + " " + row.eventType() + " " + row.submissionVersion()).toList());
 
-        var recorded = org.mockito.Mockito.inOrder(revisions);
+        // Each revision is written before the outbox row that names it.
+        var recorded = org.mockito.Mockito.inOrder(revisions, outbox);
         recorded.verify(revisions).append(newSubmission.getId(), 0L, null, RevisionKind.CREATE, UPLOAD);
+        recorded.verify(outbox).insert(anyList());
         recorded.verify(revisions).append("01CHANGED0000000000000001", STORED + 1, STORED, RevisionKind.UPDATE, UPLOAD);
+        recorded.verify(outbox).insert(anyList());
         recorded.verify(revisions).append("01DELETE000000000000000001", STORED + 1, STORED, RevisionKind.DELETE, UPLOAD);
+        recorded.verify(outbox).insert(anyList());
         org.mockito.Mockito.verifyNoMoreInteractions(revisions);
 
         assertEquals(List.of("new00000001"), summary.getCreated());
@@ -358,8 +358,49 @@ class DefaultDataSubmissionServiceTest {
 
         assertTrue(stored.getDeleted());
         assertNotNull(stored.getDeletedAt());
-        verify(revisions).append("01DELETE000000000000000002", STORED + 1, STORED, RevisionKind.DELETE, delete);
-        verify(outbox).insertByEventType(anyList(), org.mockito.ArgumentMatchers.eq("DELETE"));
+        var recorded = org.mockito.Mockito.inOrder(repository, revisions, outbox);
+        recorded.verify(repository).flush();
+        recorded.verify(revisions).append("01DELETE000000000000000002", STORED + 1, STORED, RevisionKind.DELETE, delete);
+        recorded.verify(outbox).insert(List.of(new OutboxWritePort.OutboxInsert("01DELETE000000000000000002",
+            "delete00002", "version0001", "{\"nested\":{\"value\":\"delete00002\"}}", (long) "delete00002".hashCode(),
+            STORED + 1, "DELETE")));
+    }
+
+    /** A2 W1-15: a new uid sent already deleted is created deleted, and announced as DELETE, not SAVE. */
+    @Test
+    void aNewSubmissionSentDeletedIsCreatedAndAnnouncedAsDeleted() {
+        DataSubmission incoming = incomingSubmission("newdel00001");
+        incoming.setDeleted(true);
+        when(repository.findAllByUidIn(any())).thenReturn(List.of());
+        persistStoresVersionZero();
+
+        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
+        service.upsertAll(List.of(incoming), summary, UPLOAD);
+
+        assertEquals(List.of("newdel00001"), summary.getCreated());
+        verify(revisions).append(incoming.getId(), 0L, null, RevisionKind.CREATE, UPLOAD);
+        verify(outbox).insert(org.mockito.ArgumentMatchers.argThat(rows -> rows.size() == 1
+            && rows.get(0).eventType().equals("DELETE") && rows.get(0).submissionVersion() == 0L));
+    }
+
+    /**
+     * The version decides, not the comparison: when the flush finds nothing to write (the stored and the incoming
+     * values only differed in how they were held in memory), the version stays and nothing is recorded or announced.
+     */
+    @Test
+    void aWriteThatLeavesTheVersionRecordsNothing() {
+        DataSubmission existing = persistedSubmission("noflush0001", "01NOFLUSH0000000000000001");
+        DataSubmission incoming = incomingSubmission("noflush0001");
+        incoming.setActivity("changed-act");
+        findExisting(existing);
+        when(repository.updateAllAndFlush(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        EntitySaveSummaryVM summary = new EntitySaveSummaryVM();
+        service.upsertAll(List.of(incoming), summary, UPLOAD);
+
+        assertEquals(List.of("noflush0001"), summary.getUpdated());
+        verify(repository).updateAllAndFlush(List.of(existing));
+        verifyNoInteractions(outbox, revisions);
     }
 
     /** Every delete names who made it: the generic delete without a revision context is refused. */
@@ -396,7 +437,7 @@ class DefaultDataSubmissionServiceTest {
         assertEquals(List.of("jsonnull001"), summary.getUpdated(), transition);
         assertSame(existing, results.get(0));
         if (expectsUpdate) {
-            verifySingleUpdate(existing, "UPDATE");
+            verifySingleUpdate(existing, RevisionKind.UPDATE, "UPDATE");
             assertEquals(incomingFormData, existing.getFormData());
             if (incomingFormData != null) {
                 assertNotSame(incomingFormData, existing.getFormData());
@@ -478,22 +519,23 @@ class DefaultDataSubmissionServiceTest {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private void verifySingleUpdate(DataSubmission expected, String eventType) {
+    private void verifySingleUpdate(DataSubmission expected, RevisionKind kind, String eventType) {
         ArgumentCaptor<List<DataSubmission>> updateCaptor =
             ArgumentCaptor.forClass((Class) List.class);
         verify(repository).updateAllAndFlush(updateCaptor.capture());
         assertEquals(List.of(expected), updateCaptor.getValue());
 
+        var recorded = org.mockito.Mockito.inOrder(revisions, outbox);
+        recorded.verify(revisions).append(expected.getId(), STORED + 1, STORED, kind, UPLOAD);
         ArgumentCaptor<List<OutboxWritePort.OutboxInsert>> outboxCaptor =
             ArgumentCaptor.forClass((Class) List.class);
-        verify(outbox).insertByEventType(outboxCaptor.capture(),
-            org.mockito.ArgumentMatchers.eq(eventType));
+        recorded.verify(outbox).insert(outboxCaptor.capture());
         assertEquals(1, outboxCaptor.getValue().size());
-        assertEquals(expected.getUid(), outboxCaptor.getValue().get(0).submissionUid);
-
-        verify(revisions).append(expected.getId(), STORED + 1, STORED,
-            "DELETE".equals(eventType) ? RevisionKind.DELETE : RevisionKind.UPDATE, UPLOAD);
-        org.mockito.Mockito.verifyNoMoreInteractions(revisions);
+        OutboxWritePort.OutboxInsert row = outboxCaptor.getValue().get(0);
+        assertEquals(expected.getUid(), row.submissionUid());
+        assertEquals(eventType, row.eventType());
+        assertEquals(STORED + 1, row.submissionVersion());
+        org.mockito.Mockito.verifyNoMoreInteractions(revisions, outbox);
     }
 
     private DataSubmission persistedSubmission(String uid, String id) {

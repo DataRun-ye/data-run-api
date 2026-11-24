@@ -137,7 +137,8 @@ final class EtlFixture {
         return tx.execute(status -> jdbc.queryForObject("""
                 INSERT INTO outbox (submission_id, submission_serial_number, submission_uid, topic, payload,
                                     event_type, status, attempt, created_at)
-                SELECT id, serial_number, uid, template_version_uid, form_data, :eventType, 'pending', 0, now()
+                SELECT id, serial_number, uid, template_version_uid, form_data, :eventType, 'pending', 0,
+                       timezone('UTC', now())
                 FROM data_submission WHERE uid = :uid
                 RETURNING outbox_id
                 """,
@@ -150,7 +151,7 @@ final class EtlFixture {
         return tx.execute(status -> jdbc.queryForObject("""
                 INSERT INTO outbox (submission_id, submission_serial_number, submission_uid, topic, payload,
                                     event_type, status, attempt, created_at)
-                VALUES (:id, :serial, :uid, :version, '{}'::jsonb, 'SAVE', 'pending', 0, now())
+                VALUES (:id, :serial, :uid, :version, '{}'::jsonb, 'SAVE', 'pending', 0, timezone('UTC', now()))
                 RETURNING outbox_id
                 """,
             new MapSqlParameterSource()
@@ -183,7 +184,7 @@ final class EtlFixture {
                 INSERT INTO outbox (submission_id, submission_serial_number, submission_uid, topic, payload,
                                     event_type, status, attempt, created_at, next_attempt_at)
                 VALUES ('etl-row', 1, 'etlRow00001', :version, '{}'::jsonb, 'SAVE', :status, 0,
-                        localtimestamp - make_interval(mins => :ago),
+                        timezone('UTC', now()) - make_interval(mins => :ago),
                         localtimestamp + make_interval(mins => :retryIn))
                 RETURNING outbox_id
                 """,

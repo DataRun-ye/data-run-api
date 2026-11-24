@@ -439,12 +439,12 @@ abstract class A2GoldenSupport {
                        extract(epoch FROM last_modified_date) AS last_modified_date
                 FROM data_submission WHERE uid LIKE 'a2%' OR assignment_uid IN (:assignments)
                 ORDER BY serial_number""", scope));
-            // Hibernate writes UTC into the timestamp columns above; OutboxWriter binds a java.sql.Timestamp, which the
-            // driver writes in the JVM's zone, the session's TimeZone
+            // Hibernate writes UTC into the timestamp columns above, and the outbox's created_at is the database's
+            // time in UTC
             db.set("outbox", rows("""
-                SELECT submission_id, submission_serial_number, submission_uid, topic, event_type,
+                SELECT submission_id, submission_serial_number, submission_uid, topic, event_type, submission_version,
                        payload::text AS payload, status, attempt, last_error,
-                       extract(epoch FROM (created_at AT TIME ZONE current_setting('TimeZone'))) AS created_at
+                       extract(epoch FROM (created_at AT TIME ZONE 'UTC')) AS created_at
                 FROM outbox WHERE submission_uid LIKE 'a2%'
                    OR submission_id IN (SELECT id FROM data_submission WHERE assignment_uid IN (:assignments))
                 ORDER BY outbox_id""", scope));

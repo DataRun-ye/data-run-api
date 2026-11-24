@@ -371,7 +371,7 @@ class SubmissionWriteOwnershipTest {
             submissions.upsertAll(List.of(), new EntitySaveSummaryVM(), null);
             repository.deleteAllByUidIn(List.of("a"));
             held.recordReleaseError("a", "b");
-            outbox.insertByEventType(List.of(), "SAVE");
+            outbox.insert(List.of());
             modifying.tidy("a");
         }
     }

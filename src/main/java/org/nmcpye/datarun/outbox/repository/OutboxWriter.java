@@ -7,7 +7,6 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 
@@ -16,40 +15,32 @@ import java.util.List;
 @Slf4j
 public class OutboxWriter implements OutboxWritePort {
 
-    private final NamedParameterJdbcTemplate jdbc;
+    /** created_at is left to its default: the database's transaction time, in UTC. */
+    private static final String INSERT_SQL = """
+        INSERT INTO outbox (submission_id, submission_serial_number, submission_uid, topic, payload, event_type,
+                            status, attempt, submission_version)
+        VALUES (:submission_id, :submission_serial_number, :submission_uid, :topic, cast(:payload AS jsonb),
+                :event_type, 'pending', 0, :submission_version)
+        """;
 
-    // --- Inserts (reused SQL from previous) ---
+    private final NamedParameterJdbcTemplate jdbc;
 
     @Override
     @Transactional
-    public int insertByEventType(List<OutboxWritePort.OutboxInsert> inserts, String eventType) {
+    public int insert(List<OutboxInsert> inserts) {
         if (inserts == null || inserts.isEmpty()) return 0;
 
-        final String sql = """
-              INSERT INTO outbox (
-            submission_id, submission_serial_number, submission_uid, topic, payload,
-                                  event_type, status, attempt, created_at)
-            VALUES (:submission_id, :submission_serial_number, :submission_uid, :topic, cast(:payload AS jsonb),
-            :event_type, 'pending', 0, :created_at)
-            """;
+        MapSqlParameterSource[] batch = inserts.stream().map(it -> new MapSqlParameterSource()
+            .addValue("submission_id", it.submissionId())
+            .addValue("submission_uid", it.submissionUid())
+            .addValue("submission_serial_number", it.submissionSerialNumber())
+            .addValue("topic", it.topic())
+            .addValue("payload", it.payload())
+            .addValue("event_type", it.eventType())
+            .addValue("submission_version", it.submissionVersion())
+        ).toArray(MapSqlParameterSource[]::new);
 
-        return batchInsert(sql, inserts, eventType);
-    }
-
-    private int batchInsert(String sql, List<OutboxWritePort.OutboxInsert> inserts, String eventType) {
-        MapSqlParameterSource[] batch = inserts.stream().map(it -> {
-            MapSqlParameterSource p = new MapSqlParameterSource();
-            p.addValue("submission_id", it.submissionId);
-            p.addValue("submission_uid", it.submissionUid);
-            p.addValue("submission_serial_number", it.submissionSerialNumber);
-            p.addValue("topic", it.templateVersionUid);
-            p.addValue("payload", it.payload);
-            p.addValue("created_at", Timestamp.from(it.createdAt));
-            if (eventType != null) p.addValue("event_type", eventType);
-            return p;
-        }).toArray(MapSqlParameterSource[]::new);
-
-        int[] results = jdbc.batchUpdate(sql, batch);
+        int[] results = jdbc.batchUpdate(INSERT_SQL, batch);
         int inserted = (int) Arrays.stream(results).filter(r -> r > 0).count();
         log.info("OutboxWriter: attempted {}, inserted {}", inserts.size(), inserted);
         return inserted;

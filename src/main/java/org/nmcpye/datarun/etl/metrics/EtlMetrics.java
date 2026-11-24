@@ -44,11 +44,12 @@ public class EtlMetrics implements SchedulingConfigurer {
 
     private static final Logger log = LoggerFactory.getLogger(EtlMetrics.class);
 
+    /** outbox.created_at is the database's time in UTC, so the age is taken against UTC, whatever the session's zone. */
     private static final String BACKLOG_SQL = """
         SELECT count(*) FILTER (WHERE status = 'pending') AS pending,
                count(*) FILTER (WHERE status = 'failed') AS failed,
                count(*) FILTER (WHERE status = 'dead') AS dead,
-               COALESCE(extract(epoch FROM localtimestamp
+               COALESCE(extract(epoch FROM timezone('UTC', now())
                    - min(created_at) FILTER (WHERE status IN ('pending', 'failed'))), 0) AS oldest_age
         FROM outbox
         WHERE status IN ('pending', 'failed', 'dead')
