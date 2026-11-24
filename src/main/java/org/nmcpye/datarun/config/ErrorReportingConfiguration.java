@@ -26,11 +26,15 @@ import java.util.List;
  * <p>
  * The settings in {@link #errorReportingOptions} override any {@code sentry.*} property or environment variable.
  * An event tells what failed and where, never with which values: log arguments and exception messages can carry a
- * login or submitted values, so {@link #withoutValues} sends the log line's pattern, the exception types and the
- * stack frames, and drops the rest.
+ * login or submitted values, so {@link #withoutValues} sends the exception types and the stack frames, and the log
+ * line's pattern only for the application's own loggers. The application's ERROR lines must therefore pass every
+ * value as a {@code {}} argument, never inside the pattern.
  */
 @Configuration
 public class ErrorReportingConfiguration {
+
+    /** Loggers whose ERROR patterns this code base writes, with values only in {@code {}} arguments. */
+    static final String OWN_LOGGERS = "org.nmcpye.datarun.";
 
     /**
      * Errors only, and nothing collected about the user or the request. No traces sample rate is set: any rate, 0
@@ -60,17 +64,27 @@ public class ErrorReportingConfiguration {
     }
 
     /**
-     * Keeps what failed and where: the logger, the level, the log line's pattern, the exception types, the stack
-     * frames, the thread, the request id and the release. Drops the request, the user, breadcrumbs, the log line's
-     * arguments and every exception message.
+     * Keeps what failed and where: the logger, the level, the exception types, the stack frames, the thread, the
+     * request id and the release, and for the application's own loggers the log line's pattern. Drops the request,
+     * the user, breadcrumbs, the log line's arguments and every exception message. Another library's line is sent as
+     * its logger's name: libraries that log through JBoss Logging (Hibernate, Undertow) format values into the text
+     * before logback sees it, so its pattern is the whole line. Undertow's UT005023 names the request path, and
+     * Hibernate's SqlExceptionHelper logs the database's message, which can quote an input value even with
+     * {@code logServerErrorDetail=false}.
      */
     static SentryEvent withoutValues(SentryEvent event, Hint hint) {
         event.setRequest(null);
         event.setUser(null);
         event.setBreadcrumbs(null);
         Message message = event.getMessage();
-        if (message != null) {
-            if (message.getMessage() != null) {
+        String logger = event.getLogger();
+        if (message != null && logger == null) {
+            event.setMessage(null);
+        } else if (message != null) {
+            if (!logger.startsWith(OWN_LOGGERS)) {
+                message.setMessage(logger);
+                message.setFormatted(logger);
+            } else if (message.getMessage() != null) {
                 message.setFormatted(message.getMessage());
             }
             message.setParams(null);

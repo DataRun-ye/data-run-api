@@ -79,7 +79,7 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
         return Optional.ofNullable(activity.getId()).flatMap(activityRepository::findById)
             .or(() -> Optional.ofNullable(activity.getUid())
                 .flatMap(activityRepository::findByUid)).orElseThrow(() -> {
-                log.error("Activity not found: " + activity.getUid());
+                log.error("Activity not found: {}", activity.getUid());
                 return new IllegalQueryException(
                     new ErrorMessage(ErrorCode.E1004,
                         "Activity", activity.getUid()));
@@ -98,7 +98,7 @@ public class DefaultTeamService extends DefaultJpaIdentifiableService<Team> impl
             }
             return repository.findByCodeAndActivityUid(code, activityUid);
         }).orElseThrow(() -> {
-            log.error("Team not found: " + team.getUid());
+            log.error("Team not found: {}", team.getUid());
             return new PropertyNotFoundException("Team not found: " + team);
         });
     }

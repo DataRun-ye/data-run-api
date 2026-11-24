@@ -59,14 +59,14 @@ public class DefaultUserGroupService extends DefaultJpaIdentifiableService<UserG
 
     private UserGroup findUserGroup(UserGroup userGroup) {
         return Optional.ofNullable(userGroup.getUid()).flatMap(repository::findByUid).or(() -> Optional.ofNullable(userGroup.getId()).flatMap(repository::findById)).or(() -> Optional.ofNullable(userGroup.getCode()).flatMap(repository::findByCode)).orElseThrow(() -> {
-            log.error("UserGroup not found: " + userGroup.getUid());
+            log.error("UserGroup not found: {}", userGroup.getUid());
             return new PropertyNotFoundException("UserGroup not found: " + userGroup);
         });
     }
 
     private User findUser(User user) {
         return Optional.ofNullable(user.getUid()).flatMap(userRepository::findByUid).or(() -> Optional.ofNullable(user.getLogin()).flatMap(userRepository::findOneByLogin)).or(() -> Optional.ofNullable(user.getId()).flatMap(userRepository::findById)).orElseThrow(() -> {
-            log.error("User not found: " + user.getUid());
+            log.error("User not found: {}", user.getUid());
             return new PropertyNotFoundException("UserGroup not found: " + user);
         });
     }

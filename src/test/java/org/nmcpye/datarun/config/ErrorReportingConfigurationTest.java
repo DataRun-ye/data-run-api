@@ -78,15 +78,43 @@ class ErrorReportingConfigurationTest {
         assertThat(sent.getContexts().get("MDC")).isEqualTo(Map.of("requestId", "6f1c0b0e"));
     }
 
+    /** JBoss Logging formats before logback sees the line, so the "pattern" is the whole text. */
     @Test
-    void aMessageWithoutAPatternKeepsItsText() {
+    void anotherLibrarysLineArrivesAsItsLoggersName() {
         SentryEvent event = new SentryEvent();
+        event.setLogger("org.hibernate.engine.jdbc.spi.SqlExceptionHelper");
+        Message message = new Message();
+        message.setMessage("ERROR: invalid input syntax for type integer: \"777000111\"");
+        message.setFormatted("ERROR: invalid input syntax for type integer: \"777000111\"");
+        event.setMessage(message);
+
+        Message sent = ErrorReportingConfiguration.withoutValues(event, new Hint()).getMessage();
+
+        assertThat(sent.getMessage()).isEqualTo("org.hibernate.engine.jdbc.spi.SqlExceptionHelper");
+        assertThat(sent.getFormatted()).isEqualTo("org.hibernate.engine.jdbc.spi.SqlExceptionHelper");
+        assertThat(sent.getParams()).isNull();
+    }
+
+    @Test
+    void anOwnLineWithoutAPatternKeepsItsText() {
+        SentryEvent event = new SentryEvent();
+        event.setLogger("org.nmcpye.datarun.etl.Example");
         Message message = new Message();
         message.setFormatted("Written by the code itself");
         event.setMessage(message);
 
         assertThat(ErrorReportingConfiguration.withoutValues(event, new Hint()).getMessage().getFormatted())
             .isEqualTo("Written by the code itself");
+    }
+
+    @Test
+    void aMessageFromNoLoggerIsDropped() {
+        SentryEvent event = new SentryEvent();
+        Message message = new Message();
+        message.setFormatted("Captured by some library");
+        event.setMessage(message);
+
+        assertThat(ErrorReportingConfiguration.withoutValues(event, new Hint()).getMessage()).isNull();
     }
 
     @Test

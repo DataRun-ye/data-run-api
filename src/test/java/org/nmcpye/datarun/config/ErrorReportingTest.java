@@ -108,6 +108,35 @@ class ErrorReportingTest {
         }
     }
 
+    /**
+     * Hibernate and Undertow log through JBoss Logging, which formats values into the text before logback sees it,
+     * as these lines do.
+     */
+    @Test
+    void anotherLibrarysErrorLineArrivesWithoutItsText() {
+        try (FakeGlitchTip glitchTip = FakeGlitchTip.start()) {
+            runner.withPropertyValues("sentry.dsn=" + glitchTip.dsn()).run(context -> {
+                assertThat(Sentry.isEnabled()).isTrue();
+                LoggerFactory.getLogger("org.hibernate.engine.jdbc.spi.SqlExceptionHelper")
+                    .error("ERROR: invalid input syntax for type integer: \"777000111\"");
+                LoggerFactory.getLogger("io.undertow.request").error(
+                    "UT005023: Exception handling request to /api/v1/admin/users/777000111",
+                    new IllegalStateException("household name"));
+                Sentry.flush(5000);
+            });
+
+            assertThat(String.join("\n", glitchTip.envelopes())).doesNotContain("777000111", "household name");
+            assertThat(glitchTip.events())
+                .extracting(event -> event.path("logger").asText() + " | " + event.path("message").path("formatted").asText())
+                .containsExactlyInAnyOrder(
+                    "org.hibernate.engine.jdbc.spi.SqlExceptionHelper | org.hibernate.engine.jdbc.spi.SqlExceptionHelper",
+                    "io.undertow.request | io.undertow.request");
+            assertThat(glitchTip.events()).filteredOn(event -> event.has("exception")).singleElement()
+                .satisfies(event -> assertThat(event.path("exception").path("values").get(0).path("type").asText())
+                    .isEqualTo("IllegalStateException"));
+        }
+    }
+
     private static void assumeNoDsnInTheEnvironment() {
         String dsn = System.getenv("SENTRY_DSN");
         assumeTrue(dsn == null || dsn.isBlank(), "SENTRY_DSN is set in this environment");

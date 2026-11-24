@@ -263,12 +263,20 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   - Errors (`SENTRY_DSN`, `SENTRY_ENVIRONMENT`): every ERROR log line and
     uncaught exception of the application becomes an event in the GlitchTip
     project `datarun-api` (Sentry Java SDK, `ErrorReportingConfiguration`).
-    An event carries the log line's pattern, the logger, exception types,
-    stack frames, the request id, the release and the environment. It never
-    carries the line's arguments, exception messages, the request, the user
-    or breadcrumbs, and nothing is traced. Request errors that the REST layer
-    answers stay in `error_event` and are not reported. A malformed DSN stops
-    the application at startup; empty it to start without reporting.
+    An event carries the logger, exception types, stack frames, the request
+    id, the release and the environment, and for the application's own lines
+    (`org.nmcpye.datarun`) the line's pattern, so those lines pass values only
+    as `{}` arguments. Another library's line arrives as its logger's name:
+    Hibernate and Undertow format values into the text (Undertow's UT005023
+    names the request path; Hibernate logs the database's message). An event
+    never carries the line's arguments, exception messages, the request, the
+    user or breadcrumbs, and nothing is traced. Request errors that the REST
+    layer answers stay in `error_event` and are not reported. A malformed DSN
+    stops the application at startup; empty it to start without reporting.
+    The container log keeps every line in full. Database errors there leave
+    out the failing row only because the pool and both JDBC URLs set
+    `logServerErrorDetail=false`; PostgreSQL's own message can still quote an
+    input value (`invalid input syntax for type integer: "…"`).
   - Heartbeat (`DATARUN_ETL_HEARTBEAT_URL`, `datarun.etl.heartbeat-url`):
     after a poll that succeeded, the ETL sends a POST to the monitor, at most
     once a minute, and gives up after 5 s. A failure is logged at DEBUG and
