@@ -5,11 +5,6 @@ import java.util.List;
 
 public interface OutboxWritePort {
     /**
-     * Insert backfill rows if not exists (returns number inserted).
-     */
-    int insertBackfillIfNotExists(List<OutboxInsert> inserts);
-
-    /**
      * Generic insert by event type.
      */
     int insertByEventType(List<OutboxInsert> inserts, String eventType);

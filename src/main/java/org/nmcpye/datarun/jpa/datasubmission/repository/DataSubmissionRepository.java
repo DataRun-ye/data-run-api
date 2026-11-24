@@ -40,7 +40,4 @@ public interface DataSubmissionRepository
         return Collections.emptyList();
     }
 
-
-    List<DataSubmission> findBySerialNumberBetween(Long serialNumberAfter, Long serialNumberBefore);
-
 }

@@ -22,21 +22,6 @@ public class OutboxWriter implements OutboxWritePort {
 
     @Override
     @Transactional
-    public int insertBackfillIfNotExists(List<OutboxWritePort.OutboxInsert> inserts) {
-        if (inserts == null || inserts.isEmpty()) return 0;
-
-        final String sql = ""
-            + "INSERT INTO outbox ("
-            + " submission_id, submission_uid, topic, payload, event_type, status, attempt, created_at, submission_serial_number"
-            + ") VALUES ("
-            + " :submission_id, :submission_uid, :topic, cast(:payload AS jsonb), 'BACKFILL', 'pending', 0, :created_at, :submission_serial_number"
-            + ") ON CONFLICT (submission_id) WHERE (event_type = 'BACKFILL') DO NOTHING";
-
-        return batchInsert(sql, inserts, null);
-    }
-
-    @Override
-    @Transactional
     public int insertByEventType(List<OutboxWritePort.OutboxInsert> inserts, String eventType) {
         if (inserts == null || inserts.isEmpty()) return 0;
 
