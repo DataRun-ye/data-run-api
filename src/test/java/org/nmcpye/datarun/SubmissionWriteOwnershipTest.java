@@ -13,7 +13,9 @@ import org.nmcpye.datarun.jpa.datasubmission.command.HeldSubmissionDecisions;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionUploads;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
+import org.nmcpye.datarun.jpa.datasubmission.revision.SubmissionRevisionWriter;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
+import org.nmcpye.datarun.jpa.datasubmission.service.DefaultDataSubmissionService;
 import org.nmcpye.datarun.jpa.intake.HeldSubmissionRepository;
 import org.nmcpye.datarun.jpa.intake.SubmissionIntake;
 import org.nmcpye.datarun.outbox.repository.OutboxWritePort;
@@ -41,8 +43,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Only the submission command service and its persistence layer write {@code data_submission},
- * {@code held_submission} and the outbox's events (B1). Everything else adapts to a command of
- * {@code jpa.datasubmission.command.SubmissionCommandService}.
+ * {@code held_submission}, the change record ({@code submission_revision}) and the outbox's events (B1, C). Everything
+ * else adapts to a command of {@code jpa.datasubmission.command.SubmissionCommandService}; within the persistence
+ * layer, only {@code DefaultDataSubmissionService} appends revisions and their outbox rows, after the change they
+ * record and in its transaction.
  *
  * <p>The persistence layer is the {@code DataSubmissionService} port and its implementation, the submission
  * repository, {@code SubmissionIntake.hold}, {@code HeldSubmissionRepository} and {@code OutboxWriter}. The rule
@@ -76,6 +80,7 @@ class SubmissionWriteOwnershipTest {
             .or(writeOn(HeldSubmissionRepository.class, "hold", "markDecided", "recordReleaseError"))
             .or(writeOn(SubmissionIntake.class, "hold"))
             .or(writeOn(OutboxWritePort.class, "insert"))
+            .or(writeOn(SubmissionRevisionWriter.class, "append"))
             .or(modifyingQueryOn(DataSubmissionRepository.class));
 
     static final ArchRule ONLY_THE_COMMAND_SERVICE_WRITES_SUBMISSIONS = noClasses()
@@ -83,6 +88,17 @@ class SubmissionWriteOwnershipTest {
         .should().callMethodWhere(SUBMISSION_WRITE)
         .because("submissions are created, changed, deleted, held and released only through "
             + "SubmissionCommandService, which runs one set of checks and writes the outbox in the same transaction");
+
+    /**
+     * A revision, and the outbox row that names it, are written by the persistence layer after the change they record,
+     * in its transaction: never by a command, which names the revision's context instead.
+     */
+    static final ArchRule ONLY_THE_PERSISTENCE_LAYER_RECORDS_CHANGES = noClasses()
+        .that().doNotBelongToAnyOf(DefaultDataSubmissionService.class)
+        .should().callMethodWhere(writeOn(SubmissionRevisionWriter.class, "append")
+            .or(writeOn(OutboxWritePort.class, "insert")))
+        .because("each change gets one revision and one outbox row, written by DefaultDataSubmissionService after the "
+            + "flush that gave the change its version, in the same transaction");
 
     /** The upload pipeline is reached through the command service; a held release replays through it too. */
     static final ArchRule ONLY_THE_COMMANDS_USE_THE_UPLOAD_PIPELINE = noClasses()
@@ -105,13 +121,15 @@ class SubmissionWriteOwnershipTest {
     private static final Map<String, List<String>> NAMED_IN = Map.of(
         "data_submission", List.of("org/nmcpye/datarun/jpa/datasubmission/"),
         "held_submission", List.of("org/nmcpye/datarun/jpa/intake/"),
+        "submission_revision", List.of("org/nmcpye/datarun/jpa/datasubmission/revision/"),
         "outbox", List.of("org/nmcpye/datarun/outbox/repository/",
             "org/nmcpye/datarun/etl/admin/ScheduledOrchestratorRunner.java",
             "org/nmcpye/datarun/etl/metrics/EtlMetrics.java"));
-    /** Where SQL may write each table: data_submission nowhere. */
+    /** Where SQL may write each table: data_submission nowhere, the journal only in its writer. */
     private static final Map<String, List<String>> WRITTEN_IN = Map.of(
         "data_submission", List.of(),
         "held_submission", List.of("org/nmcpye/datarun/jpa/intake/"),
+        "submission_revision", List.of("org/nmcpye/datarun/jpa/datasubmission/revision/SubmissionRevisionWriter.java"),
         "outbox", List.of("org/nmcpye/datarun/outbox/repository/"));
     /** Resources may name the tables only in the schema's own changelogs. */
     private static final String RESOURCES_NAMED_IN = "config/liquibase/";
@@ -119,13 +137,15 @@ class SubmissionWriteOwnershipTest {
     private static final String ENTITY_NAMED_IN = "org/nmcpye/datarun/jpa/datasubmission/";
 
     /** A table, bare, schema-qualified or quoted: the word boundaries hold at the dot and the quote. */
-    private static final Pattern TABLE = Pattern.compile("(?i)\\b(data_submission|held_submission|outbox)\\b");
+    private static final Pattern TABLE =
+        Pattern.compile("(?i)\\b(data_submission|held_submission|submission_revision|outbox)\\b");
     /** A literal that is just a table name, for SQL assembled from pieces. */
     private static final Pattern WHOLE_TABLE = Pattern.compile(
-        "(?i)^\\s*(?:public\\s*\\.\\s*)?(?:\\\\?\")?(data_submission|held_submission|outbox)(?:\\\\?\")?\\s*$");
+        "(?i)^\\s*(?:public\\s*\\.\\s*)?(?:\\\\?\")?(data_submission|held_submission|submission_revision|outbox)"
+            + "(?:\\\\?\")?\\s*$");
     private static final Pattern WRITE = Pattern.compile("(?i)\\b(insert\\s+into|update|delete\\s+from|merge\\s+into"
         + "|truncate(?:\\s+table)?|copy)\\s+(?:only\\s+)?(?:public\\s*\\.\\s*)?(?:\\\\?\")?"
-        + "(data_submission|held_submission|outbox)\\b");
+        + "(data_submission|held_submission|submission_revision|outbox)\\b");
     /**
      * "outbox" is an ordinary word in log and metric texts, so it counts as a table only beside an SQL word or as a
      * whole literal; the two other names count wherever they appear.
@@ -137,6 +157,11 @@ class SubmissionWriteOwnershipTest {
     @Test
     void onlyTheCommandServiceAndItsPersistenceWriteSubmissions() {
         ONLY_THE_COMMAND_SERVICE_WRITES_SUBMISSIONS.check(MAIN);
+    }
+
+    @Test
+    void onlyThePersistenceLayerRecordsChanges() {
+        ONLY_THE_PERSISTENCE_LAYER_RECORDS_CHANGES.check(MAIN);
     }
 
     @Test
@@ -234,6 +259,16 @@ class SubmissionWriteOwnershipTest {
             .containsExactly("outside org/nmcpye/datarun/etl/metrics/X.java: names outbox in \"SELECT count(*) FROM outbox\"");
         assertThat(sourceFindings("org/nmcpye/datarun/etl/metrics/X.java", "String sneak = \"UPDATE outbox SET x = 1\";"))
             .contains("outside org/nmcpye/datarun/etl/metrics/X.java: writes outbox in \"UPDATE outbox SET x = 1\"");
+        assertThat(sourceFindings("org/nmcpye/datarun/jpa/datasubmission/revision/Reader.java",
+            "String read = \"SELECT * FROM submission_revision\";"))
+            .containsExactly("allowed org/nmcpye/datarun/jpa/datasubmission/revision/Reader.java: names submission_revision "
+                + "in \"SELECT * FROM submission_revision\"");
+        assertThat(sourceFindings("org/nmcpye/datarun/jpa/datasubmission/revision/Reader.java",
+            "String write = \"INSERT INTO submission_revision VALUES (1)\";"))
+            .contains("outside org/nmcpye/datarun/jpa/datasubmission/revision/Reader.java: writes submission_revision "
+                + "in \"INSERT INTO submission_revision VALUES (1)\"");
+        assertThat(sourceFindings("org/nmcpye/datarun/etl/X.java", "String read = \"SELECT submission_revision_metadata(s)\";"))
+            .as("the metadata function is not the table").isEmpty();
         assertThat(resourceFindings("config/application.yml", String.join("\n",
             "# the outbox consumer", "query: DELETE FROM outbox")))
             .containsExactly("outside config/application.yml:2: names outbox in \"query: DELETE FROM outbox\"");
@@ -358,22 +393,35 @@ class SubmissionWriteOwnershipTest {
         JavaClasses withABackDoor = new ClassFileImporter().importClasses(BackDoor.class, ModifyingSubmissions.class);
 
         assertThat(ONLY_THE_COMMAND_SERVICE_WRITES_SUBMISSIONS.evaluate(withABackDoor).getFailureReport().getDetails())
-            .hasSize(5)
+            .hasSize(6)
             .allSatisfy(line -> assertThat(line).contains(BackDoor.class.getName()))
             .anySatisfy(line -> assertThat(line).contains("ModifyingSubmissions.tidy"));
     }
 
-    /** Five writes the rule must catch, for the test above only; the last one by its @Modifying, not its name. */
+    /** Six writes the rule must catch, for the test above only; the last one by its @Modifying, not its name. */
     @SuppressWarnings("unused")
     static class BackDoor {
         void writes(DataSubmissionService submissions, DataSubmissionRepository repository,
-                    HeldSubmissionRepository held, OutboxWritePort outbox, ModifyingSubmissions modifying) {
+                    HeldSubmissionRepository held, OutboxWritePort outbox, SubmissionRevisionWriter revisions,
+                    ModifyingSubmissions modifying) {
             submissions.upsertAll(List.of(), new EntitySaveSummaryVM(), null);
             repository.deleteAllByUidIn(List.of("a"));
             held.recordReleaseError("a", "b");
             outbox.insert(List.of());
+            revisions.append("a", 0, null, null, null);
             modifying.tidy("a");
         }
+    }
+
+    /** The persistence layer's rule is not vacuous either: the back door's revision and outbox writes break it. */
+    @Test
+    void aRevisionWriterOutsideThePersistenceLayerBreaksTheRule() {
+        JavaClasses withABackDoor = new ClassFileImporter().importClasses(BackDoor.class);
+
+        assertThat(ONLY_THE_PERSISTENCE_LAYER_RECORDS_CHANGES.evaluate(withABackDoor).getFailureReport().getDetails())
+            .hasSize(2)
+            .anySatisfy(line -> assertThat(line).contains("SubmissionRevisionWriter.append"))
+            .anySatisfy(line -> assertThat(line).contains("OutboxWritePort.insert"));
     }
 
     /** A JPQL write whose name says nothing. Nested, so Spring Data's repository scan leaves it alone. */

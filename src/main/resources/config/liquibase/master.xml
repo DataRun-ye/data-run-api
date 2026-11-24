@@ -109,6 +109,8 @@
     <include file="/config/liquibase/changelog/data_submission/20261124-submission-revision.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/etl/20261124-outbox-submission-version.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/data_submission/20261124-submission-revision-baseline.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/data_submission/20261124-submission-revision-guards.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/etl/20261124-outbox-revision-key.xml" relativeToChangelogFile="false"/>
     <!-- Runs on every start; keep it the last changeset of the submission journal. -->
     <include file="/config/liquibase/changelog/data_submission/20261124-submission-revision-gap-repair.xml" relativeToChangelogFile="false"/>
 

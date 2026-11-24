@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!-- How long the outbox's DDL may wait for its lock; a Liquibase parameter of the same name overrides it. -->
+    <property name="outboxRevisionLockTimeout" value="30s"/>
+
+    <!--
+      An outbox row announces only a revision that exists: (submission_id, submission_version) references the
+      journal's key. MATCH SIMPLE leaves rows without a version unchecked: every row written before step C, and
+      those a rolled-back 6.5.4 writes. It ships with the journal, so no row needs NOT VALID.
+
+      Adding it scans the outbox once (every existing row has a NULL version) under a SHARE ROW EXCLUSIVE lock on
+      both tables, with the application stopped; lock_timeout makes the deploy fail visibly if a dump or a long read
+      holds the outbox. The ETL's own updates of a row never change these columns, so they are never checked. The
+      journal is append-only, so no index on the outbox side is needed for deletes.
+
+      Rollback drops the key.
+    -->
+    <changeSet id="20261124-c07-outbox-revision-key" author="datarun">
+        <sql>SET LOCAL lock_timeout = '${outboxRevisionLockTimeout}'</sql>
+        <sql>
+            ALTER TABLE outbox ADD CONSTRAINT fk_outbox_submission_revision
+                FOREIGN KEY (submission_id, submission_version) REFERENCES submission_revision (submission_id, version)
+        </sql>
+        <rollback>
+            <sql>SET LOCAL lock_timeout = '${outboxRevisionLockTimeout}'</sql>
+            <sql>ALTER TABLE outbox DROP CONSTRAINT fk_outbox_submission_revision</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

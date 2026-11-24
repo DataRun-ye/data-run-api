@@ -17,6 +17,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.nmcpye.datarun.IntegrationTest;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Group;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Item;
+import org.nmcpye.datarun.jpa.datasubmission.revision.JournalReconciliation;
 import org.nmcpye.datarun.jpa.datasubmission.revision.SubmissionTestPurge;
 import org.nmcpye.datarun.jpa.intake.GoLiveRule;
 import org.nmcpye.datarun.jpa.intake.GoLiveRuleRepository;
@@ -76,6 +77,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  *   <li>Every phone upload and phone read is checked against what that app generation needs from the answer
  *       ({@link A2PhoneContract}). Mobile code is cited as {@code m@<tag> path:lines}: the data-run-mobile
  *       repository at that release tag.</li>
+ *   <li>Before the golden is compared, the change record must agree with the scenario's submissions
+ *       ({@link JournalReconciliation}), except where the scenario's own SQL changed a submission behind it: a head
+ *       revision whose state that SQL made stale is expected.</li>
  * </ul>
  */
 @IntegrationTest
@@ -91,6 +95,7 @@ abstract class A2GoldenSupport {
         "start_entry_time", "finished_entry_time", "started_at", "live_from");
     private static final List<String> SERIALS = List.of("serial_number", "submission_serial_number");
     private static final List<String> JSON_COLUMNS = List.of("form_data", "payload");
+    private static final Pattern SQL_SUBMISSION_WRITE = Pattern.compile("(?i)\\bupdate\\s+data_submission\\b");
     /** A qualified Java name such as {@code org.example.web.Resource}: the prod profile replaces such details. */
     private static final Pattern JAVA_NAME =
         Pattern.compile("\\b[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+\\.[A-Z][A-Za-z0-9_$]*");
@@ -184,6 +189,8 @@ abstract class A2GoldenSupport {
         private final Set<String> summarized = new HashSet<>();
         private final Map<String, String> sortedArrays = new LinkedHashMap<>();
         private final Map<String, Map<Instant, String>> times = new LinkedHashMap<>();
+        /** Submissions an SQL step changed behind the journal. */
+        private final Set<String> changedBySql = new HashSet<>();
         private final Instant started;
         private final PinnedBug pinnedBug;
         private JsonNode lastBody = NullNode.getInstance();
@@ -230,6 +237,9 @@ abstract class A2GoldenSupport {
         /** A change made outside the API (a correction by SQL, a revoked grant), recorded with its effect. */
         public Scenario sql(String label, String sql, Map<String, ?> params) {
             inTransaction(() -> jdbc.update(sql, params));
+            if (SQL_SUBMISSION_WRITE.matcher(sql).find() && params.get("uid") != null) {
+                changedBySql.add(params.get("uid").toString());
+            }
             ObjectNode step = JsonNodeFactory.instance.objectNode();
             step.put("step", steps.size() + 1);
             step.put("label", label);
@@ -301,6 +311,12 @@ abstract class A2GoldenSupport {
                 bug.put("what", pinnedBug.what());
             }
             document.set("steps", steps);
+            assertThat(JournalReconciliation.findings(jdbc, "s.uid LIKE 'a2%' OR s.assignment_uid IN (:assignments)",
+                scope().getValues()))
+                .as("the change record of scenario %s against its submissions", id)
+                .filteredOn(finding -> changedBySql.stream()
+                    .noneMatch(uid -> finding.equals(uid + ": the head revision's state is not the row's")))
+                .isEmpty();
             A2Golden.verify(id, document, requestValues, placeholders);
         }
 

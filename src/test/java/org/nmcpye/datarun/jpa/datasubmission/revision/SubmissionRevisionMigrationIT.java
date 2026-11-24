@@ -370,14 +370,39 @@ class SubmissionRevisionMigrationIT {
             .as("recorded_at is the database's time").isTrue();
     }
 
+    /**
+     * Two writers of one submission that both read the same head: the no-gap check passes for both, and the
+     * primary key refuses the second once the first commits.
+     */
     @Test
-    void aVersionIsRecordedOnce() {
+    void aVersionIsRecordedOnceEvenByConcurrentWriters() throws Exception {
         String uploader = user();
-        String id = submission(0, false);
+        String id = submission(1, false);
         revision(id, 0, null, "CREATE", "UPLOAD", uploader, null, null, null);
-
-        assertThat(refusal(() -> revision(id, 0, null, "CREATE", "UPLOAD", uploader, null, null, null)))
-            .isEqualTo("23505 pk_submission_revision");
+        String insert = """
+            INSERT INTO submission_revision (submission_id, version, previous_version, kind, command, actor_user_id,
+                                             metadata)
+            VALUES ('%s', 1, 0, 'UPDATE', 'UPLOAD', '%s', '{}')""".formatted(id, uploader);
+        try (Connection first = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword());
+             Connection second = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())) {
+            first.setAutoCommit(false);
+            second.setAutoCommit(false);
+            first.createStatement().execute(insert);
+            var blocked = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+                try {
+                    second.createStatement().execute(insert);
+                    return "accepted";
+                } catch (SQLException e) {
+                    return e.getSQLState() + " " + ((org.postgresql.util.PSQLException) e).getServerErrorMessage()
+                        .getConstraint();
+                }
+            });
+            Thread.sleep(500);
+            assertThat(blocked).as("the second waits for the first").isNotDone();
+            first.commit();
+            assertThat(blocked.get(30, java.util.concurrent.TimeUnit.SECONDS)).isEqualTo("23505 pk_submission_revision");
+            second.rollback();
+        }
     }
 
     @Test
@@ -420,20 +445,85 @@ class SubmissionRevisionMigrationIT {
     @Test
     void eachKindTakesItsOwnVersionsAndCommands() {
         String user = user();
-        String id = submission(5, false);
+        String first = submission(5, false);
+        String headed = submission(5, false);
+        revision(headed, 4, null, "BASELINE", "MIGRATION", null, "MIGRATION", null, null);
 
-        assertThat(refusal(() -> revision(id, 1, null, "CREATE", "UPLOAD", user, null, null, null)))
+        assertThat(refusal(() -> revision(first, 1, null, "CREATE", "UPLOAD", user, null, null, null)))
             .as("a creation above 0").isEqualTo("23514 ck_submission_revision_version");
-        assertThat(refusal(() -> revision(id, 5, 3L, "UPDATE", "UPLOAD", user, null, null, null)))
-            .as("an update that skips a version").isEqualTo("23514 ck_submission_revision_version");
-        assertThat(refusal(() -> revision(id, 5, 5L, "BASELINE", "GAP_REPAIR", null, "MIGRATION", null, null)))
-            .as("a baseline that does not move forward").isEqualTo("23514 ck_submission_revision_version");
-        assertThat(refusal(() -> revision(id, 5, 4L, "UPDATE", "MIGRATION", null, "MIGRATION", null, null)))
-            .as("a system command writes only baselines").isEqualTo("23514 ck_submission_revision_baseline");
-        assertThat(refusal(() -> revision(id, 5, null, "BASELINE", "UPLOAD", user, null, null, null)))
+        assertThat(refusal(() -> revision(first, 5, null, "BASELINE", "UPLOAD", user, null, null, null)))
             .as("a baseline comes from a system command").isEqualTo("23514 ck_submission_revision_baseline");
-        assertThat(refusal(() -> revision(id, 5, 4L, "RESTORE", "UPLOAD", user, null, null, null)))
+        assertThat(refusal(() -> revision(headed, 6, 4L, "UPDATE", "UPLOAD", user, null, null, null)))
+            .as("an update that skips a version").isEqualTo("23514 ck_submission_revision_version");
+        assertThat(refusal(() -> revision(headed, 4, 4L, "BASELINE", "GAP_REPAIR", null, "MIGRATION", null, null)))
+            .as("a baseline that does not move forward").isEqualTo("23514 ck_submission_revision_version");
+        assertThat(refusal(() -> revision(headed, 5, 4L, "UPDATE", "MIGRATION", null, "MIGRATION", null, null)))
+            .as("a system command writes only baselines").isEqualTo("23514 ck_submission_revision_baseline");
+        assertThat(refusal(() -> revision(headed, 5, 4L, "RESTORE", "UPLOAD", user, null, null, null)))
             .as("an unknown kind").isEqualTo("23514 ck_submission_revision_kind");
+    }
+
+    // ---------------------------------------------------------------- the guards
+
+    @Test
+    void theJournalIsNeverChanged() {
+        String uploader = user();
+        String id = submission(0, false);
+        revision(id, 0, null, "CREATE", "UPLOAD", uploader, null, null, null);
+
+        assertThat(refusal(() -> db.update("UPDATE submission_revision SET reason = 'edited' WHERE submission_id = ?", id)))
+            .isEqualTo("23000 submission_revision_append_only");
+        assertThat(refusal(() -> db.update("DELETE FROM submission_revision WHERE submission_id = ?", id)))
+            .isEqualTo("23000 submission_revision_append_only");
+        assertThat(refusal(() -> db.execute("TRUNCATE submission_revision")))
+            .as("the outbox's key refuses it first").isEqualTo("0A000");
+        assertThat(refusal(() -> db.execute("TRUNCATE submission_revision CASCADE")))
+            .isEqualTo("23000 submission_revision_append_only");
+        assertThat(count("SELECT count(*) FROM submission_revision WHERE submission_id = ? AND reason IS NULL", id))
+            .isEqualTo(1);
+    }
+
+    @Test
+    void versionsRunWithoutGaps() {
+        String user = user();
+        String created = submission(0, false);
+        revision(created, 0, null, "CREATE", "UPLOAD", user, null, null, null);
+        String bare = submission(3, false);
+        String baselined = submission(3, false);
+        revision(baselined, 3, null, "BASELINE", "MIGRATION", null, "MIGRATION", null, null);
+
+        assertThat(refusal(() -> revision(created, 2, 1L, "UPDATE", "UPLOAD", user, null, null, null)))
+            .as("an update past a missing version").isEqualTo("23000 submission_revision_no_gap");
+        assertThat(refusal(() -> revision(bare, 3, 2L, "UPDATE", "UPLOAD", user, null, null, null)))
+            .as("an update of a submission the journal never saw").isEqualTo("23000 submission_revision_no_gap");
+        assertThat(refusal(() -> revision(baselined, 0, null, "CREATE", "UPLOAD", user, null, null, null)))
+            .as("a creation after a baseline").isEqualTo("23000 submission_revision_no_gap");
+        assertThat(refusal(() -> revision(baselined, 6, null, "BASELINE", "GAP_REPAIR", null, "MIGRATION", null, null)))
+            .as("a gap repair that does not name the head it jumps from").isEqualTo("23000 submission_revision_no_gap");
+
+        revision(created, 1, 0L, "UPDATE", "UPLOAD", user, null, null, null);
+        revision(baselined, 4, 3L, "DELETE", "ADMIN_DELETE", user, null, null, null);
+        revision(baselined, 6, 4L, "BASELINE", "GAP_REPAIR", null, "MIGRATION", null, null);
+        assertThat(count("SELECT count(*) FROM submission_revision WHERE submission_id IN (?, ?)", created, baselined))
+            .isEqualTo(5);
+    }
+
+    @Test
+    void theOutboxAnnouncesOnlyRevisionsThatExist() {
+        String user = user();
+        String id = submission(0, false);
+        revision(id, 0, null, "CREATE", "UPLOAD", user, null, null, null);
+        String insert = """
+            INSERT INTO outbox (submission_id, submission_serial_number, submission_uid, topic, payload, event_type,
+                                status, attempt, submission_version)
+            SELECT id, serial_number, uid, template_version_uid, form_data, 'SAVE', 'pending', 0, ?
+            FROM data_submission WHERE id = ?""";
+
+        assertThat(refusal(() -> db.update(insert, 1L, id))).isEqualTo("23503 fk_outbox_submission_revision");
+        db.update(insert, 0L, id);
+        db.update(insert, null, id);
+        assertThat(count("SELECT count(*) FROM outbox WHERE submission_id = ?", id))
+            .as("the revision's row, and one without a version as 6.5.4 writes").isEqualTo(2);
     }
 
     // ---------------------------------------------------------------- the outbox
@@ -441,6 +531,7 @@ class SubmissionRevisionMigrationIT {
     @Test
     void theOutboxNamesAVersionAndTakesItsTimeFromTheDatabaseInUtc() throws Exception {
         String id = submission(0, false);
+        revision(id, 0, null, "CREATE", "UPLOAD", user(), null, null, null);
         try (Connection connection = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword());
              var statement = connection.createStatement()) {
             statement.execute("SET TimeZone = 'Asia/Aden'");
