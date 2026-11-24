@@ -19,6 +19,12 @@ scripts/integrity/check.sh            # one line per check
 scripts/integrity/check.sh --detail   # also each count split by template or pivot table
 ```
 
+**Never run it during a deploy or a pivot build.** Its read locks last until
+it finishes, so a migration's DDL or a pivot swap would wait behind it, and the
+application behind them; and a pivot rebuilt after it started reads as empty.
+It refuses to start while an exclusive lock is held or waited for, but it
+cannot stop one from starting during the run.
+
 To gate a repair step, save a run before the step and one after, then compare:
 
 ```bash
@@ -29,7 +35,7 @@ diff before.txt after.txt
 ```
 
 The summary goes to stdout and is stable between runs on unchanged data.
-Timings and the target go to stderr.
+Timings, the guards' readings and the temporary files written go to stderr.
 
 Production only on the owner's go:
 
@@ -42,26 +48,44 @@ Hosts and databases follow the reference scripts: `DATARUN_STAGING_DB_SSH`
 (`datarun_staging`), `DATARUN_PRODUCTION_DB_SSH` (`nmcp@datarun-prod-db.lab`)
 and `DATARUN_PRODUCTION_DATABASE` (`nmcpdb`).
 
+Exit codes: 0 done, 2 usage or settings, 3 a guard refused to start, 4 psql
+failed (a query error, a timeout or a lost connection), 5 a line is missing or
+the output was not understood.
+
 ## How it stays safe
 
-- It first lists the templates in a short read-only transaction. All checks
-  then run in one `BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY`
+- Before any query it reads the database host and stops (exit 3) when:
+  - less than 1024 MB of memory is available
+    (`DATARUN_INTEGRITY_MIN_AVAILABLE_MB`); one heavy query once stopped the
+    whole staging database (2026-11-23);
+  - the disk holding the data directory has less than 10 GB free
+    (`DATARUN_INTEGRITY_MIN_FREE_DISK_MB`, default 10240); sorts and hashes
+    that pass `work_mem` spill to temporary files there;
+  - an `AccessExclusiveLock` is held or waited for on a table in `public`,
+    `analytics` or `pivot`, the sign of a migration or a pivot swap.
+- It lists the templates in a short read-only transaction (1-minute statement
+  timeout, 5-second lock timeout), and stops if there are none.
+- All checks then run in one `BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY`
   that ends in `ROLLBACK`, so all counts come from the same snapshot and nothing
-  can be written.
-- One heavy query once stopped the whole staging database (2026-11-23), so the
-  transaction sets `work_mem = '8MB'`, `max_parallel_workers_per_gather = 0`,
-  `statement_timeout = '5min'`, `jit = off`, `lock_timeout = '10s'` and
-  `idle_in_transaction_session_timeout = '2min'`. Statements run one at a time.
+  can be written. The transaction sets `work_mem = '8MB'`,
+  `max_parallel_workers_per_gather = 0`, `statement_timeout = '5min'`,
+  `lock_timeout = '5s'`, `idle_in_transaction_session_timeout = '2min'`,
+  `jit = off` and `temp_file_limit = '1GB'` (superuser-only, so set first), then
+  `SET LOCAL ROLE pg_read_all_data`, so the statements run with read rights
+  only. Statements run one at a time.
 - The payload walks run one template at a time (`payload-by-template.sql`, once
   per template), and the pivot checks one pivot table at a time.
-- Before any query, it reads the database host's available memory and stops if
-  it is below 1024 MB (`DATARUN_INTEGRITY_MIN_AVAILABLE_MB`).
 - The SQL is copied to the database host first and run there with
   `sudo -n -u postgres psql`, as the reference scripts do, so a stalled tunnel
-  cannot leave the transaction waiting for input. The copy is removed afterwards.
+  cannot leave the transaction waiting for input. psql is stopped after 15
+  minutes (`DATARUN_INTEGRITY_TIMEOUT_S`, default 900): an interrupt first,
+  which cancels the running query, then a kill 30 seconds later. The copy is
+  removed afterwards.
 
 On staging (2026-11-24, about 66,000 submissions) a full run takes about a
-minute, almost all of it in the payload walks.
+minute, almost all of it in the payload walks. It wrote 132 temporary files,
+about 3 GB in all; the most on disk at one time, sampled every 5 seconds, was
+about 0.5 GB, under the 1 GB limit.
 
 ## Files
 
@@ -70,14 +94,15 @@ minute, almost all of it in the payload walks.
 | `check.sh` | the runner |
 | `sql/01-outbox.sql` | 1 |
 | `sql/04-voided.sql` | 4 |
-| `sql/05-empty-submissions.sql` | 5c |
+| `sql/05-skipped-submissions.sql` | 5c, 5d |
 | `sql/08-pivots.sql` | 8 |
 | `sql/09-version-labels.sql` | 9 |
 | `sql/10-etl-lag.sql` | 10 |
 | `sql/payload-by-template.sql` | 2, 3, 5a–5b, 6, 7 |
 
 Each SQL statement returns rows of `key|count|description`, optionally with a
-fourth column saying where (a pivot table); the runner adds the rows up per key.
+fourth column saying where (a pivot table); the runner adds the rows up per key
+and fails (exit 5) if any expected key is missing.
 
 ## The checks
 
@@ -92,18 +117,23 @@ transaction. The ETL learns about changes only through these events.
 - **1a** Submissions with no outbox event at all. They were stored before the
   outbox existed (April to September 2025) and were never backfilled, so tall
   and events do not have them either (see 5a).
-- **1b** Deleted submissions whose latest event is not a DELETE. Today these are
-  the 48 deleted by hand-written SQL on 2025-11-27; their latest event is the
-  later BACKFILL. Falls when events carry a type that matches the state (plan
-  step C1).
+- **1b** Deleted submissions that have events, whose latest event is not a
+  DELETE (submissions with no event at all are in 1a). Today these are the 48
+  deleted by hand-written SQL on 2025-11-27; their latest event is the later
+  BACKFILL. Falls when events carry a type that matches the state (plan step
+  C1).
 - **1c** Active submissions whose latest event is a DELETE. Should stay 0.
 - **1d** Submissions changed after their latest event: the stored payload
-  differs from the latest event's payload, or `last_modified_date` is later.
-  Should stay 0; a rise means some write skipped the outbox (the generic PUT, or
-  SQL).
-- **1e, 1f** UPDATE events that changed nothing (same payload as the event
-  before), and their submissions. Noise from identical retries, which stopped on
-  2026-11-18. Should not rise.
+  differs from the latest event's payload, or the record was modified later.
+  The upload saves the record before it stamps the event, so its event is
+  never older; the admin delete stamps the DELETE event first and saves the
+  record in the same transaction, so a deleted record up to a minute newer
+  than its DELETE event is not counted. Should stay 0; a rise means some write
+  skipped the outbox (the generic PUT, or SQL).
+- **1e, 1f** UPDATE events whose form data equals the previous event's, and
+  their submissions. An UPDATE is also written when only the status, team,
+  village or assignment changes (since `a7c7e008`), so this is not a fault count
+  by itself. The ones from identical retries stopped on 2026-11-18.
 
 ### 2. Removed repeat rows still projected
 
@@ -151,12 +181,19 @@ All fall to 0 with plan step D1, which records who made each change.
 
 ### 5. Never projected
 
-- **5a** Active submissions that hold data but have no projection (no root
-  event).
+A submission counts as projected once it has any tall row or any event. The
+ETL writes events only for the keys of the tall rows it writes, so a
+submission whose values all sit in repeat rows has no root event; a root event
+alone is not the test.
+
+- **5a** Active submissions holding at least one value with a field definition
+  but no tall row and no event.
 - **5b** The values with a field definition that those submissions hold: what a
   re-projection would add to tall.
-- **5c** Active submissions with no data at all (`form_data` null). There is
+- **5c** Active submissions whose form data is not a JSON object. There is
   nothing to project, so they are not a projection gap.
+- **5d** Active submissions with no `template_uid`. The payload checks read one
+  template at a time, so they cannot see them. Should stay 0.
 
 5a and 5b fall to 0 with the supported re-projection (plan step D2).
 
@@ -192,24 +229,29 @@ for the submission's template.
 
 ### 8. Pivot tables
 
-Pivot tables (`pivot.fact_<template code>`) are snapshots built by hand from
-events. Each build renames the previous table to `<name>_old`; those copies are
-not counted. "Active events" are events with `deleted_at` null.
+Pivot tables (`pivot.fact_<template code>`) are snapshots, built only when
+someone asks for them (one template or a list, each rebuilt whole). Each build
+renames the previous table to `<name>_old`; those copies are not counted.
+"Active events" are events with `deleted_at` null.
 
 - **8a** Active events missing from their template's pivot table: events created
   after its last build. `--detail` shows which tables are old.
 - **8b** Pivot rows that are not active events: voided rows a build kept, or
   events that are gone.
-- **8c** Templates with active events but no pivot table under their current
-  name (never built, or the table is missing).
+- **8c** Templates with active events and no pivot table under their current
+  name. Pivots are built on request, so this is not a fault by itself.
 - **8d** Pivot tables under a name no template has now: the template's code
   changed after the build.
-- **8e** Manifest entries marked success whose table does not exist.
+- **8e** Manifest entries marked success whose table does not exist. A fault.
 - **8f** Manifest entries whose name differs from the current naming. The
   manifest keeps the name of the first build.
 - **8g** Active pivot rows of repeat rows removed from their submission: 2a
   carried into the pivots. Note that once D1 marks removed rows in events, these
   rows move to 8b until the pivots are rebuilt.
+- **8h** Pivot tables under a current name that lack a column 8a, 8b or 8g
+  read (`event_id`, `event_type`, `submission_uid`, `deleted_at`), so those
+  checks are incomplete there. Today: three pivots built in December 2025 and
+  January 2026 that have no `deleted_at`, so their own void flag cannot be read.
 
 ### 9. Form-version labels
 
@@ -229,27 +271,46 @@ uploads should never add to them.
 
 ### 10. ETL lag
 
-- **10a** Outbox rows waiting for the ETL.
-- **10b** The age of the oldest waiting row, in seconds (0 when none wait).
-- **10c** Outbox rows marked failed. The ETL never marks failures today (a
-  failing row stays pending and is retried every minute), so watch 10a and 10b.
+An outbox row is `pending` until the ETL first tries it and `success` once
+projected. The ETL fix (branch `fix/etl-runtime`) adds `failed`, a row that
+failed and will be tried again after a backoff, and `dead`, a row given up on.
+Today's ETL writes neither, so 10c and 10d stay 0 until that fix ships; the
+check reads only the `status` and `created_at` columns that exist today.
+
+- **10a** Outbox rows not projected yet: pending, or failed and waiting to be
+  tried again.
+- **10b** The age of the oldest of them, in seconds (0 when none wait).
+- **10c** Of 10a, the rows that failed and wait to be tried again.
+- **10d** Dead rows: given up after failing, never projected. Each one is a
+  change analytics will never see until someone acts.
 
 ## How the payload checks read a submission
 
-`payload-by-template.sql` mirrors the ETL's path resolution
-(`TransformServiceRobust`), so its expected projection can be compared with
+The ETL that runs is `TransformServiceV2` (`EventProcessorServiceImpl.java:35`,
+`:99`). It takes its tall rows from `TransformServiceRobust.transform` over
+every field definition of the template (`TransformServiceV2.java:34`,
+`EventProcessorServiceImpl.java:85`) and writes one event per projection key of
+those rows (`TransformServiceV2.java:51`, `:84`). `payload-by-template.sql`
+mirrors that path resolution, so its expected projection can be compared with
 tall row by row:
 
 - a path is section and field names joined by dots; repeat rows add no segment;
 - an array is a repeat when one of its first 10 items is an object, and each
-  item is then a row; any other array (a multi-select, or an empty array) is one
-  node;
-- JSON null and `""` are skipped; any other node at a field definition's path is
-  projected, even an empty array or a plain section object;
-- the projection key is the nearest repeat row's `_id`, or the submission uid
-  outside rows or when the nearest row has no `_id`;
-- when several nodes share a key and a field, the last one is kept, as in the
-  ETL.
+  item is then a row (`TransformServiceRobust.java:171-180`); any other array (a
+  multi-select, or an empty array) is one node;
+- JSON null and `""` are skipped (`:163`, `:166`, `:102`); any other node at a
+  field definition's path is projected, even an empty array or a plain section
+  object;
+- the projection key is the nearest repeat row's `_id` (`:47`), or the
+  submission uid outside rows or when the nearest row has no `_id`
+  (`InstanceKeyUtil.java:27`);
+- when several nodes share a key and a field, the last one is kept, because
+  tall is upserted on that key and field (`TallCanonicalJdbcRepository.java:39`).
+
+On staging this mirror agrees with tall: every tall row of an active
+submission is either an expected row or a counted leftover (2b, 3a), no
+expected row of a projected submission is missing (7a = 0), and none of the
+1,585,896 values differs (7d = 0).
 
 A **value** is a non-empty string, a number, a boolean or a non-empty
 multi-select. Keys starting with `_` (`_id`, `_index`, `_parentId`,
@@ -269,7 +330,7 @@ data-chain investigations of the same day, on the same data.
 | 1b | 48 | 48 | |
 | 1c | 0 | 0 | |
 | 1d | 0 | 0 | |
-| 1e, 1f | 1,573, 588 | 1,573, 588 | |
+| 1e, 1f | 1,573, 588 | 1,573, 588 | equal form data; identical retries and metadata-only changes |
 | 2a, 2b | 429, 1,845 | 429, 1,845 | |
 | 2c, 2d | 71, 5 | 71, 5 | |
 | 3a | 3 | 2 | the investigation counted fields on the submission itself; the third is a field removed inside a repeat row that still exists |
@@ -280,7 +341,7 @@ data-chain investigations of the same day, on the same data.
 | 4c | 0 | 0 | (70 events marked) |
 | 4d, 4e, 4f | 0, 0, 0 | | not measured before |
 | 5a, 5b | 4,628, 56,925 | 4,628, 56,925 | |
-| 5c | 2 | | not measured before |
+| 5c, 5d | 2, 0 | | not measured before |
 | 6a | 18,485 | 18,485 | |
 | 6b | 699 | 699 | |
 | 6c | 1 | | not measured before: a line-items submission holding another form's data since a July 2026 re-send |
@@ -290,12 +351,13 @@ data-chain investigations of the same day, on the same data.
 | 7e | 1,585,896 | 1,585,896 | |
 | 8a | 6,646 | | per table as the investigation: 3,312, 412, 64 and 2,239 in the four old pivots; the pivots rebuilt on 2026-11-19 miss only later events |
 | 8b | 70 | 70 | voided rows in `fact_lsm` |
-| 8c | 3 | | not measured before |
+| 8c | 3 | | not measured before; two templates never pivoted, and the one whose table is missing (8e) |
 | 8d, 8e, 8f | 3, 2, 3 | 3, 2, 3 | |
 | 8g | 409 | 409 | |
+| 8h | 3 | | not measured before: three older pivots without `deleted_at` |
 | 9a, 9b | 402, 13,814 | 402, 13,814 | |
 | 9c, 9d | 0, 0 | | |
-| 10a, 10b, 10c | 0, 0, 0 | 0 pending or failed | |
+| 10a–10d | 0, 0, 0, 0 | 0 pending or failed | |
 
 ## Not included
 

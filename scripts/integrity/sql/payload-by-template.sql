@@ -3,29 +3,47 @@
 -- The runner sets :tmpl and runs this once per template, so each payload walk
 -- stays small. Active submissions only (deleted ones are check 4).
 --
--- The walk mirrors the ETL's path resolution (TransformServiceRobust):
+-- The ETL that runs is TransformServiceV2 (EventProcessorServiceImpl.java:35,
+-- :99). It takes its tall rows from TransformServiceRobust.transform over every
+-- field definition of the template (TransformServiceV2.java:34;
+-- EventProcessorServiceImpl.java:85) and writes one event per projection key
+-- of those rows (TransformServiceV2.java:51, :84). So a submission whose values
+-- all sit in repeat rows has no root event: "projected" means it has any tall
+-- row or any event.
+--
+-- The walk mirrors that path resolution (TransformServiceRobust.java):
 --   * a path is section and field names joined by dots; repeat rows add no segment;
 --   * an array is a repeat when one of its first 10 items is an object, and each
---     item is then a row; any other array (a multi-select, or an empty array) is
---     one node;
---   * JSON null and "" are skipped; any other node at a field definition's path
---     is projected, even an empty array or a plain section object;
---   * the projection key is the nearest repeat row's _id, or the submission uid
---     outside rows or when the nearest row has no _id;
---   * when several nodes share a key and a field, the ETL keeps the last one.
+--     item is then a row (:171-180); any other array (a multi-select, or an empty
+--     array) is one node;
+--   * JSON null and "" are skipped (:163, :166, :102); any other node at a field
+--     definition's path is projected, even an empty array or a plain section object;
+--   * the projection key is the nearest repeat row's _id (:47), or the submission
+--     uid outside rows or when the nearest row has no _id (InstanceKeyUtil.java:27);
+--   * when several nodes share a key and a field, the ETL keeps the last one
+--     (upsert on instance_key and field, TallCanonicalJdbcRepository.java:39).
 -- A "value" is a non-empty string, a number, a boolean or a non-empty
 -- multi-select. Keys starting with "_" (_id, _index, _parentId, _submissionUid,
 -- _status) are system keys, not values.
 --
 -- Row estimates for these CTEs are poor, so the "projected" flag is carried
--- along instead of joining back to the submissions.
+-- along instead of joining back to the submissions, and the template's event
+-- submissions are joined as a set rather than looked up per submission.
 WITH RECURSIVE
+event_subs AS MATERIALIZED (
+    SELECT DISTINCT e.submission_uid AS uid
+    FROM analytics.events e
+    WHERE e.template_uid = :'tmpl' AND e.submission_uid IS NOT NULL
+),
 sub AS MATERIALIZED (
-    SELECT s.uid, s.form_data,
-           EXISTS (SELECT 1 FROM analytics.events e WHERE e.event_id = s.uid) AS projected
+    -- active submissions of the template; a payload that is not an object yields no values
+    SELECT s.uid,
+           CASE WHEN jsonb_typeof(s.form_data) = 'object' THEN s.form_data END AS form_data,
+           EXISTS (SELECT 1 FROM analytics.tall_canonical t WHERE t.submission_uid = s.uid)
+           OR es.uid IS NOT NULL AS projected
     FROM data_submission s
+    LEFT JOIN event_subs es ON es.uid = s.uid
     WHERE s.template_uid = :'tmpl' AND NOT coalesce(s.deleted, false)
-      AND jsonb_typeof(s.form_data) = 'object'
 ),
 ce AS MATERIALIZED (
     SELECT c.id AS ce_id, p.path
@@ -90,8 +108,7 @@ tall AS MATERIALIZED (
                IS DISTINCT FROM (s.org_unit_uid, s.assignment_uid, s.team_uid, s.activity_uid) AS context_differs
     FROM analytics.tall_canonical t
     JOIN data_submission s ON s.uid = t.submission_uid
-    WHERE t.template_uid = :'tmpl' AND s.template_uid = :'tmpl'
-      AND NOT coalesce(s.deleted, false) AND jsonb_typeof(s.form_data) = 'object'
+    WHERE t.template_uid = :'tmpl' AND s.template_uid = :'tmpl' AND NOT coalesce(s.deleted, false)
 ),
 cur_rows AS MATERIALIZED (
     SELECT DISTINCT n.sub_uid, n.projected, n.instance_key AS row_id
@@ -104,8 +121,7 @@ ev AS MATERIALIZED (
            e.last_modified_by IS DISTINCT FROM s.last_modified_by AS modifier_differs
     FROM analytics.events e
     JOIN data_submission s ON s.uid = e.submission_uid
-    WHERE e.template_uid = :'tmpl' AND s.template_uid = :'tmpl'
-      AND NOT coalesce(s.deleted, false) AND jsonb_typeof(s.form_data) = 'object'
+    WHERE e.template_uid = :'tmpl' AND s.template_uid = :'tmpl' AND NOT coalesce(s.deleted, false)
 ),
 cmp AS MATERIALIZED (
     SELECT e.sub_uid, e.projected, e.instance_key AS e_key, e.node, e.is_leaf,
@@ -147,7 +163,7 @@ counts AS (
         (SELECT count(*) FROM ev WHERE modifier_differs) AS events_modifier_differs,
         (SELECT count(*) FROM (SELECT sub_uid FROM val GROUP BY sub_uid HAVING NOT bool_or(has_def)) x)
             AS subs_without_any_def,
-        (SELECT count(*) FROM sub WHERE NOT projected) AS unprojected_subs,
+        (SELECT count(DISTINCT sub_uid) FROM val WHERE NOT projected AND has_def) AS unprojected_subs,
         (SELECT count(*) FROM val WHERE NOT projected AND has_def) AS unprojected_values,
         (SELECT count(*) FROM val WHERE NOT has_def) AS values_no_def,
         (SELECT count(*) FROM cur_rows r LEFT JOIN ev ON ev.event_id = r.row_id
@@ -179,7 +195,7 @@ CROSS JOIN LATERAL (VALUES
     ('3c', c.tall_context_differs, 'tall rows whose village, assignment, team or activity differs from the submission'),
     ('3d', c.events_context_differs, 'events whose village, assignment, team or activity differs from the submission'),
     ('3e', c.events_modifier_differs, 'events whose last modifier differs from the submission''s (kept from the first projection)'),
-    ('5a', c.unprojected_subs, 'submissions with data that were never projected'),
+    ('5a', c.unprojected_subs, 'submissions with values to project but no tall row or event'),
     ('5b', c.unprojected_values, 'values with a field definition in those submissions'),
     ('6a', c.values_no_def, 'values with no field definition (never projected)'),
     ('6b', c.rows_without_event, 'repeat rows with no event (their section has no field definition)'),
