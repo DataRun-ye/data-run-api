@@ -64,6 +64,7 @@ public class ErrorReportingConfiguration {
             options.setTracesSampler(null);
             options.setTracePropagationTargets(List.of()); // no trace headers on outgoing requests
             options.getLogs().setEnabled(false); // log lines are not shipped; ERROR lines become events
+            options.setAttachServerName(false); // the container's host name says nothing GlitchTip needs
             // Sentry becomes the JVM's default uncaught exception handler and, unlike the JVM's own, prints nothing;
             // the event carries no message, so the stack trace must still reach the container log.
             options.setPrintUncaughtStackTrace(true);

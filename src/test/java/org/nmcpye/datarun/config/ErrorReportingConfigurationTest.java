@@ -144,6 +144,7 @@ class ErrorReportingConfigurationTest {
         assertThat(options.isTracingEnabled()).isFalse();
         assertThat(options.getTracePropagationTargets()).isEmpty();
         assertThat(options.getLogs().isEnabled()).isFalse();
+        assertThat(options.isAttachServerName()).isFalse();
         assertThat(options.isPrintUncaughtStackTrace()).isTrue();
         assertThat(options.getFlushTimeoutMillis()).isEqualTo(2000);
         assertThat(options.getConnectionTimeoutMillis()).isEqualTo(5000);

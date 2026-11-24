@@ -120,6 +120,7 @@ class ErrorReportingTest {
                 assertThat(event.has("request")).isFalse();
                 assertThat(event.has("user")).isFalse();
                 assertThat(event.has("breadcrumbs")).isFalse();
+                assertThat(event.has("server_name")).isFalse();
             });
             assertThat(glitchTip.envelopes()).as("one envelope: no transaction, log or other item")
                 .singleElement().satisfies(envelope -> assertThat(envelope.split("\n")).hasSize(3));
