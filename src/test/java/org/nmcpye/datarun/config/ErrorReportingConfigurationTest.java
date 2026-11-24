@@ -146,6 +146,9 @@ class ErrorReportingConfigurationTest {
         assertThat(options.getLogs().isEnabled()).isFalse();
         assertThat(options.isPrintUncaughtStackTrace()).isTrue();
         assertThat(options.getFlushTimeoutMillis()).isEqualTo(2000);
+        assertThat(options.getConnectionTimeoutMillis()).isEqualTo(5000);
+        assertThat(options.getReadTimeoutMillis()).isEqualTo(5000);
+        assertThat(options.getShutdownTimeoutMillis()).isEqualTo(2000);
         assertThat(options.getLogging().getMinimumEventLevel()).isEqualTo(Level.ERROR);
         assertThat(options.getRelease()).isEqualTo("6.5.3");
     }

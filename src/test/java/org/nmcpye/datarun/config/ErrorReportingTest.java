@@ -16,8 +16,12 @@ import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -187,6 +191,26 @@ class ErrorReportingTest {
             });
         } finally {
             Thread.setDefaultUncaughtExceptionHandler(before);
+        }
+    }
+
+    /**
+     * A GlitchTip that takes the connection but never answers, as one behind a stuck proxy. With the SDK's defaults,
+     * closing waited for the stuck send for up to 15 s more, past docker's 10 s stop grace.
+     */
+    @Test
+    void aGlitchTipThatNeverAnswersDelaysShutdownBySecondsOnly() throws IOException {
+        try (ServerSocket silent = new ServerSocket(0, 50, InetAddress.getLoopbackAddress())) {
+            long[] closing = new long[1];
+            runner.withPropertyValues("sentry.dsn=http://publickey@127.0.0.1:" + silent.getLocalPort() + "/1")
+                .run(context -> {
+                    assertThat(Sentry.isEnabled()).isTrue();
+                    log.error("A report that never arrives");
+                    closing[0] = System.nanoTime();
+                });
+
+            assertThat(Duration.ofNanos(System.nanoTime() - closing[0])).as("within docker's 10 s stop grace")
+                .isLessThan(Duration.ofSeconds(9));
         }
     }
 

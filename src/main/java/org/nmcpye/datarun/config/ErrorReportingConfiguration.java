@@ -69,6 +69,11 @@ public class ErrorReportingConfiguration {
             options.setPrintUncaughtStackTrace(true);
             // How long a dying thread waits for its report to start going out, and shutdown for reports to leave.
             options.setFlushTimeoutMillis(2000);
+            // A GlitchTip that does not answer holds each send for seconds, not the SDK's default 30 s, and
+            // shutdown by a few seconds at most, within docker's 10 s stop grace.
+            options.setConnectionTimeoutMillis(5000);
+            options.setReadTimeoutMillis(5000);
+            options.setShutdownTimeoutMillis(2000);
             if (options instanceof SentryProperties properties) {
                 properties.getLogging().setMinimumEventLevel(Level.ERROR);
             }
