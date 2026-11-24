@@ -61,6 +61,26 @@ class A2LegacyUploadTier1IT extends A2GoldenSupport {
             .verify();
     }
 
+    /**
+     * Nested rows without _id, the way G0 sends every row. The server adds _id only where the version it resolves
+     * names a repeat section at the row's path (rows, and subrows inside each row, here as in W3-02); a nested list
+     * the version does not name is stored as sent. That list stands for a phone and a server that disagree on the
+     * version's sections: G0 builds its lists from its own copy of the version, so when both hold the same version,
+     * every list it sends is named.
+     */
+    @Test
+    void w3_15_g0NestedListTheVersionDoesNotName() {
+        String uid = uid("w315");
+        Item g0 = formA(G0, uid, "first", ASSIGN_T1_V1);
+        ((ObjectNode) g0.node.get("formData").get("main").get("rows").get(0)).set("samples", NODES.arrayNode()
+            .add(NODES.objectNode().put("a2_sub", "x1"))
+            .add(NODES.objectNode().put("a2_sub", "x2")));
+        scenario("W3-15", "G0 nested rows: _id where the version names a repeat; a nested list it does not name is "
+            + "stored as sent, without _id")
+            .upload("new", G0, FIELD_1, g0)
+            .verify();
+    }
+
     @Test
     @PinnedBug(changeBy = "D1",
         what = "a G0 re-send of an unchanged record gets new repeat-row ids, so it is written as an UPDATE and its "
