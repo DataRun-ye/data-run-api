@@ -40,6 +40,9 @@ class A2VersionedUploadTier2IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "C1/D1",
+        what = "an unchanged re-send after the village was renamed writes an UPDATE carrying the new name: a "
+            + "server-side context change churns every record re-sent afterwards")
     void w1_06_unchangedResendAfterARename() {
         String uid = uid("w106");
         try {

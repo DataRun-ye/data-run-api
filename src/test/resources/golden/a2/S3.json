@@ -1,4 +1,8 @@
 {
+  "pinnedBug" : {
+    "changeBy" : "E3/E4, C1, B1",
+    "what" : "a phone re-send after an admin delete is absorbed into the deleted record, and a second admin delete writes a second DELETE event"
+  },
   "scenario" : "S3",
   "steps" : [
     {
@@ -8,7 +12,7 @@
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT1a",
             "created_by" : "a2-field1",
-            "created_date" : "<set>",
+            "created_date" : "<created_date:1>",
             "deleted" : false,
             "deleted_at" : null,
             "finished_entry_time" : "2026-11-20T05:10:00Z",
@@ -37,7 +41,7 @@
             },
             "id" : "<ulid:1>",
             "last_modified_by" : "a2-field1",
-            "last_modified_date" : "<set>",
+            "last_modified_date" : "<last_modified_date:1>",
             "lock_version" : 0,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
@@ -58,7 +62,7 @@
         "outbox" : [
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:1>",
             "event_type" : "SAVE",
             "last_error" : null,
             "payload" : {
@@ -164,9 +168,9 @@
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT1a",
             "created_by" : "a2-field1",
-            "created_date" : "<set>",
+            "created_date" : "<created_date:1>",
             "deleted" : true,
-            "deleted_at" : "<set>",
+            "deleted_at" : "<deleted_at:1>",
             "finished_entry_time" : "2026-11-20T05:10:00Z",
             "form_data" : {
               "main" : {
@@ -193,7 +197,7 @@
             },
             "id" : "<ulid:1>",
             "last_modified_by" : "admin",
-            "last_modified_date" : "<set>",
+            "last_modified_date" : "<last_modified_date:2>",
             "lock_version" : 1,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
@@ -214,7 +218,7 @@
         "outbox" : [
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:1>",
             "event_type" : "SAVE",
             "last_error" : null,
             "payload" : {
@@ -248,7 +252,7 @@
           },
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:2>",
             "event_type" : "DELETE",
             "last_error" : null,
             "payload" : {
@@ -306,9 +310,9 @@
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT1a",
             "created_by" : "a2-field1",
-            "created_date" : "<set>",
+            "created_date" : "<created_date:1>",
             "deleted" : true,
-            "deleted_at" : "<set>",
+            "deleted_at" : "<deleted_at:1>",
             "finished_entry_time" : "2026-11-20T05:10:00Z",
             "form_data" : {
               "main" : {
@@ -335,7 +339,7 @@
             },
             "id" : "<ulid:1>",
             "last_modified_by" : "a2-field1",
-            "last_modified_date" : "<set>",
+            "last_modified_date" : "<last_modified_date:3>",
             "lock_version" : 2,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
@@ -356,7 +360,7 @@
         "outbox" : [
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:1>",
             "event_type" : "SAVE",
             "last_error" : null,
             "payload" : {
@@ -390,7 +394,7 @@
           },
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:2>",
             "event_type" : "DELETE",
             "last_error" : null,
             "payload" : {
@@ -424,7 +428,7 @@
           },
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:3>",
             "event_type" : "UPDATE",
             "last_error" : null,
             "payload" : {
@@ -530,9 +534,9 @@
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT1a",
             "created_by" : "a2-field1",
-            "created_date" : "<set>",
+            "created_date" : "<created_date:1>",
             "deleted" : true,
-            "deleted_at" : "<set>",
+            "deleted_at" : "<deleted_at:2>",
             "finished_entry_time" : "2026-11-20T05:10:00Z",
             "form_data" : {
               "main" : {
@@ -559,7 +563,7 @@
             },
             "id" : "<ulid:1>",
             "last_modified_by" : "admin",
-            "last_modified_date" : "<set>",
+            "last_modified_date" : "<last_modified_date:4>",
             "lock_version" : 3,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
@@ -580,7 +584,7 @@
         "outbox" : [
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:1>",
             "event_type" : "SAVE",
             "last_error" : null,
             "payload" : {
@@ -614,7 +618,7 @@
           },
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:2>",
             "event_type" : "DELETE",
             "last_error" : null,
             "payload" : {
@@ -648,7 +652,7 @@
           },
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:3>",
             "event_type" : "UPDATE",
             "last_error" : null,
             "payload" : {
@@ -682,7 +686,7 @@
           },
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:4>",
             "event_type" : "DELETE",
             "last_error" : null,
             "payload" : {

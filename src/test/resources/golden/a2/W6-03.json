@@ -1,4 +1,8 @@
 {
+  "pinnedBug" : {
+    "changeBy" : "B1",
+    "what" : "an admin delete of an unknown uid answers 500 instead of 404"
+  },
   "scenario" : "W6-03",
   "steps" : [
     {

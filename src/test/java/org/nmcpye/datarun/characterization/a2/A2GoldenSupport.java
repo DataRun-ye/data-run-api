@@ -10,6 +10,9 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayNameGeneration;
+import org.junit.jupiter.api.DisplayNameGenerator;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.TestInstance;
 import org.nmcpye.datarun.IntegrationTest;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Group;
@@ -29,6 +32,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -39,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
@@ -52,10 +57,30 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  * <p>
  * The ETL never polls in these tests: {@code AsyncConfiguration}, which carries {@code @EnableScheduling}, is
  * excluded from the test profiles, so outbox rows stay {@code pending} and the goldens pin that.
+ * <p>
+ * What the goldens record besides the raw exchange:
+ * <ul>
+ *   <li>A scenario that freezes a known bug says so: {@link PinnedBug} on its test method puts
+ *       {@code "pinnedBug": {"changeBy": ..., "what": ...}} into the golden and the note into the display name.</li>
+ *   <li>Server clock times in the snapshots become {@code <column:n>}, numbered per column in order of first
+ *       appearance, so an unchanged time keeps its token and a moved or refreshed one gets the next. Numbers are per
+ *       column because two clock reads in one statement (a decision sets {@code decided_at} and
+ *       {@code last_modified_date} with two {@code clock_timestamp()} calls) can fall in the same microsecond or
+ *       not, which would make tokens shared across columns flaky. Every such time must lie inside the test's own
+ *       time window. Times in response bodies stay {@code <set>}: they include the seed's, which predate the
+ *       test.</li>
+ *   <li>Error {@code detail} texts that the prod profile would not show are masked, so the goldens keep the
+ *       status, the error key and the shape but not library or driver wording: a text naming Java classes becomes
+ *       {@code <framework text>}, a PostgreSQL message {@code <database error>}.</li>
+ *   <li>Every phone upload is checked against what that app generation needs from the answer
+ *       ({@link A2PhoneContract}). Mobile code is cited as {@code m@<tag> path:lines}: the data-run-mobile
+ *       repository at that release tag.</li>
+ * </ul>
  */
 @IntegrationTest
 @AutoConfigureMockMvc
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@DisplayNameGeneration(A2GoldenSupport.DisplayNames.class)
 abstract class A2GoldenSupport {
 
     private static final List<String> SERVER_TIMES = List.of(
@@ -65,6 +90,9 @@ abstract class A2GoldenSupport {
         "start_entry_time", "finished_entry_time", "started_at", "live_from");
     private static final List<String> SERIALS = List.of("serial_number", "submission_serial_number");
     private static final List<String> JSON_COLUMNS = List.of("form_data", "payload");
+    /** A qualified Java name such as {@code org.example.web.Resource}: the prod profile replaces such details. */
+    private static final Pattern JAVA_NAME =
+        Pattern.compile("\\b[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+\\.[A-Z][A-Za-z0-9_$]*");
 
     @Autowired
     protected MockMvc mvc;
@@ -83,14 +111,19 @@ abstract class A2GoldenSupport {
 
     protected final ObjectMapper json = new ObjectMapper().findAndRegisterModules();
 
+    private Instant testStarted;
+    private PinnedBug pinnedBug;
+
     @BeforeAll
     void seedConfiguration() throws Exception {
         A2Seed.ensure(jdbc, transactionManager, mvc, jwtKey);
     }
 
     @BeforeEach
-    void cleanBefore() {
+    void cleanBefore(TestInfo test) {
         clean();
+        testStarted = Instant.now();
+        pinnedBug = test.getTestMethod().map(method -> method.getAnnotation(PinnedBug.class)).orElse(null);
     }
 
     @AfterEach
@@ -126,7 +159,17 @@ abstract class A2GoldenSupport {
     }
 
     protected Scenario scenario(String id, String title) {
-        return new Scenario(id, title);
+        return new Scenario(id, title, testStarted, pinnedBug);
+    }
+
+    /** Appends a {@link PinnedBug} note to the test's display name. */
+    static final class DisplayNames extends DisplayNameGenerator.Standard {
+        @Override
+        public String generateDisplayNameForMethod(Class<?> testClass, Method testMethod) {
+            String name = super.generateDisplayNameForMethod(testClass, testMethod);
+            PinnedBug bug = testMethod.getAnnotation(PinnedBug.class);
+            return bug == null ? name : name + " [pinned bug, changed by " + bug.changeBy() + ": " + bug.what() + "]";
+        }
     }
 
     /** One scenario: its steps, and what normalization needs to know about them. */
@@ -139,12 +182,17 @@ abstract class A2GoldenSupport {
         private final Set<String> requestValues = new HashSet<>();
         private final Set<String> summarized = new HashSet<>();
         private final Map<String, String> sortedArrays = new LinkedHashMap<>();
+        private final Map<String, Map<Instant, String>> times = new LinkedHashMap<>();
+        private final Instant started;
+        private final PinnedBug pinnedBug;
         private JsonNode lastBody = NullNode.getInstance();
         private int lastStatus;
 
-        private Scenario(String id, String title) {
+        private Scenario(String id, String title, Instant started, PinnedBug pinnedBug) {
             this.id = id;
             this.title = title;
+            this.started = started;
+            this.pinnedBug = pinnedBug;
         }
 
         /** An upload as the given phone generation sends it. */
@@ -236,6 +284,11 @@ abstract class A2GoldenSupport {
             ObjectNode document = JsonNodeFactory.instance.objectNode();
             document.put("scenario", id);
             document.put("title", title);
+            if (pinnedBug != null) {
+                ObjectNode bug = document.putObject("pinnedBug");
+                bug.put("changeBy", pinnedBug.changeBy());
+                bug.put("what", pinnedBug.what());
+            }
             document.set("steps", steps);
             A2Golden.verify(id, document, requestValues, placeholders);
         }
@@ -288,7 +341,7 @@ abstract class A2GoldenSupport {
                     }
                 }
                 answer.set("headers", answerHeaders);
-                answer.set("body", maskResponseTimes(lastBody.deepCopy()));
+                answer.set("body", maskResponse(lastBody.deepCopy()));
 
                 if (group != null) {
                     List<String> violations = A2PhoneContract.violations(group, requestBody, lastStatus, lastBody);
@@ -326,7 +379,7 @@ abstract class A2GoldenSupport {
             }
         }
 
-        private JsonNode maskResponseTimes(JsonNode node) {
+        private JsonNode maskResponse(JsonNode node) {
             if (node.isObject()) {
                 ObjectNode object = (ObjectNode) node;
                 List<String> names = new java.util.ArrayList<>();
@@ -339,23 +392,25 @@ abstract class A2GoldenSupport {
                         value.forEach(elements::add);
                         elements.sort(java.util.Comparator.comparing(element -> element.path(field).asText()));
                         ArrayNode sorted = JsonNodeFactory.instance.arrayNode();
-                        elements.forEach(element -> sorted.add(maskResponseTimes(element)));
+                        elements.forEach(element -> sorted.add(maskResponse(element)));
                         object.set(name, sorted);
                     } else if (summarized.contains(name) && value.isArray()) {
                         object.put(name, "<" + value.size() + " items>");
                     } else if ("detail".equals(name) && value.isTextual() && value.asText().contains("ERROR: ")) {
                         object.put(name, "<database error>");
+                    } else if ("detail".equals(name) && value.isTextual() && JAVA_NAME.matcher(value.asText()).find()) {
+                        object.put(name, "<framework text>");
                     } else if (List.of("createdDate", "lastModifiedDate", "lastSeen").contains(name) && !value.isNull()) {
                         object.put(name, "<set>");
                     } else if ("serialNumber".equals(name) && value.isNumber()) {
                         object.put(name, serials.computeIfAbsent(value.asText(),
                             serial -> "<serial:" + (serials.size() + 1) + ">"));
                     } else {
-                        maskResponseTimes(value);
+                        maskResponse(value);
                     }
                 }
             } else if (node.isArray()) {
-                node.forEach(this::maskResponseTimes);
+                node.forEach(this::maskResponse);
             }
             return node;
         }
@@ -366,22 +421,29 @@ abstract class A2GoldenSupport {
             db.set("data_submission", rows("""
                 SELECT id, uid, serial_number, template_uid, template_version_uid, template_version_no, assignment_uid,
                        team_uid, team_code, org_unit_uid, org_unit_code, org_unit_name, activity_uid, status, deleted,
-                       deleted_at, form_data::text AS form_data, extract(epoch FROM start_entry_time) AS start_entry_time,
+                       extract(epoch FROM deleted_at) AS deleted_at, form_data::text AS form_data,
+                       extract(epoch FROM start_entry_time) AS start_entry_time,
                        extract(epoch FROM finished_entry_time) AS finished_entry_time, lock_version, created_by,
-                       last_modified_by, created_date, last_modified_date
+                       last_modified_by, extract(epoch FROM created_date) AS created_date,
+                       extract(epoch FROM last_modified_date) AS last_modified_date
                 FROM data_submission WHERE uid LIKE 'a2%' OR assignment_uid IN (:assignments)
                 ORDER BY serial_number""", scope));
+            // Hibernate writes UTC into the timestamp columns above; OutboxWriter binds a java.sql.Timestamp, which the
+            // driver writes in the JVM's zone, the session's TimeZone
             db.set("outbox", rows("""
                 SELECT submission_id, submission_serial_number, submission_uid, topic, event_type,
-                       payload::text AS payload, status, attempt, last_error, created_at
+                       payload::text AS payload, status, attempt, last_error,
+                       extract(epoch FROM (created_at AT TIME ZONE current_setting('TimeZone'))) AS created_at
                 FROM outbox WHERE submission_uid LIKE 'a2%'
                    OR submission_id IN (SELECT id FROM data_submission WHERE assignment_uid IN (:assignments))
                 ORDER BY outbox_id""", scope));
             db.set("held_submission", rows("""
                 SELECT uid, reason, state, activity_uid, org_unit_uid, org_unit_path, form_uid, form_version_uid,
-                       team_uid, assignment_uid, submitted_by, extract(epoch FROM started_at) AS started_at, received_at,
-                       go_live_rule_uid, extract(epoch FROM live_from) AS live_from, payload::text AS payload,
-                       decided_by, decided_at, note, last_release_error, last_modified_date AS held_last_modified_date
+                       team_uid, assignment_uid, submitted_by, extract(epoch FROM started_at) AS started_at,
+                       extract(epoch FROM received_at) AS received_at, go_live_rule_uid,
+                       extract(epoch FROM live_from) AS live_from, payload::text AS payload, decided_by,
+                       extract(epoch FROM decided_at) AS decided_at, note, last_release_error,
+                       extract(epoch FROM last_modified_date) AS held_last_modified_date
                 FROM held_submission WHERE uid LIKE 'a2%' OR assignment_uid IN (:assignments)
                 ORDER BY uid""", scope));
             db.set("go_live_rule", rows("""
@@ -414,13 +476,10 @@ abstract class A2GoldenSupport {
                 return NullNode.getInstance();
             }
             if (SERVER_TIMES.contains(column)) {
-                return TextNode.valueOf("<set>");
+                return TextNode.valueOf(timeToken(column, instant(value)));
             }
             if (EPOCH_TIMES.contains(column)) {
-                BigDecimal seconds = new BigDecimal(value.toString());
-                Instant instant = Instant.ofEpochSecond(seconds.longValue(),
-                    seconds.remainder(BigDecimal.ONE).movePointRight(9).longValue());
-                return TextNode.valueOf(DateTimeFormatter.ISO_INSTANT.format(instant));
+                return TextNode.valueOf(DateTimeFormatter.ISO_INSTANT.format(instant(value)));
             }
             if (SERIALS.contains(column)) {
                 return TextNode.valueOf(serials.computeIfAbsent(value.toString(),
@@ -430,6 +489,24 @@ abstract class A2GoldenSupport {
                 return parse(value.toString());
             }
             return json.valueToTree(value);
+        }
+
+        private String timeToken(String column, Instant time) {
+            assertThat(time).as("%s in scenario %s lies inside the test's time window", column, id)
+                .isBetween(started.minusSeconds(1), Instant.now().plusSeconds(1));
+            Map<Instant, String> seen = times.computeIfAbsent(column, name -> new LinkedHashMap<>());
+            String token = seen.get(time);
+            if (token == null) {
+                token = "<" + column + ":" + (seen.size() + 1) + ">";
+                seen.put(time, token);
+            }
+            return token;
+        }
+
+        private static Instant instant(Object epochSeconds) {
+            BigDecimal seconds = new BigDecimal(epochSeconds.toString());
+            return Instant.ofEpochSecond(seconds.longValue(),
+                seconds.remainder(BigDecimal.ONE).movePointRight(9).longValue());
         }
     }
 }

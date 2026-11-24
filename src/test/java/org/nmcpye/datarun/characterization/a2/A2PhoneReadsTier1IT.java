@@ -18,6 +18,9 @@ import static org.nmcpye.datarun.characterization.a2.A2Seed.version;
 class A2PhoneReadsTier1IT extends A2GoldenSupport {
 
     @Test
+    @PinnedBug(changeBy = "E2",
+        what = "the G0 submission pull answers 500 to a user holding EDIT, because its filter names an attribute the "
+            + "entity lacks; any fix must keep the pull inert for G0")
     void r1_g0SubmissionPull() {
         String mine = uid("r1a");
         String deleters = uid("r1b");

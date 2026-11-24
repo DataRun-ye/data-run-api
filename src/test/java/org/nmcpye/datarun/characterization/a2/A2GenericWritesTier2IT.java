@@ -24,6 +24,8 @@ class A2GenericWritesTier2IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "B2",
+        what = "a field user's PUT answers 400 instead of 403: validation runs before method security")
     void w5_02_fieldUserPut() {
         String uid = uid("w502");
         ObjectNode body = formA(uid, "changed").node.deepCopy();
@@ -36,6 +38,8 @@ class A2GenericWritesTier2IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "B1",
+        what = "an admin delete by the internal id answers 500 instead of 404")
     void w6_04_deleteByInternalId() {
         String uid = uid("w604");
         var scenario = scenario("W6-04", "An admin delete by the internal id (not the uid) answers 500")
@@ -48,6 +52,9 @@ class A2GenericWritesTier2IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "C1",
+        what = "an admin delete of a row without template_version_uid answers 500: the DELETE event takes that uid as "
+            + "its topic, and the outbox refuses a null topic")
     void w6_06_deleteOfARowWithoutAVersionUid() {
         String uid = uid("w606");
         scenario("W6-06", "An admin delete of a row without template_version_uid answers 500 and writes nothing")

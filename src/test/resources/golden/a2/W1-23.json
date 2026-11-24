@@ -1,4 +1,8 @@
 {
+  "pinnedBug" : {
+    "changeBy" : "none planned (A3 nearest)",
+    "what" : "an unreadable body gets a bare Spring ProblemDetail, without message or path: a fifth error shape"
+  },
   "scenario" : "W1-23",
   "steps" : [
     {

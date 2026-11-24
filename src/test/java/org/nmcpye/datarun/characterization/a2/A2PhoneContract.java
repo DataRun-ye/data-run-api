@@ -10,7 +10,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * What an installed phone needs from a 2xx upload response (A2 inventory, section 2.4).
+ * What an installed phone needs from a 2xx upload response. Mobile code is cited as {@code m@<tag> path:lines}:
+ * the data-run-mobile repository at that release tag.
  * <ul>
  *   <li>M1, G1 to G3 (m@v6.1.2 lib/core/sync/sync_summary_model.dart:20-63; data_submissions_dao.dart:46-82): a
  *       JSON object; created and updated absent or lists of strings; failed absent or an object with string keys;

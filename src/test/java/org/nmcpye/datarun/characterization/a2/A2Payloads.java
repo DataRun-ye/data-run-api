@@ -8,9 +8,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Map;
 
 /**
- * Upload items in the shape each installed app generation sends, derived by hand from the mobile tags (A2
- * inventory, section 2.3). Phones never send status, version, team, teamCode, orgUnit, orgUnitCode, orgUnitName,
- * activity or deletedAt, and always send deleted=false.
+ * Upload items in the shape each installed app generation sends, derived by hand from the mobile release tags cited
+ * below ({@code m@<tag>}: the data-run-mobile repository at that tag). Phones never send status, version, team,
+ * teamCode, orgUnit, orgUnitCode, orgUnitName, activity or deletedAt, and always send deleted=false.
  * <ul>
  *   <li>G0 (v5.2.0+17 to v5.3.0+20): the legacy route; repeat rows carry field values only
  *       (m@v5.3.0+20 packages/drun_sdk/lib/database/extensions/data_submission.extension.dart:4-23;

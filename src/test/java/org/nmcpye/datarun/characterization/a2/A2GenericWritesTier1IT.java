@@ -32,6 +32,9 @@ class A2GenericWritesTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "B2",
+        what = "POST /dataSubmission can never save (its required id cannot be bound) and answers 400 instead of "
+            + "being refused as a method (405)")
     void w4_01_genericPostAlwaysFailsValidation() {
         scenario("W4-01", "POST /dataSubmission answers 400 to an admin and to a field user")
             .call("admin", "POST", "/api/v1/dataSubmission", ADMIN, entityBody(uid("w401a"), "a"))
@@ -40,6 +43,8 @@ class A2GenericWritesTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "B2",
+        what = "POST /dataSubmission/return can never save and answers 400 instead of being refused as a method (405)")
     void w4_02_genericPostReturnAlwaysFailsValidation() {
         scenario("W4-02", "POST /dataSubmission/return answers 400")
             .call("admin", "POST", "/api/v1/dataSubmission/return", ADMIN, entityBody(uid("w402"), "a"))
@@ -47,6 +52,8 @@ class A2GenericWritesTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "B2",
+        what = "PUT /dataSubmission/{uid} can never save and answers 400 instead of being refused as a method (405)")
     void w5_01_adminPutAlwaysFailsValidation() {
         String uid = uid("w501");
         scenario("W5-01", "PUT /dataSubmission/{uid} by an admin answers 400 and changes nothing")
@@ -65,6 +72,8 @@ class A2GenericWritesTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "B1/C1",
+        what = "a second admin delete of a deleted record writes a second DELETE event and moves deleted_at")
     void w6_02_adminDeleteTwice() {
         String uid = uid("w602");
         scenario("W6-02", "A second admin delete writes a second DELETE event and moves deleted_at")
@@ -75,6 +84,8 @@ class A2GenericWritesTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "B1",
+        what = "an admin delete of an unknown uid answers 500 instead of 404")
     void w6_03_adminDeleteOfAnUnknownUid() {
         scenario("W6-03", "An admin delete of an unknown uid answers 500")
             .call("admin deletes an unknown uid", "DELETE", "/api/v1/dataSubmission/a2nosuchsub", ADMIN, null)

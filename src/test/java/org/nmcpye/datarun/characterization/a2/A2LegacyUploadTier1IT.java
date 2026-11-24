@@ -62,6 +62,9 @@ class A2LegacyUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "D1",
+        what = "a G0 re-send of an unchanged record gets new repeat-row ids, so it is written as an UPDATE and its "
+            + "rows lose their identity")
     void w3_03_g0ResendRegeneratesRowIds() {
         String uid = uid("w303");
         Item g0 = formA(G0, uid, "first", ASSIGN_T1_V1);
@@ -72,6 +75,8 @@ class A2LegacyUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "B1/B2",
+        what = "the legacy route stores a Reference value unchecked and creates no reference entry")
     void w3_04_referenceValueUnchecked() {
         String uid = uid("w304");
         scenario("W3-04", "A Reference value on the legacy route is stored unchecked and creates no entry")
@@ -80,6 +85,8 @@ class A2LegacyUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "B1",
+        what = "a legacy upload made before the campaign's go-live is saved instead of held")
     void w3_05_legacyIsNeverHeld() {
         String uid = uid("w305");
         scenario("W3-05", "A legacy upload before the campaign's go-live is saved, never held")
@@ -89,6 +96,8 @@ class A2LegacyUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "B1/B2",
+        what = "a legacy item without uid is stored under a uid the server makes and the phone never learns")
     void w3_06_missingUid() {
         Item noUid = item(G1, null, FORM_A, version("FORM_A.v1"), ASSIGN_T1_V1,
             ordinary(G1, "a2nouidxxxx", "first", "r1", "s1", 1)).remove("uid");
@@ -102,6 +111,8 @@ class A2LegacyUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "versioning-policy step 4",
+        what = "any referenceVersion other than exactly 1 falls through silently to the legacy route")
     void w3_08_referenceVersionOtherThanOneFallsThrough() {
         scenario("W3-08", "Any referenceVersion but exactly 1 takes the legacy route (an unknown household tells them apart)")
             .call("referenceVersion=0", "POST", BULK_LEGACY + "?referenceVersion=0", FIELD_1,
@@ -131,6 +142,9 @@ class A2LegacyUploadTier1IT extends A2GoldenSupport {
             .verify();
     }
     @Test
+    @PinnedBug(changeBy = "E4",
+        what = "lost update on the legacy route: G0's re-send of its old copy silently overwrites a change made on "
+            + "the server")
     void w3_11_g0LostUpdate() {
         String uid = uid("w311");
         Item original = formA(G0, uid, "first", ASSIGN_T1_V1);
@@ -145,6 +159,9 @@ class A2LegacyUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "E3/E4, C1",
+        what = "a G0 re-send onto a soft-deleted record replaces its data, leaves it deleted and is reported as "
+            + "updated")
     void w3_12_g0ResendOntoASoftDeletedRecord() {
         String uid = uid("w312");
         scenario("W3-12", "G0: a legacy re-send onto a soft-deleted record replaces its data and leaves it deleted")

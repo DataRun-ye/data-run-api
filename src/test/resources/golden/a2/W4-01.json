@@ -1,4 +1,8 @@
 {
+  "pinnedBug" : {
+    "changeBy" : "B2",
+    "what" : "POST /dataSubmission can never save (its required id cannot be bound) and answers 400 instead of being refused as a method (405)"
+  },
   "scenario" : "W4-01",
   "steps" : [
     {
@@ -51,7 +55,7 @@
       },
       "response" : {
         "body" : {
-          "detail" : "Validation failed for argument [0] in public org.springframework.http.ResponseEntity<org.nmcpye.datarun.common.EntitySaveSummaryVM> org.nmcpye.datarun.web.rest.common.BaseReadWriteResource.saveOne(T): [Field error in object 'dataSubmission' on field 'id': rejected value [null]; codes [NotNull.dataSubmission.id,NotNull.id,NotNull.java.lang.String,NotNull]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [dataSubmission.id,id]; arguments []; default message [id]]; default message [must not be null]] ",
+          "detail" : "<framework text>",
           "fieldErrors" : [
             {
               "field" : "id",
@@ -123,7 +127,7 @@
       },
       "response" : {
         "body" : {
-          "detail" : "Validation failed for argument [0] in public org.springframework.http.ResponseEntity<org.nmcpye.datarun.common.EntitySaveSummaryVM> org.nmcpye.datarun.web.rest.common.BaseReadWriteResource.saveOne(T): [Field error in object 'dataSubmission' on field 'id': rejected value [null]; codes [NotNull.dataSubmission.id,NotNull.id,NotNull.java.lang.String,NotNull]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [dataSubmission.id,id]; arguments []; default message [id]]; default message [must not be null]] ",
+          "detail" : "<framework text>",
           "fieldErrors" : [
             {
               "field" : "id",

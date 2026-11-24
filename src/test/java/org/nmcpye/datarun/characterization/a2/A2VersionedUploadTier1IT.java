@@ -36,7 +36,7 @@ import static org.nmcpye.datarun.characterization.a2.A2Seed.HOUSE_V2;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.NO_TEAM;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.version;
 
-/** Tier 1, W1 and W2: the versioned upload route as G2 and G3 phones use it (A2 inventory, section 6.3). */
+/** Tier 1, W1 and W2: the versioned upload route as G2 and G3 phones use it. */
 class A2VersionedUploadTier1IT extends A2GoldenSupport {
 
     private static final String FUTURE = "2099-01-01T00:00:00Z";
@@ -72,6 +72,9 @@ class A2VersionedUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "D1",
+        what = "repeat rows that carry _id but lack _index, _parentId or _submissionUid are stored without those "
+            + "fills: the filled copy is kept only when the server generated an _id")
     void w1_02b_repeatRowsWithIdsButNoOtherMetadata() {
         String uid = uid("w102b");
         ObjectNode data = ordinary(G0, uid, "first", "r1", "s1", 1);
@@ -108,6 +111,9 @@ class A2VersionedUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "B1",
+        what = "a re-send replaces the data but keeps the first start and finish entry times; B1 decides which times "
+            + "stand")
     void w1_05_resendChanged() {
         String uid = uid("w105");
         scenario("W1-05", "G3 re-sends with changed data and a later finish time: data replaced, entry times kept")
@@ -117,6 +123,8 @@ class A2VersionedUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "E1",
+        what = "a re-send on a newer version of the form replaces the data but keeps the old version uid and number")
     void w1_07_resendOnANewerVersion() {
         String uid = uid("w107");
         ObjectNode data = ordinary(G3, uid, "first", "r1", "s1", 1);
@@ -177,6 +185,9 @@ class A2VersionedUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "C1",
+        what = "a new uid sent with deleted=true is stored as a deleted row, without deleted_at, and gets a SAVE "
+            + "event")
     void w1_15_newUidAlreadyDeleted() {
         String uid = uid("w115");
         scenario("W1-15", "A new uid sent with deleted=true is stored deleted, with a SAVE event")
@@ -185,6 +196,8 @@ class A2VersionedUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "E3/E4, C1",
+        what = "a re-send onto a soft-deleted record replaces its data, leaves it deleted and is reported as updated")
     void w1_16_resendOntoASoftDeletedRecord() {
         String uid = uid("w116");
         scenario("W1-16", "A re-send onto a soft-deleted record replaces its data and leaves it deleted")
@@ -196,6 +209,8 @@ class A2VersionedUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "E4",
+        what = "lost update: the phone's re-send of its old copy silently overwrites a change made on the server")
     void w1_17_lostUpdate() {
         String uid = uid("w117");
         Item original = formA(uid, "first");
@@ -254,6 +269,8 @@ class A2VersionedUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "none planned (A3 nearest)",
+        what = "an unreadable body gets a bare Spring ProblemDetail, without message or path: a fifth error shape")
     void w1_23_unreadableBodies() {
         scenario("W1-23", "An unreadable body fails the whole request with 400")
             .call("not JSON", "POST", BULK_VERSIONED, FIELD_1, "not json")
@@ -288,6 +305,8 @@ class A2VersionedUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "none planned",
+        what = "an upload on a soft-deleted assignment is accepted")
     void w1_25_unauthorized() {
         scenario("W1-25", "No token, no team, another team's assignment (E4114), a soft-deleted assignment (accepted)")
             .call("no token", "POST", BULK_VERSIONED, null, body(formA(uid("w125a"), "a")))
@@ -302,6 +321,9 @@ class A2VersionedUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "B2",
+        what = "an admin upload skips scope, grant and stored-record checks, so another form's data sent on a stored "
+            + "uid overwrites the record under its stored form")
     void w1_26_adminSkipsEveryCheck() {
         String uid = uid("w126");
         scenario("W1-26", "An admin re-send of another form's data overwrites the record under its stored form")

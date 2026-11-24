@@ -68,6 +68,9 @@ class A2SequencesTier2IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "E3/E4, C1, B1",
+        what = "a phone re-send after an admin delete is absorbed into the deleted record, and a second admin delete "
+            + "writes a second DELETE event")
     void s3_deleteResendDelete() {
         String uid = uid("s3");
         scenario("S3", "Admin delete, a phone re-send absorbed, a second admin delete")
@@ -79,6 +82,9 @@ class A2SequencesTier2IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "B1/E4",
+        what = "a re-send that lands between a release's read and its replay is lost: the old held copy is saved and "
+            + "the next release marks the newer one superseded")
     void s4_resendDuringARelease() {
         String uid = uid("s4");
         Scenario scenario = scenario("S4",
@@ -120,6 +126,9 @@ class A2SequencesTier2IT extends A2GoldenSupport {
     }
 
     @Test
+    @PinnedBug(changeBy = "none planned",
+        what = "the catalog's nextPage link repeats page (?page=0&page=1&size=500); phones compute page numbers "
+            + "themselves and do not follow it")
     void r2b_catalogPages() {
         scenario("R2b", "A 501-entry catalog is two pages of 500 and 1; the phone walks totalPages")
             .summarize("referenceEntries")

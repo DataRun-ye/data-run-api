@@ -14,7 +14,7 @@
             "form_uid" : "a2FormAAAA1",
             "form_version_uid" : "<FORM_A.v1>",
             "go_live_rule_uid" : null,
-            "held_last_modified_date" : "<set>",
+            "held_last_modified_date" : "<held_last_modified_date:1>",
             "last_release_error" : null,
             "live_from" : null,
             "note" : null,
@@ -53,7 +53,7 @@
               "uid" : "a2w201xxxxx"
             },
             "reason" : "PRACTICE",
-            "received_at" : "<set>",
+            "received_at" : "<received_at:1>",
             "started_at" : "2026-11-20T05:00:00Z",
             "state" : "HELD",
             "submitted_by" : "a2-field1",

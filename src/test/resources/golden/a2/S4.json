@@ -1,4 +1,8 @@
 {
+  "pinnedBug" : {
+    "changeBy" : "B1/E4",
+    "what" : "a re-send that lands between a release's read and its replay is lost: the old held copy is saved and the next release marks the newer one superseded"
+  },
   "scenario" : "S4",
   "steps" : [
     {
@@ -28,7 +32,7 @@
             "form_uid" : "a2FormAAAA1",
             "form_version_uid" : "<FORM_A.v1>",
             "go_live_rule_uid" : "<rule campaign>",
-            "held_last_modified_date" : "<set>",
+            "held_last_modified_date" : "<held_last_modified_date:1>",
             "last_release_error" : null,
             "live_from" : "2099-01-01T00:00:00Z",
             "note" : null,
@@ -67,7 +71,7 @@
               "uid" : "a2s4xxxxxxx"
             },
             "reason" : "BEFORE_GO_LIVE",
-            "received_at" : "<set>",
+            "received_at" : "<received_at:1>",
             "started_at" : "2026-11-20T05:00:00Z",
             "state" : "HELD",
             "submitted_by" : "a2-field1",
@@ -162,7 +166,7 @@
             "form_uid" : "a2FormAAAA1",
             "form_version_uid" : "<FORM_A.v1>",
             "go_live_rule_uid" : "<rule campaign>",
-            "held_last_modified_date" : "<set>",
+            "held_last_modified_date" : "<held_last_modified_date:2>",
             "last_release_error" : null,
             "live_from" : "2099-01-01T00:00:00Z",
             "note" : null,
@@ -201,7 +205,7 @@
               "uid" : "a2s4xxxxxxx"
             },
             "reason" : "BEFORE_GO_LIVE",
-            "received_at" : "<set>",
+            "received_at" : "<received_at:2>",
             "started_at" : "2026-11-20T05:00:00Z",
             "state" : "HELD",
             "submitted_by" : "a2-field1",
@@ -283,7 +287,7 @@
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT1a",
             "created_by" : "a2-field1",
-            "created_date" : "<set>",
+            "created_date" : "<created_date:1>",
             "deleted" : false,
             "deleted_at" : null,
             "finished_entry_time" : "2026-11-20T05:10:00Z",
@@ -312,7 +316,7 @@
             },
             "id" : "<ulid:1>",
             "last_modified_by" : "a2-field1",
-            "last_modified_date" : "<set>",
+            "last_modified_date" : "<last_modified_date:1>",
             "lock_version" : 0,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
@@ -345,7 +349,7 @@
             "form_uid" : "a2FormAAAA1",
             "form_version_uid" : "<FORM_A.v1>",
             "go_live_rule_uid" : "<rule campaign>",
-            "held_last_modified_date" : "<set>",
+            "held_last_modified_date" : "<held_last_modified_date:2>",
             "last_release_error" : null,
             "live_from" : "2099-01-01T00:00:00Z",
             "note" : null,
@@ -384,7 +388,7 @@
               "uid" : "a2s4xxxxxxx"
             },
             "reason" : "BEFORE_GO_LIVE",
-            "received_at" : "<set>",
+            "received_at" : "<received_at:2>",
             "started_at" : "2026-11-20T05:00:00Z",
             "state" : "HELD",
             "submitted_by" : "a2-field1",
@@ -395,7 +399,7 @@
         "outbox" : [
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:1>",
             "event_type" : "SAVE",
             "last_error" : null,
             "payload" : {
@@ -450,7 +454,7 @@
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT1a",
             "created_by" : "a2-field1",
-            "created_date" : "<set>",
+            "created_date" : "<created_date:1>",
             "deleted" : false,
             "deleted_at" : null,
             "finished_entry_time" : "2026-11-20T05:10:00Z",
@@ -479,7 +483,7 @@
             },
             "id" : "<ulid:1>",
             "last_modified_by" : "a2-field1",
-            "last_modified_date" : "<set>",
+            "last_modified_date" : "<last_modified_date:1>",
             "lock_version" : 0,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
@@ -507,12 +511,12 @@
           {
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT1a",
-            "decided_at" : "<set>",
+            "decided_at" : "<decided_at:1>",
             "decided_by" : "admin",
             "form_uid" : "a2FormAAAA1",
             "form_version_uid" : "<FORM_A.v1>",
             "go_live_rule_uid" : "<rule campaign>",
-            "held_last_modified_date" : "<set>",
+            "held_last_modified_date" : "<held_last_modified_date:3>",
             "last_release_error" : null,
             "live_from" : "2099-01-01T00:00:00Z",
             "note" : null,
@@ -551,7 +555,7 @@
               "uid" : "a2s4xxxxxxx"
             },
             "reason" : "BEFORE_GO_LIVE",
-            "received_at" : "<set>",
+            "received_at" : "<received_at:2>",
             "started_at" : "2026-11-20T05:00:00Z",
             "state" : "SUPERSEDED",
             "submitted_by" : "a2-field1",
@@ -562,7 +566,7 @@
         "outbox" : [
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:1>",
             "event_type" : "SAVE",
             "last_error" : null,
             "payload" : {

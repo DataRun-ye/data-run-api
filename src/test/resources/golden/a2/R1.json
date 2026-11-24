@@ -1,4 +1,8 @@
 {
+  "pinnedBug" : {
+    "changeBy" : "E2",
+    "what" : "the G0 submission pull answers 500 to a user holding EDIT, because its filter names an attribute the entity lacks; any fix must keep the pull inert for G0"
+  },
   "scenario" : "R1",
   "steps" : [
     {
@@ -8,7 +12,7 @@
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT1a",
             "created_by" : "a2-field1",
-            "created_date" : "<set>",
+            "created_date" : "<created_date:1>",
             "deleted" : false,
             "deleted_at" : null,
             "finished_entry_time" : "2026-11-20T05:10:00Z",
@@ -37,7 +41,7 @@
             },
             "id" : "<ulid:1>",
             "last_modified_by" : "a2-field1",
-            "last_modified_date" : "<set>",
+            "last_modified_date" : "<last_modified_date:1>",
             "lock_version" : 0,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
@@ -58,7 +62,7 @@
         "outbox" : [
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:1>",
             "event_type" : "SAVE",
             "last_error" : null,
             "payload" : {
@@ -164,7 +168,7 @@
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT1a",
             "created_by" : "a2-field1",
-            "created_date" : "<set>",
+            "created_date" : "<created_date:1>",
             "deleted" : false,
             "deleted_at" : null,
             "finished_entry_time" : "2026-11-20T05:10:00Z",
@@ -193,7 +197,7 @@
             },
             "id" : "<ulid:1>",
             "last_modified_by" : "a2-field1",
-            "last_modified_date" : "<set>",
+            "last_modified_date" : "<last_modified_date:1>",
             "lock_version" : 0,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
@@ -212,7 +216,7 @@
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT5a",
             "created_by" : "a2-deleter",
-            "created_date" : "<set>",
+            "created_date" : "<created_date:2>",
             "deleted" : false,
             "deleted_at" : null,
             "finished_entry_time" : "2026-11-20T05:10:00Z",
@@ -241,7 +245,7 @@
             },
             "id" : "<ulid:2>",
             "last_modified_by" : "a2-deleter",
-            "last_modified_date" : "<set>",
+            "last_modified_date" : "<last_modified_date:2>",
             "lock_version" : 0,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
@@ -262,7 +266,7 @@
         "outbox" : [
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:1>",
             "event_type" : "SAVE",
             "last_error" : null,
             "payload" : {
@@ -296,7 +300,7 @@
           },
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:2>",
             "event_type" : "SAVE",
             "last_error" : null,
             "payload" : {
@@ -402,7 +406,7 @@
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT1a",
             "created_by" : "a2-field1",
-            "created_date" : "<set>",
+            "created_date" : "<created_date:1>",
             "deleted" : false,
             "deleted_at" : null,
             "finished_entry_time" : "2026-11-20T05:10:00Z",
@@ -431,7 +435,7 @@
             },
             "id" : "<ulid:1>",
             "last_modified_by" : "a2-field1",
-            "last_modified_date" : "<set>",
+            "last_modified_date" : "<last_modified_date:1>",
             "lock_version" : 0,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
@@ -450,7 +454,7 @@
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT5a",
             "created_by" : "a2-deleter",
-            "created_date" : "<set>",
+            "created_date" : "<created_date:2>",
             "deleted" : false,
             "deleted_at" : null,
             "finished_entry_time" : "2026-11-20T05:10:00Z",
@@ -479,7 +483,7 @@
             },
             "id" : "<ulid:2>",
             "last_modified_by" : "a2-deleter",
-            "last_modified_date" : "<set>",
+            "last_modified_date" : "<last_modified_date:2>",
             "lock_version" : 0,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
@@ -500,7 +504,7 @@
         "outbox" : [
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:1>",
             "event_type" : "SAVE",
             "last_error" : null,
             "payload" : {
@@ -534,7 +538,7 @@
           },
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:2>",
             "event_type" : "SAVE",
             "last_error" : null,
             "payload" : {
@@ -598,7 +602,7 @@
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT1a",
             "created_by" : "a2-field1",
-            "created_date" : "<set>",
+            "created_date" : "<created_date:1>",
             "deleted" : false,
             "deleted_at" : null,
             "finished_entry_time" : "2026-11-20T05:10:00Z",
@@ -627,7 +631,7 @@
             },
             "id" : "<ulid:1>",
             "last_modified_by" : "a2-field1",
-            "last_modified_date" : "<set>",
+            "last_modified_date" : "<last_modified_date:1>",
             "lock_version" : 0,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
@@ -646,7 +650,7 @@
             "activity_uid" : "a2Activity1",
             "assignment_uid" : "a2AssignT5a",
             "created_by" : "a2-deleter",
-            "created_date" : "<set>",
+            "created_date" : "<created_date:2>",
             "deleted" : false,
             "deleted_at" : null,
             "finished_entry_time" : "2026-11-20T05:10:00Z",
@@ -675,7 +679,7 @@
             },
             "id" : "<ulid:2>",
             "last_modified_by" : "a2-deleter",
-            "last_modified_date" : "<set>",
+            "last_modified_date" : "<last_modified_date:2>",
             "lock_version" : 0,
             "org_unit_code" : "A2V1",
             "org_unit_name" : "a2 village 1",
@@ -696,7 +700,7 @@
         "outbox" : [
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:1>",
             "event_type" : "SAVE",
             "last_error" : null,
             "payload" : {
@@ -730,7 +734,7 @@
           },
           {
             "attempt" : 0,
-            "created_at" : "<set>",
+            "created_at" : "<created_at:2>",
             "event_type" : "SAVE",
             "last_error" : null,
             "payload" : {
@@ -773,7 +777,7 @@
       },
       "response" : {
         "body" : {
-          "detail" : "Could not resolve attribute 'templateUid' of 'org.nmcpye.datarun.jpa.datasubmission.DataSubmission'",
+          "detail" : "<framework text>",
           "instance" : "/api/v1/dataSubmission/objects",
           "message" : "error.http.500",
           "path" : "/api/v1/dataSubmission/objects",

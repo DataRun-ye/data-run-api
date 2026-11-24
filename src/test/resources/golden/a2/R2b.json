@@ -1,4 +1,8 @@
 {
+  "pinnedBug" : {
+    "changeBy" : "none planned",
+    "what" : "the catalog's nextPage link repeats page (?page=0&page=1&size=500); phones compute page numbers themselves and do not follow it"
+  },
   "scenario" : "R2b",
   "steps" : [
     {
