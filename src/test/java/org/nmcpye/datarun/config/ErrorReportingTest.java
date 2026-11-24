@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,6 +48,37 @@ class ErrorReportingTest {
     void closeTheSdk() {
         Sentry.close();
         root().detachAppender("SENTRY_APPENDER");
+        System.clearProperty("sentry.dsn");
+    }
+
+    /**
+     * Whenever the configuration leaves the SDK off, nothing may start it. Sentry-logback's appender would initialise
+     * Sentry itself from the environment, with no beforeSend; the system property stands in for SENTRY_DSN, which the
+     * SDK reads the same way, and Spring binds it as sentry.dsn as it does the environment variable.
+     */
+    @Test
+    void whenTheConfigurationLeavesTheSdkOffTheAppenderCannotStartIt() {
+        try (FakeGlitchTip glitchTip = FakeGlitchTip.start()) {
+            String server = glitchTip.dsn().substring(0, glitchTip.dsn().lastIndexOf('/') + 1);
+            Map<String, String[]> cases = Map.of(
+                server + "project", new String[0], // the SDK takes a project id that is not a number; the check does not
+                server + "sub path/1", new String[0], // nor a space in the path
+                glitchTip.dsn(), new String[]{"sentry.enabled=false"}); // a good DSN with reporting switched off
+            cases.forEach((dsn, properties) -> {
+                System.setProperty("sentry.dsn", dsn);
+                try {
+                    runner.withPropertyValues(properties).run(context -> {
+                        assertThat(context).hasNotFailed();
+                        log.error("Submission {} from {} failed unexpectedly", "sub00000001", "777000111");
+                        assertThat(Sentry.isEnabled()).as(dsn).isFalse();
+                    });
+                } finally {
+                    closeTheSdk();
+                }
+            });
+
+            assertThat(glitchTip.envelopes()).isEmpty();
+        }
     }
 
     @Test

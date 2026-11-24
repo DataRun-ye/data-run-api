@@ -15,6 +15,7 @@ import io.sentry.protocol.SentryStackFrame;
 import io.sentry.protocol.SentryStackTrace;
 import io.sentry.protocol.User;
 import io.sentry.spring.boot.jakarta.SentryProperties;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
@@ -31,6 +32,25 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 class ErrorReportingConfigurationTest {
 
     private final ErrorReportingConfiguration configuration = new ErrorReportingConfiguration();
+
+    @AfterEach
+    void forgetTheBlankedDsn() {
+        System.clearProperty("sentry.dsn");
+    }
+
+    @Test
+    void theSdksOwnDsnSourceIsBlankedOnlyWhenReportingStaysOff() {
+        SentryProperties on = new SentryProperties();
+        on.setDsn("https://abc123@glitchtip.example/1");
+        configuration.errorReportingOptions(build("6.5.3")).configure(on);
+        assertThat(System.getProperty("sentry.dsn")).as("a good DSN").isNull();
+
+        SentryProperties switchedOff = new SentryProperties();
+        switchedOff.setDsn("https://abc123@glitchtip.example/1");
+        switchedOff.setEnabled(false);
+        configuration.errorReportingOptions(build("6.5.3")).configure(switchedOff);
+        assertThat(System.getProperty("sentry.dsn")).as("reporting switched off").isEmpty();
+    }
 
     @Test
     void anEventKeepsWhatFailedAndWhereButNoValues() {
@@ -192,6 +212,7 @@ class ErrorReportingConfigurationTest {
             configuration.errorReportingOptions(build("6.5.3")).configure(options);
 
             assertThat(options.getDsn()).isEmpty();
+            assertThat(System.getProperty("sentry.dsn")).as("the SDK's own source, read before SENTRY_DSN").isEmpty();
             assertThat(logged.list).singleElement().satisfies(line -> {
                 assertThat(line.getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);
                 assertThat(line.getFormattedMessage()).contains("error reporting stays off")

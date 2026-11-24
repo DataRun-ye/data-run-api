@@ -30,6 +30,11 @@ import java.util.List;
  * build's version. Request errors are not reported: {@code ExceptionTranslator} answers all of them and records
  * them in {@code error_event}, so none reaches Sentry's exception resolver.
  * <p>
+ * Only the starter's own initialisation may start the SDK, since only it carries these settings: sentry-logback's
+ * appender initialises Sentry from the environment whenever it finds the SDK off, so {@link #errorReportingOptions}
+ * blanks that source when it leaves the SDK off. (The third caller, {@code SentryInitBeanPostProcessor}, comes only
+ * with {@code @EnableSentry}, which this application does not use.)
+ * <p>
  * The settings in {@link #errorReportingOptions} override any {@code sentry.*} property or environment variable.
  * An event tells what failed and where, never with which values: log arguments and exception messages can carry a
  * login or submitted values, so {@link #withoutValues} sends the exception types and the stack frames, and the log
@@ -56,6 +61,11 @@ public class ErrorReportingConfiguration {
                 log.warn("SENTRY_DSN is not a DSN of the form https://<public key>@<host>/<project id>; "
                     + "error reporting stays off");
                 options.setDsn("");
+            }
+            if (!options.isEnabled() || options.getDsn() == null || options.getDsn().isEmpty()) {
+                // Whenever this leaves the SDK off, the logback appender would start it on its own, from
+                // SENTRY_DSN and without any of these settings or the beforeSend. It reads system properties first.
+                System.setProperty("sentry.dsn", "");
             }
             options.setSendDefaultPii(false); // no user, IP address or cookies
             options.setMaxRequestBodySize(SentryOptions.RequestSize.NONE);
