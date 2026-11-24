@@ -167,6 +167,14 @@ lines on these paths carry identifiers and shapes only: submission and form
 uids, the user id, counts, error codes and exception types, never a login, a
 submitted value or an exception message.
 
+`data_submission`'s indexes: the primary key, the unique keys on `uid` and
+`serial_number`, `idx_ds_form_assignment`, and two that only the generic read
+surface would use, when an admin filters `/objects` or `/query` by org unit
+(`idx_ds_orgunit`) or by form (`idx_ds_active_form_assignment`). Changeset
+`20261125-03` (6.5.5) drops the GIN on `form_data`, which no query can use (no
+jsonb operator it serves appears anywhere), and `idx_ds_serial_number`, a
+duplicate of the unique key.
+
 Ordinary and Reference-capable submissions share the versioned upload
 (`SubmissionUploads`, the released mobile's owner). It maps the versioned
 DTO; resolves assignment and pinned template once through

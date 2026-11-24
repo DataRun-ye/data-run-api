@@ -29,10 +29,9 @@ import java.util.Objects;
 @Table(
     name = "data_submission",
     indexes = {
-        @Index(name = "idx_ds_form_assignment", columnList = "template_uid, assignment_uid"),
-        @Index(name = "idx_ds_serial_number", columnList = "serial_number"),
+        @Index(name = "idx_ds_form_assignment", columnList = "template_version_uid, assignment_uid"),
         @Index(name = "idx_ds_orgunit", columnList = "org_unit_uid"),
-        // partial index implemented in Liquibase (deleted = false)
+        // partial index implemented in Liquibase (deleted = false); serial_number has its unique key
     }
 )
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
