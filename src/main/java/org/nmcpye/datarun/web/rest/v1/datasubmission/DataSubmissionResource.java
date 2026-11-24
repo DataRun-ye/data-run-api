@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
+import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommand;
@@ -81,6 +83,32 @@ public class DataSubmissionResource extends BaseReadResource<DataSubmission, Str
         PagedResponse<DataSubmission> response = new
             PagedResponse<>(resultPage, getName(), next);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * The generic list reads ({@code GET /}, {@code /byLastModified}, {@code POST /query}, {@code /objects}), bounded
+     * for an admin before any query runs: a page holds at most {@value #MAX_PAGE_SIZE} submissions, starts within the
+     * first {@value #MAX_OFFSET}, and is never unpaged (E2060, 400). Deep pages cost an OFFSET to the end plus a
+     * count, two whole-table scans; the admin tool that read pages 61 to 66 of 1,000 no longer depends on them
+     * (2026-11-25). A non-admin's read is unchanged: it finds nothing without an EDIT grant (the G0 pull, A2 R1).
+     */
+    @Override
+    protected Page<DataSubmission> getList(QueryRequest queryRequest, String jsonQueryBody) {
+        if (SecurityUtils.getCurrentUserDetailsOrThrow().isSuper()) {
+            refuseDeepPaging(queryRequest);
+        }
+        return super.getList(queryRequest, jsonQueryBody);
+    }
+
+    static final int MAX_PAGE_SIZE = 1_000;
+    static final int MAX_OFFSET = 10_000;
+
+    private static void refuseDeepPaging(QueryRequest queryRequest) {
+        if (!queryRequest.isPaged()
+            || queryRequest.getSize() > MAX_PAGE_SIZE
+            || (long) queryRequest.getPage() * queryRequest.getSize() > MAX_OFFSET) {
+            throw new IllegalQueryException(ErrorCode.E2060);
+        }
     }
 
     @Override

@@ -56,6 +56,8 @@ public enum ErrorCode {
     E2034("Filter not supported: `{0}`"),
     E2035("Operator not supported: `{0}`"),
     E2050("Query parsing error: `{0}`"),
+    E2060("Deep paging over submissions is not supported: a page holds at most 1,000 submissions and starts within "
+        + "the first 10,000, and an admin's list is always paged"),
 
     /* Security */
     E3000("No currentUser available"),
