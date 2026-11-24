@@ -11,22 +11,24 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** The request id in the log and in error reports: the client's when short and plain, else a new UUID. */
+/** The request id in the log and in error reports: the client's when it is a UUID, else a new UUID. */
 class RequestIdFilterTest {
 
     private final RequestIdFilter filter = new RequestIdFilter();
 
     @Test
-    void aShortPlainIdFromTheClientIsKept() throws Exception {
-        assertThat(served("phone-7f3a9c01")).containsExactly("phone-7f3a9c01", "phone-7f3a9c01");
+    void aUuidFromTheClientIsKept() throws Exception {
         String uuid = UUID.randomUUID().toString();
         assertThat(served(uuid)).containsExactly(uuid, uuid);
+        String upper = uuid.toUpperCase();
+        assertThat(served(upper)).containsExactly(upper, upper);
     }
 
     @Test
     void anyOtherIdIsReplacedByANewOne() throws Exception {
         for (String sent : new String[]{
-            "abc\r\n2026-11-24 ERROR forged line", "login 777000111", "a".repeat(65), "", "ïd"}) {
+            "777000111", "phone-7f3a9c01", "abc\r\n2026-11-24 ERROR forged line", "login 777000111",
+            UUID.randomUUID() + "0", "", "ïd"}) {
             List<String> seen = served(sent);
             assertThat(seen.get(0)).as(sent).isNotEqualTo(sent).satisfies(id -> UUID.fromString(id));
             assertThat(seen.get(1)).as("the response names the id the log used").isEqualTo(seen.get(0));

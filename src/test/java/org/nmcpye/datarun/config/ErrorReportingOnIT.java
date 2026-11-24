@@ -47,6 +47,9 @@ class ErrorReportingOnIT {
 
     private static final FakeGlitchTip GLITCHTIP = FakeGlitchTip.start();
 
+    /** A client's request id; RequestIdFilter keeps only a UUID. */
+    private static final String REQUEST_ID = "5b0f7c3e-2d4a-4c8b-9e61-0a7d3f2b9c14";
+
     /** A client's trace id, as a phone with Sentry tracing would send it, with its user named in the baggage. */
     private static final String CLIENT_TRACE = "771a43a4192642f0b136d5159a501700";
 
@@ -74,7 +77,7 @@ class ErrorReportingOnIT {
         mockMvc
             .perform(post("/api/v1/test/error-reporting")
                 .queryParam("login", "777000111")
-                .header("X-Request-ID", "error-reporting-it")
+                .header("X-Request-ID", REQUEST_ID)
                 .header("X-Secret", "secret-header")
                 .header("sentry-trace", CLIENT_TRACE + "-b5e4c9e8d4c0a1b2-1")
                 .header("baggage", "sentry-trace_id=" + CLIENT_TRACE
@@ -94,7 +97,7 @@ class ErrorReportingOnIT {
             assertThat(event.path("transaction").asText()).as("the request was in scope")
                 .isEqualTo("POST /api/v1/test/error-reporting");
             assertThat(event.path("contexts").path("MDC").path("requestId").asText())
-                .isEqualTo("error-reporting-it");
+                .isEqualTo(REQUEST_ID);
             assertThat(event.path("environment").asText()).isEqualTo("test");
             JsonNode exception = event.path("exception").path("values").get(0);
             assertThat(exception.path("type").asText()).isEqualTo("IllegalStateException");

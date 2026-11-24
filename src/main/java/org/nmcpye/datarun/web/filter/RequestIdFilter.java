@@ -22,10 +22,11 @@ public class RequestIdFilter extends OncePerRequestFilter {
     public static final String MDC_REQUEST_ID_KEY = "requestId";
 
     /**
-     * A client's id goes as it is into every log line of the request and into error reports, so only a short plain
-     * one is kept (a UUID passes); anything else is replaced by a new id.
+     * A client's id goes as it is into every log line of the request and into error reports, so only a UUID is kept,
+     * a shape no login takes; anything else is replaced by a new id.
      */
-    private static final Pattern CLIENT_REQUEST_ID = Pattern.compile("[A-Za-z0-9-]{1,64}");
+    private static final Pattern CLIENT_REQUEST_ID =
+        Pattern.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 
 
     @Override
