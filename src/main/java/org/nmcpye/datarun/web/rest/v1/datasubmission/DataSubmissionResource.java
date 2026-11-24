@@ -8,6 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommand;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
@@ -56,13 +59,15 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     private final SubmissionAccessValidator submissionAccessValidator;
     private final TemplateVersionResolver templateVersionResolver;
     private final SubmissionUploadService uploadService;
+    private final SubmissionCommandService commands;
 
     public DataSubmissionResource(DataSubmissionService submissionService,
                                   DataSubmissionRepository submissionRepository,
                                   ObjectMapper objectMapper, CompositeSubmissionValidator compositeValidator,
                                   SubmissionAccessValidator submissionAccessValidator,
                                   TemplateVersionResolver templateVersionResolver,
-                                  SubmissionUploadService uploadService) {
+                                  SubmissionUploadService uploadService,
+                                  SubmissionCommandService commands) {
         super(submissionService, submissionRepository);
         this.submissionService = submissionService;
         this.objectMapper = objectMapper;
@@ -70,6 +75,7 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
         this.submissionAccessValidator = submissionAccessValidator;
         this.templateVersionResolver = templateVersionResolver;
         this.uploadService = uploadService;
+        this.commands = commands;
     }
 
     @Deprecated(since = "V7, main method do the same now")
@@ -127,9 +133,10 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     @PostMapping(value = "/bulk", params = "referenceVersion=1")
     public ResponseEntity<EntitySaveSummaryVM> saveVersionedUpload(
         @RequestBody List<DataSubmissionUploadV1Dto> requests) {
-        requireResourceApiAccess(
-            SecurityUtils.getCurrentUserDetailsOrThrow());
-        return ResponseEntity.ok(uploadService.upsertAll(requests));
+        CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        requireResourceApiAccess(user);
+        return ResponseEntity.ok(commands.upload(
+            new SubmissionCommand.Upload(SubmissionActor.of(user), requests)));
     }
 
     /**

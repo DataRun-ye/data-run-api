@@ -1,10 +1,9 @@
-package org.nmcpye.datarun.web.rest.v1.datasubmission;
+package org.nmcpye.datarun.jpa.datasubmission.command;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.MockedStatic;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
@@ -21,6 +20,7 @@ import org.nmcpye.datarun.jpa.intake.GoLiveRuleRepository;
 import org.nmcpye.datarun.jpa.intake.HeldContext;
 import org.nmcpye.datarun.jpa.intake.HeldSubmissionRepository;
 import org.nmcpye.datarun.jpa.intake.HoldReason;
+import org.nmcpye.datarun.jpa.intake.IntakeMode;
 import org.nmcpye.datarun.jpa.intake.SubmissionIntake;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
@@ -30,10 +30,8 @@ import org.nmcpye.datarun.jpa.orgunit.OrgUnit;
 import org.nmcpye.datarun.jpa.reference.ReferenceSubmissionResolver;
 import org.nmcpye.datarun.jpa.team.Team;
 import org.nmcpye.datarun.security.CurrentUserDetails;
-import org.nmcpye.datarun.security.SecurityUtils;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.mapper.DataSubmissionUploadV1Mapper;
-import org.nmcpye.datarun.web.rest.v1.datasubmission.service.SubmissionUploadService;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
@@ -62,7 +60,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class SubmissionUploadServiceTest {
+class SubmissionUploadsTest {
 
     private DataSubmissionService submissionService;
     private DataSubmissionUploadV1Mapper mapper;
@@ -76,7 +74,7 @@ class SubmissionUploadServiceTest {
     private GoLiveRuleRepository goLiveRules;
     private HeldSubmissionRepository heldSubmissions;
     private DataSubmissionRepository submissionRepository;
-    private SubmissionUploadService service;
+    private SubmissionUploads service;
     private TemplateVersionContext templateContext;
     private DataTemplateInstanceDto template;
     private CurrentUserDetails user;
@@ -99,7 +97,7 @@ class SubmissionUploadServiceTest {
         submissionRepository = mock(DataSubmissionRepository.class);
         when(transactionManager.getTransaction(any(TransactionDefinition.class)))
             .thenReturn(transactionStatus);
-        service = new SubmissionUploadService(
+        service = new SubmissionUploads(
             submissionService,
             mapper,
             new ObjectMapper(),
@@ -218,7 +216,7 @@ class SubmissionUploadServiceTest {
 
         EntitySaveSummaryVM summary = upload(List.of(stubbedRequest("firstSub01"), stubbedRequest("secondSub1")));
 
-        assertEquals(SubmissionUploadService.UNEXPECTED_FAILURE, summary.getFailed().get("firstSub01"));
+        assertEquals(SubmissionUploads.UNEXPECTED_FAILURE, summary.getFailed().get("firstSub01"));
         assertEquals(List.of("secondSub1"), summary.getCreated());
     }
 
@@ -227,15 +225,11 @@ class SubmissionUploadServiceTest {
         goLiveIn(Duration.ofDays(1));
         DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
 
-        AtomicReference<EntitySaveSummaryVM> result = new AtomicReference<>();
-        try (MockedStatic<SecurityUtils> security = org.mockito.Mockito.mockStatic(SecurityUtils.class)) {
-            security.when(SecurityUtils::getCurrentUserDetailsOrThrow).thenReturn(user);
-            result.set(service.release(request));
-        }
+        EntitySaveSummaryVM result = service.save(List.of(request), SubmissionActor.of(user), IntakeMode.RELEASE);
 
         verify(transactionStatus, never()).setRollbackOnly();
         verify(heldSubmissions, never()).hold(any(), any(), any(), any(), any());
-        assertEquals(List.of("firstSub01"), result.get().getCreated());
+        assertEquals(List.of("firstSub01"), result.getCreated());
     }
 
     private GoLiveRule goLiveIn(Duration fromNow) {
@@ -403,7 +397,7 @@ class SubmissionUploadServiceTest {
 
         EntitySaveSummaryVM summary = upload(List.of(firstRequest, secondRequest));
 
-        assertEquals(SubmissionUploadService.UNEXPECTED_FAILURE, summary.getFailed().get("firstSub01"),
+        assertEquals(SubmissionUploads.UNEXPECTED_FAILURE, summary.getFailed().get("firstSub01"),
             "the phone must not show the server's internal error text");
         assertEquals(List.of("secondSub1"), summary.getCreated());
     }
@@ -414,8 +408,9 @@ class SubmissionUploadServiceTest {
         DataSubmission second = submission("secondSub1");
         AtomicReference<DataSubmission> validated = new AtomicReference<>();
 
-        EntitySaveSummaryVM summary = service.upsertAllLegacy(
+        EntitySaveSummaryVM summary = service.saveLegacy(
             List.of(first, second),
+            SubmissionActor.of(user),
             candidate -> {
                 if (candidate == first) {
                     throw new IllegalQueryException("not allowed");
@@ -438,14 +433,7 @@ class SubmissionUploadServiceTest {
     private EntitySaveSummaryVM upload(
         List<DataSubmissionUploadV1Dto> requests,
         boolean practice) {
-        AtomicReference<EntitySaveSummaryVM> result = new AtomicReference<>();
-        try (MockedStatic<SecurityUtils> security =
-                 org.mockito.Mockito.mockStatic(SecurityUtils.class)) {
-            security.when(SecurityUtils::getCurrentUserDetailsOrThrow)
-                .thenReturn(user);
-            result.set(service.upsertAll(requests, practice));
-        }
-        return result.get();
+        return service.save(requests, SubmissionActor.of(user), practice ? IntakeMode.PRACTICE : IntakeMode.LIVE);
     }
 
     private DataSubmissionUploadV1Dto stubbedRequest(String uid) {

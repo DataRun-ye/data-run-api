@@ -3,6 +3,8 @@ package org.nmcpye.datarun.web.rest.v1.datasubmission;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommand;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.CompositeSubmissionValidator;
@@ -65,7 +67,7 @@ class ReferenceUploadRouteContractTest {
 
     @Test
     void oldAndVersionedBulkMappingsRegisterWithoutAmbiguity() {
-        DataSubmissionResource resource = resource(mock(SubmissionUploadService.class));
+        DataSubmissionResource resource = resource(mock(SubmissionUploadService.class), mock(SubmissionCommandService.class));
 
         assertDoesNotThrow(
             () -> MockMvcBuilders.standaloneSetup(resource).build());
@@ -79,7 +81,8 @@ class ReferenceUploadRouteContractTest {
     @Test
     void onlyThePracticeRouteUploadsWithoutStoring() throws Exception {
         SubmissionUploadService uploadService = mock(SubmissionUploadService.class);
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(resource(uploadService)).build();
+        SubmissionCommandService commands = mock(SubmissionCommandService.class);
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(resource(uploadService, commands)).build();
         SecurityContextHolder.getContext().setAuthentication(
             new UsernamePasswordAuthenticationToken(
                 mock(CurrentUserDetails.class), null, List.of()));
@@ -89,8 +92,8 @@ class ReferenceUploadRouteContractTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("[]"))
             .andExpect(status().isOk());
-        verify(uploadService).upsertAll(anyList());
-        verifyNoMoreInteractions(uploadService);
+        verify(commands).upload(any(SubmissionCommand.Upload.class));
+        verifyNoMoreInteractions(uploadService, commands);
 
         mvc.perform(post("/api/v1/dataSubmission/bulk/practice")
                 .param("referenceVersion", "1")
@@ -98,10 +101,11 @@ class ReferenceUploadRouteContractTest {
                 .content("[]"))
             .andExpect(status().isOk());
         verify(uploadService).upsertAll(anyList(), eq(true));
-        verifyNoMoreInteractions(uploadService);
+        verifyNoMoreInteractions(uploadService, commands);
     }
 
-    private static DataSubmissionResource resource(SubmissionUploadService uploadService) {
+    private static DataSubmissionResource resource(
+        SubmissionUploadService uploadService, SubmissionCommandService commands) {
         DataSubmissionResource resource = new DataSubmissionResource(
             mock(DataSubmissionService.class),
             mock(DataSubmissionRepository.class),
@@ -109,7 +113,8 @@ class ReferenceUploadRouteContractTest {
             mock(CompositeSubmissionValidator.class),
             mock(SubmissionAccessValidator.class),
             mock(TemplateVersionResolver.class),
-            uploadService);
+            uploadService,
+            commands);
         ResourceApiAuthorization authorization = mock(ResourceApiAuthorization.class);
         when(authorization.canRead(any())).thenReturn(true);
         ReflectionTestUtils.setField(resource, "resourceApiAuthorization", authorization);
