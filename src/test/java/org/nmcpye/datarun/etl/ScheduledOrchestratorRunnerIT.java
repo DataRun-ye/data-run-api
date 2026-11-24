@@ -18,10 +18,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * The lock that keeps two ETL runs from overlapping, against PostgreSQL. The runner borrows its connections
- * from a two-connection data source that hands them out in turn, as a pool may.
+ * When the scheduled runner starts a run, and the lock that keeps two runs from overlapping, against
+ * PostgreSQL. The runner borrows its connections from a two-connection data source that hands them out in
+ * turn, as a pool may.
  */
-class EtlSchedulingLockIT {
+class ScheduledOrchestratorRunnerIT {
 
     private static final long LOCK_KEY = 123456789012345L;
 
@@ -53,10 +54,6 @@ class EtlSchedulingLockIT {
               claimed_by varchar(255),
               claimed_at timestamp,
               created_at timestamp)""");
-        observer.update("""
-            INSERT INTO outbox (submission_serial_number, submission_id, submission_uid, topic, event_type, status,
-                                attempt, created_at)
-            VALUES (1, 'sub1', 'subUid00001', 'version0001', 'SAVE', 'pending', 0, now())""");
     }
 
     @AfterAll
@@ -66,6 +63,7 @@ class EtlSchedulingLockIT {
 
     @BeforeEach
     void openPool() throws Exception {
+        observer.update("DELETE FROM outbox");
         pool = new AlternatingDataSource(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword());
     }
 
@@ -74,13 +72,22 @@ class EtlSchedulingLockIT {
         pool.close();
     }
 
-    private EtlOrchestrator countingOrchestrator() {
-        return new EtlOrchestrator(null, null, null, null, null, new EtlProperties()) {
+    private void outboxRow(String status, String nextAttemptAt) {
+        observer.update("""
+            INSERT INTO outbox (submission_serial_number, submission_id, submission_uid, topic, event_type, status,
+                                attempt, next_attempt_at, created_at)
+            VALUES (1, 'sub1', 'subUid00001', 'version0001', 'SAVE', ?, 0, CAST(? AS timestamp), now())""",
+            status, nextAttemptAt);
+    }
+
+    private ScheduledOrchestratorRunner runner() {
+        EtlOrchestrator countingOrchestrator = new EtlOrchestrator(null, null, null, null, null, new EtlProperties()) {
             @Override
             public void runOnce(String pipelineName, int batchSize) {
                 runs.incrementAndGet();
             }
         };
+        return new ScheduledOrchestratorRunner(new NamedParameterJdbcTemplate(pool), countingOrchestrator);
     }
 
     private int heldLocks() {
@@ -90,14 +97,35 @@ class EtlSchedulingLockIT {
             Integer.class, LOCK_KEY);
     }
 
+    @Test
+    void aFailedRowWhoseRetryTimeHasComeStartsARunWhenNothingIsPending() {
+        outboxRow("failed", "2026-01-01 00:00:00");
+
+        runner().scheduledRun();
+
+        assertThat(runs).hasValue(1);
+    }
+
+    @Test
+    void rowsThatAreLeasedWaitingToRetryDeadOrDoneStartNoRun() {
+        outboxRow("pending", "2999-01-01 00:00:00");
+        outboxRow("failed", "2999-01-01 00:00:00");
+        outboxRow("dead", null);
+        outboxRow("success", null);
+
+        runner().scheduledRun();
+
+        assertThat(runs).hasValue(0);
+    }
+
     /**
      * Today: the session-level lock is taken on one borrowed connection and released on whichever connection
      * is borrowed next. Released on the other one, it stays held, and later runs are skipped.
      */
     @Test
     void today_theLockReleasedOnAnotherConnectionStaysHeldAndLaterRunsAreSkipped() {
-        ScheduledOrchestratorRunner runner =
-            new ScheduledOrchestratorRunner(new NamedParameterJdbcTemplate(pool), countingOrchestrator());
+        outboxRow("pending", null);
+        ScheduledOrchestratorRunner runner = runner();
 
         runner.scheduledRun();
         assertThat(runs).hasValue(1);

@@ -30,14 +30,19 @@ public class ScheduledOrchestratorRunner {
 
     //
 
+    /** Whether a claim would find a row: pending or failed, and due (not leased, its retry time come). */
+    private static final String CLAIMABLE_SQL = """
+        SELECT count(*) FROM outbox
+        WHERE status IN ('pending', 'failed')
+          AND (next_attempt_at IS NULL OR next_attempt_at <= now())
+        """;
+
     @Scheduled(cron = "${migration.cron:0 */1 * * * *}")
     public void scheduledRun() {
         log.info("Checking for pending outbox events...");
-        Integer countPending = jdbc.queryForObject(
-            "SELECT COUNT(1) FROM outbox WHERE status = 'pending'",
-            new MapSqlParameterSource(), Integer.class);
+        Integer countPending = jdbc.queryForObject(CLAIMABLE_SQL, new MapSqlParameterSource(), Integer.class);
         if (countPending != null && countPending > 0) {
-            log.info("{} pending outbox events, starting orchestrator run ...", countPending);
+            log.info("{} outbox events due, starting orchestrator run ...", countPending);
             Boolean acquired = jdbc.queryForObject(
                 "SELECT pg_try_advisory_lock(:key)",
                 new MapSqlParameterSource("key", ADVISORY_LOCK_KEY),
