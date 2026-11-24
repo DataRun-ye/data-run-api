@@ -90,7 +90,9 @@ abstract class A2GoldenSupport {
 
     private static final List<String> SERVER_TIMES = List.of(
         "created_date", "last_modified_date", "deleted_at", "created_at", "received_at", "decided_at",
-        "held_last_modified_date");
+        "held_last_modified_date", "recorded_at");
+    /** Times inside a revision's metadata, tokenized like the row's columns of the same name. */
+    private static final List<String> METADATA_TIMES = List.of("deleted_at", "last_modified_date");
     private static final List<String> EPOCH_TIMES = List.of(
         "start_entry_time", "finished_entry_time", "started_at", "live_from");
     private static final List<String> SERIALS = List.of("serial_number", "submission_serial_number");
@@ -191,6 +193,8 @@ abstract class A2GoldenSupport {
         private final Map<String, Map<Instant, String>> times = new LinkedHashMap<>();
         /** Submissions an SQL step changed behind the journal. */
         private final Set<String> changedBySql = new HashSet<>();
+        /** Whether the snapshots include the change record. */
+        private boolean revisions;
         private final Instant started;
         private final PinnedBug pinnedBug;
         private JsonNode lastBody = NullNode.getInstance();
@@ -272,6 +276,15 @@ abstract class A2GoldenSupport {
             step.set("result", json.valueToTree(result));
             step.set("db", snapshot());
             steps.add(step);
+            return this;
+        }
+
+        /**
+         * Snapshots include the scenario's revisions ({@code submission_revision}), in version order per submission.
+         * The A2 goldens written before step C leave them out, so that they changed only where the outbox did.
+         */
+        public Scenario withRevisions() {
+            revisions = true;
             return this;
         }
 
@@ -464,6 +477,16 @@ abstract class A2GoldenSupport {
                 FROM outbox WHERE submission_uid LIKE 'a2%'
                    OR submission_id IN (SELECT id FROM data_submission WHERE assignment_uid IN (:assignments))
                 ORDER BY outbox_id""", scope));
+            if (revisions) {
+                db.set("submission_revision", rows("""
+                    SELECT r.submission_id, r.version, r.previous_version, r.kind, r.command, r.actor_user_id,
+                           r.actor_system, r.on_behalf_of_user_id, r.reason,
+                           extract(epoch FROM r.recorded_at) AS recorded_at, r.form_data::text AS form_data,
+                           r.metadata::text AS metadata
+                    FROM submission_revision r JOIN data_submission s ON s.id = r.submission_id
+                    WHERE s.uid LIKE 'a2%' OR s.assignment_uid IN (:assignments)
+                    ORDER BY s.serial_number, r.version""", scope));
+            }
             db.set("held_submission", rows("""
                 SELECT uid, reason, state, activity_uid, org_unit_uid, org_unit_path, form_uid, form_version_uid,
                        team_uid, assignment_uid, submitted_by, extract(epoch FROM started_at) AS started_at,
@@ -514,6 +537,15 @@ abstract class A2GoldenSupport {
             }
             if (JSON_COLUMNS.contains(column)) {
                 return parse(value.toString());
+            }
+            if ("metadata".equals(column)) {
+                ObjectNode metadata = (ObjectNode) parse(value.toString());
+                for (String time : METADATA_TIMES) {
+                    if (metadata.path(time).isTextual()) {
+                        metadata.put(time, timeToken(time, Instant.parse(metadata.get(time).asText())));
+                    }
+                }
+                return metadata;
             }
             return json.valueToTree(value);
         }
