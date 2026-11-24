@@ -183,7 +183,9 @@ spring:
     scheduling:
       thread-name-prefix: data-run-api-scheduling-
       pool:
-        size: 2
+        # Shared by the ETL poll (up to datarun.etl.max-poll-duration), the ETL backlog reading, the last-seen
+        # flush and the nightly jobs; with the database pool exhausted, any of them can wait 30 s for a connection.
+        size: 4
   thymeleaf:
     mode: HTML
   output:
