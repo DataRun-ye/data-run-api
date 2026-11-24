@@ -248,7 +248,26 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   - `datarun_etl_outbox_processing_seconds`: the time per row.
 - **Index.** The partial index `idx_outbox_unfinished` (pending, failed and
   dead rows, in claim order) keeps the due check, the claim and the backlog
-  gauges off the processed history.
+  gauges off the processed history. Liquibase builds it at startup with a plain
+  `CREATE INDEX` and `lock_timeout` 30s (Liquibase parameter
+  `outboxIndexLockTimeout`), so a held write lock fails the deploy instead of
+  stalling it.
+- **Migrations at deploy time.**
+  - Never restart or stop the application while it applies migrations.
+  - If a crash left Liquibase's lock held, startup logs "Waiting for changelog
+    lock" and gives up after five minutes. Check
+    `SELECT locked, lockgranted, lockedby FROM databasechangeloglock;`. Confirm
+    no session is still migrating:
+    `SELECT pid, application_name, state, now() - query_start AS running,
+    left(query, 60) FROM pg_stat_activity WHERE datname = current_database() AND
+    state <> 'idle';`. Only then release it:
+    `UPDATE databasechangeloglock SET locked = false, lockgranted = NULL,
+    lockedby = NULL WHERE id = 1;`.
+  - To see what a migration waits on:
+    `SELECT pid, wait_event_type, wait_event, pg_blocking_pids(pid) AS blocked_by,
+    now() - query_start AS waiting, left(query, 60) FROM pg_stat_activity WHERE
+    datname = current_database() AND wait_event_type = 'Lock';`. The blocking
+    pids are the sessions holding the lock.
 
 ## Cleanup Cycle
 

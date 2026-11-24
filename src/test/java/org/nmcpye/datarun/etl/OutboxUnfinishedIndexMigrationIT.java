@@ -14,25 +14,29 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.Statement;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * The outbox index changeset on its own, against PostgreSQL: it builds a valid index, does nothing when run
- * again, rolls back, replaces an invalid index a failed concurrent build would leave, and only marks itself ran
- * when a valid index is already there.
+ * again, rolls back, fails after its lock timeout instead of waiting behind a writer, and only marks itself ran
+ * when the index is already there (where the earlier concurrent build ran).
  */
 class OutboxUnfinishedIndexMigrationIT {
 
     private static final String CHANGELOG = "config/liquibase/changelog/etl/20261124-outbox-unfinished-index.xml";
-    private static final String CHANGESET = "20261124-01-outbox-unfinished-index";
+    private static final String CHANGESET = "20261124-02-outbox-unfinished-index";
 
     private static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16.2");
 
@@ -75,11 +79,18 @@ class OutboxUnfinishedIndexMigrationIT {
      * and remembers a changelog it found up to date, even across a rollback.
      */
     private static void liquibase(boolean rollback) throws Exception {
+        liquibase(rollback, null);
+    }
+
+    private static void liquibase(boolean rollback, String lockTimeout) throws Exception {
         ChangeLogHistoryServiceFactory.getInstance().resetAll();
         Scope.getCurrentScope().getSingleton(FastCheckService.class).clearCache();
         try (Connection connection = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())) {
             Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
             Liquibase liquibase = new Liquibase(CHANGELOG, new ClassLoaderResourceAccessor(), database);
+            if (lockTimeout != null) {
+                liquibase.setChangeLogParameter("outboxIndexLockTimeout", lockTimeout);
+            }
             if (rollback) {
                 liquibase.rollback(1, (String) null);
             } else {
@@ -120,22 +131,30 @@ class OutboxUnfinishedIndexMigrationIT {
         assertThat(index()).isEqualTo("valid");
     }
 
+    /** A writer's open transaction holds a lock the build needs: the migration fails visibly instead of waiting. */
     @Test
-    void itReplacesAnInvalidIndexLeftByAFailedConcurrentBuild() throws Exception {
-        db.execute("CREATE INDEX idx_outbox_unfinished ON outbox (outbox_id)");
-        db.update("UPDATE pg_index SET indisvalid = false WHERE indexrelid = 'idx_outbox_unfinished'::regclass");
-        assertThat(index()).isEqualTo("invalid");
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
+    void aHeldWriteLockMakesTheMigrationFailAfterItsLockTimeoutInsteadOfWaiting() throws Exception {
+        try (Connection writer = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())) {
+            writer.setAutoCommit(false);
+            try (Statement statement = writer.createStatement()) {
+                statement.execute("LOCK TABLE outbox IN ROW EXCLUSIVE MODE");
+            }
+            long start = System.nanoTime();
+            assertThatThrownBy(() -> liquibase(false, "2s")).hasStackTraceContaining("lock timeout");
+            assertThat((System.nanoTime() - start) / 1e9).isBetween(1.5, 20.0);
+            writer.rollback();
+        }
 
+        assertThat(index()).isNull();
+        assertThat(runs()).isEmpty();
         liquibase(false);
-
         assertThat(index()).isEqualTo("valid");
-        assertThat(db.queryForObject("SELECT pg_get_indexdef('idx_outbox_unfinished'::regclass)", String.class))
-            .contains("(submission_serial_number, outbox_id)");
-        assertThat(runs()).containsExactly("EXECUTED");
     }
 
+    /** Where the earlier concurrent build ran, the index exists and this changeset only marks itself ran. */
     @Test
-    void itOnlyMarksItselfRanWhenAValidIndexIsAlreadyThere() throws Exception {
+    void itOnlyMarksItselfRanWhenTheIndexIsAlreadyThere() throws Exception {
         db.execute("""
             CREATE INDEX idx_outbox_unfinished ON outbox (submission_serial_number, outbox_id)
             WHERE status IN ('pending', 'failed', 'dead')""");

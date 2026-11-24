@@ -6,34 +6,40 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
 
+    <!-- How long the index build may wait for a lock; a Liquibase parameter of the same name overrides it. -->
+    <property name="outboxIndexLockTimeout" value="30s"/>
+
     <!--
       The outbox rows the ETL has not finished with (pending, failed, dead), in claim order. The ETL's due check,
       its claim and its backlog gauges read only these rows; without the index each of them reads the whole outbox,
       which keeps every row it was ever sent.
 
-      Built concurrently, so writes to the outbox go on meanwhile; that cannot run in a transaction. A concurrent
-      build that failed leaves an invalid index of the same name, so the changeset runs while no valid one exists,
-      drops a leftover first, and can be run again.
+      A plain CREATE INDEX in the changeset's transaction. Liquibase runs at startup, before the application serves
+      and with the previous one stopped, so nothing writes to the outbox meanwhile. A plain build takes a SHARE lock,
+      which blocks writers only, and does not wait for older snapshots the way a concurrent build does (a pg_dump, a
+      sync or an idle session could stall startup indefinitely). On production's 64,645 rows it takes tens of
+      milliseconds. lock_timeout makes the deploy fail visibly, instead of waiting, if something holds a write lock.
+
+      It replaces 20261124-01-outbox-unfinished-index, a concurrent build that never reached production; where that
+      one ran, the index exists and this changeset only marks itself ran.
 
       Rollback drops the index; nothing depends on it but query speed.
     -->
-    <changeSet id="20261124-01-outbox-unfinished-index" author="datarun" runInTransaction="false">
+    <changeSet id="20261124-02-outbox-unfinished-index" author="datarun">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="0">
-                SELECT count(*)
-                FROM pg_index i
-                JOIN pg_class c ON c.oid = i.indexrelid
-                WHERE c.relname = 'idx_outbox_unfinished' AND i.indisvalid
-            </sqlCheck>
+            <not>
+                <indexExists tableName="outbox" indexName="idx_outbox_unfinished"/>
+            </not>
         </preConditions>
-        <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_outbox_unfinished</sql>
+        <sql>SET LOCAL lock_timeout = '${outboxIndexLockTimeout}'</sql>
         <sql>
-            CREATE INDEX CONCURRENTLY idx_outbox_unfinished
+            CREATE INDEX idx_outbox_unfinished
                 ON outbox (submission_serial_number, outbox_id)
                 WHERE status IN ('pending', 'failed', 'dead')
         </sql>
         <rollback>
-            <sql>DROP INDEX CONCURRENTLY IF EXISTS idx_outbox_unfinished</sql>
+            <sql>SET LOCAL lock_timeout = '${outboxIndexLockTimeout}'</sql>
+            <sql>DROP INDEX IF EXISTS idx_outbox_unfinished</sql>
         </rollback>
     </changeSet>
 </databaseChangeLog>
