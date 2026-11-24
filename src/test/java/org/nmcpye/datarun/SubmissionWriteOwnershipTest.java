@@ -18,6 +18,8 @@ import org.nmcpye.datarun.jpa.intake.HeldSubmissionRepository;
 import org.nmcpye.datarun.jpa.intake.SubmissionIntake;
 import org.nmcpye.datarun.outbox.repository.OutboxWritePort;
 import org.nmcpye.datarun.outbox.repository.OutboxWriter;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -49,8 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>writes made through the generic {@code IdentifiableObjectService} or {@code JpaIdentifiableRepository}
  *       types: the inherited {@code PUT /dataSubmission/{uid}} body is one; it answers 400 before its body runs,
  *       and B2 turns the route into a 405;</li>
- *   <li>SQL that names the tables directly: none exists outside these classes today, apart from the ETL consumer's
- *       claim and status updates on the outbox, which are its own progress, not submission events.</li>
+ *   <li>SQL text. A second test scans it, as a tripwire, not proof: SQL built at run time is not seen.</li>
  * </ul>
  * <p>No violation is accepted: the one the rule first met, the unreachable outbox backfill behind
  * {@code /admin/etl}, left with that code in 6.5.3.</p>
@@ -74,7 +75,8 @@ class SubmissionWriteOwnershipTest {
                 "save", "persist", "update", "delete", "merge", "insert", "remove"))
             .or(writeOn(HeldSubmissionRepository.class, "hold", "markDecided", "recordReleaseError"))
             .or(writeOn(SubmissionIntake.class, "hold"))
-            .or(writeOn(OutboxWritePort.class, "insert"));
+            .or(writeOn(OutboxWritePort.class, "insert"))
+            .or(modifyingQueryOn(DataSubmissionRepository.class));
 
     static final ArchRule ONLY_THE_COMMAND_SERVICE_WRITES_SUBMISSIONS = noClasses()
         .that(not(OWNERS))
@@ -93,12 +95,43 @@ class SubmissionWriteOwnershipTest {
         .should().dependOnClassesThat().belongToAnyOf(HeldSubmissionDecisions.class)
         .because("held releases and discards are commands of SubmissionCommandService, not an entry point");
 
-    /** Where SQL may write each table: nowhere for data_submission, which JPA writes through the persistence port. */
-    private static final Map<String, String> SQL_HOMES = Map.of(
-        "held_submission", "org/nmcpye/datarun/jpa/intake/",
-        "outbox", "org/nmcpye/datarun/outbox/repository/");
-    private static final Pattern SQL_WRITE = Pattern.compile(
-        "(?i)\\b(insert\\s+into|update|delete\\s+from)\\s+(data_submission|held_submission|outbox)\\b");
+    // SQL text, which ArchUnit cannot see. Scanned as a tripwire, not proof: SQL built at run time is not seen.
+
+    /**
+     * Where text may name each table at all, by source path: data_submission only in its entity's mapping (JPA
+     * writes it through the persistence port), held_submission in its repository, and the outbox in its writer and
+     * in the ETL consumer's claim, due check and backlog reads.
+     */
+    private static final Map<String, List<String>> NAMED_IN = Map.of(
+        "data_submission", List.of("org/nmcpye/datarun/jpa/datasubmission/"),
+        "held_submission", List.of("org/nmcpye/datarun/jpa/intake/"),
+        "outbox", List.of("org/nmcpye/datarun/outbox/repository/", "org/nmcpye/datarun/etl/admin/",
+            "org/nmcpye/datarun/etl/metrics/"));
+    /** Where SQL may write each table: data_submission nowhere. */
+    private static final Map<String, List<String>> WRITTEN_IN = Map.of(
+        "data_submission", List.of(),
+        "held_submission", List.of("org/nmcpye/datarun/jpa/intake/"),
+        "outbox", List.of("org/nmcpye/datarun/outbox/repository/"));
+    /** Resources may name the tables only in the schema's own changelogs. */
+    private static final String RESOURCES_NAMED_IN = "config/liquibase/";
+    /** Where JPQL may name the DataSubmission entity. */
+    private static final String ENTITY_NAMED_IN = "org/nmcpye/datarun/jpa/datasubmission/";
+
+    /** A table, bare, schema-qualified or quoted: the word boundaries hold at the dot and the quote. */
+    private static final Pattern TABLE = Pattern.compile("(?i)\\b(data_submission|held_submission|outbox)\\b");
+    /** A literal that is just a table name, for SQL assembled from pieces. */
+    private static final Pattern WHOLE_TABLE = Pattern.compile(
+        "(?i)^\\s*(?:public\\s*\\.\\s*)?(?:\\\\?\")?(data_submission|held_submission|outbox)(?:\\\\?\")?\\s*$");
+    private static final Pattern WRITE = Pattern.compile("(?i)\\b(insert\\s+into|update|delete\\s+from|merge\\s+into"
+        + "|truncate(?:\\s+table)?|copy)\\s+(?:only\\s+)?(?:public\\s*\\.\\s*)?(?:\\\\?\")?"
+        + "(data_submission|held_submission|outbox)\\b");
+    /**
+     * "outbox" is an ordinary word in log and metric texts, so it counts as a table only beside an SQL word or as a
+     * whole literal; the two other names count wherever they appear.
+     */
+    private static final Pattern SQL_WORD = Pattern.compile(
+        "(?i)\\b(select|insert|update|delete|merge|truncate|copy|from|into|join|where|set|values|returning)\\b");
+    private static final Pattern ENTITY = Pattern.compile("\\bDataSubmission\\b");
 
     @Test
     void onlyTheCommandServiceAndItsPersistenceWriteSubmissions() {
@@ -112,40 +145,42 @@ class SubmissionWriteOwnershipTest {
     }
 
     /**
-     * What ArchUnit cannot see: SQL text. Every string literal and text block in the main sources is scanned for an
-     * INSERT, UPDATE or DELETE on the three tables. held_submission may be written only in jpa.intake (its
-     * repository), the outbox only in outbox.repository (the writer's inserts, and the ETL consumer's claim and status
-     * updates), and data_submission nowhere. Comments are skipped; SQL assembled from a table name held in a variable
-     * would not be seen.
+     * A tripwire, not proof, for what ArchUnit cannot see: SQL text. Every string literal and text block in the main
+     * sources, and every line of the main resources, is read for the three tables. A table may be named only where
+     * {@link #NAMED_IN} allows it, whatever the verb (split literals, MERGE, TRUNCATE and COPY included), and written
+     * only where {@link #WRITTEN_IN} does; a JPQL {@code @Query} may name the DataSubmission entity only in its own
+     * package; resources may name the tables only in the Liquibase changelogs. SQL assembled at run time from names
+     * held elsewhere is not seen.
      */
     @Test
-    void noSqlOutsideThePersistenceLayerWritesTheTables() throws IOException {
-        Path root = Path.of("src", "main", "java");
+    void noSqlTextOutsideThePersistenceLayerNamesTheTables() throws IOException {
         List<String> outside = new ArrayList<>();
-        List<String> seen = new ArrayList<>();
-        try (Stream<Path> files = Files.walk(root)) {
+        int named = 0;
+        Path sources = Path.of("src", "main", "java");
+        try (Stream<Path> files = Files.walk(sources)) {
             for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
-                String relative = root.relativize(file).toString().replace('\\', '/');
-                for (String literal : stringLiterals(Files.readString(file))) {
-                    Matcher write = SQL_WRITE.matcher(literal);
-                    while (write.find()) {
-                        String table = write.group(2).toLowerCase(Locale.ROOT);
-                        String found = relative + ": " + write.group().replaceAll("\\s+", " ");
-                        seen.add(found);
-                        if (!SQL_HOMES.containsKey(table) || !relative.startsWith(SQL_HOMES.get(table))) {
-                            outside.add(found);
-                        }
-                    }
-                }
+                List<String> found = sourceFindings(relative(sources, file), Files.readString(file));
+                named += found.size();
+                found.stream().filter(finding -> finding.startsWith("outside ")).forEach(outside::add);
             }
         }
-        assertThat(seen).as("the scan finds the writes that do exist").isNotEmpty();
-        assertThat(outside).isEmpty();
+        Path resources = Path.of("src", "main", "resources");
+        try (Stream<Path> files = Files.walk(resources)) {
+            for (Path file : files.filter(path -> path.toString().matches(".*\\.(xml|ya?ml|sql|properties|json)$"))
+                .toList()) {
+                outside.addAll(resourceFindings(relative(resources, file), Files.readString(file)));
+            }
+        }
+        assertThat(named).as("the scan finds the SQL that does exist").isPositive();
+        assertThat(outside)
+            .as("SQL text naming data_submission, held_submission or the outbox outside its persistence classes "
+                + "(a tripwire, not proof: SQL built at run time is not seen)")
+            .isEmpty();
     }
 
-    /** The scan reads string literals and text blocks, not comments. */
+    /** The scan's rules on small sources: what it reads, skips and flags. */
     @Test
-    void theSqlScanReadsLiteralsAndSkipsComments() {
+    void theSqlScanFlagsWhatItShould() {
         String source = String.join("\n",
             "// update outbox status in a comment",
             "/* insert into data_submission in a block comment */",
@@ -155,15 +190,104 @@ class SubmissionWriteOwnershipTest {
             "    WHERE id = ?\"\"\";",
             "char c = '\"';",
             "String d = \"a \\\" quote and update data_submission\";");
-
         assertThat(stringLiterals(source))
             .containsExactly("UPDATE held_submission SET x = 1", "\n    DELETE FROM outbox\n    WHERE id = ?",
                 "a \\\" quote and update data_submission");
+
+        assertThat(sourceFindings("org/nmcpye/datarun/web/X.java", String.join("\n",
+            "String split = \"TRUNCATE \" + \"public.held_submission\";",
+            "String quoted = \"COPY \\\"data_submission\\\" FROM STDIN\";",
+            "String piece = \"outbox\";",
+            "String log = \"Could not read the outbox backlog: {}\";",
+            "@Query(\"update DataSubmission s set s.status = null\")")))
+            .containsExactly(
+                "outside org/nmcpye/datarun/web/X.java: names held_submission in \"public.held_submission\"",
+                "outside org/nmcpye/datarun/web/X.java: names data_submission in \"COPY \\\"data_submission\\\" FROM STDIN\"",
+                "outside org/nmcpye/datarun/web/X.java: writes data_submission in \"COPY \\\"data_submission\\\" FROM STDIN\"",
+                "outside org/nmcpye/datarun/web/X.java: names outbox in \"outbox\"",
+                "outside org/nmcpye/datarun/web/X.java: names the DataSubmission entity in \"update DataSubmission s set s.status = null\"");
+        assertThat(sourceFindings("org/nmcpye/datarun/etl/metrics/X.java", "String read = \"SELECT count(*) FROM outbox\";"))
+            .containsExactly("allowed org/nmcpye/datarun/etl/metrics/X.java: names outbox in \"SELECT count(*) FROM outbox\"");
+        assertThat(sourceFindings("org/nmcpye/datarun/etl/metrics/X.java", "String sneak = \"UPDATE outbox SET x = 1\";"))
+            .contains("outside org/nmcpye/datarun/etl/metrics/X.java: writes outbox in \"UPDATE outbox SET x = 1\"");
+        assertThat(resourceFindings("config/application.yml", String.join("\n",
+            "# the outbox consumer", "query: DELETE FROM outbox")))
+            .containsExactly("outside config/application.yml:2: names outbox in \"query: DELETE FROM outbox\"");
+    }
+
+    /**
+     * What a Java source says about the tables: one entry per table named, written, or entity named in a JPQL query,
+     * each starting with "allowed " or "outside ".
+     */
+    static List<String> sourceFindings(String path, String source) {
+        List<String> findings = new ArrayList<>();
+        for (Literal literal : literals(source)) {
+            Matcher table = TABLE.matcher(literal.text());
+            boolean sqlLike = SQL_WORD.matcher(literal.text()).find() || WHOLE_TABLE.matcher(literal.text()).matches();
+            List<String> seen = new ArrayList<>();
+            while (table.find()) {
+                String name = table.group(1).toLowerCase(Locale.ROOT);
+                if (!seen.contains(name) && (sqlLike || !"outbox".equals(name))) {
+                    seen.add(name);
+                    findings.add(where(path, NAMED_IN.get(name)) + path + ": names " + name + " in \"" + literal.text()
+                        + "\"");
+                }
+            }
+            Matcher write = WRITE.matcher(literal.text());
+            while (write.find()) {
+                String name = write.group(2).toLowerCase(Locale.ROOT);
+                findings.add(where(path, WRITTEN_IN.get(name)) + path + ": writes " + name + " in \"" + literal.text()
+                    + "\"");
+            }
+            if (literal.inQuery() && ENTITY.matcher(literal.text()).find()) {
+                findings.add(where(path, List.of(ENTITY_NAMED_IN)) + path + ": names the DataSubmission entity in \""
+                    + literal.text() + "\"");
+            }
+        }
+        return findings;
+    }
+
+    /** Lines of a resource that name a table outside the changelogs. */
+    static List<String> resourceFindings(String path, String text) {
+        if (path.startsWith(RESOURCES_NAMED_IN)) {
+            return List.of();
+        }
+        List<String> findings = new ArrayList<>();
+        String[] lines = text.split("\n", -1);
+        for (int i = 0; i < lines.length; i++) {
+            Matcher table = TABLE.matcher(lines[i]);
+            boolean sqlLike = SQL_WORD.matcher(lines[i]).find();
+            while (table.find()) {
+                String name = table.group(1).toLowerCase(Locale.ROOT);
+                if (sqlLike || !"outbox".equals(name)) {
+                    findings.add("outside " + path + ":" + (i + 1) + ": names " + name + " in \"" + lines[i].strip()
+                        + "\"");
+                }
+            }
+        }
+        return findings;
+    }
+
+    private static String where(String path, List<String> homes) {
+        return homes.stream().anyMatch(path::startsWith) ? "allowed " : "outside ";
+    }
+
+    private static String relative(Path root, Path file) {
+        return root.relativize(file).toString().replace('\\', '/');
+    }
+
+    /** A string literal or text block, and whether it sits in a {@code @Query} or {@code @NativeQuery}. */
+    record Literal(String text, boolean inQuery) {
     }
 
     /** The contents of the string literals and text blocks in Java source, comments and char literals skipped. */
     static List<String> stringLiterals(String source) {
-        List<String> literals = new ArrayList<>();
+        return literals(source).stream().map(Literal::text).toList();
+    }
+
+    static List<Literal> literals(String source) {
+        List<Literal> literals = new ArrayList<>();
+        int queryDepth = 0;
         int i = 0;
         while (i < source.length()) {
             char c = source.charAt(i);
@@ -176,7 +300,7 @@ class SubmissionWriteOwnershipTest {
             } else if (source.startsWith("\"\"\"", i)) {
                 int end = source.indexOf("\"\"\"", i + 3);
                 end = end < 0 ? source.length() : end;
-                literals.add(source.substring(i + 3, end));
+                literals.add(new Literal(source.substring(i + 3, end), queryDepth > 0));
                 i = end + 3;
             } else if (c == '"' || c == '\'') {
                 int j = i + 1;
@@ -184,10 +308,20 @@ class SubmissionWriteOwnershipTest {
                     j += source.charAt(j) == '\\' ? 2 : 1;
                 }
                 if (c == '"') {
-                    literals.add(source.substring(i + 1, Math.min(j, source.length())));
+                    literals.add(new Literal(source.substring(i + 1, Math.min(j, source.length())), queryDepth > 0));
                 }
                 i = j + 1;
+            } else if (queryDepth == 0 && (source.startsWith("@Query", i) || source.startsWith("@NativeQuery", i))) {
+                int open = source.indexOf('(', i);
+                boolean annotation = open > 0 && source.substring(i + 1, open).strip().matches("Query|NativeQuery");
+                i = annotation ? open + 1 : i + 1;
+                queryDepth = annotation ? 1 : 0;
             } else {
+                if (queryDepth > 0 && c == '(') {
+                    queryDepth++;
+                } else if (queryDepth > 0 && c == ')') {
+                    queryDepth--;
+                }
                 i++;
             }
         }
@@ -197,23 +331,44 @@ class SubmissionWriteOwnershipTest {
     /** The rule is not vacuous: a class outside the command service that saves a submission breaks it. */
     @Test
     void aWriterOutsideTheCommandServiceBreaksTheRule() {
-        JavaClasses withABackDoor = new ClassFileImporter().importClasses(BackDoor.class);
+        JavaClasses withABackDoor = new ClassFileImporter().importClasses(BackDoor.class, ModifyingSubmissions.class);
 
         assertThat(ONLY_THE_COMMAND_SERVICE_WRITES_SUBMISSIONS.evaluate(withABackDoor).getFailureReport().getDetails())
-            .hasSize(4)
-            .allSatisfy(line -> assertThat(line).contains(BackDoor.class.getName()));
+            .hasSize(5)
+            .allSatisfy(line -> assertThat(line).contains(BackDoor.class.getName()))
+            .anySatisfy(line -> assertThat(line).contains("ModifyingSubmissions.tidy"));
     }
 
-    /** Four writes the rule must catch, for the test above only. */
+    /** Five writes the rule must catch, for the test above only; the last one by its @Modifying, not its name. */
     @SuppressWarnings("unused")
     static class BackDoor {
         void writes(DataSubmissionService submissions, DataSubmissionRepository repository,
-                    HeldSubmissionRepository held, OutboxWritePort outbox) {
+                    HeldSubmissionRepository held, OutboxWritePort outbox, ModifyingSubmissions modifying) {
             submissions.upsertAll(List.of(), new EntitySaveSummaryVM());
             repository.deleteAllByUidIn(List.of("a"));
             held.recordReleaseError("a", "b");
             outbox.insertByEventType(List.of(), "SAVE");
+            modifying.tidy("a");
         }
+    }
+
+    /** A JPQL write whose name says nothing. Nested, so Spring Data's repository scan leaves it alone. */
+    interface ModifyingSubmissions extends DataSubmissionRepository {
+        @Modifying
+        @Query("update DataSubmission s set s.status = null where s.uid = ?1")
+        int tidy(String uid);
+    }
+
+    /** A call to a {@code @Modifying} query method of {@code owner}: a JPQL write, whatever its name. */
+    private static DescribedPredicate<JavaMethodCall> modifyingQueryOn(Class<?> owner) {
+        return new DescribedPredicate<>("a @Modifying query on " + owner.getSimpleName()) {
+            @Override
+            public boolean test(JavaMethodCall call) {
+                return call.getTargetOwner().isAssignableTo(owner)
+                    && call.getTarget().resolveMember().map(method -> method.isAnnotatedWith(Modifying.class))
+                    .orElse(false);
+            }
+        };
     }
 
     private static DescribedPredicate<JavaMethodCall> writeOn(Class<?> owner, String... namePrefixes) {
