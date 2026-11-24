@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.management.SecurityMetersService;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -24,7 +25,10 @@ import java.util.Date;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** A token the decoder rejects for an unforeseen reason is the client's doing, so it is logged at WARN. */
+/**
+ * A token the decoder rejects for an unforeseen reason is the client's doing, so it is logged at WARN; a failure of
+ * the server's own key stays an ERROR.
+ */
 class SecurityJwtConfigurationTest {
 
     /** The test profile's secret: a 512-bit key, as HS512 needs. */
@@ -51,7 +55,7 @@ class SecurityJwtConfigurationTest {
                 .build());
         foreign.sign(new MACSigner(new byte[32]));
 
-        assertThatThrownBy(() -> decoder().decode(foreign.serialize())).isInstanceOf(JwtException.class);
+        assertThatThrownBy(() -> decoder(SECRET).decode(foreign.serialize())).isInstanceOf(BadJwtException.class);
 
         assertThat(logged.list).singleElement().satisfies(line -> {
             assertThat(line.getLevel()).isEqualTo(Level.WARN);
@@ -59,9 +63,27 @@ class SecurityJwtConfigurationTest {
         });
     }
 
-    private static JwtDecoder decoder() {
+    /** A server secret too short for HMAC: a key failure no client can cause, which must still page. */
+    @Test
+    void aFailureOfTheServersOwnKeyStaysAnError() throws Exception {
+        SignedJWT wellFormed = new SignedJWT(new JWSHeader(JWSAlgorithm.HS512),
+            new JWTClaimsSet.Builder().subject("anyone").expirationTime(new Date(System.currentTimeMillis() + 60_000))
+                .build());
+        wellFormed.sign(new MACSigner(new byte[64]));
+        String sixteenByteSecret = java.util.Base64.getEncoder().encodeToString(new byte[16]);
+
+        assertThatThrownBy(() -> decoder(sixteenByteSecret).decode(wellFormed.serialize()))
+            .isInstanceOf(JwtException.class).isNotInstanceOf(BadJwtException.class);
+
+        assertThat(logged.list).singleElement().satisfies(line -> {
+            assertThat(line.getLevel()).isEqualTo(Level.ERROR);
+            assertThat(line.getFormattedMessage()).startsWith("Unknown JWT error");
+        });
+    }
+
+    private static JwtDecoder decoder(String secret) {
         SecurityJwtConfiguration configuration = new SecurityJwtConfiguration();
-        ReflectionTestUtils.setField(configuration, "jwtKey", SECRET);
+        ReflectionTestUtils.setField(configuration, "jwtKey", secret);
         return configuration.jwtDecoder(new SecurityMetersService(new SimpleMeterRegistry()));
     }
 

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -42,10 +43,14 @@ public class SecurityJwtConfiguration {
                     e.getMessage().contains("Invalid unsecured/JWS/JWE")
                 ) {
                     metersService.trackTokenMalformed();
-                } else {
+                } else if (e instanceof BadJwtException) {
                     // A token the decoder rejects for another reason (an unexpected algorithm, say) is still the
                     // client's: anyone can send one, so it is no server error and must not page error reporting.
                     log.warn("Unknown JWT error {}", e.getMessage());
+                } else {
+                    // Not the token's fault: NimbusJwtDecoder raises a plain JwtException for a key or crypto
+                    // failure on this server, which no client can cause.
+                    log.error("Unknown JWT error {}", e.getMessage());
                 }
                 throw e;
             }
