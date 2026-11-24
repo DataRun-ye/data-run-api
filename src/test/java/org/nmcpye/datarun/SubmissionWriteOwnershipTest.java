@@ -7,7 +7,6 @@ import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
-import com.tngtech.archunit.library.freeze.FreezingArchRule;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.jpa.datasubmission.command.HeldSubmissionDecisions;
@@ -53,9 +52,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>SQL that names the tables directly: none exists outside these classes today, apart from the ETL consumer's
  *       claim and status updates on the outbox, which are its own progress, not submission events.</li>
  * </ul>
- * <p>The frozen store ({@code src/test/resources/archunit_store}) keeps the one violation that stays: the
- * outbox backfill ({@code etl.admin.BackfillServiceImpl}), reachable only from {@code /admin/etl}, which the security
- * chain refuses to everyone; D2 replaces it. A new violation fails the build; a fixed one leaves the store.</p>
+ * <p>No violation is accepted: the one the rule first met, the unreachable outbox backfill behind
+ * {@code /admin/etl}, left with that code in 6.5.3.</p>
  */
 class SubmissionWriteOwnershipTest {
 
@@ -104,7 +102,7 @@ class SubmissionWriteOwnershipTest {
 
     @Test
     void onlyTheCommandServiceAndItsPersistenceWriteSubmissions() {
-        FreezingArchRule.freeze(ONLY_THE_COMMAND_SERVICE_WRITES_SUBMISSIONS).check(MAIN);
+        ONLY_THE_COMMAND_SERVICE_WRITES_SUBMISSIONS.check(MAIN);
     }
 
     @Test

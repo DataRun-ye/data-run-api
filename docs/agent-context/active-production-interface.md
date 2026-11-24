@@ -143,10 +143,9 @@ written in a transaction of its own, with its `outbox` row, and
 `SubmissionWriteOwnershipTest` (ArchUnit) fails the build when any other class
 calls the write methods of the persistence layer (`DataSubmissionService`, the
 submission repository, `SubmissionIntake.hold`, `HeldSubmissionRepository`,
-`OutboxWriter`). Its frozen store keeps one known violation, the unreachable
-outbox backfill behind `/admin/etl`. The rule cannot see writes through the
-generic `IdentifiableObjectService` types; the inherited `PUT` body is the one
-such path, and it answers 400 before it runs. Log lines on these paths carry
+`OutboxWriter`); it accepts no violation. The rule cannot see writes through
+the generic `IdentifiableObjectService` types; the inherited `PUT` body is the
+one such path, and it answers 400 before it runs. Log lines on these paths carry
 identifiers and shapes only: submission and form uids, the user id, counts,
 error codes and exception types, never a login, a submitted value or an
 exception message.
