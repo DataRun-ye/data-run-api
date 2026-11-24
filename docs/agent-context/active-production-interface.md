@@ -363,7 +363,9 @@ voids, delete markers) belongs to the projector work, not to this runtime.
     so a failed startup and the Liquibase migrations, which production runs
     during the refresh, show in the container log only. A malformed DSN leaves
     reporting off, with one WARN at startup that does not repeat it.
-    The container log keeps every line in full. Database errors there leave
+    The container log keeps every line in full, in at most 5 files of 20 MB
+    (json-file rotation in `deploy/production/compose.yml` since 6.5.5; before
+    that it never rotated). Database errors there leave
     out the failing row only because the pool and both JDBC URLs set
     `logServerErrorDetail=false`; PostgreSQL's own message can still quote an
     input value (`invalid input syntax for type integer: "…"`).

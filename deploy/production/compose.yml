@@ -35,6 +35,12 @@ services:
       - DATARUN_ETL_HEARTBEAT_URL=${DATARUN_ETL_HEARTBEAT_URL:-}
     ports:
       - "192.168.1.110:8080:8080"
+    # The container log rotates: at most 5 files of 20 MB (json-file keeps everything without these options).
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
     healthcheck:
       test:
         - CMD
