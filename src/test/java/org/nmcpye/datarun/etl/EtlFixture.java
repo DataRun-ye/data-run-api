@@ -90,6 +90,11 @@ final class EtlFixture {
 
     /** A submission with four root values and {@code members} repeat rows of four values each. */
     long submission(String uid, String templateUid, int members) {
+        return submissionWithFormData(uid, templateUid, formData(uid, members));
+    }
+
+    /** A submission whose form data is given as JSON. */
+    long submissionWithFormData(String uid, String templateUid, String formData) {
         return tx.execute(status -> jdbc.queryForObject("""
                 INSERT INTO data_submission (id, uid, template_uid, template_version_uid, template_version_no,
                                              assignment_uid, activity_uid, team_uid, org_unit_uid, status,
@@ -105,7 +110,7 @@ final class EtlFixture {
                 .addValue("uid", uid)
                 .addValue("template", templateUid)
                 .addValue("version", TEMPLATE_VERSION)
-                .addValue("formData", formData(uid, members)),
+                .addValue("formData", formData),
             Long.class));
     }
 

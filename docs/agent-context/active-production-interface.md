@@ -257,6 +257,21 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   `CREATE INDEX` and `lock_timeout` 30s (Liquibase parameter
   `outboxIndexLockTimeout`), so a held write lock fails the deploy instead of
   stalling it.
+- **Before a deploy that changes the ETL.** Check the outbox right before
+  deploying, and compare with the release notes:
+  `SELECT status, attempt, next_attempt_at IS NOT NULL AS leased, count(*)
+  FROM outbox GROUP BY 1, 2, 3 ORDER BY 1, 2, 3;`.
+  - Under the release before this runtime, every row is `success` with attempt
+    0, and nothing is pending, failed or leased.
+  - Rows pending at deploy time are projected by the first poll.
+  - Anything else (failed, dead, attempt above 0) was changed by hand: find
+    out why before deploying.
+- **Known residual (projector step).** An array or object value longer than
+  10,000 characters is cut into invalid JSON (`TransformServiceRobust`,
+  `TallCanonicalJdbcRepository`). Its row fails on every attempt with
+  `invalid input syntax for type json` and is dead after about four hours.
+  This is latent in production today; its fix belongs to the projector step,
+  not to this runtime.
 - **Migrations at deploy time.**
   - Never restart or stop the application while it applies migrations.
   - If a crash left Liquibase's lock held, startup logs "Waiting for changelog

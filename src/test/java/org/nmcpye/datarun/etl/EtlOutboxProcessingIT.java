@@ -349,6 +349,26 @@ class EtlOutboxProcessingIT {
         return lines;
     }
 
+    /**
+     * Known residual, left to the projector step: an array or object value longer than 10,000 characters is cut
+     * into invalid JSON (TransformServiceRobust, TallCanonicalJdbcRepository), so the row fails on every attempt
+     * and ends dead after about four hours of retries. Here a repeat row whose JSON is that long.
+     */
+    @Test
+    void today_aValueLongerThan10000CharactersIsCutIntoInvalidJsonAndTheRowFails() {
+        fixture.submissionWithFormData("longSub0001", TEMPLATE, """
+            {"main":{"hh_name":"x"},"members":[{"_id":"longSub001m0","_index":1,"member_name":"%s"}]}"""
+            .formatted("y".repeat(10_100)));
+        long outboxId = fixture.outbox("longSub0001", "SAVE");
+
+        orchestrator.runOnce("test", 10);
+
+        Map<String, Object> row = fixture.outboxRow(outboxId);
+        assertThat(row).containsEntry("status", "failed");
+        assertThat((String) row.get("last_error")).startsWith("ERROR: invalid input syntax for type json");
+        assertThat(fixture.tallRows("longSub0001")).isZero();
+    }
+
     /** A row started more often than it may be tried, each run ending without an outcome, is dead unprojected. */
     @Test
     void aRowStartedMoreOftenThanItMayBeTriedIsDeadWithoutBeingProjected() {
