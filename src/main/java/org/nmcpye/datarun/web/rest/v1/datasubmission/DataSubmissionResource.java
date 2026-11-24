@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
-import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommand;
@@ -109,13 +108,20 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
         return submission;
     }
 
+    /**
+     * The body of the generic {@code POST /} and {@code POST /return}. Unreachable today: bean validation refuses
+     * every body first, because a submission's id cannot be bound (A2 W4-01, W4-02), and B2 refuses both routes as
+     * methods. A body that ever got here would be saved as one legacy upload.
+     */
     @Override
     protected void saveEntity(DataSubmission payLoadEntity, EntitySaveSummaryVM summary) {
-        requireResourceApiAccess(SecurityUtils.getCurrentUserDetailsOrThrow());
-        var processedEntity = preProcess(List.of(payLoadEntity))
-            .stream().findFirst().orElseThrow(() -> new IllegalQueryException("processing: " + payLoadEntity.getUid() + " swallowed submission"));
-        submissionService.upsert(processedEntity, summary);
-
+        CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        requireResourceApiAccess(user);
+        EntitySaveSummaryVM saved = commands.uploadLegacy(
+            new SubmissionCommand.LegacyUpload(SubmissionActor.of(user), List.of(payLoadEntity)));
+        summary.getCreated().addAll(saved.getCreated());
+        summary.getUpdated().addAll(saved.getUpdated());
+        summary.getFailed().putAll(saved.getFailed());
     }
 
     @Override
