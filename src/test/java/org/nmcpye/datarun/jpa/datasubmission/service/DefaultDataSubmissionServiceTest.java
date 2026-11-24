@@ -403,6 +403,23 @@ class DefaultDataSubmissionServiceTest {
         verifyNoInteractions(outbox, revisions);
     }
 
+    /** The generic writes would store a submission without a revision or an outbox row: they are refused. */
+    @Test
+    void theGenericWritesAreRefused() {
+        DataSubmission stored = persistedSubmission("generic0001", "01GENERIC0000000000000001");
+
+        org.junit.jupiter.api.Assertions.assertThrows(UnsupportedOperationException.class, () -> service.save(stored));
+        org.junit.jupiter.api.Assertions.assertThrows(UnsupportedOperationException.class, () -> service.update(stored));
+        org.junit.jupiter.api.Assertions.assertThrows(UnsupportedOperationException.class,
+            () -> service.saveWithRelations(stored));
+
+        verifyNoInteractions(outbox, revisions);
+        verify(repository, never()).save(any());
+        verify(repository, never()).persist(any());
+        verify(repository, never()).merge(any());
+        verify(repository, never()).update(any());
+    }
+
     /** Every delete names who made it: the generic delete without a revision context is refused. */
     @Test
     void aDeleteThatNamesNoOneIsRefused() {

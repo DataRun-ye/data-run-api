@@ -218,13 +218,17 @@ public class DefaultDataSubmissionService
         return kind == RevisionKind.CREATE ? "SAVE" : "UPDATE";
     }
 
-    /** The delete is flushed first, so that its revision and its DELETE event carry the version it gave. */
+    /**
+     * The delete is flushed first, so that its revision and its DELETE event carry the version it gave. The submission
+     * is the managed one the command loaded in this transaction, so the flush writes it.
+     */
     @Transactional
     @Override
     public void softDelete(DataSubmission submission, RevisionContext revision) {
         Objects.requireNonNull(revision, "revision");
         Stored before = new Stored(submission.getLockVersion(), Boolean.TRUE.equals(submission.getDeleted()));
-        super.softDelete(submission);
+        submission.setDeleted(Boolean.TRUE);
+        submission.setDeletedAt(Instant.now());
         jpaAuditableObjectRepository.flush();
         record(submission, before, revision);
     }
@@ -238,6 +242,31 @@ public class DefaultDataSubmissionService
     public void softDelete(DataSubmission submission) {
         throw new UnsupportedOperationException(
             "A submission is deleted only through SubmissionCommandService, which records who deleted it");
+    }
+
+    /**
+     * Not for submissions: the generic save would write a submission without a revision or an outbox row. A
+     * submission is created or changed only through {@code SubmissionCommandService} ({@link #upsertAll}). The
+     * generic POST and PUT routes answer 400 before they get here (A2 W4-01, W5-01).
+     */
+    @Override
+    public DataSubmission save(DataSubmission submission) {
+        throw new UnsupportedOperationException(
+            "A submission is written only through SubmissionCommandService, which records the change");
+    }
+
+    /** Not for submissions, as {@link #save}. */
+    @Override
+    public DataSubmission saveWithRelations(DataSubmission submission) {
+        throw new UnsupportedOperationException(
+            "A submission is written only through SubmissionCommandService, which records the change");
+    }
+
+    /** Not for submissions, as {@link #save}. */
+    @Override
+    public DataSubmission update(DataSubmission submission) {
+        throw new UnsupportedOperationException(
+            "A submission is written only through SubmissionCommandService, which records the change");
     }
 
     private OutboxWritePort.OutboxInsert outboxRow(DataSubmission s, long version, String eventType) {
