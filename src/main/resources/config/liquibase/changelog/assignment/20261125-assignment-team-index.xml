@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!-- How long the index build may wait for a lock; a Liquibase parameter of the same name overrides it. -->
+    <property name="assignmentTeamIndexLockTimeout" value="30s"/>
+
+    <!--
+      Assignments by team. The phone syncs and the supervisor scope read a team's assignments, and no index starts
+      with team_id: it is the third column of uc_assignment_activity_id. So the org-unit sync (findAllByTeamUidIn)
+      read the whole table, and the assignment sync (AssignmentFilter) and the supervisor scope
+      (findManagedScope) walked the whole of that 25-27 MB index once per team. Production counted 3,453
+      sequential scans of assignment reading 333 M rows by 2026-11-24 21:37 UTC (233 k rows, 75 MB).
+
+      Measured on staging (a production clone), EXPLAIN (ANALYZE, BUFFERS) for the three busiest teams and for the
+      supervisor team that manages the most teams (205), then the index built and the table analysed in the same
+      transaction, rolled back:
+      - assignment sync, own teams: 408.6 ms and 23,878 buffers, then 12.2 ms and 606;
+      - org-unit sync: 88.6 ms and 8,136 buffers (a sequential scan), then 5.6 ms and 594;
+      - supervisor scope: 3,276.5 ms and 662,789 buffers, then 28.2 ms and 8,319.
+      The build took 0.3 s and made a 2 MB index.
+
+      A plain CREATE INDEX in the changeset's transaction: it takes a SHARE lock, which blocks writes to assignment
+      (admin configuration only) for well under a second and no reader. lock_timeout makes the deploy fail visibly,
+      instead of waiting, if a write holds the table. It runs while no valid index of that name exists, and marks
+      itself ran otherwise; an invalid leftover is dropped and the index built normally.
+
+      Rollback drops the index; nothing depends on it but query speed.
+    -->
+    <changeSet id="20261125-02-assignment-team-index" author="datarun">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT count(*)
+                FROM pg_index i
+                JOIN pg_class c ON c.oid = i.indexrelid
+                WHERE c.relname = 'idx_assignment_team_id' AND i.indisvalid
+            </sqlCheck>
+        </preConditions>
+        <sql>SET LOCAL lock_timeout = '${assignmentTeamIndexLockTimeout}'</sql>
+        <sql>DROP INDEX IF EXISTS idx_assignment_team_id</sql>
+        <sql>CREATE INDEX idx_assignment_team_id ON assignment (team_id)</sql>
+        <rollback>
+            <sql>SET LOCAL lock_timeout = '${assignmentTeamIndexLockTimeout}'</sql>
+            <sql>DROP INDEX IF EXISTS idx_assignment_team_id</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

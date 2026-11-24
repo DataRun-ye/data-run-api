@@ -54,6 +54,12 @@ The released mobile owners are `AssignmentDatasource` and
 and replaces the local assignment-form projection only after its secondary
 request succeeds.
 
+The assignment and org-unit syncs and the supervisor scope read assignments by
+team, through `idx_assignment_team_id` (changeset `20261125-02`, 6.5.5).
+Before it no index started with `team_id`, so each such read walked the whole
+table or the whole `uc_assignment_activity_id` index (on staging, the busiest
+supervisor's scope went from 3.3 s to 28 ms).
+
 ## Authorization Ownership
 
 - `User.authorities` supplies Spring authentication authorities and the
