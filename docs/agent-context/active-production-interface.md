@@ -209,6 +209,9 @@ Releasing a campaign's held uploads:
   uploads already tried and failed wait behind untried ones.
 - If a call makes no progress, it answers `stopReason` (for example "No
   progress: 2 failed again"): stop and investigate before calling again.
+  The exception: if the only thing left is `changed` (phones re-sent those
+  uploads during the call), call once more. The next call releases their
+  newer copies.
 - Re-run once before treating a failed upload as needing a fix: a live upload
   of the same uid that was not yet committed can make the replay fail on the
   unique uid, and the next release marks it superseded. An upload that keeps
