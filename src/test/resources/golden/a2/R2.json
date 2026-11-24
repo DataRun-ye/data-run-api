@@ -13,7 +13,8 @@
       "request" : {
         "as" : "a2-field1",
         "method" : "GET",
-        "path" : "/api/v1/assignments/a2AssignT1b/referenceEntries?page=0&size=500"
+        "path" : "/api/v1/assignments/a2AssignT1b/referenceEntries?page=0&size=500",
+        "phone" : "G2, G3"
       },
       "response" : {
         "body" : {
@@ -36,7 +37,38 @@
         "status" : 200
       },
       "step" : 1
+    },
+    {
+      "db" : {
+        "data_submission" : [ ],
+        "go_live_rule" : [ ],
+        "held_submission" : [ ],
+        "outbox" : [ ],
+        "reference_entry" : [ ]
+      },
+      "label" : "field1 reads village 5's catalog, which is empty",
+      "request" : {
+        "as" : "a2-field1",
+        "method" : "GET",
+        "path" : "/api/v1/assignments/a2AssignRen/referenceEntries?page=0&size=500",
+        "phone" : "G2, G3"
+      },
+      "response" : {
+        "body" : {
+          "page" : 0,
+          "paged" : true,
+          "referenceEntries" : [ ],
+          "size" : 500,
+          "totalElements" : 0,
+          "totalPages" : 0
+        },
+        "headers" : {
+          "Content-Type" : "application/json"
+        },
+        "status" : 200
+      },
+      "step" : 2
     }
   ],
-  "title" : "GET assignments/{uid}/referenceEntries: the envelope and entry keys G2 and G3 parse"
+  "title" : "GET assignments/{uid}/referenceEntries: the envelope and entry keys G2 and G3 parse; an empty catalog is totalPages 0"
 }

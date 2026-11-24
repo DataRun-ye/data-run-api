@@ -17,7 +17,8 @@
       "request" : {
         "as" : "a2-field1",
         "method" : "GET",
-        "path" : "/api/v1/assignments/a2AssignPag/referenceEntries?page=0&size=500"
+        "path" : "/api/v1/assignments/a2AssignPag/referenceEntries?page=0&size=500",
+        "phone" : "G2, G3"
       },
       "response" : {
         "body" : {
@@ -48,7 +49,8 @@
       "request" : {
         "as" : "a2-field1",
         "method" : "GET",
-        "path" : "/api/v1/assignments/a2AssignPag/referenceEntries?page=1&size=500"
+        "path" : "/api/v1/assignments/a2AssignPag/referenceEntries?page=1&size=500",
+        "phone" : "G2, G3"
       },
       "response" : {
         "body" : {

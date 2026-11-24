@@ -13,7 +13,8 @@
       "request" : {
         "as" : "a2-field1",
         "method" : "GET",
-        "path" : "/api/v1/assignments/forms?paged=false&referenceVersion=1"
+        "path" : "/api/v1/assignments/forms?paged=false&referenceVersion=1",
+        "phone" : "G2, G3"
       },
       "response" : {
         "body" : {
@@ -42,6 +43,13 @@
                   "canDeleteSubmissions" : false,
                   "canEditSubmissions" : false,
                   "form" : "a2FormAAAA1"
+                },
+                {
+                  "assignment" : "a2AssignRen",
+                  "canAddSubmissions" : true,
+                  "canDeleteSubmissions" : false,
+                  "canEditSubmissions" : false,
+                  "form" : "a2FormRefR1"
                 }
               ],
               "activity" : "a2Activity1",
@@ -122,7 +130,8 @@
       "request" : {
         "as" : "a2-field1",
         "method" : "GET",
-        "path" : "/api/v1/assignments/forms?paged=false"
+        "path" : "/api/v1/assignments/forms?paged=false",
+        "phone" : "G0, G1"
       },
       "response" : {
         "body" : {

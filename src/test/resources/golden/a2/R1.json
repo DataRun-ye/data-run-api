@@ -577,7 +577,8 @@
       "request" : {
         "as" : "a2-field1",
         "method" : "GET",
-        "path" : "/api/v1/dataSubmission/objects?paged=false"
+        "path" : "/api/v1/dataSubmission/objects?paged=false",
+        "phone" : "G0"
       },
       "response" : {
         "body" : {
@@ -773,7 +774,8 @@
       "request" : {
         "as" : "a2-deleter",
         "method" : "GET",
-        "path" : "/api/v1/dataSubmission/objects?paged=false"
+        "path" : "/api/v1/dataSubmission/objects?paged=false",
+        "phone" : "G0"
       },
       "response" : {
         "body" : {

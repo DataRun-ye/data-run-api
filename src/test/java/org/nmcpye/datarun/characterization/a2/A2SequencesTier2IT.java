@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 
+import static org.nmcpye.datarun.characterization.a2.A2PhoneContract.referenceCatalogPage;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.Group.G3;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.NODES;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.item;
@@ -33,6 +34,7 @@ import static org.nmcpye.datarun.characterization.a2.A2Seed.ASSIGN_T1_V1;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.ASSIGN_T1_V4;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.FIELD_1;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.FORM_A;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.VILLAGE_4;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.version;
 
 /** Tier 2, sequences: delete then re-send, the release race, and the catalog's second page. */
@@ -132,10 +134,10 @@ class A2SequencesTier2IT extends A2GoldenSupport {
     void r2b_catalogPages() {
         scenario("R2b", "A 501-entry catalog is two pages of 500 and 1; the phone walks totalPages")
             .summarize("referenceEntries")
-            .call("page 0", "GET", "/api/v1/assignments/" + ASSIGN_T1_V4 + "/referenceEntries?page=0&size=500",
-                FIELD_1, null)
-            .call("page 1", "GET", "/api/v1/assignments/" + ASSIGN_T1_V4 + "/referenceEntries?page=1&size=500",
-                FIELD_1, null)
+            .read("page 0", referenceCatalogPage(0, VILLAGE_4),
+                "/api/v1/assignments/" + ASSIGN_T1_V4 + "/referenceEntries?page=0&size=500", FIELD_1)
+            .read("page 1", referenceCatalogPage(1, VILLAGE_4),
+                "/api/v1/assignments/" + ASSIGN_T1_V4 + "/referenceEntries?page=1&size=500", FIELD_1)
             .verify();
     }
 

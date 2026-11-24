@@ -32,7 +32,7 @@ final class A2Seed {
     static final String VILLAGE_2 = "a2Village02";
     static final String VILLAGE_3 = "a2Village03";
     static final String VILLAGE_4 = "a2Village04";
-    /** Renamed by one scenario, which restores it; no other scenario uses it. */
+    /** Renamed by one scenario, which restores it. Its Reference catalog is empty. */
     static final String VILLAGE_5 = "a2Village05";
     static final String VILLAGE_5_NAME = "a2 village 5";
 
@@ -70,7 +70,7 @@ final class A2Seed {
     static final String ASSIGN_T3_V3 = "a2AssignT3a";
     /** Team one, village 3, soft-deleted: FORM_A. One assignment per activity, org unit and team. */
     static final String ASSIGN_DELETED = "a2AssignDel";
-    /** Team one, village 5 (renamed by one scenario): FORM_A. */
+    /** Team one, village 5 (renamed by one scenario; an empty Reference catalog): FORM_A, FORM_R. */
     static final String ASSIGN_T1_V5 = "a2AssignRen";
     /** Team four, village 4: FORM_A. */
     static final String ASSIGN_T4_V4 = "a2AssignT4a";
@@ -176,7 +176,7 @@ final class A2Seed {
         assignment(jdbc, ASSIGN_T1_V2, "a2-team-one", "a2-ou-v2", List.of(FORM_A, FORM_R), false);
         assignment(jdbc, ASSIGN_T3_V3, "a2-team-three", "a2-ou-v3", List.of(FORM_A, FORM_X), false);
         assignment(jdbc, ASSIGN_DELETED, "a2-team-one", "a2-ou-v3", List.of(FORM_A), true);
-        assignment(jdbc, ASSIGN_T1_V5, "a2-team-one", "a2-ou-v5", List.of(FORM_A), false);
+        assignment(jdbc, ASSIGN_T1_V5, "a2-team-one", "a2-ou-v5", List.of(FORM_A, FORM_R), false);
         assignment(jdbc, ASSIGN_T4_V4, "a2-team-four", "a2-ou-v4", List.of(FORM_A), false);
         assignment(jdbc, ASSIGN_T5_V1, "a2-team-five", "a2-ou-v1", List.of(FORM_A), false);
         assignment(jdbc, ASSIGN_T1_V4, "a2-team-one", "a2-ou-v4", List.of(FORM_R), false);

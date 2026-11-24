@@ -72,7 +72,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  *   <li>Error {@code detail} texts that the prod profile would not show are masked, so the goldens keep the
  *       status, the error key and the shape but not library or driver wording: a text naming Java classes becomes
  *       {@code <framework text>}, a PostgreSQL message {@code <database error>}.</li>
- *   <li>Every phone upload is checked against what that app generation needs from the answer
+ *   <li>Every phone upload and phone read is checked against what that app generation needs from the answer
  *       ({@link A2PhoneContract}). Mobile code is cited as {@code m@<tag> path:lines}: the data-run-mobile
  *       repository at that release tag.</li>
  * </ul>
@@ -195,25 +195,35 @@ abstract class A2GoldenSupport {
             this.pinnedBug = pinnedBug;
         }
 
-        /** An upload as the given phone generation sends it. */
+        /** An upload as the given phone generation sends it, checked against what that generation needs back. */
         public Scenario upload(String label, Group group, String login, Item... items) {
-            return send(label, group, "POST", group.route(), login, group.headers(), A2Payloads.body(items));
+            ArrayNode body = A2Payloads.body(items);
+            return send(label, group.name(),
+                (status, answer) -> A2PhoneContract.violations(group, body, status, answer),
+                "POST", group.route(), login, group.headers(), body);
         }
 
         /** A practice upload (G3 only). */
         public Scenario practice(String label, String login, Item... items) {
-            return send(label, Group.G3, "POST", A2Payloads.BULK_PRACTICE, login, Group.G3.headers(),
-                A2Payloads.body(items));
+            ArrayNode body = A2Payloads.body(items);
+            return send(label, Group.G3.name(),
+                (status, answer) -> A2PhoneContract.violations(Group.G3, body, status, answer),
+                "POST", A2Payloads.BULK_PRACTICE, login, Group.G3.headers(), body);
+        }
+
+        /** A read phones make, checked against what the generations making it need from the answer. */
+        public Scenario read(String label, A2PhoneContract.Read read, String path, String login) {
+            return send(label, read.phones(), read.check(), "GET", path, login, Map.of(), null);
         }
 
         /** Any request that no phone makes in this shape (admin calls, API-shaped uploads). */
         public Scenario call(String label, String method, String path, String login, Object body) {
-            return send(label, null, method, path, login, Map.of(), body);
+            return send(label, null, null, method, path, login, Map.of(), body);
         }
 
         public Scenario call(String label, String method, String path, String login, Map<String, String> headers,
                              Object body) {
-            return send(label, null, method, path, login, headers, body);
+            return send(label, null, null, method, path, login, headers, body);
         }
 
         /** A change made outside the API (a correction by SQL, a revoked grant), recorded with its effect. */
@@ -293,8 +303,8 @@ abstract class A2GoldenSupport {
             A2Golden.verify(id, document, requestValues, placeholders);
         }
 
-        private Scenario send(String label, Group group, String method, String path, String login,
-                              Map<String, String> headers, Object body) {
+        private Scenario send(String label, String phones, A2PhoneContract.ReadCheck contract, String method,
+                              String path, String login, Map<String, String> headers, Object body) {
             try {
                 MockHttpServletRequestBuilder builder = request(HttpMethod.valueOf(method), path)
                     .contentType(MediaType.APPLICATION_JSON);
@@ -316,8 +326,8 @@ abstract class A2GoldenSupport {
                 request.put("method", method);
                 request.put("path", path);
                 request.put("as", login);
-                if (group != null) {
-                    request.put("phone", group.name());
+                if (phones != null) {
+                    request.put("phone", phones);
                 }
                 if (!headers.isEmpty()) {
                     request.set("headers", json.valueToTree(headers));
@@ -343,9 +353,9 @@ abstract class A2GoldenSupport {
                 answer.set("headers", answerHeaders);
                 answer.set("body", maskResponse(lastBody.deepCopy()));
 
-                if (group != null) {
-                    List<String> violations = A2PhoneContract.violations(group, requestBody, lastStatus, lastBody);
-                    assertThat(violations).as("phone contract %s in %s", group, label).isEmpty();
+                if (contract != null) {
+                    List<String> violations = contract.violations(lastStatus, lastBody);
+                    assertThat(violations).as("phone contract (%s) in %s", phones, label).isEmpty();
                 }
 
                 ObjectNode step = JsonNodeFactory.instance.objectNode();
