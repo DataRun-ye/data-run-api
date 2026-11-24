@@ -258,6 +258,53 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   (15 s), so a scrape never waits on the database, even when the pool is
   exhausted. The application serves `/management/prometheus` without a login.
   Operations should limit `/management/` at nginx to the monitoring host.
+- **Monitoring.** GlitchTip watches production. Each part is off, and sends
+  nothing, while its `.env` value is empty.
+  - Errors (`SENTRY_DSN`, `SENTRY_ENVIRONMENT`): every ERROR log line and
+    uncaught exception of the application becomes an event in the GlitchTip
+    project `datarun-api` (Sentry Java SDK, `ErrorReportingConfiguration`).
+    An event carries the log line's pattern, the logger, exception types,
+    stack frames, the request id, the release and the environment. It never
+    carries the line's arguments, exception messages, the request, the user
+    or breadcrumbs, and nothing is traced. Request errors that the REST layer
+    answers stay in `error_event` and are not reported. A malformed DSN stops
+    the application at startup; empty it to start without reporting.
+  - Heartbeat (`DATARUN_ETL_HEARTBEAT_URL`, `datarun.etl.heartbeat-url`):
+    after a poll that succeeded, the ETL sends a POST to the monitor, at most
+    once a minute, and gives up after 5 s. A failure is logged at DEBUG and
+    never touches the poll. A healthy ETL pings about every 60 to 90 s.
+  - One-time setup in GlitchTip (owner): create the project `datarun-api`
+    (platform Java) and copy its DSN. Under Uptime Monitors, add a monitor of
+    type Heartbeat with an interval of 300 s and copy its URL, of the form
+    `/api/0/organizations/<org>/heartbeat_check/<uuid>/`. GlitchTip 6.0.7 has
+    no separate grace setting: the monitor is down when no ping arrived within
+    the last interval, so the 300 s are the grace for a few missed pings, and
+    it turns down 5 to 10 minutes after the last one. An alert channel is
+    optional; without one, issues and the monitor's state show in GlitchTip.
+  - Values on the API VM: put the DSN and the heartbeat URL into the
+    production `.env` exactly as GlitchTip shows them, with
+    `SENTRY_ENVIRONMENT=production` (`deploy/production/.env.example`). The
+    API VM must resolve GlitchTip's public name to the internal reverse proxy
+    (split-horizon DNS on the lab router); without that, the name does not
+    resolve from inside the lab and nothing arrives. Check from the container
+    without printing the URL; GlitchTip answers 200:
+    `docker exec datarunapi sh -c 'curl -sS -o /dev/null -w "%{http_code}\n"
+    -X POST "$DATARUN_ETL_HEARTBEAT_URL"'`. Staging's deploy script writes
+    its own `.env` without these values, so staging reports nothing.
+  - What GlitchTip shows, and what to do:
+    - An issue `Outbox row {} is dead after attempt {}: {}`: rows were set
+      aside as dead. List them with `SELECT outbox_id, attempt, last_error
+      FROM outbox WHERE status = 'dead';`, fix the cause, then put them back
+      (Dead rows above).
+    - The heartbeat monitor is down: no poll has succeeded within the
+      interval. The application is down or restarting (a long deploy shows
+      this too), the ETL is switched off, its polls keep failing (the pause
+      grows to five minutes), or the API VM cannot reach GlitchTip. Check that
+      `datarunapi` runs, its log (`docker logs --since 30m datarunapi`), then
+      the outbox. The next successful poll brings the monitor back up.
+    - Any other issue: an ERROR line or uncaught exception. The full line,
+      with its values, is in the application's log at that time; an event
+      raised during a request carries the request id the log line shows.
 - **Index.** The partial index `idx_outbox_unfinished` (pending, failed and
   dead rows, in claim order) keeps the due check, the claim and the backlog
   gauges off the processed history. Liquibase builds it at startup with a plain
