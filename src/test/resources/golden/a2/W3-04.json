@@ -1,6 +1,6 @@
 {
   "pinnedBug" : {
-    "changeBy" : "B1/B2",
+    "changeBy" : "B2",
     "what" : "the legacy route stores a Reference value unchecked and creates no reference entry"
   },
   "scenario" : "W3-04",

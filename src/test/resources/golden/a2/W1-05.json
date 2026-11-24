@@ -1,7 +1,7 @@
 {
   "pinnedBug" : {
-    "changeBy" : "B1",
-    "what" : "a re-send replaces the data but keeps the first start and finish entry times; B1 decides which times stand"
+    "changeBy" : "none planned: kept in B1 (first entry times stand)",
+    "what" : "a re-send replaces the data but keeps the first start and finish entry times"
   },
   "scenario" : "W1-05",
   "steps" : [

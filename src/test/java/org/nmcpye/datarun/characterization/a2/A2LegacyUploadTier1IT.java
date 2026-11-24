@@ -97,7 +97,7 @@ class A2LegacyUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
-    @PinnedBug(changeBy = "B1/B2",
+    @PinnedBug(changeBy = "B2",
         what = "the legacy route stores a Reference value unchecked and creates no reference entry")
     void w3_04_referenceValueUnchecked() {
         String uid = uid("w304");
@@ -107,7 +107,7 @@ class A2LegacyUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
-    @PinnedBug(changeBy = "B1",
+    @PinnedBug(changeBy = "B2",
         what = "a legacy upload made before the campaign's go-live is saved instead of held")
     void w3_05_legacyIsNeverHeld() {
         String uid = uid("w305");
@@ -118,7 +118,7 @@ class A2LegacyUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
-    @PinnedBug(changeBy = "B1/B2",
+    @PinnedBug(changeBy = "B2",
         what = "a legacy item without uid is stored under a uid the server makes and the phone never learns")
     void w3_06_missingUid() {
         Item noUid = item(G1, null, FORM_A, version("FORM_A.v1"), ASSIGN_T1_V1,

@@ -1,6 +1,6 @@
 {
   "pinnedBug" : {
-    "changeBy" : "B1/B2",
+    "changeBy" : "B2",
     "what" : "a legacy item without uid is stored under a uid the server makes and the phone never learns"
   },
   "scenario" : "W3-06",

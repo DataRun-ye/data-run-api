@@ -1,6 +1,6 @@
 {
   "pinnedBug" : {
-    "changeBy" : "B1",
+    "changeBy" : "B2",
     "what" : "a legacy upload made before the campaign's go-live is saved instead of held"
   },
   "scenario" : "W3-05",

@@ -111,9 +111,8 @@ class A2VersionedUploadTier1IT extends A2GoldenSupport {
     }
 
     @Test
-    @PinnedBug(changeBy = "B1",
-        what = "a re-send replaces the data but keeps the first start and finish entry times; B1 decides which times "
-            + "stand")
+    @PinnedBug(changeBy = "none planned: kept in B1 (first entry times stand)",
+        what = "a re-send replaces the data but keeps the first start and finish entry times")
     void w1_05_resendChanged() {
         String uid = uid("w105");
         scenario("W1-05", "G3 re-sends with changed data and a later finish time: data replaced, entry times kept")
