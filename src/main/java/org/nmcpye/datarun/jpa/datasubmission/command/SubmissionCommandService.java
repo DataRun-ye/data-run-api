@@ -69,4 +69,13 @@ public class SubmissionCommandService {
     public HeldDecisionResult discardHeld(SubmissionCommand.DiscardHeld command) {
         return held.discard(command.actor(), command.selection());
     }
+
+    /**
+     * An admin's release of held uploads: each one is replayed through the upload checks and save on behalf of its
+     * original submitter, or marked superseded when its uid is already in the real data, and the decision is
+     * recorded in the admin's name (see {@link HeldSubmissionDecisions#release}).
+     */
+    public HeldDecisionResult releaseHeld(SubmissionCommand.ReleaseHeld command) {
+        return held.release(command.actor(), command.selection());
+    }
 }

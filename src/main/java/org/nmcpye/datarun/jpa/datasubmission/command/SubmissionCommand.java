@@ -42,4 +42,12 @@ public sealed interface SubmissionCommand {
      */
     record DiscardHeld(SubmissionActor actor, HeldDecisionRequest selection) implements SubmissionCommand {
     }
+
+    /**
+     * An admin's release of held uploads ({@code POST /admin/heldSubmissions/release}): either uids, or a filter on one
+     * campaign. {@code actor} is the admin, whom each decision names; each upload is replayed on behalf of its
+     * original submitter, read from the held upload, whom its records name.
+     */
+    record ReleaseHeld(SubmissionActor actor, HeldDecisionRequest selection) implements SubmissionCommand {
+    }
 }

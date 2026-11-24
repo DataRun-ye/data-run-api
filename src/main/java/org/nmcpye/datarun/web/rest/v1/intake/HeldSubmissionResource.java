@@ -43,7 +43,6 @@ public class HeldSubmissionResource {
     private static final int MAX_PAGE_SIZE = 500;
 
     private final HeldSubmissionRepository held;
-    private final HeldSubmissionReview review;
     private final SubmissionCommandService commands;
 
     /** Counts by org unit, form, reason and state, with the first and last entry times. */
@@ -85,7 +84,7 @@ public class HeldSubmissionResource {
 
     @PostMapping("/release")
     public HeldDecisionResult release(@RequestBody HeldDecisionRequest request) {
-        return review.release(request);
+        return commands.releaseHeld(new SubmissionCommand.ReleaseHeld(SubmissionActor.current(), request));
     }
 
     @PostMapping("/discard")
