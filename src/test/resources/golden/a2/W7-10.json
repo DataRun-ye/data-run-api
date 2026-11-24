@@ -237,7 +237,7 @@
             "form_version_uid" : "<FORM_A.v1>",
             "go_live_rule_uid" : "<rule campaign>",
             "held_last_modified_date" : "<held_last_modified_date:1>",
-            "last_release_error" : "Cannot release as a2-ghost: User a2-ghost was not found in the database",
+            "last_release_error" : "UsernameNotFoundException (uploader not loaded)",
             "live_from" : "2099-01-01T00:00:00Z",
             "note" : null,
             "org_unit_path" : ",a2Country01,a2District1,a2Village01",
@@ -302,7 +302,7 @@
           "changed" : [ ],
           "discarded" : [ ],
           "failed" : {
-            "a2w710xxxxx" : "Cannot release as a2-ghost: User a2-ghost was not found in the database"
+            "a2w710xxxxx" : "UsernameNotFoundException (uploader not loaded)"
           },
           "released" : [ ],
           "remaining" : 0,

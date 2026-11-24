@@ -320,7 +320,7 @@ class SubmissionUploadsTest {
             return true;
         });
 
-        assertTrue(result.failure().startsWith("E4114: "));
+        assertEquals("E4114", result.failure(), "the code only: a refusal's text can quote submitted values");
         assertEquals(SubmissionUploads.ReleaseOutcome.FAILED, result.outcome());
         assertEquals(false, asked.get(), "no decision is recorded for a refused release");
     }

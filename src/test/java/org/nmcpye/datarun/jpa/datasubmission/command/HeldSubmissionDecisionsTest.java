@@ -163,13 +163,14 @@ class HeldSubmissionDecisionsTest {
         when(held.findWithPayload(List.of("heldSub0001"), HELD_OR_DISCARDED))
             .thenReturn(List.of(row("heldSub0001", HoldReason.BEFORE_GO_LIVE)));
         when(uploads.saveReleased(any(), any(), any())).thenReturn(
-            new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.FAILED, "E4114: not in the team"));
+            new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.FAILED, "E4114"));
 
         HeldDecisionResult result =
             decisions.release(admin, new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
 
-        assertThat(result.failed()).isEqualTo(Map.of("heldSub0001", "E4114: not in the team"));
-        verify(held).recordReleaseError("heldSub0001", "E4114: not in the team");
+        String recorded = "E4114 (uploader " + idOf("field-user") + ")";
+        assertThat(result.failed()).isEqualTo(Map.of("heldSub0001", recorded));
+        verify(held).recordReleaseError("heldSub0001", recorded);
         verify(held, never()).markDecided(anyString(), any(), any(), any(), any(), any());
     }
 
@@ -182,7 +183,10 @@ class HeldSubmissionDecisionsTest {
         HeldDecisionResult result =
             decisions.release(admin, new HeldDecisionRequest(List.of("heldSub0001"), null, null, null));
 
-        assertThat(result.failed().get("heldSub0001")).startsWith("Cannot release as field-user");
+        assertThat(result.failed().get("heldSub0001"))
+            .as("the exception's type, never the login or its message")
+            .isEqualTo("UsernameNotFoundException (uploader not loaded)");
+        verify(held).recordReleaseError("heldSub0001", "UsernameNotFoundException (uploader not loaded)");
         assertThat(SecurityContextHolder.getContext().getAuthentication().getName()).isEqualTo("admin");
     }
 
@@ -197,18 +201,18 @@ class HeldSubmissionDecisionsTest {
                 row("heldSub0002", HoldReason.BEFORE_GO_LIVE, "gone-user")));
         when(users.loadUserByUsername("gone-user"))
             .thenThrow(new UsernameNotFoundException("User gone-user was not found in the database"));
-        when(uploads.saveReleased(any(), any(), any())).thenReturn(new SubmissionUploads.Released(
-            SubmissionUploads.ReleaseOutcome.FAILED,
-            "E4122: You may not submit form `household1` for assignment `assignment1`"));
+        when(uploads.saveReleased(any(), any(), any()))
+            .thenReturn(new SubmissionUploads.Released(SubmissionUploads.ReleaseOutcome.FAILED, "E4122"));
 
         try (LogCapture logs = new LogCapture(HeldSubmissionDecisions.class)) {
             HeldDecisionResult result = decisions.release(admin,
                 new HeldDecisionRequest(List.of("heldSub0001", "heldSub0002"), null, null, null));
 
-            assertThat(result.failed().get("heldSub0002")).startsWith("Cannot release as gone-user: ");
-            logs.assertNothingLeaks("gone-user", "field-user", "admin", "You may not");
+            assertThat(result.failed().get("heldSub0002")).isEqualTo("UsernameNotFoundException (uploader not loaded)");
+            logs.assertNothingLeaks("gone-user", "field-user", "admin", "You may not", "was not found");
             assertThat(logs.lines()).anySatisfy(line -> assertThat(line)
-                .contains("heldSub0001").contains("household1").contains(admin.userId()).endsWith(": E4122"));
+                .contains("heldSub0001").contains("household1").contains(admin.userId())
+                .endsWith(": E4122 (uploader " + idOf("field-user") + ")"));
             assertThat(logs.lines()).anySatisfy(line -> assertThat(line)
                 .contains("heldSub0002").contains("UsernameNotFoundException"));
         }
@@ -284,9 +288,14 @@ class HeldSubmissionDecisionsTest {
             .isInstanceOf(IllegalQueryException.class);
     }
 
+    /** The durable id the test users get: not derived from the login's text, so a leak check can tell them apart. */
+    private static String idOf(String login) {
+        return "01JTEST" + Integer.toHexString(login.hashCode());
+    }
+
     private static CurrentUserDetails user(String login, String authority) {
         return CurrentUserDetailsImpl.builder()
-            .id("01JTEST" + Integer.toHexString(login.hashCode()))
+            .id(idOf(login))
             .username(login)
             .password("x")
             .enabled(true)

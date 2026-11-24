@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -103,7 +104,8 @@ public class SubmissionUploads {
             DataSubmissionUploadV1Dto::getUid,
             DataSubmissionUploadV1Dto::getForm,
             (request, summary, transaction) -> upsertOne(request, actor, summary, mode, receivedAt),
-            objectMapper::valueToTree);
+            objectMapper::valueToTree,
+            failure -> { });
     }
 
     /** What became of a released upload; see {@link #saveReleased}. */
@@ -121,7 +123,8 @@ public class SubmissionUploads {
     /**
      * A released upload's outcome.
      *
-     * @param failure the per-row text when the outcome is {@link ReleaseOutcome#FAILED}, else null
+     * @param failure when the outcome is {@link ReleaseOutcome#FAILED}, the refusal's error code or the failure's
+     *                exception type (never its message, which can quote submitted values); else null
      */
     public record Released(ReleaseOutcome outcome, String failure) {
     }
@@ -141,8 +144,9 @@ public class SubmissionUploads {
         SubmissionActor submitter,
         BooleanSupplier decide) {
         AtomicReference<ReleaseOutcome> outcome = new AtomicReference<>(ReleaseOutcome.FAILED);
+        AtomicReference<RuntimeException> failed = new AtomicReference<>();
         Instant receivedAt = Instant.now();
-        EntitySaveSummaryVM summary = saveEach(
+        saveEach(
             List.of(upload),
             submitter,
             DataSubmissionUploadV1Dto::getUid,
@@ -161,9 +165,11 @@ public class SubmissionUploads {
                 }
                 return decision;
             },
-            objectMapper::valueToTree);
-        String failure = summary.getFailed().values().stream().findFirst().orElse(null);
-        return failure != null ? new Released(ReleaseOutcome.FAILED, failure) : new Released(outcome.get(), null);
+            objectMapper::valueToTree,
+            failed::set);
+        return failed.get() != null
+            ? new Released(ReleaseOutcome.FAILED, SubmissionLog.code(failed.get()))
+            : new Released(outcome.get(), null);
     }
 
     /**
@@ -199,7 +205,8 @@ public class SubmissionUploads {
                 submissionService.upsertAll(List.of(submission), summary);
                 return IntakeDecision.save();
             },
-            submission -> null);
+            submission -> null,
+            failure -> { });
     }
 
     private IntakeDecision upsertOne(
@@ -271,7 +278,8 @@ public class SubmissionUploads {
         Function<T, String> uidOf,
         Function<T, String> formOf,
         SaveOne<T> save,
-        Function<T, JsonNode> payloadOf) {
+        Function<T, JsonNode> payloadOf,
+        Consumer<RuntimeException> onFailure) {
         TransactionTemplate perSubmission = new TransactionTemplate(transactionManager);
         perSubmission.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
@@ -286,6 +294,7 @@ public class SubmissionUploads {
             } catch (RuntimeException failure) {
                 String uid = Optional.ofNullable(uidOf.apply(item)).orElse("#" + index);
                 summary.getFailed().put(uid, failureMessage(failure));
+                onFailure.accept(failure);
                 // Identifiers and shapes only (SubmissionLog): never the login, a value or an exception's message.
                 if (failure instanceof ErrorCodeException refusal) {
                     log.warn("Submission {} (form {}) from user {} refused: {}",

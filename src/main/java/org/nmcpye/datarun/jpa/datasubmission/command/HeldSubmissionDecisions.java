@@ -74,21 +74,26 @@ public class HeldSubmissionDecisions {
                 continue;
             }
             String failure;
-            String failureShape;
+            String[] uploader = {null};
             SubmissionUploads.ReleaseOutcome outcome = SubmissionUploads.ReleaseOutcome.FAILED;
             try {
                 DataSubmissionUploadV1Dto upload =
                     objectMapper.treeToValue(row.payload(), DataSubmissionUploadV1Dto.class);
-                SubmissionUploads.Released released = onBehalfOf(row.submittedBy(),
-                    submitter -> uploads.saveReleased(upload, submitter, () -> held.markDecided(row.uid(),
+                SubmissionUploads.Released released = onBehalfOf(row.submittedBy(), submitter -> {
+                    uploader[0] = submitter.userId();
+                    return uploads.saveReleased(upload, submitter, () -> held.markDecided(row.uid(),
                         HeldState.RELEASED, UNDECIDED_OR_DISCARDED, row.lastModifiedDate(), admin.login(),
-                        request.note())));
+                        request.note()));
+                });
                 outcome = released.outcome();
                 failure = released.failure();
-                failureShape = failure == null ? null : SubmissionLog.refusal(failure);
             } catch (Exception e) {
-                failure = "Cannot release as " + row.submittedBy() + ": " + e.getMessage();
-                failureShape = SubmissionLog.failure(e);
+                failure = SubmissionLog.code(e);
+            }
+            if (failure != null) {
+                // What admins read, in last_release_error and the answer: a code or an exception type, and the
+                // uploader's user id; never the login or an exception's message.
+                failure += " (uploader " + (uploader[0] == null ? "not loaded" : uploader[0]) + ")";
             }
             if (outcome == SubmissionUploads.ReleaseOutcome.SUPERSEDED) {
                 record(result, row, HeldState.SUPERSEDED, admin, request.note(), result.superseded());
@@ -96,11 +101,10 @@ public class HeldSubmissionDecisions {
                 (outcome == SubmissionUploads.ReleaseOutcome.RELEASED ? result.released() : result.changed())
                     .add(row.uid());
             } else {
-                // The admin and the API keep the full text; the log keeps identifiers and shapes (SubmissionLog).
                 held.recordReleaseError(row.uid(), failure);
                 result.failed().put(row.uid(), failure);
                 log.warn("Held submission {} (form {}) not released by user {}: {}",
-                    row.uid(), row.form(), admin.userId(), failureShape);
+                    row.uid(), row.form(), admin.userId(), failure);
             }
         }
         if (!result.released().isEmpty()) {

@@ -237,7 +237,7 @@
             "form_version_uid" : "<FORM_A.v1>",
             "go_live_rule_uid" : "<rule campaign>",
             "held_last_modified_date" : "<held_last_modified_date:1>",
-            "last_release_error" : "E4122: You may not submit form `a2FormAAAA1` for assignment `a2AssignT4a`",
+            "last_release_error" : "E4122 (uploader a2-user-field4)",
             "live_from" : "2099-01-01T00:00:00Z",
             "note" : null,
             "org_unit_path" : ",a2Country01,a2District1,a2Village04",
@@ -302,7 +302,7 @@
           "changed" : [ ],
           "discarded" : [ ],
           "failed" : {
-            "a2w703xxxxx" : "E4122: You may not submit form `a2FormAAAA1` for assignment `a2AssignT4a`"
+            "a2w703xxxxx" : "E4122 (uploader a2-user-field4)"
           },
           "released" : [ ],
           "remaining" : 0,

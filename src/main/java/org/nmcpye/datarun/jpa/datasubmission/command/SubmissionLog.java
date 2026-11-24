@@ -8,11 +8,10 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
- * What the submission commands write to the logs about a failure: identifiers and shapes only. Production keeps
+ * What the submission commands write to the logs, and to a failed release's record, about a failure: identifiers and
+ * shapes only. Production keeps
  * these logs in its container logs, so a line never carries a login, a submitted value, or an exception's message,
  * which can quote submitted values (a refusal names the Reference value it refused; a database or JSON error can
  * quote the row). Production's JDBC URLs also set {@code logServerErrorDetail=false}, but these lines do not rely on
@@ -23,7 +22,6 @@ final class SubmissionLog {
 
     private static final String APPLICATION = "org.nmcpye.datarun.";
     private static final int FRAMES = 3;
-    private static final Pattern CODED_TEXT = Pattern.compile("^(E\\d{4}): ");
 
     private SubmissionLog() {
     }
@@ -33,13 +31,9 @@ final class SubmissionLog {
         return refusal.getErrorCode() != null ? refusal.getErrorCode().name() : refusal.getClass().getSimpleName();
     }
 
-    /** A refusal as the phone was told it ({@code "E4122: ..."}): its code only. */
-    static String refusal(String phoneText) {
-        if (SubmissionUploads.UNEXPECTED_FAILURE.equals(phoneText)) {
-            return "unexpected failure";
-        }
-        Matcher coded = CODED_TEXT.matcher(phoneText);
-        return coded.find() ? coded.group(1) : "refusal without a code";
+    /** Any failure in one word: the error code of a refusal that has one, else the exception's type. */
+    static String code(Throwable failure) {
+        return failure instanceof ErrorCodeException refusal ? refusal(refusal) : failure.getClass().getSimpleName();
     }
 
     /**
