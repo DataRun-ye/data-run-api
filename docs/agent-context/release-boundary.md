@@ -101,7 +101,10 @@ so a rebuild of the same commit is a different, untested image.
    a different digest.
 3. Back up PostgreSQL. On the production host, keep the current `.env` as the
    rollback copy and set `DATARUN_API_IMAGE` to
-   `kaswarah/datarunapi:<version>-<commit>@<digest>`.
+   `kaswarah/datarunapi:<version>-<commit>@<digest>`. If the release changes
+   `deploy/production/compose.yml`, also keep the host's current `compose.yml`
+   as the rollback copy and replace it with the release's; the host copy is not
+   updated otherwise.
 4. Validate Compose, then pull and replace only `app`.
 5. Verify health and `/management/info`; smoke login, configuration sync, and
    one ordinary submission.

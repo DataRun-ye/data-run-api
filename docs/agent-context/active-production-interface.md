@@ -264,8 +264,12 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   `CREATE INDEX` and `lock_timeout` 30s (Liquibase parameter
   `outboxIndexLockTimeout`), so a held write lock fails the deploy instead of
   stalling it.
-- **Before a deploy that changes the ETL.** Check the outbox right before
-  deploying, and compare with the release notes:
+- **Before a deploy that changes the ETL.** Update the production host's
+  `compose.yml` from `deploy/production/compose.yml` (`release-boundary.md`,
+  step 3). Both JDBC URLs there carry `logServerErrorDetail=false`. The pool
+  also gets it from the application's configuration, but Liquibase's connection
+  gets it only from its URL. Check the outbox right before deploying, and
+  compare with the release notes:
   `SELECT status, attempt, next_attempt_at IS NOT NULL AS leased, count(*)
   FROM outbox GROUP BY 1, 2, 3 ORDER BY 1, 2, 3;`.
   - Under the release before this runtime, every row is `success` with attempt
