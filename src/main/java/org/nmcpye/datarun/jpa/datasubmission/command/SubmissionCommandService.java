@@ -23,4 +23,12 @@ public class SubmissionCommandService {
     public EntitySaveSummaryVM upload(SubmissionCommand.Upload command) {
         return uploads.save(command.items(), command.actor(), IntakeMode.LIVE);
     }
+
+    /**
+     * Practice uploads: every submission runs the same checks and save as an {@link #upload}, then the save is rolled
+     * back and the upload held as practice. The phone is told it was saved.
+     */
+    public EntitySaveSummaryVM uploadPractice(SubmissionCommand.PracticeUpload command) {
+        return uploads.save(command.items(), command.actor(), IntakeMode.PRACTICE);
+    }
 }

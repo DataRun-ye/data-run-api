@@ -27,9 +27,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -100,7 +98,7 @@ class ReferenceUploadRouteContractTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("[]"))
             .andExpect(status().isOk());
-        verify(uploadService).upsertAll(anyList(), eq(true));
+        verify(commands).uploadPractice(any(SubmissionCommand.PracticeUpload.class));
         verifyNoMoreInteractions(uploadService, commands);
     }
 

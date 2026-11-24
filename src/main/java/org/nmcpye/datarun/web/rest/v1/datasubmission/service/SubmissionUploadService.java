@@ -23,13 +23,6 @@ public class SubmissionUploadService {
 
     private final SubmissionUploads uploads;
 
-    /** The practice route; see {@link SubmissionUploads#save}. */
-    public EntitySaveSummaryVM upsertAll(
-        List<DataSubmissionUploadV1Dto> requests,
-        boolean practice) {
-        return uploads.save(requests, SubmissionActor.current(), practice ? IntakeMode.PRACTICE : IntakeMode.LIVE);
-    }
-
     /**
      * Saves a held upload an admin released, through the same path as a live
      * upload. The caller runs it as the upload's original submitter.

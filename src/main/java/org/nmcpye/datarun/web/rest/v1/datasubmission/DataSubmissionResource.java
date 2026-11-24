@@ -151,9 +151,10 @@ public class DataSubmissionResource extends JpaBaseResource<DataSubmission> {
     @PostMapping(value = "/bulk/practice", params = "referenceVersion=1")
     public ResponseEntity<EntitySaveSummaryVM> savePracticeUpload(
         @RequestBody List<DataSubmissionUploadV1Dto> requests) {
-        requireResourceApiAccess(
-            SecurityUtils.getCurrentUserDetailsOrThrow());
-        return ResponseEntity.ok(uploadService.upsertAll(requests, true));
+        CurrentUserDetails user = SecurityUtils.getCurrentUserDetailsOrThrow();
+        requireResourceApiAccess(user);
+        return ResponseEntity.ok(commands.uploadPractice(
+            new SubmissionCommand.PracticeUpload(SubmissionActor.of(user), requests)));
     }
 
     @Override
