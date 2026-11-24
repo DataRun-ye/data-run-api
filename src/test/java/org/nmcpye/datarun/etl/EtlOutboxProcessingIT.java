@@ -13,6 +13,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -107,34 +108,31 @@ class EtlOutboxProcessingIT {
     }
 
     /**
-     * Today: a database error is audited, but the outbox row keeps no error or retry time of its own, and the
-     * audited error is the start of the failed statement, cut before the cause.
+     * A database error is recorded on the outbox row: failed, with its attempt, the database's own error line
+     * (not the statement and its values) and a retry time one retry delay away.
      */
     @Test
-    void today_aDatabaseFailureIsAuditedButTheRowStaysPendingWithNoErrorOrRetryTime() {
+    void aDatabaseFailureIsRecordedOnTheRowWithItsErrorAndARetryTime() {
         fixture.failProjectionsOfFailUids();
         fixture.submission("failSub0001", TEMPLATE, 1);
         long failing = fixture.outbox("failSub0001", "SAVE");
 
         orchestrator.runOnce("test", 10);
 
-        assertThat(watchdog.cancelled()).as("a database error ends the transaction at once: no wait").isEmpty();
+        assertThat(watchdog.cancelled()).isEmpty();
         Map<String, Object> row = fixture.outboxRow(failing);
-        assertThat(row).containsEntry("status", "pending").containsEntry("attempt", 1);
-        assertThat(row.get("last_error")).isNull();
-        assertThat(fixture.isLeased(failing)).as("only the claim's lease keeps it back").isTrue();
+        assertThat(row).containsEntry("status", "failed").containsEntry("attempt", 1);
+        assertThat((String) row.get("last_error")).isEqualTo("ERROR: injected projection failure [SQLState P0001]");
+        assertThat(fixture.leaseSecondsLeft(failing)).isBetween(50.0, 60.0);
         assertThat(fixture.auditRows(failing)).singleElement().satisfies(audit -> {
-            assertThat(audit).containsEntry("status", "failure");
-            assertThat((String) audit.get("error"))
-                .startsWith("PreparedStatementCallback")
-                .endsWith("...(truncated)")
-                .doesNotContain("injected projection failure");
+            assertThat(audit).containsEntry("status", "failure").containsEntry("attempt", 1);
+            assertThat(audit).containsEntry("error", row.get("last_error"));
         });
         assertThat(fixture.tallRows("failSub0001")).isZero();
         assertThat(fixture.runs()).singleElement().satisfies(r -> assertThat(r).containsEntry("failure_count", 1L));
     }
 
-    /** A failed row is leased by its claim, so the next run moves on to newer rows instead of stalling. */
+    /** A failed row waits for its retry time, so the next run moves on to newer rows instead of stalling. */
     @Test
     void aFailedRowDoesNotKeepNewerRowsWaiting() {
         fixture.failProjectionsOfFailUids();
@@ -147,7 +145,7 @@ class EtlOutboxProcessingIT {
         orchestrator.runOnce("test", 1);
         orchestrator.runOnce("test", 1);
 
-        assertThat(fixture.outboxRow(failing)).containsEntry("attempt", 1);
+        assertThat(fixture.outboxRow(failing)).containsEntry("status", "failed").containsEntry("attempt", 1);
         assertThat(fixture.isLeased(failing)).isTrue();
         assertThat(fixture.auditRows(failing)).hasSize(1);
         assertThat(fixture.outboxRow(newer)).containsEntry("status", "success").containsEntry("attempt", 1);
@@ -155,37 +153,66 @@ class EtlOutboxProcessingIT {
         assertThat(watchdog.cancelled()).isEmpty();
     }
 
+    /** Each further failure doubles the wait, up to an hour; the tenth failure makes the row dead. */
+    @Test
+    void aRowThatKeepsFailingWaitsLongerEachTimeAndIsDeadAfterItsLastTry() {
+        fixture.failProjectionsOfFailUids();
+        fixture.submission("failSub0001", TEMPLATE, 1);
+        long failing = fixture.outbox("failSub0001", "SAVE");
+
+        List<Long> waits = new ArrayList<>();
+        for (int attempt = 1; attempt <= 9; attempt++) {
+            orchestrator.runOnce("test", 10);
+            assertThat(fixture.outboxRow(failing)).containsEntry("status", "failed").containsEntry("attempt", attempt);
+            waits.add(Math.round(fixture.leaseSecondsLeft(failing) / 60));
+            fixture.endLease(failing);
+        }
+        orchestrator.runOnce("test", 10);
+
+        assertThat(waits).as("minutes to the next try").containsExactly(1L, 2L, 4L, 8L, 16L, 32L, 60L, 60L, 60L);
+        Map<String, Object> row = fixture.outboxRow(failing);
+        assertThat(row).containsEntry("status", "dead").containsEntry("attempt", 10);
+        assertThat(row.get("next_attempt_at")).isNull();
+        assertThat((String) row.get("last_error")).contains("injected projection failure");
+        assertThat(fixture.auditRows(failing)).extracting(r -> r.get("status")).hasSize(10).endsWith("dead");
+
+        orchestrator.runOnce("test", 10);
+        assertThat(fixture.outboxRow(failing)).as("a dead row is not claimed again").containsEntry("attempt", 10);
+    }
+
     /**
-     * Today: when the failure is raised in Java while the transaction is still open, the failure audit is
-     * written in a second transaction with the same (run, outbox) key as the first transaction's uncommitted
-     * "processing" row. PostgreSQL makes the second insert wait for the first transaction, which waits for the
-     * same thread: the run never ends on its own.
+     * A failure raised in Java while the transaction is still open is recorded after that transaction rolled
+     * back, so the run no longer waits on its own uncommitted audit row (pinned before as a hang).
      */
     @Test
-    void today_aFailureRaisedOutsideTheDatabaseLeavesTheRunWaitingOnItsOwnAuditRow() throws Exception {
+    void aFailureRaisedOutsideTheDatabaseIsRecordedWithoutTheRunWaitingOnItself() throws Exception {
         fixture.defineTemplateTheApplicationCannotRead("etlTmpl0002");
         fixture.submission("javaSub0001", "etlTmpl0002", 0);
         long failing = fixture.outbox("javaSub0001", "SAVE");
 
-        CompletableFuture<Void> run = CompletableFuture.runAsync(() -> orchestrator.runOnce("test", 10));
-        Thread.sleep(2500);
-        assertThat(run).as("the run is still waiting after 2.5 s").isNotDone();
+        CompletableFuture.runAsync(() -> orchestrator.runOnce("test", 10)).get(5, TimeUnit.SECONDS);
 
-        run.get(10, TimeUnit.SECONDS);
-        assertThat(watchdog.cancelled()).as("the audit insert had to be cancelled to end the run")
-            .singleElement()
-            .satisfies(wait -> {
-                assertThat(wait.seconds()).isGreaterThanOrEqualTo(STUCK_AFTER_SECONDS);
-                assertThat(wait.blockerState()).as("it waited for a transaction nobody would finish")
-                    .isEqualTo("idle in transaction");
-            });
-
-        // Once unblocked, nothing about the failure is kept.
+        assertThat(watchdog.cancelled()).isEmpty();
         Map<String, Object> row = fixture.outboxRow(failing);
-        assertThat(row).containsEntry("status", "pending").containsEntry("attempt", 1);
-        assertThat(row.get("last_error")).isNull();
-        assertThat(fixture.auditRows(failing)).isEmpty();
+        assertThat(row).containsEntry("status", "failed").containsEntry("attempt", 1);
+        assertThat((String) row.get("last_error")).contains("NotASemanticType");
+        assertThat(fixture.auditRows(failing)).extracting(r -> r.get("status")).containsExactly("failure");
         assertThat(fixture.runs()).singleElement().satisfies(r -> assertThat(r).containsEntry("failure_count", 1L));
+    }
+
+    /** A row claimed more often than it may be tried, each run ending without an outcome, is dead unprojected. */
+    @Test
+    void aRowClaimedMoreOftenThanItMayBeTriedIsDeadWithoutBeingProjected() {
+        fixture.submission("okSub000004", TEMPLATE, 1);
+        long outboxId = fixture.outbox("okSub000004", "SAVE");
+        fixture.setAttempt(outboxId, 10);
+
+        orchestrator.runOnce("test", 10);
+
+        Map<String, Object> row = fixture.outboxRow(outboxId);
+        assertThat(row).containsEntry("status", "dead").containsEntry("attempt", 11)
+            .containsEntry("last_error", "claimed 11 times without an outcome");
+        assertThat(fixture.tallRows("okSub000004")).isZero();
     }
 
     /**
@@ -204,7 +231,7 @@ class EtlOutboxProcessingIT {
         assertThat(fixture.isLeased(gone)).isTrue();
         assertThat(fixture.runs()).extracting(r -> r.get("submitted_count"), r -> r.get("success_count"))
             .containsExactly(tuple(1L, 1L), tuple(0L, 0L));
-        assertThat(fixture.auditRows(gone)).extracting(r -> r.get("status")).containsExactly("processing");
+        assertThat(fixture.auditRows(gone)).isEmpty();
         assertThat(watchdog.cancelled()).isEmpty();
     }
 

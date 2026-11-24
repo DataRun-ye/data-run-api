@@ -11,9 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -66,14 +64,23 @@ public class OutboxClaimReader implements OutboxClaimPort {
             "SET status = 'success', last_error = NULL, next_attempt_at = NULL " +
             "WHERE outbox_id = :outboxId AND ingest_id = :ingestId;";
 
-    private static final String MARK_FAILURE_SQL_RETURNING =
-        "UPDATE outbox " +
-            "SET attempt = COALESCE(attempt, 0) + 1, " +
-            "    last_error = :error, " +
-            "    next_attempt_at = :nextAttemptAt, " +
-            "    status = 'failed' " +
-            "WHERE outbox_id = :outboxId " +
-            "RETURNING attempt;";
+    // Failure outcomes apply only to the claim they belong to: a row claimed again after its lease ended
+    // belongs to the newer claim.
+    private static final String MARK_RETRY_SQL = """
+        UPDATE outbox
+        SET status = 'failed',
+            last_error = :error,
+            next_attempt_at = now() + make_interval(secs => :retrySeconds)
+        WHERE outbox_id = :outboxId AND ingest_id = :ingestId
+        """;
+
+    private static final String MARK_DEAD_SQL = """
+        UPDATE outbox
+        SET status = 'dead',
+            last_error = :error,
+            next_attempt_at = NULL
+        WHERE outbox_id = :outboxId AND ingest_id = :ingestId
+        """;
 
     private static final RowMapper<OutboxDto> OUTBOX_ROW_MAPPER = new RowMapper<>() {
         @Override
@@ -135,23 +142,23 @@ public class OutboxClaimReader implements OutboxClaimPort {
     }
 
     @Override
-    @jakarta.transaction.Transactional
-    public int markFailure(long outboxId, String error, Instant nextAttemptAt) {
-        MapSqlParameterSource params = new MapSqlParameterSource()
+    @Transactional
+    public boolean markRetry(long outboxId, UUID ingestId, String error, Duration retryAfter) {
+        return cloudJdbc.update(MARK_RETRY_SQL, failure(outboxId, ingestId, error)
+            .addValue("retrySeconds", (double) retryAfter.toSeconds())) > 0;
+    }
+
+    @Override
+    @Transactional
+    public boolean markDead(long outboxId, UUID ingestId, String error) {
+        return cloudJdbc.update(MARK_DEAD_SQL, failure(outboxId, ingestId, error)) > 0;
+    }
+
+    private static MapSqlParameterSource failure(long outboxId, UUID ingestId, String error) {
+        return new MapSqlParameterSource()
             .addValue("outboxId", outboxId)
-            .addValue("error", error == null ? null : error.substring(0, Math.min(4000, error.length())))
-            .addValue("nextAttemptAt", nextAttemptAt == null ? null : Timestamp.from(nextAttemptAt));
-
-        List<Integer> attempts = cloudJdbc.query(
-            MARK_FAILURE_SQL_RETURNING,
-            params,
-            (rs, rowNum) -> rs.getInt("attempt")
-        );
-
-        if (attempts.isEmpty()) {
-            throw new IllegalStateException("markFailure: no outbox row updated for id=" + outboxId);
-        }
-        return attempts.get(0);
+            .addValue("ingestId", ingestId)
+            .addValue("error", error == null ? null : error.substring(0, Math.min(4000, error.length())));
     }
 }
 

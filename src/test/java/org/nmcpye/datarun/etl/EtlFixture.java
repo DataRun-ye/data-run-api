@@ -171,6 +171,12 @@ final class EtlFixture {
         return left == null ? 0 : left;
     }
 
+    /** Sets how often the row was already claimed, as runs that died on it would leave it. */
+    void setAttempt(long outboxId, int attempt) {
+        tx.executeWithoutResult(status -> jdbc.update(
+            "UPDATE outbox SET attempt = :attempt WHERE outbox_id = :id", Map.of("id", outboxId, "attempt", attempt)));
+    }
+
     /** Ends the row's lease or retry wait, as time passing would. */
     void endLease(long outboxId) {
         tx.executeWithoutResult(status -> jdbc.update(

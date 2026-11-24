@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.etl.admin.ScheduledOrchestratorRunner;
+import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -74,7 +75,7 @@ class EtlSchedulingLockIT {
     }
 
     private EtlOrchestrator countingOrchestrator() {
-        return new EtlOrchestrator(null, null, null, null, null) {
+        return new EtlOrchestrator(null, null, null, null, null, new EtlProperties()) {
             @Override
             public void runOnce(String pipelineName, int batchSize) {
                 runs.incrementAndGet();

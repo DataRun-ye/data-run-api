@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.etl.orchestrator;
 
+import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.etl.dto.EtlRunCompletion;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.etl.entity.EtlRun;
@@ -13,15 +14,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * Orchestrator that runs one ETL cycle.
  * <p>
- * Important: per-outbox work is executed inside a dedicated transaction so each outbox either
- * fully commits its transform/persist/audit or rolls back; failures persist a failure record
- * via REQUIRES_NEW in EventProcessorServiceImpl.
+ * Each claimed row is projected in a transaction of its own, which saves the projection and the row's success
+ * together. A failure is recorded only after that transaction has rolled back, in a new one: the row is marked
+ * failed and tried again after a growing wait, or dead once its tries are used up.
  */
 @Component
 public class EtlOrchestrator {
@@ -33,24 +35,25 @@ public class EtlOrchestrator {
     private final OutboxProcessingService outboxProcessingService;
     private final EventProcessorService eventProcessorService;
     private final TransactionTemplate txTemplate;
+    private final EtlRetryPolicy retryPolicy;
 
     public EtlOrchestrator(EtlRunService etlRunService,
                            OutboxClaimService outboxClaimService,
                            OutboxProcessingService outboxProcessingService,
                            EventProcessorService eventProcessorService,
-                           PlatformTransactionManager txManager) {
+                           PlatformTransactionManager txManager,
+                           EtlProperties properties) {
         this.etlRunService = etlRunService;
         this.outboxClaimService = outboxClaimService;
         this.outboxProcessingService = outboxProcessingService;
         this.eventProcessorService = eventProcessorService;
-
-        // default template (not used for per-outbox work anymore)
         this.txTemplate = new TransactionTemplate(txManager);
+        this.retryPolicy = new EtlRetryPolicy(properties);
     }
 
     /**
      * Run a single processing cycle:
-     * - start run -> claim batch -> for each outbox: per-outbox TX { startProcessing; processEvent }
+     * - start run -> claim batch -> for each outbox: per-outbox TX { processEvent }, failures recorded after it
      * - finish run and persist counters
      */
     public void runOnce(String pipelineName, int batchSize) {
@@ -72,37 +75,14 @@ public class EtlOrchestrator {
             minSerial = claimed.stream().mapToLong(OutboxDto::getSubmissionSerialNumber).min().orElse(-1L);
             maxSerial = claimed.stream().mapToLong(OutboxDto::getSubmissionSerialNumber).max().orElse(-1L);
 
-            submittedCount = (claimed == null) ? 0 : claimed.size();
+            submittedCount = claimed.size();
             log.info("Run {} claimed {} rows (ingestId={})", runId, submittedCount, ingestId);
 
-            if (claimed != null) {
-                for (OutboxDto outbox : claimed) {
-                    try {
-                        // Per-outbox transaction: startProcessing + processEvent (transform + upsert/delete + recordSuccess)
-                        txTemplate.execute(status -> {
-                            // insert 'processing' audit row in same TX
-                            outboxProcessingService.startProcessing(runId, outbox);
-
-                            // processEvent does transform (pure) + persistence (upsert/delete) and on success records success.
-                            // On failure it will call recordFailureRequiresNewTx(...) to persist failure durable, then rethrow.
-                            try {
-                                eventProcessorService.processEvent(runId, outbox, ingestId);
-                            } catch (RuntimeException | Error e) {
-                                // rethrow to cause TX rollback for this outbox
-                                throw e;
-                            } catch (Exception e) {
-                                // wrap checked exceptions to ensure rollback
-                                throw new RuntimeException(e);
-                            }
-                            return null;
-                        });
-                        // if we reach here, the per-outbox tx committed and recordSuccess has been called by EventProcessorService
-                        successCount++;
-                    } catch (Exception ex) {
-                        // per-outbox processing failed; EventProcessorService already persisted a failure row and scheduled retry
-                        failureCount++;
-                        log.warn("Outbox processing failed for outboxId={} in run {}: {}", outbox.getOutboxId(), runId, ex.getMessage());
-                    }
+            for (OutboxDto outbox : claimed) {
+                if (process(runId, outbox, ingestId)) {
+                    successCount++;
+                } else {
+                    failureCount++;
                 }
             }
 
@@ -122,6 +102,50 @@ public class EtlOrchestrator {
             }
             log.error("Orchestration error for run {}: {}", runId, topEx.getMessage(), topEx);
             throw new RuntimeException(topEx);
+        }
+    }
+
+    /** Projects one claimed row; true when it succeeded. */
+    private boolean process(UUID runId, OutboxDto outbox, UUID ingestId) {
+        int attempt = outbox.getAttempt();
+        if (retryPolicy.wasClaimedTooOften(attempt)) {
+            recordDead(runId, outbox, "claimed " + attempt + " times without an outcome");
+            return false;
+        }
+        try {
+            txTemplate.executeWithoutResult(status -> eventProcessorService.processEvent(runId, outbox, ingestId));
+            return true;
+        } catch (RuntimeException e) {
+            // The row's transaction has rolled back: nothing of it is left to wait on.
+            String error = EtlFailures.describe(e);
+            log.debug("Outbox row {} failed on attempt {}", outbox.getOutboxId(), attempt, e);
+            if (retryPolicy.isLastAttempt(attempt)) {
+                recordDead(runId, outbox, error);
+            } else {
+                recordRetry(runId, outbox, error, retryPolicy.delayAfter(attempt));
+            }
+            return false;
+        }
+    }
+
+    private void recordRetry(UUID runId, OutboxDto outbox, String error, Duration retryAfter) {
+        log.warn("Outbox row {} failed on attempt {}, tried again in {}: {}",
+            outbox.getOutboxId(), outbox.getAttempt(), retryAfter, error);
+        try {
+            outboxProcessingService.recordRetry(runId, outbox, error, retryAfter);
+        } catch (RuntimeException e) {
+            log.error("Could not record the failure of outbox row {}; it is claimed again when its lease ends",
+                outbox.getOutboxId(), e);
+        }
+    }
+
+    private void recordDead(UUID runId, OutboxDto outbox, String error) {
+        log.error("Outbox row {} is dead after attempt {}: {}", outbox.getOutboxId(), outbox.getAttempt(), error);
+        try {
+            outboxProcessingService.recordDead(runId, outbox, error);
+        } catch (RuntimeException e) {
+            log.error("Could not record outbox row {} as dead; it is claimed again when its lease ends",
+                outbox.getOutboxId(), e);
         }
     }
 }

@@ -19,4 +19,13 @@ public class EtlProperties {
      * rows to be claimed again once this has passed; it must exceed the time one batch takes.
      */
     private Duration claimLease = Duration.ofMinutes(15);
+
+    /** Tries before a failing row is dead-lettered (status {@code dead}) and left for an operator. */
+    private int maxAttempts = 10;
+
+    /** Wait before the first retry of a failed row; it doubles with each further failure. */
+    private Duration retryDelay = Duration.ofMinutes(1);
+
+    /** The longest wait between two tries. */
+    private Duration maxRetryDelay = Duration.ofHours(1);
 }

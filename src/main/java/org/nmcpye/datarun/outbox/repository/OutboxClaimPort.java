@@ -3,7 +3,6 @@ package org.nmcpye.datarun.outbox.repository;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,7 +24,14 @@ public interface OutboxClaimPort {
     void markSuccess(long outboxId);
 
     /**
-     * Mark outbox row failed and return the new attempt count.
+     * Mark the row failed, to be claimed again after {@code retryAfter}; false when the row now belongs to a
+     * newer claim.
      */
-    int markFailure(long outboxId, String error, Instant nextAttemptAt);
+    boolean markRetry(long outboxId, UUID ingestId, String error, Duration retryAfter);
+
+    /**
+     * Mark the row dead: it is not claimed again until an operator puts it back to pending; false when the row
+     * now belongs to a newer claim.
+     */
+    boolean markDead(long outboxId, UUID ingestId, String error);
 }
