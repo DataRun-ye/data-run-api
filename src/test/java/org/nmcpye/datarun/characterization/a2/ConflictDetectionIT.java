@@ -1,12 +1,16 @@
 package org.nmcpye.datarun.characterization.a2;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Group;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Item;
+import org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictRehearsal;
 import org.nmcpye.datarun.jpa.datasubmission.revision.JournalReconciliation;
 import org.nmcpye.datarun.jpa.datasubmission.revision.SubmissionRevisionReader;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +20,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import javax.sql.DataSource;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.Group.G0;
+import static org.nmcpye.datarun.characterization.a2.A2Payloads.Group.G1;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.Group.G3;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.item;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.ordinary;
@@ -62,6 +68,9 @@ class ConflictDetectionIT extends A2GoldenSupport {
 
     @MockitoSpyBean
     private SubmissionRevisionReader journalReader;
+
+    @Autowired
+    private DataSource dataSource;
 
     private ReviewSeed seed;
 
@@ -471,6 +480,98 @@ class ConflictDetectionIT extends A2GoldenSupport {
 
         assertThat(conflicts(uid)).isEmpty();
         assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
+    }
+
+    // ---------------------------------------------------------------- the staging rehearsal
+
+    /**
+     * The staging rehearsal ({@link ConflictRehearsal}) on these scenarios' kind of data, through its own connections:
+     * copies uploaded in three app generations' shapes, one changed by the editor, one changed in {@code _status}
+     * alone, one older than the journal, and some changed on the server since. Re-sent unchanged, none is kept aside
+     * and none fails; every changed copy after a seeded server-side change is kept aside, tagged when its rows lack
+     * ids; the change of {@code _status} alone is found; the report holds counts only, and the database is left as it
+     * was.
+     */
+    @Test
+    @Timeout(120)
+    void theRehearsalFindsNoConflictInUnchangedReSendsAndKeepsEveryChangedCopyAside() throws Exception {
+        String value = "rhValue";
+        for (Group group : List.of(G3, G1, G0)) {
+            String uid = uid("rh" + group.name());
+            assertThat(answer(upload(group, FIELD_1, formA(group, uid, value)))).isEqualTo(created(uid));
+        }
+        String edited = uid("rhEdited");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, edited, value)))).isEqualTo(created(edited));
+        seed.edit(edited, ADMIN, value + " on the server");
+        String moved = uid("rhMoved");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, moved, value)))).isEqualTo(created(moved));
+        seed.move(moved, ADMIN, ASSIGN_T3_V3);
+        String deleted = uid("rhDeleted");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, deleted, value)))).isEqualTo(created(deleted));
+        assertThat(adminDelete(deleted).getStatus()).isEqualTo(204);
+        String byEditor = uid("rhEditor");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, byEditor, value)))).isEqualTo(created(byEditor));
+        assertThat(answer(upload(G3, EDITOR, formA(G3, byEditor, value + " by the editor"))))
+            .isEqualTo(updated(byEditor));
+        String status = uid("rhStatus");
+        Item before = formA(G3, status, value);
+        ((ObjectNode) before.node.get("formData")).put("_status", "rhStatusOne");
+        Item after = formA(G3, status, value);
+        ((ObjectNode) after.node.get("formData")).put("_status", "rhStatusTwo");
+        assertThat(answer(upload(G3, FIELD_1, before))).isEqualTo(created(status));
+        assertThat(answer(upload(G3, FIELD_1, after))).isEqualTo(updated(status));
+        String older = uid("rhOlder");
+        seed.storedBeforeTheJournal(older, FIELD_2, ASSIGN_T1_V1, version("FORM_A.v1"),
+            formA(G3, older, value).node.get("formData").toString());
+        String footprint = footprint();
+
+        HikariDataSource pool = dataSource.unwrap(HikariDataSource.class);
+        List<String> report;
+        try (ConflictRehearsal rehearsal = new ConflictRehearsal(new ConflictRehearsal.Settings(pool.getJdbcUrl(),
+            pool.getUsername(), pool.getPassword(), null, 100, 2, "s2", "a2rh%"))) {
+            report = rehearsal.run();
+
+            assertThat(rehearsal.unchanged.sorted()).as("nine copies, two shapes each").containsOnly(
+                Map.entry("apps 6.0 and later (rows with ids), changes nothing, before the checks", 9L),
+                Map.entry("apps 5.2 and 5.3 (rows without ids), changes nothing, before the checks", 9L));
+            assertThat(rehearsal.unchangedConflicts()).isZero();
+            assertThat(rehearsal.unchangedFailures()).isZero();
+            assertThat(rehearsal.holders.sorted()).containsOnly(Map.entry("creator", 1L), Map.entry("upload", 8L));
+
+            assertThat(rehearsal.changedNotKeptAside()).isZero();
+            assertThat(rehearsal.changed.sorted()).as("every seeded kind, both shapes").containsKeys(
+                "EDIT, apps 6.0 and later (rows with ids), upload, kept aside, SERVER_SIDE_CHANGE",
+                "EDIT, apps 5.2 and 5.3 (rows without ids), upload, kept aside, SERVER_SIDE_CHANGE, rows lack ids",
+                "MOVE, apps 6.0 and later (rows with ids), upload, refused for access (E4124), kept aside, "
+                    + "SERVER_SIDE_CHANGE",
+                "DELETE, apps 6.0 and later (rows with ids), upload, kept aside, SERVER_SIDE_CHANGE");
+            assertThat(rehearsal.changed.sum("")).isGreaterThanOrEqualTo(18);
+
+            assertThat(rehearsal.status.get("history: consecutive states, only _status differs")).isEqualTo(1);
+            assertThat(rehearsal.status.get("history: submissions whose latest change differs only in _status"))
+                .isEqualTo(1);
+            assertThat(rehearsal.status.get("heads with a top-level _status")).isEqualTo(1);
+            assertThat(rehearsal.status.get("heads whose re-sent copy differs from the stored document only in "
+                + "_status")).isZero();
+        }
+        assertThat(String.join("\n", report)).as("counts only")
+            .doesNotContain("a2rh", "a2-", value, "rhStatus");
+        assertThat(footprint()).as("the database is as it was").isEqualTo(footprint);
+    }
+
+    /** What the rehearsal could change: its scope's rows and versions, revisions, outbox rows and conflicts. */
+    private String footprint() {
+        return jdbc.queryForObject("""
+                SELECT count(*) || ' rows, versions ' || coalesce(sum(s.lock_version), 0) || ', deleted '
+                       || count(*) FILTER (WHERE s.deleted) || ', documents ' || md5(string_agg(s.form_data::text,
+                       '|' ORDER BY s.id)) || ', revisions '
+                       || (SELECT count(*) FROM journal.submission_revision r WHERE r.submission_id IN
+                              (SELECT id FROM data_submission WHERE uid LIKE 'a2rh%')) || ', outbox '
+                       || (SELECT count(*) FROM outbox WHERE submission_uid LIKE 'a2rh%') || ', conflicts '
+                       || (SELECT count(*) FROM submission_review.conflict c WHERE c.submission_id IN
+                              (SELECT id FROM data_submission WHERE uid LIKE 'a2rh%'))
+                FROM data_submission s WHERE s.uid LIKE 'a2rh%'""",
+            Map.of(), String.class);
     }
 
     // ---------------------------------------------------------------- helpers
