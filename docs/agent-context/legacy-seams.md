@@ -118,9 +118,7 @@ Where today's seams serve new code poorly:
 | SQL: `data_submission` | `submission.normalized.jdbc.StoredSubmissionJdbcReader`, **planned** | stored submissions by id and in batches |
 | SQL: `assignment`, `team`, `org_unit`, `activity` | `submission.normalized.jdbc.PlacementJdbcResolver`, **planned** | one placement resolver, turning placement uids into ids |
 
-The two planned seams are being built for the feed (engineering, 2026-11-26). Until they exist where named, SQL in
-new code that names their tables anywhere else fails the test; once built, the test wants them marked built. Outside
-new code, these tables are named only by the write path.
+The two planned seams are being built for the feed (engineering, 2026-11-26).
 
 ## Exceptions
 
@@ -135,8 +133,7 @@ new code, these tables are named only by the write path.
 | `ConflictDetection` | `CurrentUserDetails`: the uploader's access snapshot, for that question | removed by `refactor/conflict-detection-seam` |
 | `ConflictCheck` | `ErrorCode`: the v1 refusal codes E4124, E4114 and E4122 that keep a copy aside after a move | removed by `refactor/conflict-detection-seam` |
 
-The conflict detection rows apply from `feat/review-s2`, which lands before the guard (checked at `8649e9ef`). Each
-exception must still occur while its class exists.
+The conflict detection rows apply from `feat/review-s2`, which lands before the guard (checked at `8649e9ef`).
 
 ## Gaps
 
