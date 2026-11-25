@@ -88,9 +88,10 @@ public class DataSubmissionResource extends BaseReadResource<DataSubmission, Str
     /**
      * The generic list reads ({@code GET /}, {@code /byLastModified}, {@code POST /query}, {@code /objects}), bounded
      * for an admin before any query runs: a page holds at most {@value #MAX_PAGE_SIZE} submissions, starts within the
-     * first {@value #MAX_OFFSET}, and is never unpaged (E2060, 400). Deep pages cost an OFFSET to the end plus a
-     * count, two whole-table scans; the admin tool that read pages 61 to 66 of 1,000 no longer depends on them
-     * (2026-11-25). A non-admin's read is unchanged: it finds nothing without an EDIT grant (the G0 pull, A2 R1).
+     * first {@value #MAX_OFFSET}, and is never unpaged (E2060, 400; {@code POST /query} answers its own empty 400
+     * instead, as it does for any failure). Deep pages cost an OFFSET to the end plus a count, two whole-table scans;
+     * the admin tool that read pages 61 to 66 of 1,000 no longer depends on them (2026-11-25). A non-admin's read is
+     * unchanged: it finds nothing without an EDIT grant (the G0 pull, A2 R1).
      */
     @Override
     protected Page<DataSubmission> getList(QueryRequest queryRequest, String jsonQueryBody) {

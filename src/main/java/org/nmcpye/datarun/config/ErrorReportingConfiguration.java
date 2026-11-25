@@ -232,8 +232,9 @@ public class ErrorReportingConfiguration {
      * its first request runs, or a held release meeting a live copy). The upload logs that outcome at WARN with its
      * ids and SQLState, so this line is not reported; the container log keeps it. Hibernate logs it before the upload
      * can tell, and no check before the insert can see a save that is not committed yet. Only a unique violation of
-     * that constraint is dropped, in PostgreSQL's English text (lc_messages C.UTF-8 on the staging clone of
-     * production): every other database error, and this one in any other wording, is still reported.
+     * that constraint is dropped, in PostgreSQL's English text. lc_messages was read on staging only (C.UTF-8);
+     * production's was not read, and a server answering in another language leaves this line reported. Every other
+     * database error, and this one in any other wording, is still reported.
      */
     private static boolean isSubmissionUidRace(SentryEvent event) {
         Message message = event.getMessage();

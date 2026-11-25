@@ -23,8 +23,11 @@
 
       DROP TABLE holds an ACCESS EXCLUSIVE lock on the table, so lock_timeout makes the deploy fail visibly instead of
       waiting behind an Airbyte read. The changeset drops only a table the migration's role owns: one another role
-      owns is skipped with a warning and tried again at the next start, rather than failing the deploy. The rollback
-      recreates the table with its definition on the staging clone; its 5 old rows are not restored.
+      owns is skipped and tried again at the next start, rather than failing the deploy. Liquibase reports that skip
+      at INFO ("Continuing past: ... despite precondition failure due to onFail='CONTINUE': ..."), below the WARN
+      level logback-spring.xml sets for liquibase, so the application log has no line for it: the table still being
+      there, and no databasechangelog row for this changeset, show it. The rollback recreates the table with its
+      definition on the staging clone; its 5 old rows are not restored.
     -->
     <changeSet id="20261125-05-drop-analytics-etl-runs" author="datarun">
         <preConditions onFail="CONTINUE" onFailMessage="analytics.etl_runs is owned by another role: not dropped">
