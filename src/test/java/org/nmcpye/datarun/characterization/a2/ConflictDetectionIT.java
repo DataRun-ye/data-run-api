@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -752,12 +753,17 @@ class ConflictDetectionIT extends A2GoldenSupport {
             assertThat(rehearsal.holders.sorted()).containsOnly(Map.entry("creator", 1L), Map.entry("upload", 8L));
 
             assertThat(rehearsal.changedNotKeptAside()).isZero();
-            assertThat(rehearsal.changed.sorted()).as("every seeded kind, both shapes").containsKeys(
-                "EDIT, apps 6.0 and later (rows with ids), upload, kept aside, SERVER_SIDE_CHANGE",
-                "EDIT, apps 5.2 and 5.3 (rows without ids), upload, kept aside, SERVER_SIDE_CHANGE, rows lack ids",
-                "MOVE, apps 6.0 and later (rows with ids), upload, refused for access (E4124), kept aside, "
-                    + "SERVER_SIDE_CHANGE",
-                "DELETE, apps 6.0 and later (rows with ids), upload, kept aside, SERVER_SIDE_CHANGE");
+            // Which holder each kind meets depends on the sample's order, by ids made at random: nine submissions
+            // take each of the four kinds at least once, a delete on the deleted one being seeded as an edit.
+            Set<String> outcomes = rehearsal.changed.sorted().keySet();
+            for (String kind : List.of("EDIT", "MOVE", "DELETE", "ADMIN_DELETE")) {
+                assertThat(outcomes).as(kind + ", rows with ids").anyMatch(key -> key.startsWith(kind
+                    + ", apps 6.0 and later (rows with ids), ") && key.endsWith("kept aside, SERVER_SIDE_CHANGE"));
+                assertThat(outcomes).as(kind + ", rows without ids").anyMatch(key -> key.startsWith(kind
+                    + ", apps 5.2 and 5.3 (rows without ids), ") && key.endsWith("SERVER_SIDE_CHANGE, rows lack ids"));
+            }
+            assertThat(outcomes).as("a move refused for access").anyMatch(key -> key.startsWith("MOVE, ")
+                && key.contains("refused for access (E4124), kept aside, SERVER_SIDE_CHANGE"));
             assertThat(rehearsal.changed.sum("")).isGreaterThanOrEqualTo(18);
 
             assertThat(rehearsal.status.get("history: consecutive states, only _status differs")).isEqualTo(1);
