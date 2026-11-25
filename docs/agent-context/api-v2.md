@@ -160,3 +160,47 @@ The vocabulary study's API rules (`.review/data-chain/2026-11-25-vocabulary.md`
   clearing is its own operation, and whatever a request leaves out is
   untouched.
 - `reason` is only ever a person's text; codes the server assigns are `cause`.
+
+## Changing Requests
+
+Every changing method takes the same four things (vocabulary rule R4): the
+`If-Match` and `Idempotency-Key` headers, which E0 enforces through
+`CommandRequest`, and a required `reason` with an optional `dryRun` in its
+body, which each method's request defines; E0 builds no shared body type.
+
+- A handler becomes a command by taking `web.v2.idempotency.CommandRequest`:
+  before it runs, no caller is 401, a missing key 400
+  `idempotency-key-missing`, a key that is not one UUID 400
+  `invalid-idempotency-key`, no `If-Match` or `*` 428, a malformed one 400.
+  Keys are quoted (`"8e03978e-..."`, the Structured Field string of the IETF
+  draft-09) or bare; the nil and max UUIDs are refused.
+- `IdempotentCommands.execute` runs it in one READ COMMITTED transaction, in
+  this order: bound lock waits (`datarun.v2.commands.lock-timeout`, 5 s);
+  claim the caller's key in `api.idempotency_key`; the command locks its row
+  (`SELECT ... FOR UPDATE` first), checks `If-Match` through its context,
+  applies the change; the outcome is written on the key; commit.
+  - A duplicate waits on the key, never on the row, and then gets the first
+    outcome. Past the lock timeout it is 409 `request-in-progress`; a row held
+    past it is 409 `resource-busy`.
+  - The same key with the same request is a replay, even once its `If-Match`
+    is stale: the first status and body, the `ETag`, and
+    `Idempotent-Replayed: true`. With a different request it is 422
+    `idempotency-key-reused`.
+  - Any refusal or failure rolls back the command with its claim: only
+    successes are remembered, and a retry of a refused request runs again.
+- The request's fingerprint is a SHA-256 of the method, the decoded path, the
+  query (ordered by name), the canonical `If-Match` and the body in canonical
+  JSON (members sorted, numbers by exact value, no whitespace).
+- The record keeps the caller's user id, the key, that hash and the outcome
+  (resource type, id, version, response status) for 72 hours; expired keys
+  count as absent and are purged hourly. No value of the request or the
+  response is stored.
+- A response, first or replayed, comes from the method's `OutcomeRenderer`,
+  which renders the resource at the outcome's version from its history. For
+  submissions that history is the revision journal (step C) through the
+  translation (step E1a); until a module has a history, it cannot offer
+  replayable commands.
+- A dry run writes nothing and is not a command: it neither needs nor claims
+  an idempotency key, so a tool may dry-run a change and then send it with
+  its key.
+- Command bodies are at most 1 MB (413 `payload-too-large`).

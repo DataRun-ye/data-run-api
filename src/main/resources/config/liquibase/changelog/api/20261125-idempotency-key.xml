@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!-- How long the changeset may wait for a lock; a Liquibase parameter of the same name overrides it. -->
+    <property name="apiIdempotencyLockTimeout" value="30s"/>
+
+    <!--
+      The idempotency record of v2 commands (web.v2.idempotency): one row per caller and Idempotency-Key, so a
+      command retried after a lost response is answered with its first outcome instead of being applied twice.
+
+      A row is claimed by the command's own transaction before anything else (the key first, then the resource's
+      row lock, then If-Match), and the outcome is written on it before that transaction commits. Only committed
+      rows are visible to other sessions, so every visible row has its outcome; a rolled-back attempt takes its
+      claim with it, and a retry simply runs again. A concurrent duplicate waits on the primary key, not on the
+      resource's row.
+
+      It stores no values: the caller's user id, the key, a SHA-256 of the request in a canonical form, and the
+      outcome as a resource type, id, version and status. A replay renders the resource at that version from its
+      module's history; nothing of the request or the response is kept here.
+
+      Rows live 72 hours (expires_at); an expired row counts as absent and is re-claimed in place, and the
+      application deletes expired rows in batches.
+
+      Its own schema, api: transport state of the HTTP API, never part of the analytics copy, which reads the
+      public and analytics schemas. No foreign key: the rows are short-lived, so no lock on app_user is taken here
+      or at each claim.
+
+      Additive only: a new schema and table, no existing object is touched. Rollback drops the table, then the
+      schema; DROP SCHEMA without CASCADE refuses if anything else was put there. Dropping the rows loses nothing
+      but the replay of commands retried after the rollback, when v2 commands no longer exist.
+    -->
+    <changeSet id="20261125-e0-01-idempotency-key" author="datarun">
+        <sql>SET LOCAL lock_timeout = '${apiIdempotencyLockTimeout}'</sql>
+        <sql>CREATE SCHEMA api</sql>
+        <sql>
+            COMMENT ON SCHEMA api IS 'Transport state of the HTTP API (v2 idempotency). Not domain data: never part of the analytics copy.'
+        </sql>
+        <sql>
+            CREATE TABLE api.idempotency_key (
+                actor_user_id    varchar(26) NOT NULL,
+                idempotency_key  uuid        NOT NULL,
+                request_hash     bytea       NOT NULL,
+                resource_type    varchar(32),
+                resource_id      varchar(36),
+                resource_version bigint,
+                response_status  smallint,
+                created_at       timestamptz NOT NULL DEFAULT now(),
+                expires_at       timestamptz NOT NULL,
+                CONSTRAINT pk_idempotency_key PRIMARY KEY (actor_user_id, idempotency_key),
+                CONSTRAINT ck_idempotency_key_hash CHECK (octet_length(request_hash) = 32),
+                -- Claimed (no outcome yet, only inside the claiming transaction) or completed (all of it).
+                CONSTRAINT ck_idempotency_key_outcome
+                    CHECK (num_nulls(resource_type, resource_id, resource_version, response_status) IN (0, 4)),
+                CONSTRAINT ck_idempotency_key_status
+                    CHECK (response_status IS NULL OR response_status BETWEEN 200 AND 299),
+                CONSTRAINT ck_idempotency_key_version CHECK (resource_version IS NULL OR resource_version &gt;= 0),
+                CONSTRAINT ck_idempotency_key_expiry CHECK (expires_at &gt; created_at)
+            )
+        </sql>
+        <sql>CREATE INDEX idx_idempotency_key_expires_at ON api.idempotency_key (expires_at)</sql>
+        <sql>
+            COMMENT ON TABLE api.idempotency_key IS 'v2 command outcomes by caller and Idempotency-Key, kept 72 hours; ids, a request hash and versions only, no values.'
+        </sql>
+        <rollback>
+            <sql>SET LOCAL lock_timeout = '${apiIdempotencyLockTimeout}'</sql>
+            <sql>DROP TABLE api.idempotency_key</sql>
+            <sql>DROP SCHEMA api</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
