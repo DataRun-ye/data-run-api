@@ -196,8 +196,8 @@ Normalization flag counts are not in `freshness`; they are server monitoring (§
    change. Versions never go backwards: a revision at or below the version the feed holds is skipped. Republication
    writes the same version again, and skips a submission whose held version is newer than the head it read.
 4. **Nothing stays unpublished.** The feed's writes share the ETL's per-row transaction, inside a savepoint: a feed
-   failure rolls back only the feed part, tall and events still commit, and the submission waits in a retry list.
-   Retries are capped; past the cap the change is marked dead with its reason code, counted in `freshness` and by
+   failure rolls back only the feed part, tall and events still commit, and the submission waits in a retry list; a
+   tall or events failure never holds back the feed, which commits whatever they do. Retries are capped; past the cap the change is marked dead with its reason code, counted in `freshness` and by
    integrity check 12, and the heartbeat stops (§12). Reconcile publishes every head the feed lacks or holds at another
    version: at start, at switch-on and nightly. That covers periods with the feed off, a rollback to a release without
    it, dead outbox rows and anything else. **Integrity check 12** holds the feed to this. Its publication lines must
