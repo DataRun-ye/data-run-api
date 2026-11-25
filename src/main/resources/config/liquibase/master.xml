@@ -117,6 +117,7 @@
     <include file="/config/liquibase/changelog/api/20261125-idempotency-key.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/feed/20261125-feed-schema.xml" relativeToChangelogFile="false"/>
     <include file="/config/liquibase/changelog/data_submission/20261125-submission-revision-review-commands.xml" relativeToChangelogFile="false"/>
+    <include file="/config/liquibase/changelog/submission_review/20261125-submission-review-conflict.xml" relativeToChangelogFile="false"/>
 
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

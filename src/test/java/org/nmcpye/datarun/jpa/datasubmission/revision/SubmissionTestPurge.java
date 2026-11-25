@@ -18,11 +18,13 @@ public final class SubmissionTestPurge {
     }
 
     /**
-     * Deletes the submissions matching {@code where}, a condition on {@code data_submission s}, with their revisions
-     * and outbox rows. Runs in the caller's transaction, which it requires.
+     * Deletes the submissions matching {@code where}, a condition on {@code data_submission s}, with their revisions,
+     * outbox rows and conflicts. Runs in the caller's transaction, which it requires.
      */
     public static void purge(NamedParameterJdbcTemplate jdbc, String where, Map<String, ?> params) {
         jdbc.getJdbcTemplate().execute("SET LOCAL session_replication_role = replica");
+        jdbc.update("DELETE FROM submission_review.conflict c USING data_submission s WHERE c.submission_id = s.id AND ("
+            + where + ")", params);
         jdbc.update("DELETE FROM outbox o USING data_submission s WHERE o.submission_id = s.id AND (" + where + ")",
             params);
         jdbc.update("""

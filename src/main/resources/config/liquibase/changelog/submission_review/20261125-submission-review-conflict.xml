@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!-- How long the changeset may wait for a lock; a Liquibase parameter of the same name overrides it. -->
+    <property name="submissionReviewConflictLockTimeout" value="30s"/>
+
+    <!--
+      Submission review's conflicts (docs/features/submission-review/spec.md, Conflicts). A conflict is a changed
+      phone copy that arrived after a server-side change its phone had not seen: kept aside unapplied, while the
+      phone is answered updated, until a person keeps the submission as it is or accepts the copy.
+
+      One row per conflict:
+      - submission_id and uploader_user_id: the submission (data_submission.id) and the user whose phone sent the
+        copy (app_user.id), never a login; one OPEN conflict per submission and uploader (uq_conflict_open);
+      - state: OPEN, KEPT or ACCEPTED; cause: SERVER_SIDE_CHANGE, or DETECTION_ERROR when detection failed and the
+        copy was kept aside rather than risk applying it;
+      - base_version: the version the copy was based on (null only when detection failed before finding it);
+      - rows_lack_ids: the copy as received has rows without ids (apps 5.2 and 5.3), so it can never be matched row
+        by row;
+      - upload_route and phone_copy: the upload item exactly as received, before any id was minted, in the shape of
+        its route (VERSIONED, the referenceVersion=1 route; LEGACY);
+      - first_received_at, last_received_at, resend_count: when the copy first and last arrived and how often it was
+        sent again while open; version: the conflict's own version, 0 when opened and one more each time a different
+        copy replaces the one kept, so a decision made on an older view can be refused;
+      - the decision, written when a person decides: who, when and why, and for an accept whether the server-side
+        edits were re-applied and the submission version it made. An OPEN conflict has none of these.
+
+      Schema submission_review: this feature's tables, never part of the analytics copy, which reads analytics,
+      pivot and public. A new schema and table; no existing object changes.
+
+      Rollback refuses once a conflict exists: each holds a phone copy its phone was told was saved, as
+      held_submission does. Then it drops the table, and the schema only if nothing else was left in it.
+    -->
+    <changeSet id="20261125-s2-02-submission-review-conflict" author="datarun">
+        <sql>SET LOCAL lock_timeout = '${submissionReviewConflictLockTimeout}'</sql>
+        <sql>CREATE SCHEMA submission_review</sql>
+        <sql>
+            COMMENT ON SCHEMA submission_review IS 'Submission review (docs/features/submission-review): conflicts and their phone copies. Never part of the analytics copy.'
+        </sql>
+        <sql>
+            CREATE TABLE submission_review.conflict (
+                id                 varchar(36)  NOT NULL,
+                submission_id      varchar(26)  NOT NULL,
+                uploader_user_id   varchar(26)  NOT NULL,
+                state              varchar(16)  NOT NULL,
+                cause              varchar(32)  NOT NULL,
+                base_version       bigint,
+                rows_lack_ids      boolean      NOT NULL,
+                upload_route       varchar(16)  NOT NULL,
+                phone_copy         jsonb        NOT NULL,
+                first_received_at  timestamptz  NOT NULL,
+                last_received_at   timestamptz  NOT NULL,
+                resend_count       integer      NOT NULL DEFAULT 0,
+                version            bigint       NOT NULL DEFAULT 0,
+                decided_at         timestamptz,
+                decided_by_user_id varchar(26),
+                decision_reason    text,
+                reapplied_edits    boolean,
+                accepted_version   bigint,
+                CONSTRAINT pk_conflict PRIMARY KEY (id),
+                CONSTRAINT fk_conflict_submission FOREIGN KEY (submission_id) REFERENCES public.data_submission (id),
+                CONSTRAINT fk_conflict_uploader FOREIGN KEY (uploader_user_id) REFERENCES public.app_user (id),
+                CONSTRAINT fk_conflict_decided_by FOREIGN KEY (decided_by_user_id) REFERENCES public.app_user (id),
+                CONSTRAINT ck_conflict_state CHECK (state IN ('OPEN', 'KEPT', 'ACCEPTED')),
+                CONSTRAINT ck_conflict_cause CHECK (cause IN ('SERVER_SIDE_CHANGE', 'DETECTION_ERROR')),
+                -- A conflict detection opened knows its base version; only a failed detection may not.
+                CONSTRAINT ck_conflict_base CHECK (
+                    (base_version IS NOT NULL AND base_version >= 0) OR cause = 'DETECTION_ERROR'),
+                CONSTRAINT ck_conflict_upload_route CHECK (upload_route IN ('VERSIONED', 'LEGACY')),
+                CONSTRAINT ck_conflict_received CHECK (
+                    last_received_at >= first_received_at AND resend_count >= 0 AND version >= 0),
+                -- An OPEN conflict has no decision; a decided one says who, when and why; only an accept says whether it
+                -- re-applied the server-side edits and which submission version it made.
+                CONSTRAINT ck_conflict_decision CHECK (
+                    CASE state
+                        WHEN 'OPEN' THEN num_nonnulls(decided_at, decided_by_user_id, decision_reason, reapplied_edits,
+                                                      accepted_version) = 0
+                        WHEN 'KEPT' THEN num_nonnulls(decided_at, decided_by_user_id, decision_reason) = 3
+                                         AND num_nonnulls(reapplied_edits, accepted_version) = 0
+                        WHEN 'ACCEPTED' THEN num_nonnulls(decided_at, decided_by_user_id, decision_reason,
+                                                          reapplied_edits, accepted_version) = 5
+                        ELSE true
+                    END)
+            )
+        </sql>
+        <sql>
+            CREATE UNIQUE INDEX uq_conflict_open ON submission_review.conflict (submission_id, uploader_user_id)
+                WHERE state = 'OPEN'
+        </sql>
+        <sql>
+            CREATE INDEX idx_conflict_submission_uploader ON submission_review.conflict (submission_id, uploader_user_id)
+        </sql>
+        <rollback>
+            <sql splitStatements="false"><![CDATA[
+                DO $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM submission_review.conflict) THEN
+                        RAISE EXCEPTION 'submission_review.conflict holds phone copies their phones were told were saved: never roll it back';
+                    END IF;
+                END $$
+            ]]></sql>
+            <sql>DROP TABLE submission_review.conflict</sql>
+            <sql>DROP SCHEMA submission_review</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
