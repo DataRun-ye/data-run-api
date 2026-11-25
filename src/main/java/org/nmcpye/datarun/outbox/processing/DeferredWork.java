@@ -16,4 +16,13 @@ public interface DeferredWork {
      * @return whether it did anything; false when nothing waits
      */
     boolean runBatch();
+
+    /**
+     * Updates the freshness the work reports, and says whether it is within its target. The runtime sends its
+     * heartbeat only while every work that is on is: a stall, a failure that recurs on every retry, or a change given up
+     * on stops it, and the monitor raises the alert. Work that keeps no target is always within it.
+     */
+    default boolean withinFreshnessTarget() {
+        return true;
+    }
 }

@@ -32,7 +32,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * While an output keeps deferred work ({@link DeferredWork}, such as the submission feed's retries and reconcile),
  * every poll takes the run lock, and once no outbox row is due it runs that work one batch at a time, with the live
- * backlog first again after each, for as long as the poll may run.
+ * backlog first again after each, for as long as the poll may run. A poll that succeeds pings the heartbeat monitor
+ * only while every such work is within its freshness target ({@link DeferredWork#withinFreshnessTarget}).
  */
 @Service
 public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
@@ -106,7 +107,25 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
         } else if (outcome == PollOutcome.SUCCEEDED) {
             metrics.pollSucceeded();
             pause.set(properties.getPollDelay());
-            heartbeat.pollSucceeded();
+            if (withinFreshnessTargets()) {
+                heartbeat.pollSucceeded();
+            }
+        }
+    }
+
+    /** Whether every deferred work that is on is within its freshness target; one that cannot tell is not. */
+    private boolean withinFreshnessTargets() {
+        try {
+            for (DeferredWork work : deferredWork) {
+                if (work.isOn() && !work.withinFreshnessTarget()) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (RuntimeException e) {
+            log.warn("Could not tell whether the deferred work is within its freshness target, so no heartbeat: {}",
+                e.getClass().getSimpleName());
+            return false;
         }
     }
 

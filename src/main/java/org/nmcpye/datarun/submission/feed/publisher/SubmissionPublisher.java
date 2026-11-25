@@ -58,6 +58,10 @@ import java.util.function.IntSupplier;
  * lock, each submission in its own savepoint, and stops starting submissions once it has run half the feed part's
  * limit, so it holds the lock briefly.</p>
  *
+ * <p><b>Freshness:</b> at each poll the runtime asks {@link #withinFreshnessTarget}, which writes what waits into
+ * {@code feed.freshness} (backlog, pending and dead changes, the oldest of each) and says whether the feed is within
+ * {@code datarun.feed.freshness-target}; the runtime's heartbeat stops while it is not (contract 12).</p>
+ *
  * <p><b>Savepoints are JDBC savepoints on the transaction's connection.</b> Spring's {@code Propagation.NESTED} is not
  * available: the application's transaction manager is JPA's, whose Hibernate dialect offers no savepoints, so a nested
  * transaction would fail to start. The feed writes through JDBC only, so a savepoint on the connection rolls back
@@ -84,6 +88,8 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
     private final Map<FeedWriter.Outcome, Counter> changes;
     private final Counter failures;
     private final Map<NormalizationFlag, Counter> flags;
+    /** Whether the last freshness reading was within the target; {@code null} before the first. */
+    private volatile Boolean withinTarget;
 
     @Autowired
     public SubmissionPublisher(ActivationSwitches switches, DataSource dataSource,
@@ -195,6 +201,37 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
             return false;
         }
         return retryPending() > 0 || republish() > 0 || reconcileBatch();
+    }
+
+    /**
+     * Writes what waits into {@code feed.freshness}, under the feed's lock, and says whether the feed is within its
+     * freshness target. Logs once when it falls behind, and once when it is back.
+     */
+    @Override
+    public boolean withinFreshnessTarget() {
+        if (!isOn()) {
+            return true;
+        }
+        Freshness.Reading reading = afterBacklog.execute(status -> {
+            FeedLock.take(jdbc.getJdbcOperations());
+            return freshness.refresh(jdbc);
+        });
+        boolean within = reading != null && reading.withinTarget(properties.getFreshnessTarget());
+        Boolean before = withinTarget;
+        withinTarget = within;
+        if (!within && !Boolean.FALSE.equals(before) && reading != null) {
+            log.warn("The feed is behind its freshness target ({}): {} outbox changes waiting, the oldest {} s; {} "
+                    + "pending changes, the oldest {} s; {} dead. The heartbeat stops until it is within it again",
+                properties.getFreshnessTarget(), reading.backlog(), seconds(reading.oldestBacklogAge()),
+                reading.pending(), seconds(reading.oldestPendingAge()), reading.dead());
+        } else if (within && Boolean.FALSE.equals(before)) {
+            log.info("The feed is within its freshness target again; the heartbeat resumes");
+        }
+        return within;
+    }
+
+    private static Object seconds(Double age) {
+        return age == null ? "none" : Math.round(age);
     }
 
     /** Requests a reconcile pass at start, which is also switch-on: the switch is read at start. */

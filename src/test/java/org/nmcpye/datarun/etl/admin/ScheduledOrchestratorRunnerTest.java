@@ -30,8 +30,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Which polls ping the heartbeat monitor (only those that succeed), and when the outputs' deferred work runs: once the
- * live backlog is drained, a batch at a time, the live backlog first again after each.
+ * Which polls ping the heartbeat monitor (only those that succeed, while every deferred work is within its freshness
+ * target), and when the outputs' deferred work runs: once the live backlog is drained, a batch at a time, the live
+ * backlog first again after each.
  */
 class ScheduledOrchestratorRunnerTest {
 
@@ -102,6 +103,7 @@ class ScheduledOrchestratorRunnerTest {
         lockFree();
         when(orchestrator.runOnce(anyString(), anyInt())).thenReturn(new EtlRunResult(3, 3, 0, false));
         when(deferred.runBatch()).thenReturn(true, true, false);
+        when(deferred.withinFreshnessTarget()).thenReturn(true);
 
         runner.scheduledRun();
 
@@ -136,6 +138,42 @@ class ScheduledOrchestratorRunnerTest {
         runner.scheduledRun();
 
         verify(deferred, never()).runBatch();
+    }
+
+    @Test
+    void aSucceededPollPingsOnlyWhileTheDeferredWorkIsWithinItsFreshnessTarget() {
+        when(deferred.isOn()).thenReturn(true);
+        rowsDue(false);
+        lockFree();
+        when(deferred.withinFreshnessTarget()).thenReturn(false, true);
+
+        runner.scheduledRun();
+        verify(heartbeat, never()).pollSucceeded();
+
+        runner.scheduledRun();
+        verify(heartbeat).pollSucceeded();
+    }
+
+    @Test
+    void deferredWorkThatCannotTellItsFreshnessStopsThePingButNotThePoll() {
+        when(deferred.isOn()).thenReturn(true);
+        rowsDue(false);
+        lockFree();
+        when(deferred.withinFreshnessTarget()).thenThrow(new DataAccessResourceFailureException("database unreachable"));
+
+        runner.scheduledRun();
+
+        verify(heartbeat, never()).pollSucceeded();
+    }
+
+    @Test
+    void deferredWorkThatIsOffDoesNotHoldThePing() {
+        rowsDue(false);
+
+        runner.scheduledRun();
+
+        verify(deferred, never()).withinFreshnessTarget();
+        verify(heartbeat).pollSucceeded();
     }
 
     private void rowsDue(boolean due, Boolean... then) {
