@@ -19,6 +19,7 @@ import org.nmcpye.datarun.common.exceptions.DatabaseFailures;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
 import org.nmcpye.datarun.common.exceptions.FailureShape;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
+import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.uidgenerate.BaseDto;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
@@ -28,10 +29,13 @@ import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommand;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
+import org.nmcpye.datarun.jpa.datasubmission.validation.StoredSubmissionGuard;
+import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
 import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
 import org.nmcpye.datarun.jpa.datatemplate.DataType;
 import org.nmcpye.datarun.jpa.datatemplate.SemanticType;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
+import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
 import org.nmcpye.datarun.jpa.datatemplate.repository.CanonicalElementRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.MetadataUpsertService;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
@@ -78,7 +82,8 @@ import static org.nmcpye.datarun.NewCodeSeamsTest.Kind.TRANSITIONAL;
  *
  * <p>Read and extend it in order. <b>1. The classification table</b> gives every main class exactly one kind: the
  * most specific row that matches it. <b>2. The allowlist</b> names the seams new code may use. <b>3. The rules</b>
- * check new code against both. A change to the map is a row or a seam, each with its reason. Nothing is frozen.</p>
+ * check new code against both. A change to the map is a row, a seam or an exception, each with its reason. Nothing is
+ * frozen: an exception names its class and dependency, and the test fails once it no longer occurs.</p>
  * <ul>
  *   <li>(a) Retiring derived structures: no dependency from new code, and none from them to new code, so new code
  *       shares no transaction, schedule or failure with the legacy outputs; neutral and transitional code depend on
@@ -126,7 +131,8 @@ class NewCodeSeamsTest {
         row("submission..", NEW_CODE, "the submission normalizer and the feed"),
         row("web.v2..", NEW_CODE, "the v2 API"),
         row("jpa.datasubmission.revision..", NEW_CODE, "the revision journal"),
-        row("jpa.datasubmission.conflict..", NEW_CODE, "conflict detection (feat/review-s2)"),
+        row("jpa.datasubmission.conflict..", NEW_CODE, "conflict detection, which takes the values the write path "
+            + "computes; its breaches are listed until its seam refactor (feat/review-s2)"),
 
         // Retiring derived structures
         row("etl..", RETIRING, "tall, events, dimensions and pivots, their transformers, and for now the home and name "
@@ -269,6 +275,30 @@ class NewCodeSeamsTest {
         new Leftover(OutboxProcessingServiceImpl.class, "counts outcomes on the ETL's run (EtlRunService), until the "
             + "claim loop leaves etl"));
 
+    private static final String CONFLICT_DETECTION = ROOT + ".jpa.datasubmission.conflict.ConflictDetection";
+    private static final String CONFLICT_CHECK = ROOT + ".jpa.datasubmission.conflict.ConflictCheck";
+    private static final String CONFLICT_REFACTOR = "removed by refactor/conflict-detection-seam";
+
+    /**
+     * Breaches by new code that are listed until a named change removes them, each by its class (nested classes
+     * included) and the class it depends on. Conflict detection lands with feat/review-s2 before this guard, and its
+     * seam refactor follows as its own change. A listed breach must occur while its class exists, so the list only
+     * shrinks; a class this build does not hold yet is not checked.
+     */
+    static final List<Breach> BREACHES = List.of(
+        new Breach(CONFLICT_DETECTION, DataSubmission.class.getName(),
+            "takes the stored submission entity from SubmissionUploads, and logs its uids; " + CONFLICT_REFACTOR),
+        new Breach(CONFLICT_DETECTION, TemplateVersionContext.class.getName(),
+            "takes the copy's form version context, for the row id check; " + CONFLICT_REFACTOR),
+        new Breach(CONFLICT_DETECTION, MigrationRepeatIdGenerator.class.getName(),
+            "asks the legacy route's id minting whether the copy has rows without ids; " + CONFLICT_REFACTOR),
+        new Breach(CONFLICT_DETECTION, StoredSubmissionGuard.class.getName(),
+            "asks the stored-record guard whether the uploader made the submission; " + CONFLICT_REFACTOR),
+        new Breach(CONFLICT_DETECTION, CurrentUserDetails.class.getName(),
+            "takes the uploader's access snapshot, for that question; " + CONFLICT_REFACTOR),
+        new Breach(CONFLICT_CHECK, ErrorCode.class.getName(),
+            "keeps a copy aside after a move on the v1 refusal codes E4124, E4114 and E4122; " + CONFLICT_REFACTOR));
+
     /**
      * Where SQL in new code may name system-of-record tables: the seam that owns the read, by source path prefix.
      * {@code data_submission} and the configuration tables are named only in the planned readers and the journal (and,
@@ -295,7 +325,7 @@ class NewCodeSeamsTest {
 
     /** (a) New code takes no dependency on retiring code. */
     static ArchRule newCodeDependsOnNoRetiringCode(DescribedPredicate<JavaClass> newCode) {
-        return noClasses().that(newCode).should().dependOnClassesThat(ofKind(RETIRING))
+        return classes().that(newCode).should(dependOnGuardedCodeOnlyAsListed(Set.of(RETIRING), false))
             .because("retiring derived structures get no dependency: no read, no write, no import (rule a)");
     }
 
@@ -317,14 +347,15 @@ class NewCodeSeamsTest {
 
     /** (b) New code reaches systems of record and transitional code only through the seams. */
     static ArchRule newCodeReachesOldCodeOnlyThroughSeams(DescribedPredicate<JavaClass> newCode) {
-        return classes().that(newCode).should(dependOnlyThroughSeams(Set.of(SYSTEM_OF_RECORD, TRANSITIONAL)))
+        return classes().that(newCode)
+            .should(dependOnGuardedCodeOnlyAsListed(Set.of(SYSTEM_OF_RECORD, TRANSITIONAL), true))
             .because("systems of record and the outbox are reached through one named seam each, never through their "
                 + "entities, tables, repositories or generic services (rule b)");
     }
 
     /** (c) New code takes no dependency on client contracts. */
     static ArchRule newCodeDependsOnNoClientContract(DescribedPredicate<JavaClass> newCode) {
-        return noClasses().that(newCode).should().dependOnClassesThat(ofKind(CLIENT_CONTRACT))
+        return classes().that(newCode).should(dependOnGuardedCodeOnlyAsListed(Set.of(CLIENT_CONTRACT), false))
             .because("installed clients' contracts are adapted at the edge; their shapes, uids and error codes never "
                 + "travel inward (rule c)");
     }
@@ -450,6 +481,26 @@ class NewCodeSeamsTest {
             classes().that().belongToAnyOf(leftover.type()).should().dependOnClassesThat(ofKind(RETIRING))
                 .because(leftover.type().getSimpleName() + " is listed as still depending on retiring code")
                 .check(MAIN);
+        }
+    }
+
+    /** A listed breach still occurs, in new code, on a dependency a rule guards; a class not built yet is skipped. */
+    @Test
+    void everyBreachStillOccurs() {
+        for (Breach breach : BREACHES) {
+            assertThat(breach.why()).as(breach.origin()).isNotBlank();
+            assertThat(kindOf(MAIN.get(breach.dependency())).orElse(null)).as(breach.dependency())
+                .isIn(RETIRING, TRANSITIONAL, SYSTEM_OF_RECORD, CLIENT_CONTRACT);
+            if (!MAIN.contain(breach.origin())) {
+                continue;
+            }
+            assertThat(kindOf(MAIN.get(breach.origin()))).as(breach.origin()).contains(NEW_CODE);
+            boolean occurs = MAIN.stream()
+                .filter(c -> c.getName().split("\\$", 2)[0].equals(breach.origin()))
+                .flatMap(c -> c.getDirectDependenciesFromSelf().stream())
+                .anyMatch(d -> d.getTargetClass().getBaseComponentType().getName().equals(breach.dependency()));
+            assertThat(occurs).as(breach.origin() + " no longer depends on " + breach.dependency() + ": remove the "
+                + "breach").isTrue();
         }
     }
 
@@ -594,6 +645,14 @@ class NewCodeSeamsTest {
     record Leftover(Class<?> type, String why) {
     }
 
+    /** A listed breach: new code in this class (nested classes included) depends on that class, and why. */
+    record Breach(String origin, String dependency, String why) {
+
+        boolean covers(JavaClass from, JavaClass target) {
+            return from.getName().split("\\$", 2)[0].equals(origin) && target.getName().equals(dependency);
+        }
+    }
+
     /** A seam's own SQL: the source (a file, or a package folder) where new code may name these tables, and why. */
     record SqlSeam(String source, Set<String> tables, boolean planned, String why) {
     }
@@ -637,16 +696,21 @@ class NewCodeSeamsTest {
         return MAIN.contain(name) ? MAIN.get(name) : MAIN.get(DataRunApiApp.class);
     }
 
-    /** Each dependency on code of these kinds that no seam allows is a violation, reported with its location. */
-    private static ArchCondition<JavaClass> dependOnlyThroughSeams(Set<Kind> guarded) {
-        return new ArchCondition<>("depend on " + guarded.stream().map(k -> k.label).collect(Collectors.joining(" or "))
-            + " only through the seams") {
+    /**
+     * Each dependency on code of the guarded kinds is a violation, reported with its location, unless a seam allows it
+     * (where seams apply) or a breach lists it.
+     */
+    private static ArchCondition<JavaClass> dependOnGuardedCodeOnlyAsListed(Set<Kind> guarded, boolean throughSeams) {
+        String kinds = guarded.stream().map(k -> k.label).sorted().collect(Collectors.joining(" or "));
+        return new ArchCondition<>(throughSeams ? "depend on " + kinds + " only through the seams"
+            : "depend on no " + kinds) {
             @Override
             public void check(JavaClass origin, ConditionEvents events) {
                 for (Dependency dependency : origin.getDirectDependenciesFromSelf()) {
                     JavaClass target = dependency.getTargetClass().getBaseComponentType();
-                    if (kindOf(target).filter(guarded::contains).isPresent()
-                        && SEAMS.stream().noneMatch(seam -> seam.allows(origin, target))) {
+                    boolean allowed = (throughSeams && SEAMS.stream().anyMatch(seam -> seam.allows(origin, target)))
+                        || BREACHES.stream().anyMatch(breach -> breach.covers(origin, target));
+                    if (kindOf(target).filter(guarded::contains).isPresent() && !allowed) {
                         events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
                     }
                 }

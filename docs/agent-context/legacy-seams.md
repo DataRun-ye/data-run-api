@@ -27,7 +27,7 @@ enforces them; change both together. Facts were read from `develop` on 2026-11-2
 | [`submission.feed`](../../src/main/java/org/nmcpye/datarun/submission/feed/) | the feed's switch and reader role; `publisher` writes the form dictionary, and the submission streams on `feat/feed-v1` | develop |
 | [`web.v2`](../../src/main/java/org/nmcpye/datarun/web/v2/) | v2's conventions (`api-v2.md`): problems, its security chain, `ApiCaller`, ids, paging, idempotent commands | develop |
 | [`jpa.datasubmission.revision`](../../src/main/java/org/nmcpye/datarun/jpa/datasubmission/revision/) | the journal: `SubmissionRevisionWriter`; `SubmissionRevisionReader` on `feat/review-s2` | develop |
-| `jpa.datasubmission.conflict` | conflict detection, called by `SubmissionUploads` for each upload item | feat/review-s2 |
+| `jpa.datasubmission.conflict` | conflict detection, called by `SubmissionUploads` for each upload item; it takes the values the write path computes, and its breaches are listed (Exceptions) until its seam refactor | feat/review-s2 |
 
 ## Retiring Derived
 
@@ -128,6 +128,15 @@ new code, these tables are named only by the write path.
 | --- | --- | --- |
 | [`OutboxClaimServiceImpl`](../../src/main/java/org/nmcpye/datarun/outbox/service/impl/OutboxClaimServiceImpl.java) | `etl.config.EtlProperties` (its claim lease) | the claim loop leaves `etl` |
 | [`OutboxProcessingServiceImpl`](../../src/main/java/org/nmcpye/datarun/outbox/service/impl/OutboxProcessingServiceImpl.java) | `etl.service.EtlRunService` (outcomes counted on the ETL's run) | the claim loop leaves `etl` |
+| `ConflictDetection` | `DataSubmission`: the stored entity from `SubmissionUploads`, whose uids it logs | removed by `refactor/conflict-detection-seam` |
+| `ConflictDetection` | `TemplateVersionContext`: the copy's form version, for the row id check | removed by `refactor/conflict-detection-seam` |
+| `ConflictDetection` | `MigrationRepeatIdGenerator`: whether the copy has rows without ids | removed by `refactor/conflict-detection-seam` |
+| `ConflictDetection` | `StoredSubmissionGuard`: whether the uploader made the submission | removed by `refactor/conflict-detection-seam` |
+| `ConflictDetection` | `CurrentUserDetails`: the uploader's access snapshot, for that question | removed by `refactor/conflict-detection-seam` |
+| `ConflictCheck` | `ErrorCode`: the v1 refusal codes E4124, E4114 and E4122 that keep a copy aside after a move | removed by `refactor/conflict-detection-seam` |
+
+The conflict detection rows apply from `feat/review-s2`, which lands before the guard (checked at `8649e9ef`). Each
+exception must still occur while its class exists.
 
 ## Gaps
 
