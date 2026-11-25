@@ -5,7 +5,7 @@ import org.nmcpye.datarun.etl.metrics.EtlHeartbeat;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.nmcpye.datarun.etl.orchestrator.EtlRunResult;
-import org.nmcpye.datarun.submission.feed.publisher.SubmissionPublisher;
+import org.nmcpye.datarun.outbox.processing.DeferredWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -29,9 +30,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * heartbeat monitor ({@link EtlHeartbeat}). Scheduling is enabled outside the test profiles;
  * {@code datarun.etl.enabled=false} stops this instance from polling.
  * <p>
- * While the submission feed is on, every poll takes the run lock, and once no outbox row is due it hands the feed's
- * publisher the work that waits behind the live backlog ({@link SubmissionPublisher#publishAfterBacklog}), one batch
- * at a time, with the live backlog first again after each, for as long as the poll may run.
+ * While an output keeps deferred work ({@link DeferredWork}, such as the submission feed's retries and reconcile),
+ * every poll takes the run lock, and once no outbox row is due it runs that work one batch at a time, with the live
+ * backlog first again after each, for as long as the poll may run.
  */
 @Service
 public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
@@ -54,21 +55,21 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
     private final EtlMetrics metrics;
     private final EtlProperties properties;
     private final EtlHeartbeat heartbeat;
-    private final SubmissionPublisher feed;
+    private final List<DeferredWork> deferredWork;
     private final AtomicReference<Duration> pause = new AtomicReference<>();
 
     private enum PollOutcome { SUCCEEDED, STOPPED, SKIPPED }
 
     public ScheduledOrchestratorRunner(NamedParameterJdbcTemplate jdbc, EtlOrchestrator orchestrator, EtlRunLock lock,
                                        EtlMetrics metrics, EtlProperties properties, EtlHeartbeat heartbeat,
-                                       SubmissionPublisher feed) {
+                                       List<DeferredWork> deferredWork) {
         this.jdbc = jdbc;
         this.orchestrator = orchestrator;
         this.lock = lock;
         this.metrics = metrics;
         this.properties = properties;
         this.heartbeat = heartbeat;
-        this.feed = feed;
+        this.deferredWork = List.copyOf(deferredWork);
         this.pause.set(properties.getPollDelay());
     }
 
@@ -110,11 +111,11 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
     }
 
     private PollOutcome poll() {
-        boolean publishing = feed.isOn();
-        if (!publishing && !rowsDue()) {
+        boolean deferring = deferredWork.stream().anyMatch(DeferredWork::isOn);
+        if (!deferring && !rowsDue()) {
             return PollOutcome.SUCCEEDED;
         }
-        Optional<Boolean> stopped = lock.callExclusively(() -> drain(publishing));
+        Optional<Boolean> stopped = lock.callExclusively(() -> drain(deferring));
         if (stopped.isEmpty()) {
             log.info("Another ETL run holds the lock; skipping this poll");
             return PollOutcome.SKIPPED;
@@ -137,11 +138,11 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
     }
 
     /**
-     * Claims batches while full ones come back, then, while the feed is on, runs the feed's batches behind the live
-     * backlog, claiming again first whenever a row is due; stops when nothing is left or the poll's time is up. True
-     * when a batch stopped on a lost connection or an interrupt.
+     * Claims batches while full ones come back, then runs batches of the outputs' deferred work, claiming again first
+     * whenever a row is due; stops when nothing is left or the poll's time is up. True when a batch stopped on a lost
+     * connection or an interrupt.
      */
-    private boolean drain(boolean publishing) {
+    private boolean drain(boolean deferring) {
         int batchSize = Math.max(1, properties.getBatchSize());
         long deadline = System.nanoTime() + properties.getMaxPollDuration().toNanos();
         while (true) {
@@ -157,9 +158,19 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
                     continue;
                 }
             }
-            if (!publishing || System.nanoTime() - deadline >= 0 || !feed.publishAfterBacklog()) {
+            if (!deferring || System.nanoTime() - deadline >= 0 || !runDeferredBatch()) {
                 return false;
             }
         }
+    }
+
+    /** One batch of the first deferred work that has any; whether there was one. */
+    private boolean runDeferredBatch() {
+        for (DeferredWork work : deferredWork) {
+            if (work.isOn() && work.runBatch()) {
+                return true;
+            }
+        }
+        return false;
     }
 }

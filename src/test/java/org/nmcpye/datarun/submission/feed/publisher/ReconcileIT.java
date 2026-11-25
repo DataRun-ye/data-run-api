@@ -6,7 +6,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.config.activation.ActivationSwitches;
-import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.nmcpye.datarun.submission.feed.publisher.FeedFixture.Ids;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,9 +58,6 @@ class ReconcileIT {
     @Autowired
     private FeedPublisherProperties properties;
 
-    @Autowired
-    private EtlProperties etlProperties;
-
     @Value("${spring.datasource.url}")
     private String url;
 
@@ -102,7 +98,7 @@ class ReconcileIT {
 
     private static int runUntilIdle(SubmissionPublisher publisher) {
         int batches = 0;
-        while (publisher.publishAfterBacklog()) {
+        while (publisher.runBatch()) {
             batches++;
         }
         return batches;
@@ -231,7 +227,7 @@ class ReconcileIT {
         }
         processedWithTheFeedOff();
         publisher.reconcileNightly();
-        assertThat(publisher.publishAfterBacklog()).isTrue();
+        assertThat(publisher.runBatch()).isTrue();
         Map<String, Long> writtenBeforeTheRestart = new java.util.HashMap<>();
         for (Ids submission : submissions) {
             Object position = fixture.record(submission).get("position");
@@ -243,8 +239,7 @@ class ReconcileIT {
             .isNotEmpty().hasSizeLessThanOrEqualTo(5);
 
         SubmissionPublisher restarted = new SubmissionPublisher(switches, dataSource, transactionManager, properties,
-            etlProperties, new FeedWriter(new FormDefinitions(), objectMapper, SplitPartners.NONE),
-            new SimpleMeterRegistry());
+            new FeedWriter(new FormDefinitions(), objectMapper, SplitPartners.NONE), new SimpleMeterRegistry());
         restarted.reconcileAtStart();
         runUntilIdle(restarted);
 

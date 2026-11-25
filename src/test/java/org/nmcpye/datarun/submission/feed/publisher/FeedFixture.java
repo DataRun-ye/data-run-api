@@ -373,6 +373,45 @@ final class FeedFixture {
         tx.executeWithoutResult(status -> update("DELETE FROM assignment WHERE id = 'fd-assignment-2'"));
     }
 
+    /**
+     * Makes every write to an analytics table ({@code tall_canonical} or {@code events}) raise an error, as a failing
+     * projection would, until {@link #mendLegacyWrites}.
+     */
+    void failLegacyWrites(String table) {
+        tx.executeWithoutResult(status -> {
+            jdbc.getJdbcTemplate().execute("""
+                CREATE OR REPLACE FUNCTION fd_test_fail() RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN
+                  RAISE EXCEPTION 'injected % failure', TG_TABLE_NAME;
+                END $$""");
+            jdbc.getJdbcTemplate().execute("DROP TRIGGER IF EXISTS fd_test_fail ON analytics." + table);
+            jdbc.getJdbcTemplate().execute("CREATE TRIGGER fd_test_fail BEFORE INSERT OR UPDATE ON analytics." + table
+                + " FOR EACH ROW EXECUTE FUNCTION fd_test_fail()");
+        });
+    }
+
+    /** Removes what {@link #failLegacyWrites} installed. */
+    void mendLegacyWrites() {
+        tx.executeWithoutResult(status -> {
+            jdbc.getJdbcTemplate().execute("DROP TRIGGER IF EXISTS fd_test_fail ON analytics.tall_canonical");
+            jdbc.getJdbcTemplate().execute("DROP TRIGGER IF EXISTS fd_test_fail ON analytics.events");
+            jdbc.getJdbcTemplate().execute("DROP FUNCTION IF EXISTS fd_test_fail()");
+        });
+    }
+
+    /** Ends the wait of the submission's outbox rows, as time passing would. */
+    void endOutboxWaits(Ids ids) {
+        execute("UPDATE outbox SET next_attempt_at = localtimestamp - interval '1 second' WHERE submission_id = :id",
+            Map.of("id", ids.id()));
+    }
+
+    /** The submission's outbox rows: status, attempt and last error, in order. */
+    List<Map<String, Object>> outboxRows(Ids ids) {
+        return jdbc.queryForList("""
+                SELECT status, attempt, last_error FROM outbox WHERE submission_id = :id ORDER BY outbox_id""",
+            Map.of("id", ids.id()));
+    }
+
     /** The submission's head version in the journal. */
     long head(Ids ids) {
         return jdbc.queryForObject("SELECT max(version) FROM journal.submission_revision WHERE submission_id = :id",
@@ -437,13 +476,17 @@ final class FeedFixture {
 
     /**
      * Removes everything the publisher's tests read or write: the outbox and the ETL's bookkeeping (as the ETL's own
-     * tests do), the feed's submission streams and freshness, feed_ops, and the fixture's submissions.
+     * tests do), the fixture's tall rows and events, the feed's submission streams and freshness, feed_ops, and the
+     * fixture's submissions.
      */
     void clean() {
+        mendLegacyWrites();
         tx.executeWithoutResult(status -> {
             update("DELETE FROM outbox_processing");
             update("DELETE FROM outbox");
             update("DELETE FROM etl_runs");
+            update("DELETE FROM analytics.tall_canonical WHERE submission_uid LIKE 'fd%'");
+            update("DELETE FROM analytics.events WHERE submission_uid LIKE 'fd%'");
             update("DELETE FROM feed.submission_row");
             update("DELETE FROM feed.submission");
             update("DELETE FROM feed.freshness");

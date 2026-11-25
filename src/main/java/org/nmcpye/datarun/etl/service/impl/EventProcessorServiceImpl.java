@@ -15,10 +15,8 @@ import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository
 import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
 import org.nmcpye.datarun.jpa.datatemplate.repository.CanonicalElementRepository;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
-import org.nmcpye.datarun.outbox.service.OutboxProcessingService;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -30,23 +28,20 @@ public class EventProcessorServiceImpl implements EventProcessorService {
     private final DataSubmissionRepository submissionRepository;
     private final TransformServiceV2 transformService;
     private final TallCanonicalJdbcRepository tallRepo;
-    private final OutboxProcessingService outboxProcessingService;
     private final DataSubmissionMapper dataSubmissionMapper;
     private final CanonicalElementRepository canonicalElementRepository;
     private final EventEntityJdbcRepository eventJdbcRepository;
 
     /**
-     * Projects one claimed outbox row and records its success, inside the caller's transaction, so the
-     * projection and the success are saved together. Any failure propagates: the caller rolls the transaction
-     * back and only then records the failure, in a transaction of its own.
+     * Projects one claimed outbox row into tall and events, inside the caller's transaction. Any failure propagates;
+     * the caller records the row's outcome.
      *
-     * @param etlRunId the current etl run id (used for bookkeeping)
-     * @param outbox   the claimed outbox DTO (contains event type, repeat ids, submission uid)
-     * @param ingestId the run-level ingest id assigned during claim
+     * @param outbox the claimed outbox DTO (event type, submission uid, and the ingest id its claim assigned)
      */
     @Override
-    public void processEvent(UUID etlRunId, OutboxDto outbox, UUID ingestId) {
+    public void processEvent(OutboxDto outbox) {
         if (outbox == null) return;
+        final var ingestId = outbox.getIngestId();
 
         final Long outboxId = outbox.getOutboxId();
         final String eventType = outbox.getEventType() == null ? "SAVE" : outbox.getEventType().toUpperCase();
@@ -54,9 +49,6 @@ public class EventProcessorServiceImpl implements EventProcessorService {
             eventJdbcRepository.markAllAsDeletedForSubmission(outbox.getSubmissionUid());
             log.debug("Deleted events rows for submission_uid={} (outboxId={})",
                 outbox.getSubmissionUid(), outboxId);
-
-            // record success (recordSuccess will update outbox.status and etl run counters)
-            outboxProcessingService.recordSuccess(etlRunId, outbox);
             return;
         }
 
@@ -90,7 +82,6 @@ public class EventProcessorServiceImpl implements EventProcessorService {
 
         if (flattenSubmission == null) {
             // nothing to persist -> still a successful processing
-            outboxProcessingService.recordSuccess(etlRunId, outbox);
             return;
         }
 
@@ -99,8 +90,6 @@ public class EventProcessorServiceImpl implements EventProcessorService {
             flattenSubmission.eventRows().size(), flattenSubmission.tallCanonicalRows().size(), submission.getUid());
         tallRepo.upsertBatch(submissionContext, flattenSubmission.tallCanonicalRows());
         eventJdbcRepository.patchUpsertEvents(submissionContext, flattenSubmission.eventRows());
-        // on success, record success (updates outbox and run counters)
-        outboxProcessingService.recordSuccess(etlRunId, outbox);
     }
 
 }

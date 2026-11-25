@@ -12,8 +12,8 @@ import java.lang.annotation.Target;
 /**
  * The application context the publisher's integration tests share: the switch on, a pool of six connections (writers,
  * publishers and readers run at once), a row timeout of ten seconds with a feed part limit of three, three attempts
- * before a pending change is dead, retries due at once, small batches, the split seam's stub, and a dictionary that is
- * not checked again during a test.
+ * before an outbox row or a pending change is dead, the feed's retries due at once, small batches, the split seam's
+ * stub, and a dictionary that is not checked again during a test.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -23,6 +23,7 @@ import java.lang.annotation.Target;
     "datarun.activation.submission-feed=true",
     "spring.datasource.hikari.maximum-pool-size=6",
     "datarun.etl.row-timeout=10s",
+    "datarun.etl.max-attempts=3",
     "datarun.feed.part-timeout=3s",
     "datarun.feed.max-attempts=3",
     "datarun.feed.retry-delay=0s",

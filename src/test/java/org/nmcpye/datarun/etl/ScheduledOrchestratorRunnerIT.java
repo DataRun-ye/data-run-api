@@ -16,7 +16,6 @@ import org.nmcpye.datarun.etl.metrics.EtlHeartbeat;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.nmcpye.datarun.etl.orchestrator.EtlRunResult;
-import org.nmcpye.datarun.submission.feed.publisher.SubmissionPublisher;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -40,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
-import static org.mockito.Mockito.mock;
 
 /**
  * When the scheduled runner starts a run, and the lock that keeps two runs from overlapping, against
@@ -109,7 +107,7 @@ class ScheduledOrchestratorRunnerIT {
 
     /** An orchestrator that claims the given batch sizes in turn, then nothing. */
     private EtlOrchestrator orchestratorClaiming(int... batches) {
-        return new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null, null) {
+        return new EtlOrchestrator(null, null, null, List.of(), null, null, new EtlProperties(), null) {
             @Override
             public EtlRunResult runOnce(String pipelineName, int batchSize) {
                 int run = runs.getAndIncrement();
@@ -125,8 +123,7 @@ class ScheduledOrchestratorRunnerIT {
 
     private ScheduledOrchestratorRunner runner(EtlOrchestrator orchestrator, EtlProperties properties) {
         return new ScheduledOrchestratorRunner(new NamedParameterJdbcTemplate(pool), orchestrator, new EtlRunLock(pool),
-            new EtlMetrics(registry, pool, properties), properties, new EtlHeartbeat(properties),
-            mock(SubmissionPublisher.class));
+            new EtlMetrics(registry, pool, properties), properties, new EtlHeartbeat(properties), List.of());
     }
 
     private ScheduledOrchestratorRunner runner(EtlOrchestrator orchestrator) {
@@ -210,7 +207,7 @@ class ScheduledOrchestratorRunnerIT {
     @Test
     void aRunThatFailsStillReleasesTheLock() {
         outboxRow("pending", null);
-        EtlOrchestrator failing = new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null, null) {
+        EtlOrchestrator failing = new EtlOrchestrator(null, null, null, List.of(), null, null, new EtlProperties(), null) {
             @Override
             public EtlRunResult runOnce(String pipelineName, int batchSize) {
                 throw new IllegalStateException("run failed");
@@ -294,7 +291,7 @@ class ScheduledOrchestratorRunnerIT {
         properties.setPollDelay(Duration.ofSeconds(30));
         properties.setMaxPollDelay(Duration.ofMinutes(5));
         boolean[] stopping = {true};
-        EtlOrchestrator orchestrator = new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null, null) {
+        EtlOrchestrator orchestrator = new EtlOrchestrator(null, null, null, List.of(), null, null, new EtlProperties(), null) {
             @Override
             public EtlRunResult runOnce(String pipelineName, int batchSize) {
                 return new EtlRunResult(1, 0, stopping[0] ? 1 : 0, stopping[0]);
@@ -340,7 +337,7 @@ class ScheduledOrchestratorRunnerIT {
         outboxRow("pending", null);
         EtlProperties properties = new EtlProperties();
         properties.setBatchSize(100);
-        EtlOrchestrator stopping = new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null, null) {
+        EtlOrchestrator stopping = new EtlOrchestrator(null, null, null, List.of(), null, null, new EtlProperties(), null) {
             @Override
             public EtlRunResult runOnce(String pipelineName, int batchSize) {
                 runs.incrementAndGet();

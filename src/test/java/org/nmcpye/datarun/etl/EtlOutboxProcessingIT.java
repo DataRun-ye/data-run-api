@@ -21,7 +21,7 @@ import org.nmcpye.datarun.etl.service.EventProcessorService;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.outbox.service.OutboxClaimService;
 import org.nmcpye.datarun.outbox.service.OutboxProcessingService;
-import org.nmcpye.datarun.submission.feed.publisher.SubmissionPublisher;
+import org.nmcpye.datarun.etl.service.impl.TallAndEventsOutput;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -84,9 +84,6 @@ class EtlOutboxProcessingIT {
 
     @Autowired
     private EtlMetrics metrics;
-
-    @Autowired
-    private SubmissionPublisher feed;
 
     private EtlFixture fixture;
     private AuditInsertWatchdog watchdog;
@@ -341,9 +338,10 @@ class EtlOutboxProcessingIT {
 
     /**
      * Whatever is logged anywhere while the projection fails, Spring's transaction and JDBC code at DEBUG
-     * included: when a rollback itself fails, Spring logs the projection's exception at ERROR, and its SQL error
-     * translation logs the driver's message at DEBUG. With logServerErrorDetail=false the driver puts neither
-     * the batch's bound values nor the server's Detail into its messages.
+     * included: their statement texts, and the ETL's own lines about the failure. The projection's failure is rolled
+     * back to its savepoint and recorded in the row's transaction, so Spring no longer rolls that transaction back on it
+     * nor logs it; when a rollback itself fails, Spring logs the failure at ERROR. With logServerErrorDetail=false the
+     * driver puts neither the batch's bound values nor the server's Detail into its messages.
      */
     @Test
     void aFailingProjectionLeavesNoSubmittedValueInAnyLogWithSpringAtDebug() {
@@ -354,9 +352,9 @@ class EtlOutboxProcessingIT {
         List<String> logged = logsOf(() -> orchestrator.runOnce("test", 10),
             "org.springframework.transaction", "org.springframework.jdbc", "org.springframework.orm", "org.nmcpye.datarun");
 
-        assertThat(logged).as("Spring logged the projection's exception itself").anySatisfy(line -> assertThat(line)
-            .contains("Initiating transaction rollback on application exception")
-            .contains("Batch entry 0 <unknown> was aborted"));
+        assertThat(logged).as("the failure was logged, with Spring's statements at DEBUG").anySatisfy(line ->
+            assertThat(line).contains("injected projection failure"))
+            .anySatisfy(line -> assertThat(line).startsWith("Executing SQL batch update"));
         assertThat(String.join("\n", logged))
             .doesNotContain("household failSub0001", "first visit", "member 1", "member 2", "Failing row contains");
     }
@@ -511,7 +509,7 @@ class EtlOutboxProcessingIT {
         });
         SimpleMeterRegistry polled = new SimpleMeterRegistry();
         ScheduledOrchestratorRunner runner = new ScheduledOrchestratorRunner(jdbc, poolTimingOut, new EtlRunLock(dataSource),
-            new EtlMetrics(polled, dataSource, etlProperties), etlProperties, new EtlHeartbeat(etlProperties), feed);
+            new EtlMetrics(polled, dataSource, etlProperties), etlProperties, new EtlHeartbeat(etlProperties), List.of());
 
         for (int poll = 1; poll <= 12; poll++) {
             runner.scheduledRun();
@@ -581,14 +579,14 @@ class EtlOutboxProcessingIT {
 
     /** The application's orchestrator, except that projecting a submission the predicate picks runs {@code failure}. */
     private EtlOrchestrator orchestratorFailing(Predicate<String> submissionUids, Runnable failure) {
-        EventProcessorService failingOnSomeRows = (runId, outbox, ingestId) -> {
+        EventProcessorService failingOnSomeRows = outbox -> {
             if (submissionUids.test(outbox.getSubmissionUid())) {
                 failure.run();
             }
-            eventProcessor.processEvent(runId, outbox, ingestId);
+            eventProcessor.processEvent(outbox);
         };
-        return new EtlOrchestrator(etlRunService, claimService, processingService, failingOnSomeRows, transactionManager,
-            etlProperties, metrics, feed);
+        return new EtlOrchestrator(etlRunService, claimService, processingService,
+            List.of(new TallAndEventsOutput(failingOnSomeRows)), transactionManager, dataSource, etlProperties, metrics);
     }
 
     /**

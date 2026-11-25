@@ -97,7 +97,7 @@ class RepublicationIT {
         assertThat(rowsBefore.get("r2")).containsEntry("deleted", true);
 
         mark(submission);
-        assertThat(publisher.publishAfterBacklog()).isTrue();
+        assertThat(publisher.runBatch()).isTrue();
 
         Map<String, Object> after = fixture.record(submission);
         assertThat(after).containsEntry("version", before.get("version"))
@@ -116,7 +116,7 @@ class RepublicationIT {
                 .isGreaterThan((Long) earlier.get("position"));
         });
         assertThat(mark(submission.id())).as("the mark is removed once written").isEmpty();
-        assertThat(publisher.publishAfterBacklog()).isFalse();
+        assertThat(publisher.runBatch()).isFalse();
     }
 
     /**
@@ -134,14 +134,14 @@ class RepublicationIT {
 
         fixture.unfixPlacement();
         mark(submission);
-        assertThat(publisher.publishAfterBacklog()).isTrue();
+        assertThat(publisher.runBatch()).isTrue();
         assertThat(mark(submission.id())).containsEntry("attempts", 1)
             .containsEntry("reason", FeedFailure.PLACEMENT_UNRESOLVED);
         assertThat(fixture.record(submission)).as("rolled back to its savepoint").isEqualTo(published);
         assertThat(fixture.pending(submission)).as("a republication is not a pending change").isEmpty();
 
         fixture.fixPlacement();
-        assertThat(publisher.publishAfterBacklog()).isTrue();
+        assertThat(publisher.runBatch()).isTrue();
         assertThat(mark(submission.id())).isEmpty();
         assertThat((Long) fixture.record(submission).get("position")).isGreaterThan((Long) published.get("position"));
     }
@@ -156,10 +156,10 @@ class RepublicationIT {
         drain();
         fixture.fixPlacement();
 
-        assertThat(publisher.publishAfterBacklog()).isTrue();
+        assertThat(publisher.runBatch()).isTrue();
         assertThat(fixture.record(retried)).as("the retry, first").isNotEmpty();
         assertThat(mark(republished.id())).as("the mark waits for the next batch").isNotEmpty();
-        assertThat(publisher.publishAfterBacklog()).isTrue();
+        assertThat(publisher.runBatch()).isTrue();
         assertThat(mark(republished.id())).isEmpty();
     }
 }

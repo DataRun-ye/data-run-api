@@ -6,7 +6,6 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.submission.feed.publisher.DictionaryPublisher;
-import org.nmcpye.datarun.submission.feed.publisher.SubmissionPublisher;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,8 +29,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * lock (contract 8).
  *
  * <ul>
- *   <li>ArchUnit: nothing outside the publisher's package reaches into it, except through its entry point,
- *       {@link SubmissionPublisher}, through which the ETL publishes its changes.</li>
+ *   <li>ArchUnit: nothing outside the publisher's package reaches into it. The runtime that applies outbox changes
+ *       reaches the publisher only through the seam it implements ({@code outbox.processing.ChangeOutput} and
+ *       {@code DeferredWork}), as Spring wires it.</li>
  *   <li>Text, which ArchUnit cannot see, scanned as a tripwire, not proof. In the main sources outside the publisher
  *       it flags: a schema-qualified feed relation in a string literal or text block, named or written; a search path
  *       set to the feed; a JPA mapping to either schema ({@code schema = "feed"}, as {@code @Table} and the other
@@ -56,8 +56,8 @@ class FeedWriteOwnershipTest {
         .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
         .importPackages("org.nmcpye.datarun");
 
-    /** The publisher's entry point for other packages: the ETL publishes its changes through it. */
-    private static final Class<?>[] ENTRY_POINTS = {SubmissionPublisher.class};
+    /** The publisher's entry points for other packages: none, since the runtime reaches it through the seam. */
+    private static final Class<?>[] ENTRY_POINTS = {};
 
     static final ArchRule ONLY_THE_PUBLISHER_WRITES_THE_FEED = noClasses()
         .that().resideOutsideOfPackage(PUBLISHER + "..")

@@ -17,8 +17,9 @@ public class FeedPublisherProperties {
 
     /**
      * How long one submission's feed part may take: its statements are cancelled once it has run this long, and the
-     * change waits in the retry list. Kept below the ETL's row timeout ({@code datarun.etl.row-timeout}): a setting at
-     * or above it is replaced by half the row timeout, so the feed part always fails before the row's transaction does.
+     * change waits in the retry list. It must stay below the row timeout of the runtime that applies outbox changes
+     * ({@code datarun.etl.row-timeout}), which refuses to start otherwise, so the feed part always fails before the
+     * row's transaction does.
      */
     private Duration partTimeout = Duration.ofSeconds(20);
 

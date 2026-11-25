@@ -85,12 +85,12 @@ class PendingRetriesIT {
         assertThat(fixture.pending(submission)).containsEntry("attempts", 1);
 
         fixture.fixPlacement();
-        assertThat(publisher.publishAfterBacklog()).isTrue();
+        assertThat(publisher.runBatch()).isTrue();
 
         assertThat(fixture.record(submission)).containsEntry("version", 0L);
         assertThat(fixture.rows(submission)).hasSize(1);
         assertThat(fixture.pending(submission)).isEmpty();
-        assertThat(publisher.publishAfterBacklog()).as("nothing left to retry").isFalse();
+        assertThat(publisher.runBatch()).as("nothing left to retry").isFalse();
     }
 
     @Test
@@ -99,15 +99,15 @@ class PendingRetriesIT {
         drain();
         assertThat(fixture.pending(submission)).containsEntry("attempts", 1).containsEntry("dead_at", null);
 
-        assertThat(publisher.publishAfterBacklog()).isTrue();
+        assertThat(publisher.runBatch()).isTrue();
         assertThat(fixture.pending(submission)).containsEntry("attempts", 2).containsEntry("dead_at", null);
 
-        assertThat(publisher.publishAfterBacklog()).isTrue();
+        assertThat(publisher.runBatch()).isTrue();
         Map<String, Object> dead = fixture.pending(submission);
         assertThat(dead).containsEntry("attempts", 3).containsEntry("reason", FeedFailure.PLACEMENT_UNRESOLVED);
         assertThat(dead.get("dead_at")).as("dead at the cap").isNotNull();
 
-        assertThat(publisher.publishAfterBacklog()).as("a dead change is not retried").isFalse();
+        assertThat(publisher.runBatch()).as("a dead change is not retried").isFalse();
         assertThat(fixture.pending(submission)).isEqualTo(dead);
         assertThat(fixture.record(submission)).isEmpty();
     }
@@ -116,8 +116,8 @@ class PendingRetriesIT {
     void aLaterLiveChangeOfADeadSubmissionPublishesItAndClearsTheDeadChange() {
         Ids submission = unplaced();
         drain();
-        publisher.publishAfterBacklog();
-        publisher.publishAfterBacklog();
+        publisher.runBatch();
+        publisher.runBatch();
         assertThat(fixture.pending(submission).get("dead_at")).isNotNull();
 
         fixture.fixPlacement();
