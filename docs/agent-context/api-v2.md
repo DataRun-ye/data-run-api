@@ -98,3 +98,20 @@ and its error shapes are untouched.
     `Link: <...>; rel="version-history"`.
 - The comparison runs after the idempotency key is claimed and the resource's
   row is locked (Idempotency, below), never before.
+
+## Paging
+
+- Lists use keyset paging (`web.v2.paging`): `limit` (default 50, 1 to 200,
+  otherwise 400 `bad-request`) and an opaque `cursor`; a handler takes
+  `PageQuery` as a parameter.
+- The answer is `{"items": [...], "next": <cursor or null>}`; `next` is always
+  present. A GET also sends `Link: <...>; rel="next"`, a relative reference to
+  the same request with the cursor replaced. There are no totals.
+- A cursor is base64url text holding the sort key of the last item shown and
+  a binding to its query (`QueryBinding`: the list's name and its filters,
+  order-insensitive; the limit may change between pages). A cursor of another
+  query, or anything else, is 400 `invalid-cursor`, never repeated back. It is
+  not signed: it holds sort keys only, and the query after it still applies
+  the caller's filters and access.
+- A query reads `limit + 1` rows after the position, ordered by a unique key;
+  `Keyset.page` turns them into the page and its next cursor.
