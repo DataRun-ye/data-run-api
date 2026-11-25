@@ -33,9 +33,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 /**
  * The v2 OpenAPI check, as a unit test so the release gate ({@code ./mvnw test} in {@code scripts/release/verify.sh})
  * runs it; the repository has no CI. It generates the v2 document from the v2 controllers alone, in a web slice
- * without a database, and compares it with the published contract, {@code docs/api/openapi-v2.json}
- * ({@link OpenApiCompatibility}): a breaking change fails; any other difference fails too until the snapshot is
- * updated, so the snapshot always is the contract.
+ * without a database, and:
+ * <ol>
+ *   <li>checks the conventions that show in the document ({@link V2Conventions});</li>
+ *   <li>compares it with the published contract, {@code docs/api/openapi-v2.json} ({@link OpenApiCompatibility}):
+ *       a breaking change fails; any other difference fails too until the snapshot is updated, so the snapshot
+ *       always is the contract.</li>
+ * </ol>
  * To publish an additive change: {@code ./mvnw test -Dtest=V2OpenApiContractTest -Dopenapi.v2.update=true}, then
  * commit the snapshot with the change. A breaking change also needs {@code -Dopenapi.v2.acceptBreaking=true}: v2 takes
  * one only by a reviewed decision. A controller with collaborators adds them here as {@code @MockitoBean}s; the
@@ -68,6 +72,14 @@ class V2OpenApiContractTest {
     private JsonNode generated() throws Exception {
         String json = mvc.perform(get(V2OpenApiConfiguration.DOCS_PATH)).andReturn().getResponse().getContentAsString();
         return OpenApiDocuments.read(json);
+    }
+
+    @Test
+    void theDocumentKeepsTheV2Conventions() throws Exception {
+        JsonNode document = generated();
+        assertThat(V2Conventions.violations(document)).isEmpty();
+        assertThat(document.path("components").path("schemas").path("Id").path("maxLength").asInt()).isEqualTo(36);
+        assertThat(document.path("components").path("schemas").path("Id").has("format")).isFalse();
     }
 
     @Test

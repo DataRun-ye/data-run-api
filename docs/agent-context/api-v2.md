@@ -262,3 +262,13 @@ Deploying a release and turning on what it brings are separate steps
   compared as a set (`["string", "null"]`). Schemas are compared through the
   operations that use them; E0 publishes no operation yet, so its check bites
   from the first v2 route on (the test proves it fails on a deliberate break).
+- The same test checks the conventions that show in the document
+  (`V2Conventions`): paths under `/api/v2` in kebab-case with `{camelCase}`
+  variables and `:verb` actions; GET, POST and DELETE only; camelCase members
+  and parameters; UPPER_SNAKE enumeration values; no bare `status` outside the
+  problem; ids are the `Id` schema and never a `uid`; no `format: uuid` but
+  the `Idempotency-Key` header; a default problem response and the global
+  bearer requirement.
+- `V2ArchitectureTest`: nothing in `web.v2` touches a JPA entity (domain work
+  for v2 lives outside it and hands it its own types), and nothing in
+  `web.v2` uses the v1 resources in `web.rest`.
