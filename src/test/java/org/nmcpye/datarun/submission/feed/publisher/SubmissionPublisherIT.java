@@ -341,6 +341,63 @@ class SubmissionPublisherIT {
         return false;
     }
 
+    /**
+     * A restart in the middle of a publication: the row's connection is lost while its feed part runs, so nothing of
+     * the row commits; the row is recorded for a retry, and the next run publishes it once.
+     */
+    @Test
+    @org.junit.jupiter.api.Timeout(60)
+    void aRowWhoseConnectionIsLostMidPublicationIsPublishedOnceByTheNextRun() throws Exception {
+        Ids submission = fixture.create(document("first", 1, row("r1", "a")));
+        fixture.execute("""
+            CREATE OR REPLACE FUNCTION fd_test_hold() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN
+              PERFORM pg_sleep(30);
+              RETURN NEW;
+            END $$""", Map.of());
+        fixture.execute("""
+            CREATE TRIGGER fd_test_hold AFTER INSERT OR UPDATE ON feed.submission
+            FOR EACH ROW EXECUTE FUNCTION fd_test_hold()""", Map.of());
+        try {
+            CompletableFuture<Void> etl = CompletableFuture.runAsync(this::drain);
+            try (Connection watcher = fixture.connect()) {
+                long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20);
+                boolean terminated = false;
+                while (!terminated && System.nanoTime() < deadline) {
+                    try (PreparedStatement kill = watcher.prepareStatement("""
+                        SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+                        WHERE datname = current_database() AND state = 'active' AND pid <> pg_backend_pid()
+                          AND query ILIKE '%INSERT INTO feed.submission%'""");
+                         ResultSet killed = kill.executeQuery()) {
+                        terminated = killed.next() && killed.getBoolean(1);
+                    }
+                    Thread.sleep(50);
+                }
+                assertThat(terminated).as("the row's session was found in its feed part and ended").isTrue();
+            }
+            etl.get(30, TimeUnit.SECONDS);
+        } finally {
+            fixture.execute("DROP TRIGGER IF EXISTS fd_test_hold ON feed.submission", Map.of());
+            fixture.execute("DROP FUNCTION IF EXISTS fd_test_hold()", Map.of());
+        }
+        assertThat(fixture.record(submission)).as("nothing of the row committed").isEmpty();
+        assertThat(fixture.outboxRows(submission)).singleElement()
+            .satisfies(row -> assertThat(row).containsEntry("status", "failed"));
+
+        fixture.endOutboxWaits(submission);
+        drain();
+
+        assertThat(fixture.record(submission)).containsEntry("version", 0L);
+        assertThat(fixture.rows(submission)).hasSize(1);
+        assertThat(fixture.outboxStatuses(submission)).containsExactly("success");
+        assertThat(fixture.count("""
+                SELECT count(*) FROM (SELECT x.position
+                                      FROM (SELECT position FROM feed.submission
+                                            UNION ALL SELECT position FROM feed.submission_row) x
+                                      GROUP BY x.position HAVING count(*) > 1) d""", Map.of())).isZero();
+        assertThat(fixture.pending(submission)).isEmpty();
+    }
+
     /** The split seam: a submission's partner is published with it, and the partner's own change is then skipped. */
     @Test
     void aSplitPartnersHeadIsPublishedInTheSameTransaction() {
