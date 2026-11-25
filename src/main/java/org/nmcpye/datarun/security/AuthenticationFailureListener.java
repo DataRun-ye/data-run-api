@@ -52,8 +52,9 @@ public class AuthenticationFailureListener
 
     /**
      * Only a username-and-password login is logged. Spring Security also reports a rejected bearer token as bad
-     * credentials (an InvalidBearerTokenException, with the raw token as the principal): such a request logs nothing,
-     * and the invalid-token meter ({@code security.authentication.invalid-tokens}) counts it by cause.
+     * credentials (an InvalidBearerTokenException, with the raw token as the principal), which is not logged here: the
+     * invalid-token meter ({@code security.authentication.invalid-tokens}) counts an expired, badly signed or
+     * malformed token by cause, and SecurityJwtConfiguration logs any other rejection with the decoder's message.
      */
     @Override
     public void onApplicationEvent(AuthenticationFailureBadCredentialsEvent event) {
