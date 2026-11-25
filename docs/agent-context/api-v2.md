@@ -115,3 +115,14 @@ and its error shapes are untouched.
   the caller's filters and access.
 - A query reads `limit + 1` rows after the position, ordered by a unique key;
   `Keyset.page` turns them into the page and its next cursor.
+
+## Caller
+
+- A v2 handler that needs to know who is asking takes `web.v2.caller.ApiCaller`:
+  the account's durable user id and its current authorities, as the v2 chain
+  loaded them for this request; commands receive it in their context.
+- It is the seam for access decisions, not a decision. No permission for
+  changing data is wired in v2 yet: operations divide work by action
+  (monitoring, auditing and reviewing, making changes, feedback), so the model
+  will be per action and scoped by activity, designed after the glossary.
+- Records name the caller by user id, never by login.

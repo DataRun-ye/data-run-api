@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.web.v2.config;
 
+import org.nmcpye.datarun.web.v2.caller.ApiCallerResolver;
 import org.nmcpye.datarun.web.v2.paging.PageQueryResolver;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
@@ -17,5 +18,6 @@ public class V2WebMvcConfiguration implements WebMvcConfigurer {
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
         resolvers.add(new PageQueryResolver());
+        resolvers.add(new ApiCallerResolver());
     }
 }
