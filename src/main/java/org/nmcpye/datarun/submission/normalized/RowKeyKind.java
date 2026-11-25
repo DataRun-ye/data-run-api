@@ -13,7 +13,7 @@ public enum RowKeyKind {
     /**
      * An earlier row of the same submission already has the id this row would get, usually because both carry the
      * same stored {@code _id}; the id is derived from this row's position instead
-     * ({@link DerivedIds#duplicateRowKey}), so no two rows of a submission share an id. Flagged
+     * ({@link DerivedIds#duplicateRowId}), so no two rows of a submission share an id. Flagged
      * {@link NormalizationFlag#DUPLICATE_ID}; the row keeps its stored id in {@link NormalizedRow#storedId()}.
      */
     DUPLICATE_ID

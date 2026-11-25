@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * Resolves a stored submission against its pinned form version into a {@link NormalizedSubmission}.
@@ -38,15 +37,16 @@ import java.util.UUID;
  *   <li>A row's {@code _id}, {@code _index}, {@code _parentId} and {@code _submissionUid}, and the root's
  *       {@code _status}, are structure, not values (the spike found every one consistent with the structure and the
  *       {@code status} column).</li>
- *   <li>A row is keyed by its stored {@code _id} exactly as stored; a row without one gets a derived id
- *       ({@link DerivedIds}). Its parent is the row it is nested in, through any plain sections between them.</li>
+ *   <li>A row is keyed by its stored {@code _id} exactly as stored; a row without one gets a derived id, hashed from
+ *       the submission's id, its section path, its parent row's id and its index ({@link DerivedIds}). Its parent is
+ *       the row it is nested in, through any plain sections between them.</li>
  * </ul>
  *
  * <p><b>Ids and fields used twice</b> (none on the staging clone) resolve by fixed rules, so keys stay unique:</p>
  * <ul>
  *   <li>A row whose id an earlier row of the submission already has, in walk order (arrays in stored order,
  *       sections in key order), keeps its stored id in {@link NormalizedRow#storedId()} but is keyed by its
- *       position-derived id ({@link RowKeyKind#DUPLICATE_ID}, {@link DerivedIds#duplicateRowKey}). The first row
+ *       position-derived id ({@link RowKeyKind#DUPLICATE_ID}, {@link DerivedIds#duplicateRowId}). The first row
  *       keeps the id: it is the one a phone or a reader most likely already knows by it.</li>
  *   <li>Two stored paths of one row, or of the submission outside every row, that resolve to the same section and
  *       field: the value resolved by the pinned version's own definition stays, otherwise the first in walk order;
@@ -86,7 +86,7 @@ public final class SubmissionNormalizer {
         if (pinned == null) {
             flags.put(NormalizationFlag.PINNED_VERSION_MISSING, 1);
         }
-        Walk walk = new Walk(definition, pinned, DerivedIds.submissionKey(submission.id()), flags);
+        Walk walk = new Walk(definition, pinned, submission.id(), flags);
         Container top = new Container();
         JsonNode data = submission.formData();
         if (data != null && !data.isNull() && !data.isMissingNode()) {
@@ -132,16 +132,16 @@ public final class SubmissionNormalizer {
 
         private final FormDefinition form;
         private final FormVersionDefinition pinned;
-        private final UUID submissionKey;
+        private final String submissionId;
         private final Map<NormalizationFlag, Integer> flags;
         private final List<NormalizedRow> rows = new ArrayList<>();
         private final Set<String> rowIds = new HashSet<>();
 
-        Walk(FormDefinition form, FormVersionDefinition pinned, UUID submissionKey,
+        Walk(FormDefinition form, FormVersionDefinition pinned, String submissionId,
              Map<NormalizationFlag, Integer> flags) {
             this.form = form;
             this.pinned = pinned;
-            this.submissionKey = submissionKey;
+            this.submissionId = submissionId;
             this.flags = flags;
         }
 
@@ -261,30 +261,26 @@ public final class SubmissionNormalizer {
             String storedId = storedIdNode == null || storedIdNode.isNull() ? null
                 : storedIdNode.isTextual() ? storedIdNode.textValue() : storedIdNode.toString();
             if (storedId == null || storedId.isEmpty()) {
-                UUID derived = DerivedIds.derivedRowKey(
-                    submissionKey, sectionPath, parent == null ? null : parent.key(), index);
-                return new RowKey(derived.toString(), derived, RowKeyKind.DERIVED, null);
+                return new RowKey(DerivedIds.derivedRowId(submissionId, sectionPath, parent == null ? null : parent.id(),
+                    index), RowKeyKind.DERIVED, null);
             }
-            UUID ulid = DerivedIds.ulidToUuid(storedId);
-            return ulid != null
-                ? new RowKey(storedId, ulid, RowKeyKind.CLIENT, storedId)
-                : new RowKey(storedId, DerivedIds.legacyRowKey(submissionKey, storedId), RowKeyKind.LEGACY, storedId);
+            return new RowKey(storedId, DerivedIds.isUlid(storedId) ? RowKeyKind.CLIENT : RowKeyKind.LEGACY, storedId);
         }
 
-        /** The first free id of {@link DerivedIds#duplicateRowKey}'s attempts. */
+        /** The first free id of {@link DerivedIds#duplicateRowId}'s attempts. */
         private RowKey duplicateKey(String storedId, String sectionPath, RowKey parent, int index) {
-            UUID parentKey = parent == null ? null : parent.key();
+            String parentId = parent == null ? null : parent.id();
             for (int attempt = 1; ; attempt++) {
-                UUID key = DerivedIds.duplicateRowKey(submissionKey, sectionPath, parentKey, index, attempt);
-                if (!rowIds.contains(key.toString())) {
-                    return new RowKey(key.toString(), key, RowKeyKind.DUPLICATE_ID, storedId);
+                String id = DerivedIds.duplicateRowId(submissionId, sectionPath, parentId, index, attempt);
+                if (!rowIds.contains(id)) {
+                    return new RowKey(id, RowKeyKind.DUPLICATE_ID, storedId);
                 }
             }
         }
     }
 
-    /** A row's id, the key a derived id of a row nested in it is computed from, and its stored id. */
-    private record RowKey(String id, UUID key, RowKeyKind kind, String storedId) {
+    /** A row's id, where it comes from, and its stored id. */
+    private record RowKey(String id, RowKeyKind kind, String storedId) {
     }
 
     /** What identifies a value inside one row, or outside every row. */
