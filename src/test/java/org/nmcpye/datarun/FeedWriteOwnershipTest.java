@@ -31,17 +31,25 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <ul>
  *   <li>ArchUnit: nothing outside the publisher's package reaches into it, except through its entry points. It has
  *       none yet: it schedules its own work. The step that hands it the ETL's changes adds its entry point here.</li>
- *   <li>SQL text, which ArchUnit cannot see, scanned as a tripwire, not proof: a schema-qualified feed relation is
- *       named, and written, only in the publisher's sources and in the Liquibase changelogs. The two schemas are on no
- *       search path, so SQL reaches them only by qualifying them, or by setting a search path, which the scan flags
- *       too. SQL assembled at run time from names held elsewhere is not seen.</li>
+ *   <li>Text, which ArchUnit cannot see, scanned as a tripwire, not proof. In the main sources outside the publisher
+ *       it flags: a schema-qualified feed relation in a string literal or text block, named or written; a search path
+ *       set to the feed; a JPA mapping to either schema ({@code schema = "feed"}, as {@code @Table} and the other
+ *       mapping annotations take it); and {@code withSchemaName("feed")}, as {@code SimpleJdbcInsert} and
+ *       {@code SimpleJdbcCall} take it. In the resources, any feed relation or {@code schemaName="feed"} outside the
+ *       feed's own changelogs ({@code config/liquibase/changelog/feed/}).</li>
  * </ul>
+ * <p>What it cannot see: names split across literals or held in constants and assembled at run time
+ * ({@code "feed" + "." + table}); SQL read from files outside the main resources; a schema given to JPA by
+ * {@code orm.xml}, a naming strategy or a default schema setting; unqualified names reaching the feed through a search
+ * path set by the connection's configuration or the database role. The two schemas are on no search path, so SQL
+ * reaches them only in one of these ways or by naming them, which the scan flags.</p>
  */
 class FeedWriteOwnershipTest {
 
     private static final String PUBLISHER = "org.nmcpye.datarun.submission.feed.publisher";
     private static final String PUBLISHER_SOURCES = "org/nmcpye/datarun/submission/feed/publisher/";
-    private static final String RESOURCES_NAMED_IN = "config/liquibase/";
+    /** The feed's own changelogs: the only resources that may name its relations. */
+    private static final String RESOURCES_NAMED_IN = "config/liquibase/changelog/feed/";
 
     private static final JavaClasses MAIN = new ClassFileImporter()
         .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
@@ -68,6 +76,13 @@ class FeedWriteOwnershipTest {
         + "|truncate(?:\\s+table)?|copy|alter\\s+table|drop\\s+table|create\\s+(?:unlogged\\s+)?table)\\s+"
         + "(?:only\\s+)?(?:if\\s+(?:not\\s+)?exists\\s+)?" + QUOTE + "(feed(?:_ops)?)" + QUOTE + "\\s*\\.");
     private static final Pattern SEARCH_PATH = Pattern.compile("(?i)search_path.*\\bfeed(?:_ops)?\\b");
+    /** A JPA mapping to either schema: {@code schema = "feed"} in {@code @Table} and the other mapping annotations. */
+    private static final Pattern JPA_SCHEMA = Pattern.compile("\\bschema\\s*=\\s*\"(feed(?:_ops)?)\"");
+    /** {@code withSchemaName("feed")}, as {@code SimpleJdbcInsert} and {@code SimpleJdbcCall} take it. */
+    private static final Pattern JDBC_SCHEMA =
+        Pattern.compile("\\bwithSchemaName\\s*\\(\\s*\"(feed(?:_ops)?)\"\\s*\\)");
+    /** Liquibase's {@code schemaName="feed"}, as structured changes take it. */
+    private static final Pattern CHANGELOG_SCHEMA = Pattern.compile("\\bschemaName\\s*=\\s*\"(feed(?:_ops)?)\"");
     /** "feed." ends many an English sentence, so a relation counts only beside an SQL word or as a whole literal. */
     private static final Pattern SQL_WORD = Pattern.compile("(?i)\\b(select|insert|update|delete|merge|truncate|copy"
         + "|from|into|join|where|set|values|returning|alter|drop|create|table|grant|revoke|lock)\\b");
@@ -172,6 +187,32 @@ class FeedWriteOwnershipTest {
             .containsExactly("outside config/application.yml:1: names feed.freshness in \"query: UPDATE feed.freshness "
                 + "SET backlog = 0\"");
         assertThat(resourceFindings("config/liquibase/changelog/feed/x.xml", "DROP TABLE feed.freshness")).isEmpty();
+        assertThat(resourceFindings("config/liquibase/changelog/etl/x.xml", String.join("\n",
+            "<sql>UPDATE feed.freshness SET dead = 0</sql>",
+            "<insert schemaName=\"feed_ops\" tableName=\"pending\">")))
+            .as("another changelog, in SQL or as a structured change").containsExactly(
+                "outside config/liquibase/changelog/etl/x.xml:1: names feed.freshness in \"<sql>UPDATE feed.freshness "
+                    + "SET dead = 0</sql>\"",
+                "outside config/liquibase/changelog/etl/x.xml:2: names schema feed_ops in \"<insert "
+                    + "schemaName=\"feed_ops\" tableName=\"pending\">\"");
+    }
+
+    @Test
+    void theScanFlagsMappingsToTheFeedsSchemas() {
+        String source = String.join("\n",
+            "// @Table(schema = \"feed\") in a comment",
+            "/* new SimpleJdbcInsert(ds).withSchemaName(\"feed\") in a block comment */",
+            "@Table(name = \"submission\", schema = \"feed\")",
+            "@Table(schema=\"feed_ops\", name = \"pending\")",
+            "SimpleJdbcInsert insert = new SimpleJdbcInsert(ds).withSchemaName( \"feed\" ).withTableName(\"x\");",
+            "String text = \"schema = \\\"feed\\\" said in a literal\";");
+        assertThat(sourceFindings("org/nmcpye/datarun/web/X.java", source)).containsExactly(
+            "outside org/nmcpye/datarun/web/X.java: maps to schema feed in \"schema = \"feed\"\"",
+            "outside org/nmcpye/datarun/web/X.java: maps to schema feed_ops in \"schema=\"feed_ops\"\"",
+            "outside org/nmcpye/datarun/web/X.java: maps to schema feed in \"withSchemaName( \"feed\" )\"");
+        assertThat(sourceFindings(PUBLISHER_SOURCES + "X.java", source)).hasSize(3)
+            .allMatch(finding -> finding.startsWith("allowed "));
+        assertThat(withoutComments("a // b \"c\"\n\"d // e\" /* f */ g")).isEqualTo("a \n\"d // e\"  g");
     }
 
     /** What a Java source says about the feed's relations: one entry each, starting "allowed " or "outside ". */
@@ -198,10 +239,50 @@ class FeedWriteOwnershipTest {
                 findings.add(where + path + ": sets a search path to the feed in \"" + literal + "\"");
             }
         }
+        String code = withoutComments(source);
+        for (Pattern schema : List.of(JPA_SCHEMA, JDBC_SCHEMA)) {
+            Matcher mapping = schema.matcher(code);
+            while (mapping.find()) {
+                findings.add(where + path + ": maps to schema " + mapping.group(1) + " in \"" + mapping.group() + "\"");
+            }
+        }
         return findings;
     }
 
-    /** Lines of a resource that name the feed's relations outside the changelogs. */
+    /** Java source without its comments, string literals and text blocks kept as they are. */
+    static String withoutComments(String source) {
+        StringBuilder code = new StringBuilder(source.length());
+        int i = 0;
+        while (i < source.length()) {
+            if (source.startsWith("//", i)) {
+                int end = source.indexOf('\n', i);
+                i = end < 0 ? source.length() : end;
+            } else if (source.startsWith("/*", i)) {
+                int end = source.indexOf("*/", i + 2);
+                i = end < 0 ? source.length() : end + 2;
+            } else if (source.startsWith("\"\"\"", i)) {
+                int end = source.indexOf("\"\"\"", i + 3);
+                end = end < 0 ? source.length() : end + 3;
+                code.append(source, i, end);
+                i = end;
+            } else if (source.charAt(i) == '"' || source.charAt(i) == '\'') {
+                char quote = source.charAt(i);
+                int j = i + 1;
+                while (j < source.length() && source.charAt(j) != quote) {
+                    j += source.charAt(j) == '\\' ? 2 : 1;
+                }
+                int end = Math.min(j + 1, source.length());
+                code.append(source, i, end);
+                i = end;
+            } else {
+                code.append(source.charAt(i));
+                i++;
+            }
+        }
+        return code.toString();
+    }
+
+    /** Lines of a resource that name the feed's relations or schemas outside the feed's own changelogs. */
     static List<String> resourceFindings(String path, String text) {
         if (path.startsWith(RESOURCES_NAMED_IN)) {
             return List.of();
@@ -213,6 +294,11 @@ class FeedWriteOwnershipTest {
             while (SQL_WORD.matcher(lines[i]).find() && relation.find()) {
                 findings.add("outside " + path + ":" + (i + 1) + ": names " + relation.group(1).toLowerCase(Locale.ROOT)
                     + "." + relation.group(2) + " in \"" + lines[i].strip() + "\"");
+            }
+            Matcher schema = CHANGELOG_SCHEMA.matcher(lines[i]);
+            while (schema.find()) {
+                findings.add("outside " + path + ":" + (i + 1) + ": names schema " + schema.group(1) + " in \""
+                    + lines[i].strip() + "\"");
             }
         }
         return findings;
