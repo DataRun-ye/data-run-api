@@ -388,7 +388,7 @@ accept with phone re-sends, unchanged and changed, with and without row ids, and
 The v2 foundation's rules apply as built ([api-v2.md](../../agent-context/api-v2.md), Concurrency and Changing
 Requests). A submission's `ETag` is its version (`"4"`, also shown as `version`; a conflict's is its own, §7), and
 `If-Match` is required on every changing method (428 when missing, 412 when stale). Each changing transaction
-claims the `Idempotency-Key`, takes the submission lock (`SELECT … FOR UPDATE`, the first read), checks `If-Match`,
+claims the `Idempotency-Key`, takes the submission lock (`SELECT … FOR NO KEY UPDATE`, the first read), checks `If-Match`,
 validates and applies, records the outcome on the key, and commits; a rolled-back attempt takes its claim with it.
 
 This feature adds (engineering, 2026-11-25): the upload routes and the v1 admin delete take the same submission lock

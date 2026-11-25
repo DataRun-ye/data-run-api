@@ -251,7 +251,7 @@ Operations never see these: they see history and "deleted".
 | **Lineage** | The submissions linked by splits, splits of splits included, recorded both ways. API: `splitFrom`, `splitTo` |
 | **Live** | Not deleted, for a submission; in a live submission's current state, for a row. A row id is live in at most one submission of a lineage |
 | **Unmapped value** | A stored value no field keys, kept whole at its path: mostly one at a path no version of its form defines, also a second value for a field that already has one. A split cannot name a top-level one, so it stays in the source; one inside a split row travels with the row |
-| **Submission lock** | The database lock on the submission (`SELECT … FOR UPDATE` on `data_submission`), taken first in every changing transaction, the upload routes' included. _Avoid_: row lock |
+| **Submission lock** | The database lock on the submission (`SELECT … FOR NO KEY UPDATE` on `data_submission`, the lock every update of it takes), taken first in every changing transaction, the upload routes' included, and waited for at most `datarun.submissions.lock-timeout` (5 s). _Avoid_: row lock |
 | **Outbox** | The table where each change's transaction leaves one row naming its revision, for the ETL and the feed's publisher |
 | **ETL** | The outbox consumer that projects each change into tall (`analytics.tall_canonical`) and events (`analytics.events`), the analytics interface until the feed replaces them. Its **split re-attribution** moves split rows to their new submission in tall |
 | **Data path** | Where a value sits in a stored document: the stored keys from the root, joined by dots. Never a target in the API |

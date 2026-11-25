@@ -199,7 +199,8 @@ body, which each method's request defines; E0 builds no shared body type.
 - `IdempotentCommands.execute` runs it in one READ COMMITTED transaction, in
   this order: bound lock waits (`datarun.v2.commands.lock-timeout`, 5 s);
   claim the caller's key in `api.idempotency_key`; the command locks its row
-  (`SELECT ... FOR UPDATE` first), checks `If-Match` through its context,
+  first (`SELECT ... FOR NO KEY UPDATE`, or `FOR UPDATE` when the command
+  changes a key column), checks `If-Match` through its context,
   applies the change; the outcome is written on the key; commit.
   - A duplicate waits on the key, never on the row, and then gets the first
     outcome. Past the lock timeout it is 409 `request-in-progress`; a row held
