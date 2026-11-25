@@ -59,6 +59,16 @@ public class V2CommandFixtureController {
     @PostMapping(path = "/counters/{id}:increment", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Counter> increment(@PathVariable String id, CommandRequest command,
                                              @Valid @RequestBody Increment increment) {
+        return add(id, command, increment.by());
+    }
+
+    /** A command that reads no body: one sent anyway must not be hashed as empty. */
+    @PostMapping("/counters/{id}:bump")
+    public ResponseEntity<Counter> bump(@PathVariable String id, CommandRequest command) {
+        return add(id, command, 1);
+    }
+
+    private ResponseEntity<Counter> add(String id, CommandRequest command, int by) {
         return commands.execute(command, context -> {
             RUNS.incrementAndGet();
             Map<String, Object> row;
@@ -70,7 +80,7 @@ public class V2CommandFixtureController {
             }
             long version = ((Number) row.get("version")).longValue();
             context.checkVersion(version, "/api/v2/fixtures/counters/" + id + "/versions");
-            long value = ((Number) row.get("value")).longValue() + increment.by();
+            long value = ((Number) row.get("value")).longValue() + by;
             MapSqlParameterSource next = new MapSqlParameterSource()
                 .addValue("id", id).addValue("version", version + 1).addValue("value", value);
             jdbc.update("UPDATE v2_fixture_counter SET version = :version, value = :value WHERE id = :id", next);

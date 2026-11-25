@@ -234,6 +234,23 @@ class V2CommandsIT {
             .as("the draft's quoted form").isEqualTo(200);
     }
 
+    /** A body the command does not read is not hashed as empty: the request fails and nothing is claimed. */
+    @Test
+    void aBodyTheCommandDoesNotReadFailsInsteadOfBeingIgnored() throws Exception {
+        MockHttpServletResponse withBody = send(post("/api/v2/fixtures/counters/c1:bump"), V2TestUsers.CALLER_A,
+            key(), "\"0\"", "{\"by\": 5}");
+        assertThat(withBody.getStatus()).isEqualTo(500);
+        assertThat(problemCode(withBody)).isEqualTo("internal-error");
+        assertThat(records()).isZero();
+        assertThat(storedVersion()).isZero();
+
+        MockHttpServletResponse without = mvc.perform(post("/api/v2/fixtures/counters/c1:bump")
+            .header(HttpHeaders.AUTHORIZATION, V2TestUsers.bearer(jwtKey, V2TestUsers.CALLER_A))
+            .header(IdempotencyKey.HEADER, key()).header(HttpHeaders.IF_MATCH, "\"0\"")).andReturn().getResponse();
+        assertThat(without.getStatus()).isEqualTo(200);
+        assertThat(storedVersion()).isEqualTo(1);
+    }
+
     @Test
     void aBodyOverTheLimitIs413() throws Exception {
         String big = "{\"by\": 1, \"padding\": \"" + "x".repeat(1024 * 1024) + "\"}";

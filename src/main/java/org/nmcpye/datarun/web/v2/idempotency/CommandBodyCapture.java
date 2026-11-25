@@ -19,11 +19,11 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 
 /**
- * Keeps the body of a command (a v2 handler that takes {@link CommandRequest}) as received, for its fingerprint,
- * and hands the same bytes on to the handler's body parameter. A body over the configured size is refused, 413,
- * before it is parsed.
+ * Keeps the body of a command (any handler that takes {@link CommandRequest}, wherever it is declared) as received,
+ * for its fingerprint, and hands the same bytes on to the handler's body parameter. A body over the configured size
+ * is refused, 413, before it is parsed. It applies to every controller; {@link #supports} limits it to commands.
  */
-@ControllerAdvice(basePackages = "org.nmcpye.datarun.web.v2")
+@ControllerAdvice
 public class CommandBodyCapture extends RequestBodyAdviceAdapter {
 
     private final V2Properties properties;

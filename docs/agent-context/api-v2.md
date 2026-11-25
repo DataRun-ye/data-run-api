@@ -192,7 +192,13 @@ body, which each method's request defines; E0 builds no shared body type.
     successes are remembered, and a retry of a refused request runs again.
 - The request's fingerprint is a SHA-256 of the method, the decoded path, the
   query (ordered by name), the canonical `If-Match` and the body in canonical
-  JSON (members sorted, numbers by exact value, no whitespace).
+  JSON (members sorted, numbers by exact value, no whitespace). The body is
+  captured for every command wherever its controller is declared; a body that
+  was sent but not read as the command's `@RequestBody` fails the request
+  (500) rather than hash as empty.
+- Every handler that can answer under `/api/v2` lives in `web.v2`
+  (`V2HandlerPlacementIT`), so the ArchUnit rules and the contract test see
+  all of them.
 - The record keeps the caller's user id, the key, that hash and the outcome
   (resource type, id, version, response status) for 72 hours; expired keys
   count as absent and are purged hourly. No value of the request or the

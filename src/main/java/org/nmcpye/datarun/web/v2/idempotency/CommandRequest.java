@@ -47,10 +47,18 @@ public final class CommandRequest {
     /**
      * The request's fingerprint ({@link RequestFingerprint}), computed when first asked: by then the handler's
      * arguments, its body included, have been read.
+     *
+     * @throws IllegalStateException when the request carries a body that was not captured (the handler did not
+     *                               read it as its {@code @RequestBody}): hashing it as empty would let a different
+     *                               body replay the first outcome under the same key
      */
     byte[] fingerprint() {
         if (fingerprint == null) {
             Object body = request.getAttribute(BODY_ATTRIBUTE);
+            if (body == null && carriesBody(request)) {
+                throw new IllegalStateException("A command's body was sent but not read as its @RequestBody, so it "
+                    + "cannot be part of its idempotency fingerprint");
+            }
             String path = request.getRequestURI();
             String context = request.getContextPath();
             if (context != null && !context.isEmpty() && path.startsWith(context)) {
@@ -63,5 +71,10 @@ public final class CommandRequest {
                 ifMatch.canonical(), body instanceof byte[] bytes ? bytes : null);
         }
         return fingerprint.clone();
+    }
+
+    /** Whether the request has a body at all: a positive length, or a chunked one of unknown length. */
+    static boolean carriesBody(HttpServletRequest request) {
+        return request.getContentLengthLong() > 0 || request.getHeader("Transfer-Encoding") != null;
     }
 }
