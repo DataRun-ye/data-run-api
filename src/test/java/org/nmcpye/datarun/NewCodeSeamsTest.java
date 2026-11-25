@@ -233,6 +233,9 @@ class NewCodeSeamsTest {
 
     /** Any new code may use the seam. */
     private static final String ANY_NEW_CODE = null;
+    /** An SQL seam that exists, or one planned and not built yet. */
+    private static final boolean BUILT = false;
+    private static final boolean PLANNED = true;
 
     /**
      * The only system-of-record and transitional code new code may depend on: a class exactly (a nested class is not a
@@ -266,12 +269,24 @@ class NewCodeSeamsTest {
         new Leftover(OutboxProcessingServiceImpl.class, "counts outcomes on the ETL's run (EtlRunService), until the "
             + "claim loop leaves etl"));
 
-    /** Where SQL in new code may name system-of-record tables: the seam that owns the read, by source path prefix. */
+    /**
+     * Where SQL in new code may name system-of-record tables: the seam that owns the read, by source path prefix.
+     * {@code data_submission} and the configuration tables are named only in the planned readers and the journal (and,
+     * outside new code, in the write path).
+     */
     static final List<SqlSeam> SQL_SEAMS = List.of(
         new SqlSeam("org/nmcpye/datarun/submission/normalized/jdbc/FormDefinitionJdbcReader.java",
-            Set.of("data_template", "data_template_version", "data_element", "option_set"),
+            Set.of("data_template", "data_template_version", "data_element", "option_set"), BUILT,
             "the normalizer's form definitions"),
-        new SqlSeam("org/nmcpye/datarun/jpa/datasubmission/revision/", Set.of("data_submission"),
+        // PLANNED (engineering, 2026-11-26), being built for the feed: until they exist here, SQL naming their tables
+        // anywhere else in new code fails the tripwire. Once built, mark them BUILT.
+        new SqlSeam("org/nmcpye/datarun/submission/normalized/jdbc/StoredSubmissionJdbcReader.java",
+            Set.of("data_submission"), PLANNED,
+            "stored submissions by id and in batches, as StoredSubmission"),
+        new SqlSeam("org/nmcpye/datarun/submission/normalized/jdbc/PlacementJdbcResolver.java",
+            Set.of("assignment", "team", "org_unit", "activity"), PLANNED,
+            "one placement resolver: a submission's assignment, team, org unit and activity uids turned into ids"),
+        new SqlSeam("org/nmcpye/datarun/jpa/datasubmission/revision/", Set.of("data_submission"), BUILT,
             "the journal copies the stored row it records"));
 
     // =================================================================================================================
@@ -409,6 +424,17 @@ class NewCodeSeamsTest {
         assertThat(CLASSIFICATION).allSatisfy(r -> assertThat(r.why()).as(r.target()).isNotBlank());
     }
 
+    /** A built SQL seam exists where named; a planned one does not yet, and is marked built once it does. */
+    @Test
+    void everySqlSeamIsWhereItsMarkSays() {
+        for (SqlSeam seam : SQL_SEAMS) {
+            boolean exists = Files.exists(Path.of("src", "main", "java").resolve(seam.source()));
+            assertThat(exists).as(seam.source() + (seam.planned() ? " exists: mark it BUILT" : " is missing"))
+                .isEqualTo(!seam.planned());
+            assertThat(seam.why()).as(seam.source()).isNotBlank();
+        }
+    }
+
     /** A seam is system-of-record or transitional code, with a reason; a leftover still needs its place. */
     @Test
     void everySeamAndLeftoverIsWhatItSays() {
@@ -476,6 +502,13 @@ class NewCodeSeamsTest {
         assertThat(sqlFindings("org/nmcpye/datarun/jpa/datasubmission/revision/Reader.java",
             "String v = \"SELECT form_data FROM data_submission JOIN journal.submission_revision r ON true\";"))
             .as("the journal's own reads").isEmpty();
+        assertThat(sqlFindings("org/nmcpye/datarun/submission/normalized/jdbc/PlacementJdbcResolver.java",
+            "String v = \"SELECT a.id FROM assignment a JOIN team t ON t.id = a.team_id\";"))
+            .as("a planned seam's own reads").isEmpty();
+        assertThat(sqlFindings("org/nmcpye/datarun/submission/feed/publisher/Placement.java",
+            "String v = \"SELECT a.id FROM assignment a WHERE a.uid = :assignmentUid\";"))
+            .as("the same reads anywhere else").containsExactly("org/nmcpye/datarun/submission/feed/publisher/"
+                + "Placement.java: system-of-record table assignment outside its seam");
         assertThat(sqlFindings("org/nmcpye/datarun/submission/normalized/jdbc/Other.java",
             "String v = \"SELECT 1 FROM data_template\";"))
             .as("a seam's tables in another class of its package")
@@ -562,8 +595,9 @@ class NewCodeSeamsTest {
     }
 
     /** A seam's own SQL: the source (a file, or a package folder) where new code may name these tables, and why. */
-    record SqlSeam(String source, Set<String> tables, String why) {
+    record SqlSeam(String source, Set<String> tables, boolean planned, String why) {
     }
+
 
     private static final Map<String, Optional<Row>> ROWS_BY_CLASS = new ConcurrentHashMap<>();
 

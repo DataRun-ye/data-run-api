@@ -115,6 +115,12 @@ Where today's seams serve new code poorly:
 | `outbox.processing` | any new code | the outputs' seam: a change as a submission id and version |
 | SQL: `data_template`, `data_template_version`, `data_element`, `option_set` | `FormDefinitionJdbcReader` | the normalizer's form definitions |
 | SQL: `data_submission` | the journal package | the journal copies the row it records |
+| SQL: `data_submission` | `submission.normalized.jdbc.StoredSubmissionJdbcReader`, **planned** | stored submissions by id and in batches |
+| SQL: `assignment`, `team`, `org_unit`, `activity` | `submission.normalized.jdbc.PlacementJdbcResolver`, **planned** | one placement resolver, turning placement uids into ids |
+
+The two planned seams are being built for the feed (engineering, 2026-11-26). Until they exist where named, SQL in
+new code that names their tables anywhere else fails the test; once built, the test wants them marked built. Outside
+new code, these tables are named only by the write path.
 
 ## Exceptions
 
@@ -125,12 +131,12 @@ Where today's seams serve new code poorly:
 
 ## Gaps
 
-Submission review (`docs/features/submission-review/spec.md`) needs these; none is built.
+Submission review (`docs/features/submission-review/spec.md`) needs these; none is built yet.
 
 | # | Need | Systems of record | Seam to build | Today |
 | --- | --- | --- | --- | --- |
-| 1 | Search, view and history: submissions by filters and by id | `data_submission`, journal | a stored-submission reader: `StoredSubmission`s with placement ids, by id and by filters under the search guard, and revisions; turns stored uids into ids | `feat/feed-v1`'s `FeedWriter` and `Reconcile`, and `feat/review-s2`'s `SubmissionRevisionReader`, each read `data_submission` on their own |
+| 1 | Search, view and history: submissions by filters and by id | `data_submission`, journal | `StoredSubmissionJdbcReader` (planned: by id and in batches); search by filters under the search guard still to add | `feat/feed-v1`'s `FeedWriter` and `Reconcile`, and `feat/review-s2`'s `SubmissionRevisionReader`, each read `data_submission` on their own |
 | 2 | Values typed for a form named by id; edits written back | form definitions | a read by form id, and the write direction (field id and row id to the stored place), in `submission.normalized` | uid-keyed reader; no write direction |
 | 3 | Edits, moves, splits, deletes and restores | `data_submission`, journal | write-path commands for new code: `SubmissionCommand` variants keyed by submission id, with domain types and the journal's reason and detail, run in v2's idempotent transaction, answering a result of their own | every variant carries a client contract or a uid |
-| 4 | A move's destination rules; scope by activity, team, area | configuration, access scope | a placement reader: an assignment by id with its activity, team, org unit, forms and deleted state; org unit ancestry; uids to ids. Review's own grants are new code | entities and v1 DTOs keyed by uid; the snapshot in uids |
+| 4 | A move's destination rules; scope by activity, team, area | configuration, access scope | `PlacementJdbcResolver` (planned: uids to ids); an assignment's forms and deleted state, and org unit ancestry, still to add. Review's own grants are new code | entities and v1 DTOs keyed by uid; the snapshot in uids; `feat/feed-v1`'s private `Placement` |
 | 5 | View's entries; history's actor names | `reference_entry`, `app_user` | small readers by id | none |
