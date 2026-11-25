@@ -490,7 +490,7 @@ class SubmissionNormalizerTest {
     void aValueOfAFieldWhoseDataElementIsGoneIsUnmappedAndFlagged() {
         FormVersionDefinition version = FormVersionDefinition.parse(FORM, "01JV0000000000000000000007", "fvUid000007",
             7, json("[]"), json("[{'id': 'deUidGone001', 'name': 'gone', 'path': 'deUidGone001', 'type': 'Text'}]"),
-            uid -> null);
+            uid -> null, uid -> null);
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
             new StoredSubmission(SUBMISSION, FORM_UID, "fvUid000007", text("{'gone': 'kept'}")),
             FormDefinition.of(FORM, List.of(version)));

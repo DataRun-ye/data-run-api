@@ -21,25 +21,32 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Reads form definitions for {@link org.nmcpye.datarun.submission.normalized.SubmissionNormalizer}: every version of
- * each form as stored, with the stored ids of the data elements its fields name, in one read-only statement, so one
- * snapshot. It writes nothing and opens no transaction of its own, so it joins the caller's.
+ * Reads form definitions for {@link org.nmcpye.datarun.submission.normalized.SubmissionNormalizer} and for the feed's
+ * dictionary: every version of each form as stored, with the stored ids of the data elements and option sets its
+ * fields name, in one read-only statement, so one snapshot. It writes nothing and opens no transaction of its own, so
+ * it joins the caller's.
  *
  * <p><b>Change tokens.</b> Each definition comes with a token that changes whenever anything it was built from
- * changes: a version added, rewritten or deleted, or a data element its fields name changed, deleted or created.
- * {@link #changeTokens} computes the current tokens without reading the definitions, so a caller keeping
+ * changes: a version added, rewritten or deleted, or a data element or option set its fields name changed, deleted or
+ * created. {@link #changeTokens} computes the current tokens without reading the definitions, so a caller keeping
  * definitions can tell when to read them again. The token is a SHA-256, over each version's id and row version
- * ({@code xmin}) and those of its data elements; its text has no other meaning.</p>
+ * ({@code xmin}) and those of its data elements and option sets; its text has no other meaning.</p>
  */
 @Component
 public class FormDefinitionJdbcReader {
 
-    /** Per version: its id and row version, then each data element its fields name, with their row versions. */
+    /**
+     * Per version: its id and row version, then each data element and each option set its fields name, with their
+     * row versions.
+     */
     private static final String VERSION_MARK = """
         v.id || ':' || v.xmin::text || ':' || coalesce((
             SELECT string_agg(de.id || ':' || de.xmin::text, ',' ORDER BY de.id)
             FROM jsonb_array_elements(v.fields) AS f(field)
-            JOIN data_element de ON de.uid = f.field ->> 'id'), '')""";
+            JOIN data_element de ON de.uid = f.field ->> 'id'), '') || ':' || coalesce((
+            SELECT string_agg(os.id || ':' || os.xmin::text, ',' ORDER BY os.id)
+            FROM jsonb_array_elements(v.fields) AS f(field)
+            JOIN option_set os ON os.uid = f.field ->> 'optionSet'), '')""";
 
     private static final String DEFINITIONS = """
         SELECT t.uid AS form_uid, t.id AS form_id, v.id AS version_id, v.uid AS version_uid, v.version_number,
@@ -47,6 +54,9 @@ public class FormDefinitionJdbcReader {
                (SELECT coalesce(jsonb_object_agg(de.uid, de.id), '{}'::jsonb)::text
                 FROM jsonb_array_elements(v.fields) AS f(field)
                 JOIN data_element de ON de.uid = f.field ->> 'id') AS field_ids,
+               (SELECT coalesce(jsonb_object_agg(os.uid, os.id), '{}'::jsonb)::text
+                FROM jsonb_array_elements(v.fields) AS f(field)
+                JOIN option_set os ON os.uid = f.field ->> 'optionSet') AS option_set_ids,
                """ + VERSION_MARK + """
          AS version_mark
         FROM data_template t
@@ -86,8 +96,8 @@ public class FormDefinitionJdbcReader {
     /**
      * The definitions of the forms with these uids, by form uid. A uid that names no form has no entry: the caller
      * then normalizes with no definition ({@link org.nmcpye.datarun.submission.normalized.NormalizationFlag#FORM_MISSING}).
-     * A stored field whose data element no longer exists is kept without an id; nothing in the stored definitions
-     * makes the read fail.
+     * A stored field whose data element no longer exists is kept without an id, and one whose option set no longer
+     * exists without an option set; nothing in the stored definitions makes the read fail.
      */
     public Map<String, Snapshot> read(Collection<String> formUids) {
         if (formUids.isEmpty()) {
@@ -103,6 +113,7 @@ public class FormDefinitionJdbcReader {
             marks.computeIfAbsent(formUid, uid -> new ArrayList<>()).add(rs.getString("version_mark"));
             try {
                 JsonNode fieldIds = objectMapper.readTree(rs.getString("field_ids"));
+                JsonNode optionSetIds = objectMapper.readTree(rs.getString("option_set_ids"));
                 versions.computeIfAbsent(formUid, uid -> new ArrayList<>()).add(FormVersionDefinition.parse(
                     formId,
                     rs.getString("version_id"),
@@ -110,7 +121,8 @@ public class FormDefinitionJdbcReader {
                     rs.getInt("version_number"),
                     objectMapper.readTree(rs.getString("sections")),
                     objectMapper.readTree(rs.getString("fields")),
-                    uid -> fieldIds.hasNonNull(uid) ? fieldIds.get(uid).asText() : null));
+                    uid -> fieldIds.hasNonNull(uid) ? fieldIds.get(uid).asText() : null,
+                    uid -> optionSetIds.hasNonNull(uid) ? optionSetIds.get(uid).asText() : null));
             } catch (JsonProcessingException e) {
                 // the columns are jsonb, which always prints as JSON
                 throw new IllegalStateException("form version " + rs.getString("version_id")

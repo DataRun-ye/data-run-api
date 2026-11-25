@@ -24,6 +24,9 @@ final class StoredForms {
     /** Data element uid to its stored id. */
     static final Map<String, String> FIELD_IDS = new HashMap<>();
 
+    /** Option set uid to its stored id; an option set not registered here does not exist. */
+    static final Map<String, String> OPTION_SET_IDS = new HashMap<>();
+
     private StoredForms() {
     }
 
@@ -97,7 +100,8 @@ final class StoredForms {
         }
 
         FormVersionDefinition build(String formId) {
-            return FormVersionDefinition.parse(formId, id, uid, number, sections, fields, FIELD_IDS::get);
+            return FormVersionDefinition.parse(formId, id, uid, number, sections, fields, FIELD_IDS::get,
+                OPTION_SET_IDS::get);
         }
     }
 }

@@ -14,7 +14,9 @@ import java.util.function.Function;
  * <p>{@link #parse} reads a version as stored ({@code data_template_version.sections} and {@code .fields}): a
  * section's data path is its stored {@code path}; a field's is its section's path and its
  * {@code name} (its stored {@code path} ends with its data element's uid, which the stored data never uses), or
- * the name alone for a field outside every section.</p>
+ * the name alone for a field outside every section. It also reads what the feed's dictionary publishes of each:
+ * name, {@code label}, {@code order}, and for a field {@code mandatory} and the option set its {@code optionSet}
+ * uid names.</p>
  *
  * @param id       the form version's stored id
  * @param uid      the form version's uid, by which stored submissions name their pinned version (internal)
@@ -48,6 +50,8 @@ public record FormVersionDefinition(
      * @param fieldIdForUid the stored id of the data element with a given uid, or {@code null} when there is none;
      *                      each field's {@code id} is a data element uid. A field whose data element has no id is
      *                      kept without an id, and its values are then unmapped, never refused
+     * @param optionSetIdForUid the stored id of the option set with a given uid, or {@code null} when there is none;
+     *                          a field's {@code optionSet} is an option set uid
      */
     public static FormVersionDefinition parse(
         String formId,
@@ -56,7 +60,8 @@ public record FormVersionDefinition(
         int number,
         JsonNode sections,
         JsonNode fields,
-        Function<String, String> fieldIdForUid) {
+        Function<String, String> fieldIdForUid,
+        Function<String, String> optionSetIdForUid) {
         List<SectionDefinition> sectionList = new ArrayList<>();
         if (sections != null) {
             for (JsonNode section : sections) {
@@ -68,7 +73,10 @@ public record FormVersionDefinition(
                 sectionList.add(new SectionDefinition(
                     path,
                     repeatable != null && repeatable.asBoolean(false),
-                    DerivedIds.sectionId(formId, path)));
+                    DerivedIds.sectionId(formId, path),
+                    text(section.get("name")),
+                    json(section.get("label")),
+                    integer(section.get("order"))));
             }
         }
         List<FieldDefinition> fieldList = new ArrayList<>();
@@ -84,11 +92,17 @@ public record FormVersionDefinition(
                 String sectionPath = storedPath == null || storedPath.equals(dataElementUid) || storedPath.indexOf('.') < 0
                     ? null
                     : parentPath(storedPath);
+                String optionSetUid = text(field.get("optionSet"));
                 fieldList.add(new FieldDefinition(
                     fieldId,
                     sectionPath == null ? name : sectionPath + "." + name,
                     sectionPath == null ? null : DerivedIds.sectionId(formId, sectionPath),
-                    valueType(text(field.get("type")))));
+                    valueType(text(field.get("type"))),
+                    name,
+                    json(field.get("label")),
+                    optionSetUid == null ? null : optionSetIdForUid.apply(optionSetUid),
+                    bool(field.get("mandatory")),
+                    integer(field.get("order"))));
             }
         }
         return new FormVersionDefinition(id, uid, number, sectionList, fieldList);
@@ -102,6 +116,21 @@ public record FormVersionDefinition(
 
     private static String text(JsonNode node) {
         return node == null || node.isNull() ? null : node.asText();
+    }
+
+    /** A stored value whole, in JSON text, or {@code null} when absent or the JSON null. */
+    private static String json(JsonNode node) {
+        return node == null || node.isNull() || node.isMissingNode() ? null : node.toString();
+    }
+
+    /** A stored boolean, or {@code null} when absent or of another type. */
+    private static Boolean bool(JsonNode node) {
+        return node != null && node.isBoolean() ? node.booleanValue() : null;
+    }
+
+    /** A stored whole number that fits an int, or {@code null} when absent or anything else. */
+    private static Integer integer(JsonNode node) {
+        return node != null && node.isIntegralNumber() && node.canConvertToInt() ? node.intValue() : null;
     }
 
     private static ValueType valueType(String stored) {

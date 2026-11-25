@@ -71,6 +71,10 @@ class FormDefinitionJdbcReaderIT {
             dataElement("nzDeTitle01", "nz_title", "Text");
             dataElement("nzDeCount01", "nz_count", "Integer");
             dataElement("nzDeNote001", "nz_note", "LongText");
+            jdbc.update("""
+                    INSERT INTO option_set (id, uid, code, name, created_by)
+                    VALUES ('01JS1OS0000000000000000001', 'nzOsUid0001', 'nzOsUid0001', 'nz counts', 'nz-test')""",
+                Map.of());
             // no data element nzDePart001 is stored: version 2's field names one that is gone
             jdbc.update("""
                     INSERT INTO data_template (id, uid, code, name, version_uid, version_number, created_by)
@@ -90,9 +94,10 @@ class FormDefinitionJdbcReaderIT {
                  {"name": "parts", "path": "main.rows.parts", "parent": "rows", "repeatable": true}]""", """
                 [{"id": "nzDeTitle01", "name": "nz_title", "path": "nzDeTitle01", "type": "Text"},
                  {"id": "nzDeCount01", "name": "nz_count", "path": "main.rows.nzDeCount01", "parent": "rows",
-                  "type": "Integer"},
+                  "type": "Integer", "mandatory": true, "order": 2, "label": {"en": "Count"},
+                  "optionSet": "nzOsUid0001"},
                  {"id": "nzDePart001", "name": "nz_part", "path": "main.rows.parts.nzDePart001", "parent": "parts",
-                  "type": "Text"}]""");
+                  "type": "Text", "optionSet": "nzOsNone001"}]""");
         });
     }
 
@@ -114,6 +119,24 @@ class FormDefinitionJdbcReaderIT {
                 tuple(null, "main.rows.parts.nz_part", ValueType.Text));
         assertThat(form.versions().get(1).fields()).extracting(FieldDefinition::path)
             .containsExactlyInAnyOrder("main.nz_title", "main.nz_note", "main.rows.nz_count");
+    }
+
+    /** What the feed's dictionary publishes is read in the same statement: option set ids, labels, mandatory, order. */
+    @Test
+    void theDictionaryAttributesAreReadWithTheDefinitions() {
+        FormVersionDefinition v2 = reader.read(FORM_UID).orElseThrow().definition().versions().get(0);
+
+        assertThat(v2.fields())
+            .extracting(FieldDefinition::name, FieldDefinition::optionSetId, FieldDefinition::label,
+                FieldDefinition::mandatory, FieldDefinition::order)
+            .containsExactlyInAnyOrder(
+                tuple("nz_title", null, null, null, null),
+                tuple("nz_count", "01JS1OS0000000000000000001", "{\"en\":\"Count\"}", true, 2),
+                // it names an option set that does not exist
+                tuple("nz_part", null, null, null, null));
+        assertThat(v2.sections()).extracting(SectionDefinition::path, SectionDefinition::name)
+            .containsExactlyInAnyOrder(tuple("main", "main"), tuple("main.rows", "rows"),
+                tuple("main.rows.parts", "parts"));
     }
 
     @Test
@@ -194,11 +217,24 @@ class FormDefinitionJdbcReaderIT {
         String elementCreated = currentToken();
         inTransaction(() -> jdbc.update("DELETE FROM data_element WHERE uid = 'nzDePart001'", Map.of()));
         String elementDeletedAgain = currentToken();
+        inTransaction(() -> jdbc.update("UPDATE option_set SET name = 'nz counts renamed' WHERE uid = 'nzOsUid0001'",
+            Map.of()));
+        String optionSetChanged = currentToken();
+        // version 2's other field names an option set that does not exist: create it, then delete it again
+        inTransaction(() -> jdbc.update("""
+                INSERT INTO option_set (id, uid, code, name, created_by)
+                VALUES ('01JS1OS0000000000000000002', 'nzOsNone001', 'nzOsNone001', 'nz none', 'nz-test')""",
+            Map.of()));
+        String optionSetCreated = currentToken();
+        inTransaction(() -> jdbc.update("DELETE FROM option_set WHERE uid = 'nzOsNone001'", Map.of()));
+        String optionSetDeletedAgain = currentToken();
 
-        assertThat(List.of(token, added, rewritten, elementChanged, elementCreated)).doesNotHaveDuplicates();
+        assertThat(List.of(token, added, rewritten, elementChanged, elementCreated, optionSetChanged, optionSetCreated))
+            .doesNotHaveDuplicates();
         assertThat(deleted).as("back to the same versions and elements").isEqualTo(token);
         assertThat(elementDeletedAgain).as("back to the same elements").isEqualTo(elementChanged);
-        assertThat(reader.read(FORM_UID).orElseThrow().changeToken()).isEqualTo(elementChanged);
+        assertThat(optionSetDeletedAgain).as("back to the same option sets").isEqualTo(optionSetChanged);
+        assertThat(reader.read(FORM_UID).orElseThrow().changeToken()).isEqualTo(optionSetChanged);
     }
 
     @Test

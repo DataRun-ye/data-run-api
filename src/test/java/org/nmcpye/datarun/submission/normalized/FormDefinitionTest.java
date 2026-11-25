@@ -33,8 +33,10 @@ class FormDefinitionTest {
         assertThat(v1.sections().get(1).id()).isEqualTo(DerivedIds.sectionId(FORM, "visit.households"));
         assertThat(v1.fields()).containsExactly(
             new FieldDefinition(fieldId("deUidHHsize"), "visit.households.household_size",
-                DerivedIds.sectionId(FORM, "visit.households"), ValueType.IntegerZeroOrPositive),
-            new FieldDefinition(fieldId("deUidVdate0"), "visit_date", null, ValueType.Date));
+                DerivedIds.sectionId(FORM, "visit.households"), ValueType.IntegerZeroOrPositive, "household_size",
+                null, null, null, null),
+            new FieldDefinition(fieldId("deUidVdate0"), "visit_date", null, ValueType.Date, "visit_date",
+                null, null, null, null));
     }
 
     @Test
@@ -42,9 +44,10 @@ class FormDefinitionTest {
         FormVersionDefinition v = FormVersionDefinition.parse(FORM, "01JV0000000000000000000001", "fvUid000001", 1,
             StoredForms.json("[]"),
             StoredForms.json("[{'id': 'deUidNoId00', 'name': 'x', 'path': 'deUidNoId00', 'type': 'Text'}]"),
-            uid -> null);
+            uid -> null, uid -> null);
 
-        assertThat(v.fields()).containsExactly(new FieldDefinition(null, "x", null, ValueType.Text));
+        assertThat(v.fields())
+            .containsExactly(new FieldDefinition(null, "x", null, ValueType.Text, "x", null, null, null, null));
     }
 
     @Test
@@ -52,10 +55,39 @@ class FormDefinitionTest {
         FormVersionDefinition v = FormVersionDefinition.parse(FORM, "01JV0000000000000000000001", "fvUid000001", 1,
             StoredForms.json("{'not': 'an array'}"),
             StoredForms.json("[3, {'name': 'no id'}, {'id': 'deUidNoName'}, null]"),
-            uid -> "01JD0000000000000000000001");
+            uid -> "01JD0000000000000000000001", uid -> "01JO0000000000000000000001");
 
         assertThat(v.sections()).isEmpty();
         assertThat(v.fields()).isEmpty();
+    }
+
+    /** What the feed's dictionary publishes of each definition is read as stored; a value of another type is none. */
+    @Test
+    void theDictionaryAttributesAreReadAsStored() {
+        FormVersionDefinition v = FormVersionDefinition.parse(FORM, "01JV0000000000000000000001", "fvUid000001", 1,
+            StoredForms.json("""
+                [{'name': 'visit', 'path': 'visit', 'order': 1, 'label': {'en': 'Visit', 'ar': 'Ziyara'}},
+                 {'name': 'households', 'path': 'visit.households', 'repeatable': true, 'order': 2},
+                 {'path': 'unnamed', 'repeatable': 'yes', 'order': 2.5, 'label': null}]"""),
+            StoredForms.json("""
+                [{'id': 'deUidSize00', 'name': 'size', 'path': 'visit.households.deUidSize00', 'type': 'Integer',
+                  'mandatory': true, 'order': 3, 'label': {'en': 'Size'}, 'optionSet': 'osUidSizes1'},
+                 {'id': 'deUidNote00', 'name': 'note', 'path': 'deUidNote00', 'type': 'NoSuchType',
+                  'mandatory': 'true', 'order': '4', 'label': 'a bare text', 'optionSet': 'osUidGone01'},
+                 {'id': 'deUidBare00', 'name': 'bare', 'path': 'deUidBare00'}]"""),
+            uid -> "id-" + uid, uid -> uid.equals("osUidSizes1") ? "01JO0000000000000000000001" : null);
+
+        assertThat(v.sections()).containsExactly(
+            new SectionDefinition("visit", false, DerivedIds.sectionId(FORM, "visit"), "visit",
+                "{\"en\":\"Visit\",\"ar\":\"Ziyara\"}", 1),
+            new SectionDefinition("visit.households", true, DerivedIds.sectionId(FORM, "visit.households"),
+                "households", null, 2),
+            new SectionDefinition("unnamed", false, DerivedIds.sectionId(FORM, "unnamed"), null, null, null));
+        assertThat(v.fields()).containsExactly(
+            new FieldDefinition("id-deUidSize00", "visit.households.size", DerivedIds.sectionId(FORM, "visit.households"),
+                ValueType.Integer, "size", "{\"en\":\"Size\"}", "01JO0000000000000000000001", true, 3),
+            new FieldDefinition("id-deUidNote00", "note", null, null, "note", "\"a bare text\"", null, null, null),
+            new FieldDefinition("id-deUidBare00", "bare", null, null, "bare", null, null, null, null));
     }
 
     @Test
