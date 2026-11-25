@@ -73,9 +73,12 @@ final class ValueConformance {
 
     private enum Sign { ANY, POSITIVE, NEGATIVE, ZERO_OR_POSITIVE }
 
-    /** A JSON number; a floating-point node that is not finite (built in code, never parsed) is none. */
+    /**
+     * A JSON number. A decimal is always finite, however large ({@code 1E+400}); only a binary floating node, which a
+     * document parsed by {@link StoredJson} never holds, can be infinite or NaN, and then it is no number.
+     */
     private static boolean finiteNumber(JsonNode value) {
-        return value.isNumber() && !(value.isFloatingPointNumber() && !Double.isFinite(value.doubleValue()));
+        return value.isNumber() && !((value.isDouble() || value.isFloat()) && !Double.isFinite(value.doubleValue()));
     }
 
     private static ValueIssue integer(JsonNode value, Sign sign) {

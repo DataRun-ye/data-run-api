@@ -1,6 +1,8 @@
 package org.nmcpye.datarun.submission.normalized;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -21,9 +23,12 @@ import java.util.Set;
  *
  * <p><b>It never fails on data.</b> Its callers run it inside transactions, where one exception would retry a
  * change until it dies. Whatever the stored document and the stored definitions hold, it returns a result, and
- * counts what it met in {@link NormalizedSubmission#flags()}: a missing form or pinned version, values no field keys
- * (by reason), values that do not parse as their type, ids and fields used twice, nesting deeper than
- * {@link #MAX_DEPTH}. Only a programming error (a null submission) throws.</p>
+ * counts what it met in {@link NormalizedSubmission#flags()}: a document that is not JSON, a missing form or pinned
+ * version, values no field keys (by reason), values that do not parse as their type, ids and fields used twice,
+ * nesting deeper than {@link #MAX_DEPTH}. Only a programming error (a null submission) throws.</p>
+ *
+ * <p><b>Numbers are exact.</b> It parses the stored JSON text itself ({@link StoredJson}): a decimal keeps every digit
+ * and its scale, and is never a binary float.</p>
  *
  * <p><b>The walk</b> (the D feed spike's rules, measured on all 67,176 heads of the staging clone):</p>
  * <ul>
@@ -90,12 +95,12 @@ public final class SubmissionNormalizer {
         }
         Walk walk = new Walk(definition, pinned, submission.id(), flags);
         Container top = new Container();
-        JsonNode data = submission.formData();
-        if (data != null && !data.isNull() && !data.isMissingNode()) {
+        JsonNode data = parse(submission.formData(), walk, top);
+        if (data != null && !data.isNull()) {
             if (data.isObject()) {
                 walk.members(data, null, top, null, false, 0);
             } else {
-                walk.unmapped(top, "", copy(data), UnmappedReason.DOCUMENT_NOT_AN_OBJECT);
+                walk.unmapped(top, "", data, UnmappedReason.DOCUMENT_NOT_AN_OBJECT);
             }
         }
         int issues = countIssues(top.values);
@@ -113,6 +118,19 @@ public final class SubmissionNormalizer {
             top.unmapped,
             walk.rows,
             flags);
+    }
+
+    /** The parsed document, or {@code null} when there is none or it is not JSON (then kept whole as text). */
+    private static JsonNode parse(String text, Walk walk, Container top) {
+        if (text == null) {
+            return null;
+        }
+        try {
+            return StoredJson.parse(text);
+        } catch (JsonProcessingException notJson) {
+            walk.unmapped(top, "", TextNode.valueOf(text), UnmappedReason.DOCUMENT_NOT_PARSED);
+            return null;
+        }
     }
 
     private static int countIssues(List<FieldValue> values) {

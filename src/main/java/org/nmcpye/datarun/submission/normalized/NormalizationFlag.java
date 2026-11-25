@@ -25,8 +25,10 @@ public enum NormalizationFlag {
     FIELD_ALREADY_HAS_VALUE,
     /** Values unmapped because they lie deeper than the walk goes. */
     NESTED_TOO_DEEP,
-    /** The stored document is not a JSON object. Counted once. */
+    /** The stored document is JSON but not an object. Counted once. */
     DOCUMENT_NOT_AN_OBJECT,
+    /** The stored text is not JSON: no value could be read, and the text is kept whole. Counted once. */
+    DOCUMENT_NOT_PARSED,
     /** Values kept whole that do not parse as their field's value type ({@link FieldValue#issue()}). */
     VALUE_ISSUE,
     /** Rows whose id was already taken by an earlier row of the submission, given a derived id instead. */

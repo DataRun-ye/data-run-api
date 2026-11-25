@@ -33,6 +33,7 @@ class NormalizedSubmissionPurityTest {
                 "java.nio.charset..",
                 "java.nio",
                 "java.security",
+                "com.fasterxml.jackson.core..",
                 "com.fasterxml.jackson.databind..",
                 "org.nmcpye.datarun.datatemplateelement.enumeration")
             .because("a pure function reads its arguments and nothing else")

@@ -1,7 +1,5 @@
 package org.nmcpye.datarun.submission.normalized;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import java.util.Objects;
 
 /**
@@ -9,10 +7,13 @@ import java.util.Objects;
  * {@link SubmissionNormalizer} reads.
  *
  * @param id             the submission's stored id
- * @param formVersionUid the uid of the pinned form version, as stored ({@code template_version_uid})
- * @param formData       the stored document ({@code form_data}); it is read, never changed
+ * @param formVersionUid the uid of the pinned form version, as stored ({@code template_version_uid}); may be
+ *                       {@code null} or unknown, which the normalizer flags
+ * @param formData       the stored document as JSON text ({@code form_data::text}), or {@code null} when there is
+ *                       none. The normalizer parses it itself, exactly ({@link StoredJson}): a document read through
+ *                       another mapper may already have lost digits
  */
-public record StoredSubmission(String id, String formVersionUid, JsonNode formData) {
+public record StoredSubmission(String id, String formVersionUid, String formData) {
 
     public StoredSubmission {
         Objects.requireNonNull(id, "id");

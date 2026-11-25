@@ -33,6 +33,11 @@ final class StoredForms {
         return new VersionBuilder(id, uid, number);
     }
 
+    /** JSON text written with single quotes, as a stored document's text. */
+    static String text(String singleQuoted) {
+        return singleQuoted.replace('\'', '"');
+    }
+
     static JsonNode json(String text) {
         try {
             return JSON.readTree(text.replace('\'', '"'));

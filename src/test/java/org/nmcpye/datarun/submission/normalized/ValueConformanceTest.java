@@ -112,6 +112,13 @@ class ValueConformanceTest {
     }
 
     @Test
+    void aDecimalBeyondTheRangeOfADoubleIsStillANumber() throws Exception {
+        JsonNode huge = StoredJson.parse("1e400");
+        assertThat(ValueConformance.check(ValueType.Number, huge)).isNull();
+        assertThat(ValueConformance.check(ValueType.Integer, huge)).isNull();
+    }
+
+    @Test
     void typesWithoutARuleAreNotJudged() {
         assertThat(check(ValueType.Coordinate, "{'lat': 1}")).isNull();
         assertThat(check(null, "{'x': 1}")).isNull();
@@ -124,16 +131,15 @@ class ValueConformanceTest {
             .field("deUidCount01", null, "count", "IntegerPositive")
             .field("deUidDay0001", null, "day", "Date")
             .build(form);
-        JsonNode document = json("{'count': '7 people', 'day': '2026-12-03'}");
-
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission("01J2Q7Y0V6M3N4P5R6S7T8V9WX", "fvUid000001", document),
+            new StoredSubmission("01J2Q7Y0V6M3N4P5R6S7T8V9WX", "fvUid000001",
+                StoredForms.text("{'count': '7 people', 'day': '2026-12-03'}")),
             FormDefinition.of(form, List.of(v1)));
 
         assertThat(normalized.values()).extracting(FieldValue::path, FieldValue::issue)
             .containsExactly(
                 org.assertj.core.groups.Tuple.tuple("count", ValueIssue.NOT_AN_INTEGER),
                 org.assertj.core.groups.Tuple.tuple("day", null));
-        assertThat(normalized.values().get(0).value()).isSameAs(document.get("count"));
+        assertThat(normalized.values().get(0).value().textValue()).isEqualTo("7 people");
     }
 }

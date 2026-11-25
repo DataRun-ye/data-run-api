@@ -115,11 +115,11 @@ class FormDefinitionJdbcReaderIT {
     }
 
     @Test
-    void aStoredSubmissionNormalizesAgainstTheReadDefinition() {
+    void aStoredSubmissionNormalizesAgainstTheReadDefinition() throws Exception {
         FormDefinition form = reader.read(FORM_UID).orElseThrow();
 
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(new StoredSubmission(
-            "01JS1SB0000000000000000001", "s1FormVer02", json.valueToTree(Map.of(
+            "01JS1SB0000000000000000001", "s1FormVer02", json.writeValueAsString(Map.of(
                 "s1_title", "T",
                 "main", Map.of(
                     "s1_note", "kept through version 1",

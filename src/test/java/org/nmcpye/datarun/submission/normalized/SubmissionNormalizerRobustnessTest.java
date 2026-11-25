@@ -60,7 +60,7 @@ class SubmissionNormalizerRobustnessTest {
     private static final JsonNodeFactory NODES = JsonNodeFactory.instance;
 
     @Test
-    void noStoredDocumentMakesItFail() {
+    void noStoredDocumentMakesItFail() throws Exception {
         Random random = new Random(20261125);
         Set<NormalizationFlag> seen = EnumSet.noneOf(NormalizationFlag.class);
         for (int i = 0; i < 4_000; i++) {
@@ -71,14 +71,17 @@ class SubmissionNormalizerRobustnessTest {
             }
             String pin = PINS[random.nextInt(PINS.length)];
             FormDefinition form = random.nextInt(12) == 0 ? null : FORM_DEFINITION;
-            JsonNode before = document.deepCopy();
+            String stored = StoredForms.JSON.writeValueAsString(document);
+            if (i % 97 == 0) {
+                // now and then a document cut short: no JSON at all
+                stored = stored.substring(0, stored.length() / 2);
+            }
 
             NormalizedSubmission normalized =
-                SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, pin, document), form);
+                SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, pin, stored), form);
 
-            assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, pin, document), form))
+            assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, pin, stored), form))
                 .as("deterministic").isEqualTo(normalized);
-            assertThat(document).as("unchanged").isEqualTo(before);
             flagsAgreeWithTheLists(normalized, form, pin);
             seen.addAll(normalized.flags().keySet());
         }

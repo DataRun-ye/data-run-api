@@ -30,6 +30,11 @@ public enum UnmappedReason {
      * is kept whole at the path where the walk stopped.
      */
     NESTED_TOO_DEEP,
-    /** The stored document is not a JSON object; it is kept whole at the empty path. */
-    DOCUMENT_NOT_AN_OBJECT
+    /** The stored document is JSON but not an object; it is kept whole at the empty path. */
+    DOCUMENT_NOT_AN_OBJECT,
+    /**
+     * The stored text is not JSON ({@link StoredJson#parse}); it is kept whole, as a JSON string holding the text, at
+     * the empty path.
+     */
+    DOCUMENT_NOT_PARSED
 }
