@@ -121,8 +121,7 @@ public class ConflictDetection {
         boolean equalsLastDecided = conflicts.lastDecidedCopy(submissionId, uploader)
             .map(text -> sameState(context.copy().asReceived(), ComparedState.ofUploadItem(ComparedState.parse(text))))
             .orElse(false);
-        // Any other uploader's base is the first revision, whose state an unchanged copy of theirs equals.
-        boolean equalsBase = sameState(copy, ComparedState.of(journal.stateAt(submissionId, after)));
+        boolean equalsBase = base != null && sameState(copy, ComparedState.of(journal.stateAt(submissionId, base)));
         boolean equalsCurrent = sameState(copy, ComparedState.of(journal.current(submissionId)));
         return ConflictCheck.analysed(this, context, rowsLackIds, new ConflictCheck.Analysis(
             base != null, after, equalsBase || equalsLastDecided, equalsCurrent, serverSideChange, moved));

@@ -428,19 +428,36 @@ class ConflictDetectionIT extends A2GoldenSupport {
     }
 
     /**
-     * The editor's copy equal to the first revision's state, their base, is an unchanged re-send: once the checks
-     * pass, it changes nothing, though the server edited the submission since. Today it would undo the edit.
+     * The editor has no base of their own: their copy equal to the first revision's state is not an unchanged re-send
+     * of theirs. After the creator changed the submission, and with no server-side change, it applies as today.
      */
     @Test
-    void anAuthorizedUploadersCopyEqualToTheFirstRevisionChangesNothing() throws Exception {
+    void anAuthorizedUploadersCopyEqualToTheFirstRevisionAppliesAsTodayWithoutAServerSideChange() throws Exception {
         String uid = uid("cdEdFirst");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed by the creator")))).isEqualTo(updated(uid));
+
+        assertThat(answer(upload(G3, EDITOR, formA(G3, uid, "first")))).isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE UPLOAD", "2 UPDATE UPLOAD");
+        assertThat(jdbc.queryForObject("SELECT form_data #>> '{main,a2_name}' FROM data_submission WHERE uid = :uid",
+            Map.of("uid", uid), String.class)).isEqualTo("first");
+        assertThat(conflicts(uid)).isEmpty();
+    }
+
+    /** The same copy after a server-side change since the first revision is kept aside, with that revision as base. */
+    @Test
+    void anAuthorizedUploadersCopyEqualToTheFirstRevisionIsKeptAsideAfterAServerSideChange() throws Exception {
+        String uid = uid("cdEdFirsK");
         assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
         seed.edit(uid, ADMIN, "edited on the server");
 
         assertThat(answer(upload(G3, EDITOR, formA(G3, uid, "first")))).isEqualTo(updated(uid));
 
         assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
-        assertThat(conflicts(uid)).isEmpty();
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("uploader_user_id", seed.userId(EDITOR)).containsEntry("base_version", 0L)
+            .containsEntry("cause", "SERVER_SIDE_CHANGE"));
     }
 
     // ---------------------------------------------------------------- never fail, and what is not detected
