@@ -1,6 +1,7 @@
 package org.nmcpye.datarun.submission.normalized;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -119,6 +120,78 @@ public final class FormDefinition {
      */
     public Map<String, List<String>> dataPaths(String fieldId) {
         return fieldId == null ? Map.of() : dataPathsByField.getOrDefault(fieldId, Map.of());
+    }
+
+    /**
+     * The order the normalizer walks a document in, as an order of data paths: key by key from the root, each key in
+     * {@link String#compareTo} order, a path before the paths under it. Of two values of one field in one row, the
+     * first in this order is the one kept, unless only the other is resolved through the pinned version.
+     */
+    public static final Comparator<String> WALK_ORDER = (left, right) -> {
+        String[] a = left.split("\\.", -1);
+        String[] b = right.split("\\.", -1);
+        for (int i = 0; i < Math.min(a.length, b.length); i++) {
+            int order = a[i].compareTo(b[i]);
+            if (order != 0) {
+                return order;
+            }
+        }
+        return Integer.compare(a.length, b.length);
+    };
+
+    /**
+     * Which placements of a version's fields hold that version's values, by the rules the normalizer resolves values
+     * with: at a data path the version names twice, the definition resolution picks (the first in stored order); and
+     * of one field placed twice in one section, the placement first in {@link #WALK_ORDER}, whose value a row keeps.
+     * A field whose data element no longer exists holds none. The feed's dictionary publishes the placements that do.
+     *
+     * @param published          the placements that hold values, in stored order
+     * @param pathTakenByAnother placements at a data path the version names twice, which resolves to another
+     *                           definition ({@link NormalizationFlag#AMBIGUOUS_PATH})
+     * @param placedTwice        placements of a field the version also places, earlier in walk order, in the same
+     *                           section
+     */
+    public record Placements(List<FieldDefinition> published, List<FieldDefinition> pathTakenByAnother,
+                             List<FieldDefinition> placedTwice) {
+
+        public Placements {
+            published = List.copyOf(published);
+            pathTakenByAnother = List.copyOf(pathTakenByAnother);
+            placedTwice = List.copyOf(placedTwice);
+        }
+    }
+
+    /** The placements of one of this form's versions that hold its values ({@link Placements}). */
+    public Placements placements(FormVersionDefinition version) {
+        FormVersionDefinition own = versionsByUid.get(version.uid());
+        if (own == null || !own.equals(version)) {
+            throw new IllegalArgumentException("form " + id + " has no version " + version.id());
+        }
+        List<FieldDefinition> resolving = new ArrayList<>();
+        List<FieldDefinition> pathTakenByAnother = new ArrayList<>();
+        for (FieldDefinition field : own.fields()) {
+            Resolution resolution = resolve(own, field.path(), StoredShape.LEAF);
+            if (resolution == null || resolution.field() != field) {
+                pathTakenByAnother.add(field);
+            } else if (field.id() != null) {
+                resolving.add(field);
+            }
+        }
+        Map<List<String>, FieldDefinition> firstInWalkOrder = new HashMap<>();
+        for (FieldDefinition field : resolving) {
+            firstInWalkOrder.merge(Arrays.asList(field.sectionId(), field.id()), field,
+                (kept, other) -> WALK_ORDER.compare(other.path(), kept.path()) < 0 ? other : kept);
+        }
+        List<FieldDefinition> published = new ArrayList<>();
+        List<FieldDefinition> placedTwice = new ArrayList<>();
+        for (FieldDefinition field : resolving) {
+            if (firstInWalkOrder.get(Arrays.asList(field.sectionId(), field.id())) == field) {
+                published.add(field);
+            } else {
+                placedTwice.add(field);
+            }
+        }
+        return new Placements(published, pathTakenByAnother, placedTwice);
     }
 
     /** The version a stored submission names by its uid. */

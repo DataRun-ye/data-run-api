@@ -104,28 +104,34 @@ class FormDictionaryTest {
         assertThat(dictionary.fields()).extracting(FormDictionary.FieldRecord::valueType)
             .as("as stored, a type the server does not know included")
             .containsExactly("Text", "Text", "SelectOne", "LongText", "NoSuchType");
-        assertThat(dictionary.skipped()).isZero();
+        assertThat(dictionary.givenTwice().count()).isZero();
+        assertThat(dictionary.pathsTakenByAnother().count()).isZero();
         assertThat(dictionary.versionCount()).isEqualTo(1);
     }
 
     @Test
-    void aKeyAVersionGivesTwiceIsKeptOnceTheFirstInStoredOrder() {
+    void whatAVersionGivesTwiceIsPublishedByTheNormalizersRule() {
         FormVersionDefinition twice = version(FORM, "01JFV000000000000000000002", 2, """
             [{'name': 'main', 'path': 'main'}, {'name': 'main again', 'path': 'main'}]""", """
-            [{'id': 'deUidName01', 'name': 'name', 'path': 'main.deUidName01', 'type': 'Text'},
-             {'id': 'deUidName01', 'name': 'name_again', 'path': 'main.deUidName01', 'type': 'Integer'},
+            [{'id': 'deUidName01', 'name': 'zeta', 'path': 'main.deUidName01', 'type': 'Text'},
+             {'id': 'deUidName01', 'name': 'alpha', 'path': 'main.deUidName01', 'type': 'Integer'},
              {'id': 'deUidTitle1', 'name': 'title', 'path': 'deUidTitle1', 'type': 'Text'},
-             {'id': 'deUidTitle1', 'name': 'title_again', 'path': 'deUidTitle1', 'type': 'Text'},
+             {'id': 'deUidCount1', 'name': 'title', 'path': 'deUidCount1', 'type': 'Integer'},
              {'id': 'deUidName01', 'name': 'name_at_the_top', 'path': 'deUidName01', 'type': 'Text'}]""");
 
         FormDictionary dictionary = FormDictionary.of(List.of(FormDefinition.of(FORM, List.of(twice))));
 
         assertThat(dictionary.sections()).extracting(FormDictionary.SectionRecord::name).containsExactly("main");
-        assertThat(dictionary.fields()).extracting(FormDictionary.FieldRecord::name, FormDictionary.FieldRecord::sectionId)
-            .as("one data element in two places is two placements; twice in one place is one")
-            .containsExactly(tuple("name", section("main")), tuple("title", null), tuple("name_at_the_top", null));
-        assertThat(dictionary.skipped()).isEqualTo(3);
-        assertThat(dictionary.versionsWithDuplicates()).containsExactly("01JFV000000000000000000002");
+        assertThat(dictionary.fields()).extracting(FormDictionary.FieldRecord::name, FormDictionary.FieldRecord::fieldId)
+            .as("the first in walk order of one field in one section; the field a path named twice resolves to")
+            .containsExactly(
+                tuple("alpha", "01JDE000000000000000000002"),
+                tuple("title", "01JDE000000000000000000001"),
+                tuple("name_at_the_top", "01JDE000000000000000000002"));
+        assertThat(dictionary.givenTwice()).isEqualTo(new FormDictionary.LeftOut(2,
+            List.of("01JFV000000000000000000002")));
+        assertThat(dictionary.pathsTakenByAnother()).isEqualTo(new FormDictionary.LeftOut(1,
+            List.of("01JFV000000000000000000002")));
     }
 
     @Test

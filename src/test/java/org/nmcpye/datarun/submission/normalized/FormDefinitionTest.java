@@ -264,4 +264,58 @@ class FormDefinitionTest {
         assertThatThrownBy(() -> form.dataPaths(fieldId("deUidMoved0")).clear())
             .isInstanceOf(UnsupportedOperationException.class);
     }
+    /**
+     * The placements that hold a version's values follow resolution: a data path named twice keeps the definition
+     * resolution picks, and one field placed twice in one section keeps the placement first in walk order, whatever
+     * the stored order. A submission's values agree: they land under the published placements.
+     */
+    @Test
+    void theFieldPlacementsThatHoldValuesAreTheOnesTheNormalizerKeeps() {
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+            .section("visit", false)
+            .field("deUidTwice0", "visit", "zeta", "Integer")
+            .field("deUidTwice0", "visit", "alpha", "Integer")
+            .field("deUidFirst0", "visit", "shared", "Text")
+            .field("deUidSecond", "visit", "shared", "Text")
+            .field("deUidTwice0", null, "top", "Integer")
+            .fieldWithoutDataElement("deUidGone00", null, "gone", "Text")
+            .build(FORM);
+        FormDefinition form = FormDefinition.of(FORM, List.of(v1));
+
+        FormDefinition.Placements placements = form.placements(v1);
+
+        assertThat(placements.published()).extracting(FieldDefinition::path)
+            .as("in stored order; a field in two sections is two placements")
+            .containsExactly("visit.alpha", "visit.shared", "top");
+        assertThat(placements.published().get(1).id()).isEqualTo(fieldId("deUidFirst0"));
+        assertThat(placements.placedTwice()).extracting(FieldDefinition::path).containsExactly("visit.zeta");
+        assertThat(placements.pathTakenByAnother()).extracting(FieldDefinition::id)
+            .containsExactly(fieldId("deUidSecond"));
+
+        NormalizedSubmission normalized = SubmissionNormalizer.normalize(new StoredSubmission(
+            "01J2Q7Y0V6M3N4P5R6S7T8V9WX", StoredForms.FORM_UID, "fvUid000001",
+            StoredForms.text("{'visit': {'zeta': 1, 'alpha': 2, 'shared': 's'}}")), form);
+        assertThat(normalized.values()).extracting(FieldValue::path, FieldValue::fieldId).containsExactly(
+            org.assertj.core.groups.Tuple.tuple("visit.alpha", fieldId("deUidTwice0")),
+            org.assertj.core.groups.Tuple.tuple("visit.shared", fieldId("deUidFirst0")));
+        assertThat(normalized.unmapped()).extracting(UnmappedValue::path).containsExactly("visit.zeta");
+    }
+
+    @Test
+    void walkOrderComparesKeyByKey() {
+        assertThat(FormDefinition.WALK_ORDER.compare("visit.headline", "visit-alt")).isNegative();
+        assertThat("visit.headline".compareTo("visit-alt")).as("unlike the text as a whole").isPositive();
+        assertThat(FormDefinition.WALK_ORDER.compare("a", "a.b")).isNegative();
+        assertThat(FormDefinition.WALK_ORDER.compare("a.b", "a.b")).isZero();
+        assertThat(FormDefinition.WALK_ORDER.compare("b", "a.z")).isPositive();
+    }
+
+    @Test
+    void placementsAreAskedOfTheFormsOwnVersions() {
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1).build(FORM);
+        FormVersionDefinition other = version("01JV0000000000000000000009", "fvUid000009", 9).build(FORM);
+
+        assertThatThrownBy(() -> FormDefinition.of(FORM, List.of(v1)).placements(other))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
 }

@@ -147,10 +147,15 @@ public class DictionaryPublisher {
         jdbc.batchUpdate(INSERT_FIELD, dictionary.fields().stream().map(DictionaryPublisher::parameters)
             .toArray(SqlParameterSource[]::new));
 
-        if (dictionary.skipped() > 0) {
+        if (dictionary.pathsTakenByAnother().count() > 0) {
+            log.warn("The feed's dictionary left out {} field placements at a data path their form version names "
+                + "twice, which resolves to another data element (AMBIGUOUS_PATH), in versions {}",
+                dictionary.pathsTakenByAnother().count(), dictionary.pathsTakenByAnother().versions());
+        }
+        if (dictionary.givenTwice().count() > 0) {
             log.warn("The feed's dictionary left out {} section definitions or field placements that a form version "
-                + "gives twice (the first is kept), in versions {}", dictionary.skipped(),
-                dictionary.versionsWithDuplicates());
+                + "gives twice in one section (the first in walk order is kept), in versions {}",
+                dictionary.givenTwice().count(), dictionary.givenTwice().versions());
         }
         log.info("Published the feed's dictionary: {} field placements and {} sections of {} form versions",
             dictionary.fields().size(), dictionary.sections().size(), dictionary.versionCount());
