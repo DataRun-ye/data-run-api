@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -133,6 +134,20 @@ class StoredSubmissionGuardTest {
 
         assertThatCode(() -> guard.check(incoming(FORM, false), stored, user(FormPermission.ADD_SUBMISSIONS)))
             .doesNotThrowAnyException();
+    }
+
+    /** The creator test the guard and conflict detection share: the login, whatever its case; unknown is no one. */
+    @Test
+    void theCreatorIsTheLoginThatFirstSentIt() {
+        CurrentUserDetails worker = user(FormPermission.ADD_SUBMISSIONS);
+        DataSubmission record = new DataSubmission();
+
+        record.setCreatedBy("Worker");
+        assertThat(StoredSubmissionGuard.madeBy(record, worker)).isTrue();
+        record.setCreatedBy("teammate");
+        assertThat(StoredSubmissionGuard.madeBy(record, worker)).isFalse();
+        record.setCreatedBy(null);
+        assertThat(StoredSubmissionGuard.madeBy(record, worker)).isFalse();
     }
 
     @Test

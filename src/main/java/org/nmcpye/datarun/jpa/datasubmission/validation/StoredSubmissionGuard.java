@@ -63,8 +63,12 @@ public class StoredSubmissionGuard {
         }
     }
 
-    /** A record whose creator is unknown counts as another user's. */
-    private static boolean madeBy(DataSubmission stored, CurrentUserDetails user) {
+    /**
+     * Whether the user made the stored record: its creator, the stored {@code created_by}, is the user's login,
+     * whatever its case. A record whose creator is unknown counts as another user's. Conflict detection asks the same
+     * question, through this one test, to give a baseline to its creator only.
+     */
+    public static boolean madeBy(DataSubmission stored, CurrentUserDetails user) {
         return stored.getCreatedBy() != null
             && user.getUsername() != null
             && stored.getCreatedBy().equalsIgnoreCase(user.getUsername());
