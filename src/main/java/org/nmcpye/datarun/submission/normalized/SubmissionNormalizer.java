@@ -142,6 +142,7 @@ public final class SubmissionNormalizer {
                     path,
                     copy(value),
                     field.valueType(),
+                    ValueConformance.check(field.valueType(), value),
                     resolution.version().id(),
                     resolution.fromPinnedVersion()));
             } else {

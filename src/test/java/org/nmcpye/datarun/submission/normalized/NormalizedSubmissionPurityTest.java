@@ -28,6 +28,8 @@ class NormalizedSubmissionPurityTest {
                 PACKAGE,
                 "java.lang..",
                 "java.util..",
+                "java.math",
+                "java.time",
                 "java.nio.charset..",
                 "java.nio",
                 "java.security",

@@ -16,6 +16,8 @@ import java.util.Objects;
  *                          null (a stored null is no value). An array or object is a copy, never the stored node
  * @param valueType         the declared value type of the definition that resolved the value, or {@code null} when
  *                          that definition declares none the server knows
+ * @param issue             why the value does not parse as that type, or {@code null} when it does; the value is
+ *                          kept whole either way
  * @param formVersionId     the stored id of the form version whose definition resolved the value
  * @param fromPinnedVersion whether that version is the submission's pinned version; otherwise the path is one the
  *                          pinned version does not define for this shape, resolved through another version
@@ -26,6 +28,7 @@ public record FieldValue(
     String path,
     JsonNode value,
     ValueType valueType,
+    ValueIssue issue,
     String formVersionId,
     boolean fromPinnedVersion) {
 
