@@ -21,6 +21,7 @@ import org.nmcpye.datarun.etl.service.EventProcessorService;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.outbox.service.OutboxClaimService;
 import org.nmcpye.datarun.outbox.service.OutboxProcessingService;
+import org.nmcpye.datarun.submission.feed.publisher.SubmissionPublisher;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -83,6 +84,9 @@ class EtlOutboxProcessingIT {
 
     @Autowired
     private EtlMetrics metrics;
+
+    @Autowired
+    private SubmissionPublisher feed;
 
     private EtlFixture fixture;
     private AuditInsertWatchdog watchdog;
@@ -584,7 +588,7 @@ class EtlOutboxProcessingIT {
             eventProcessor.processEvent(runId, outbox, ingestId);
         };
         return new EtlOrchestrator(etlRunService, claimService, processingService, failingOnSomeRows, transactionManager,
-            etlProperties, metrics);
+            etlProperties, metrics, feed);
     }
 
     /**

@@ -11,6 +11,7 @@ import org.nmcpye.datarun.etl.service.EventProcessorService;
 import org.nmcpye.datarun.etl.service.SubmissionNotFoundException;
 import org.nmcpye.datarun.outbox.service.OutboxClaimService;
 import org.nmcpye.datarun.outbox.service.OutboxProcessingService;
+import org.nmcpye.datarun.submission.feed.publisher.SubmissionPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,10 @@ import java.util.UUID;
  * dead once its tries are used up. A lost connection or an interrupt also stops the batch: the row that met it is
  * recorded like any failure, with the usual retry wait, so it can neither hold the head of the queue nor die before
  * its normal schedule, and the rows not started are released for the next run without losing an attempt.
+ * <p>
+ * While the submission feed is on, a row's transaction also publishes the change to the feed: it takes the feed's lock
+ * first, then writes tall and events, then runs the feed part in a savepoint ({@link SubmissionPublisher}). A feed part
+ * that fails rolls back to its savepoint and leaves a pending change; tall, events and the row's success still commit.
  */
 @Component
 public class EtlOrchestrator {
@@ -44,6 +49,7 @@ public class EtlOrchestrator {
     private final TransactionTemplate txTemplate;
     private final EtlRetryPolicy retryPolicy;
     private final EtlMetrics metrics;
+    private final SubmissionPublisher feed;
 
     public EtlOrchestrator(EtlRunService etlRunService,
                            OutboxClaimService outboxClaimService,
@@ -51,7 +57,8 @@ public class EtlOrchestrator {
                            EventProcessorService eventProcessorService,
                            PlatformTransactionManager txManager,
                            EtlProperties properties,
-                           EtlMetrics metrics) {
+                           EtlMetrics metrics,
+                           SubmissionPublisher feed) {
         this.etlRunService = etlRunService;
         this.outboxClaimService = outboxClaimService;
         this.outboxProcessingService = outboxProcessingService;
@@ -61,6 +68,7 @@ public class EtlOrchestrator {
         this.txTemplate.setTimeout((int) Math.max(1, properties.getRowTimeout().toSeconds()));
         this.retryPolicy = new EtlRetryPolicy(properties);
         this.metrics = metrics;
+        this.feed = feed;
     }
 
     /**
@@ -182,8 +190,17 @@ public class EtlOrchestrator {
             recordDead(runId, outbox, "started " + attempt + " times without an outcome");
             return RowResult.DEAD;
         }
+        boolean publishing = feed.isOn();
         try {
-            txTemplate.executeWithoutResult(status -> eventProcessorService.processEvent(runId, outbox, ingestId));
+            txTemplate.executeWithoutResult(status -> {
+                if (publishing) {
+                    feed.lockFeed();
+                }
+                eventProcessorService.processEvent(runId, outbox, ingestId);
+                if (publishing) {
+                    feed.publishChange(outbox.getSubmissionId());
+                }
+            });
             return RowResult.SUCCESS;
         } catch (SubmissionNotFoundException e) {
             // No later try can find it: the submission was removed outside the application.

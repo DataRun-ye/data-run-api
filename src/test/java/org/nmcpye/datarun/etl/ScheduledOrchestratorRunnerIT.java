@@ -107,7 +107,7 @@ class ScheduledOrchestratorRunnerIT {
 
     /** An orchestrator that claims the given batch sizes in turn, then nothing. */
     private EtlOrchestrator orchestratorClaiming(int... batches) {
-        return new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null) {
+        return new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null, null) {
             @Override
             public EtlRunResult runOnce(String pipelineName, int batchSize) {
                 int run = runs.getAndIncrement();
@@ -207,7 +207,7 @@ class ScheduledOrchestratorRunnerIT {
     @Test
     void aRunThatFailsStillReleasesTheLock() {
         outboxRow("pending", null);
-        EtlOrchestrator failing = new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null) {
+        EtlOrchestrator failing = new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null, null) {
             @Override
             public EtlRunResult runOnce(String pipelineName, int batchSize) {
                 throw new IllegalStateException("run failed");
@@ -291,7 +291,7 @@ class ScheduledOrchestratorRunnerIT {
         properties.setPollDelay(Duration.ofSeconds(30));
         properties.setMaxPollDelay(Duration.ofMinutes(5));
         boolean[] stopping = {true};
-        EtlOrchestrator orchestrator = new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null) {
+        EtlOrchestrator orchestrator = new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null, null) {
             @Override
             public EtlRunResult runOnce(String pipelineName, int batchSize) {
                 return new EtlRunResult(1, 0, stopping[0] ? 1 : 0, stopping[0]);
@@ -337,7 +337,7 @@ class ScheduledOrchestratorRunnerIT {
         outboxRow("pending", null);
         EtlProperties properties = new EtlProperties();
         properties.setBatchSize(100);
-        EtlOrchestrator stopping = new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null) {
+        EtlOrchestrator stopping = new EtlOrchestrator(null, null, null, null, null, new EtlProperties(), null, null) {
             @Override
             public EtlRunResult runOnce(String pipelineName, int batchSize) {
                 runs.incrementAndGet();

@@ -1,0 +1,198 @@
+package org.nmcpye.datarun.submission.feed.publisher;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.nmcpye.datarun.config.activation.ActivationSwitches;
+import org.nmcpye.datarun.etl.config.EtlProperties;
+import org.nmcpye.datarun.submission.feed.FeedActivation;
+import org.nmcpye.datarun.submission.normalized.NormalizationFlag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.ConnectionCallback;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.Savepoint;
+import java.time.Duration;
+import java.util.EnumMap;
+import java.util.Map;
+
+/**
+ * The submission feed's publisher, as the ETL reaches it: the only entry point into the feed's writes from outside this
+ * package ({@code FeedWriteOwnershipTest}). Nothing is written while the switch {@code submission-feed} is off.
+ *
+ * <p><b>A live change</b> is published inside the ETL's per-row transaction (contract 8, item 4). The ETL takes the
+ * feed's lock first ({@link #lockFeed}), writes tall and events as before, then calls {@link #publishChange}, which
+ * runs the feed part in a savepoint of that transaction: it reads the submission's head and the version the feed holds,
+ * normalizes, and writes the submission's record with its changed, new and deleted row records ({@link FeedWriter}).
+ * A failure rolls back to the savepoint only, so tall and events still commit with the outbox row's success, and the
+ * submission waits in the retry list as a pending change with its reason code ({@link PendingChanges}). The feed part
+ * has a time limit below the row's ({@code datarun.feed.part-timeout}).</p>
+ *
+ * <p><b>The savepoint is a JDBC savepoint on the transaction's connection.</b> Spring's {@code Propagation.NESTED} is
+ * not available here: the application's transaction manager is JPA's, whose Hibernate dialect offers no savepoints, so
+ * a nested transaction would fail to start. The feed part writes through JDBC only, so a savepoint on the connection
+ * rolls back exactly what it wrote; and since it never passes through a transactional proxy, a failure never marks the
+ * row's transaction rollback-only.</p>
+ */
+@Component
+public class SubmissionPublisher {
+
+    private static final Logger log = LoggerFactory.getLogger(SubmissionPublisher.class);
+
+    private final ActivationSwitches switches;
+    private final DataSource dataSource;
+    private final NamedParameterJdbcTemplate jdbc;
+    private final FeedPublisherProperties properties;
+    private final Duration partTimeout;
+    private final FeedWriter writer;
+    private final PendingChanges pending;
+    private final Map<FeedWriter.Outcome, Counter> changes;
+    private final Counter failures;
+    private final Map<NormalizationFlag, Counter> flags;
+
+    @Autowired
+    public SubmissionPublisher(ActivationSwitches switches, DataSource dataSource, ObjectMapper objectMapper,
+                               FeedPublisherProperties properties, EtlProperties etlProperties,
+                               ObjectProvider<SplitPartners> splitPartners, MeterRegistry registry) {
+        this(switches, dataSource, properties, etlProperties, new FeedWriter(new FormDefinitions(), objectMapper,
+            splitPartners.getIfAvailable(() -> SplitPartners.NONE)), registry);
+    }
+
+    SubmissionPublisher(ActivationSwitches switches, DataSource dataSource, FeedPublisherProperties properties,
+                        EtlProperties etlProperties, FeedWriter writer, MeterRegistry registry) {
+        this.switches = switches;
+        this.dataSource = dataSource;
+        this.jdbc = new NamedParameterJdbcTemplate(dataSource);
+        this.properties = properties;
+        this.partTimeout = partTimeout(properties.getPartTimeout(), etlProperties.getRowTimeout());
+        this.writer = writer;
+        this.pending = new PendingChanges(properties);
+        Map<FeedWriter.Outcome, Counter> byOutcome = new EnumMap<>(FeedWriter.Outcome.class);
+        for (FeedWriter.Outcome outcome : FeedWriter.Outcome.values()) {
+            byOutcome.put(outcome, changeCounter(registry, outcome.name().toLowerCase()));
+        }
+        this.changes = byOutcome;
+        this.failures = changeCounter(registry, "failed");
+        Map<NormalizationFlag, Counter> byFlag = new EnumMap<>(NormalizationFlag.class);
+        for (NormalizationFlag flag : NormalizationFlag.values()) {
+            byFlag.put(flag, Counter.builder("datarun.feed.normalization.flags")
+                .description("What the submission normalizer flagged in the records the feed published, by flag")
+                .tag("flag", flag.name())
+                .register(registry));
+        }
+        this.flags = byFlag;
+    }
+
+    private static Counter changeCounter(MeterRegistry registry, String outcome) {
+        return Counter.builder("datarun.feed.changes")
+            .description("Submissions the feed's publisher handled, by outcome")
+            .tag("outcome", outcome)
+            .register(registry);
+    }
+
+    /** The feed part's time limit: the setting, or half the row's timeout when the setting does not stay below it. */
+    static Duration partTimeout(Duration configured, Duration rowTimeout) {
+        if (configured.compareTo(rowTimeout) < 0 && !configured.isNegative() && !configured.isZero()) {
+            return configured;
+        }
+        Duration half = rowTimeout.dividedBy(2);
+        log.warn("datarun.feed.part-timeout ({}) does not stay below the ETL's row timeout ({}); the feed part may take "
+            + "{}", configured, rowTimeout, half);
+        return half;
+    }
+
+    /** Whether the feed is published: the switch {@code submission-feed}. */
+    public boolean isOn() {
+        return switches.isOn(FeedActivation.SUBMISSION_FEED);
+    }
+
+    /**
+     * Takes the feed's lock in the caller's transaction ({@link FeedLock}): the ETL's first statement in a row's
+     * transaction, before tall and events, while the feed is on.
+     *
+     * @throws IllegalStateException when no transaction is active
+     */
+    public void lockFeed() {
+        requireTransaction();
+        FeedLock.take(jdbc.getJdbcOperations());
+    }
+
+    /**
+     * Publishes the submission's head in a savepoint of the caller's transaction, which took the feed's lock first.
+     * A failure of the feed part rolls back to the savepoint and records a pending change; it is never thrown. Only a
+     * failure that leaves the transaction unusable (a lost connection) is thrown, and the caller's transaction then
+     * fails as a whole.
+     *
+     * @param submissionId the submission's id ({@code data_submission.id}), as the outbox row names it
+     */
+    public void publishChange(String submissionId) {
+        requireTransaction();
+        Attempt attempt = attempt(submissionId, false);
+        if (attempt.failure() != null) {
+            recordFailure(submissionId, attempt);
+        }
+    }
+
+    /**
+     * One submission's publication in a savepoint of the current transaction, within the feed part's time limit:
+     * written, or rolled back to the savepoint with the failure's reason code.
+     */
+    private Attempt attempt(String submissionId, boolean republish) {
+        FeedStatements statements = new FeedStatements(dataSource, System.nanoTime() + partTimeout.toNanos());
+        Savepoint savepoint = jdbc.getJdbcOperations().execute((ConnectionCallback<Savepoint>) Connection::setSavepoint);
+        FeedWriter.Result result;
+        try {
+            result = writer.publish(statements, submissionId, republish);
+        } catch (RuntimeException failure) {
+            jdbc.getJdbcOperations().execute((ConnectionCallback<Void>) connection -> {
+                connection.rollback(savepoint);
+                return null;
+            });
+            failures.increment();
+            return new Attempt(null, FeedFailure.reasonOf(failure), FeedFailure.typeOf(failure));
+        }
+        jdbc.getJdbcOperations().execute((ConnectionCallback<Void>) connection -> {
+            connection.releaseSavepoint(savepoint);
+            return null;
+        });
+        changes.get(result.outcome()).increment();
+        result.flags().forEach((flag, count) -> flags.get(flag).increment(count));
+        return new Attempt(result, null, null);
+    }
+
+    /**
+     * One publication's outcome.
+     *
+     * @param result  what was written, or {@code null} when it failed
+     * @param failure the failure's reason code, or {@code null}
+     * @param type    the failure's exception type, for the log
+     */
+    private record Attempt(FeedWriter.Result result, String failure, String type) {
+    }
+
+    /** Records a failed feed part as a pending change, in the current transaction, and logs it without values. */
+    private void recordFailure(String submissionId, Attempt attempt) {
+        PendingChanges.Failure recorded = pending.recordFailure(jdbc, submissionId, attempt.failure());
+        if (recorded.dead()) {
+            log.error("The feed gave up on submission {} after {} failures ({}, {}); reconcile publishes it once the "
+                + "cause is fixed", submissionId, recorded.attempts(), attempt.failure(), attempt.type());
+        } else {
+            log.warn("The feed part of submission {} failed ({}, {}); it waits for a retry after the live backlog, "
+                    + "failure {} of {}", submissionId, attempt.failure(), attempt.type(), recorded.attempts(),
+                properties.getMaxAttempts());
+        }
+    }
+
+    private static void requireTransaction() {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalStateException("the feed is written only inside a transaction that holds its lock");
+        }
+    }
+}
