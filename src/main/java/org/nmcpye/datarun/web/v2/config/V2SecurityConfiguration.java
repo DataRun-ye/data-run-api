@@ -39,8 +39,8 @@ import static org.springframework.security.config.Customizer.withDefaults;
  *       so a deactivated account or a changed role takes effect at once. HTTP Basic, which the main chain still
  *       accepts for operational compatibility, is not part of v2;</li>
  *   <li>a refusal at this layer is a v2 problem too: 401 {@code unauthenticated} with the bearer
- *       {@code WWW-Authenticate} challenge, 403 {@code forbidden}. These answers are not logged here; failed
- *       authentications have their own listener.</li>
+ *       {@code WWW-Authenticate} challenge, 403 {@code forbidden}. These answers log nothing: a missing token is
+ *       the client's, and a rejected bearer token is no failed login (AuthenticationFailureListener).</li>
  * </ul>
  * It comes first among the chains and matches only v2 paths, so every other request still meets the main chain.
  */

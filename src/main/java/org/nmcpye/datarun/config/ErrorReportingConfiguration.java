@@ -12,6 +12,7 @@ import io.sentry.spring.jakarta.tracing.TransactionNameProvider;
 import jakarta.servlet.Filter;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.web.rest.errors.ExceptionTranslator;
+import org.nmcpye.datarun.web.v2.problem.V2ProblemResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
@@ -200,11 +201,16 @@ public class ErrorReportingConfiguration {
         return event;
     }
 
-    /** ExceptionTranslator's line for a handled server fault (5xx), with at least its first five arguments. */
+    /**
+     * A handled server fault's line (5xx), from ExceptionTranslator (v1) or V2ProblemResolver (v2), with at least
+     * its first five arguments. Both lines take the same arguments in the same order.
+     */
     private static boolean isHandledServerFault(String logger, Message message) {
-        return ExceptionTranslator.class.getName().equals(logger)
-            && ExceptionTranslator.SERVER_FAULT_LINE.equals(message.getMessage())
-            && message.getParams() != null && message.getParams().size() >= 5;
+        boolean v1 = ExceptionTranslator.class.getName().equals(logger)
+            && ExceptionTranslator.SERVER_FAULT_LINE.equals(message.getMessage());
+        boolean v2 = V2ProblemResolver.class.getName().equals(logger)
+            && V2ProblemResolver.FAULT_LINE.equals(message.getMessage());
+        return (v1 || v2) && message.getParams() != null && message.getParams().size() >= 5;
     }
 
     /**

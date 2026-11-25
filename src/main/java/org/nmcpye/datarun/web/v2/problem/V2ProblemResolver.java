@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.nmcpye.datarun.config.activation.OperationNotEnabledException;
+import org.nmcpye.datarun.common.exceptions.FailureShape;
 import org.nmcpye.datarun.web.v2.ApiV2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,6 @@ import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.ModelAndView;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -66,13 +66,13 @@ public class V2ProblemResolver implements HandlerExceptionResolver, Ordered {
     /** The pattern of the INFO line for an answered client error. */
     public static final String ANSWERED_LINE = "v2 request {} {} answered {} ({}): {}, request {}";
 
-    /** The pattern of the ERROR line for a server fault. */
+    /**
+     * The pattern of the ERROR line for a server fault. Its arguments are ExceptionTranslator's, in the same order
+     * (method, route, status, code, failure shape, request id), so GlitchTip groups v2 faults by the same rule.
+     */
     public static final String FAULT_LINE = "v2 request {} {} failed with {} ({}): {}, request {}";
 
     private static final Logger log = LoggerFactory.getLogger(V2ProblemResolver.class);
-
-    private static final String APPLICATION = "org.nmcpye.datarun.";
-    private static final int FRAMES = 3;
 
     private final ProblemWriter writer;
 
@@ -319,7 +319,7 @@ public class V2ProblemResolver implements HandlerExceptionResolver, Ordered {
             : problem.getInstance().toString().substring("urn:uuid:".length());
         if (problem.getStatus() >= 500) {
             log.error(FAULT_LINE, request.getMethod(), route(request), problem.getStatus(), problem.getCode(),
-                shape(ex), requestId);
+                FailureShape.of(ex), requestId);
         } else {
             log.info(ANSWERED_LINE, request.getMethod(), route(request), problem.getStatus(), problem.getCode(),
                 types(ex), requestId);
@@ -342,37 +342,4 @@ public class V2ProblemResolver implements HandlerExceptionResolver, Ordered {
         return types.toString();
     }
 
-    /** The types, the first SQLState among the causes, and the root cause's first application frames. */
-    static String shape(Throwable ex) {
-        StringBuilder shape = new StringBuilder(types(ex));
-        Throwable root = ex;
-        Set<Throwable> seen = Collections.newSetFromMap(new IdentityHashMap<>());
-        String sqlState = null;
-        for (Throwable cause = ex; cause != null && seen.add(cause); cause = cause.getCause()) {
-            if (sqlState == null && cause instanceof SQLException sql) {
-                sqlState = sql.getSQLState();
-            }
-            root = cause;
-        }
-        if (sqlState != null) {
-            shape.append(", SQLState ").append(sqlState);
-        }
-        StringJoiner frames = new StringJoiner(" < ");
-        int count = 0;
-        for (StackTraceElement frame : root.getStackTrace()) {
-            if (count == FRAMES) {
-                break;
-            }
-            String type = frame.getClassName();
-            if (type.startsWith(APPLICATION) && !type.contains("$$")) {
-                frames.add(type.substring(type.lastIndexOf('.') + 1) + "." + frame.getMethodName() + ":"
-                    + frame.getLineNumber());
-                count++;
-            }
-        }
-        if (count > 0) {
-            shape.append(", at ").append(frames);
-        }
-        return shape.toString();
-    }
 }

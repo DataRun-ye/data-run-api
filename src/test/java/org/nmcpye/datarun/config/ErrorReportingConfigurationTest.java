@@ -18,6 +18,7 @@ import io.sentry.spring.boot.jakarta.SentryProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.web.rest.errors.ExceptionTranslator;
+import org.nmcpye.datarun.web.v2.problem.V2ProblemResolver;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -176,6 +177,25 @@ class ErrorReportingConfigurationTest {
             .containsExactly("handled-server-fault", "POST /api/v1/assignments", "NullPointerException");
         assertThat(first.getMessage().getParams()).as("nothing more is sent").isNull();
         assertThat(first.getMessage().getFormatted()).isEqualTo(ExceptionTranslator.SERVER_FAULT_LINE);
+    }
+
+    /** v2's fault line takes ExceptionTranslator's arguments in the same order and is grouped by the same rule. */
+    @Test
+    void v2ServerFaultsAreGroupedByTheSameRule() {
+        SentryEvent event = new SentryEvent();
+        event.setLogger(V2ProblemResolver.class.getName());
+        Message message = new Message();
+        message.setMessage(V2ProblemResolver.FAULT_LINE);
+        message.setParams(List.of("POST", "/api/v2/things/{id}:touch", "500", "internal-error",
+            "CannotCreateTransactionException < PSQLException, SQLState 08006, at IdempotencyStore.claim:70", "req-1"));
+        event.setMessage(message);
+
+        SentryEvent sent = withoutValues(event);
+
+        assertThat(sent.getFingerprints()).containsExactly("handled-server-fault", "POST /api/v2/things/{id}:touch",
+            "CannotCreateTransactionException", "SQLState 08006");
+        assertThat(sent.getMessage().getParams()).isNull();
+        assertThat(sent.getMessage().getFormatted()).isEqualTo(V2ProblemResolver.FAULT_LINE);
     }
 
     /** Any other line keeps GlitchTip's own grouping. */

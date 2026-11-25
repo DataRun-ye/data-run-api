@@ -256,6 +256,20 @@ class V2ProblemResolverTest {
         assertNoLineLeaks();
     }
 
+    /** FailureShape's fallback: a root cause thrown in library code shows where the application met it. */
+    @Test
+    void aFaultWhoseRootCauseHasNoApplicationFrameShowsTheOuterFrames() {
+        IllegalArgumentException root = new IllegalArgumentException(SECRET);
+        root.setStackTrace(new StackTraceElement[] {
+            new StackTraceElement("java.util.Objects", "requireNonNull", "Objects.java", 233)});
+        resolver.resolveException(request("GET", "/api/v2/things/7"), new MockHttpServletResponse(), null,
+            new IllegalStateException(SECRET, root));
+
+        assertThat(lines.list).singleElement().satisfies(line -> assertThat(line.getFormattedMessage())
+            .contains("IllegalStateException < IllegalArgumentException, at V2ProblemResolverTest."));
+        assertNoLineLeaks();
+    }
+
     @Test
     void withoutARequestIdYetTheClientsUuidOrANewOneIsUsedAndReturned() throws Exception {
         MDC.remove(RequestIdFilter.MDC_REQUEST_ID_KEY);

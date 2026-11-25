@@ -49,9 +49,12 @@ and its error shapes are untouched.
 - Status use: 400 malformed; 401; 403; 404; 405; 409 the same request may
   succeed later; 412 stale; 422 well formed but not applicable; 428 missing
   precondition; 5xx server faults.
-- Every answer is one log line: INFO for 4xx, ERROR for 5xx (reported to
-  GlitchTip), with method, route pattern, status, code, exception types and
-  request id, and nothing the client sent.
+- Every answer is one log line: INFO for 4xx, ERROR for 5xx, with method,
+  route pattern, status, code, exception types (for a 5xx 6.5.5's
+  `FailureShape`: types, SQLState, first application frames) and request id,
+  and nothing the client sent. The ERROR line takes `ExceptionTranslator`'s
+  arguments in the same order, so GlitchTip groups v2 faults by the same
+  fingerprint (route, outermost type, SQLState).
 
 ## Authentication
 
@@ -65,8 +68,9 @@ and its error shapes are untouched.
   token names the account; the request's authority comes from the account's
   current database state. HTTP Basic is not accepted on v2.
 - Refusals here are problems: 401 `unauthenticated` with the
-  `WWW-Authenticate: Bearer` challenge, 403 `forbidden`. They are not logged
-  by v2; the authentication listener records failures.
+  `WWW-Authenticate: Bearer` challenge, 403 `forbidden`. They log nothing: a
+  missing token is the client's, and since 6.5.5 a rejected bearer token is
+  no failed login and leaves no line.
 
 ## Ids
 
