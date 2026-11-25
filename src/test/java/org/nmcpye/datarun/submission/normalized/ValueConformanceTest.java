@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.submission.normalized;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.DoubleNode;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 
@@ -102,13 +101,17 @@ class ValueConformanceTest {
     }
 
     @Test
-    void aFloatingNumberThatIsNotFiniteIsNoNumber() {
-        // never parsed from JSON, but a node built in code can hold one, and the check must not fail on it
-        assertThat(ValueConformance.check(ValueType.Number, DoubleNode.valueOf(Double.NaN)))
-            .isEqualTo(ValueIssue.NOT_A_NUMBER);
-        assertThat(ValueConformance.check(ValueType.IntegerPositive, DoubleNode.valueOf(Double.POSITIVE_INFINITY)))
-            .isEqualTo(ValueIssue.NOT_AN_INTEGER);
-        assertThat(ValueConformance.check(ValueType.Integer, DoubleNode.valueOf(3.0))).isNull();
+    void aStoredNaNNeverReachesTheCheck_theDocumentDoesNotParse() {
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+            .field("deUidAmount1", null, "amount", "Number").build("01HZY8X3K2ABCDEFGHJKMNPQRS");
+
+        NormalizedSubmission normalized = SubmissionNormalizer.normalize(
+            new StoredSubmission("01J2Q7Y0V6M3N4P5R6S7T8V9WX", "fvUid000001", "{\"amount\": NaN}"),
+            FormDefinition.of("01HZY8X3K2ABCDEFGHJKMNPQRS", List.of(v1)));
+
+        assertThat(normalized.values()).isEmpty();
+        assertThat(normalized.flags()).containsExactly(
+            org.assertj.core.api.Assertions.entry(NormalizationFlag.DOCUMENT_NOT_PARSED, 1));
     }
 
     @Test

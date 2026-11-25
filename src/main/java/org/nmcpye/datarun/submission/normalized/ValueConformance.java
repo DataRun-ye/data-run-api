@@ -25,8 +25,8 @@ import java.util.regex.Pattern;
  *       {@code OrganisationUnit}, {@code Activity}, {@code Entity}, {@code Progress}, {@code Reference},
  *       {@code Image}, {@code FileResource}): a JSON string. Whether a code is one of the field's options is not
  *       judged here.</li>
- *   <li>{@code Number}, {@code Percentage}, {@code UnitInterval}: a JSON number. No range is judged: DataRun
- *       defines none for the last two, and no stored value has either type.</li>
+ *   <li>{@code Number}, {@code Percentage}, {@code UnitInterval}: a JSON number, judged by its exact decimal value,
+ *       however large ({@code 1E+400}). No range is judged: DataRun defines none for the last two.</li>
  *   <li>Integers: a JSON number without a fractional part ({@code 3.0} is whole); {@code IntegerPositive} above
  *       zero, {@code IntegerNegative} below, {@code IntegerZeroOrPositive} not below.</li>
  *   <li>{@code Boolean}, {@code YesNo}: a JSON boolean; {@code TrueOnly}: JSON {@code true}.</li>
@@ -35,8 +35,13 @@ import java.util.regex.Pattern;
  *       {@code Time}: a time of day.</li>
  *   <li>{@code SelectMulti}: a JSON array of strings.</li>
  *   <li>Other types ({@code Coordinate}, {@code GeoJson}, {@code Calculated}, sections) and an unknown type: not
- *       judged; no stored value has them.</li>
+ *       judged.</li>
  * </ul>
+ *
+ * <p><b>NaN and Infinity never reach it.</b> They are not JSON: stored text holding one does not parse
+ * ({@link StoredJson}), and the whole document is kept as text, flagged {@link UnmappedReason#DOCUMENT_NOT_PARSED}.
+ * The values it judges come from {@link StoredJson#parse}, whose numbers are ints, longs, big integers and big
+ * decimals, never binary floats.</p>
  */
 final class ValueConformance {
 
@@ -56,7 +61,7 @@ final class ValueConformance {
             case Text, LongText, Letter, FullName, PhoneNumber, Email, URL, Username, ScannedCode, SelectOne, Team,
                  OrganisationUnit, Activity, Entity, Progress, Reference, Image, FileResource ->
                 value.isTextual() ? null : ValueIssue.NOT_TEXT;
-            case Number, Percentage, UnitInterval -> finiteNumber(value) ? null : ValueIssue.NOT_A_NUMBER;
+            case Number, Percentage, UnitInterval -> value.isNumber() ? null : ValueIssue.NOT_A_NUMBER;
             case Integer -> integer(value, Sign.ANY);
             case IntegerPositive -> integer(value, Sign.POSITIVE);
             case IntegerNegative -> integer(value, Sign.NEGATIVE);
@@ -73,16 +78,8 @@ final class ValueConformance {
 
     private enum Sign { ANY, POSITIVE, NEGATIVE, ZERO_OR_POSITIVE }
 
-    /**
-     * A JSON number. A decimal is always finite, however large ({@code 1E+400}); only a binary floating node, which a
-     * document parsed by {@link StoredJson} never holds, can be infinite or NaN, and then it is no number.
-     */
-    private static boolean finiteNumber(JsonNode value) {
-        return value.isNumber() && !((value.isDouble() || value.isFloat()) && !Double.isFinite(value.doubleValue()));
-    }
-
     private static ValueIssue integer(JsonNode value, Sign sign) {
-        if (!finiteNumber(value)) {
+        if (!value.isNumber()) {
             return ValueIssue.NOT_AN_INTEGER;
         }
         BigDecimal number = value.decimalValue();
