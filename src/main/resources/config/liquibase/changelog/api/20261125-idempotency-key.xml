@@ -20,7 +20,8 @@
       resource's row.
 
       It stores no values: the caller's user id, the key, a SHA-256 of the request in a canonical form, and the
-      outcome as a resource type, id, version and status. A replay renders the resource at that version from its
+      outcome as a resource type, id, version and status. Both ids are up to 36 characters, the v2 id rule's
+      maximum, so a later move of app_user to UUIDv7 text needs no change here. A replay renders the resource at that version from its
       module's history; nothing of the request or the response is kept here.
 
       Rows live 72 hours (expires_at); an expired row counts as absent and is re-claimed in place, and the
@@ -42,7 +43,7 @@
         </sql>
         <sql>
             CREATE TABLE api.idempotency_key (
-                actor_user_id    varchar(26) NOT NULL,
+                actor_user_id    varchar(36) NOT NULL,
                 idempotency_key  uuid        NOT NULL,
                 request_hash     bytea       NOT NULL,
                 resource_type    varchar(32),

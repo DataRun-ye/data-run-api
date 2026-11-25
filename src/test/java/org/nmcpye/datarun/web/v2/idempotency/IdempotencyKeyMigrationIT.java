@@ -94,7 +94,7 @@ class IdempotencyKeyMigrationIT {
         assertThat(columns).extracting(column -> column.get("column_name") + " " + column.get("data_type") + " "
                 + column.get("character_maximum_length") + " " + column.get("is_nullable"))
             .containsExactly(
-                "actor_user_id character varying 26 NO",
+                "actor_user_id character varying 36 NO",
                 "idempotency_key uuid null NO",
                 "request_hash bytea null NO",
                 "resource_type character varying 32 YES",
