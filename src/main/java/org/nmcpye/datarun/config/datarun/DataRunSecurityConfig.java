@@ -75,7 +75,7 @@ public class DataRunSecurityConfig {
                         .requestMatchers(mvc.pattern("/management/health")).permitAll()
                         .requestMatchers(mvc.pattern("/management/health/**")).permitAll()
                         .requestMatchers(mvc.pattern("/management/info")).permitAll()
-                        .requestMatchers(mvc.pattern("/management/prometheus")).permitAll()
+                        // Everything else under /management needs an admin, Prometheus metrics included (6.5.5).
                         .requestMatchers(mvc.pattern("/management/**")).hasAuthority(AuthoritiesConstants.ADMIN)
                         .anyRequest().denyAll()
 

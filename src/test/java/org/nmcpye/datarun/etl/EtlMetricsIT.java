@@ -8,8 +8,13 @@ import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
+import org.nmcpye.datarun.security.jwt.JwtAuthenticationTestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -42,6 +47,9 @@ class EtlMetricsIT {
 
     @Autowired
     private DataSource dataSource;
+
+    @Value("${jhipster.security.authentication.jwt.base64-secret}")
+    private String jwtKey;
 
     private EtlFixture fixture;
 
@@ -114,9 +122,13 @@ class EtlMetricsIT {
         assertThat(oldestAge()).isZero();
     }
 
+    /** To an admin: the endpoint is not public since 6.5.5 (ManagementRouteSecurityIT). */
     @Test
-    void theMetersAreServedUnauthenticatedAtTheManagementPrometheusEndpoint() {
-        String scrape = http.getForObject("/management/prometheus", String.class);
+    void theMetersAreServedToAnAdminAtTheManagementPrometheusEndpoint() {
+        HttpHeaders admin = new HttpHeaders();
+        admin.setBearerAuth(JwtAuthenticationTestUtils.createValidTokenForUser(jwtKey, "admin"));
+        String scrape = http.exchange("/management/prometheus", HttpMethod.GET, new HttpEntity<>(admin), String.class)
+            .getBody();
 
         assertThat(scrape).contains(
             "datarun_etl_outbox_rows{status=\"pending\",}",

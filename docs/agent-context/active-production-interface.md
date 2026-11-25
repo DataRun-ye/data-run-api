@@ -44,9 +44,12 @@ the decoder rejects for another reason (an unexpected algorithm, say) logs
 A failure inside the security chain (HTTP Basic) runs before `RequestIdFilter`,
 so its line names no request id.
 
-HTTP Basic and public Prometheus access remain baseline operational
-compatibility pending evidence from the administrator and monitoring smoke.
-They are not canonicalized by this transition.
+HTTP Basic remains baseline operational compatibility pending evidence from
+the administrator and monitoring smoke. It is not canonicalized by this
+transition. Under `/management/`, only `health` (with its probes) and `info`
+are public; everything else needs ADMIN, `/management/prometheus` included
+since 6.5.5 (it was public, and it names every route pattern, repository
+timings, exception types and error rates).
 
 ## Assignment
 
@@ -338,7 +341,9 @@ voids, delete markers) belongs to the projector work, not to this runtime.
   `UPDATE outbox SET status = 'pending', attempt = 0, next_attempt_at = NULL
   WHERE outbox_id IN (...)`.
 - **Metrics.** Micrometer meters are served at `/management/prometheus` where
-  Prometheus export is on:
+  Prometheus export is on. Production and staging turn it on in their compose
+  files (`MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED=true`), which outranks
+  `application-prod.yml`'s `false`:
   - `datarun_etl_outbox_rows{status}`: the backlog by status;
   - `datarun_etl_outbox_oldest_age_seconds`: the age of the oldest change not
     yet projected;
@@ -350,8 +355,8 @@ voids, delete markers) belongs to the projector work, not to this runtime.
 
   A scheduled task reads the backlog every `datarun.etl.backlog-refresh`
   (15 s), so a scrape never waits on the database, even when the pool is
-  exhausted. The application serves `/management/prometheus` without a login.
-  Operations should limit `/management/` at nginx to the monitoring host.
+  exhausted. Since 6.5.5 a scrape needs ADMIN (HTTP Basic or a bearer token),
+  so a scraper needs credentials or an internal-only path.
 - **Monitoring.** GlitchTip watches production. Each part is off, and sends
   nothing, while its `.env` value is empty.
   - Errors (`SENTRY_DSN`, `SENTRY_ENVIRONMENT`): every ERROR log line and
