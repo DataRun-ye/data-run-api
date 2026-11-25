@@ -5,8 +5,8 @@ the publisher keeps it complete. Status: LIVING. Contract version 1 is proposed 
 
 - These are engineering and downstream words; operations see none of them.
 - Words shared with [submission review](../submission-review/CONTEXT.md) mean the same in both: form, activity,
-  team, org unit, submission, row, entry, version, deleted, created, entered, placement, split-off, position, field
-  id, data path, unmapped value, head, outbox, ETL.
+  team, org unit, submission, row, entry (a list entry only), version, deleted, created, entered, placement,
+  split-off, position, field id, data path, unmapped value, head, outbox, ETL.
 - Airbyte's own words name what Airbyte does: stream, record, cursor field, sync mode, initial load, refresh.
 
 ## Language
@@ -161,7 +161,7 @@ The published map from analytics' `canonical_element_id` to `field_id`, for re-p
 | status (bare) | Several meanings | freshness; deleted |
 | snapshot | The journal's revisions hold snapshots | current record; first publication |
 | element, offset, seq | Vague, or another system's word | field id; position |
-| entry | The lists word | record; pending change |
+| entry, for anything but a list entry | It means a list entry, as in submission review | record; pending change |
 | received | Not the first receipt for releases and split-offs | created |
 | `submission_version` | A dead column's name | version; changed in version |
 | void | The stored state is deleted | deleted |

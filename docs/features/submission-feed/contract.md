@@ -14,7 +14,7 @@ Decisions are engineering (2026-11-25) unless marked. Counts come from a throwaw
 | --- | --- | --- | --- | --- |
 | `feed.submission` | submission, live or deleted | `id` | `position` | Incremental, Append + Deduped |
 | `feed.submission_row` | row ever published in a submission's current record | `submission_id`, `id` | `position` | Incremental, Append + Deduped |
-| `feed.form_field` | field placement per form version | (`form_version_id`, `section_id`, `field_id`), for reference | — | Full Refresh, Overwrite |
+| `feed.form_field` | field placement per form version | unique (`form_version_id`, `section_id`, `field_id`), for reference | — | Full Refresh, Overwrite |
 | `feed.form_section` | section per form version | (`form_version_id`, `section_id`) | — | Full Refresh, Overwrite |
 | `feed.freshness` | feed (one record: `submissions`) | `feed` | — | Full Refresh, Overwrite |
 
@@ -43,7 +43,7 @@ Decisions are engineering (2026-11-25) unless marked. Counts come from a throwaw
 | `position` | bigint | no | The feed's order, from the same sequence as `submission` |
 | `submission_id` | text | no | The submission |
 | `id` | text | no | The row id: its stored id as text, or a derived id (§5). Unique within its submission only: a split moves rows to a new submission with their ids, and a phone can copy rows |
-| `id_origin` | text | no | `STORED` or `DERIVED` (an open list). Derived when the row has no stored id, an empty one, or one an earlier row of the submission already has. A derived id follows the row's place, so it changes when an earlier sibling is removed |
+| `id_origin` | text | no | `STORED` or `DERIVED` (an open list). Derived when the row has no stored id or an empty one, or when its id, stored or derived, is already taken by a row earlier in walk order (`DUPLICATE_ID`, §5). A derived id follows the row's place, so it changes when an earlier sibling is removed |
 | `parent_row_id` | text | yes | The parent row, for a nested row; null at the first level |
 | `section_id` | text | no | The repeating section (`form_section.section_id`) |
 | `row_index` | integer | no | The row's 1-based place among its siblings |
@@ -65,9 +65,9 @@ Decisions are engineering (2026-11-25) unless marked. Counts come from a throwaw
   (`PATH_NOT_IN_FORM`; about 5,900 values in two forms today), also a second value for a field that already has one
   (`FIELD_ALREADY_HAS_VALUE`). A stored document that is not a JSON object is kept whole under the empty path `""`.
 - **Never a failure on data.** The normalizer flags what it meets and counts the flags per submission; the publisher
-  never fails a change because of the data. The flag counts are server monitoring (integrity check 12 and a
-  metric), not part of the feed: downstream already sees `unmapped_values`. A count column would be an additive
-  change if downstream ever needs one (engineering, 2026-11-25).
+  never fails a change because of the data. The flag counts are server monitoring, reported for reference by
+  integrity check 12 (§8) and as a metric, not part of the feed: downstream already sees `unmapped_values`. A count
+  column would be an additive change if downstream ever needs one (engineering, 2026-11-25).
 - **Types are the phone's:** the server does not check uploaded values (submission review checks its own edits).
   Cast by the dictionary's `value_type`, guarding against a stray type (none today).
 - **Labels are not in the feed.** Option labels, names and translations come through their own tables (owner,
@@ -87,23 +87,60 @@ Decisions are engineering (2026-11-25) unless marked. Counts come from a throwaw
     objects have none, and 21 of 62 repeating-section paths changed id across versions), so a renamed section gets a
     new id;
   - a row with no stored id, or an empty one: `<submission id>|<section path>|<parent row id, or nothing>|<row index>`;
-  - a row whose stored id an earlier row of the submission already has (`DUPLICATE_ID`): the same name, then the same
-    name followed by `|<attempt>`, from 2 up, until the id is free.
+  - a row whose id, stored or derived, is already taken by an earlier row of the submission (`DUPLICATE_ID`): first
+    the name above, then the same name followed by `|<attempt>`, from 2 up, until the id is free.
 
   A section path is the stored keys from the root to the section, joined by dots. The parent row id is that row's own
   id, stored or derived. The row index is the row's 1-based place in its array.
 
+  **Earlier** means walk order: depth first from the document's root; each object's keys in `String.compareTo`
+  order (by UTF-16 code unit); each array in stored order; a row before its nested rows. The walk reads the stored
+  document as PostgreSQL prints it: arrays keep their stored order, and object keys, which come in jsonb's own
+  order, are sorted again by the walk, so jsonb's key order never changes an id.
+
 ## 6. The dictionary
 
-**`feed.form_field`**, one record per field placement per form version: `form_id`, `form_version_id`,
-`form_version_number`, `field_id` (`public.data_element.id`), `section_id` (null at the top level),
-`repeat_section_id` (the repeating section whose rows hold the field's values; null when they are in
-`submission.field_values`), `name` (in this version), `label` (jsonb, by locale), `value_type` (as defined),
-`option_set_id` (`public.option_set.id`), `mandatory`, `sort_order`, `published_at`. Unique on (`form_version_id`,
-`section_id`, `field_id`), nulls not distinct.
+### `feed.form_field`
 
-**`feed.form_section`**: `form_id`, `form_version_id`, `form_version_number`, `section_id`, `parent_section_id`,
-`name`, `label`, `repeatable`, `sort_order`, `published_at`.
+One record per field placement per form version. Unique on (`form_version_id`, `section_id`, `field_id`), nulls not
+distinct, which matters only for `section_id`.
+
+| Column | Type (Airbyte) | Null | Meaning |
+| --- | --- | --- | --- |
+| `form_id` | text (string) | no | `public.data_template.id` |
+| `form_version_id` | text | no | `public.data_template_version.id` |
+| `form_version_number` | integer (number) | no | The version's number |
+| `field_id` | text | no | `public.data_element.id` |
+| `section_id` | text | yes | The section that holds the field (`form_section.section_id`); null for a field outside every section |
+| `repeat_section_id` | text | yes | The repeating section whose rows hold the field's values; null when they are in `submission.field_values` |
+| `name` | text | no | The field's name in this version |
+| `label` | jsonb (string) | yes | Labels by locale |
+| `value_type` | text | yes | The value type as defined; null when the definition gives none |
+| `option_set_id` | text | yes | `public.option_set.id` |
+| `mandatory` | boolean | yes | As defined; null when the definition does not say |
+| `sort_order` | integer | yes | Its place among its siblings, as defined |
+| `published_at` | timestamptz (string, ISO 8601 with zone) | no | When this record was written |
+
+Only fields the submission normalizer resolves are published (engineering, 2026-11-25). A field whose data element
+no longer exists, or a definition without a data element or a name, has no record; its values are already published
+as unmapped values under their data path.
+
+### `feed.form_section`
+
+One record per section per form version; key (`form_version_id`, `section_id`).
+
+| Column | Type (Airbyte) | Null | Meaning |
+| --- | --- | --- | --- |
+| `form_id` | text (string) | no | `public.data_template.id` |
+| `form_version_id` | text | no | `public.data_template_version.id` |
+| `form_version_number` | integer (number) | no | The version's number |
+| `section_id` | text | no | The section's derived id (§5) |
+| `parent_section_id` | text | yes | The section that holds it; null for a section outside every other |
+| `name` | text | yes | The section's name in this version |
+| `label` | jsonb (string) | yes | Labels by locale |
+| `repeatable` | boolean | no | Whether its data are rows; false when the definition does not say |
+| `sort_order` | integer | yes | Its place among its siblings, as defined |
+| `published_at` | timestamptz | no | When this record was written |
 
 - **Small** (about 5,000 placements and sections), so read with a full refresh: a rewritten or deleted form version
   needs no deleted records. The server rewrites the dictionary in place, in one transaction, at start and whenever a
@@ -117,21 +154,21 @@ Decisions are engineering (2026-11-25) unless marked. Counts come from a throwaw
 
 One record, key `feed` = `submissions`, read with a full refresh at every sync.
 
-| Column | Meaning |
-| --- | --- |
-| `feed` | The feed's name and key: `submissions` (room for other feeds in the schema) |
-| `last_position` | The highest position published |
-| `last_published_at` | When the publisher last wrote a record |
-| `last_changed_at` | The newest `changed_at` published ("data as of", for dashboards) |
-| `backlog` | Outbox changes not yet processed |
-| `oldest_unpublished_at` | When the oldest of them was recorded; null when none |
-| `pending` | Changes whose feed part failed and wait for a retry |
-| `oldest_pending_at` | When the oldest pending change first failed; null when none |
-| `dead` | Changes given up on: outbox rows marked dead, and pending changes past the attempt cap, each kept with its reason code. Reconcile still publishes their submissions once the cause is fixed |
-| `unpublished` | Submissions whose published version differed from the journal's head at the last reconcile |
-| `last_reconciled_at` | When reconcile last ran |
-| `first_publication_completed_at` | Null until the first publication has written every submission; models built earlier are partial |
-| `checked_at` | When the publisher last wrote this record, also when idle |
+| Column | Type (Airbyte) | Null | Meaning |
+| --- | --- | --- | --- |
+| `feed` | text (string) | no | The feed's name and key: `submissions` (room for other feeds in the schema) |
+| `last_position` | bigint (number) | yes | The highest position published; null until the first record |
+| `last_published_at` | timestamptz (string) | yes | When the publisher last wrote a record; null until then |
+| `last_changed_at` | timestamptz | yes | The newest `changed_at` published ("data as of", for dashboards); null until the first record |
+| `backlog` | bigint | no | Outbox changes not yet processed; 0 when none |
+| `oldest_unpublished_at` | timestamptz | yes | When the oldest of them was recorded; null when none |
+| `pending` | bigint | no | Changes whose feed part failed and wait for a retry; 0 when none |
+| `oldest_pending_at` | timestamptz | yes | When the oldest pending change first failed; null when none |
+| `dead` | bigint | no | Changes given up on: outbox rows marked dead, and pending changes past the attempt cap, each kept with its reason code; 0 when none. Reconcile still publishes their submissions once the cause is fixed |
+| `unpublished` | bigint | yes | Submissions whose published version differed from the journal's head at the last reconcile; null until the first reconcile |
+| `last_reconciled_at` | timestamptz | yes | When reconcile last ran; null until then |
+| `first_publication_completed_at` | timestamptz | yes | Null until the first publication has written every submission; models built earlier are partial |
+| `checked_at` | timestamptz | no | When the publisher last wrote this record, also when idle |
 
 Normalization flag counts are not in `freshness`; they are server monitoring (§4).
 
@@ -153,19 +190,23 @@ Normalization flag counts are not in `freshness`; they are server monitoring (§
    writes the same version again, and skips a submission whose held version is newer than the head it read.
 4. **Nothing stays unpublished.** The feed's writes share the ETL's per-row transaction, inside a savepoint: a feed
    failure rolls back only the feed part, tall and events still commit, and the submission waits in a retry list.
-   Retries are capped; past the cap the change is marked dead with its reason code, counted in `freshness` and by an
-   integrity check, and the heartbeat stops (§12). Reconcile publishes every head the feed lacks or holds at another
+   Retries are capped; past the cap the change is marked dead with its reason code, counted in `freshness` and by
+   integrity check 12, and the heartbeat stops (§12). Reconcile publishes every head the feed lacks or holds at another
    version: at start, at switch-on and nightly. That covers periods with the feed off, a rollback to a release without
-   it, dead outbox rows and anything else.
+   it, dead outbox rows and anything else. **Integrity check 12** holds the feed to this. Its publication lines must
+   read 0: a journal head not published at its version once the backlog is 0; a feed record without its submission;
+   a live row of a deleted submission; a position used twice; a submission whose row records differ from its head;
+   a pending change older than the freshness target; a dead change. The backlog and the normalization flag counts
+   are reported for reference only.
 5. **A split lands at once.** Submission review writes a split as one transaction with two revisions that name each
    other. When the publisher reaches either revision, it writes both submissions' heads in one feed transaction; the
    partner's own outbox row then finds its version held and is skipped. Because of the feed, no consumer sees the moved
    rows under both submissions, or under neither.
 6. **Not guaranteed across the two streams within one sync.** Airbyte reads `submission` and `submission_row` at
-   different moments, so for one sync interval a submission's record and its row records may differ. Consumers join rows to
-   live submissions (`NOT r.deleted AND NOT s.deleted`). After a split, a read caught between the two streams then
-   shows the moved rows for one interval either hidden or still under the source submission; never under both, and
-   the next sync converges.
+   different moments, so for one sync interval a submission's record and its row records may differ. Consumers
+   join rows to live submissions (`NOT r.deleted AND NOT s.deleted`). After a split, a read caught between the two
+   streams then shows the moved rows for one interval either hidden or still under the source submission; never
+   under both, and the next sync converges.
 7. **Not guaranteed:** every intermediate version (a lagging publisher coalesces changes); a record for a row added and
    removed between two publications.
 
@@ -296,8 +337,8 @@ feed's release rehearsed. Timing follows engineering readiness, not a campaign d
 
 - **Server:** deploy with the feed switched off. At a quiet hour, switch it on: reconcile runs, then the first
   publication writes every submission (about half an hour of CPU and 3 GB of WAL per million submissions); the
-  integrity check reads 0; `first_publication_completed_at` is set. From then on the ETL writes tall, events and the
-  feed for every change. The feed costs about 4.4 KB of WAL per change.
+  publication lines of integrity check 12 read 0; `first_publication_completed_at` is set. From then on the ETL
+  writes tall, events and the feed for every change. The feed costs about 4.4 KB of WAL per change.
 - **Downstream:** add `feed` to the source's schemas, refresh the schema, and enable the five streams (§13); run the
   first sync with the feed paused, then check counts. New models are built on the feed. Feed versions of existing
   models are built beside the old ones and compared through the server's comparison queries.
@@ -317,12 +358,15 @@ crosswalk; the first-time values of §14, counted one by one.
   agree; dashboards follow. Not during a campaign peak.
 - Dimension tables stay as Airbyte copies them (daily) and are joined by text id. During a campaign, a new team or
   assignment joins nothing until the next copy; downstream may copy those two more often.
-- Submission review's gate B (clears and row removals) opens server-wide, once downstream confirms in writing that
-  no model reads tall and events, for any activity (engineering, 2026-11-25): downstream re-points all its models,
-  and tall and events then retire. No removal fix for tall is built; the split re-attribution stays (owner,
-  2026-11-25).
+- Submission review's gate B (clears and row removals) is switched on server-wide, once downstream confirms in
+  writing that no model reads tall and events, for any activity (engineering, 2026-11-25): downstream re-points all
+  its models, and tall and events then retire. No removal fix for tall is built; the split re-attribution stays
+  (owner, 2026-11-25).
 - The server marks tall, events and pivots deprecated in its docs, and watches their scan counters until reads stop.
-- **Rollback:** downstream points back at tall and events, which are still maintained.
+- **Rollback:** downstream points back at tall and events, which are still maintained. Before `clearValue` and
+  `removeRow` are switched on, that loses nothing. After that, tall and events keep the removed rows and cleared
+  values of the submissions those operations touched, which the journal lists; a rollback then accepts those
+  differences, and tall and events get no fix (owner, 2026-11-25).
 
 ### Phase D: retire tall, events and pivots
 
