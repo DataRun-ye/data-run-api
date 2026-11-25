@@ -77,7 +77,8 @@ field may pick one. The lists feature owns entries. API: `entry`.
 
 **Entries outside placement**:
 Rows whose picked entry belongs to another org unit than the submission's, after a move, split or accept. They are
-reported and tracked until an edit re-points them. API: `entriesOutsidePlacement`.
+reported and tracked until an edit re-points them. `setEntry` refuses such an entry.
+API: `entriesOutsidePlacement`; problem `entry-outside-placement`.
 
 ### Finding and reading
 

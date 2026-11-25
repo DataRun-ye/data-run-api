@@ -141,8 +141,9 @@ Conflict detection is a requirement of every change switch, so no change can be 
   field answers 422 `mandatory-field-empty` unless `overrideMandatory` is set; the override is recorded with the
   reason.
 - **`setEntry`.** The entry exists, belongs to the submission's current org unit, and is not in another row of the
-  submission at that field (E4118). A household used in another submission of the activity is reported, not
-  refused: whether it was served twice is a person's decision. It never creates an entry.
+  submission at that field (E4118); otherwise 422 `entry-outside-placement` or `entry-already-in-submission`. A
+  household used in another submission of the activity is reported, not refused: whether it was served twice is a
+  person's decision. It never creates an entry.
 - **`removeRow`, `restoreRow`.** A removed row leaves the current state and stays in history. `restoreRow` puts it
   back from a named revision with the same id. It is refused with 409 `row-live-elsewhere` while that row id is live
   in any submission of the lineage (I5), and refused while its entry now sits in another row at that field.
@@ -510,7 +511,7 @@ from a study of operations' words, field data platforms and API design guides (e
 | --- | --- |
 | Search | `search-too-broad` (422); `search-timeout` (503) |
 | Validation (422) | `mandatory-field-empty`; `not-an-integer` and the other value-type codes; `not-an-option-code`; `field-not-in-form-version` |
-| Entries (422) | `entry-not-in-village`; `entry-already-in-submission` |
+| Entries (422) | `entry-outside-placement`; `entry-already-in-submission` |
 | Rows | `row-not-top-level`, `split-takes-all-rows`, `top-level-field-unstated` (422); `row-live-elsewhere` (409) |
 | Destinations | `destination-other-activity`, `form-not-on-destination`, `destination-deleted` (422); `already-at-destination` (409) |
 | State (409) | `already-deleted`; `not-deleted` |
@@ -636,8 +637,6 @@ Invented ids and values. Team T312 has assignment A7 in village V7 and assignmen
 
 ## 14. Open
 
-- **`entry-not-in-village`** names one activity's org-unit level; a generic word should replace it before the code
-  is published.
 - **`deleted=any`** is not UPPER_SNAKE like other enumeration values; its spelling is settled when the search
   contract is published.
 - **`If-Match` on `:keep`.** Accept names the submission's version; keep's precondition is set in build step 4.
