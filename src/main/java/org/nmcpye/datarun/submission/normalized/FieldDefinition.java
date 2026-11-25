@@ -17,6 +17,8 @@ import java.util.Objects;
  *                    version can place a field in two sections, so a definition is identified by this pair; a stored
  *                    value is keyed by its field id alone, and carries its section as an attribute
  * @param valueType   the declared value type, or {@code null} when the stored type is missing or unknown
+ * @param type        the value type as stored, whatever its text, which the dictionary publishes; {@code null} when
+ *                    the definition gives none
  * @param name        the field's name in this version, as stored: the last key of its data path
  * @param label       its labels by locale, as stored, in JSON text; {@code null} when it has none
  * @param optionSetId the stored id of the option set it names, or {@code null} when it names none or that option set
@@ -29,6 +31,7 @@ public record FieldDefinition(
     String path,
     String sectionId,
     ValueType valueType,
+    String type,
     String name,
     String label,
     String optionSetId,

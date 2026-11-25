@@ -33,9 +33,9 @@ class FormDefinitionTest {
         assertThat(v1.sections().get(1).id()).isEqualTo(DerivedIds.sectionId(FORM, "visit.households"));
         assertThat(v1.fields()).containsExactly(
             new FieldDefinition(fieldId("deUidHHsize"), "visit.households.household_size",
-                DerivedIds.sectionId(FORM, "visit.households"), ValueType.IntegerZeroOrPositive, "household_size",
-                null, null, null, null),
-            new FieldDefinition(fieldId("deUidVdate0"), "visit_date", null, ValueType.Date, "visit_date",
+                DerivedIds.sectionId(FORM, "visit.households"), ValueType.IntegerZeroOrPositive,
+                "IntegerZeroOrPositive", "household_size", null, null, null, null),
+            new FieldDefinition(fieldId("deUidVdate0"), "visit_date", null, ValueType.Date, "Date", "visit_date",
                 null, null, null, null));
     }
 
@@ -47,7 +47,7 @@ class FormDefinitionTest {
             uid -> null, uid -> null);
 
         assertThat(v.fields())
-            .containsExactly(new FieldDefinition(null, "x", null, ValueType.Text, "x", null, null, null, null));
+            .containsExactly(new FieldDefinition(null, "x", null, ValueType.Text, "Text", "x", null, null, null, null));
     }
 
     @Test
@@ -85,9 +85,11 @@ class FormDefinitionTest {
             new SectionDefinition("unnamed", false, DerivedIds.sectionId(FORM, "unnamed"), null, null, null));
         assertThat(v.fields()).containsExactly(
             new FieldDefinition("id-deUidSize00", "visit.households.size", DerivedIds.sectionId(FORM, "visit.households"),
-                ValueType.Integer, "size", "{\"en\":\"Size\"}", "01JO0000000000000000000001", true, 3),
-            new FieldDefinition("id-deUidNote00", "note", null, null, "note", "\"a bare text\"", null, null, null),
-            new FieldDefinition("id-deUidBare00", "bare", null, null, "bare", null, null, null, null));
+                ValueType.Integer, "Integer", "size", "{\"en\":\"Size\"}", "01JO0000000000000000000001", true, 3),
+            // a type the server does not know: no value type for the normalizer, the stored text for the dictionary
+            new FieldDefinition("id-deUidNote00", "note", null, null, "NoSuchType", "note", "\"a bare text\"", null,
+                null, null),
+            new FieldDefinition("id-deUidBare00", "bare", null, null, null, "bare", null, null, null, null));
     }
 
     @Test

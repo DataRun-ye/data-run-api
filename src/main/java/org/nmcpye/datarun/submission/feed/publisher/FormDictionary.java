@@ -27,6 +27,8 @@ import java.util.TreeSet;
  *       Their values are published as unmapped values.</li>
  *   <li>A field's repeating section is the innermost repeating section of its version that holds it: the rows that
  *       hold its values. A section's parent is the innermost section of its version that holds it.</li>
+ *   <li>Attributes are as the definition stores them: a value type the server does not know is published as
+ *       stored.</li>
  *   <li>The keys hold whatever the definitions say: a version that defines one section path twice, or places one
  *       field twice in one section (or twice outside every section), keeps the first in stored order; the others are
  *       counted in {@link #skipped()}, with their versions.</li>
@@ -118,8 +120,7 @@ final class FormDictionary {
                         : innermost(defined, sectionPath(field), true);
                     fields.add(new FieldRecord(form.id(), version.id(), version.number(), field.id(),
                         field.sectionId(), rows == null ? null : rows.id(), field.name(), field.label(),
-                        field.valueType() == null ? null : field.valueType().name(), field.optionSetId(),
-                        field.mandatory(), field.order()));
+                        field.type(), field.optionSetId(), field.mandatory(), field.order()));
                 }
                 if (skipped > before) {
                     withDuplicates.add(version.id());

@@ -63,7 +63,7 @@ class FormDictionaryTest {
          {'id': 'deUidCount1', 'name': 'count', 'path': 'main.rows.deUidCount1', 'type': 'SelectOne',
           'optionSet': 'osUidCount1', 'mandatory': false},
          {'id': 'deUidNote01', 'name': 'note', 'path': 'main.rows.details.deUidNote01', 'type': 'LongText'},
-         {'id': 'deUidSub001', 'name': 'sub', 'path': 'main.rows.subrows.deUidSub001', 'type': 'Integer'},
+         {'id': 'deUidSub001', 'name': 'sub', 'path': 'main.rows.subrows.deUidSub001', 'type': 'NoSuchType'},
          {'id': 'deUidGone01', 'name': 'gone', 'path': 'main.deUidGone01', 'type': 'Text'}]""";
 
     @Test
@@ -101,6 +101,9 @@ class FormDictionaryTest {
                 FormDictionary.FieldRecord::optionSetId, FormDictionary.FieldRecord::mandatory,
                 FormDictionary.FieldRecord::sortOrder, FormDictionary.FieldRecord::label)
             .containsExactly("SelectOne", "01JOS000000000000000000001", false, null, null);
+        assertThat(dictionary.fields()).extracting(FormDictionary.FieldRecord::valueType)
+            .as("as stored, a type the server does not know included")
+            .containsExactly("Text", "Text", "SelectOne", "LongText", "NoSuchType");
         assertThat(dictionary.skipped()).isZero();
         assertThat(dictionary.versionCount()).isEqualTo(1);
     }

@@ -15,8 +15,8 @@ import java.util.function.Function;
  * section's data path is its stored {@code path}; a field's is its section's path and its
  * {@code name} (its stored {@code path} ends with its data element's uid, which the stored data never uses), or
  * the name alone for a field outside every section. It also reads what the feed's dictionary publishes of each:
- * name, {@code label}, {@code order}, and for a field {@code mandatory} and the option set its {@code optionSet}
- * uid names.</p>
+ * name, {@code label}, {@code order}, and for a field its {@code type} as stored, {@code mandatory} and the option
+ * set its {@code optionSet} uid names.</p>
  *
  * @param id       the form version's stored id
  * @param uid      the form version's uid, by which stored submissions name their pinned version (internal)
@@ -93,11 +93,13 @@ public record FormVersionDefinition(
                     ? null
                     : parentPath(storedPath);
                 String optionSetUid = text(field.get("optionSet"));
+                String type = text(field.get("type"));
                 fieldList.add(new FieldDefinition(
                     fieldId,
                     sectionPath == null ? name : sectionPath + "." + name,
                     sectionPath == null ? null : DerivedIds.sectionId(formId, sectionPath),
-                    valueType(text(field.get("type"))),
+                    valueType(type),
+                    type,
                     name,
                     json(field.get("label")),
                     optionSetUid == null ? null : optionSetIdForUid.apply(optionSetUid),
