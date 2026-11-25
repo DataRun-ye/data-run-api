@@ -10,6 +10,8 @@ import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictCheck;
+import org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictDetection;
 import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.StoredSubmissionGuard;
@@ -93,7 +95,14 @@ class LegacyUploadAccessTest {
             transactionManager,
             mock(SubmissionIntake.class),
             new StoredSubmissionGuard(assignments, formAccess),
-            mock(SubmissionLock.class));
+            mock(SubmissionLock.class),
+            conflictDetectionOff());
+    }
+
+    private static ConflictDetection conflictDetectionOff() {
+        ConflictDetection detection = mock(ConflictDetection.class);
+        when(detection.check(any(), any(), any(), any(), any())).thenReturn(ConflictCheck.OFF);
+        return detection;
     }
 
     @Test

@@ -1,0 +1,104 @@
+package org.nmcpye.datarun.jpa.datasubmission.conflict;
+
+/**
+ * What conflict detection found of one phone copy, and what the upload does with it, in the spec's order:
+ * <ol>
+ *   <li>an unchanged re-send (a copy equal to its base version's state, or to the uploader's last decided conflict
+ *       copy) changes nothing;</li>
+ *   <li>a copy equal to the current state changes nothing;</li>
+ *   <li>a server-side change after the base version keeps the copy aside as a conflict;</li>
+ *   <li>otherwise the upload applies as today.</li>
+ * </ol>
+ * For an uploader with a base version of their own, the first two come before the upload checks
+ * ({@link #changesNothing}), so a copy that would now be refused is still answered {@code updated}. For any other
+ * uploader the upload checks run first, exactly as before, and their refusals stand; an authorized copy then takes the
+ * submission's first revision as its base ({@link #afterChecks}). Whatever it decides, the phone is answered
+ * {@code updated}.
+ */
+public final class ConflictCheck {
+
+    /** What the upload does once the upload checks have passed. */
+    public enum Outcome {
+        /** Saves the copy, as before detection existed. */
+        APPLY,
+        /** Writes nothing: the copy changes nothing. */
+        NOTHING,
+        /** Writes nothing: the copy is kept aside, and its conflict is stored. */
+        KEPT_ASIDE
+    }
+
+    /** Detection does not run: switched off, a new submission, or a practice upload or a release. */
+    public static final ConflictCheck OFF = new ConflictCheck(null, null, false, null);
+
+    /**
+     * What detection read before the upload checks.
+     *
+     * @param ownBase          the uploader has a base version of their own
+     * @param base             their base version, or else the submission's first revision
+     * @param unchangedResend  the copy equals the base version's state, or the uploader's last decided conflict copy
+     * @param equalsCurrent    the copy equals the current state
+     * @param serverSideChange a server-side change came after the base
+     */
+    record Analysis(boolean ownBase, long base, boolean unchangedResend, boolean equalsCurrent,
+                    boolean serverSideChange) {
+    }
+
+    private final ConflictDetection detection;
+    private final ConflictDetection.Context context;
+    private final boolean rowsLackIds;
+    /** Null when detection failed. */
+    private final Analysis analysis;
+
+    private ConflictCheck(ConflictDetection detection, ConflictDetection.Context context, boolean rowsLackIds,
+                          Analysis analysis) {
+        this.detection = detection;
+        this.context = context;
+        this.rowsLackIds = rowsLackIds;
+        this.analysis = analysis;
+    }
+
+    static ConflictCheck analysed(ConflictDetection detection, ConflictDetection.Context context, boolean rowsLackIds,
+                                  Analysis analysis) {
+        return new ConflictCheck(detection, context, rowsLackIds, analysis);
+    }
+
+    /**
+     * Detection failed: the copy is kept aside once the upload checks pass.
+     *
+     * @param rowsLackIds whether the copy's rows lack ids; true when tagging itself failed, the stricter of the two
+     *                    for a later accept
+     */
+    static ConflictCheck failed(ConflictDetection.Context context, ConflictDetection detection, boolean rowsLackIds) {
+        return new ConflictCheck(detection, context, rowsLackIds, null);
+    }
+
+    /**
+     * Before the upload checks: whether the copy changes nothing, so the upload writes nothing and skips the checks.
+     * Only for an uploader with a base version of their own.
+     */
+    public boolean changesNothing() {
+        return analysis != null && analysis.ownBase() && (analysis.unchangedResend() || analysis.equalsCurrent());
+    }
+
+    /**
+     * Once the upload checks have passed: whether to apply the copy, write nothing, or keep it aside. Keeping it aside
+     * stores its conflict here, in the upload item's transaction.
+     */
+    public Outcome afterChecks() {
+        if (context == null) {
+            return Outcome.APPLY;
+        }
+        if (analysis == null) {
+            detection.keepAside(context, ConflictCause.DETECTION_ERROR, null, rowsLackIds);
+            return Outcome.KEPT_ASIDE;
+        }
+        if (!analysis.ownBase() && (analysis.unchangedResend() || analysis.equalsCurrent())) {
+            return Outcome.NOTHING;
+        }
+        if (analysis.serverSideChange()) {
+            detection.keepAside(context, ConflictCause.SERVER_SIDE_CHANGE, analysis.base(), rowsLackIds);
+            return Outcome.KEPT_ASIDE;
+        }
+        return Outcome.APPLY;
+    }
+}

@@ -73,7 +73,11 @@ public final class SubmissionNormalizer {
      */
     public static final int MAX_DEPTH = 32;
 
-    private static final Set<String> ROW_STRUCTURE_KEYS = Set.of("_id", "_index", "_parentId", "_submissionUid");
+    /**
+     * A row's structure keys: they repeat what the document's structure already says. Conflict detection's comparison
+     * leaves out exactly these keys on rows.
+     */
+    public static final Set<String> ROW_STRUCTURE_KEYS = Set.of("_id", "_index", "_parentId", "_submissionUid");
     private static final String ROOT_STRUCTURE_KEY = "_status";
 
     private SubmissionNormalizer() {

@@ -13,6 +13,11 @@ import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datasubmission.conflict.ComparedState;
+import org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictCheck;
+import org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictDetection;
+import org.nmcpye.datarun.jpa.datasubmission.conflict.PhoneCopy;
+import org.nmcpye.datarun.jpa.datasubmission.conflict.UploadRoute;
 import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
@@ -55,6 +60,11 @@ import java.util.function.Function;
  * as any unexpected failure does. A new submission has nothing to lock; a second save of its uid fails on the uid's
  * unique constraint.</p>
  *
+ * <p>Conflict detection ({@link ConflictDetection}, behind its switch) reads each live upload item of a stored
+ * submission right after the lock, before the upload checks and before any row id is minted: a copy that changes
+ * nothing, or that a server-side change keeps aside, is answered {@code updated} and nothing is written. Practice
+ * uploads and held releases are not detected.</p>
+ *
  * <p>Only the command service calls this class; it is a separate component so that a held release can replay an
  * upload through it.</p>
  */
@@ -81,6 +91,7 @@ public class SubmissionUploads {
     private final SubmissionIntake intake;
     private final StoredSubmissionGuard storedSubmissionGuard;
     private final SubmissionLock submissionLock;
+    private final ConflictDetection conflictDetection;
 
     /**
      * The versioned upload route. Every submission is checked and saved as
@@ -216,7 +227,19 @@ public class SubmissionUploads {
             DataSubmission::getForm,
             (submission, summary, transaction) -> {
                 DataSubmission stored = submissionLock.take(submission.getUid());
-                checkLegacy(submission, stored, actor);
+                TemplateVersionContext template = templateVersionResolver.resolveByUid(
+                    submission.getForm(),
+                    submission.getFormVersion());
+                ConflictCheck conflict = conflictDetection.check(
+                    () -> phoneCopy(UploadRoute.LEGACY, objectMapper.valueToTree(submission), submission),
+                    stored, template, actor.userId(), actor.access());
+                if (conflict.changesNothing()) {
+                    return answeredUpdated(submission, summary);
+                }
+                checkLegacy(submission, stored, template, actor);
+                if (conflict.afterChecks() != ConflictCheck.Outcome.APPLY) {
+                    return answeredUpdated(submission, summary);
+                }
                 submissionService.upsert(submission, stored, summary, revision);
                 return IntakeDecision.save();
             },
@@ -239,7 +262,16 @@ public class SubmissionUploads {
             submission,
             assignment,
             template.getTemplate());
+        ConflictCheck conflict = mode != IntakeMode.LIVE ? ConflictCheck.OFF : conflictDetection.check(
+            () -> phoneCopy(UploadRoute.VERSIONED, objectMapper.valueToTree(request), submission),
+            stored, template, actor.userId(), actor.access());
+        if (conflict.changesNothing()) {
+            return answeredUpdated(submission, summary);
+        }
         authorize(submission, stored, assignment, actor.access(), assignment.getTeam().getUid());
+        if (conflict.afterChecks() != ConflictCheck.Outcome.APPLY) {
+            return answeredUpdated(submission, summary);
+        }
         IntakeDecision decision = intake.decide(
             mode,
             submission,
@@ -257,14 +289,31 @@ public class SubmissionUploads {
     }
 
     /**
-     * The legacy route's checks and context, in that route's order; see {@link #saveLegacy}.
-     *
-     * @param stored the stored submission, as the submission lock returned it ({@link SubmissionLock#take})
+     * The phone copy conflict detection reads: the upload item as received and its document, before any id is minted,
+     * with the assignment and form version the upload resolved.
      */
-    private void checkLegacy(DataSubmission submission, DataSubmission stored, SubmissionActor actor) {
-        TemplateVersionContext template = templateVersionResolver.resolveByUid(
-            submission.getForm(),
-            submission.getFormVersion());
+    private static PhoneCopy phoneCopy(UploadRoute route, JsonNode uploadItem, DataSubmission submission) {
+        return new PhoneCopy(route, uploadItem, new ComparedState(
+            submission.getFormData(),
+            Boolean.TRUE.equals(submission.getDeleted()),
+            submission.getAssignment(),
+            submission.getFormVersion()));
+    }
+
+    /** The upload item is answered {@code updated}, as an unchanged re-send always was, and nothing is written. */
+    private static IntakeDecision answeredUpdated(DataSubmission submission, EntitySaveSummaryVM summary) {
+        summary.getUpdated().add(submission.getUid());
+        return IntakeDecision.save();
+    }
+
+    /**
+     * The legacy route's checks and context, in that route's order, after its form version (see {@link #saveLegacy}).
+     *
+     * @param stored   the stored submission, as the submission lock returned it ({@link SubmissionLock#take})
+     * @param template the form version the item names, resolved first
+     */
+    private void checkLegacy(DataSubmission submission, DataSubmission stored, TemplateVersionContext template,
+                             SubmissionActor actor) {
         generateMissingRepeatIds(submission, template);
         Assignment assignment = submission.getAssignment() == null
             ? null

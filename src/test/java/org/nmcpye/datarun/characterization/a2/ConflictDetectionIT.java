@@ -1,0 +1,427 @@
+package org.nmcpye.datarun.characterization.a2;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.nmcpye.datarun.characterization.a2.A2Payloads.Group;
+import org.nmcpye.datarun.characterization.a2.A2Payloads.Item;
+import org.nmcpye.datarun.jpa.datasubmission.revision.JournalReconciliation;
+import org.nmcpye.datarun.jpa.datasubmission.revision.SubmissionRevisionReader;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.nmcpye.datarun.characterization.a2.A2Payloads.Group.G0;
+import static org.nmcpye.datarun.characterization.a2.A2Payloads.Group.G3;
+import static org.nmcpye.datarun.characterization.a2.A2Payloads.item;
+import static org.nmcpye.datarun.characterization.a2.A2Payloads.ordinary;
+import static org.nmcpye.datarun.characterization.a2.A2Payloads.uid;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.ADMIN;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.ASSIGN_T1_V1;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.EDITOR;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.FIELD_1;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.FIELD_2;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.FORM_A;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.version;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
+/**
+ * Conflict detection switched on, through the production filter chain, on the A2 seed (spec, Conflicts): server-side
+ * changes are seeded as their methods will write them ({@link ReviewSeed}). Every upload item is answered
+ * {@code updated} or refused exactly as today; what changes is what the server keeps.
+ * <ul>
+ *   <li>An unchanged re-send, and a copy equal to the current state, write nothing, with or without row ids.</li>
+ *   <li>A changed copy after a server-side change is kept aside, with its base version, its route's shape and whether
+ *       its rows lack ids; re-sent while open, it counts or replaces the copy.</li>
+ *   <li>A kept conflict stays kept under unchanged re-sends; a plain accept is the uploader's next base.</li>
+ *   <li>Another user's copy is checked first and refused as today, never queued; an authorized one takes the first
+ *       revision as its base.</li>
+ *   <li>A detection error keeps the copy aside and never fails the item; practice uploads are not detected.</li>
+ * </ul>
+ * Not a golden: it reads the database directly.
+ */
+@TestPropertySource(properties = "datarun.activation.conflict-detection=true")
+class ConflictDetectionIT extends A2GoldenSupport {
+
+    @MockitoSpyBean
+    private SubmissionRevisionReader journalReader;
+
+    private ReviewSeed seed;
+
+    @BeforeEach
+    void seedServerSideChanges() {
+        seed = new ReviewSeed(jdbc, transactionManager);
+    }
+
+    // ---------------------------------------------------------------- changes nothing
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = Group.class, names = {"G3", "G0"})
+    void anUnchangedReSendAfterAServerSideEditChangesNothing(Group group) throws Exception {
+        String uid = uid("cdSame" + group.name());
+        assertThat(answer(upload(group, FIELD_1, formA(group, uid, "first")))).isEqualTo(created(uid));
+        seed.edit(uid, ADMIN, "edited on the server");
+
+        for (int i = 0; i < 3; i++) {
+            assertThat(answer(upload(group, FIELD_1, formA(group, uid, "first")))).isEqualTo(updated(uid));
+        }
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE " + command(group), "1 UPDATE EDIT");
+        assertThat(conflicts(uid)).isEmpty();
+        assertThat(reconciliation(uid)).isEmpty();
+    }
+
+    /** Apps 5.2 and 5.3 send rows without ids; the legacy route used to mint new ones, and write, at every re-send. */
+    @Test
+    void aCopyWithoutRowIdsReSentUnchangedWritesNothing() throws Exception {
+        String uid = uid("cdG0Same");
+        assertThat(answer(upload(G0, FIELD_1, formA(G0, uid, "first")))).isEqualTo(created(uid));
+
+        for (int i = 0; i < 3; i++) {
+            assertThat(answer(upload(G0, FIELD_1, formA(G0, uid, "first")))).isEqualTo(updated(uid));
+        }
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE LEGACY_UPLOAD");
+        assertThat(conflicts(uid)).isEmpty();
+    }
+
+    @Test
+    void aCopyEqualToTheCurrentStateChangesNothing() throws Exception {
+        String uid = uid("cdCurrent");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        seed.edit(uid, ADMIN, "edited on the server");
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "edited on the server")))).isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
+        assertThat(conflicts(uid)).isEmpty();
+    }
+
+    @Test
+    void withoutAServerSideChangeAChangedCopyIsSavedAsToday() throws Exception {
+        String uid = uid("cdApply");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed on the phone")))).isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE UPLOAD");
+        assertThat(conflicts(uid)).isEmpty();
+    }
+
+    // ---------------------------------------------------------------- kept aside
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = Group.class, names = {"G3", "G0"})
+    void aChangedCopyAfterAServerSideEditIsKeptAside(Group group) throws Exception {
+        String uid = uid("cdKept" + group.name());
+        assertThat(answer(upload(group, FIELD_1, formA(group, uid, "first")))).isEqualTo(created(uid));
+        seed.edit(uid, ADMIN, "edited on the server");
+        Item changed = formA(group, uid, "changed on the phone");
+
+        assertThat(answer(upload(group, FIELD_1, changed))).isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).as("the submission is unchanged")
+            .containsExactly("0 CREATE " + command(group), "1 UPDATE EDIT");
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> {
+            assertThat(conflict).containsEntry("state", "OPEN").containsEntry("cause", "SERVER_SIDE_CHANGE")
+                .containsEntry("base_version", 0L).containsEntry("uploader_user_id", seed.userId(FIELD_1))
+                .containsEntry("rows_lack_ids", group == G0)
+                .containsEntry("upload_route", group.versioned() ? "VERSIONED" : "LEGACY")
+                .containsEntry("resend_count", 0).containsEntry("version", 0L);
+            JsonNode copy = json.readTree(conflict.get("phone_copy").toString());
+            assertThat(copy.get("formData")).as("the document as received, rows without ids left so")
+                .isEqualTo(changed.node.get("formData"));
+            assertThat(copy.get("uid").asText()).isEqualTo(uid);
+        });
+    }
+
+    @Test
+    void aReSendWhileOpenCountsTheSameCopyOrReplacesItWithADifferentOne() throws Exception {
+        String uid = uid("cdResend");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        seed.edit(uid, ADMIN, "edited on the server");
+        upload(G3, FIELD_1, formA(G3, uid, "changed on the phone"));
+        Map<String, Object> opened = conflicts(uid).get(0);
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed on the phone")))).isEqualTo(updated(uid));
+        Map<String, Object> again = conflicts(uid).get(0);
+        assertThat(again).containsEntry("resend_count", 1).containsEntry("version", 0L)
+            .containsEntry("first_received_at", opened.get("first_received_at"));
+        assertThat((java.sql.Timestamp) again.get("last_received_at"))
+            .isAfter((java.sql.Timestamp) opened.get("last_received_at"));
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed again")))).isEqualTo(updated(uid));
+        assertThat(conflicts(uid)).singleElement().satisfies(replaced -> {
+            assertThat(replaced).containsEntry("state", "OPEN").containsEntry("resend_count", 2)
+                .containsEntry("version", 1L).containsEntry("first_received_at", opened.get("first_received_at"));
+            assertThat(json.readTree(replaced.get("phone_copy").toString()).at("/formData/main/a2_name").asText())
+                .isEqualTo("changed again");
+        });
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
+    }
+
+    @Test
+    void aKeptConflictStaysKeptUnderUnchangedReSends() throws Exception {
+        String uid = uid("cdKeep");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        seed.edit(uid, ADMIN, "edited on the server");
+        upload(G3, FIELD_1, formA(G3, uid, "changed on the phone"));
+        seed.keep(conflictId(uid), ADMIN);
+
+        for (int i = 0; i < 3; i++) {
+            assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed on the phone")))).isEqualTo(updated(uid));
+        }
+
+        assertThat(conflicts(uid)).singleElement().satisfies(kept -> assertThat(kept).containsEntry("state", "KEPT"));
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
+    }
+
+    /** A plain accept leaves the state equal to the uploader's copy: it is their base for what comes next. */
+    @Test
+    void aPlainAcceptIsTheUploadersNextBaseAndAnAcceptThatReappliedEditsIsNot() throws Exception {
+        String plain = uid("cdAccept");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, plain, "first")))).isEqualTo(created(plain));
+        seed.edit(plain, ADMIN, "edited on the server");
+        upload(G3, FIELD_1, formA(G3, plain, "changed on the phone"));
+        seed.accept(conflictId(plain), ADMIN, false, null);
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, plain, "changed on the phone")))).isEqualTo(updated(plain));
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, plain, "changed after the accept"))))
+            .isEqualTo(updated(plain));
+        assertThat(revisions(plain)).as("saved: no server-side change since the accept")
+            .containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT", "2 UPDATE CONFLICT_ACCEPT", "3 UPDATE UPLOAD");
+
+        String reapplied = uid("cdReapply");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, reapplied, "first")))).isEqualTo(created(reapplied));
+        seed.edit(reapplied, ADMIN, "edited on the server");
+        upload(G3, FIELD_1, formA(G3, reapplied, "changed on the phone"));
+        seed.accept(conflictId(reapplied), ADMIN, true, "edited on the server");
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, reapplied, "changed after the accept"))))
+            .isEqualTo(updated(reapplied));
+        assertThat(revisions(reapplied)).as("kept aside: the edit since the base still stands")
+            .containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT", "2 UPDATE CONFLICT_ACCEPT");
+        assertThat(conflicts(reapplied)).extracting(conflict -> conflict.get("state"))
+            .containsExactlyInAnyOrder("ACCEPTED", "OPEN");
+    }
+
+    /** After field1's own accepted copy (their base, revision 2), the only change is the editor's accepted copy. */
+    @Test
+    void anotherUploadersAcceptIsAServerSideChange() throws Exception {
+        String uid = uid("cdOtherAcc");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        seed.edit(uid, ADMIN, "edited on the server");
+        upload(G3, FIELD_1, formA(G3, uid, "field1's copy"));
+        seed.accept(conflictId(uid), ADMIN, false, null);
+        upload(G3, EDITOR, formA(G3, uid, "the editor's copy"));
+        seed.accept(conflictId(uid), ADMIN, false, null);
+        assertThat(revisions(uid)).containsExactly(
+            "0 CREATE UPLOAD", "1 UPDATE EDIT", "2 UPDATE CONFLICT_ACCEPT", "3 UPDATE CONFLICT_ACCEPT");
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "field1 changes again")))).isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).hasSize(4);
+        assertThat(conflicts(uid)).filteredOn(conflict -> "OPEN".equals(conflict.get("state")))
+            .singleElement().satisfies(open -> assertThat(open)
+                .containsEntry("uploader_user_id", seed.userId(FIELD_1)).containsEntry("base_version", 2L));
+    }
+
+    @Test
+    void anAdminDeleteIsAServerSideChange() throws Exception {
+        String uid = uid("cdAdminDel");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        assertThat(adminDelete(uid).getStatus()).isEqualTo(204);
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).as("unchanged").isEqualTo(updated(uid));
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed on the phone")))).as("changed")
+            .isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).as("no copy is absorbed into the deleted submission any more")
+            .containsExactly("0 CREATE UPLOAD", "1 DELETE ADMIN_DELETE");
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("state", "OPEN").containsEntry("base_version", 0L));
+    }
+
+    /** The release before the journal deleted it unrecorded; the gap repair recorded a deleted baseline. */
+    @Test
+    void aDeletedBaselineAfterTheBaseIsAServerSideChange() throws Exception {
+        String uid = uid("cdGapDel");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        seed.deletedUnrecorded(uid);
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).as("unchanged").isEqualTo(updated(uid));
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed on the phone")))).isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 BASELINE GAP_REPAIR");
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("cause", "SERVER_SIDE_CHANGE").containsEntry("base_version", 0L));
+    }
+
+    // ---------------------------------------------------------------- other uploaders
+
+    /**
+     * A submission older than the journal, made by field2: field1 (same team, no edit-from-users) has no base of
+     * their own, so the upload checks run first and refuse the copy as today; it never enters the queue, even after a
+     * server-side change. Its creator's baseline is their base.
+     */
+    @Test
+    void aForeignUploadersCopyOfASubmissionOlderThanTheJournalIsRefusedAsTodayAndNeverQueued() throws Exception {
+        String uid = uid("cdForeign");
+        seed.storedBeforeTheJournal(uid, FIELD_2, ASSIGN_T1_V1, version("FORM_A.v1"),
+            formA(G3, uid, "first").node.get("formData").toString());
+        seed.edit(uid, ADMIN, "edited on the server");
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed by another user"))))
+            .startsWith("200 created=[] updated=[] failed={\"" + uid + "\":\"E4126: ");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "edited on the server"))))
+            .as("refused before any shortcut, though equal to the current state")
+            .startsWith("200 created=[] updated=[] failed={\"" + uid + "\":\"E4126: ");
+        assertThat(conflicts(uid)).isEmpty();
+
+        assertThat(answer(upload(G3, FIELD_2, formA(G3, uid, "first")))).as("the creator, unchanged")
+            .isEqualTo(updated(uid));
+        assertThat(answer(upload(G3, FIELD_2, formA(G3, uid, "changed by the creator"))))
+            .isEqualTo(updated(uid));
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("uploader_user_id", seed.userId(FIELD_2)).containsEntry("base_version", 3L));
+        assertThat(revisions(uid)).containsExactly("3 BASELINE MIGRATION", "4 UPDATE EDIT");
+    }
+
+    /**
+     * The editor may change team one's submissions: authorized, with no base of their own, their base is the first
+     * revision.
+     */
+    @Test
+    void anAuthorizedUploaderWithoutABaseOfTheirOwnTakesTheFirstRevision() throws Exception {
+        String quiet = uid("cdEdQuiet");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, quiet, "first")))).isEqualTo(created(quiet));
+        assertThat(answer(upload(G3, EDITOR, formA(G3, quiet, "the editor's copy")))).isEqualTo(updated(quiet));
+        assertThat(revisions(quiet)).as("saved as today").containsExactly("0 CREATE UPLOAD", "1 UPDATE UPLOAD");
+
+        String edited = uid("cdEdEdited");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, edited, "first")))).isEqualTo(created(edited));
+        seed.edit(edited, ADMIN, "edited on the server");
+        assertThat(answer(upload(G3, EDITOR, formA(G3, edited, "the editor's copy")))).isEqualTo(updated(edited));
+        assertThat(revisions(edited)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
+        assertThat(conflicts(edited)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("uploader_user_id", seed.userId(EDITOR)).containsEntry("base_version", 0L));
+    }
+
+    // ---------------------------------------------------------------- never fail, and what is not detected
+
+    /**
+     * Detection's read fails in the database, which aborts the transaction: its savepoint is rolled back, the copy is
+     * kept aside with DETECTION_ERROR and the tag it was given, the item is answered updated, and the conflict
+     * commits.
+     */
+    @Test
+    void aDetectionErrorKeepsTheCopyAsideAndNeverFailsTheItem() throws Exception {
+        String uid = uid("cdError");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        doAnswer(invocation -> jdbc.getJdbcTemplate().queryForObject("SELECT 1 / 0", Integer.class))
+            .when(journalReader).current(anyString());
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed on the phone")))).isEqualTo(updated(uid));
+
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("cause", "DETECTION_ERROR").containsEntry("state", "OPEN")
+            .containsEntry("base_version", null).containsEntry("rows_lack_ids", false));
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD");
+    }
+
+    @Test
+    void practiceUploadsAreNotDetected() throws Exception {
+        String uid = uid("cdPractice");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        seed.edit(uid, ADMIN, "edited on the server");
+
+        MockHttpServletRequestBuilder practice = post(A2Payloads.BULK_PRACTICE)
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Authorization", "Bearer " + A2Tokens.token(jwtKey, FIELD_1))
+            .content(json.writeValueAsString(A2Payloads.body(formA(G3, uid, "changed in practice"))));
+        G3.headers().forEach(practice::header);
+        assertThat(answer(mvc.perform(practice).andReturn().getResponse())).isEqualTo(updated(uid));
+
+        assertThat(conflicts(uid)).isEmpty();
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
+    }
+
+    // ---------------------------------------------------------------- helpers
+
+    private static Item formA(Group group, String uid, String name) {
+        return item(group, uid, FORM_A, version("FORM_A.v1"), ASSIGN_T1_V1, ordinary(group, uid, name, "r1", "s1", 1));
+    }
+
+    private static String command(Group group) {
+        return group.versioned() ? "UPLOAD" : "LEGACY_UPLOAD";
+    }
+
+    private MockHttpServletResponse upload(Group group, String login, Item... items) throws Exception {
+        MockHttpServletRequestBuilder request = post(group.route())
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Authorization", "Bearer " + A2Tokens.token(jwtKey, login))
+            .content(json.writeValueAsString(A2Payloads.body(items)));
+        group.headers().forEach(request::header);
+        return mvc.perform(request).andReturn().getResponse();
+    }
+
+    private MockHttpServletResponse adminDelete(String uid) throws Exception {
+        return mvc.perform(delete("/api/v1/dataSubmission/" + uid)
+                .header("Authorization", "Bearer " + A2Tokens.token(jwtKey, ADMIN)))
+            .andReturn().getResponse();
+    }
+
+    /** What the phone applies: the status and the three lists. */
+    private String answer(MockHttpServletResponse response) throws Exception {
+        JsonNode answer = json.readTree(response.getContentAsString(StandardCharsets.UTF_8));
+        return response.getStatus() + " created=" + answer.path("created") + " updated=" + answer.path("updated")
+            + " failed=" + answer.path("failed");
+    }
+
+    private static String created(String uid) {
+        return "200 created=[\"" + uid + "\"] updated=[] failed={}";
+    }
+
+    private static String updated(String uid) {
+        return "200 created=[] updated=[\"" + uid + "\"] failed={}";
+    }
+
+    private List<String> revisions(String uid) {
+        return jdbc.query("""
+                SELECT r.version, r.kind, r.command FROM journal.submission_revision r
+                JOIN data_submission s ON s.id = r.submission_id
+                WHERE s.uid = :uid ORDER BY r.version""",
+            Map.of("uid", uid),
+            (result, n) -> result.getLong("version") + " " + result.getString("kind") + " "
+                + result.getString("command"));
+    }
+
+    private List<Map<String, Object>> conflicts(String uid) {
+        return jdbc.queryForList("""
+                SELECT c.* FROM submission_review.conflict c JOIN data_submission s ON s.id = c.submission_id
+                WHERE s.uid = :uid ORDER BY c.first_received_at, c.id""",
+            Map.of("uid", uid));
+    }
+
+    private String conflictId(String uid) {
+        return (String) conflicts(uid).stream().filter(conflict -> "OPEN".equals(conflict.get("state")))
+            .findFirst().orElseThrow().get("id");
+    }
+
+    private List<String> reconciliation(String uid) {
+        return JournalReconciliation.findings(jdbc, "s.uid = :uid", Map.of("uid", uid));
+    }
+}

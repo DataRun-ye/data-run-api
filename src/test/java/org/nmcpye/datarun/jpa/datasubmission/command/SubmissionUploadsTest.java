@@ -15,6 +15,8 @@ import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictCheck;
+import org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictDetection;
 import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
@@ -87,6 +89,7 @@ class SubmissionUploadsTest {
     private HeldSubmissionRepository heldSubmissions;
     private DataSubmissionRepository submissionRepository;
     private SubmissionLock submissionLock;
+    private ConflictDetection conflictDetection;
     private SubmissionUploads service;
     private TemplateVersionContext templateContext;
     private DataTemplateInstanceDto template;
@@ -110,6 +113,8 @@ class SubmissionUploadsTest {
         when(heldSubmissions.hold(any(), any(), any(), any(), any())).thenReturn(true);
         submissionRepository = mock(DataSubmissionRepository.class);
         submissionLock = mock(SubmissionLock.class);
+        conflictDetection = mock(ConflictDetection.class);
+        when(conflictDetection.check(any(), any(), any(), any(), any())).thenReturn(ConflictCheck.OFF);
         when(transactionManager.getTransaction(any(TransactionDefinition.class)))
             .thenReturn(transactionStatus);
         service = new SubmissionUploads(
@@ -123,7 +128,8 @@ class SubmissionUploadsTest {
             transactionManager,
             new SubmissionIntake(goLiveRules, heldSubmissions, submissionRepository),
             storedSubmissionGuard,
-            submissionLock);
+            submissionLock,
+            conflictDetection);
 
         templateContext = mock(TemplateVersionContext.class);
         template = mock(DataTemplateInstanceDto.class);
