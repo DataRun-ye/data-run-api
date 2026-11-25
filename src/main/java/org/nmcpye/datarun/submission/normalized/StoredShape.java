@@ -3,7 +3,7 @@ package org.nmcpye.datarun.submission.normalized;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * The shape of a stored value, which decides what kind of definition can hold it (the spike's shape classes).
+ * The shape of a stored value, which decides what kind of definition can hold it.
  */
 enum StoredShape {
     /** An object: a plain section's members, or a field holding an object. */

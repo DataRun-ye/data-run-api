@@ -26,10 +26,8 @@ import java.util.UUID;
  * A section path is the stored keys from the root to the section, joined by dots; the index is the row's 1-based
  * position in its array.</p>
  *
- * <p>Sections take derived ids because stored definitions carry no usable one: 145 of 717 stored sections have no
- * {@code id}, and every other one repeats its name (staging clone, 2026-11-25). A renamed section therefore gets a new
- * id. Engineering decision (coordinator, 2026-11-25): the recipe hashes id texts, never a UUID read from them; it
- * replaces the D feed spike's recipe, which read ULIDs as UUIDs.</p>
+ * <p>Sections take derived ids because stored definitions carry no usable one: a stored section has no {@code id}, or
+ * one that repeats its name. A renamed section therefore gets a new id.</p>
  */
 public final class DerivedIds {
 
@@ -37,9 +35,6 @@ public final class DerivedIds {
 
     /** The namespace of every derived id: the version 5 UUID of the URL {@code https://datarun/feed/v1}. */
     public static final UUID NAMESPACE = uuidV5(URL_NAMESPACE, "https://datarun/feed/v1");
-
-    private static final String CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-    private static final int ULID_LENGTH = 26;
 
     private DerivedIds() {
     }
@@ -68,7 +63,7 @@ public final class DerivedIds {
     }
 
     /**
-     * The id of a row whose own id an earlier row of the submission already has ({@link RowKeyKind#DUPLICATE_ID}).
+     * The id of a row whose own id an earlier row of the submission already has ({@link NormalizationFlag#DUPLICATE_ID}).
      * The first attempt is the row's derived id ({@link #derivedRowId}); the next ones append {@code |<attempt>} to
      * the same name, from 2 up.
      *
@@ -82,23 +77,6 @@ public final class DerivedIds {
 
     private static String rowName(String submissionId, String sectionPath, String parentRowId, int index) {
         return submissionId + "|" + sectionPath + "|" + (parentRowId == null ? "" : parentRowId) + "|" + index;
-    }
-
-    /**
-     * Whether a stored {@code _id} has a ULID's shape: 26 Crockford base-32 digits, either case, the first at most
-     * {@code 7}. It only names a row's {@link RowKeyKind}; no id is read as a number.
-     */
-    public static boolean isUlid(String text) {
-        if (text == null || text.length() != ULID_LENGTH || text.charAt(0) > '7') {
-            return false;
-        }
-        for (int i = 0; i < ULID_LENGTH; i++) {
-            char upper = Character.toUpperCase(text.charAt(i));
-            if (upper >= 128 || CROCKFORD.indexOf(upper) < 0) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /** A version 5 (name-based, SHA-1) UUID of the name's UTF-8 bytes in the namespace. */

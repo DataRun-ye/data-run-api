@@ -119,7 +119,7 @@ class SubmissionNormalizerRobustnessTest {
             assertThat(row.values()).extracting(FieldValue::fieldId).doesNotHaveDuplicates();
         }
         assertThat(normalized.flagged(NormalizationFlag.DUPLICATE_ID)).isEqualTo((int) normalized.rows().stream()
-            .filter(r -> r.keyKind() == RowKeyKind.DUPLICATE_ID).count());
+            .filter(r -> r.idOrigin() == RowIdOrigin.DERIVED && r.storedId() != null).count());
     }
 
     private static JsonNode any(Random random, int depth) {

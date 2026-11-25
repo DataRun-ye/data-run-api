@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * Every version of one form, and for each version the resolution of every data path any version defines.
  *
- * <p><b>Resolution</b> (the spike's path map). A stored value at a data path, in a submission pinned to version V,
+ * <p><b>Resolution.</b> A stored value at a data path, in a submission pinned to version V,
  * resolves to one definition at that path, chosen among all the form's versions in this order:</p>
  * <ol>
  *   <li>a definition that can hold the value's shape (a field holds anything; a plain section holds an object; a
@@ -23,8 +23,7 @@ import java.util.Set;
  *   <li>a field before a section.</li>
  * </ol>
  * <p>A path no version defines has no resolution. Example: a section plain in versions 1-9 and repeating in 14-15
- * holds an object in submissions pinned to 13 and 15; those objects resolve through version 9 (1,104 submissions
- * on the staging clone).</p>
+ * holds an object in submissions pinned to 13 and 15; those objects resolve through version 9.</p>
  *
  * <p>A submission whose pinned version is not among the form's stored versions (a deleted version) resolves by the
  * same order without step 2: through the form's other versions, newest first.</p>

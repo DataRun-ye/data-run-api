@@ -25,7 +25,7 @@ import static org.nmcpye.datarun.submission.normalized.StoredForms.version;
  */
 class SubmissionNormalizerTest {
 
-    /** A form with a 24-hex id, as 27 of the 55 forms on the staging clone have. */
+    /** A form with a 24-hex id, as older forms have. */
     private static final String FORM = "5f2a9c0b1d3e4f5061728394";
     private static final String SUBMISSION = "01J2Q7Y0V6M3N4P5R6S7T8V9WX";
 
@@ -189,12 +189,12 @@ class SubmissionNormalizerTest {
                        {'_id': 'aB3dE5fG7hJ9kL1m', 'count': 3}]}""");
 
         assertThat(normalized.rows())
-            .extracting(NormalizedRow::id, NormalizedRow::keyKind, NormalizedRow::index, NormalizedRow::parentRowId,
+            .extracting(NormalizedRow::id, NormalizedRow::idOrigin, NormalizedRow::index, NormalizedRow::parentRowId,
                 NormalizedRow::sectionId, NormalizedRow::sectionPath)
             .containsExactly(
-                tuple("01J2Q7Y0V6M3N4P5R6S7T8V9W1", RowKeyKind.CLIENT, 1, null, section("items"), "items"),
-                tuple("01j2q7y0v6m3n4p5r6s7t8v9w2", RowKeyKind.CLIENT, 2, null, section("items"), "items"),
-                tuple("aB3dE5fG7hJ9kL1m", RowKeyKind.LEGACY, 3, null, section("items"), "items"));
+                tuple("01J2Q7Y0V6M3N4P5R6S7T8V9W1", RowIdOrigin.STORED, 1, null, section("items"), "items"),
+                tuple("01j2q7y0v6m3n4p5r6s7t8v9w2", RowIdOrigin.STORED, 2, null, section("items"), "items"),
+                tuple("aB3dE5fG7hJ9kL1m", RowIdOrigin.STORED, 3, null, section("items"), "items"));
         assertThat(normalized.rows()).extracting(r -> r.values().get(0).value().intValue()).containsExactly(1, 2, 3);
         assertThat(normalized.rows().get(0).values().get(0).fieldId()).isEqualTo(fieldId("deUidCount01"));
         assertThat(normalized.values()).isEmpty();
@@ -218,15 +218,15 @@ class SubmissionNormalizerTest {
         // expected ids computed by Python's uuid module and by util-linux uuidgen (see DerivedIdsTest)
         String firstHousehold = "ea8b77f1-ebb9-5f13-aa3f-3aeec966b4ca";
         assertThat(normalized.rows())
-            .extracting(NormalizedRow::id, NormalizedRow::keyKind, NormalizedRow::parentRowId, NormalizedRow::index)
+            .extracting(NormalizedRow::id, NormalizedRow::idOrigin, NormalizedRow::parentRowId, NormalizedRow::index)
             .containsExactly(
-                tuple(firstHousehold, RowKeyKind.DERIVED, null, 1),
+                tuple(firstHousehold, RowIdOrigin.DERIVED, null, 1),
                 tuple(DerivedIds.derivedRowId(SUBMISSION, "visit.households.members", firstHousehold, 1),
-                    RowKeyKind.DERIVED, firstHousehold, 1),
-                tuple("01J2Q7Y0V6M3N4P5R6S7T8V9WY", RowKeyKind.CLIENT, null, 2),
+                    RowIdOrigin.DERIVED, firstHousehold, 1),
+                tuple("01J2Q7Y0V6M3N4P5R6S7T8V9WY", RowIdOrigin.STORED, null, 2),
                 tuple(DerivedIds.derivedRowId(SUBMISSION, "visit.households.members", "01J2Q7Y0V6M3N4P5R6S7T8V9WY", 1),
-                    RowKeyKind.DERIVED, "01J2Q7Y0V6M3N4P5R6S7T8V9WY", 1),
-                tuple("dd2bccab-dd79-57f4-a8de-07ab2df663f7", RowKeyKind.DERIVED, "01J2Q7Y0V6M3N4P5R6S7T8V9WY", 2));
+                    RowIdOrigin.DERIVED, "01J2Q7Y0V6M3N4P5R6S7T8V9WY", 1),
+                tuple("dd2bccab-dd79-57f4-a8de-07ab2df663f7", RowIdOrigin.DERIVED, "01J2Q7Y0V6M3N4P5R6S7T8V9WY", 2));
         // the same document gives the same derived ids every time
         assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, "fvUid000009",
             text("{'visit': {'households': [{'members': [{'age': 1}]}]}}")),
@@ -268,14 +268,14 @@ class SubmissionNormalizerTest {
 
         String second = DerivedIds.derivedRowId(SUBMISSION, "items", null, 2);
         assertThat(normalized.rows())
-            .extracting(NormalizedRow::id, NormalizedRow::keyKind, NormalizedRow::storedId, NormalizedRow::parentRowId)
+            .extracting(NormalizedRow::id, NormalizedRow::idOrigin, NormalizedRow::storedId, NormalizedRow::parentRowId)
             .containsExactly(
-                tuple("01J2Q7Y0V6M3N4P5R6S7T8V9W1", RowKeyKind.CLIENT, "01J2Q7Y0V6M3N4P5R6S7T8V9W1", null),
-                tuple(second, RowKeyKind.DUPLICATE_ID, "01J2Q7Y0V6M3N4P5R6S7T8V9W1", null),
+                tuple("01J2Q7Y0V6M3N4P5R6S7T8V9W1", RowIdOrigin.STORED, "01J2Q7Y0V6M3N4P5R6S7T8V9W1", null),
+                tuple(second, RowIdOrigin.DERIVED, "01J2Q7Y0V6M3N4P5R6S7T8V9W1", null),
                 // a row nested in a rekeyed row points to its new id, and derives its own id from it
-                tuple(DerivedIds.derivedRowId(SUBMISSION, "items.extra.parts", second, 1), RowKeyKind.DERIVED, null,
+                tuple(DerivedIds.derivedRowId(SUBMISSION, "items.extra.parts", second, 1), RowIdOrigin.DERIVED, null,
                     second),
-                tuple(DerivedIds.derivedRowId(SUBMISSION, "items", null, 3), RowKeyKind.DUPLICATE_ID,
+                tuple(DerivedIds.derivedRowId(SUBMISSION, "items", null, 3), RowIdOrigin.DERIVED,
                     "01J2Q7Y0V6M3N4P5R6S7T8V9W1", null));
         assertThat(normalized.rows()).extracting(r -> r.values().get(0).value().intValue()).containsExactly(1, 2, 5, 3);
         assertThat(normalized.flags()).containsExactly(entry(NormalizationFlag.DUPLICATE_ID, 2));
@@ -293,11 +293,11 @@ class SubmissionNormalizerTest {
         NormalizedSubmission normalized = normalize("{'items': [{'_id': 'aB3dE5fG7hJ9kL1m', 'count': 1},"
             + " {'_id': '" + third + "', 'count': 2}, {'_id': 'aB3dE5fG7hJ9kL1m', 'count': 3}]}");
 
-        assertThat(normalized.rows()).extracting(NormalizedRow::id, NormalizedRow::keyKind)
+        assertThat(normalized.rows()).extracting(NormalizedRow::id, NormalizedRow::idOrigin)
             .containsExactly(
-                tuple("aB3dE5fG7hJ9kL1m", RowKeyKind.LEGACY),
-                tuple(third, RowKeyKind.LEGACY),
-                tuple(DerivedIds.duplicateRowId(SUBMISSION, "items", null, 3, 2), RowKeyKind.DUPLICATE_ID));
+                tuple("aB3dE5fG7hJ9kL1m", RowIdOrigin.STORED),
+                tuple(third, RowIdOrigin.STORED),
+                tuple(DerivedIds.duplicateRowId(SUBMISSION, "items", null, 3, 2), RowIdOrigin.DERIVED));
         assertThat(normalized.flags()).containsExactly(entry(NormalizationFlag.DUPLICATE_ID, 1));
     }
 
@@ -308,14 +308,14 @@ class SubmissionNormalizerTest {
             {'items': [{'_id': '01J2Q7Y0V6M3N4P5R6S7T8V9W1', 'extra': {'parts': [{'qty': 1}]}},
                        {'_id': '01j2q7y0v6m3n4p5r6s7t8v9w1', 'extra': {'parts': [{'qty': 2}]}}]}""");
 
-        assertThat(normalized.rows()).extracting(NormalizedRow::id, NormalizedRow::keyKind, NormalizedRow::parentRowId)
+        assertThat(normalized.rows()).extracting(NormalizedRow::id, NormalizedRow::idOrigin, NormalizedRow::parentRowId)
             .containsExactly(
-                tuple("01J2Q7Y0V6M3N4P5R6S7T8V9W1", RowKeyKind.CLIENT, null),
+                tuple("01J2Q7Y0V6M3N4P5R6S7T8V9W1", RowIdOrigin.STORED, null),
                 tuple(DerivedIds.derivedRowId(SUBMISSION, "items.extra.parts", "01J2Q7Y0V6M3N4P5R6S7T8V9W1", 1),
-                    RowKeyKind.DERIVED, "01J2Q7Y0V6M3N4P5R6S7T8V9W1"),
-                tuple("01j2q7y0v6m3n4p5r6s7t8v9w1", RowKeyKind.CLIENT, null),
+                    RowIdOrigin.DERIVED, "01J2Q7Y0V6M3N4P5R6S7T8V9W1"),
+                tuple("01j2q7y0v6m3n4p5r6s7t8v9w1", RowIdOrigin.STORED, null),
                 tuple(DerivedIds.derivedRowId(SUBMISSION, "items.extra.parts", "01j2q7y0v6m3n4p5r6s7t8v9w1", 1),
-                    RowKeyKind.DERIVED, "01j2q7y0v6m3n4p5r6s7t8v9w1"));
+                    RowIdOrigin.DERIVED, "01j2q7y0v6m3n4p5r6s7t8v9w1"));
         assertThat(normalized.flags()).isEmpty();
     }
 

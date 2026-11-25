@@ -32,7 +32,7 @@ import java.util.Set;
  * values never share nodes. Parsing is iterative and the walk stops at {@link #MAX_DEPTH}, so no document, however
  * deep, can exhaust the stack.</p>
  *
- * <p><b>The walk</b> (the D feed spike's rules, measured on all 67,176 heads of the staging clone):</p>
+ * <p><b>The walk:</b></p>
  * <ul>
  *   <li>Each key of an object, from the root down, is resolved at its data path by the form's definitions
  *       ({@link FormDefinition}): the pinned version first, then the form's other versions, by the stored value's
@@ -42,19 +42,20 @@ import java.util.Set;
  *   <li>Anything resolving to a field is that field's value, kept whole. Anything else is unmapped, kept whole with
  *       its data path and the reason; nothing is dropped. A stored JSON null is no value.</li>
  *   <li>A row's {@code _id}, {@code _index}, {@code _parentId} and {@code _submissionUid}, and the root's
- *       {@code _status}, are structure, not values (the spike found every one consistent with the structure and the
- *       {@code status} column).</li>
+ *       {@code _status}, are structure, not values: they repeat what the structure and the {@code status} column
+ *       already say.</li>
  *   <li>A row is keyed by its stored {@code _id} exactly as stored; a row without one gets a derived id, hashed from
  *       the submission's id, its section path, its parent row's id and its index ({@link DerivedIds}). Its parent is
  *       the row it is nested in, through any plain sections between them.</li>
  * </ul>
  *
- * <p><b>Ids and fields used twice</b> (none on the staging clone) resolve by fixed rules, so keys stay unique:</p>
+ * <p><b>Ids and fields used twice</b> resolve by fixed rules, so keys stay unique:</p>
  * <ul>
  *   <li>A row whose id an earlier row of the submission already has, in walk order (arrays in stored order,
  *       sections in key order), keeps its stored id in {@link NormalizedRow#storedId()} but is keyed by its
- *       position-derived id ({@link RowKeyKind#DUPLICATE_ID}, {@link DerivedIds#duplicateRowId}). The first row
- *       keeps the id: it is the one a phone or a reader most likely already knows by it.</li>
+ *       position-derived id ({@link RowIdOrigin#DERIVED}, {@link DerivedIds#duplicateRowId}), flagged
+ *       {@link NormalizationFlag#DUPLICATE_ID}. The first row keeps the id: it is the one a phone or a reader most
+ *       likely already knows by it.</li>
  *   <li>Two stored paths of one row, or of the submission outside every row, that resolve to the same field, in the
  *       same section or not (a field placed in two sections, a section renamed with both names stored): the value
  *       resolved by the pinned version's own definition stays, otherwise the first in walk order; the other is
@@ -67,7 +68,7 @@ public final class SubmissionNormalizer {
     /**
      * How many objects and rows deep the walk goes. Below that, a container is kept whole as unmapped
      * ({@link UnmappedReason#NESTED_TOO_DEEP}), so no document can exhaust the stack. Stored documents nest a few
-     * levels; the spike's walk stopped at 30.
+     * levels.
      */
     public static final int MAX_DEPTH = 32;
 
@@ -266,7 +267,7 @@ public final class SubmissionNormalizer {
                 members(element, sectionPath, container, key, true, depth);
                 rows.set(place, new NormalizedRow(
                     key.id(),
-                    key.kind(),
+                    key.origin(),
                     key.storedId(),
                     parent == null ? null : parent.id(),
                     section.id(),
@@ -282,9 +283,9 @@ public final class SubmissionNormalizer {
                 : storedIdNode.isTextual() ? storedIdNode.textValue() : storedIdNode.toString();
             if (storedId == null || storedId.isEmpty()) {
                 return new RowKey(DerivedIds.derivedRowId(submissionId, sectionPath, parent == null ? null : parent.id(),
-                    index), RowKeyKind.DERIVED, null);
+                    index), RowIdOrigin.DERIVED, null);
             }
-            return new RowKey(storedId, DerivedIds.isUlid(storedId) ? RowKeyKind.CLIENT : RowKeyKind.LEGACY, storedId);
+            return new RowKey(storedId, RowIdOrigin.STORED, storedId);
         }
 
         /** The first free id of {@link DerivedIds#duplicateRowId}'s attempts. */
@@ -293,14 +294,14 @@ public final class SubmissionNormalizer {
             for (int attempt = 1; ; attempt++) {
                 String id = DerivedIds.duplicateRowId(submissionId, sectionPath, parentId, index, attempt);
                 if (!rowIds.contains(id)) {
-                    return new RowKey(id, RowKeyKind.DUPLICATE_ID, storedId);
+                    return new RowKey(id, RowIdOrigin.DERIVED, storedId);
                 }
             }
         }
     }
 
     /** A row's id, where it comes from, and its stored id. */
-    private record RowKey(String id, RowKeyKind kind, String storedId) {
+    private record RowKey(String id, RowIdOrigin origin, String storedId) {
     }
 
     /** The values of one row, or of the submission outside every row. */

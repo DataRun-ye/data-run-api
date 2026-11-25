@@ -49,14 +49,4 @@ class DerivedIdsTest {
         assertThat(DerivedIds.duplicateRowId(SUBMISSION, "visit.households", null, 1, 2))
             .isEqualTo("3c0744c6-26a1-5c36-8e2b-e6cc939d7f51");
     }
-
-    @Test
-    void aStoredIdHasAUlidsShapeOrNot() {
-        assertThat(DerivedIds.isUlid("01ARZ3NDEKTSV4RRFFQ69G5FAV")).isTrue();
-        assertThat(DerivedIds.isUlid("01arz3ndektsv4rrffq69g5fav")).isTrue();
-        assertThat(DerivedIds.isUlid("0123456789abcdef")).isFalse();           // a 16-character older id
-        assertThat(DerivedIds.isUlid("8ZZZZZZZZZZZZZZZZZZZZZZZZZ")).isFalse(); // more than 128 bits
-        assertThat(DerivedIds.isUlid("01ARZ3NDEKTSV4RRFFQ69G5FAI")).isFalse(); // I is not a Crockford digit
-        assertThat(DerivedIds.isUlid(null)).isFalse();
-    }
 }

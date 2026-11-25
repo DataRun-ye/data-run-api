@@ -6,12 +6,11 @@ import java.util.Objects;
 /**
  * One row of a repeating section, keyed by its submission's id and its own id.
  *
- * @param id          the row's id, unique within its submission: its stored {@code _id} exactly as stored (a ULID
- *                    or an older app's id), or a derived id when it has none or an earlier row already has it
- *                    ({@link RowKeyKind})
- * @param keyKind     where the id comes from
- * @param storedId    its stored {@code _id} exactly as stored, or {@code null} when it has none; differs from the id
- *                    only for {@link RowKeyKind#DUPLICATE_ID}
+ * @param id          the row's id, unique within its submission: its stored {@code _id} exactly as stored, or a
+ *                    derived id when it has none or an earlier row already has it ({@link RowIdOrigin})
+ * @param idOrigin    where the id comes from
+ * @param storedId    its stored {@code _id} exactly as stored, or {@code null} when it has none; set while the id is
+ *                    derived only when an earlier row already had that stored id
  * @param parentRowId the id of the row it is nested in, or {@code null} when its section is outside every row
  * @param sectionId   the id of its repeating section
  * @param sectionPath the data path of its repeating section
@@ -21,7 +20,7 @@ import java.util.Objects;
  */
 public record NormalizedRow(
     String id,
-    RowKeyKind keyKind,
+    RowIdOrigin idOrigin,
     String storedId,
     String parentRowId,
     String sectionId,
@@ -32,7 +31,7 @@ public record NormalizedRow(
 
     public NormalizedRow {
         Objects.requireNonNull(id, "id");
-        Objects.requireNonNull(keyKind, "keyKind");
+        Objects.requireNonNull(idOrigin, "idOrigin");
         Objects.requireNonNull(sectionId, "sectionId");
         Objects.requireNonNull(sectionPath, "sectionPath");
         values = List.copyOf(values);

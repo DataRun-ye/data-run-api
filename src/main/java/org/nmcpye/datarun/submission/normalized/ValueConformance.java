@@ -14,8 +14,7 @@ import java.util.regex.Pattern;
  * Whether a stored value parses as its field's declared value type. It only judges; the value is kept whole either
  * way.
  *
- * <p>The rules follow how phones store values, measured on the staging clone (all 1,638,246 mapped values, by
- * declared type and stored JSON type): numbers as JSON numbers, booleans and yes/no as JSON booleans, codes, ids and
+ * <p>The rules follow how phones store values: numbers as JSON numbers, booleans and yes/no as JSON booleans, codes, ids and
  * texts as strings, multi-selects as arrays of strings, dates as {@code yyyy-MM-dd} or as an ISO date and time (an
  * {@code Age} with a zone), date-times with a space before the time, times as {@code HH:mm}.</p>
  *

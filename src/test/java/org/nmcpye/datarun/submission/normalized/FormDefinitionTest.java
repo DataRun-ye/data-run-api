@@ -191,7 +191,7 @@ class FormDefinitionTest {
     }
 
     @Test
-    void storedShapesFollowTheSpike() {
+    void aStoredValuesShapeIsWhatItHolds() {
         assertThat(StoredShape.of(StoredForms.json("{}"))).isEqualTo(StoredShape.OBJECT);
         assertThat(StoredShape.of(StoredForms.json("[{}, {'a': 1}]"))).isEqualTo(StoredShape.ROWS);
         assertThat(StoredShape.of(StoredForms.json("[{}, 1]"))).isEqualTo(StoredShape.LEAF);

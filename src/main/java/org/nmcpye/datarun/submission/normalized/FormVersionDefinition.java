@@ -11,8 +11,8 @@ import java.util.function.Function;
 /**
  * One version of a form: its sections and fields, each located by the data path its values are stored at.
  *
- * <p>{@link #parse} reads a version as stored ({@code data_template_version.sections} and {@code .fields}) by the
- * spike's rules: a section's data path is its stored {@code path}; a field's is its section's path and its
+ * <p>{@link #parse} reads a version as stored ({@code data_template_version.sections} and {@code .fields}): a
+ * section's data path is its stored {@code path}; a field's is its section's path and its
  * {@code name} (its stored {@code path} ends with its data element's uid, which the stored data never uses), or
  * the name alone for a field outside every section.</p>
  *

@@ -12,7 +12,7 @@ import static org.nmcpye.datarun.submission.normalized.StoredForms.version;
 
 /**
  * A stored value that does not parse as its declared type is kept whole and flagged. The accepted forms are the ones
- * the staging clone stores (invented values here).
+ * phones store (invented values here).
  */
 class ValueConformanceTest {
 
