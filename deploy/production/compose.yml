@@ -33,7 +33,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN:-}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-}
       - DATARUN_ETL_HEARTBEAT_URL=${DATARUN_ETL_HEARTBEAT_URL:-}
-      # Downstream's reading role for schema feed (FeedReaderRole); empty grants nothing and logs a WARN at start.
+      # Downstream's reader role for schema feed (FeedReaderGrants); empty changes no grant and logs a WARN at start.
       - DATARUN_FEED_READER_ROLE=${DATARUN_FEED_READER_ROLE:-}
     ports:
       - "192.168.1.110:8080:8080"

@@ -32,8 +32,8 @@
       leaves the schema: the feed is derived from the journal, its records outlive nothing they name, and a key would
       lock public tables at each write.
 
-      Only the publisher (org.nmcpye.datarun.submission.feed.publisher) writes these schemas. Downstream's grant on
-      feed is changeset 20261125-d02; nothing grants feed_ops.
+      Only the publisher (org.nmcpye.datarun.submission.feed.publisher) writes these schemas. Downstream's read grant on
+      feed is converged at every start by the application (FeedReaderGrants); nothing grants feed_ops.
 
       Additive only: two new schemas, no existing object touched. Rollback drops what this created; every record can
       be published again from the journal. Roll back only after downstream has deselected the feed's streams

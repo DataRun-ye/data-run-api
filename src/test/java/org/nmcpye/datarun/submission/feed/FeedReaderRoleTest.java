@@ -10,21 +10,23 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.env.SystemEnvironmentPropertySource;
-import org.springframework.dao.QueryTimeoutException;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.mock.env.MockEnvironment;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.Map;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
- * Downstream's reading role comes from one setting, reaches Liquibase only as a plain role name, and every start logs
- * exactly one line on the grant: a WARN naming what is missing, or an INFO when the role can read schema feed.
+ * Downstream's reader role comes from one setting, from YAML or the environment, and only a plain role name is used;
+ * with no role named, or a name that is not plain, the start logs one WARN and reaches no database.
  */
 class FeedReaderRoleTest {
 
-    private final Logger logger = (Logger) LoggerFactory.getLogger(FeedReaderGrantCheck.class);
+    private final Logger logger = (Logger) LoggerFactory.getLogger(FeedReaderGrants.class);
     private final ListAppender<ILoggingEvent> lines = new ListAppender<>();
 
     @BeforeEach
@@ -36,10 +38,6 @@ class FeedReaderRoleTest {
     @AfterEach
     void release() {
         logger.detachAppender(lines);
-    }
-
-    private java.util.List<String> logged() {
-        return lines.list.stream().map(line -> line.getLevel() + " " + line.getFormattedMessage()).toList();
     }
 
     @Test
@@ -58,11 +56,11 @@ class FeedReaderRoleTest {
         StandardEnvironment fromYaml = new StandardEnvironment();
         fromYaml.getPropertySources().addFirst(new MapPropertySource("yaml",
             Map.of("datarun.feed.reader-role", "Airbyte-Reader")));
-        assertThat(FeedReaderRole.liquibaseParameter(fromYaml)).isEqualTo("Airbyte-Reader");
+        assertThat(FeedReaderRole.configured(fromYaml)).contains("Airbyte-Reader");
     }
 
     @Test
-    void onlyAPlainRoleNameReachesLiquibase() {
+    void onlyAPlainRoleNameIsUsed() {
         assertThat(FeedReaderRole.isPlain("airbyte")).isTrue();
         assertThat(FeedReaderRole.isPlain("_reader-2")).isTrue();
         assertThat(FeedReaderRole.isPlain("a".repeat(63))).isTrue();
@@ -71,44 +69,24 @@ class FeedReaderRoleTest {
         assertThat(FeedReaderRole.isPlain("air\"byte")).isFalse();
         assertThat(FeedReaderRole.isPlain("air'byte")).isFalse();
         assertThat(FeedReaderRole.isPlain("air byte")).isFalse();
-        assertThat(FeedReaderRole.isPlain("${feedReaderRole}")).isFalse();
+        assertThat(FeedReaderRole.isPlain("air%byte")).isFalse();
         assertThat(FeedReaderRole.isPlain(null)).isFalse();
-
-        assertThat(FeedReaderRole.liquibaseParameter(new MockEnvironment())).isEmpty();
-        assertThat(FeedReaderRole.liquibaseParameter(new MockEnvironment()
-            .withProperty(FeedReaderRole.PROPERTY, "x\"; DROP SCHEMA feed; --"))).isEmpty();
     }
 
     @Test
-    void noRoleSetIsOneWarnNamingTheMissingGrant() {
-        FeedReaderGrantCheck.check(Optional.empty(), role -> {
-            throw new AssertionError("nothing to read");
-        });
-        assertThat(logged()).containsExactly(
-            "WARN Downstream's grant on schema feed is not made: no reader role is set (datarun.feed.reader-role)");
-    }
+    void noRoleNamed_orANameThatIsNotPlain_isOneWarnAndNoDatabaseWork() {
+        NamedParameterJdbcTemplate jdbc = mock(NamedParameterJdbcTemplate.class);
+        PlatformTransactionManager transactions = mock(PlatformTransactionManager.class);
 
-    @Test
-    void eachStateOfTheCatalogIsOneLine() {
-        FeedReaderGrantCheck.check(Optional.of("airbyte"), role -> new FeedReaderGrantCheck.State(true, true, true, true));
-        FeedReaderGrantCheck.check(Optional.of("airbyte"), role -> new FeedReaderGrantCheck.State(false, true, false, false));
-        FeedReaderGrantCheck.check(Optional.of("airbyte"), role -> new FeedReaderGrantCheck.State(true, true, false, false));
-        FeedReaderGrantCheck.check(Optional.of("airbyte"), role -> new FeedReaderGrantCheck.State(true, true, false, true));
-        FeedReaderGrantCheck.check(Optional.of("airbyte"), role -> new FeedReaderGrantCheck.State(true, false, false, false));
-        FeedReaderGrantCheck.check(Optional.of("airbyte"), role -> {
-            throw new QueryTimeoutException("a value must never reach the log");
-        });
+        new FeedReaderGrants(jdbc, transactions, new MockEnvironment()).convergeAtStart();
+        new FeedReaderGrants(jdbc, transactions,
+            new MockEnvironment().withProperty(FeedReaderRole.PROPERTY, "x\"; DROP SCHEMA feed; --")).convergeAtStart();
 
-        assertThat(logged()).containsExactly(
-            "INFO Schema feed is readable by reader role airbyte",
-            "WARN Downstream's grant on schema feed is not made: reader role airbyte does not exist. Once it does, grant "
-                + "it by hand, or restart once with datarun.feed.reader-role empty and once with it set",
-            "WARN Downstream's grant on schema feed is not made for reader role airbyte: changeset "
-                + "20261125-d02-feed-reader-grant has not run, as Liquibase did not run at this start",
-            "WARN Reader role airbyte cannot read schema feed, and changeset 20261125-d02-feed-reader-grant runs again "
-                + "only when datarun.feed.reader-role changes: grant it USAGE on feed, SELECT on its tables and default "
-                + "privileges by hand",
-            "WARN Downstream's grant on schema feed is not made: schema feed does not exist",
-            "WARN Could not check downstream's grant on schema feed for reader role airbyte: QueryTimeoutException");
+        verifyNoInteractions(jdbc, transactions);
+        assertThat(lines.list).extracting(line -> line.getLevel() + " " + line.getFormattedMessage()).containsExactly(
+            "WARN Downstream's grant on schema feed is not made: no reader role is set (datarun.feed.reader-role); "
+                + "grants on feed are left as they are",
+            "WARN Downstream's grant on schema feed is not made: datarun.feed.reader-role is not a plain role name "
+                + "(letters, digits, _ and -, at most 63 characters); grants on feed are left as they are");
     }
 }

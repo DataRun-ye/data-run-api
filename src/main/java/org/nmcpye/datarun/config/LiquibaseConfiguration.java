@@ -1,7 +1,6 @@
 package org.nmcpye.datarun.config;
 
 import liquibase.integration.spring.SpringLiquibase;
-import org.nmcpye.datarun.submission.feed.FeedReaderRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -20,8 +19,6 @@ import tech.jhipster.config.JHipsterConstants;
 import tech.jhipster.config.liquibase.SpringLiquibaseUtil;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Executor;
 
 @Configuration
@@ -77,7 +74,7 @@ public class LiquibaseConfiguration {
         if (!CollectionUtils.isEmpty(liquibaseProperties.getLabelFilter())) {
             liquibase.setLabelFilter(StringUtils.collectionToCommaDelimitedString(liquibaseProperties.getLabelFilter()));
         }
-        liquibase.setChangeLogParameters(changeLogParameters(liquibaseProperties.getParameters(), env));
+        liquibase.setChangeLogParameters(liquibaseProperties.getParameters());
         liquibase.setRollbackFile(liquibaseProperties.getRollbackFile());
         liquibase.setTestRollbackOnUpdate(liquibaseProperties.isTestRollbackOnUpdate());
         if (env.acceptsProfiles(Profiles.of(JHipsterConstants.SPRING_PROFILE_NO_LIQUIBASE))) {
@@ -87,19 +84,5 @@ public class LiquibaseConfiguration {
             log.debug("Configuring Liquibase");
         }
         return liquibase;
-    }
-
-    /**
-     * The changelog parameters: those configured under {@code spring.liquibase.parameters}, and downstream's reading
-     * role for the feed's grant, from {@value FeedReaderRole#PROPERTY} and only when it is a plain role name
-     * ({@link FeedReaderRole}); otherwise empty, and nothing is granted.
-     */
-    static Map<String, String> changeLogParameters(Map<String, String> configured, Environment env) {
-        Map<String, String> parameters = new HashMap<>();
-        if (configured != null) {
-            parameters.putAll(configured);
-        }
-        parameters.put(FeedReaderRole.LIQUIBASE_PARAMETER, FeedReaderRole.liquibaseParameter(env));
-        return parameters;
     }
 }
