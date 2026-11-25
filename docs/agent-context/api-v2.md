@@ -101,6 +101,10 @@ all of them.
 
 - A versioned resource carries a strong `ETag`: its version in quotes, `"3"`
   (`web.v2.concurrency.EntityTag`), also shown in its body as `version`.
+- A resource whose view also shows another resource's state carries an
+  opaque strong `ETag` that changes when either changes, and no `version`
+  member. Clients never parse it. The one such resource so far is a
+  submission's conflict (`docs/features/submission-review/spec.md`).
 - Every command requires `If-Match` (`web.v2.concurrency.IfMatch`), compared
   by RFC 9110's strong comparison against the version its transaction has
   locked:
