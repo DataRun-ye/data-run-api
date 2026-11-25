@@ -41,6 +41,7 @@ class SubmissionRevisionMigrationIT {
     /** Every changeset of step C starts with this id. */
     static final String STEP_C = "20261124-c";
     static final String GAP_REPAIR = "20261124-c08-submission-revision-gap-repair";
+    static final String REVIEW_COMMANDS = "20261125-s2-01-submission-revision-review-commands";
 
     private static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16.2");
 
@@ -612,6 +613,72 @@ class SubmissionRevisionMigrationIT {
                 SELECT recorded_at BETWEEN now() - interval '1 minute' AND now()
                 FROM journal.submission_revision WHERE submission_id = ? AND version = 0""", Boolean.class, created))
             .as("recorded_at is the database's time").isTrue();
+    }
+
+    /**
+     * Submission review's commands, with the kinds and actors their methods will write: an accept names the uploader
+     * it acts for, as a release does. The kind RESTORE comes with the method that writes it, so a restore is recorded
+     * here as an update.
+     */
+    @Test
+    void submissionReviewsCommandsAreAcceptedWithTheirActors() {
+        String resolver = user();
+        String uploader = user();
+        String id = submission(0, false);
+        String splitOff = submission(0, false);
+
+        revision(id, 0, null, "CREATE", "UPLOAD", uploader, null, null, null);
+        revision(id, 1, 0L, "UPDATE", "EDIT", resolver, null, null, "typed 70 for 7");
+        revision(id, 2, 1L, "UPDATE", "MOVE", resolver, null, null, "village handed over");
+        revision(id, 3, 2L, "UPDATE", "SPLIT", resolver, null, null, "two villages in one");
+        revision(splitOff, 0, null, "CREATE", "SPLIT", resolver, null, null, "two villages in one");
+        revision(id, 4, 3L, "UPDATE", "CONFLICT_ACCEPT", resolver, null, uploader, "the phone was right");
+        revision(id, 5, 4L, "DELETE", "DELETE", resolver, null, null, "recorded twice");
+        revision(id, 6, 5L, "UPDATE", "RESTORE", resolver, null, null, "not recorded twice");
+
+        assertThat(db.queryForList("""
+                SELECT version || ' ' || kind || ' ' || command FROM journal.submission_revision
+                WHERE submission_id IN (?, ?) ORDER BY submission_id = ?, version""",
+            String.class, id, splitOff, splitOff))
+            .containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT", "2 UPDATE MOVE", "3 UPDATE SPLIT",
+                "4 UPDATE CONFLICT_ACCEPT", "5 DELETE DELETE", "6 UPDATE RESTORE", "0 CREATE SPLIT");
+        assertThat(refusal(() -> revision(id, 7, 6L, "UPDATE", "CONFLICT_ACCEPT", resolver, null, null, "no one")))
+            .as("an accept without its uploader").isEqualTo("23514 ck_submission_revision_on_behalf_of");
+        assertThat(refusal(() -> revision(id, 7, 6L, "UPDATE", "EDIT", resolver, null, uploader, "for whom")))
+            .as("on behalf of, on an edit").isEqualTo("23514 ck_submission_revision_on_behalf_of");
+        assertThat(refusal(() -> revision(id, 7, 6L, "UPDATE", "MERGE", resolver, null, null, null)))
+            .as("an unknown command").isEqualTo("23514 ck_submission_revision_command");
+    }
+
+    /**
+     * Once a revision records one of submission review's commands, a Liquibase rollback of that changeset refuses
+     * and both checks stay widened; the changesets run after it (the gap repair last) are rolled back first and run
+     * again at the next start.
+     */
+    @Test
+    void aRollbackOfSubmissionReviewsCommandsRefusesOnceOneIsRecorded() throws Exception {
+        String id = submission(0, false);
+        revision(id, 0, null, "CREATE", "UPLOAD", user(), null, null, null);
+        revision(id, 1, 0L, "UPDATE", "EDIT", user(), null, null, "typed 70 for 7");
+        migrate(false);
+        int sinceReviewCommands = (int) count("""
+            SELECT count(*) FROM databasechangelog
+            WHERE orderexecuted >= (SELECT orderexecuted FROM databasechangelog WHERE id = ?)""", REVIEW_COMMANDS);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> rollback(sinceReviewCommands))
+            .hasStackTraceContaining("never roll it back");
+
+        assertThat(count("SELECT count(*) FROM databasechangelog WHERE id = ?", REVIEW_COMMANDS)).isEqualTo(1);
+        assertThat(db.queryForObject("""
+                SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'ck_submission_revision_command'""",
+            String.class)).contains("'CONFLICT_ACCEPT'");
+        assertThat(db.queryForObject("""
+                SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'ck_submission_revision_on_behalf_of'""",
+            String.class)).contains("'CONFLICT_ACCEPT'");
+
+        migrate(false);
+        assertThat(count("SELECT count(*) FROM databasechangelog WHERE id = ?", GAP_REPAIR))
+            .as("the next start runs the gap repair again").isEqualTo(1);
     }
 
     /**

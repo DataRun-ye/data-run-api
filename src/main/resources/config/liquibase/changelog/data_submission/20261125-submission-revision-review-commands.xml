@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!-- How long the changeset may wait for a lock; a Liquibase parameter of the same name overrides it. -->
+    <property name="submissionReviewJournalLockTimeout" value="30s"/>
+
+    <!--
+      Submission review's commands in the journal (docs/features/submission-review/spec.md, the journal and the feed):
+      EDIT, MOVE, SPLIT, DELETE, RESTORE and CONFLICT_ACCEPT, one per changing method. Conflict detection reads them
+      as server-side changes, or a plain accept as the uploader's base version; nothing writes them until the methods
+      are built. An accept is the resolver acting for the uploader, so like a release it names both: the
+      on-behalf-of check takes CONFLICT_ACCEPT too.
+
+      Additive: both checks only widen. The rest of that changeset (the kind RESTORE, a required reason, the detail
+      column) comes with the methods that write them.
+
+      Rollback restores the checks as they were, and refuses once a revision uses one of these commands: such a
+      revision is the only record of that change.
+    -->
+    <changeSet id="20261125-s2-01-submission-revision-review-commands" author="datarun">
+        <sql>SET LOCAL lock_timeout = '${submissionReviewJournalLockTimeout}'</sql>
+        <sql>ALTER TABLE journal.submission_revision DROP CONSTRAINT ck_submission_revision_command</sql>
+        <sql>
+            ALTER TABLE journal.submission_revision ADD CONSTRAINT ck_submission_revision_command
+                CHECK (command IN ('MIGRATION', 'GAP_REPAIR', 'UPLOAD', 'LEGACY_UPLOAD', 'HELD_RELEASE',
+                                   'ADMIN_DELETE', 'EDIT', 'MOVE', 'SPLIT', 'DELETE', 'RESTORE', 'CONFLICT_ACCEPT'))
+        </sql>
+        <sql>ALTER TABLE journal.submission_revision DROP CONSTRAINT ck_submission_revision_on_behalf_of</sql>
+        <sql>
+            ALTER TABLE journal.submission_revision ADD CONSTRAINT ck_submission_revision_on_behalf_of
+                CHECK ((on_behalf_of_user_id IS NOT NULL) = (command IN ('HELD_RELEASE', 'CONFLICT_ACCEPT')))
+        </sql>
+        <rollback>
+            <sql splitStatements="false"><![CDATA[
+                DO $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM journal.submission_revision
+                               WHERE command IN ('EDIT', 'MOVE', 'SPLIT', 'DELETE', 'RESTORE', 'CONFLICT_ACCEPT')) THEN
+                        RAISE EXCEPTION 'journal.submission_revision holds revisions of submission review''s commands: never roll it back';
+                    END IF;
+                END $$
+            ]]></sql>
+            <sql>SET LOCAL lock_timeout = '${submissionReviewJournalLockTimeout}'</sql>
+            <sql>ALTER TABLE journal.submission_revision DROP CONSTRAINT ck_submission_revision_on_behalf_of</sql>
+            <sql>
+                ALTER TABLE journal.submission_revision ADD CONSTRAINT ck_submission_revision_on_behalf_of
+                    CHECK ((on_behalf_of_user_id IS NOT NULL) = (command = 'HELD_RELEASE'))
+            </sql>
+            <sql>ALTER TABLE journal.submission_revision DROP CONSTRAINT ck_submission_revision_command</sql>
+            <sql>
+                ALTER TABLE journal.submission_revision ADD CONSTRAINT ck_submission_revision_command
+                    CHECK (command IN ('MIGRATION', 'GAP_REPAIR', 'UPLOAD', 'LEGACY_UPLOAD', 'HELD_RELEASE',
+                                       'ADMIN_DELETE'))
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

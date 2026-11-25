@@ -9,7 +9,8 @@ import java.util.Objects;
  * @param command          the command
  * @param actorUserId      the durable id ({@code app_user.id}) of the user who performed it: the uploader, or for a
  *                         release or a delete, the admin
- * @param onBehalfOfUserId for a release, the uploader the admin acts for; otherwise null
+ * @param onBehalfOfUserId for a release or an accepted conflict, the uploader the admin or resolver acts for;
+ *                         otherwise null
  * @param reason           the admin's note on a release, if any; otherwise null
  */
 public record RevisionContext(RevisionCommand command, String actorUserId, String onBehalfOfUserId, String reason) {
@@ -17,8 +18,10 @@ public record RevisionContext(RevisionCommand command, String actorUserId, Strin
     public RevisionContext {
         Objects.requireNonNull(command, "command");
         Objects.requireNonNull(actorUserId, "actorUserId");
-        if ((command == RevisionCommand.HELD_RELEASE) != (onBehalfOfUserId != null)) {
-            throw new IllegalArgumentException("A release, and only a release, names the uploader it acts for");
+        boolean actsForUploader = command == RevisionCommand.HELD_RELEASE || command == RevisionCommand.CONFLICT_ACCEPT;
+        if (actsForUploader != (onBehalfOfUserId != null)) {
+            throw new IllegalArgumentException(
+                "A release or an accept, and only those, names the uploader it acts for");
         }
     }
 
