@@ -1,6 +1,6 @@
 # Submission review
 
-The words for finding, checking and changing the submissions of any form after phones send them, and for who may
+The words for searching, checking and changing the submissions of any form after phones send them, and for who may
 do it. Status: LIVING. Adopted for the first build (engineering, 2026-11-25), with the owner's answers of
 2026-11-25.
 
@@ -16,7 +16,7 @@ do it. Status: LIVING. Adopted for the first build (engineering, 2026-11-25), wi
 ### The capability
 
 **Submission review** (مراجعة الاستمارات المرسلة):
-The work of finding, checking and changing the submissions of any form after phones send them, with every change
+The work of searching, checking and changing the submissions of any form after phones send them, with every change
 kept in history. Progress views, dashboards and exports are not part of it.
 _Avoid_: corrections, data cleaning (what downstream analytics does to its own copy), review alone (in engineering
 documents it means an engineering review)
@@ -77,10 +77,10 @@ field may pick one. The lists feature owns entries. API: `entry`.
 
 **Entries outside placement**:
 Rows whose picked entry belongs to another org unit than the submission's, after a move, split or accept. They are
-reported and tracked until an edit re-points them. `setEntry` refuses such an entry.
+reported and tracked until a `setEntry`, a removal or a move back resolves them. `setEntry` refuses such an entry.
 API: `entriesOutsidePlacement`; problem `entry-outside-placement`.
 
-### Finding and reading
+### Searching and reading
 
 **Search** (بحث):
 Listing one form's submissions by activity, team, assignment, org unit, area, created and entered times, open
@@ -99,7 +99,7 @@ When the form was filled on the phone: the start and end times the phone recorde
 `enteredTo`; in the feed `entered_start_at`, `entered_end_at`.
 
 **View** (عرض):
-Opening one submission: its current state, typed by its form version, its version as the `ETag`, whether it has an
+Reading one submission: its current state, typed by its form version, its version as the `ETag`, whether it has an
 open conflict, and its note count. API: `GET /api/v2/submissions/{id}`.
 _Avoid_: open, head
 
@@ -184,6 +184,10 @@ _Avoid_: review status, approved, rejected, validated, verified, on hold
 
 ### Phones and conflicts
 
+**Upload item**:
+One submission in a phone's upload, answered on its own: `updated`, or a refusal of that item alone.
+_Avoid_: phone row (a row is a repetition of a repeating section)
+
 **Uploader** (المُرسِل):
 The user whose phone sent a submission or a phone copy. A submission's creator is the user who first sent it.
 
@@ -197,8 +201,8 @@ after a lost answer. It changes nothing, opens no conflict, and is answered `upd
 _Avoid_: echo, absorbed, duplicate, retry
 
 **Server-side change** (تغيير على الخادم):
-A revision the uploader's phone did not make: an edit, move, split, delete, restore, another uploader's accepted
-copy, or an admin delete.
+A revision the uploader's phone did not make, exactly: an edit, move, split, delete or restore, another uploader's
+accepted copy, an admin delete, or a deleted baseline.
 _Avoid_: office change, room change
 
 **Conflict** (تعارض):
@@ -245,7 +249,8 @@ Operations never see these: they see history and "deleted".
 | **Command** | Which action made a revision: `UPLOAD`, `LEGACY_UPLOAD`, `HELD_RELEASE`, `ADMIN_DELETE`; this feature adds `EDIT`, `MOVE`, `SPLIT`, `DELETE`, `RESTORE`, `CONFLICT_ACCEPT`, one per changing method. In v2 code a command is also any changing request |
 | **Lineage** | The submissions linked by splits, splits of splits included, recorded both ways. API: `splitFrom`, `splitTo` |
 | **Live** | Not deleted, for a submission; in a live submission's current state, for a row. A row id is live in at most one submission of a lineage |
-| **Unmapped value** | A stored value no field keys, kept whole at its path: mostly one at a path no version of its form defines, also a second value for a field that already has one. A split cannot name it, so it stays in the source |
+| **Unmapped value** | A stored value no field keys, kept whole at its path: mostly one at a path no version of its form defines, also a second value for a field that already has one. A split cannot name a top-level one, so it stays in the source; one inside a split row travels with the row |
+| **Submission lock** | The database lock on the submission (`SELECT … FOR UPDATE` on `data_submission`), taken first in every changing transaction, the upload routes' included. _Avoid_: row lock |
 | **Outbox** | The table where each change's transaction leaves one row naming its revision, for the ETL and the feed's publisher |
 | **ETL** | The outbox consumer that projects each change into tall (`analytics.tall_canonical`) and events (`analytics.events`), the analytics interface until the feed replaces them. Its **split re-attribution** moves split rows to their new submission in tall |
 | **Data path** | Where a value sits in a stored document: the stored keys from the root, joined by dots. Never a target in the API |

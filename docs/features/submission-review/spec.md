@@ -45,8 +45,8 @@ failure a phone forgets that the server holds the submission. Old apps on the le
 without ids, and the server mints new ids at every re-send. Today a move or a handover can make the original team's
 copies fail (E4124, E4114, E4122). Most later copies are retries: 96.6% of re-sends arrive within an hour of the
 previous change.
-So: the server answers `updated` to every phone row and decides alone, from the journal, whether a copy is an
-unchanged re-send or a conflict; nothing a server-side change does may fail a phone row; a copy without row ids is
+So: the server answers `updated` to every upload item and decides alone, from the journal, whether a copy is an
+unchanged re-send or a conflict; nothing a server-side change does may fail an upload item; a copy without row ids is
 never matched row by row; teams learn of server-side changes by other channels until an app release can show them.
 
 **C2. List entries stay where they are.** Phones pick entries from an org unit's list. An upload's entry must belong
@@ -93,7 +93,7 @@ grants; admins grant themselves what they use.
 | 9 | Downstream reads the current state through the feed, deleted records included | owner, 2026-11-25 |
 | 10 | Ids are opaque strings, never the uid | owner, 2026-11-24; engineering, 2026-11-25 |
 | 11 | The wire format is not the storage format; ordinary change stays inside v2 | owner, 2026-11-24 |
-| 12 | Installed phones never break, and no phone row fails because of a server-side change | engineering |
+| 12 | Installed phones never break, and no upload item fails because of a server-side change | engineering |
 | 13 | Changes are reversible; resolving a conflict never drops server-side edits silently; a split never duplicates a row or a value | engineering |
 | 14 | Search never scans without bound | engineering |
 | 15 | Deployment and activation are separate | engineering |
@@ -185,12 +185,12 @@ visited every row (209 ms, about 3 µs a row); narrowed to one village by an ind
 
 **How** (engineering, 2026-11-25). Now: SQL on `data_submission` under the guard, with B-tree indexes on (form,
 serial), (form, team, serial) and (form, org unit, serial), the assignment index, and a pattern index on
-`org_unit.path`; field filters are predicates on the data paths each form version gives a field. The scaled measurement (build
-step 6) decides whether a `jsonb_path_ops` GIN is added for form-wide equality. Later: a server-owned read model in
-schema `submission_review`, written by the feed's publisher from the same normalized submissions. Rejected: a read
-model written in the upload transaction (load on the phones' path), and the feed's tables (they would tie this
-feature's indexes to downstream's additive-only contract). A test proves that the SQL filters and the submission
-normalizer select the same submissions and rows.
+`org_unit.path`; field filters are predicates on the data paths each form version gives a field. The scaled
+measurement (build step 6) decides whether a `jsonb_path_ops` GIN is added for form-wide equality. Later: a
+server-owned read model in schema `submission_review`, written by the feed's publisher from the same normalized
+submissions. Rejected: a read model written in the upload transaction (load on the phones' path), and the feed's
+tables (they would tie this feature's indexes to downstream's additive-only contract). A test proves that the SQL
+filters and the submission normalizer select the same submissions and rows.
 
 ### 3.2 View, history, notes and the form dictionary
 
@@ -214,12 +214,12 @@ normalizer select the same submissions and rows.
 
 ### 3.4 Not built, by decision (owner, 2026-11-25)
 
-- **Review status or approval.** Operations do not mark their reviews, and an approval process must not be
-  hardcoded unless it is data. If marks are wanted later, they are added as data (engineering, 2026-11-25): defined
-  per activity like option sets (code, label, order); applied by `POST …/{id}:mark` with a mark's code and a reason; stored in one small table
-  in `submission_review` and shown in history beside revisions; one more permission (for example
-  `submissions.mark`); an additive search filter. A mark changes no version, so it causes no conflict and stays out
-  of the feed. Nothing else depends on marks, so adding them is additive.
+- **Review status or approval.** Operations do not mark their reviews, and an approval process must not be hardcoded
+  unless it is data. If marks are wanted later, they are added as data (engineering, 2026-11-25): defined per
+  activity like option sets (code, label, order); applied by `POST …/{id}:mark` with a mark's code and a reason;
+  stored in one small table in `submission_review` and shown in history beside revisions; one more permission (for
+  example `submissions.mark`); an additive search filter. A mark changes no version, so it causes no conflict and
+  stays out of the feed. Nothing else depends on marks, so adding them is additive.
 - **Moving rows into an existing submission.** Split covers the need.
 - **A feedback workflow** with recipients and states. Feedback is plain notes.
 
@@ -247,9 +247,9 @@ Idempotency-Key: 3c51…
 otherwise 422 `destination-other-activity`, `form-not-on-destination` or `destination-deleted`. The current
 assignment answers 409 `already-at-destination`, and a deleted submission 409 `already-deleted`.
 
-**Effects, in one transaction**, after the key claim, the row lock and `If-Match`: the placement columns and their
-copied labels are set from the destination, the stored document is untouched, and the version rises by one; the
-journal records `UPDATE`, command `MOVE`, with detail `{from, to, entriesOutsidePlacement}`; one outbox row; the
+**Effects, in one transaction**, after the key claim, the submission lock and `If-Match`: the placement columns and
+their copied labels are set from the destination, the stored document is untouched, and the version rises by one;
+the journal records `UPDATE`, command `MOVE`, with detail `{from, to, entriesOutsidePlacement}`; one outbox row; the
 tracking of entries outside placement is updated (§4.3). Downstream, the ETL re-projects every value with the new
 placement and the feed carries it: gate A.
 
@@ -310,7 +310,7 @@ the body names the source's new version.
 
 **Effects, in one transaction:**
 
-1. the key claim, the source's row lock, `If-Match`;
+1. the key claim, the source's submission lock, `If-Match`;
 2. the new submission: a new id and a server-made uid (the v1 alias, known to no phone); the source's form, pinned
    form version, entered times and creator (the person who entered the rows); the destination's placement; exactly
    the named top-level values, and the selected rows with their ids and nested rows; version 0, recorded as `CREATE`,
@@ -358,7 +358,7 @@ I5 refuses the opposite order, and refuses to restore the new submission while i
 | # | Invariant | Test |
 | --- | --- | --- |
 | I1 | One writer: every changed submission gets exactly one revision and one outbox row, in one transaction, both of a split's submissions included | Failure injection after each insert of a split leaves nothing; ArchUnit and the SQL tripwire |
-| I2 | No phone row of an uploader with a base version of their own fails because of a server-side change. Unchanged re-sends and copies equal to the current state change nothing and open nothing, checked first; changed copies, and changed copies refused after a server-side move, are kept aside. Other uploaders are refused exactly as today | Characterization goldens for each installed phone contract after edit, move, split, delete and restore, copies without row ids included: never a refusal or an unexpected failure. An unchanged re-send after a move, repeated, opens no conflict; a kept conflict stays kept under repeated unchanged re-sends; another user's copy of a submission older than the journal is refused as today and never enters the queue |
+| I2 | No upload item of an uploader with a base version of their own fails because of a server-side change. Unchanged re-sends and copies equal to the current state change nothing and open nothing, checked first; changed copies, and changed copies refused after a server-side move, are kept aside. Other uploaders are refused exactly as today | Characterization goldens for each installed phone contract after edit, move, split, delete and restore, copies without row ids included: never a refusal or an unexpected failure. An unchanged re-send after a move, repeated, opens no conflict; a kept conflict stays kept under repeated unchanged re-sends; another user's copy of a submission older than the journal is refused as today and never enters the queue |
 | I3 | A move changes placement only, to an assignment of the same activity that carries the form; accept never changes placement | The stored document and row ids compared byte for byte, before and after; refusal tests |
 | I4 | Conservation: a split neither loses nor duplicates a row; the new submission holds exactly the named top-level values; unmapped top-level values stay in the source | On a clone, split a random half of every multi-row submission with random top-level choices, then compare rows and top-level totals with the request, through the submission normalizer |
 | I5 | A row id is live in at most one submission of a lineage, splits of splits included; `:restore`, `restoreRow` and accept refuse to break it | Lineage checks after every step of the randomized sequences |
@@ -377,12 +377,12 @@ accept with phone re-sends, unchanged and changed, with and without row ids, and
 The v2 foundation's rules apply as built ([api-v2.md](../../agent-context/api-v2.md), Concurrency and Changing
 Requests). The `ETag` is the submission's version (`"4"`, also shown as `version`), and `If-Match` is required on
 every changing method (428 when missing, 412 with `currentVersion` when stale). Each changing transaction claims the
-`Idempotency-Key`, locks the submission row (`SELECT … FOR UPDATE`, the first read), checks `If-Match`, validates
+`Idempotency-Key`, takes the submission lock (`SELECT … FOR UPDATE`, the first read), checks `If-Match`, validates
 and applies, records the outcome on the key, and commits; a rolled-back attempt takes its claim with it.
 
-This feature adds (engineering, 2026-11-25): the upload routes and the v1 admin delete take the same row lock first,
-and the stored-submission guard, conflict detection and the save use that row. A latch test proves that no phone row
-fails when a change commits between two reads.
+This feature adds (engineering, 2026-11-25): the upload routes and the v1 admin delete take the same submission lock
+first, and the stored-submission guard, conflict detection and the save read the submission under it. A latch test
+proves that no upload item fails when a change commits between two reads.
 
 ## 7. Conflicts
 
@@ -395,8 +395,8 @@ someone else made it.
 
 **First,** a copy is tagged if any of its rows lacks an id, before any id is minted, on both upload routes.
 
-**The decision,** for each phone row of an existing submission, under the row lock, in this order (engineering,
-2026-11-25):
+**The decision,** for each upload item of an existing submission, under the submission lock, in this order
+(engineering, 2026-11-25):
 
 - **For an uploader with a base version of their own:**
   1. A copy equal to the base version's state, or to the uploader's last decided conflict copy, is an unchanged
@@ -417,8 +417,8 @@ someone else made it.
 **The comparison is structural:** two JSON trees without row metadata, plus the assignment and the form version. It
 does not go through the submission normalizer.
 
-**It never fails a row:** an exception in detection keeps the copy aside with cause `DETECTION_ERROR`. Only a
-failure to store the conflict can fail the row.
+**It never fails an upload item:** an exception in detection keeps the copy aside with cause `DETECTION_ERROR`.
+Only a failure to store the conflict can fail the upload item.
 
 **Storage:** `submission_review.conflict` holds one open conflict per submission and uploader; its state (`OPEN`,
 `KEPT`, `ACCEPTED`) and `cause`; the base version and whether the copy's rows lack ids; the copy as it arrived, its
@@ -530,7 +530,7 @@ The switches' codes, `method-not-enabled` and `operation-not-enabled`, are alrea
 | --- | --- | --- |
 | View, `ETag` | The version equals the head's | The state by field id and row id, typed |
 | History | Revisions: kind, command, actor, on behalf of, reason, time; split lineage in `detail` | Differences between consecutive states |
-| Changes | One writer: the submission row, its revision and its outbox row in one transaction (two of each for a split) | The write direction: from field id and row id to the stored place |
+| Changes | One writer: the submission, its revision and its outbox row in one transaction (two of each for a split) | The write direction: from field id and row id to the stored place |
 | Conflicts | Base versions, server-side changes, the operations to re-apply | None: the comparison is structural |
 | Search | — | The data paths each form version gives a field now; a read model later |
 | Downstream | Each change is revisions and outbox rows | The ETL's split re-attribution now; the feed later |
@@ -568,15 +568,15 @@ grants and entry tracking. The analytics copy never reads it: Airbyte reads `ana
 
 ## 12. Build order and activation
 
-There is no delivery deadline, and no search-only release: finding is of no use without acting on what is found
+There is no delivery deadline, and no search-only release: searching is of no use without acting on the results
 (owner, 2026-11-25). Each step ends reviewed and rehearsed, and users get one coherent capability.
 
 | Step | Contents | Proves |
 | --- | --- | --- |
 | 0 | The revision journal in production (6.5.6); the v2 foundation on `develop` | — |
 | 1 | The submission normalizer (reading by row id and field id, typed values: on `develop`) and the write direction back to stored places | Agreement with the feed spike on every submission |
-| 2 | Its own release, reviewed: the row lock first on the upload paths; conflict detection shipped switched off, with the tagging of copies without row ids and the never-fail handling of copies refused after a move; the ETL's split re-attribution | Goldens unchanged with the switch off. With it on, on a clone: every submission re-sent unchanged, with and without row ids, gives 0 conflicts and 0 failures, and changed copies are kept aside. ETL test: split rows re-attributed |
-| 3 | Access grants; search (both forms, the guard, the timeout, row semantics, entry tracking, `created`); view; history; the form dictionary; notes | Plans use the indexes; refusals for missing grants and other activities; the test of SQL against the normalizer; entry searches find split rows |
+| 2 | Its own release, reviewed: the submission lock first on the upload paths; conflict detection shipped switched off, with the tagging of copies without row ids and the never-fail handling of copies refused after a move; the ETL's split re-attribution | Goldens unchanged with the switch off. With it on, on a clone: every submission re-sent unchanged, with and without row ids, gives 0 conflicts and 0 failures, and changed copies are kept aside. ETL test: split rows re-attributed |
+| 3 | Access grants; search (both forms, the guard, the timeout, row semantics, entry tracking, `created`); view; history; the form dictionary; notes | Plans use the indexes; refusals for missing grants and other activities; the test of SQL against the normalizer; entry searches return split rows |
 | 4 | Edits; delete and restore with lineage checks; the conflict view, keep, accept, accept and re-apply; validation; dry run; the journal changeset | I1, I2, I5, I8, I10; 428, 412, 422 and replays; integrity check 11 reads 0 |
 | 5 | Move and split: destination rules, top-level choices, entry tracking, the two-submission transaction, lineage, accept's split rules; the randomized sequences | I2–I7 and I9 on the clone; rows and top-level values conserved |
 | 6 | The scaled measurement: about 30,000 village-shaped submissions of about 70 rows, and about a million submissions without rows | p50 and p95, warm and cold, for every search shape the guard allows; whether the GIN is added |
@@ -592,8 +592,8 @@ There is no delivery deadline, and no search-only release: finding is of no use 
 | Then | The v1 admin delete retired | Once `:delete` is on and the logs show its callers have moved |
 
 Gate B is server-wide, never per activity (engineering, 2026-11-25): downstream re-points all its models to the feed,
-and tall and events then retire. Opening it per activity would need a per-activity setting that this plan does not
-use; revisit only if downstream switches activity by activity.
+and tall and events then retire. Switching it on per activity would need a per-activity setting that this plan does
+not use; revisit only if downstream switches activity by activity.
 
 **Later, by need:** marks as data; `addRow`; creating a submission through the API; area, form and team scopes; the
 server-owned read model for search; the operations screen, with its browser login.
@@ -623,15 +623,16 @@ Invented ids and values. Team T312 has assignment A7 in village V7 and assignmen
     "operations": [{"op": "setValue", "row": "…k4", "field": "…p1", "value": 7},
                    {"op": "removeRow", "row": "…k9"}]}
    ```
-   Once gate B is open, it makes revision 2, shown as "Edited by ‹user› · row …k4: population 70 → 7; row …k9
-   removed". Before that, the whole request is refused with 422 `operation-not-enabled` at `#/operations/1`.
+   Once gate B is switched on, it makes revision 2, shown as "Edited by ‹user› · row …k4: population 70 → 7;
+   row …k9 removed". Before that, the whole request is refused with 422 `operation-not-enabled` at
+   `#/operations/1`.
 7. **The phone re-sends S unchanged.** That is an unchanged re-send: nothing changes, and the phone is answered
    `updated`.
 8. **The team leader edits S on the phone and re-sends it.** Its base version is 0, and server-side changes came
    after it, so a conflict `…c1` opens (`OPEN`); the phone is answered `updated`, and S shows
    `"hasOpenConflict": true`. A user with `submissions.change` opens `GET /api/v2/submissions/…7f3a/conflicts/…c1`
    and sees the base version, the current state and the phone copy side by side. The copy still holds the 23 rows
-   now in …9c2e, so a plain accept would answer 409 `row-live-elsewhere`. Finding nothing in the copy to take, the
+   now in …9c2e, so a plain accept would answer 409 `row-live-elsewhere`. Seeing nothing in the copy to take, the
    user sends `POST …/conflicts/…c1:keep` with `If-Match: "2"`, the receipt count it saw and a reason: the
    conflict is `KEPT`, and S stays at version 2.
 9. **A refusal.** Clearing a mandatory field without `"overrideMandatory": true` answers 422 with

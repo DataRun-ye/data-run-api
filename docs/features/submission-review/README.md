@@ -4,7 +4,7 @@ Status: DESIGNED, NOT BUILT (2026-11-25). The v2 conventions it uses are on `dev
 ([api-v2.md](../../agent-context/api-v2.md)), and the revision journal that records its changes is in production
 since 6.5.6.
 
-Submission review is how operations find, check and change the submissions of any form after phones send them:
+Submission review is how operations search, check and change the submissions of any form after phones send them:
 search, view, history and notes; edits with a required reason; moves and splits; delete and restore; and the
 conflicts that arise when a phone sends a changed copy after a change on the server. Every change becomes a new
 revision with who, when and why. The admin's tools use the v2 API first; a screen for operations follows (owner,
@@ -30,8 +30,8 @@ What each step proves is in [spec.md §12](spec.md#12-build-order-and-activation
 0. The revision journal in production (6.5.6) and the v2 foundation (done).
 1. The submission normalizer, which reads stored submissions by row id and field id with typed values (on
    `develop`), and the write direction back to stored places.
-2. Upload-path safety, in its own release: the row lock first; conflict detection shipped switched off; the ETL's
-   split re-attribution.
+2. Upload-path safety, in its own release: the submission lock first; conflict detection shipped switched off; the
+   ETL's split re-attribution.
 3. Reading: access grants, search, view, history, the form dictionary, notes.
 4. Changes inside one submission: edits, delete and restore, conflict decisions, validation, dry run, the journal
    changeset.
@@ -41,7 +41,7 @@ What each step proves is in [spec.md §12](spec.md#12-build-order-and-activation
 
 ## Activation
 
-Deployment and activation are separate. Nothing is on by default, and each gate opens on the owner's go.
+Deployment and activation are separate. Nothing is on by default, and each gate is switched on at the owner's go.
 
 | Gate | Turns on | When |
 | --- | --- | --- |
