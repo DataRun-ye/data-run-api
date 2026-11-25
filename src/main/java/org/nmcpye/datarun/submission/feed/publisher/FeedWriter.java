@@ -29,8 +29,8 @@ import java.util.function.UnaryOperator;
  * feed holds, so positions taken here commit in position order.
  *
  * <p><b>The head</b> is the submission's newest revision in the journal, read joined to {@code data_submission} for
- * what a revision leaves out (the form, the entry times, the creation time) and to the tables its placement names, for
- * their ids. A head at or below the version the feed holds is skipped: versions never go backwards. A republication
+ * what a revision leaves out (the form, the entry times, the creation time); its placement is resolved to ids by
+ * {@link Placement}. A head at or below the version the feed holds is skipped: versions never go backwards. A republication
  * writes the held version again, with new positions, and skips a submission whose held version is newer than its
  * head.</p>
  *
@@ -77,8 +77,7 @@ final class FeedWriter {
                s.created_date AT TIME ZONE 'UTC' AS created_at,
                s.start_entry_time AT TIME ZONE 'UTC' AS entered_start_at,
                s.finished_entry_time AT TIME ZONE 'UTC' AS entered_end_at,
-               t.id AS form_id, v.id AS form_version_id, a.id AS assignment_id, tm.id AS team_id,
-               o.id AS org_unit_id, ac.id AS activity_id, f.version AS held_version
+               t.id AS form_id, v.id AS form_version_id, r.metadata::text AS metadata, f.version AS held_version
         FROM data_submission s
         JOIN LATERAL (SELECT x.version, x.kind, x.recorded_at, x.form_data, x.metadata
                       FROM journal.submission_revision x
@@ -87,10 +86,6 @@ final class FeedWriter {
                       LIMIT 1) r ON true
         LEFT JOIN data_template t ON t.uid = s.template_uid
         LEFT JOIN data_template_version v ON v.uid = r.metadata ->> 'template_version_uid' AND v.data_template_id = t.id
-        LEFT JOIN assignment a ON a.uid = r.metadata ->> 'assignment_uid'
-        LEFT JOIN team tm ON tm.uid = r.metadata ->> 'team_uid'
-        LEFT JOIN org_unit o ON o.uid = r.metadata ->> 'org_unit_uid'
-        LEFT JOIN activity ac ON ac.uid = r.metadata ->> 'activity_uid'
         LEFT JOIN feed.submission f ON f.id = s.id
         WHERE s.id = :submissionId""";
 
@@ -206,10 +201,7 @@ final class FeedWriter {
         OffsetDateTime enteredEndAt,
         String formId,
         String formVersionId,
-        String assignmentId,
-        String teamId,
-        String orgUnitId,
-        String activityId,
+        String metadata,
         Long heldVersion) {
     }
 
@@ -251,8 +243,8 @@ final class FeedWriter {
         if (head.formId() == null) {
             throw new FeedFailure(FeedFailure.FORM_UNRESOLVED);
         }
-        if (head.assignmentId() == null || head.teamId() == null || head.orgUnitId() == null
-            || head.activityId() == null) {
+        Placement placement = Placement.of(jdbc, head.metadata());
+        if (!placement.complete()) {
             throw new FeedFailure(FeedFailure.PLACEMENT_UNRESOLVED);
         }
         FormDefinition form = definitions.forHead(new FormDefinitionJdbcReader(jdbc, objectMapper), head.formUid(),
@@ -271,10 +263,10 @@ final class FeedWriter {
             .addValue("changedAt", head.changedAt(), Types.TIMESTAMP_WITH_TIMEZONE)
             .addValue("formId", head.formId())
             .addValue("formVersionId", head.formVersionId(), Types.VARCHAR)
-            .addValue("assignmentId", head.assignmentId())
-            .addValue("teamId", head.teamId())
-            .addValue("orgUnitId", head.orgUnitId())
-            .addValue("activityId", head.activityId())
+            .addValue("assignmentId", placement.assignmentId())
+            .addValue("teamId", placement.teamId())
+            .addValue("orgUnitId", placement.orgUnitId())
+            .addValue("activityId", placement.activityId())
             .addValue("fieldValues", StoredJson.write(fieldValues(normalized.values())))
             .addValue("unmappedValues", text(unmapped(normalized.unmapped(), UnaryOperator.identity())),
                 Types.VARCHAR)
@@ -301,10 +293,7 @@ final class FeedWriter {
             rs.getObject("entered_end_at", OffsetDateTime.class),
             rs.getString("form_id"),
             rs.getString("form_version_id"),
-            rs.getString("assignment_id"),
-            rs.getString("team_id"),
-            rs.getString("org_unit_id"),
-            rs.getString("activity_id"),
+            rs.getString("metadata"),
             rs.getObject("held_version", Long.class)));
         if (heads.isEmpty()) {
             throw new FeedFailure(FeedFailure.HEAD_MISSING);
