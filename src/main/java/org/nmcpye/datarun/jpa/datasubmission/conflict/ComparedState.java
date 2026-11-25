@@ -17,30 +17,27 @@ import org.nmcpye.datarun.submission.normalized.StoredJson;
  *   <li>not compared: {@code activity_uid}, {@code team_uid}, {@code team_code}, {@code org_unit_uid},
  *       {@code org_unit_code} and {@code org_unit_name}, which both routes set from the assignment before the save, so
  *       they follow it;</li>
- *   <li>compared though an update never writes it: the form version ({@code template_version_uid} is set at creation),
- *       as the spec lists it, so a copy naming another form version is a changed copy.</li>
+ *   <li>not compared: the form version. An update never writes it: {@code template_version_uid} is set at creation
+ *       and every later upload keeps it (existing behaviour, golden W1-07), so a copy that differs only in its form
+ *       version, with identical data, changes nothing.</li>
  * </ul>
  * Nothing else an upload sends is written onto a stored submission: entry times and the creation's own fields are set
  * at creation, and {@code deleted_at} is the server's time.
  *
- * @param document    the document ({@code formData}), or null when there is none
- * @param assignment  the assignment's uid
- * @param formVersion the form version's uid
- * @param status      the progress status ({@code data_submission.status}), or null when there is none
+ * @param document   the document ({@code formData}), or null when there is none
+ * @param assignment the assignment's uid
+ * @param status     the progress status ({@code data_submission.status}), or null when there is none
  */
-public record ComparedState(JsonNode document, boolean deleted, String assignment, String formVersion,
-                            String status) {
+public record ComparedState(JsonNode document, boolean deleted, String assignment, String status) {
 
     /** A stored state, its document read exactly from the text the database printed ({@link StoredJson}). */
     static ComparedState of(SubmissionRevisionReader.State stored) {
-        return new ComparedState(parse(stored.document()), stored.deleted(), stored.assignment(),
-            stored.formVersion(), stored.status());
+        return new ComparedState(parse(stored.document()), stored.deleted(), stored.assignment(), stored.status());
     }
 
     /**
      * The parts of an upload item as the phone sent them, in either route's shape, which name them alike:
-     * {@code formData}, {@code deleted} (absent or null is false), {@code assignment}, {@code formVersion} and
-     * {@code status}.
+     * {@code formData}, {@code deleted} (absent or null is false), {@code assignment} and {@code status}.
      */
     static ComparedState ofUploadItem(JsonNode item) {
         JsonNode deleted = item.path("deleted");
@@ -48,7 +45,6 @@ public record ComparedState(JsonNode document, boolean deleted, String assignmen
             item.get("formData"),
             deleted.isBoolean() && deleted.booleanValue(),
             textOrNull(item.get("assignment")),
-            textOrNull(item.get("formVersion")),
             textOrNull(item.get("status")));
     }
 

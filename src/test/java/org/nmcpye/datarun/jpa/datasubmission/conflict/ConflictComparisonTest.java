@@ -80,27 +80,35 @@ class ConflictComparisonTest {
     }
 
     @Test
-    void theDeletedFlagTheAssignmentAndTheFormVersionCount() throws Exception {
+    void theDeletedFlagAndTheAssignmentCount() throws Exception {
         JsonNode document = REQUEST.readTree("{\"main\": {\"name\": \"a\"}}");
-        ComparedState state = new ComparedState(document, false, "assignment1", "version1", null);
+        ComparedState state = new ComparedState(document, false, "assignment1", null);
 
-        assertThat(sameState(state, new ComparedState(document.deepCopy(), false, "assignment1", "version1", null)))
-            .isTrue();
-        assertThat(sameState(state, new ComparedState(document, true, "assignment1", "version1", null))).isFalse();
-        assertThat(sameState(state, new ComparedState(document, false, "assignment2", "version1", null))).isFalse();
-        assertThat(sameState(state, new ComparedState(document, false, "assignment1", "version2", null))).isFalse();
-        assertThat(sameState(state, new ComparedState(document, false, null, "version1", null))).isFalse();
+        assertThat(sameState(state, new ComparedState(document.deepCopy(), false, "assignment1", null))).isTrue();
+        assertThat(sameState(state, new ComparedState(document, true, "assignment1", null))).isFalse();
+        assertThat(sameState(state, new ComparedState(document, false, "assignment2", null))).isFalse();
+        assertThat(sameState(state, new ComparedState(document, false, null, null))).isFalse();
+    }
+
+    /** An update never writes the form version, so an item that names another one, with the same data, is the same. */
+    @Test
+    void theFormVersionDoesNotCount() throws Exception {
+        assertThat(sameState(
+            ComparedState.ofUploadItem(REQUEST.readTree("""
+                {"formData": {"main": {"name": "a"}}, "assignment": "a1", "formVersion": "v1"}""")),
+            ComparedState.ofUploadItem(REQUEST.readTree("""
+                {"formData": {"main": {"name": "a"}}, "assignment": "a1", "formVersion": "v2"}""")))).isTrue();
     }
 
     /** API callers can send a status, and an upload writes it: a copy that changes only the status is changed. */
     @Test
     void theStatusCounts() throws Exception {
         JsonNode document = REQUEST.readTree("{\"main\": {\"name\": \"a\"}}");
-        ComparedState none = new ComparedState(document, false, "assignment1", "version1", null);
+        ComparedState none = new ComparedState(document, false, "assignment1", null);
 
-        assertThat(sameState(none, new ComparedState(document, false, "assignment1", "version1", "DONE"))).isFalse();
-        assertThat(sameState(new ComparedState(document, false, "assignment1", "version1", "DONE"),
-            new ComparedState(document, false, "assignment1", "version1", "DONE"))).isTrue();
+        assertThat(sameState(none, new ComparedState(document, false, "assignment1", "DONE"))).isFalse();
+        assertThat(sameState(new ComparedState(document, false, "assignment1", "DONE"),
+            new ComparedState(document, false, "assignment1", "DONE"))).isTrue();
         assertThat(ComparedState.ofUploadItem(REQUEST.readTree("{\"status\": \"DONE\"}")).status()).isEqualTo("DONE");
         assertThat(ComparedState.ofUploadItem(REQUEST.readTree("{}")).status()).isNull();
     }
@@ -112,7 +120,6 @@ class ConflictComparisonTest {
 
         assertThat(item.deleted()).as("absent is false").isFalse();
         assertThat(item.assignment()).isEqualTo("a1");
-        assertThat(item.formVersion()).isEqualTo("v1");
         assertThat(ComparedState.ofUploadItem(REQUEST.readTree("{\"deleted\": null}")).deleted()).isFalse();
         assertThat(ComparedState.ofUploadItem(REQUEST.readTree("{\"deleted\": true}")).deleted()).isTrue();
     }

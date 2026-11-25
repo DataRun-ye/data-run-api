@@ -324,14 +324,13 @@ public class SubmissionUploads {
 
     /**
      * The phone copy conflict detection reads: the upload item as received and its document, before any id is minted,
-     * with the assignment and form version the upload resolved.
+     * with the assignment the upload resolved and its status.
      */
     private static PhoneCopy phoneCopy(UploadRoute route, JsonNode uploadItem, DataSubmission submission) {
         return new PhoneCopy(route, uploadItem, new ComparedState(
             submission.getFormData(),
             Boolean.TRUE.equals(submission.getDeleted()),
             submission.getAssignment(),
-            submission.getFormVersion(),
             submission.getStatus() == null ? null : submission.getStatus().name()));
     }
 

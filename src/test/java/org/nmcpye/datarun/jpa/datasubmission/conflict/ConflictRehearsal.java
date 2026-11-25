@@ -585,7 +585,7 @@ public final class ConflictRehearsal implements AutoCloseable {
         item.put("status", state.status());
         item.set("formData", document);
         return new PhoneCopy(UploadRoute.LEGACY, item,
-            new ComparedState(document, deleted, state.assignment(), state.formVersion(), state.status()));
+            new ComparedState(document, deleted, state.assignment(), state.status()));
     }
 
     // ------------------------------------------------------------------------------------------ reading

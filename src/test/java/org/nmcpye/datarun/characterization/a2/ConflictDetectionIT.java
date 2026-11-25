@@ -157,6 +157,23 @@ class ConflictDetectionIT extends A2GoldenSupport {
             .containsEntry("cause", "SERVER_SIDE_CHANGE").containsEntry("base_version", 1L));
     }
 
+    /**
+     * An update never writes the form version (golden W1-07), so a copy that names another version of the form, with
+     * identical data, changes nothing, even after a server-side change.
+     */
+    @Test
+    void aCopyThatDiffersOnlyInItsFormVersionChangesNothing() throws Exception {
+        String uid = uid("cdVersion");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        seed.edit(uid, ADMIN, "edited on the server");
+
+        assertThat(answer(upload(G3, FIELD_1, item(G3, uid, FORM_A, version("FORM_A.v2"), ASSIGN_T1_V1,
+            ordinary(G3, uid, "first", "r1", "s1", 1))))).isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
+        assertThat(conflicts(uid)).isEmpty();
+    }
+
     @Test
     void withoutAServerSideChangeAChangedCopyIsSavedAsToday() throws Exception {
         String uid = uid("cdApply");

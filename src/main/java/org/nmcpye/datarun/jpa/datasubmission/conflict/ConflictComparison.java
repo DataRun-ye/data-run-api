@@ -11,7 +11,7 @@ import java.util.Set;
 
 /**
  * The conflict comparison (spec, Conflicts): structural, between two documents without row metadata, together with
- * their deleted flag, assignment, form version and status ({@link ComparedState} says why these). It does not go through the submission normalizer, and needs no
+ * their deleted flag, assignment and status ({@link ComparedState} says why these, and why not the form version). It does not go through the submission normalizer, and needs no
  * form definition.
  * <ul>
  *   <li>Row metadata is exactly the normalizer's row structure keys ({@link SubmissionNormalizer#ROW_STRUCTURE_KEYS}:
@@ -35,11 +35,10 @@ public final class ConflictComparison {
     private ConflictComparison() {
     }
 
-    /** Whether two states are the same: document, deleted flag, assignment, form version and status. */
+    /** Whether two states are the same: document, deleted flag, assignment and status. */
     public static boolean sameState(ComparedState a, ComparedState b) {
         return a.deleted() == b.deleted()
             && Objects.equals(a.assignment(), b.assignment())
-            && Objects.equals(a.formVersion(), b.formVersion())
             && Objects.equals(a.status(), b.status())
             && sameDocument(a.document(), b.document());
     }

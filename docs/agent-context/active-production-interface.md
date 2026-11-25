@@ -216,7 +216,8 @@ after the submission lock, before the upload checks and, on the legacy route,
 before row ids are minted. It tags a phone copy whose rows lack ids, finds the
 uploader's base version in the journal, and compares the copy structurally
 (`ConflictComparison`: rows' structure keys left out, numbers by value, with
-the deleted flag, assignment, form version and status). While the uploader has
+the deleted flag, assignment and status; not the form version, which an update
+never writes). While the uploader has
 an open conflict on the submission, their copy only counts there or replaces
 its copy, and never writes the submission. Otherwise an unchanged re-send, or a
 copy equal to the current state, writes nothing. After a server-side change since
