@@ -391,8 +391,9 @@ class SubmissionNormalizerTest {
             assertThat(normalized.flags()).as(notJson)
                 .containsExactly(entry(NormalizationFlag.DOCUMENT_NOT_PARSED, 1));
         }
-        // numbers Jackson cannot represent, alone or inside a document
-        for (String number : StoredJsonTest.OUT_OF_RANGE) {
+        // numbers Jackson cannot represent, or longer than 1,000 characters in plain form
+        for (String number : java.util.stream.Stream.concat(StoredJsonTest.OUT_OF_RANGE.stream(),
+            java.util.stream.Stream.of("1e10000", "1e-10000")).toList()) {
             for (String stored : List.of(number, "{\"title\": " + number + "}")) {
                 assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, "fvUid000002", stored),
                     FORM_DEFINITION).flags()).as(stored).containsExactly(entry(NormalizationFlag.DOCUMENT_NOT_PARSED, 1));

@@ -87,6 +87,28 @@ class StoredJsonTest {
         }
     }
 
+    @Test
+    void aNumberIsReadOnlyWhenItsPlainFormFitsTheLimit_whateverItsSpelling() throws Exception {
+        // 10,001 characters in plain form: refused spelled with an exponent, as spelled in full
+        for (String tooLong : List.of("1e10000", "1e-10000", "{\"a\": 1e10000}", "1" + "0".repeat(10_000))) {
+            assertThatThrownBy(() -> StoredJson.parse(tooLong)).as(tooLong.length() > 20 ? "10,001 digits" : tooLong)
+                .isInstanceOf(JsonProcessingException.class);
+        }
+        // just under the limit, 1,000 characters in plain form: read, and written again in full
+        for (String justUnder : List.of("1e999", "-1e999", "1e-998")) {
+            JsonNode read = StoredJson.parse(justUnder);
+            String written = StoredJson.write(read);
+            assertThat(written.replace("-", "")).as(justUnder).hasSize(1_000);
+            // read again, the plain text writes the same text and holds the same value
+            assertThat(StoredJson.write(StoredJson.parse(written))).as(justUnder).isEqualTo(written);
+            assertThat(StoredJson.parse(written).decimalValue()).as(justUnder).isEqualByComparingTo(read.decimalValue());
+        }
+        assertThat(StoredJson.write(StoredJson.parse("1e999"))).isEqualTo("1" + "0".repeat(999));
+        assertThat(StoredJson.plainLength(new java.math.BigDecimal("12.34"))).isEqualTo(5);
+        assertThat(StoredJson.plainLength(new java.math.BigDecimal("0.0012"))).isEqualTo(6);
+        assertThat(StoredJson.plainLength(new java.math.BigDecimal("123e2"))).isEqualTo(5);
+    }
+
     /** Exponents Jackson reports as NumberFormatException, not as a JSON failure. */
     static final List<String> OUT_OF_RANGE = List.of("1e9999999999", "1e-9999999999", "1E+2147483648", "0e99999999999");
 
