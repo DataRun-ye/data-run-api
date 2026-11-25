@@ -270,7 +270,10 @@ Deploying a release and turning on what it brings are separate steps
   on every operation; `Idempotency-Key`, `If-Match`, 412 and 428 on every
   command; `limit` and `cursor` on every list. Problem codes are listed as
   `x-extensible-enum`, an open list, so generated clients do not reject a new
-  code.
+  code. Every response enumeration is marked open the same way: one only
+  responses use is published as `x-extensible-enum`; one a request uses too
+  keeps `enum` (a request may only send listed values) and its description
+  says responses may add values.
 - `V2OpenApiContractTest` is a unit test, so `scripts/release/verify.sh`
   (`./mvnw test`) runs it; the repository has no CI. It generates the
   document from the v2 controllers in a web slice without a database and

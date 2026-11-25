@@ -98,6 +98,13 @@ final class V2Conventions {
                 found.add(at + ": enum value " + value.asText() + " is not UPPER_SNAKE");
             }
         }
+        if (!at.equals("Problem.code")) {
+            for (JsonNode value : schema.path("x-extensible-enum")) {
+                if (value.isTextual() && !UPPER_SNAKE.matcher(value.asText()).matches()) {
+                    found.add(at + ": enum value " + value.asText() + " is not UPPER_SNAKE");
+                }
+            }
+        }
     }
 
     /** Ids are the opaque Id schema, never a uid. */

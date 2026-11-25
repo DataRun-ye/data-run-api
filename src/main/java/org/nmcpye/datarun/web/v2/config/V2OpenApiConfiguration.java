@@ -3,6 +3,7 @@ package org.nmcpye.datarun.web.v2.config;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Content;
@@ -34,7 +35,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.HandlerMethod;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * The v2 OpenAPI document, group {@value #GROUP}: every route under {@code /api/v2}, served at {@value #DOCS_PATH}
@@ -122,6 +127,7 @@ public class V2OpenApiConfiguration {
             .content(new Content().addMediaType("application/problem+json",
                 new MediaType().schema(new Schema<>().$ref("#/components/schemas/" + PROBLEM)))));
         openApi.setSecurity(List.of(new SecurityRequirement().addList(BEARER)));
+        markResponseEnumsOpen(openApi);
         if (openApi.getPaths() != null) {
             openApi.getPaths().values().forEach(path -> path.readOperations().forEach(operation -> {
                 ApiResponses responses = responses(operation);
@@ -131,6 +137,87 @@ public class V2OpenApiConfiguration {
                     && !PROBLEM_REF.equals(response.getValue().get$ref()));
                 responses.addApiResponse("default", new ApiResponse().$ref(PROBLEM_REF));
             }));
+        }
+    }
+
+    /** Appended to an enumeration a response shares with a request, which must stay closed for the request. */
+    static final String OPEN_IN_RESPONSES = "In responses this list is open: accept values not listed here.";
+
+    /**
+     * Response enumerations are open lists (clients ignore values they do not know), as the breaking-change check
+     * treats them, and the document says so: an enumeration only responses use is published as
+     * {@code x-extensible-enum} (a plain string to generated clients, which then accept a new value); one a request
+     * uses too keeps {@code enum}, since a request may only send listed values, and its description says responses
+     * may add values.
+     */
+    static void markResponseEnumsOpen(OpenAPI openApi) {
+        Map<String, Schema> components = openApi.getComponents() == null || openApi.getComponents().getSchemas() == null
+            ? Map.of() : openApi.getComponents().getSchemas();
+        Set<Schema<?>> inResponses = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<Schema<?>> inRequests = Collections.newSetFromMap(new IdentityHashMap<>());
+        if (openApi.getPaths() != null) {
+            for (PathItem path : openApi.getPaths().values()) {
+                for (Operation operation : path.readOperations()) {
+                    if (operation.getParameters() != null) {
+                        operation.getParameters().forEach(parameter -> collect(parameter.getSchema(), components, inRequests));
+                    }
+                    if (operation.getRequestBody() != null && operation.getRequestBody().getContent() != null) {
+                        operation.getRequestBody().getContent().values()
+                            .forEach(media -> collect(media.getSchema(), components, inRequests));
+                    }
+                    if (operation.getResponses() != null) {
+                        operation.getResponses().values().forEach(response -> collectContent(response, components, inResponses));
+                    }
+                }
+            }
+        }
+        if (openApi.getComponents() != null && openApi.getComponents().getResponses() != null) {
+            openApi.getComponents().getResponses().values()
+                .forEach(response -> collectContent(response, components, inResponses));
+        }
+        for (Schema<?> schema : inResponses) {
+            if (schema.getEnum() == null || schema.getEnum().isEmpty()) {
+                continue;
+            }
+            if (inRequests.contains(schema)) {
+                String description = schema.getDescription();
+                if (description == null || !description.contains(OPEN_IN_RESPONSES)) {
+                    schema.setDescription(description == null ? OPEN_IN_RESPONSES : description + " " + OPEN_IN_RESPONSES);
+                }
+            } else {
+                schema.addExtension("x-extensible-enum", new java.util.ArrayList<>(schema.getEnum()));
+                @SuppressWarnings("unchecked")
+                Schema<Object> open = (Schema<Object>) schema;
+                open.setEnum(null);
+            }
+        }
+    }
+
+    private static void collectContent(ApiResponse response, Map<String, Schema> components, Set<Schema<?>> into) {
+        if (response.getContent() != null) {
+            response.getContent().values().forEach(media -> collect(media.getSchema(), components, into));
+        }
+    }
+
+    /** Every schema reachable from this one: through references, members, items, variants and map values. */
+    private static void collect(Schema<?> schema, Map<String, Schema> components, Set<Schema<?>> into) {
+        if (schema == null || !into.add(schema)) {
+            return;
+        }
+        if (schema.get$ref() != null) {
+            collect(components.get(schema.get$ref().substring(schema.get$ref().lastIndexOf('/') + 1)), components, into);
+        }
+        if (schema.getProperties() != null) {
+            schema.getProperties().values().forEach(member -> collect(member, components, into));
+        }
+        collect(schema.getItems(), components, into);
+        for (List<Schema> variants : java.util.Arrays.asList(schema.getAllOf(), schema.getOneOf(), schema.getAnyOf())) {
+            if (variants != null) {
+                variants.forEach(variant -> collect(variant, components, into));
+            }
+        }
+        if (schema.getAdditionalProperties() instanceof Schema<?> values) {
+            collect(values, components, into);
         }
     }
 
