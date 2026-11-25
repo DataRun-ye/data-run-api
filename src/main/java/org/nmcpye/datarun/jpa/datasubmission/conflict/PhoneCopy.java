@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.JsonNode;
  * before any id is minted.
  *
  * @param route      the route it came by
- * @param uploadItem the upload item exactly as received, in its route's shape: what a conflict keeps
+ * @param uploadItem the upload item as its route read it, in its route's shape: what a conflict keeps. That is every
+ *                   field the route knows, its decimals as the request's binary doubles; a field the route ignores,
+ *                   such as a phone's sync bookkeeping, is not kept
  * @param canonical  what the comparison reads of it against a stored state: the document as received, its deleted
  *                   flag, and the assignment and form version the upload resolved
  */

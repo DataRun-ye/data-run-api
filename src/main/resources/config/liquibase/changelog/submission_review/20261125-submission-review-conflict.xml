@@ -22,8 +22,8 @@
       - base_version: the version the copy was based on (null only when detection failed before finding it);
       - rows_lack_ids: the copy as received has rows without ids (apps 5.2 and 5.3), so it can never be matched row
         by row;
-      - upload_route and phone_copy: the upload item exactly as received, before any id was minted, in the shape of
-        its route (VERSIONED, the referenceVersion=1 route; LEGACY);
+      - upload_route and phone_copy: the upload item as its route read it, before any id was minted, in the shape of
+        its route (VERSIONED, the referenceVersion=1 route; LEGACY): every field the route knows;
       - first_received_at, last_received_at, resend_count: when the copy first and last arrived and how often it was
         sent again while open; version: the conflict's own version, 0 when opened and one more each time a different
         copy replaces the one kept, so a decision made on an older view can be refused;
