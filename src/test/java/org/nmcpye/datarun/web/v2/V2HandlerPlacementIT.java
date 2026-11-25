@@ -37,7 +37,7 @@ class V2HandlerPlacementIT {
                 }
                 v2Handlers++;
                 Class<?> type = mapping.getValue().getBeanType();
-                if (!type.getPackageName().startsWith("org.nmcpye.datarun.web.v2")) {
+                if (!inWebV2(type.getPackageName())) {
                     misplaced.add(pattern + " in " + type.getName());
                 }
             }
@@ -46,15 +46,23 @@ class V2HandlerPlacementIT {
         assertThat(misplaced).isEmpty();
     }
 
-    /** Whether the pattern's literal part, up to its first variable or wildcard, leaves /api/v2 reachable. */
+    /** The package web.v2 itself or one below it; never a sibling such as web.v2x. */
+    static boolean inWebV2(String packageName) {
+        return packageName.equals(WEB_V2) || packageName.startsWith(WEB_V2 + ".");
+    }
+
+    private static final String WEB_V2 = "org.nmcpye.datarun.web.v2";
+
+    /**
+     * Whether the pattern can answer a v2 path ({@link ApiV2#isV2}: /api/v2 or below it). A literal pattern must be
+     * the base or under it; a pattern with a variable or wildcard counts when its literal start is still a prefix of
+     * {@code /api/v2/} (such as {@code /api/{version}/...}) or is the base or under it. {@code /api/v2x/...} is not.
+     */
     static boolean canReachV2(String pattern) {
         int open = indexOfAny(pattern, '{', '*', '?');
         String literal = open < 0 ? pattern : pattern.substring(0, open);
-        if (open < 0) {
-            return literal.equals(ApiV2.BASE) || literal.startsWith(ApiV2.BASE + "/")
-                || literal.startsWith(ApiV2.BASE + ":");
-        }
-        return literal.startsWith(ApiV2.BASE) || (ApiV2.BASE + "/").startsWith(literal);
+        boolean baseOrBelow = literal.equals(ApiV2.BASE) || literal.startsWith(ApiV2.BASE + "/");
+        return open < 0 ? baseOrBelow : baseOrBelow || (ApiV2.BASE + "/").startsWith(literal);
     }
 
     private static int indexOfAny(String text, char... characters) {
