@@ -17,9 +17,9 @@ import java.util.Set;
  * </ol>
  * For an uploader with a base version of their own, the first two come before the upload checks
  * ({@link #changesNothing}), so a copy that would now be refused is still answered {@code updated}. For any other
- * uploader the upload checks run first, exactly as before, and their refusals stand; an authorized copy then takes the
- * submission's first revision as its base ({@link #afterChecks}). Whatever it decides, the phone is answered
- * {@code updated}.
+ * uploader the upload checks run first, exactly as before, and every refusal stands; an authorized copy then takes the
+ * submission's first revision as its base and goes through the other steps ({@link #afterChecks}). Whatever it
+ * decides, the phone is answered {@code updated}.
  */
 public final class ConflictCheck {
 
@@ -44,7 +44,7 @@ public final class ConflictCheck {
      *
      * @param ownBase          the uploader has a base version of their own
      * @param base             their base version, or else the submission's first revision
-     * @param unchangedResend  the copy equals the base version's state, or the uploader's last decided conflict copy
+     * @param unchangedResend  the copy equals the state at {@code base}, or the uploader's last decided conflict copy
      * @param equalsCurrent    the copy equals the current state
      * @param serverSideChange a server-side change came after the base
      * @param moved            a server-side {@code MOVE} came after the base

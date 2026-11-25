@@ -418,6 +418,22 @@ class ConflictDetectionIT extends A2GoldenSupport {
             .containsEntry("uploader_user_id", seed.userId(EDITOR)).containsEntry("base_version", 0L));
     }
 
+    /**
+     * The editor's copy equal to the first revision's state, their base, is an unchanged re-send: once the checks
+     * pass, it changes nothing, though the server edited the submission since. Today it would undo the edit.
+     */
+    @Test
+    void anAuthorizedUploadersCopyEqualToTheFirstRevisionChangesNothing() throws Exception {
+        String uid = uid("cdEdFirst");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        seed.edit(uid, ADMIN, "edited on the server");
+
+        assertThat(answer(upload(G3, EDITOR, formA(G3, uid, "first")))).isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
+        assertThat(conflicts(uid)).isEmpty();
+    }
+
     // ---------------------------------------------------------------- never fail, and what is not detected
 
     /**
