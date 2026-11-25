@@ -251,6 +251,11 @@ final class OpenApiCompatibility {
         }
         values(at, "enum", old, now, request);
         values(at, "x-extensible-enum", old, now, request);
+        if (!request && old.has("x-extensible-enum") && !now.has("x-extensible-enum") && now.has("enum")) {
+            // Published open, clients took it as a plain string; a closed list now would make clients generated
+            // from it reject the next value, which this check would then call additive.
+            breaking(at, "an open enumeration became closed");
+        }
         upperBound(at, "maxLength", old, now, request);
         upperBound(at, "maxItems", old, now, request);
         upperBound(at, "maximum", old, now, request);

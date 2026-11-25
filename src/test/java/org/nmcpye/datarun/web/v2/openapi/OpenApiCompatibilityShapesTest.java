@@ -94,6 +94,33 @@ class OpenApiCompatibilityShapesTest {
         assertThat(breaking(dropped)).as("a response may stop sending a shape").isEmpty();
     }
 
+    /**
+     * A response-only enumeration is published open (x-extensible-enum). If a request starts to use it, the
+     * publisher keeps it closed (enum) for the request's sake; for the response that is a break, not a growth.
+     */
+    @Test
+    void anOpenResponseEnumerationThatBecomesClosedBreaks() throws Exception {
+        String open = SHAPES.replace("\"id\":{\"type\":\"string\"},\"values\":{\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"}},",
+            "\"id\":{\"type\":\"string\"},\"state\":{\"$ref\":\"#/components/schemas/RowState\"},"
+                + "\"values\":{\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"}},")
+            .replace("\"Problem\":{\"type\":\"object\",", "\"RowState\":{\"type\":\"string\","
+                + "\"x-extensible-enum\":[\"LIVE\",\"REMOVED\"]},\"Problem\":{\"type\":\"object\",");
+        String closed = open.replace("\"RowState\":{\"type\":\"string\",\"x-extensible-enum\":[\"LIVE\",\"REMOVED\"]}",
+                "\"RowState\":{\"type\":\"string\",\"enum\":[\"LIVE\",\"REMOVED\"]}")
+            .replace("\"op\":{\"type\":\"string\"},\"row\":{\"type\":\"string\"}}",
+                "\"op\":{\"type\":\"string\"},\"row\":{\"type\":\"string\"},"
+                    + "\"state\":{\"$ref\":\"#/components/schemas/RowState\"}}");
+
+        List<OpenApiCompatibility.Change> changes = OpenApiCompatibility.compare(
+            OpenApiDocuments.read(open), OpenApiDocuments.read(closed));
+
+        assertThat(changes).filteredOn(OpenApiCompatibility.Change::breaking).extracting(Object::toString)
+            .anyMatch(change -> change.contains(".state: an open enumeration became closed"));
+        assertThat(OpenApiCompatibility.compare(OpenApiDocuments.read(open), OpenApiDocuments.read(open
+            .replace("\"x-extensible-enum\":[\"LIVE\",\"REMOVED\"]", "\"x-extensible-enum\":[\"LIVE\",\"REMOVED\",\"MOVED\"]"))))
+            .as("an open list growing stays additive").noneMatch(OpenApiCompatibility.Change::breaking);
+    }
+
     @Test
     void mapValuesAreComparedByDirection() throws Exception {
         assertThat(breaking(SHAPES.replace("\"values\":{\"type\":\"object\",\"additionalProperties\":{\"type\":\"integer\"}}",

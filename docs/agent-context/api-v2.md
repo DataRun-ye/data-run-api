@@ -273,7 +273,9 @@ Deploying a release and turning on what it brings are separate steps
   code. Every response enumeration is marked open the same way: one only
   responses use is published as `x-extensible-enum`; one a request uses too
   keeps `enum` (a request may only send listed values) and its description
-  says responses may add values.
+  says responses may add values. An enumeration once published open stays
+  open: the check calls a response's open list turning closed a break, so a
+  request that needs a closed list gets a schema of its own.
 - `V2OpenApiContractTest` is a unit test, so `scripts/release/verify.sh`
   (`./mvnw test`) runs it; the repository has no CI. It generates the
   document from the v2 controllers in a web slice without a database and
