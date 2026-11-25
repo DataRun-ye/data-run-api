@@ -131,3 +131,32 @@ and its error shapes are untouched.
   (monitoring, auditing and reviewing, making changes, feedback), so the model
   will be per action and scoped by activity, designed after the glossary.
 - Records name the caller by user id, never by login.
+
+## Methods And Actions
+
+The vocabulary study's API rules (`.review/data-chain/2026-11-25-vocabulary.md`
+§6) apply; the domain nouns and verbs come from the feature's glossary.
+
+- Reads are `GET`. A change is a named action, never `PUT` or `PATCH` on a
+  submission: `POST /api/v2/<resources>/{id}:<verb>` (AIP-136), verbs in
+  camelCase; actions on a collection are `POST /api/v2/<resources>:<verb>`,
+  such as `:search`, a safe read with a large filter body.
+- Spring MVC routes this form cleanly (`V2ActionRoutingIT`, real HTTP through
+  Undertow, the firewall and the v2 chain): ULID, 24-hex and UUIDv7-text ids
+  followed by `:verb` reach their action with the id intact, whether the colon
+  arrives as is (as nginx passes it) or as `%3A`/`%3a`; a sub-collection
+  (`/{id}/notes`) and the read (`/{id}`) route beside the actions.
+- Map a controller at the parent path and write the collection into each
+  method's pattern: a method mapping `":search"` under a class mapped at the
+  collection combines to `/<resources>/:search`.
+- A verb no route declares reaches no action: the read's `{id}` matches the
+  path with the verb inside the id, so a `POST` answers 405 (`Allow: GET`) and
+  a `GET` hands the read an id with a colon, which the id guard answers as
+  unknown. Ids never contain a colon.
+- Enumeration values are UPPER_SNAKE; JSON members, query parameters, verbs
+  and operation names camelCase; problem codes kebab-case.
+- Targets are named by id only (`field`, `row`, `destination`), never by name,
+  section path or array index. Nothing is meant by null or by omission:
+  clearing is its own operation, and whatever a request leaves out is
+  untouched.
+- `reason` is only ever a person's text; codes the server assigns are `cause`.
