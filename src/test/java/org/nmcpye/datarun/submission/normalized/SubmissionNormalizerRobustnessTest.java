@@ -14,6 +14,7 @@ import java.util.Random;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.nmcpye.datarun.submission.normalized.StoredForms.FORM_UID;
 import static org.nmcpye.datarun.submission.normalized.StoredForms.version;
 
 /**
@@ -84,9 +85,9 @@ class SubmissionNormalizerRobustnessTest {
             }
 
             NormalizedSubmission normalized =
-                SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, pin, stored), form);
+                SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, FORM_UID, pin, stored), form);
 
-            assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, pin, stored), form))
+            assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, FORM_UID, pin, stored), form))
                 .as("deterministic").isEqualTo(normalized);
             flagsAgreeWithTheLists(normalized, form, pin);
             seen.addAll(normalized.flags().keySet());

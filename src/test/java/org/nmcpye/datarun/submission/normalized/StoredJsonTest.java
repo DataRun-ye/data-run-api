@@ -10,6 +10,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.nmcpye.datarun.submission.normalized.StoredForms.FORM_UID;
 import static org.nmcpye.datarun.submission.normalized.StoredForms.version;
 
 /**
@@ -57,7 +58,7 @@ class StoredJsonTest {
         String stored = "{\"big\": " + DIGITS_401 + ", \"amount\": 12345678901234567890.123, \"scaled\": 2.50}";
 
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission("01J2Q7Y0V6M3N4P5R6S7T8V9WX", "fvUid000001", stored), FormDefinition.of(form,
+            new StoredSubmission("01J2Q7Y0V6M3N4P5R6S7T8V9WX", FORM_UID, "fvUid000001", stored), FormDefinition.of(form,
                 List.of(v1)));
 
         assertThat(normalized.values()).extracting(v -> StoredJson.write(v.value()))

@@ -18,6 +18,9 @@ final class StoredForms {
 
     static final ObjectMapper JSON = new ObjectMapper();
 
+    /** The uid of the form the synthetic submissions name; the normalizer only carries it. */
+    static final String FORM_UID = "fmUid000001";
+
     /** Data element uid to its stored id. */
     static final Map<String, String> FIELD_IDS = new HashMap<>();
 
