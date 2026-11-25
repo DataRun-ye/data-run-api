@@ -50,12 +50,14 @@ public class V2CommandFixtureController {
 
     private final IdempotentCommands commands;
     private final NamedParameterJdbcTemplate jdbc;
+    private final PlatformTransactionManager transactions;
     private final TransactionTemplate reads;
 
     public V2CommandFixtureController(IdempotentCommands commands, NamedParameterJdbcTemplate jdbc,
                                       PlatformTransactionManager transactions) {
         this.commands = commands;
         this.jdbc = jdbc;
+        this.transactions = transactions;
         this.reads = new TransactionTemplate(transactions);
         this.reads.setReadOnly(true);
     }
@@ -86,6 +88,29 @@ public class V2CommandFixtureController {
                 first);
             return CommandOutcome.created("fixture-counter", counter.id(), 0);
         }, this::render, outcome -> java.net.URI.create("/api/v2/fixtures/counters/" + outcome.resourceId()));
+    }
+
+    /** A broken command, for the contract: it changes the row without checking If-Match. */
+    @PostMapping("/counters/{id}:forget")
+    public ResponseEntity<Counter> forget(@PathVariable String id, CommandRequest command) {
+        return commands.execute(command, context -> {
+            RUNS.incrementAndGet();
+            jdbc.update("UPDATE v2_fixture_counter SET version = version + 1 WHERE id = :id", Map.of("id", id));
+            return CommandOutcome.ok("fixture-counter", id, 1);
+        }, this::render);
+    }
+
+    /** A broken command, for the contract: it writes in a transaction of its own, outside the claim's. */
+    @PostMapping("/counters/{id}:escape")
+    public ResponseEntity<Counter> escape(@PathVariable String id, CommandRequest command) {
+        return commands.execute(command, context -> {
+            RUNS.incrementAndGet();
+            TransactionTemplate separate = new TransactionTemplate(transactions);
+            separate.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            separate.executeWithoutResult(status ->
+                jdbc.update("UPDATE v2_fixture_counter SET value = 999 WHERE id = :id", Map.of("id", id)));
+            return CommandOutcome.ok("fixture-counter", id, 0);
+        }, this::render);
     }
 
     /** A command that reads no body: one sent anyway must not be hashed as empty. */

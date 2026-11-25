@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -34,6 +35,10 @@ import java.util.function.Function;
  * </ol>
  * A refusal or failure anywhere rolls back the command and its claim together, so only successful outcomes are
  * remembered and a retry of a refused request simply runs again.
+ * <p>
+ * The contract is enforced, not only documented: a change whose command never called
+ * {@link CommandContext#checkVersion} fails (500, rolled back), and work that would leave the transaction
+ * (REQUIRES_NEW, NOT_SUPPORTED) fails before it starts.
  * <p>
  * The response comes from the {@link OutcomeRenderer} for both the first request and every replay, with the
  * outcome's status and the resource's {@code ETag}.
@@ -95,9 +100,15 @@ public class IdempotentCommands {
                 }
                 return new Result(completed.outcome(), true);
             }
-            CommandOutcome outcome = command.run(new Context(caller, ifMatch));
+            Context context = new Context(caller, ifMatch);
+            TransactionSynchronizationManager.registerSynchronization(STAY_IN_THIS_TRANSACTION);
+            CommandOutcome outcome = command.run(context);
             if (outcome == null) {
                 throw new IllegalStateException("A command returns its outcome");
+            }
+            if (ifMatch != null && !context.checked) {
+                throw new IllegalStateException("A command on a versioned resource checks If-Match through its "
+                    + "context (checkVersion) after locking its row, before changing it");
             }
             store.recordOutcome(caller.userId(), request.idempotencyKey(), outcome);
             return new Result(outcome, false);
@@ -116,10 +127,24 @@ public class IdempotentCommands {
     private record Result(CommandOutcome outcome, boolean replayed) {
     }
 
+    /**
+     * A command's work stays in the transaction that claimed its key: work in a suspended transaction
+     * (REQUIRES_NEW, NOT_SUPPORTED) would commit even when the command rolls back, outside the idempotency record.
+     * Suspending fails before such work starts.
+     */
+    private static final TransactionSynchronization STAY_IN_THIS_TRANSACTION = new TransactionSynchronization() {
+        @Override
+        public void suspend() {
+            throw new IllegalStateException("A v2 command's work stays in its transaction; REQUIRES_NEW or "
+                + "NOT_SUPPORTED would escape its idempotency claim");
+        }
+    };
+
     private static final class Context implements CommandContext {
 
         private final ApiCaller caller;
         private final IfMatch ifMatch;
+        private boolean checked;
 
         Context(ApiCaller caller, IfMatch ifMatch) {
             this.caller = caller;
@@ -137,6 +162,7 @@ public class IdempotentCommands {
                 throw new IllegalStateException("A create names no version to check");
             }
             ifMatch.check(currentVersion, versionHistory);
+            checked = true;
         }
     }
 }

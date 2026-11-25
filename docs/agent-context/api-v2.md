@@ -197,6 +197,10 @@ body, which each method's request defines; E0 builds no shared body type.
     `idempotency-key-reused`.
   - Any refusal or failure rolls back the command with its claim: only
     successes are remembered, and a retry of a refused request runs again.
+  - The contract is enforced: a change whose command never called
+    `checkVersion` fails (500, rolled back), and work in a transaction of its
+    own (REQUIRES_NEW, NOT_SUPPORTED), which would commit outside the claim,
+    fails before it starts.
 - The request's fingerprint is a SHA-256 of the method, the decoded path, the
   query (ordered by name), the canonical `If-Match` and the body in canonical
   JSON (members sorted, numbers by exact value, no whitespace). The body is

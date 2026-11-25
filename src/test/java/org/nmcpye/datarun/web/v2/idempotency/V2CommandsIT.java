@@ -51,6 +51,9 @@ class V2CommandsIT {
     @Autowired
     private PlatformTransactionManager transactions;
 
+    @Autowired
+    private javax.sql.DataSource dataSource;
+
     @Value("${jhipster.security.authentication.jwt.base64-secret}")
     private String jwtKey;
 
@@ -295,6 +298,56 @@ class V2CommandsIT {
             "{\"id\": \"c4\", \"start\": 5}"))).isEqualTo("invalid-if-match");
         assertThat(problemCode(send(post("/api/v2/fixtures/counters"), V2TestUsers.CALLER_A, null, null,
             "{\"id\": \"c5\", \"start\": 5}"))).isEqualTo("idempotency-key-missing");
+    }
+
+    /** A command that changes a versioned resource without checking If-Match fails, and nothing is kept. */
+    @Test
+    void aCommandThatSkipsTheIfMatchCheckFails() throws Exception {
+        MockHttpServletResponse response = mvc.perform(post("/api/v2/fixtures/counters/c1:forget")
+            .header(HttpHeaders.AUTHORIZATION, V2TestUsers.bearer(jwtKey, V2TestUsers.CALLER_A))
+            .header(IdempotencyKey.HEADER, key()).header(HttpHeaders.IF_MATCH, "\"0\"")).andReturn().getResponse();
+        assertThat(response.getStatus()).isEqualTo(500);
+        assertThat(problemCode(response)).isEqualTo("internal-error");
+        assertThat(storedVersion()).as("rolled back").isZero();
+        assertThat(records()).isZero();
+    }
+
+    /** Work in a transaction of its own would escape the claim: it fails before it starts. */
+    @Test
+    void workOutsideTheCommandsTransactionFailsBeforeItStarts() throws Exception {
+        MockHttpServletResponse response = mvc.perform(post("/api/v2/fixtures/counters/c1:escape")
+            .header(HttpHeaders.AUTHORIZATION, V2TestUsers.bearer(jwtKey, V2TestUsers.CALLER_A))
+            .header(IdempotencyKey.HEADER, key()).header(HttpHeaders.IF_MATCH, "\"0\"")).andReturn().getResponse();
+        assertThat(response.getStatus()).isEqualTo(500);
+        assertThat(jdbc.queryForObject("SELECT value FROM v2_fixture_counter WHERE id = :id",
+            Map.of("id", COUNTER), Long.class)).as("the separate transaction never ran").isZero();
+        assertThat(records()).isZero();
+    }
+
+    /** A row another writer holds past the lock timeout is 409 resource-busy, retryable, and nothing is kept. */
+    @Test
+    void aRowHeldByAnotherWriterIs409ResourceBusy() throws Exception {
+        com.zaxxer.hikari.HikariDataSource pool = (com.zaxxer.hikari.HikariDataSource) dataSource;
+        try (java.sql.Connection holder = java.sql.DriverManager.getConnection(pool.getJdbcUrl(), pool.getUsername(),
+            pool.getPassword())) {
+            holder.setAutoCommit(false);
+            try (java.sql.PreparedStatement lock = holder.prepareStatement(
+                "SELECT version FROM v2_fixture_counter WHERE id = ? FOR UPDATE")) {
+                lock.setString(1, COUNTER);
+                lock.executeQuery().close();
+            }
+            long start = System.nanoTime();
+            MockHttpServletResponse busy = increment(key(), "\"0\"", "{\"by\": 1}");
+            double waited = (System.nanoTime() - start) / 1e9;
+            holder.rollback();
+
+            assertThat(busy.getStatus()).isEqualTo(409);
+            assertThat(problemCode(busy)).isEqualTo("resource-busy");
+            assertThat(busy.getHeader(HttpHeaders.RETRY_AFTER)).isEqualTo("1");
+            assertThat(waited).as("bounded by the command lock timeout").isBetween(4.0, 12.0);
+        }
+        assertThat(records()).isZero();
+        assertThat(storedVersion()).isZero();
     }
 
     @Test
