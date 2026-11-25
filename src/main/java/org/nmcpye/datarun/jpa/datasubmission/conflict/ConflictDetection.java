@@ -36,7 +36,7 @@ import static org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictComparison.
  *
  * <p><b>Server-side changes</b> are revisions their phone did not make: {@code EDIT}, {@code MOVE}, {@code SPLIT},
  * {@code DELETE}, {@code RESTORE}, an accept of another uploader's copy, {@code ADMIN_DELETE}, and a baseline of the
- * submission deleted.</p>
+ * submission deleted, which counts for every uploader, also as the submission's first revision.</p>
  *
  * <p><b>It never fails an upload item:</b> anything detection throws keeps the copy aside with cause
  * {@code DETECTION_ERROR}, once the upload checks pass; its reads run in a savepoint, so a database error leaves the
@@ -112,8 +112,13 @@ public class ConflictDetection {
         }
         long first = revisions.get(0).version();
         long after = base != null ? base : first;
-        boolean serverSideChange = revisions.stream()
-            .anyMatch(revision -> revision.version() > after && isServerSideChange(revision, uploader));
+        // A deleted baseline is a server-side change for every uploader, even as the first revision, which is where
+        // the comparison starts for an uploader without a base of their own: the submission was deleted before the
+        // journal began.
+        boolean noBase = base == null;
+        boolean serverSideChange = revisions.stream().anyMatch(revision ->
+            revision.version() > after && isServerSideChange(revision, uploader)
+                || noBase && revision.version() == after && isDeletedBaseline(revision));
         boolean moved = revisions.stream()
             .anyMatch(revision -> revision.version() > after && "MOVE".equals(revision.command()));
 
@@ -142,7 +147,11 @@ public class ConflictDetection {
         String command = revision.command();
         return SERVER_SIDE_COMMANDS.contains(command)
             || "CONFLICT_ACCEPT".equals(command) && !uploader.equals(revision.onBehalfOfUserId())
-            || "BASELINE".equals(revision.kind()) && revision.deleted();
+            || isDeletedBaseline(revision);
+    }
+
+    private static boolean isDeletedBaseline(SubmissionRevisionReader.Revision revision) {
+        return "BASELINE".equals(revision.kind()) && revision.deleted();
     }
 
     /**

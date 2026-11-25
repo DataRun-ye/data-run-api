@@ -447,6 +447,45 @@ class ConflictDetectionIT extends A2GoldenSupport {
         assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
     }
 
+    // ---------------------------------------------------------------- deleted before the journal
+
+    /**
+     * Deleted before the journal began, its first revision a deleted baseline, which is a server-side change for every
+     * uploader: a changed copy from its creator is kept aside instead of landing on the deleted submission.
+     */
+    @Test
+    void aChangedCopyOfASubmissionDeletedBeforeTheJournalIsKeptAside() throws Exception {
+        String uid = uid("cdPreDel");
+        seed.storedBeforeTheJournal(uid, FIELD_1, ASSIGN_T1_V1, version("FORM_A.v1"),
+            formA(G3, uid, "first").node.get("formData").toString(), true);
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed on the phone")))).isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).containsExactly("3 BASELINE MIGRATION");
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("cause", "SERVER_SIDE_CHANGE").containsEntry("base_version", 3L));
+    }
+
+    /**
+     * Apps 5.2 and 5.3 re-send it unchanged, rows without ids: today each re-send wrote a revision with new row ids.
+     * The first is kept aside, and the next ones only count on the open conflict.
+     */
+    @Test
+    void unchangedG0ReSendsOfASubmissionDeletedBeforeTheJournalOnlyCount() throws Exception {
+        String uid = uid("cdPreDelG0");
+        seed.storedBeforeTheJournal(uid, FIELD_1, ASSIGN_T1_V1, version("FORM_A.v1"),
+            formA(G1, uid, "first").node.get("formData").toString(), true);
+
+        for (int i = 0; i < 3; i++) {
+            assertThat(answer(upload(G0, FIELD_1, formA(G0, uid, "first")))).isEqualTo(updated(uid));
+        }
+
+        assertThat(revisions(uid)).containsExactly("3 BASELINE MIGRATION");
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("state", "OPEN").containsEntry("rows_lack_ids", true).containsEntry("resend_count", 2)
+            .containsEntry("version", 0L));
+    }
+
     // ---------------------------------------------------------------- other uploaders
 
     /**

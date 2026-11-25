@@ -226,7 +226,9 @@ is answered `updated`, and detection never fails one: an error in it keeps the
 copy aside with cause `DETECTION_ERROR`. Practice uploads and held releases are
 not detected. The journal accepts submission review's commands since changeset
 `20261125-s2-01`, but no release writes them yet, so today's server-side
-changes are admin deletes and the gap repair's deleted baselines.
+changes are admin deletes and deleted baselines. A deleted baseline counts for
+every uploader, also as a submission's first revision: a copy of a submission
+deleted before the journal began is kept aside, as after an admin delete.
 `ConflictDetectionRehearsalIT` rehearses detection on a database the operator
 names, counts only, and changes nothing there.
 

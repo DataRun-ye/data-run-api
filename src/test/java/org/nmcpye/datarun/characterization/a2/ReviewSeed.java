@@ -140,14 +140,22 @@ final class ReviewSeed {
      */
     void storedBeforeTheJournal(String uid, String creatorLogin, String assignment, String formVersion,
                                 String document) {
+        storedBeforeTheJournal(uid, creatorLogin, assignment, formVersion, document, false);
+    }
+
+    /** As above; {@code deleted}: deleted before the journal started, so its first revision is a deleted baseline. */
+    void storedBeforeTheJournal(String uid, String creatorLogin, String assignment, String formVersion,
+                                String document, boolean deleted) {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             jdbc.update("""
                     INSERT INTO data_submission (id, uid, template_uid, template_version_uid, template_version_no,
                                                  assignment_uid, activity_uid, team_uid, team_code, org_unit_uid,
                                                  org_unit_code, org_unit_name, form_data, lock_version, deleted,
-                                                 created_by, created_date, last_modified_by, last_modified_date)
+                                                 deleted_at, created_by, created_date, last_modified_by,
+                                                 last_modified_date)
                     SELECT :id, :uid, v.template_uid, v.uid, v.version_number, a.uid, act.uid, t.uid, t.code, o.uid,
-                           o.code, o.name, CAST(:document AS jsonb), 3, false,
+                           o.code, o.name, CAST(:document AS jsonb), 3, :deleted,
+                           CASE WHEN :deleted THEN timezone('UTC', now()) END,
                            :creator, timezone('UTC', now()), :creator, timezone('UTC', now())
                     FROM assignment a
                     JOIN team t ON t.id = a.team_id
@@ -157,7 +165,8 @@ final class ReviewSeed {
                     WHERE a.uid = :assignment""",
                 new MapSqlParameterSource("id", ("01HA2PREJOURNAL" + uid + "00000000000").substring(0, 26))
                     .addValue("uid", uid).addValue("creator", creatorLogin).addValue("assignment", assignment)
-                    .addValue("formVersion", formVersion).addValue("document", document));
+                    .addValue("formVersion", formVersion).addValue("document", document)
+                    .addValue("deleted", deleted));
             jdbc.update("""
                     INSERT INTO journal.submission_revision (submission_id, version, kind, command, actor_system,
                                                      form_data, metadata)
