@@ -38,8 +38,9 @@ public class SubmissionRevisionReader {
      * @param deleted     whether the submission is deleted
      * @param assignment  the assignment's uid
      * @param formVersion the pinned form version's uid
+     * @param status      the progress status, or null when there is none
      */
-    public record State(String document, boolean deleted, String assignment, String formVersion) {
+    public record State(String document, boolean deleted, String assignment, String formVersion, String status) {
     }
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -61,7 +62,8 @@ public class SubmissionRevisionReader {
     public State stateAt(String submissionId, long version) {
         return jdbc.queryForObject("""
                 SELECT form_data::text AS document, coalesce((metadata ->> 'deleted')::boolean, false) AS deleted,
-                       metadata ->> 'assignment_uid' AS assignment, metadata ->> 'template_version_uid' AS form_version
+                       metadata ->> 'assignment_uid' AS assignment, metadata ->> 'template_version_uid' AS form_version,
+                       metadata ->> 'status' AS status
                 FROM journal.submission_revision
                 WHERE submission_id = :submissionId AND version = :version""",
             new MapSqlParameterSource().addValue("submissionId", submissionId).addValue("version", version),
@@ -72,7 +74,7 @@ public class SubmissionRevisionReader {
     public State current(String submissionId) {
         return jdbc.queryForObject("""
                 SELECT form_data::text AS document, coalesce(deleted, false) AS deleted,
-                       assignment_uid AS assignment, template_version_uid AS form_version
+                       assignment_uid AS assignment, template_version_uid AS form_version, status
                 FROM data_submission
                 WHERE id = :submissionId""",
             Map.of("submissionId", submissionId),
@@ -81,6 +83,6 @@ public class SubmissionRevisionReader {
 
     private static State state(java.sql.ResultSet row) throws java.sql.SQLException {
         return new State(row.getString("document"), row.getBoolean("deleted"), row.getString("assignment"),
-            row.getString("form_version"));
+            row.getString("form_version"), row.getString("status"));
     }
 }

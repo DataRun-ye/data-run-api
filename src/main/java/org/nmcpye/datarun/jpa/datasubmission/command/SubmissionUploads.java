@@ -312,7 +312,8 @@ public class SubmissionUploads {
             submission.getFormData(),
             Boolean.TRUE.equals(submission.getDeleted()),
             submission.getAssignment(),
-            submission.getFormVersion()));
+            submission.getFormVersion(),
+            submission.getStatus() == null ? null : submission.getStatus().name()));
     }
 
     /** The upload item is answered {@code updated}, as an unchanged re-send always was, and nothing is written. */

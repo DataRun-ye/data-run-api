@@ -82,14 +82,27 @@ class ConflictComparisonTest {
     @Test
     void theDeletedFlagTheAssignmentAndTheFormVersionCount() throws Exception {
         JsonNode document = REQUEST.readTree("{\"main\": {\"name\": \"a\"}}");
-        ComparedState state = new ComparedState(document, false, "assignment1", "version1");
+        ComparedState state = new ComparedState(document, false, "assignment1", "version1", null);
 
-        assertThat(sameState(state, new ComparedState(document.deepCopy(), false, "assignment1", "version1")))
+        assertThat(sameState(state, new ComparedState(document.deepCopy(), false, "assignment1", "version1", null)))
             .isTrue();
-        assertThat(sameState(state, new ComparedState(document, true, "assignment1", "version1"))).isFalse();
-        assertThat(sameState(state, new ComparedState(document, false, "assignment2", "version1"))).isFalse();
-        assertThat(sameState(state, new ComparedState(document, false, "assignment1", "version2"))).isFalse();
-        assertThat(sameState(state, new ComparedState(document, false, null, "version1"))).isFalse();
+        assertThat(sameState(state, new ComparedState(document, true, "assignment1", "version1", null))).isFalse();
+        assertThat(sameState(state, new ComparedState(document, false, "assignment2", "version1", null))).isFalse();
+        assertThat(sameState(state, new ComparedState(document, false, "assignment1", "version2", null))).isFalse();
+        assertThat(sameState(state, new ComparedState(document, false, null, "version1", null))).isFalse();
+    }
+
+    /** API callers can send a status, and an upload writes it: a copy that changes only the status is changed. */
+    @Test
+    void theStatusCounts() throws Exception {
+        JsonNode document = REQUEST.readTree("{\"main\": {\"name\": \"a\"}}");
+        ComparedState none = new ComparedState(document, false, "assignment1", "version1", null);
+
+        assertThat(sameState(none, new ComparedState(document, false, "assignment1", "version1", "DONE"))).isFalse();
+        assertThat(sameState(new ComparedState(document, false, "assignment1", "version1", "DONE"),
+            new ComparedState(document, false, "assignment1", "version1", "DONE"))).isTrue();
+        assertThat(ComparedState.ofUploadItem(REQUEST.readTree("{\"status\": \"DONE\"}")).status()).isEqualTo("DONE");
+        assertThat(ComparedState.ofUploadItem(REQUEST.readTree("{}")).status()).isNull();
     }
 
     @Test

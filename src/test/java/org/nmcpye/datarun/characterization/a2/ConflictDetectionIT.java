@@ -123,6 +123,33 @@ class ConflictDetectionIT extends A2GoldenSupport {
         assertThat(conflicts(uid)).isEmpty();
     }
 
+    /**
+     * Phones never send a status, but API callers can, and an upload writes it: a copy that changes only the status is
+     * a changed copy, saved as today, or kept aside after a server-side change; re-sent unchanged, it writes nothing.
+     */
+    @Test
+    void aCopyThatChangesOnlyTheStatusIsAChangedCopy() throws Exception {
+        String uid = uid("cdStatus");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        Item done = formA(G3, uid, "first");
+        done.node.put("status", "DONE");
+
+        assertThat(answer(upload(G3, FIELD_1, done))).isEqualTo(updated(uid));
+        assertThat(revisions(uid)).as("saved as today").containsExactly("0 CREATE UPLOAD", "1 UPDATE UPLOAD");
+        assertThat(jdbc.queryForObject("SELECT status FROM data_submission WHERE uid = :uid", Map.of("uid", uid),
+            String.class)).isEqualTo("DONE");
+
+        seed.edit(uid, ADMIN, "edited on the server");
+        Item cancelled = formA(G3, uid, "first");
+        cancelled.node.put("status", "CANCELLED");
+        assertThat(answer(upload(G3, FIELD_1, done))).as("unchanged").isEqualTo(updated(uid));
+        assertThat(answer(upload(G3, FIELD_1, cancelled))).as("changed").isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE UPLOAD", "2 UPDATE EDIT");
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("cause", "SERVER_SIDE_CHANGE").containsEntry("base_version", 1L));
+    }
+
     @Test
     void withoutAServerSideChangeAChangedCopyIsSavedAsToday() throws Exception {
         String uid = uid("cdApply");
