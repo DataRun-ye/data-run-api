@@ -1,7 +1,5 @@
 package org.nmcpye.datarun.outbox.processing;
 
-import org.nmcpye.datarun.outbox.dto.OutboxDto;
-
 import java.time.Duration;
 import java.util.Optional;
 
@@ -12,8 +10,9 @@ import java.util.Optional;
  * runtime's contract, changing.
  *
  * <p><b>How the runtime applies a change:</b> in one transaction, {@link #begin} of every output that is on, then
- * {@link #apply} of each, in order, each in a savepoint of its own, then the change's outcome on its outbox row. An
- * output that throws has what it wrote rolled back, and nothing else.</p>
+ * {@link #apply} of each, in order, each in a savepoint of its own, then the change's outcome on its queue's record. An
+ * output that throws has what it wrote rolled back, and nothing else. An output is given the change as a
+ * {@link ChangeReference} only, never the queue's record.</p>
  * <ul>
  *   <li>A failure the output keeps ({@link #keepsFailure}, its own retry list) leaves the change done for the
  *       runtime.</li>
@@ -50,10 +49,10 @@ public interface ChangeOutput {
     /**
      * Applies one change in the runtime's transaction, in a savepoint of its own; throws when it could not.
      *
-     * @param change        the claimed outbox row
+     * @param change        the change: its submission and version
      * @param deadlineNanos when the output's time is up, as a {@link System#nanoTime()} value
      */
-    void apply(OutboxDto change, long deadlineNanos);
+    void apply(ChangeReference change, long deadlineNanos);
 
     /**
      * Takes a failure of {@link #apply}, after what it wrote was rolled back, still in the runtime's transaction.
@@ -61,7 +60,7 @@ public interface ChangeOutput {
      * @return whether the output keeps the failure itself, in its own retry list, so the change is done for the
      *     runtime; false leaves it to the runtime
      */
-    default boolean keepsFailure(OutboxDto change, RuntimeException failure) {
+    default boolean keepsFailure(ChangeReference change, RuntimeException failure) {
         return false;
     }
 }

@@ -14,7 +14,7 @@ import java.util.Map;
  * ({@code journal.submission_revision_metadata()}). It reads in the caller's transaction, through the template it is
  * given, and keeps each resolution for its own life, which is one read of the caller's.
  */
-public final class PlacementResolver {
+public final class PlacementJdbcResolver {
 
     private static final String RESOLVE = """
         SELECT (SELECT a.id FROM assignment a WHERE a.uid = :assignmentUid) AS assignment_id,
@@ -29,7 +29,7 @@ public final class PlacementResolver {
     private final NamedParameterJdbcTemplate jdbc;
     private final Map<StoredPlacement, Placement> resolved = new HashMap<>();
 
-    PlacementResolver(NamedParameterJdbcTemplate jdbc) {
+    PlacementJdbcResolver(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
 

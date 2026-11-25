@@ -1,7 +1,7 @@
 package org.nmcpye.datarun.submission.normalized.jdbc;
 
 /**
- * What a submission is tied to, as ids: its assignment, team, org unit and activity ({@link PlacementResolver}). The
+ * What a submission is tied to, as ids: its assignment, team, org unit and activity ({@link PlacementJdbcResolver}). The
  * model of placement is under review; this record and its resolver are the one place it lives.
  *
  * @param assignmentId the assignment's id, or {@code null} when the stored uid names no assignment

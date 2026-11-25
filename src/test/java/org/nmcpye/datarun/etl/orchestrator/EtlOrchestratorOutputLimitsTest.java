@@ -1,8 +1,8 @@
 package org.nmcpye.datarun.etl.orchestrator;
 
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.outbox.processing.ChangeOutput;
+import org.nmcpye.datarun.outbox.processing.ChangeReference;
 
 import java.time.Duration;
 import java.util.List;
@@ -34,7 +34,7 @@ class EtlOrchestratorOutputLimitsTest {
             }
 
             @Override
-            public void apply(OutboxDto change, long deadlineNanos) {
+            public void apply(ChangeReference change, long deadlineNanos) {
                 // not applied here
             }
         };

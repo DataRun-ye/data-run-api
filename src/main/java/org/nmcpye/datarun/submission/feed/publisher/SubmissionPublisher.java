@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.nmcpye.datarun.config.activation.ActivationSwitches;
-import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.outbox.processing.ChangeBacklog;
 import org.nmcpye.datarun.outbox.processing.ChangeOutput;
+import org.nmcpye.datarun.outbox.processing.ChangeReference;
 import org.nmcpye.datarun.outbox.processing.DeferredWork;
 import org.nmcpye.datarun.submission.feed.FeedActivation;
 import org.nmcpye.datarun.submission.normalized.NormalizationFlag;
@@ -183,18 +183,18 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
      * {@link #keepsFailure}.
      */
     @Override
-    public void apply(OutboxDto change, long deadlineNanos) {
+    public void apply(ChangeReference change, long deadlineNanos) {
         requireTransaction();
-        FeedWriter.Result result = writer.publish(new FeedStatements(dataSource, deadlineNanos), change.getSubmissionId(),
+        FeedWriter.Result result = writer.publish(new FeedStatements(dataSource, deadlineNanos), change.submissionId(),
             false);
         counted(result);
     }
 
     /** Records the failed feed part as a pending change, in the runtime's transaction: the feed keeps it. */
     @Override
-    public boolean keepsFailure(OutboxDto change, RuntimeException failure) {
+    public boolean keepsFailure(ChangeReference change, RuntimeException failure) {
         failures.increment();
-        recordFailure(change.getSubmissionId(),
+        recordFailure(change.submissionId(),
             new Attempt(null, FeedFailure.reasonOf(failure), FeedFailure.typeOf(failure)));
         return true;
     }

@@ -21,6 +21,8 @@ public class OutboxDto {
     private Long submissionSerialNumber;
 
     private String submissionId;
+    // the submission's version after the change; null for rows written before the journal
+    private Long submissionVersion;
     private String submissionUid;
     private String topic;
     private String eventType;

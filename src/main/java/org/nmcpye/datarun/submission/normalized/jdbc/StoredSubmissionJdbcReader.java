@@ -25,7 +25,7 @@ import java.util.Set;
  *
  * <p>A head is the revision's state ({@code form_data} as text, its version, its deleted flag, its pinned form version
  * and placement, the time of its change), with what a revision leaves out read from {@code data_submission}: the form,
- * the entry times and the creation time. Its placement is resolved to ids by {@link PlacementResolver}.</p>
+ * the entry times and the creation time. Its placement is resolved to ids by {@link PlacementJdbcResolver}.</p>
  */
 @Component
 public class StoredSubmissionJdbcReader {
@@ -120,7 +120,7 @@ public class StoredSubmissionJdbcReader {
         List<Read> reads = jdbc.query(HEADS, new MapSqlParameterSource("ids", Set.copyOf(submissionIds)),
             (rs, n) -> read(rs));
         // placements resolve once the heads' statement is done: one connection may serve both
-        PlacementResolver placements = new PlacementResolver(jdbc);
+        PlacementJdbcResolver placements = new PlacementJdbcResolver(jdbc);
         List<Head> heads = new ArrayList<>(reads.size());
         for (Read read : reads) {
             heads.add(new Head(read.submission(), read.version(), read.deleted(), read.formId(), read.formVersionId(),

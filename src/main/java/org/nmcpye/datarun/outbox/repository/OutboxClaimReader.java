@@ -99,6 +99,7 @@ public class OutboxClaimReader implements OutboxClaimPort {
                 .outboxId(rs.getLong("outbox_id"))
                 .submissionSerialNumber(rs.getLong("submission_serial_number"))
                 .submissionId(rs.getString("submission_id"))
+                .submissionVersion(rs.getObject("submission_version", Long.class))
                 .submissionUid(rs.getString("submission_uid"))
                 .eventType(rs.getString("event_type"))
                 .topic(rs.getString("topic"))

@@ -7,8 +7,11 @@ import org.nmcpye.datarun.etl.entity.EtlRun;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics.Outcome;
 import org.nmcpye.datarun.etl.service.EtlRunService;
+import org.nmcpye.datarun.etl.service.EventProcessorService;
 import org.nmcpye.datarun.etl.service.SubmissionNotFoundException;
+import org.nmcpye.datarun.etl.service.impl.TallAndEventsOutput;
 import org.nmcpye.datarun.outbox.processing.ChangeOutput;
+import org.nmcpye.datarun.outbox.processing.ChangeReference;
 import org.nmcpye.datarun.outbox.service.OutboxClaimService;
 import org.nmcpye.datarun.outbox.service.OutboxProcessingService;
 import org.slf4j.Logger;
@@ -23,14 +26,16 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.Savepoint;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.UUID;
 
 /**
- * Orchestrator that runs one ETL cycle: it claims outbox rows and applies each change to the outputs registered
- * through the seam {@link ChangeOutput} (the projection into tall and events; the submission feed, while its switch is
- * on), in the order they declare.
+ * Orchestrator that runs one ETL cycle: it claims outbox rows and applies each change to its outputs through the seam
+ * {@link ChangeOutput}: those the application registers, in the order they declare (the submission feed, while its
+ * switch is on), then the legacy projection into tall and events, built for each row ({@link TallAndEventsOutput}).
+ * Each output is handed a {@link ChangeReference} built from the row, never the row.
  * <p>
  * Each claimed row first has its attempt counted, in a transaction of its own, then is applied in another: every
  * output's {@link ChangeOutput#begin}, then each output in a savepoint of its own, then the row's outcome. An output's
@@ -57,6 +62,7 @@ public class EtlOrchestrator {
     private final OutboxClaimService outboxClaimService;
     private final OutboxProcessingService outboxProcessingService;
     private final List<ChangeOutput> outputs;
+    private final EventProcessorService tallAndEvents;
     private final TransactionTemplate txTemplate;
     private final JdbcTemplate savepoints;
     private final Duration rowTimeout;
@@ -67,6 +73,7 @@ public class EtlOrchestrator {
                            OutboxClaimService outboxClaimService,
                            OutboxProcessingService outboxProcessingService,
                            List<ChangeOutput> outputs,
+                           EventProcessorService tallAndEvents,
                            PlatformTransactionManager txManager,
                            DataSource dataSource,
                            EtlProperties properties,
@@ -75,6 +82,7 @@ public class EtlOrchestrator {
         this.outboxClaimService = outboxClaimService;
         this.outboxProcessingService = outboxProcessingService;
         this.outputs = List.copyOf(outputs);
+        this.tallAndEvents = tallAndEvents;
         this.txTemplate = new TransactionTemplate(txManager);
         // Statements in a row's transaction are cancelled once it has run this long.
         this.rowTimeout = properties.getRowTimeout();
@@ -223,7 +231,8 @@ public class EtlOrchestrator {
             recordDead(runId, outbox, "started " + attempt + " times without an outcome");
             return RowResult.DEAD;
         }
-        List<ChangeOutput> on = outputs.stream().filter(ChangeOutput::isOn).toList();
+        List<ChangeOutput> on = new ArrayList<>(outputs.stream().filter(ChangeOutput::isOn).toList());
+        on.add(new TallAndEventsOutput(tallAndEvents, outbox));
         OutputFailure[] left = new OutputFailure[1];
         Throwable failure;
         try {
@@ -259,11 +268,12 @@ public class EtlOrchestrator {
                                      OutputFailure carried, OutputFailure[] left) {
         outputs.forEach(ChangeOutput::begin);
         long rowDeadline = System.nanoTime() + rowTimeout.toNanos() - rowTimeout.toNanos() / 10;
+        ChangeReference change = new ChangeReference(outbox.getSubmissionId(), outbox.getSubmissionVersion());
         OutputFailure failure = carried;
         for (ChangeOutput output : outputs) {
             Savepoint savepoint = savepoints.execute((ConnectionCallback<Savepoint>) Connection::setSavepoint);
             try {
-                output.apply(outbox, deadline(output, rowDeadline));
+                output.apply(change, deadline(output, rowDeadline));
             } catch (RuntimeException e) {
                 if (EtlFailures.stopsTheBatch(e)) {
                     // the transaction is lost with its connection, or the thread is stopping
@@ -273,7 +283,7 @@ public class EtlOrchestrator {
                     connection.rollback(savepoint);
                     return null;
                 });
-                if (!output.keepsFailure(outbox, e) && failure == null) {
+                if (!output.keepsFailure(change, e) && failure == null) {
                     failure = new OutputFailure(output, e);
                     left[0] = failure;
                 }

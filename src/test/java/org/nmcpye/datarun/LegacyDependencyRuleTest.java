@@ -9,6 +9,7 @@ import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.outbox.service.impl.OutboxClaimServiceImpl;
 import org.nmcpye.datarun.outbox.service.impl.OutboxProcessingServiceImpl;
 
+import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -24,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>The outbox, the change log both the runtime and its outputs read, depends on nothing under {@code etl}: the
  *       runtime depends on the outbox and its seam ({@code outbox.processing}), never the other way. Two classes broke
  *       this before the rule existed and are listed here until their own cleanup; the list may only shrink.</li>
+ *   <li>The outbox is transitional: the new packages reach it only through {@code outbox.processing}.</li>
  * </ul>
  */
 class LegacyDependencyRuleTest {
@@ -48,6 +50,21 @@ class LegacyDependencyRuleTest {
         .and().doNotBelongToAnyOf(OUTBOX_CLASSES_STILL_ON_THE_ETL)
         .should().dependOnClassesThat().resideInAPackage("org.nmcpye.datarun.etl..")
         .because("the runtime depends on the outbox and its seam, never the other way");
+
+    /**
+     * The outbox is transitional: new code reaches it only through its processing seam (the change reference, the
+     * outputs' interfaces, the backlog's query), never its table's record, repositories or services.
+     */
+    static final ArchRule NEW_CODE_REACHES_THE_OUTBOX_ONLY_THROUGH_ITS_SEAM = noClasses()
+        .that().resideInAnyPackage("org.nmcpye.datarun.submission..", "org.nmcpye.datarun.web.v2..")
+        .should().dependOnClassesThat(resideInAPackage("org.nmcpye.datarun.outbox..")
+            .and(not(resideInAPackage("org.nmcpye.datarun.outbox.processing.."))))
+        .because("the outbox is transitional: new code uses its processing seam only");
+
+    @Test
+    void newCodeReachesTheOutboxOnlyThroughItsProcessingSeam() {
+        NEW_CODE_REACHES_THE_OUTBOX_ONLY_THROUGH_ITS_SEAM.check(MAIN);
+    }
 
     @Test
     void theSubmissionPackagesAndTheV2ApiDependOnNoLegacyOutput() {

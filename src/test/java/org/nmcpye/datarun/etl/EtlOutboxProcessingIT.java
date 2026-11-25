@@ -21,7 +21,6 @@ import org.nmcpye.datarun.etl.service.EventProcessorService;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.outbox.service.OutboxClaimService;
 import org.nmcpye.datarun.outbox.service.OutboxProcessingService;
-import org.nmcpye.datarun.etl.service.impl.TallAndEventsOutput;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -585,8 +584,8 @@ class EtlOutboxProcessingIT {
             }
             eventProcessor.processEvent(outbox);
         };
-        return new EtlOrchestrator(etlRunService, claimService, processingService,
-            List.of(new TallAndEventsOutput(failingOnSomeRows)), transactionManager, dataSource, etlProperties, metrics);
+        return new EtlOrchestrator(etlRunService, claimService, processingService, List.of(), failingOnSomeRows,
+            transactionManager, dataSource, etlProperties, metrics);
     }
 
     /**
