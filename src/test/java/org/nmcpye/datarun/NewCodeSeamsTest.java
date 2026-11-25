@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.common.BaseMapper;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.common.JpaIdentifiableOperationVm;
+import org.nmcpye.datarun.common.LatinDigits;
 import org.nmcpye.datarun.common.exceptions.DatabaseFailures;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
 import org.nmcpye.datarun.common.exceptions.FailureShape;
@@ -24,7 +25,9 @@ import org.nmcpye.datarun.common.uidgenerate.BaseDto;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
 import org.nmcpye.datarun.etl.config.EtlProperties;
+import org.nmcpye.datarun.etl.pivot.PivotService;
 import org.nmcpye.datarun.etl.repository.TallCanonicalJdbcRepository;
+import org.nmcpye.datarun.etl.service.EtlRunService;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommand;
@@ -38,6 +41,8 @@ import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
 import org.nmcpye.datarun.jpa.datatemplate.repository.CanonicalElementRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.MetadataUpsertService;
+import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceServiceImpl;
+import org.nmcpye.datarun.jpa.datatemplategenerator.TemplateElementGeneratorService;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
 import org.nmcpye.datarun.outbox.service.impl.OutboxClaimServiceImpl;
 import org.nmcpye.datarun.outbox.service.impl.OutboxProcessingServiceImpl;
@@ -46,6 +51,7 @@ import org.nmcpye.datarun.security.DomainUserDetailsService;
 import org.nmcpye.datarun.submission.feed.publisher.DictionaryPublisher;
 import org.nmcpye.datarun.utils.FormSubmissionDataUtil;
 import org.nmcpye.datarun.utils.UuidUtils;
+import org.nmcpye.datarun.web.filter.LastSeenFilter;
 import org.nmcpye.datarun.web.rest.v1.PivotController;
 import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1Dto;
 
@@ -85,9 +91,9 @@ import static org.nmcpye.datarun.NewCodeSeamsTest.Kind.TRANSITIONAL;
  * check new code against both. A change to the map is a row, a seam or an exception, each with its reason. Nothing is
  * frozen: an exception names its class and dependency, and the test fails once it no longer occurs.</p>
  * <ul>
- *   <li>(a) Retiring derived structures: no dependency from new code, and none from them to new code, so new code
- *       shares no transaction, schedule or failure with the legacy outputs; neutral and transitional code depend on
- *       them only where {@link #LEFTOVERS} lists it.</li>
+ *   <li>(a) Retiring derived structures: no dependency from new code, and none from them to new code, so a legacy
+ *       output's failure never aborts or delays new work. Code that stays depends on them only where
+ *       {@link #LEFTOVERS} lists the class and the dependency.</li>
  *   <li>(b) Systems of record and transitional code: new code reaches them only through the listed seams.</li>
  *   <li>(c) Client contracts: new code never depends on v1 resources, their DTOs, mappers or v1 error codes.</li>
  *   <li>SQL text in new code, which ArchUnit cannot see, is scanned as a tripwire, not proof: it names no retiring
@@ -131,8 +137,8 @@ class NewCodeSeamsTest {
         row("submission..", NEW_CODE, "the submission normalizer and the feed"),
         row("web.v2..", NEW_CODE, "the v2 API"),
         row("jpa.datasubmission.revision..", NEW_CODE, "the revision journal"),
-        row("jpa.datasubmission.conflict..", NEW_CODE, "conflict detection, which takes the values the write path "
-            + "computes; its breaches are listed until its seam refactor (feat/review-s2)"),
+        row("jpa.datasubmission.conflict..", NEW_CODE, "conflict detection, called by the write path; its breaches are "
+            + "listed until its seam refactor"),
 
         // Retiring derived structures
         row("etl..", RETIRING, "tall, events, dimensions and pivots, their transformers, and for now the home and name "
@@ -206,6 +212,8 @@ class NewCodeSeamsTest {
         row(ErrorCodeException.class, CLIENT_CONTRACT, "carries a v1 error code"),
         row(IllegalQueryException.class, CLIENT_CONTRACT, "a v1 query error"),
         row(FormSubmissionDataUtil.class, CLIENT_CONTRACT, "a helper of the v1 submission resource"),
+        row(LastSeenFilter.class, CLIENT_CONTRACT, "an edge adapter: reads the phones' X-App-Version header and "
+            + "records the account's last visit"),
 
         // Neutral infrastructure
         row(ROOT, NEUTRAL, "the application"),
@@ -216,7 +224,8 @@ class NewCodeSeamsTest {
         row(FailureShape.class, NEUTRAL, "failure shapes for log lines"),
         row(DatabaseFailures.class, NEUTRAL, "database failure classification"),
         row(CodeGenerator.class, NEUTRAL, "ids (nextUlid); its generateUid mints phone uids"),
-        row(UuidUtils.class, NEUTRAL, "uuid helpers"));
+        row(UuidUtils.class, NEUTRAL, "uuid helpers"),
+        row(LatinDigits.class, NEUTRAL, "a pure digit utility"));
 
     /**
      * SQL relations, by kind: whole retiring schemas, retiring tables, transitional tables (which new code reaches only
@@ -266,14 +275,17 @@ class NewCodeSeamsTest {
                 + "changes come from; never the outbox's table, rows or services"));
 
     /**
-     * Neutral and transitional classes that still depend on retiring code, each with what it depends on. A class leaves
-     * the list with its dependency, and the test fails while a listed class no longer needs its place.
+     * Code that stays and still depends on retiring code: each by its class and the class it depends on (nested
+     * classes included on both sides), with why. Only that dependency is exempt, and the test fails once it no longer
+     * occurs.
      */
     static final List<Leftover> LEFTOVERS = List.of(
-        new Leftover(OutboxClaimServiceImpl.class, "reads its claim lease from EtlProperties, until the claim loop "
-            + "leaves etl"),
-        new Leftover(OutboxProcessingServiceImpl.class, "counts outcomes on the ETL's run (EtlRunService), until the "
-            + "claim loop leaves etl"));
+        new Leftover(OutboxClaimServiceImpl.class, EtlProperties.class,
+            "reads its claim lease from the ETL's properties, until the claim loop leaves etl"),
+        new Leftover(OutboxProcessingServiceImpl.class, EtlRunService.class,
+            "counts outcomes on the ETL's run, until the claim loop leaves etl"),
+        new Leftover(DataTemplateInstanceServiceImpl.class, TemplateElementGeneratorService.class,
+            "publishing a form version writes canonical_element in the same call, until canonical_element goes"));
 
     private static final String CONFLICT_DETECTION = ROOT + ".jpa.datasubmission.conflict.ConflictDetection";
     private static final String CONFLICT_CHECK = ROOT + ".jpa.datasubmission.conflict.ConflictCheck";
@@ -281,9 +293,8 @@ class NewCodeSeamsTest {
 
     /**
      * Breaches by new code that are listed until a named change removes them, each by its class (nested classes
-     * included) and the class it depends on. Conflict detection lands with feat/review-s2 before this guard, and its
-     * seam refactor follows as its own change. A listed breach must occur while its class exists, so the list only
-     * shrinks; a class this build does not hold yet is not checked.
+     * included) and the class it depends on. Conflict detection's seam refactor is pending. A listed breach must still
+     * occur, so the list only shrinks.
      */
     static final List<Breach> BREACHES = List.of(
         new Breach(CONFLICT_DETECTION, DataSubmission.class.getName(),
@@ -333,15 +344,13 @@ class NewCodeSeamsTest {
     static ArchRule retiringCodeDependsOnNoNewCode(DescribedPredicate<JavaClass> retiring,
                                                    DescribedPredicate<JavaClass> newCode) {
         return noClasses().that(retiring).should().dependOnClassesThat(newCode)
-            .because("retiring code that calls new code shares its transaction, its schedule and its failures with it "
-                + "(rule a)");
+            .because("a legacy output's failure must never abort or delay new work (rule a)");
     }
 
-    /** (a) Neutral and transitional code take no dependency on retiring code, beyond the listed leftovers. */
-    static ArchRule infrastructureDependsOnNoRetiringCode(DescribedPredicate<JavaClass> infrastructure) {
-        return noClasses().that(infrastructure)
-            .and(DescribedPredicate.not(belongToAnyOf(LEFTOVERS.stream().map(Leftover::type).toArray(Class<?>[]::new))))
-            .should().dependOnClassesThat(ofKind(RETIRING))
+    /** (a) Code that stays takes no dependency on retiring code, beyond the listed leftovers. */
+    static ArchRule codeThatStaysDependsOnRetiringCodeOnlyAsListed(DescribedPredicate<JavaClass> stays,
+                                                                    List<Leftover> leftovers) {
+        return classes().that(stays).should(dependOnRetiringCodeOnlyAs(leftovers))
             .because("what stays must not hold up what retires: retiring code is removed without touching it (rule a)");
     }
 
@@ -397,8 +406,8 @@ class NewCodeSeamsTest {
     }
 
     @Test
-    void infrastructureTakesNoDependencyOnRetiringCodeBeyondTheLeftovers() {
-        infrastructureDependsOnNoRetiringCode(ofKind(NEUTRAL).or(ofKind(TRANSITIONAL))).check(MAIN);
+    void codeThatStaysTakesNoDependencyOnRetiringCodeBeyondTheLeftovers() {
+        codeThatStaysDependsOnRetiringCodeOnlyAsListed(STAYS, LEFTOVERS).check(MAIN);
     }
 
     @Test
@@ -476,30 +485,27 @@ class NewCodeSeamsTest {
             assertThat(seam.why()).as(seam.target()).isNotBlank();
         }
         for (Leftover leftover : LEFTOVERS) {
-            assertThat(kindOf(MAIN.get(leftover.type())).orElse(null)).as(leftover.type().getName())
-                .isIn(NEUTRAL, TRANSITIONAL);
-            classes().that().belongToAnyOf(leftover.type()).should().dependOnClassesThat(ofKind(RETIRING))
-                .because(leftover.type().getSimpleName() + " is listed as still depending on retiring code")
-                .check(MAIN);
+            String pair = leftover.origin().getName() + " on " + leftover.dependency().getName();
+            assertThat(STAYS.test(MAIN.get(leftover.origin()))).as(pair + ": the class stays").isTrue();
+            assertThat(kindOf(MAIN.get(leftover.dependency()))).as(pair + ": the dependency retires")
+                .contains(RETIRING);
+            assertThat(leftover.why()).as(pair).isNotBlank();
+            assertThat(occurs(leftover.origin().getName(), leftover.dependency().getName()))
+                .as(pair + " no longer occurs: remove the leftover").isTrue();
         }
     }
 
-    /** A listed breach still occurs, in new code, on a dependency a rule guards; a class not built yet is skipped. */
+    /** A listed breach still occurs, in new code, on a dependency a rule guards. */
     @Test
     void everyBreachStillOccurs() {
         for (Breach breach : BREACHES) {
             assertThat(breach.why()).as(breach.origin()).isNotBlank();
             assertThat(kindOf(MAIN.get(breach.dependency())).orElse(null)).as(breach.dependency())
                 .isIn(RETIRING, TRANSITIONAL, SYSTEM_OF_RECORD, CLIENT_CONTRACT);
-            if (!MAIN.contain(breach.origin())) {
-                continue;
-            }
+            assertThat(MAIN.contain(breach.origin())).as(breach.origin() + " is not in this build: remove the breach")
+                .isTrue();
             assertThat(kindOf(MAIN.get(breach.origin()))).as(breach.origin()).contains(NEW_CODE);
-            boolean occurs = MAIN.stream()
-                .filter(c -> c.getName().split("\\$", 2)[0].equals(breach.origin()))
-                .flatMap(c -> c.getDirectDependenciesFromSelf().stream())
-                .anyMatch(d -> d.getTargetClass().getBaseComponentType().getName().equals(breach.dependency()));
-            assertThat(occurs).as(breach.origin() + " no longer depends on " + breach.dependency() + ": remove the "
+            assertThat(occurs(breach.origin(), breach.dependency())).as(breach.origin() + " no longer depends on " + breach.dependency() + ": remove the "
                 + "breach").isTrue();
         }
     }
@@ -510,15 +516,18 @@ class NewCodeSeamsTest {
     @Test
     void theRulesCatchALeak() {
         JavaClasses classes = new ClassFileImporter()
-            .importClasses(Leak.class, EtlLeak.class, InfrastructureLeak.class);
+            .importClasses(Leak.class, EtlLeak.class, StayingLeak.class);
         DescribedPredicate<JavaClass> leak = belongToAnyOf(Leak.class);
 
         assertThat(details(newCodeDependsOnNoRetiringCode(leak), classes))
             .isNotEmpty().allSatisfy(line -> assertThat(line).contains("TallCanonicalJdbcRepository"));
         assertThat(details(retiringCodeDependsOnNoNewCode(belongToAnyOf(EtlLeak.class), ofKind(NEW_CODE)), classes))
             .isNotEmpty().allSatisfy(line -> assertThat(line).contains("DictionaryPublisher"));
-        assertThat(details(infrastructureDependsOnNoRetiringCode(belongToAnyOf(InfrastructureLeak.class)), classes))
-            .isNotEmpty().allSatisfy(line -> assertThat(line).contains("EtlProperties"));
+        List<Leftover> listed = List.of(new Leftover(StayingLeak.class, EtlProperties.class, "listed, for this test"));
+        assertThat(details(codeThatStaysDependsOnRetiringCodeOnlyAsListed(belongToAnyOf(StayingLeak.class), listed),
+            classes))
+            .as("a leftover exempts its listed dependency only")
+            .isNotEmpty().allSatisfy(line -> assertThat(line).contains("PivotService").doesNotContain("EtlProperties"));
         assertThat(details(newCodeReachesOldCodeOnlyThroughSeams(leak), classes))
             .anySatisfy(line -> assertThat(line).contains("DataSubmission>"))
             .anySatisfy(line -> assertThat(line).contains("OutboxDto"))
@@ -584,10 +593,11 @@ class NewCodeSeamsTest {
         }
     }
 
-    /** Stands for neutral or transitional code that reaches into retiring code. */
+    /** Stands for code that stays and reaches into retiring code: one dependency listed, one not. */
     @SuppressWarnings("unused")
-    static final class InfrastructureLeak {
+    static final class StayingLeak {
         EtlProperties lease;
+        PivotService pivots;
     }
 
     /** Stands for retiring code that calls into new code. */
@@ -642,14 +652,18 @@ class NewCodeSeamsTest {
     }
 
     /** A neutral or transitional class that still depends on retiring code, and on what. */
-    record Leftover(Class<?> type, String why) {
+    record Leftover(Class<?> origin, Class<?> dependency, String why) {
+
+        boolean covers(JavaClass from, JavaClass target) {
+            return isOrNestedIn(from, origin.getName()) && isOrNestedIn(target, dependency.getName());
+        }
     }
 
     /** A listed breach: new code in this class (nested classes included) depends on that class, and why. */
     record Breach(String origin, String dependency, String why) {
 
         boolean covers(JavaClass from, JavaClass target) {
-            return from.getName().split("\\$", 2)[0].equals(origin) && target.getName().equals(dependency);
+            return isOrNestedIn(from, origin) && isOrNestedIn(target, dependency);
         }
     }
 
@@ -690,6 +704,10 @@ class NewCodeSeamsTest {
         return DescribedPredicate.describe(kind.label, c -> kindOf(c.getBaseComponentType()).orElse(null) == kind);
     }
 
+    /** All old code that stays: everything neither new nor retiring. */
+    static final DescribedPredicate<JavaClass> STAYS = ofKind(NEUTRAL).or(ofKind(TRANSITIONAL))
+        .or(ofKind(SYSTEM_OF_RECORD)).or(ofKind(CLIENT_CONTRACT)).as("code that stays");
+
     /** The class a main source file declares, for the SQL scan to classify its file like its class. */
     private static JavaClass sourceClass(String path) {
         String name = path.substring(0, path.length() - ".java".length()).replace('/', '.');
@@ -716,6 +734,34 @@ class NewCodeSeamsTest {
                 }
             }
         };
+    }
+
+    /** Each dependency on retiring code that no leftover lists is a violation, reported with its location. */
+    private static ArchCondition<JavaClass> dependOnRetiringCodeOnlyAs(List<Leftover> leftovers) {
+        return new ArchCondition<>("depend on retiring code only as a listed leftover") {
+            @Override
+            public void check(JavaClass origin, ConditionEvents events) {
+                for (Dependency dependency : origin.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass().getBaseComponentType();
+                    if (kindOf(target).orElse(null) == RETIRING
+                        && leftovers.stream().noneMatch(leftover -> leftover.covers(origin, target))) {
+                        events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
+                    }
+                }
+            }
+        };
+    }
+
+    /** Whether the class (nested classes included) depends on the other (nested classes included). */
+    private static boolean occurs(String origin, String dependency) {
+        return MAIN.stream().filter(c -> isOrNestedIn(c, origin))
+            .flatMap(c -> c.getDirectDependenciesFromSelf().stream())
+            .anyMatch(d -> isOrNestedIn(d.getTargetClass().getBaseComponentType(), dependency));
+    }
+
+    /** Whether the class is the named class or one nested in it. */
+    private static boolean isOrNestedIn(JavaClass javaClass, String className) {
+        return javaClass.getName().equals(className) || javaClass.getName().startsWith(className + "$");
     }
 
     private static List<String> details(ArchRule rule, JavaClasses classes) {
