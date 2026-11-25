@@ -83,3 +83,18 @@ and its error shapes are untouched.
   and `ou_level` (4 one-character ids); `canonical_element.id` is a uuid
   column; `held_submission`, `go_live_rule` and the bookkeeping tables use
   bigint ids.
+
+## Concurrency
+
+- A versioned resource carries a strong `ETag`: its version in quotes, `"3"`
+  (`web.v2.concurrency.EntityTag`), also shown in its body as `version`.
+- Every command requires `If-Match` (`web.v2.concurrency.IfMatch`), compared
+  by RFC 9110's strong comparison against the version its transaction has
+  locked:
+  - missing, or `*` (which names no version): 428 `precondition-required`;
+  - not a list of quoted entity tags: 400 `invalid-if-match`;
+  - no listed tag matches (a weak tag never does): 412 `precondition-failed`,
+    with `currentVersion`, the current `ETag` and, when the module has one,
+    `Link: <...>; rel="version-history"`.
+- The comparison runs after the idempotency key is claimed and the resource's
+  row is locked (Idempotency, below), never before.
