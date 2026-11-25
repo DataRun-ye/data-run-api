@@ -156,8 +156,11 @@ Conflict detection is a requirement of every change switch, so no change can be 
 **Contract** (engineering, 2026-11-25; one set of names for both forms):
 
 - `GET /api/v2/submissions` takes `form` (required); `activity`, `team`, `assignment`; `orgUnit` (one org unit) or
-  `area` (an org unit and everything under it); `createdFrom`, `createdTo`; `enteredFrom`, `enteredTo`; `deleted`
-  (`false` by default, `true` or `any`); `hasOpenConflict`; `fields`; `limit`, `cursor`. No bare `status`.
+  `area` (an org unit and everything under it); `createdFrom`, `createdTo`; `enteredFrom`, `enteredTo`;
+  `showDeleted`; `hasOpenConflict`; `fields`; `limit`, `cursor`. No bare `status`.
+- **Deleted submissions** are left out unless `showDeleted` is `true` (a boolean, `false` by default); then they
+  are included, each marked `deleted: true`. There is no three-value `deleted` parameter (engineering,
+  2026-11-25, following AIP-164).
 - `POST /api/v2/submissions:search` takes the same names as JSON members, plus `where`: conditions
   `{"field", "op", "value"}` with `op` one of `eq`, `ne`, `lt`, `le`, `gt`, `ge`, `in`, `isNull`, `notNull`,
   `contains`. Values are typed JSON, compared by the field's value type. It is a safe read.
@@ -202,8 +205,8 @@ normalizer select the same submissions and rows.
 
 ### 3.3 Delete and restore
 
-- `:delete` marks a live submission deleted, with a reason. It stays with its history, searches hide it unless
-  asked, and the feed publishes it as deleted. On a deleted submission: 409 `already-deleted`.
+- `:delete` marks a live submission deleted, with a reason. It stays with its history, searches leave it out
+  unless `showDeleted` is set, and the feed publishes it as deleted. On a deleted submission: 409 `already-deleted`.
 - `:restore` makes it live again. On a live submission: 409 `not-deleted`. While one of its rows is live in another
   submission of its lineage: 409 `row-live-elsewhere` (I5).
 - The v1 admin delete (`DELETE /api/v1/dataSubmission/{uid}`) records no reason and acts outside the access grants.
@@ -637,8 +640,6 @@ Invented ids and values. Team T312 has assignment A7 in village V7 and assignmen
 
 ## 14. Open
 
-- **`deleted=any`** is not UPPER_SNAKE like other enumeration values; its spelling is settled when the search
-  contract is published.
 - **`If-Match` on `:keep`.** Accept names the submission's version; keep's precondition is set in build step 4.
 - **Switch names** are kebab-case, from the glossary, chosen with each build step.
 - **The Arabic words** are to confirm with operations ([CONTEXT.md](CONTEXT.md)).

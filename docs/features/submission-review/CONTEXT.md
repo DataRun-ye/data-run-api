@@ -83,9 +83,10 @@ API: `entriesOutsidePlacement`; problem `entry-outside-placement`.
 ### Finding and reading
 
 **Search** (بحث):
-Listing one form's submissions by activity, team, assignment, org unit, area, created and entered times, deleted,
-open conflict, or a field's value. A field or entered-time filter also needs a team, an assignment, an org unit, a
-small area or a short created range. API: `GET /api/v2/submissions`; `POST /api/v2/submissions:search`.
+Listing one form's submissions by activity, team, assignment, org unit, area, created and entered times, open
+conflict, or a field's value; deleted ones only on request. A field or entered-time filter also needs a team, an
+assignment, an org unit, a small area or a short created range. API: `GET /api/v2/submissions`;
+`POST /api/v2/submissions:search`; `showDeleted`.
 _Avoid_: find, query, filter (as the name of the action)
 
 **Created**:
@@ -141,9 +142,9 @@ deleted. Restoring puts it back, with the same id, from an earlier revision. API
 _Avoid_: delete a row (delete is for whole submissions), exclude (a lists state), void
 
 **Delete** (حذف) / **deleted** (محذوفة) / **restore** (استرجاع):
-Deleting marks a whole submission as not counting: it stays with its history, searches hide it unless asked, and
-the feed publishes it as deleted. Restoring makes it count again. Both are revisions.
-API: `:delete`, `:restore`, `deleted`.
+Deleting marks a whole submission as not counting: it stays with its history, searches leave it out unless asked,
+and the feed publishes it as deleted. Restoring makes it count again. Both are revisions.
+API: `:delete`, `:restore`, `deleted`; `showDeleted` in a search.
 _Avoid_: void, archive, discard, reject, cancel, trash, purge, undelete
 
 **Move** (نقل):
