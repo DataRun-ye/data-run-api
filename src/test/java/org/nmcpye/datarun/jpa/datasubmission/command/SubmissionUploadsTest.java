@@ -37,6 +37,7 @@ import org.nmcpye.datarun.web.rest.v1.datasubmission.dto.DataSubmissionUploadV1D
 import org.nmcpye.datarun.web.rest.v1.datasubmission.mapper.DataSubmissionUploadV1Mapper;
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.ServerErrorMessage;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -63,6 +64,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -84,6 +86,7 @@ class SubmissionUploadsTest {
     private GoLiveRuleRepository goLiveRules;
     private HeldSubmissionRepository heldSubmissions;
     private DataSubmissionRepository submissionRepository;
+    private SubmissionLock submissionLock;
     private SubmissionUploads service;
     private TemplateVersionContext templateContext;
     private DataTemplateInstanceDto template;
@@ -106,6 +109,7 @@ class SubmissionUploadsTest {
         heldSubmissions = mock(HeldSubmissionRepository.class);
         when(heldSubmissions.hold(any(), any(), any(), any(), any())).thenReturn(true);
         submissionRepository = mock(DataSubmissionRepository.class);
+        submissionLock = mock(SubmissionLock.class);
         when(transactionManager.getTransaction(any(TransactionDefinition.class)))
             .thenReturn(transactionStatus);
         service = new SubmissionUploads(
@@ -119,7 +123,7 @@ class SubmissionUploadsTest {
             transactionManager,
             new SubmissionIntake(goLiveRules, heldSubmissions, submissionRepository),
             storedSubmissionGuard,
-            submissionRepository);
+            submissionLock);
 
         templateContext = mock(TemplateVersionContext.class);
         template = mock(DataTemplateInstanceDto.class);
@@ -237,7 +241,7 @@ class SubmissionUploadsTest {
         when(heldSubmissions.hold(eq("firstSub01"), any(), any(), any(), any())).thenReturn(false);
         when(submissionRepository.existsByUid("firstSub01")).thenReturn(false, true);
         DataSubmission released = submission("firstSub01");
-        when(submissionRepository.findByUidForWrite("firstSub01")).thenReturn(Optional.empty(), Optional.of(released));
+        when(submissionLock.take("firstSub01")).thenReturn(null, released);
 
         EntitySaveSummaryVM summary = upload(List.of(stubbedRequest("firstSub01")));
 
@@ -317,7 +321,7 @@ class SubmissionUploadsTest {
     void aReleaseOfAUidThatBecameRealDataMeanwhileOverwritesNothing() {
         DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
         DataSubmission stored = submission("firstSub01");
-        when(submissionRepository.findByUidForWrite("firstSub01")).thenReturn(Optional.of(stored));
+        when(submissionLock.take("firstSub01")).thenReturn(stored);
         java.util.concurrent.atomic.AtomicBoolean asked = new java.util.concurrent.atomic.AtomicBoolean();
 
         SubmissionUploads.Released result = service.saveReleased(request, SubmissionActor.of(user), RELEASE, () -> {
@@ -387,20 +391,21 @@ class SubmissionUploadsTest {
     void theSubmissionLockComesFirstAndTheGuardAndTheSaveUseTheLockedSubmission() {
         DataSubmissionUploadV1Dto request = stubbedRequest("firstSub01");
         DataSubmission stored = submission("firstSub01");
-        when(submissionRepository.findByUidForWrite("firstSub01")).thenReturn(Optional.of(stored));
+        when(submissionLock.take("firstSub01")).thenReturn(stored);
         when(user.isSuper()).thenReturn(false);
         when(user.getUserTeamsUIDs()).thenReturn(Set.of("team0000001"));
         when(formAccessService.canSubmitData(user, assignment, "formUid0001")).thenReturn(true);
 
         EntitySaveSummaryVM summary = upload(List.of(request));
 
-        var ordered = inOrder(submissionRepository, assignmentRepository, storedSubmissionGuard, submissionService);
-        ordered.verify(submissionRepository).findByUidForWrite("firstSub01");
+        var ordered = inOrder(submissionLock, assignmentRepository, storedSubmissionGuard, submissionService);
+        ordered.verify(submissionLock).take("firstSub01");
         ordered.verify(assignmentRepository).findByUid("assignment1");
         ordered.verify(storedSubmissionGuard).check(submissionWithUid("firstSub01"), same(stored), eq(user));
         ordered.verify(submissionService).upsert(submissionWithUid("firstSub01"), same(stored),
             any(EntitySaveSummaryVM.class), eq(RevisionContext.upload(USER_ID)));
-        verifyNoMoreInteractions(submissionRepository);
+        verifyNoMoreInteractions(submissionLock);
+        verifyNoInteractions(submissionRepository);
         assertEquals(List.of("firstSub01"), summary.getUpdated());
     }
 
@@ -412,7 +417,7 @@ class SubmissionUploadsTest {
     void theLegacyRouteTakesTheSubmissionLockFirstAndChecksAndSavesTheLockedSubmission() {
         DataSubmission incoming = submission("firstSub01");
         DataSubmission stored = submission("firstSub01");
-        when(submissionRepository.findByUidForWrite("firstSub01")).thenReturn(Optional.of(stored));
+        when(submissionLock.take("firstSub01")).thenReturn(stored);
         when(user.isSuper()).thenReturn(false);
         when(user.getUserTeamsUIDs()).thenReturn(Set.of("team0000001"));
         when(formAccessService.canSubmitData(user, assignment, "formUid0001")).thenReturn(true);
@@ -420,23 +425,27 @@ class SubmissionUploadsTest {
 
         EntitySaveSummaryVM summary = service.saveLegacy(List.of(incoming), SubmissionActor.of(user));
 
-        var ordered = inOrder(submissionRepository, templateVersionResolver, storedSubmissionGuard, submissionService);
-        ordered.verify(submissionRepository).findByUidForWrite("firstSub01");
+        var ordered = inOrder(submissionLock, templateVersionResolver, storedSubmissionGuard, submissionService);
+        ordered.verify(submissionLock).take("firstSub01");
         ordered.verify(templateVersionResolver).resolveByUid("formUid0001", "version0001");
         ordered.verify(storedSubmissionGuard).check(same(incoming), same(stored), eq(user));
         ordered.verify(submissionService).upsert(same(incoming), same(stored), any(EntitySaveSummaryVM.class),
             eq(RevisionContext.legacyUpload(USER_ID)));
-        verifyNoMoreInteractions(submissionRepository);
+        verifyNoMoreInteractions(submissionLock);
+        verifyNoInteractions(submissionRepository);
         assertEquals(List.of("firstSub01"), summary.getUpdated());
     }
 
-    /** A new submission has no stored one to lock: the save creates it. An upload item without a uid locks nothing. */
+    /**
+     * A new submission has no stored one: the save creates it. An upload item without a uid goes through the
+     * submission lock too, which then only bounds its lock waits.
+     */
     @Test
-    void aNewSubmissionIsSavedWithoutAStoredOneAndNoUidLocksNothing() {
+    void aNewSubmissionIsSavedWithoutAStoredOne() {
         upload(List.of(stubbedRequest("firstSub01"), stubbedRequest(null)));
 
-        verify(submissionRepository).findByUidForWrite("firstSub01");
-        verifyNoMoreInteractions(submissionRepository);
+        verify(submissionLock).take("firstSub01");
+        verify(submissionLock).take(null);
         verify(submissionService).upsert(submissionWithUid("firstSub01"), eq(null), any(EntitySaveSummaryVM.class),
             any(RevisionContext.class));
         verify(submissionService).upsert(argThat(submission -> submission.getUid() == null), eq(null),
@@ -679,6 +688,32 @@ class SubmissionUploadsTest {
             upload(List.of(request));
 
             assertEquals(List.of(Level.ERROR), logs.events().stream().map(ILoggingEvent::getLevel).toList());
+        }
+    }
+
+    /**
+     * Another change held the submission past the submission lock's bound: that item alone fails, as any unexpected
+     * failure does (the phone sends it again), with one WARN line naming it and the SQLState, and no ERROR.
+     */
+    @Test
+    void anItemWhoseSubmissionLockTimesOutFailsAloneWithAWarning() {
+        when(user.getId()).thenReturn("01JUSER0000000000000000007");
+        DataSubmissionUploadV1Dto held = stubbedRequest("firstSub01");
+        held.setForm("formUid0001");
+        when(submissionLock.take("firstSub01")).thenThrow(new CannotAcquireLockException(
+            "could not obtain lock", new SQLException("ERROR: canceling statement due to lock timeout", "55P03")));
+
+        try (LogCapture logs = new LogCapture(SubmissionUploads.class)) {
+            EntitySaveSummaryVM summary = upload(List.of(held, stubbedRequest("secondSub1")));
+
+            assertEquals(SubmissionUploads.UNEXPECTED_FAILURE, summary.getFailed().get("firstSub01"));
+            assertEquals(List.of("secondSub1"), summary.getCreated());
+            assertEquals(List.of(Level.WARN), logs.events().stream().map(ILoggingEvent::getLevel).toList());
+            assertTrue(logs.lines().get(0).contains("Submission firstSub01 (form formUid0001) from user "
+                + "01JUSER0000000000000000007 not saved: another change held it past the submission lock's bound"),
+                logs.lines()::toString);
+            assertTrue(logs.lines().get(0).contains("SQLState 55P03"), logs.lines()::toString);
+            logs.assertNothingLeaks("lock timeout");
         }
     }
 

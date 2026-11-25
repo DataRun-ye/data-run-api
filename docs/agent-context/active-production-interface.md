@@ -193,10 +193,20 @@ used to fail the later write's version check (the upload item as
 `UNEXPECTED_FAILURE`, the delete as a 409). `SubmissionLockIT` shows it with
 real transactions: it holds an upload on either route, or an admin delete,
 between its reads, and the other change waits on the submission lock until it
-ends. The waits are not bounded beyond the database's own settings. A new
-submission has nothing to lock: a second save of its uid still fails on the
-uid's unique constraint (below). `SubmissionWriteOwnershipTest` keeps the
-submission lock to the command service and its persistence layer.
+ends. The wait is bounded: the transaction's first statement sets
+`lock_timeout` for itself (`datarun.submissions.lock-timeout`, 5 s, as v2's
+`datarun.v2.commands.lock-timeout`; Hibernate ignores a numeric lock timeout
+on PostgreSQL). When another change holds the submission longer, as a stalled
+holder would (a dropped database link, an `UPDATE` left open in psql), the
+waiting upload item fails with `UNEXPECTED_FAILURE` and the phone sends it
+again at its next sync, the admin delete answers 409
+`error.concurrencyFailure`, and one WARN line names the submission's uid with
+SQLState 55P03; the connection returns to the pool. PostgreSQL bounds each
+lock wait on its own, so a writer queued behind another waiter can wait up to
+about twice the bound (measured on a container: 5.1 to 5.2 s alone, 10.1 s
+queued). A new submission has nothing to lock: a second save of its uid still
+fails on the uid's unique constraint (below). `SubmissionWriteOwnershipTest`
+keeps the submission lock to the command service and its persistence layer.
 
 `data_submission`'s indexes: the primary key, the unique keys on `uid` and
 `serial_number`, `idx_ds_form_assignment`, and two that only the generic read

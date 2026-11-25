@@ -1,12 +1,14 @@
 package org.nmcpye.datarun.jpa.datasubmission.command;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.intake.IntakeMode;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -18,13 +20,14 @@ import org.springframework.transaction.support.TransactionTemplate;
  * own, and records each change in that same transaction: a revision naming the command and who acted
  * ({@link RevisionContext}), and the outbox row that announces it.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SubmissionCommandService {
 
     private final SubmissionUploads uploads;
     private final DataSubmissionService submissionService;
-    private final DataSubmissionRepository submissions;
+    private final SubmissionLock submissionLock;
     private final PlatformTransactionManager transactionManager;
     private final HeldSubmissionDecisions held;
 
@@ -64,23 +67,36 @@ public class SubmissionCommandService {
      * An admin's delete, in one transaction: the submission is marked deleted, and its DELETE event, carrying its
      * last data, is written to the outbox. A submission already deleted is left as it is, with no second event and
      * its first delete time, the rule an upload's {@code deleted=true} already follows. Only an admin may delete.
-     * The transaction takes the submission lock as its first read
-     * ({@link DataSubmissionRepository#findByUidForWrite}), so another change of the submission waits until the delete
-     * ends.
+     * The transaction takes the submission lock first ({@link SubmissionLock}), so another change of the submission
+     * waits until the delete ends.
+     *
+     * @throws ConcurrencyFailureException when another change held the submission past the lock's bound: nothing was
+     *                                     written, and the route answers 409 {@code error.concurrencyFailure}
      */
     public DeleteOutcome delete(SubmissionCommand.Delete command) {
         requireAdmin(command, "Only an admin may delete a submission");
-        return new TransactionTemplate(transactionManager).execute(status -> {
-            DataSubmission submission = submissions.findByUidForWrite(command.uid()).orElse(null);
-            if (submission == null) {
-                return DeleteOutcome.NOT_FOUND;
+        try {
+            return new TransactionTemplate(transactionManager).execute(status -> {
+                DataSubmission submission = submissionLock.take(command.uid());
+                if (submission == null) {
+                    return DeleteOutcome.NOT_FOUND;
+                }
+                if (Boolean.TRUE.equals(submission.getDeleted())) {
+                    return DeleteOutcome.ALREADY_DELETED;
+                }
+                submissionService.softDelete(submission, RevisionContext.adminDelete(command.actor().userId()));
+                return DeleteOutcome.DELETED;
+            });
+        } catch (RuntimeException failure) {
+            if (!SubmissionLog.isLockTimeout(failure)) {
+                throw failure;
             }
-            if (Boolean.TRUE.equals(submission.getDeleted())) {
-                return DeleteOutcome.ALREADY_DELETED;
-            }
-            submissionService.softDelete(submission, RevisionContext.adminDelete(command.actor().userId()));
-            return DeleteOutcome.DELETED;
-        });
+            // Identifiers and shapes only (SubmissionLog).
+            log.warn("Submission {} not deleted by user {}: another change held it past the submission lock's "
+                + "bound: {}", command.uid(), command.actor().userId(), SubmissionLog.failure(failure));
+            throw failure instanceof ConcurrencyFailureException concurrency ? concurrency
+                : new CannotAcquireLockException("Another change held the submission past the lock's bound", failure);
+        }
     }
 
     /**

@@ -13,7 +13,6 @@ import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.DomainValidationException;
@@ -50,10 +49,11 @@ import java.util.function.Function;
  * A submission, the Reference entries it defines and its outbox row commit or roll back together. Phones apply the
  * per-row created/updated/failed result (mobile 5.3.0 and 6.0.x).
  *
- * <p>Each transaction takes the submission lock as its first read
- * ({@link DataSubmissionRepository#findByUidForWrite}): the stored-record guard and the save use the submission it
- * locked, and another change of the submission waits until the transaction ends instead of committing between its
- * reads. A new submission has nothing to lock; a second save of its uid fails on the uid's unique constraint.</p>
+ * <p>Each transaction takes the submission lock first ({@link SubmissionLock}): the stored-record guard and the save
+ * use the submission it locked, and another change of the submission waits until the transaction ends instead of
+ * committing between its reads. Waits are bounded: an item whose submission another change holds past the bound fails
+ * as any unexpected failure does. A new submission has nothing to lock; a second save of its uid fails on the uid's
+ * unique constraint.</p>
  *
  * <p>Only the command service calls this class; it is a separate component so that a held release can replay an
  * upload through it.</p>
@@ -80,7 +80,7 @@ public class SubmissionUploads {
     private final PlatformTransactionManager transactionManager;
     private final SubmissionIntake intake;
     private final StoredSubmissionGuard storedSubmissionGuard;
-    private final DataSubmissionRepository submissionRepository;
+    private final SubmissionLock submissionLock;
 
     /**
      * The versioned upload route. Every submission is checked and saved as
@@ -215,7 +215,7 @@ public class SubmissionUploads {
             DataSubmission::getUid,
             DataSubmission::getForm,
             (submission, summary, transaction) -> {
-                DataSubmission stored = lockSubmission(submission.getUid());
+                DataSubmission stored = submissionLock.take(submission.getUid());
                 checkLegacy(submission, stored, actor);
                 submissionService.upsert(submission, stored, summary, revision);
                 return IntakeDecision.save();
@@ -232,7 +232,7 @@ public class SubmissionUploads {
         Instant receivedAt,
         RevisionContext revision) {
         DataSubmission submission = mapper.toEntity(request);
-        DataSubmission stored = lockSubmission(submission.getUid());
+        DataSubmission stored = submissionLock.take(submission.getUid());
         Assignment assignment = assignmentFor(submission);
         TemplateVersionContext template = templateFor(submission);
         canonicalizeContext(
@@ -257,18 +257,9 @@ public class SubmissionUploads {
     }
 
     /**
-     * Takes the submission lock: the stored submission with this uid, locked until the transaction ends, or null when
-     * none is stored (or the upload item names no uid). It is the transaction's first read of the submission: the
-     * stored-record guard and the save use the submission it returns.
-     */
-    private DataSubmission lockSubmission(String uid) {
-        return uid == null ? null : submissionRepository.findByUidForWrite(uid).orElse(null);
-    }
-
-    /**
      * The legacy route's checks and context, in that route's order; see {@link #saveLegacy}.
      *
-     * @param stored the stored submission, as {@link #lockSubmission} returned it
+     * @param stored the stored submission, as the submission lock returned it ({@link SubmissionLock#take})
      */
     private void checkLegacy(DataSubmission submission, DataSubmission stored, SubmissionActor actor) {
         TemplateVersionContext template = templateVersionResolver.resolveByUid(
@@ -332,6 +323,10 @@ public class SubmissionUploads {
                 } else if (SubmissionLog.isUidRace(failure)) {
                     log.warn("Submission {} (form {}) from user {} not saved: another save of the same uid came "
                         + "first: {}", uid, formOf.apply(item), actor.userId(), SubmissionLog.failure(failure));
+                } else if (SubmissionLog.isLockTimeout(failure)) {
+                    log.warn("Submission {} (form {}) from user {} not saved: another change held it past the "
+                        + "submission lock's bound: {}", uid, formOf.apply(item), actor.userId(),
+                        SubmissionLog.failure(failure));
                 } else {
                     log.error("Submission {} (form {}) from user {} failed unexpectedly: {}",
                         uid, formOf.apply(item), actor.userId(), SubmissionLog.failure(failure));
@@ -450,7 +445,7 @@ public class SubmissionUploads {
      * The upload checks for a non-admin: the assignment's team is in the user's scope (E4114), the user may submit
      * the form there (E4122), and an existing record may be changed by them ({@link StoredSubmissionGuard}).
      *
-     * @param stored        the stored submission, as {@link #lockSubmission} returned it
+     * @param stored        the stored submission, as the submission lock returned it ({@link SubmissionLock#take})
      * @param teamInRefusal the team E4114 names: the assignment's on the versioned route, the claimed one on the
      *                      legacy route
      */

@@ -11,7 +11,6 @@ import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
-import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
 import org.nmcpye.datarun.jpa.datasubmission.validation.StoredSubmissionGuard;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
@@ -94,7 +93,7 @@ class LegacyUploadAccessTest {
             transactionManager,
             mock(SubmissionIntake.class),
             new StoredSubmissionGuard(assignments, formAccess),
-            mock(DataSubmissionRepository.class));
+            mock(SubmissionLock.class));
     }
 
     @Test

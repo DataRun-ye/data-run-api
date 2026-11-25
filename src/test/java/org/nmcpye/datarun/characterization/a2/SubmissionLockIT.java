@@ -1,18 +1,27 @@
 package org.nmcpye.datarun.characterization.a2;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.zaxxer.hikari.HikariDataSource;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.stubbing.Answer;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Group;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Item;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionUploads;
 import org.nmcpye.datarun.jpa.datasubmission.revision.JournalReconciliation;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -26,6 +35,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -40,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
+import static org.nmcpye.datarun.characterization.a2.A2Payloads.Group.G3;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.item;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.ordinary;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.uid;
@@ -62,6 +74,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  * <p>Without the submission lock, the other change committed while the first writer was held, and the first writer's
  * save failed its version check: the upload item was answered {@code UNEXPECTED_FAILURE}, or the delete 409.</p>
  *
+ * <p>The lock's bound: a holder that never lets go of the submission fails each writer waiting on it once the bound
+ * passes (5 s, {@code datarun.submissions.lock-timeout}), and its connection returns to the pool.</p>
+ *
  * <p>Not a golden: it reuses the A2 seed, through the production filter chain, with a pool of four connections, so
  * that the waiting writer waits on the submission lock and not for a connection.</p>
  */
@@ -69,6 +84,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 class SubmissionLockIT extends A2GoldenSupport {
 
     private static final long WAIT_SECONDS = 10;
+    /** The submission lock's bound when nothing sets it, and what a stalled holder costs a writer at most. */
+    private static final Duration BOUND = Duration.ofSeconds(5);
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(SubmissionLockIT.class);
+    /** The sessions whose locking read of a submission waits on a lock, as PostgreSQL shows them. */
+    private static final String WAITING_ON_THE_SUBMISSION_LOCK = """
+        SELECT count(*) FROM pg_stat_activity
+        WHERE datname = current_database() AND state = 'active' AND wait_event_type = 'Lock'
+          AND query ILIKE '%from data_submission%for%update%'""";
 
     @MockitoSpyBean
     private DataSubmissionService submissionService;
@@ -142,6 +165,117 @@ class SubmissionLockIT extends A2GoldenSupport {
         });
     }
 
+    /**
+     * A holder that never lets go of the submission (a session that locked it and stays open, as psql would): an
+     * upload item of it fails once the bound passes, as any unexpected failure does, with one WARN line and no ERROR,
+     * and the rest of its batch is saved. While the holder still holds, another submission's upload is served at once.
+     */
+    @Test
+    @Timeout(30)
+    void aStalledHolderFailsItsSubmissionsItemAfterTheBoundAndTheBatchGoesOn() throws Exception {
+        String stalled = uid("stallUp");
+        String alongside = uid("stallNew");
+        String after = uid("stallAft");
+        assertThat(phoneAnswer(upload(G3, formA(G3, stalled, "first")))).isEqualTo(created(stalled));
+        ListAppender<ILoggingEvent> lines = capture(SubmissionUploads.class);
+        try (Holder holder = holdTheSubmission(stalled)) {
+            Timed batch = getTimed(timed(() ->
+                upload(G3, formA(G3, stalled, "changed in a batch"), formA(G3, alongside, "new in the batch"))));
+            Timed meanwhile = getTimed(timed(() -> upload(G3, formA(G3, after, "while the holder holds"))));
+            log.info("A stalled holder: a batch with its upload item took {} ms; another submission's upload "
+                + "meanwhile took {} ms", batch.took().toMillis(), meanwhile.took().toMillis());
+
+            assertThat(phoneAnswer(batch.response())).isEqualTo("200 created=[\"" + alongside + "\"] updated=[] "
+                + "failed={\"" + stalled + "\":\"" + SubmissionUploads.UNEXPECTED_FAILURE + "\"}");
+            assertThat(batch.took()).as("the item's wait").isBetween(BOUND, BOUND.plusSeconds(3));
+            assertThat(phoneAnswer(meanwhile.response())).isEqualTo(created(after));
+            assertThat(meanwhile.took()).as("served at once").isLessThan(Duration.ofSeconds(2));
+            assertThat(lines.list).singleElement().satisfies(line -> {
+                assertThat(line.getLevel()).isEqualTo(Level.WARN);
+                assertThat(line.getFormattedMessage())
+                    .startsWith("Submission " + stalled + " (form " + FORM_A + ") from user ")
+                    .contains("another change held it past the submission lock's bound")
+                    .contains("SQLState 55P03");
+            });
+        } finally {
+            release(SubmissionUploads.class, lines);
+        }
+        assertThat(revisions(stalled)).as("the stalled submission is unchanged").containsExactly("0 CREATE UPLOAD");
+        assertThat(reconciliation(stalled)).isEmpty();
+    }
+
+    /**
+     * Three upload items of a stalled submission at once, on three of the pool's four connections: the first waiter
+     * fails once the bound passes; one queued behind it can wait up to twice the bound, since PostgreSQL bounds each
+     * lock wait on its own (the queue on the submission, then its holder). While they wait, the fourth connection
+     * serves another submission's upload at once, and every connection comes back.
+     */
+    @Test
+    @Timeout(30)
+    void writersQueuedOnAStalledHolderEachFailWithinTwiceTheBoundAndThePoolKeepsServing() throws Exception {
+        String stalled = uid("stallQue");
+        String after = uid("stallSrv");
+        assertThat(phoneAnswer(upload(G3, formA(G3, stalled, "first")))).isEqualTo(created(stalled));
+        HikariDataSource pool = dataSource.unwrap(HikariDataSource.class);
+        try (Holder holder = holdTheSubmission(stalled)) {
+            List<CompletableFuture<Timed>> resends = List.of(
+                timed(() -> upload(G3, formA(G3, stalled, "changed once"))),
+                timed(() -> upload(G3, formA(G3, stalled, "changed twice"))),
+                timed(() -> upload(G3, formA(G3, stalled, "changed thrice"))));
+            assertThat(waitingOnTheSubmissionLock(3)).as("three writers wait on the submission").isTrue();
+            Timed meanwhile = getTimed(timed(() -> upload(G3, formA(G3, after, "while three wait"))));
+            assertThat(resends).as("still waiting when the other upload was served")
+                .noneMatch(CompletableFuture::isDone);
+            List<Timed> failed = resends.stream().map(SubmissionLockIT::getTimed).toList();
+            log.info("A stalled holder: three queued upload items failed after {} ms; another submission's upload "
+                    + "meanwhile took {} ms", failed.stream().map(timed -> timed.took().toMillis()).toList(),
+                meanwhile.took().toMillis());
+
+            assertThat(phoneAnswer(meanwhile.response())).isEqualTo(created(after));
+            assertThat(meanwhile.took()).as("served at once").isLessThan(Duration.ofSeconds(2));
+            assertThat(failed).allSatisfy(timed -> {
+                assertThat(phoneAnswer(timed.response())).isEqualTo("200 created=[] updated=[] failed={\"" + stalled
+                    + "\":\"" + SubmissionUploads.UNEXPECTED_FAILURE + "\"}");
+                assertThat(timed.took()).isBetween(BOUND, BOUND.multipliedBy(2).plusSeconds(3));
+            });
+            assertThat(failed.stream().map(Timed::took).min(Duration::compareTo).orElseThrow())
+                .as("the first waiter's wait").isLessThan(BOUND.plusSeconds(3));
+            assertThat(pool.getHikariPoolMXBean().getThreadsAwaitingConnection()).isZero();
+        }
+        assertThat(revisions(stalled)).as("the stalled submission is unchanged").containsExactly("0 CREATE UPLOAD");
+    }
+
+    /**
+     * A holder that never lets go of the submission: the admin delete is refused once the bound passes, 409
+     * {@code error.concurrencyFailure}, with one WARN line naming the submission, and nothing is written.
+     */
+    @Test
+    void aStalledHolderMakesAnAdminDeleteAnswer409AfterTheBound() throws Exception {
+        String stalled = uid("stallDel");
+        assertThat(phoneAnswer(upload(G3, formA(G3, stalled, "first")))).isEqualTo(created(stalled));
+        ListAppender<ILoggingEvent> lines = capture(SubmissionCommandService.class);
+        try (Holder holder = holdTheSubmission(stalled)) {
+            Timed refused = getTimed(timed(() -> adminDelete(stalled)));
+            log.info("A stalled holder: the admin delete was refused after {} ms", refused.took().toMillis());
+
+            assertThat(refused.response().getStatus()).isEqualTo(409);
+            assertThat(json.readTree(refused.response().getContentAsString(StandardCharsets.UTF_8))
+                .path("message").asText()).isEqualTo("error.concurrencyFailure");
+            assertThat(refused.took()).isBetween(BOUND, BOUND.plusSeconds(4));
+            assertThat(lines.list).singleElement().satisfies(line -> {
+                assertThat(line.getLevel()).isEqualTo(Level.WARN);
+                assertThat(line.getFormattedMessage())
+                    .startsWith("Submission " + stalled + " not deleted by user ")
+                    .contains("another change held it past the submission lock's bound")
+                    .contains("SQLState 55P03");
+            });
+        } finally {
+            release(SubmissionCommandService.class, lines);
+        }
+        assertThat(revisions(stalled)).as("nothing deleted").containsExactly("0 CREATE UPLOAD");
+        assertThat(reconciliation(stalled)).isEmpty();
+    }
+
     private static Item formA(Group group, String uid, String name) {
         return item(group, uid, FORM_A, version("FORM_A.v1"), ASSIGN_T1_V1, ordinary(group, uid, name, "r1", "s1", 1));
     }
@@ -154,11 +288,11 @@ class SubmissionLockIT extends A2GoldenSupport {
         return argThat(submission -> submission != null && uid.equals(submission.getUid()));
     }
 
-    private MockHttpServletResponse upload(Group group, Item item) throws Exception {
+    private MockHttpServletResponse upload(Group group, Item... items) throws Exception {
         MockHttpServletRequestBuilder request = post(group.route())
             .contentType(MediaType.APPLICATION_JSON)
             .header("Authorization", "Bearer " + A2Tokens.token(jwtKey, FIELD_1))
-            .content(json.writeValueAsString(A2Payloads.body(item)));
+            .content(json.writeValueAsString(A2Payloads.body(items)));
         group.headers().forEach(request::header);
         return mvc.perform(request).andReturn().getResponse();
     }
@@ -177,6 +311,74 @@ class SubmissionLockIT extends A2GoldenSupport {
                 throw new IllegalStateException(e);
             }
         }, writers);
+    }
+
+    /** A request's answer and how long it took. */
+    private record Timed(MockHttpServletResponse response, Duration took) {
+    }
+
+    private CompletableFuture<Timed> timed(Callable<MockHttpServletResponse> request) {
+        return CompletableFuture.supplyAsync(() -> {
+            long started = System.nanoTime();
+            try {
+                MockHttpServletResponse response = request.call();
+                return new Timed(response, Duration.ofNanos(System.nanoTime() - started));
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }, writers);
+    }
+
+    private static Timed getTimed(CompletableFuture<Timed> timed) {
+        try {
+            return timed.get(BOUND.multipliedBy(2).toSeconds() + WAIT_SECONDS, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** A session of its own that locks the submission and holds it until closed, as an open psql transaction would. */
+    private Holder holdTheSubmission(String uid) throws Exception {
+        Connection holder = connect();
+        holder.setAutoCommit(false);
+        try (PreparedStatement lock = holder.prepareStatement(
+            "SELECT 1 FROM data_submission WHERE uid = ? FOR UPDATE")) {
+            lock.setString(1, uid);
+            try (ResultSet locked = lock.executeQuery()) {
+                assertThat(locked.next()).as("the holder locked the submission").isTrue();
+            }
+        }
+        return new Holder(holder);
+    }
+
+    /** Lets go of the submission: rolls the holder's transaction back. */
+    private record Holder(Connection connection) implements AutoCloseable {
+        @Override
+        public void close() throws SQLException {
+            try {
+                connection.rollback();
+            } finally {
+                connection.close();
+            }
+        }
+    }
+
+    private Connection connect() throws SQLException {
+        // A connection of its own: the pool's are the writers'.
+        HikariDataSource pool = dataSource.unwrap(HikariDataSource.class);
+        return DriverManager.getConnection(pool.getJdbcUrl(), pool.getUsername(), pool.getPassword());
+    }
+
+    private static ListAppender<ILoggingEvent> capture(Class<?> type) {
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        ((Logger) LoggerFactory.getLogger(type)).addAppender(appender);
+        return appender;
+    }
+
+    private static void release(Class<?> type, ListAppender<ILoggingEvent> appender) {
+        ((Logger) LoggerFactory.getLogger(type)).detachAppender(appender);
+        appender.stop();
     }
 
     private static MockHttpServletResponse get(CompletableFuture<MockHttpServletResponse> response) {
@@ -220,19 +422,30 @@ class SubmissionLockIT extends A2GoldenSupport {
         return JournalReconciliation.findings(jdbc, "s.uid = :uid", Map.of("uid", uid));
     }
 
+    /** Whether, within {@link #WAIT_SECONDS}, this many sessions wait on the submission lock at once. */
+    private boolean waitingOnTheSubmissionLock(int writers) throws Exception {
+        try (Connection watcher = connect();
+             PreparedStatement waiting = watcher.prepareStatement(WAITING_ON_THE_SUBMISSION_LOCK)) {
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT_SECONDS);
+            while (System.nanoTime() < deadline) {
+                try (ResultSet count = waiting.executeQuery()) {
+                    if (count.next() && count.getInt(1) >= writers) {
+                        return true;
+                    }
+                }
+                Thread.sleep(20);
+            }
+        }
+        return false;
+    }
+
     /**
      * Whether the other writer comes to wait on the submission lock (its locking read waits, as PostgreSQL shows in
      * {@code pg_stat_activity}) while still unfinished; false when it finishes first, or never waits.
      */
     private boolean waitsOnTheSubmissionLock(CompletableFuture<?> other) throws Exception {
-        // A connection of its own: the pool's are the writers'.
-        HikariDataSource pool = dataSource.unwrap(HikariDataSource.class);
-        try (Connection watcher = DriverManager.getConnection(pool.getJdbcUrl(), pool.getUsername(),
-            pool.getPassword());
-             PreparedStatement waiting = watcher.prepareStatement("""
-                 SELECT count(*) FROM pg_stat_activity
-                 WHERE datname = current_database() AND state = 'active' AND wait_event_type = 'Lock'
-                   AND query ILIKE '%from data_submission%for%update%'""")) {
+        try (Connection watcher = connect();
+             PreparedStatement waiting = watcher.prepareStatement(WAITING_ON_THE_SUBMISSION_LOCK)) {
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT_SECONDS);
             while (System.nanoTime() < deadline && !other.isDone()) {
                 try (ResultSet count = waiting.executeQuery()) {

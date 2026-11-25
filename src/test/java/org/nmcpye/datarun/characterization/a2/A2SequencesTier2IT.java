@@ -13,6 +13,7 @@ import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommand;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionLock;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionUploads;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
@@ -103,6 +104,9 @@ class A2SequencesTier2IT extends A2GoldenSupport {
 
     @Autowired
     private StoredSubmissionGuard storedSubmissionGuard;
+
+    @Autowired
+    private SubmissionLock submissionLock;
 
     @Autowired
     private UserRepository userRepository;
@@ -203,7 +207,7 @@ class A2SequencesTier2IT extends A2GoldenSupport {
         };
         SubmissionUploads hookedUploads = new SubmissionUploads(submissionService, uploadMapper, objectMapper,
             assignments, formAccess, templateVersions, references, transactionManager, releasedMeanwhile,
-            storedSubmissionGuard, submissions);
+            storedSubmissionGuard, submissionLock);
 
         scenario
             .goLive("campaign", null, null, FUTURE)

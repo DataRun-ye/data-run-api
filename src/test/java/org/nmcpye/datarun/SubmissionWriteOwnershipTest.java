@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.common.EntitySaveSummaryVM;
 import org.nmcpye.datarun.jpa.datasubmission.command.HeldSubmissionDecisions;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionLock;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionUploads;
 import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.revision.SubmissionRevisionWriter;
@@ -51,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>The persistence layer is the {@code DataSubmissionService} port and its implementation, the submission
  * repository, {@code SubmissionIntake.hold}, {@code HeldSubmissionRepository} and {@code OutboxWriter}. The rule
  * forbids every other class to call their write methods, and the submission lock every write starts with
- * ({@code DataSubmissionRepository.findByUidForWrite}). What it cannot see:</p>
+ * ({@code SubmissionLock.take}, and the repository's {@code findByUidForWrite} under it). What it cannot see:</p>
  * <ul>
  *   <li>writes made through the generic {@code IdentifiableObjectService} or {@code JpaIdentifiableRepository}
  *       types. The submission resource has inherited no generic write since 6.5.5: {@code PUT /dataSubmission/{uid}},
@@ -78,6 +79,7 @@ class SubmissionWriteOwnershipTest {
         writeOn(DataSubmissionService.class, "upsert", "softDelete", "save", "update", "delete")
             .or(writeOn(DataSubmissionRepository.class,
                 "save", "persist", "update", "delete", "merge", "insert", "remove", "findByUidForWrite"))
+            .or(writeOn(SubmissionLock.class, "take"))
             .or(writeOn(HeldSubmissionRepository.class, "hold", "markDecided", "recordReleaseError"))
             .or(writeOn(SubmissionIntake.class, "hold"))
             .or(writeOn(OutboxWritePort.class, "insert"))
@@ -410,24 +412,26 @@ class SubmissionWriteOwnershipTest {
         JavaClasses withABackDoor = new ClassFileImporter().importClasses(BackDoor.class, ModifyingSubmissions.class);
 
         assertThat(ONLY_THE_COMMAND_SERVICE_WRITES_SUBMISSIONS.evaluate(withABackDoor).getFailureReport().getDetails())
-            .hasSize(7)
+            .hasSize(8)
             .allSatisfy(line -> assertThat(line).contains(BackDoor.class.getName()))
             .anySatisfy(line -> assertThat(line).contains("DataSubmissionRepository.findByUidForWrite"))
+            .anySatisfy(line -> assertThat(line).contains("SubmissionLock.take"))
             .anySatisfy(line -> assertThat(line).contains("ModifyingSubmissions.tidy"));
     }
 
     /**
-     * Seven writes the rule must catch, for the test above only: the submission lock among them, and the last one by
-     * its @Modifying, not its name.
+     * Eight writes the rule must catch, for the test above only: the submission lock among them, both ways, and the
+     * last one by its @Modifying, not its name.
      */
     @SuppressWarnings("unused")
     static class BackDoor {
         void writes(DataSubmissionService submissions, DataSubmissionRepository repository,
                     HeldSubmissionRepository held, OutboxWritePort outbox, SubmissionRevisionWriter revisions,
-                    ModifyingSubmissions modifying) {
+                    SubmissionLock lock, ModifyingSubmissions modifying) {
             submissions.upsert(null, null, new EntitySaveSummaryVM(), null);
             repository.deleteAllByUidIn(List.of("a"));
             repository.findByUidForWrite("a");
+            lock.take("a");
             held.recordReleaseError("a", "b");
             outbox.insert(List.of());
             revisions.append("a", 0, null, null, null);

@@ -18,8 +18,19 @@ final class SubmissionLog {
 
     /** PostgreSQL's unique_violation. */
     private static final String UNIQUE_VIOLATION = "23505";
+    /** PostgreSQL's lock_not_available: a lock wait reached the transaction's {@code lock_timeout}. */
+    private static final String LOCK_NOT_AVAILABLE = "55P03";
 
     private SubmissionLog() {
+    }
+
+    /**
+     * Whether another change held what the transaction waited for, the submission first of all, past the bound the
+     * submission lock sets ({@link SubmissionLock}). The holder was stalled, or slower than the bound; the waiting
+     * upload item fails and the phone sends it again, and an admin delete is refused.
+     */
+    static boolean isLockTimeout(Throwable failure) {
+        return DatabaseFailures.sqlState(failure).filter(LOCK_NOT_AVAILABLE::equals).isPresent();
     }
 
     /**
