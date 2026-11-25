@@ -245,8 +245,9 @@ Deploying a release and turning on what it brings are separate steps
 - In production a switch is set in the host environment, for example
   `DATARUN_ACTIVATION_SOME_FEATURE=true` passed by `compose.yml`, and the
   container recreated; setting it back to false is the rollback.
-- A v2 handler calls `requireOn`; an operation switched off answers 422
-  `operation-not-enabled`, naming its switch.
+- A v2 handler calls `requireMethod` for a whole method behind a switch (422
+  `method-not-enabled`) or `requireOperation` for one kind of operation in a
+  request (422 `operation-not-enabled`); either names its switch.
 
 ## The Published Contract
 

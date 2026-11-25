@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.nmcpye.datarun.config.activation.OperationNotEnabledException;
+import org.nmcpye.datarun.config.activation.NotEnabledException;
 import org.nmcpye.datarun.web.filter.RequestIdFilter;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -214,14 +214,18 @@ class V2ProblemResolverTest {
     }
 
     @Test
-    void anOperationSwitchedOffIs422NamingItsSwitch() throws Exception {
-        MockHttpServletResponse response = new MockHttpServletResponse();
-        resolver.resolveException(request("POST", "/api/v2/things/7"), response, null,
-            new OperationNotEnabledException("some-feature"));
-        assertThat(response.getStatus()).isEqualTo(422);
-        JsonNode body = body(response);
-        assertThat(body.get("code").asText()).isEqualTo("operation-not-enabled");
-        assertThat(body.get("detail").asText()).contains("some-feature");
+    void aMethodOrAnOperationSwitchedOffIs422NamingItsSwitch() throws Exception {
+        MockHttpServletResponse method = new MockHttpServletResponse();
+        resolver.resolveException(request("POST", "/api/v2/things/7"), method, null,
+            new NotEnabledException("some-feature", NotEnabledException.Scope.METHOD));
+        assertThat(method.getStatus()).isEqualTo(422);
+        assertThat(body(method).get("code").asText()).isEqualTo("method-not-enabled");
+        assertThat(body(method).get("detail").asText()).contains("some-feature");
+
+        MockHttpServletResponse operation = new MockHttpServletResponse();
+        resolver.resolveException(request("POST", "/api/v2/things/7"), operation, null,
+            new NotEnabledException("some-feature", NotEnabledException.Scope.OPERATION));
+        assertThat(body(operation).get("code").asText()).isEqualTo("operation-not-enabled");
     }
 
     /** Spring's default JDBC translation leaves PostgreSQL's lock timeout uncategorized; its state decides. */

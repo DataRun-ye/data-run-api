@@ -35,7 +35,15 @@ class ActivationSwitchesIT {
 
         assertThat(response.getStatus()).isEqualTo(422);
         JsonNode problem = new ObjectMapper().readTree(response.getContentAsByteArray());
-        assertThat(problem.get("code").asText()).isEqualTo("operation-not-enabled");
+        assertThat(problem.get("code").asText()).isEqualTo("method-not-enabled");
         assertThat(problem.get("detail").asText()).contains("fixture-action");
+
+        MockHttpServletResponse gated = mvc.perform(post("/api/v2/fixtures/switched:apply").param("op", "gated"))
+            .andReturn().getResponse();
+        assertThat(gated.getStatus()).isEqualTo(422);
+        assertThat(new ObjectMapper().readTree(gated.getContentAsByteArray()).get("code").asText())
+            .isEqualTo("operation-not-enabled");
+        assertThat(mvc.perform(post("/api/v2/fixtures/switched:apply").param("op", "open")).andReturn()
+            .getResponse().getStatus()).isEqualTo(200);
     }
 }

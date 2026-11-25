@@ -144,10 +144,27 @@ public class ActivationSwitches {
         return on;
     }
 
-    /** @throws OperationNotEnabledException when the switch is off; a v2 request answers it 422 */
-    public void requireOn(ActivationSwitch candidate) {
+    /**
+     * For a whole method behind the switch.
+     *
+     * @throws NotEnabledException when the switch is off; a v2 request answers it 422 {@code method-not-enabled}
+     */
+    public void requireMethod(ActivationSwitch candidate) {
+        require(candidate, NotEnabledException.Scope.METHOD);
+    }
+
+    /**
+     * For one kind of operation within a request (an edit's operation list), behind the switch.
+     *
+     * @throws NotEnabledException when the switch is off; a v2 request answers it 422 {@code operation-not-enabled}
+     */
+    public void requireOperation(ActivationSwitch candidate) {
+        require(candidate, NotEnabledException.Scope.OPERATION);
+    }
+
+    private void require(ActivationSwitch candidate, NotEnabledException.Scope scope) {
         if (!isOn(candidate)) {
-            throw new OperationNotEnabledException(candidate.name());
+            throw new NotEnabledException(candidate.name(), scope);
         }
     }
 }

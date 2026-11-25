@@ -45,6 +45,7 @@ public enum ProblemCode {
     IDEMPOTENCY_KEY_REUSED("idempotency-key-reused", 422,
         "The Idempotency-Key was already used for a different request"),
     VALIDATION_FAILED("validation-failed", 422, "The request is not valid"),
+    METHOD_NOT_ENABLED("method-not-enabled", 422, "The method is not enabled on this server"),
     OPERATION_NOT_ENABLED("operation-not-enabled", 422, "The operation is not enabled on this server"),
 
     PRECONDITION_REQUIRED("precondition-required", 428,

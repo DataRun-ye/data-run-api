@@ -26,7 +26,7 @@
           "code" : {
             "description" : "The problem's code; clients ignore codes they do not know.",
             "type" : "string",
-            "x-extensible-enum" : [ "bad-request", "invalid-cursor", "idempotency-key-missing", "invalid-idempotency-key", "invalid-if-match", "unauthenticated", "forbidden", "not-found", "method-not-allowed", "not-acceptable", "request-in-progress", "resource-busy", "precondition-failed", "payload-too-large", "unsupported-media-type", "idempotency-key-reused", "validation-failed", "operation-not-enabled", "precondition-required", "internal-error", "service-unavailable" ]
+            "x-extensible-enum" : [ "bad-request", "invalid-cursor", "idempotency-key-missing", "invalid-idempotency-key", "invalid-if-match", "unauthenticated", "forbidden", "not-found", "method-not-allowed", "not-acceptable", "request-in-progress", "resource-busy", "precondition-failed", "payload-too-large", "unsupported-media-type", "idempotency-key-reused", "validation-failed", "method-not-enabled", "operation-not-enabled", "precondition-required", "internal-error", "service-unavailable" ]
           },
           "detail" : {
             "description" : "This occurrence in words; never a submitted value or a caller's reason.",

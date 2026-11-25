@@ -37,8 +37,17 @@ public class V2ActivationFixture {
 
         @PostMapping("/api/v2/fixtures/switched:run")
         public Map<String, String> run() {
-            switches.requireOn(FIXTURE_ACTION);
+            switches.requireMethod(FIXTURE_ACTION);
             return Map.of("ran", "true");
+        }
+
+        /** A method that is on, with one kind of operation in its body behind the switch. */
+        @PostMapping("/api/v2/fixtures/switched:apply")
+        public Map<String, String> apply(@org.springframework.web.bind.annotation.RequestParam String op) {
+            if (op.equals("gated")) {
+                switches.requireOperation(FIXTURE_ACTION);
+            }
+            return Map.of("applied", op);
         }
     }
 }

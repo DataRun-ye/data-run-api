@@ -58,9 +58,14 @@ class ActivationSwitchesTest {
         assertThat(ALL).noneMatch(switches::isOn);
         assertThat(lines.list).extracting(ILoggingEvent::getFormattedMessage)
             .containsExactly("Activation switches: first-feature=off, second-feature=off, third-feature=off");
-        assertThatThrownBy(() -> switches.requireOn(FIRST))
-            .isInstanceOfSatisfying(OperationNotEnabledException.class,
-                refused -> assertThat(refused.switchName()).isEqualTo("first-feature"));
+        assertThatThrownBy(() -> switches.requireMethod(FIRST))
+            .isInstanceOfSatisfying(NotEnabledException.class, refused -> {
+                assertThat(refused.switchName()).isEqualTo("first-feature");
+                assertThat(refused.scope()).isEqualTo(NotEnabledException.Scope.METHOD);
+            });
+        assertThatThrownBy(() -> switches.requireOperation(FIRST))
+            .isInstanceOfSatisfying(NotEnabledException.class,
+                refused -> assertThat(refused.scope()).isEqualTo(NotEnabledException.Scope.OPERATION));
     }
 
     @Test
