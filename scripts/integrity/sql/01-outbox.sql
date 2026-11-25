@@ -8,7 +8,7 @@
 -- 1d also flags a record changed after its latest event. Since step C an event
 -- names the version it announces (outbox.submission_version), and the record
 -- must still be at that version. Events written before step C, or by a
--- rolled-back 6.5.4, carry no version and are compared by time, as before: the
+-- rolled-back 6.5.5, carry no version and are compared by time, as before: the
 -- upload flushed the record before it stamped the event, so its event was never
 -- older than the record, and the admin delete stamped its DELETE event first and
 -- saved the record afterwards, so a deleted record up to a minute newer than its

@@ -172,7 +172,7 @@ change and the `outbox` row that announces it (Change Record below), and
 `SubmissionWriteOwnershipTest` (ArchUnit) fails the build when any other class
 calls the write methods of the persistence layer (`DataSubmissionService`, the
 submission repository, `SubmissionIntake.hold`, `HeldSubmissionRepository`,
-`OutboxWriter`); it accepts no violation. The rule cannot see writes through
+`OutboxWriter`, `SubmissionRevisionWriter`); it accepts no violation. The rule cannot see writes through
 the generic `IdentifiableObjectService` types; `DataSubmissionResource`
 inherits none of the generic writes since 6.5.5 (it extends the read-only
 `BaseReadResource` and declares its own routes), so no route reaches one. Log
@@ -345,8 +345,8 @@ changes after creation (form, entry times, creation time).
 The outbox contract:
 - `submission_version`: the version after the change. `(submission_id,
   submission_version)` references the revision (`fk_outbox_submission_revision`);
-  rows written before step C, or by 6.5.4 after a rollback, keep NULL and are
-  not checked.
+  rows written before step C, or by 6.5.5 (the release before it) after a
+  rollback, keep NULL and are not checked.
 - `created_at`: the database's transaction time in UTC (column default);
   readers treat it as UTC (`EtlMetrics`, integrity checks 1 and 10).
 - `idx_outbox_unversioned`: the rows without a version (those written before
@@ -381,7 +381,7 @@ by `ALTER TABLE ... DISABLE TRIGGER`. The owner is the application's database
 role, which runs the migrations; it is not a superuser on staging
 (2026-11-25). No main code or changelog does either; the SQL tripwire checks
 both. A database trigger requiring a revision for every write is deferred: it
-would stop 6.5.4 from writing after a rollback.
+would stop 6.5.5 from writing after a rollback.
 
 Deploy, rollback and history:
 - History starts at the baseline: one `BASELINE` per submission stored before
@@ -398,11 +398,12 @@ Deploy, rollback and history:
   (a release without the journal wrote; the newest such row is one probe of
   `idx_outbox_unversioned`), or a changeset run since it last ran (a deploy).
   Without a cue its statement takes 0.5 ms and the changeset 13 to 19 ms; on
-  a cue it took 0.4 s on the first deploy and 0.33 s for a 6.5.4 window of
-  1,001 gaps. It moves the watermark to the newest outbox row each time. JIT
+  a cue it took 0.4 s on the first deploy and 0.33 s after a simulated window
+  of the previous release with 1,001 gaps. It moves the watermark to the newest outbox row each time. JIT
   is off for it: the estimated cost of the full read would otherwise make
   every start compile it (about 40 ms).
-- 6.5.4 runs on the migrated schema: it names its outbox columns (the version
+- 6.5.5, the release before step C, runs on the migrated schema (its outbox
+  writer is 6.5.4's): it names its outbox columns (the version
   stays NULL, `created_at` is its JVM's UTC), never touches the journal, and
   ignores applied changesets it does not know. Its writes raise versions
   without revisions, and its outbox rows, without a version, are the cue: the

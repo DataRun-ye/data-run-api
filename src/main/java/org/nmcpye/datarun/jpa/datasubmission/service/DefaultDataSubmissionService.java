@@ -246,8 +246,8 @@ public class DefaultDataSubmissionService
 
     /**
      * Not for submissions: the generic save would write a submission without a revision or an outbox row. A
-     * submission is created or changed only through {@code SubmissionCommandService} ({@link #upsertAll}). The
-     * generic POST and PUT routes answer 400 before they get here (A2 W4-01, W5-01).
+     * submission is created or changed only through {@code SubmissionCommandService} ({@link #upsertAll}). No route
+     * reaches it: since 6.5.5 the submission resource has no generic POST or PUT, which answer 405 (A2 W4-01, W5-01).
      */
     @Override
     public DataSubmission save(DataSubmission submission) {

@@ -143,7 +143,7 @@ transaction. The ETL learns about changes only through these events.
   and the record must still be at that version; the event's time now comes
   from the database and the record's from the application, so their times are
   not compared. Events without a version (written before step C, or by a
-  rolled-back 6.5.4) are compared by time, as before: the upload saved the
+  rolled-back 6.5.5) are compared by time, as before: the upload saved the
   record before it stamped the event, so its event was never older; the admin
   delete stamped the DELETE event first, so a deleted record up to a minute
   newer than its DELETE event is not counted. On a database before step C
@@ -318,7 +318,7 @@ the journal every line reads -1.
 
 - **11a** Submissions with no revision. Should stay 0.
 - **11b** Submissions whose head revision (highest version) is behind their
-  `lock_version`: a write that left no revision. 6.5.4 running after a
+  `lock_version`: a write that left no revision. 6.5.5 running after a
   rollback does this until the next start of a release with the journal
   records a gap; anything else (SQL raising the version) is a fault, and the
   gap repair does not see it, because it leaves no cue (see

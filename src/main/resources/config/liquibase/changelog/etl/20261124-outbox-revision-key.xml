@@ -12,7 +12,7 @@
     <!--
       An outbox row announces only a revision that exists: (submission_id, submission_version) references the
       journal's key. MATCH SIMPLE leaves rows without a version unchecked: every row written before step C, and
-      those a rolled-back 6.5.4 writes. It ships with the journal, so no row needs NOT VALID.
+      those a rolled-back 6.5.5 writes. It ships with the journal, so no row needs NOT VALID.
 
       Adding it scans the outbox once (every existing row has a NULL version) under a SHARE ROW EXCLUSIVE lock on
       both tables, with the application stopped; lock_timeout makes the deploy fail visibly if a dump or a long read

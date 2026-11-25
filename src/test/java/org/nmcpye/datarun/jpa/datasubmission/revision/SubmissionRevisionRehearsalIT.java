@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * the 99th, 92,443 at most and 1,212 on average;
  * versions 0 for 99.4%, deleted one in 1,371) and an outbox row for 93% of them, then vacuumed. Each step C changeset
  * is then applied on its own and timed, with the WAL it wrote; then the run-always gap repair with nothing to repair,
- * and after a simulated 6.5.4 window. The numbers go to {@code target/revision-rehearsal.txt}. Synthetic data and a
+ * and after a simulated window of 6.5.5, the release before step C. The numbers go to {@code target/revision-rehearsal.txt}. Synthetic data and a
  * container's default settings: the timings show orders of magnitude, not production's exact numbers.</p>
  */
 @EnabledIfSystemProperty(named = "revision.rehearsal.rows", matches = "\\d+")
@@ -142,8 +142,8 @@ class SubmissionRevisionRehearsalIT {
         report("the same once the journal is vacuumed: " + startAgain() + " s; statement " + gapRepairPlan(true)
             + "; reading every submission " + gapRepairPlan(false));
 
-        // A 6.5.4 window: changed re-sends of about 500 submissions and 500 new ones, without revisions, each with
-        // the outbox row 6.5.4 writes (no version): the cue for the next start.
+        // A 6.5.5 window: changed re-sends of about 500 submissions and 500 new ones, without revisions, each with
+        // the outbox row 6.5.5 writes (no version): the cue for the next start.
         db.update("""
             UPDATE data_submission SET lock_version = lock_version + 1, last_modified_date = localtimestamp
             WHERE serial_number % 134 = 0""");
@@ -166,7 +166,7 @@ class SubmissionRevisionRehearsalIT {
               SELECT 1 FROM journal.submission_revision r WHERE r.submission_id = s.id AND r.version >= s.lock_version)""",
             Long.class);
         String lsn = wal();
-        report("the start after a 6.5.4 window with " + gaps + " gaps (its outbox rows are the cue): " + startAgain()
+        report("the start after a 6.5.5 window with " + gaps + " gaps (its outbox rows are the cue): " + startAgain()
             + " s, WAL " + String.format("%.1f MB", walSince(lsn) / 1048576.0) + "; GAP_REPAIR revisions: "
             + db.queryForObject("SELECT count(*) FROM journal.submission_revision WHERE command = 'GAP_REPAIR'", Long.class));
         assertThat(db.queryForObject("SELECT count(*) FROM journal.submission_revision WHERE command = 'GAP_REPAIR'", Long.class))

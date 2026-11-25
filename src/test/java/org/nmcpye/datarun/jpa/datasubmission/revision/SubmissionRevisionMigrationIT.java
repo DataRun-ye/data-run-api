@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * The submission change record's migrations against PostgreSQL, as production meets them: a fresh database is
- * migrated up to step C's first changeset, given submissions and outbox rows the way 6.5.4 leaves them, and then
+ * migrated up to step C's first changeset, given submissions and outbox rows the way 6.5.5 leaves them, and then
  * migrated through step C. The tests then read what the migrations built and what the database refuses.
  */
 class SubmissionRevisionMigrationIT {
@@ -47,7 +47,7 @@ class SubmissionRevisionMigrationIT {
     private static JdbcTemplate db;
     private static NamedParameterJdbcTemplate named;
 
-    /** Submissions stored before step C, the way 6.5.4 leaves them. */
+    /** Submissions stored before step C, the way 6.5.5 leaves them. */
     private static String live;
     private static String changedThrice;
     private static String deleted;
@@ -127,7 +127,7 @@ class SubmissionRevisionMigrationIT {
         return n == null ? 0 : n;
     }
 
-    /** An outbox row as 6.5.4 writes it: no version, the JVM's clock. */
+    /** An outbox row as 6.5.5 writes it: no version, the JVM's clock. */
     static void legacyOutboxRow(String submissionId, String eventType) {
         db.update("""
             INSERT INTO outbox (submission_id, submission_serial_number, submission_uid, topic, payload, event_type,
@@ -323,24 +323,24 @@ class SubmissionRevisionMigrationIT {
     }
 
     /**
-     * Production runs 6.5.4 again for a while after step C: its uploads raise versions without revisions and its new
+     * Production runs 6.5.5, the release before step C, again for a while after a rollback: its uploads raise versions without revisions and its new
      * submissions have none. The next start of step C records each as an explicit gap.
      */
     @Test
-    void aWindowUnder654IsRecordedAsGapsAtTheNextStart() throws Exception {
+    void aWindowUnderTheReleaseBeforeIsRecordedAsGapsAtTheNextStart() throws Exception {
         String gapped = submission(3, false);
         revision(gapped, 3, null, "BASELINE", "MIGRATION", null, "MIGRATION", null, null);
         String untouched = submission(2, false);
         revision(untouched, 2, null, "BASELINE", "MIGRATION", null, "MIGRATION", null, null);
 
-        // 6.5.4: two changed re-sends of one submission, and a new one; its outbox rows carry no version.
+        // 6.5.5: two changed re-sends of one submission, and a new one; its outbox rows carry no version.
         db.update("""
             UPDATE data_submission SET lock_version = 5, form_data = CAST('{"main": {"name": "changed"}}' AS jsonb),
                                        last_modified_date = TIMESTAMP '2026-12-01 10:00:00'
             WHERE id = ?""", gapped);
         legacyOutboxRow(gapped, "UPDATE");
-        String createdIn654 = submission(0, false);
-        legacyOutboxRow(createdIn654, "SAVE");
+        String createdInWindow = submission(0, false);
+        legacyOutboxRow(createdInWindow, "SAVE");
 
         migrate(false);
 
@@ -349,17 +349,17 @@ class SubmissionRevisionMigrationIT {
                        || r.kind || ' ' || r.command || ' ' || r.actor_system
                 FROM journal.submission_revision r JOIN data_submission s ON s.id = r.submission_id
                 WHERE s.id IN (:ids) AND r.command = 'GAP_REPAIR' ORDER BY 1""",
-            Map.of("gapped", gapped, "ids", List.of(gapped, untouched, createdIn654)),
+            Map.of("gapped", gapped, "ids", List.of(gapped, untouched, createdInWindow)),
             (rs, i) -> rs.getString(2)))
             .containsExactly("0 - BASELINE GAP_REPAIR MIGRATION", "5 3 BASELINE GAP_REPAIR MIGRATION");
-        assertThat(headsDifferingFromTheRow(List.of(gapped, untouched, createdIn654))).isEmpty();
+        assertThat(headsDifferingFromTheRow(List.of(gapped, untouched, createdInWindow))).isEmpty();
         assertThat(count("SELECT count(*) FROM journal.submission_revision WHERE submission_id = ?", untouched)).isEqualTo(1);
 
         migrate(false);
         assertThat(count("SELECT count(*) FROM journal.submission_revision WHERE submission_id IN (?, ?, ?)",
-            gapped, untouched, createdIn654)).as("the next start finds no gap").isEqualTo(4);
+            gapped, untouched, createdInWindow)).as("the next start finds no gap").isEqualTo(4);
         assertThat(count("SELECT outbox_id FROM journal.outbox_watermark"))
-            .as("the watermark moved past 6.5.4's rows").isEqualTo(count("SELECT max(outbox_id) FROM outbox"));
+            .as("the watermark moved past 6.5.5's rows").isEqualTo(count("SELECT max(outbox_id) FROM outbox"));
     }
 
     /**
@@ -382,8 +382,8 @@ class SubmissionRevisionMigrationIT {
         assertThat(JournalReconciliation.findings(named, "s.id = :id", Map.of("id", raisedBySql)))
             .containsExactly(raisedBySql.substring(15) + ": head revision at 1, row at 2");
 
-        String written654 = submission(0, false);
-        legacyOutboxRow(written654, "SAVE");
+        String writtenInWindow = submission(0, false);
+        legacyOutboxRow(writtenInWindow, "SAVE");
         migrate(false);
 
         assertThat(named.queryForList("""
@@ -391,21 +391,21 @@ class SubmissionRevisionMigrationIT {
                 FROM journal.submission_revision r
                 WHERE r.submission_id IN (:raised, :written) AND r.command = 'GAP_REPAIR'
                 ORDER BY r.submission_id = :raised""",
-            Map.of("raised", raisedBySql, "written", written654), String.class))
-            .as("a 6.5.4 row is the cue: the repair reads every submission and records both")
+            Map.of("raised", raisedBySql, "written", writtenInWindow), String.class))
+            .as("a 6.5.5 row is the cue: the repair reads every submission and records both")
             .containsExactly("0 -", "2 1");
-        assertThat(JournalReconciliation.findings(named, "s.id IN (:ids)", Map.of("ids", List.of(raisedBySql, written654))))
-            .as("both heads are their rows; only 6.5.4's own outbox row, without a version, is reported")
-            .containsExactly(written654.substring(15) + ": 1 outbox rows without a version");
+        assertThat(JournalReconciliation.findings(named, "s.id IN (:ids)", Map.of("ids", List.of(raisedBySql, writtenInWindow))))
+            .as("both heads are their rows; only 6.5.5's own outbox row, without a version, is reported")
+            .containsExactly(writtenInWindow.substring(15) + ": 1 outbox rows without a version");
     }
 
     /**
-     * A rollback to 6.5.4 keeps the migrated schema: its changelog, which is this one without step C's includes,
-     * runs on it without error and changes nothing, and the outbox rows 6.5.4 writes (no version) are accepted.
+     * A rollback to 6.5.5 keeps the migrated schema: its changelog, which is this one without step C's includes,
+     * runs on it without error and changes nothing, and the outbox rows 6.5.5 writes (no version) are accepted.
      */
     @Test
     void theReleaseBeforeStepCRunsItsChangelogOnTheMigratedSchema() throws Exception {
-        java.nio.file.Path dir = java.nio.file.Files.createTempDirectory("changelog-654");
+        java.nio.file.Path dir = java.nio.file.Files.createTempDirectory("changelog-655");
         try {
             String master = new String(SubmissionRevisionMigrationIT.class.getClassLoader()
                 .getResourceAsStream(MASTER).readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
@@ -414,7 +414,7 @@ class SubmissionRevisionMigrationIT {
                     && !line.contains("Runs on every start"))
                 .collect(java.util.stream.Collectors.joining("\n"));
             assertThat(before).doesNotContain("20261124-c").contains("20261124-drop-duplicate-events-indexes.xml");
-            java.nio.file.Files.writeString(dir.resolve("master-6.5.4.xml"), before);
+            java.nio.file.Files.writeString(dir.resolve("master-6.5.5.xml"), before);
             long ranBefore = count("SELECT count(*) FROM databasechangelog");
             long revisionsBefore = count("SELECT count(*) FROM journal.submission_revision");
 
@@ -423,10 +423,10 @@ class SubmissionRevisionMigrationIT {
             try (Connection connection = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())) {
                 Database database = DatabaseFactory.getInstance()
                     .findCorrectDatabaseImplementation(new JdbcConnection(connection));
-                Liquibase liquibase = new Liquibase("master-6.5.4.xml", new liquibase.resource.CompositeResourceAccessor(
+                Liquibase liquibase = new Liquibase("master-6.5.5.xml", new liquibase.resource.CompositeResourceAccessor(
                     new liquibase.resource.DirectoryResourceAccessor(dir), new ClassLoaderResourceAccessor()), database);
                 assertThat(liquibase.listUnrunChangeSets(new Contexts(), new LabelExpression()))
-                    .as("6.5.4 finds nothing to run").isEmpty();
+                    .as("6.5.5 finds nothing to run").isEmpty();
                 liquibase.update(new Contexts(), new LabelExpression());
             }
 
@@ -435,7 +435,7 @@ class SubmissionRevisionMigrationIT {
             String id = submission(0, false);
             legacyOutboxRow(id, "SAVE");
             assertThat(count("SELECT count(*) FROM outbox WHERE submission_id = ? AND submission_version IS NULL", id))
-                .as("6.5.4's outbox row, without a version").isEqualTo(1);
+                .as("6.5.5's outbox row, without a version").isEqualTo(1);
         } finally {
             try (var files = java.nio.file.Files.list(dir)) {
                 for (java.nio.file.Path file : files.toList()) {
@@ -777,7 +777,7 @@ class SubmissionRevisionMigrationIT {
         db.update(insert, 0L, id);
         db.update(insert, null, id);
         assertThat(count("SELECT count(*) FROM outbox WHERE submission_id = ?", id))
-            .as("the revision's row, and one without a version as 6.5.4 writes").isEqualTo(2);
+            .as("the revision's row, and one without a version as 6.5.5 writes").isEqualTo(2);
     }
 
     // ---------------------------------------------------------------- the outbox

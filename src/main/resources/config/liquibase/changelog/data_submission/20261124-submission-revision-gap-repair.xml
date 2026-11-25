@@ -7,7 +7,8 @@
     objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
 
     <!--
-      Records, at every start, what a rolled-back release left unrecorded. Server 6.5.4 writes no revisions: if
+      Records, at every start, what a rolled-back release left unrecorded. Server 6.5.5, the release before step C,
+      writes no revisions: if
       production runs it again after step C, its uploads raise lock_version without a revision and its new
       submissions have none. On the next start of a release with the journal, this writes one explicit gap revision
       for each such submission: kind BASELINE, command GAP_REPAIR, actor MIGRATION, at the current lock_version,

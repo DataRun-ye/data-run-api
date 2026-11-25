@@ -13,9 +13,9 @@
       The outbox row names the revision it announces (data-chain plan, step C):
       - submission_version: the submission's version after the change. With submission_id it is the revision's
         key; a later changeset makes the pair a foreign key to submission_revision. Rows written before step C, and
-        rows a rolled-back 6.5.4 writes (it names its columns), keep NULL.
+        rows a rolled-back 6.5.5 writes (it names its columns), keep NULL.
       - created_at: the database's transaction time in UTC, instead of the JVM clock the writer used to send.
-        A writer that still sends a value (6.5.4 after a rollback, in UTC there) keeps doing so.
+        A writer that still sends a value (6.5.5 after a rollback, in UTC there) keeps doing so.
 
       - idx_outbox_unversioned: the rows without a version, by outbox_id. The gap repair probes it at every start
         for a row written since its last run without a version, the mark a release without the journal leaves.
