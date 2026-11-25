@@ -43,7 +43,7 @@ Decisions are engineering (2026-11-25) unless marked. Counts come from a throwaw
 | `position` | bigint | no | The feed's order, from the same sequence as `submission` |
 | `submission_id` | text | no | The submission |
 | `id` | text | no | The row id: its stored id as text, or a derived id (§5). Unique within its submission only: a split moves rows to a new submission with their ids, and a phone can copy rows |
-| `id_origin` | text | no | `STORED` or `DERIVED` (an open list). Derived when the row has no stored id or an empty one, or when its id, stored or derived, is already taken by a row earlier in walk order (`DUPLICATE_ID`, §5). A derived id follows the row's place, so it changes when an earlier sibling is removed |
+| `id_origin` | text | no | `STORED` or `DERIVED` (an open list). Derived when the row has no stored id or an empty one, or when its id, stored or derived, is already taken by a row earlier in walk order (`DUPLICATE_ID`, §5). A derived id follows the row's place, so it changes when an earlier sibling is removed, until the first server-side change freezes it (§5) |
 | `parent_row_id` | text | yes | The parent row, for a nested row; null at the first level |
 | `section_id` | text | no | The repeating section (`form_section.section_id`) |
 | `row_index` | integer | no | The row's 1-based place among its siblings |
@@ -92,6 +92,12 @@ Decisions are engineering (2026-11-25) unless marked. Counts come from a throwaw
 
   A section path is the stored keys from the root to the section, joined by dots. The parent row id is that row's own
   id, stored or derived. The row index is the row's 1-based place in its array.
+
+  **Ids freeze at the first server-side change** (engineering, 2026-11-25). Before submission review's first change
+  of any kind to a submission applies (an edit, move, split, delete, restore or accept), every row lacking a unique
+  stored id stores the id the feed already shows, in the same revision, the `|<attempt>` ids included. From then on
+  its row ids never change: a split's rows keep theirs, the remaining siblings keep theirs, and `id_origin` turns
+  `STORED` with the same id value.
 
   **Earlier** means walk order: depth first from the document's root; each object's keys in `String.compareTo`
   order (by UTF-16 code unit); each array in stored order; a row before its nested rows. The walk reads the stored

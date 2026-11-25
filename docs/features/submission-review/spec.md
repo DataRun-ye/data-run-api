@@ -146,10 +146,15 @@ Conflict detection is a requirement of every change switch, so no change can be 
   person's decision. It never creates an entry.
 - **`removeRow`, `restoreRow`.** A removed row leaves the current state and stays in history. `restoreRow` puts it
   back from a named revision with the same id. It is refused with 409 `row-live-elsewhere` while that row id is live
-  in any submission of the lineage (I5), and refused while its entry now sits in another row at that field.
+  in any submission of the lineage (I5), and with 422 `entry-already-in-submission` while its entry now sits in
+  another row at that field.
 - **`addRow`** (later): a new row id, every mandatory field of the new row, and entries that exist in the org unit.
 - **Reported, not enforced:** issues already elsewhere in the document.
-- **Row ids:** the first edit of a submission stores an id in each row that had none: the id the API already showed.
+- **Row ids freeze at the first server-side change** (engineering, 2026-11-25). Before the first server-side change
+  of any kind applies to a submission (an edit, move, split, delete, restore or accept), every row lacking a unique
+  stored id stores the id the API and the feed already show, in the same revision: its derived id, including the
+  `|<attempt>` id of a row whose id an earlier row already has. From then on row ids never change: a split's rows
+  keep theirs, the remaining siblings keep theirs, and the feed's `id_origin` turns `STORED` with the same value.
 
 ### 3.1 Search
 
@@ -175,7 +180,8 @@ Conflict detection is a requirement of every change switch, so no change can be 
 
 **The guard** (engineering, 2026-11-25). A field filter or an entered-time filter needs one indexed narrowing: a
 team, an assignment or an org unit; an `area` of at most a set number of org units; or a created range of at most a
-set number of days. Otherwise the answer is 422 `search-too-broad`. A form listed newest first needs no narrowing.
+set number of days, which maps to a `serial_number` range through the serial index. Otherwise the answer is 422
+`search-too-broad`. A form listed newest first needs no narrowing.
 Every search runs under a timeout (proposed 5 s) and answers 503 `search-timeout` when it fires. An entry search is
 narrowed by the entry's org unit and also includes the submissions tracked as holding the entry outside their
 placement (§4.3), so it finds rows moved or split elsewhere.
@@ -312,10 +318,10 @@ the body names the source's new version.
 
 1. the key claim, the source's submission lock, `If-Match`;
 2. the new submission: a new id and a server-made uid (the v1 alias, known to no phone); the source's form, pinned
-   form version, entered times and creator (the person who entered the rows); the destination's placement; exactly
-   the named top-level values, and the selected rows with their ids and nested rows; version 0, recorded as `CREATE`,
-   command `SPLIT`, with detail `{splitFrom: {submission, version}, rows, topLevel, entriesOutsidePlacement}`; an
-   outbox `SAVE` row;
+   form version, entered times and creator (its stored `created_by`, the person who entered the rows); the
+   destination's placement; exactly the named top-level values, and the selected rows with their ids and nested
+   rows; version 0, recorded as `CREATE`, command `SPLIT`, with detail `{splitFrom: {submission, version}, rows,
+   topLevel, entriesOutsidePlacement}`; an outbox `SAVE` row;
 3. the source: the rows removed and its version raised by one, recorded as `UPDATE`, command `SPLIT`, with detail
    `{splitTo, rows}`; an outbox `UPDATE` row;
 4. the tracking of entries outside placement, for both submissions;
@@ -389,9 +395,9 @@ proves that no upload item fails when a change commits between two reads.
 Phones send no version and must be answered `updated`; most re-sends are quick retries, and most later ones are
 identical. **The base version** of an uploader's copy is the newest revision whose state equals what they last sent:
 their `UPLOAD` or `LEGACY_UPLOAD` revisions; a `HELD_RELEASE` on their behalf; a plain `CONFLICT_ACCEPT` of their
-copy; or a live baseline, only when the uploader is the submission's creator (engineering, 2026-11-25). Any other
-uploader has no base version of their own: they never uploaded the submission, and it is older than the journal or
-someone else made it.
+copy; or a live baseline, only when the uploader is the submission's creator: its stored `created_by`, compared as
+`StoredSubmissionGuard` compares it (engineering, 2026-11-25). Any other uploader has no base version of their own:
+they never uploaded the submission, and it is older than the journal or someone else made it.
 
 **First,** a copy is tagged if any of its rows lacks an id, before any id is minted, on both upload routes.
 
@@ -414,28 +420,40 @@ someone else made it.
   these copies never enter the conflict queue. An authorized copy takes the submission's first revision as its base,
   so any server-side change since then keeps it aside; otherwise it applies as today.
 
-**The comparison is structural:** two JSON trees without row metadata, plus the assignment and the form version. It
-does not go through the submission normalizer.
+**The comparison is structural** (engineering, 2026-11-25): two documents without row metadata, together with their
+deleted flag, assignment and form version. It does not go through the submission normalizer.
+
+- **Row metadata** is exactly the normalizer's row structure keys: `_id`, `_index`, `_parentId` and
+  `_submissionUid`. Everything else compares, the top-level `_status` included, which only phones write. Build
+  step 2's measurement (every submission re-sent unchanged gives 0 conflicts) checks that phones do not change
+  `_status` between re-sends; if they do, it joins the ignored keys on that evidence.
+- **The deleted flag counts:** a `deleted: true` copy against a live state is a change (golden W1-14).
 
 **It never fails an upload item:** an exception in detection keeps the copy aside with cause `DETECTION_ERROR`.
 Only a failure to store the conflict can fail the upload item.
 
 **Storage:** `submission_review.conflict` holds one open conflict per submission and uploader; its state (`OPEN`,
 `KEPT`, `ACCEPTED`) and `cause`; the base version and whether the copy's rows lack ids; the copy as it arrived, its
-receipt times and a receipt count; and the decision. The held-upload table is not reused: it allows one row per uid
-and treats released rows as final.
+first and last receipt times, a re-send count and the conflict's version; and the decision. The held-upload table
+is not reused: it allows one row per uid and treats released rows as final.
+
+**A re-send while the conflict is `OPEN`** (engineering, 2026-11-25): a copy equal to the conflict's copy changes
+only its re-send count and last receipt time. A different copy replaces the conflict's copy, keeps the first
+receipt time and raises the conflict's version, so a decision made on the old copy answers 409
+`phone-copy-changed`.
 
 **Resolution** (decided with `submissions.change`; read with it or `submissions.viewHistory`):
 
 - **The view** shows three columns, the base version, the current state and the phone copy, with each value and row
   marked as changed on the phone, on the server, or both.
 - **Both decisions take the same preconditions** (engineering, 2026-11-25): `If-Match` on the submission's version,
-  and the copy's receipt count as seen. A newer copy answers 409 `phone-copy-changed`, and a changed submission
-  412. Every decision is made on the three-way view the resolver actually saw.
+  and the conflict's version as seen. A newer copy answers 409 `phone-copy-changed`, and a changed submission 412.
+  Every decision is made on the three-way view the resolver actually saw.
 - **Keep** closes the conflict with a reason. The submission is unchanged, and no revision is written.
 - **Accept** makes the copy's values and rows the state, by the resolver on behalf of the uploader. Placement never
   changes; validation and new entries use the copy's own assignment. It is also refused with 409
-  `row-live-elsewhere` while the copy holds rows live elsewhere in the lineage, and on a deleted submission.
+  `row-live-elsewhere` while the copy holds rows live elsewhere in the lineage, and with 409 `already-deleted` on a
+  deleted submission.
 - **Accept and re-apply** (`reapplyEdits`) also replays, in order and in the same revision, the edit operations of
   the server-side edits since the base version, with splits replayed as row removals.
 - **A copy whose rows lack ids:** both kinds of accept answer 409 `phone-copy-rows-without-ids` once any row-level
@@ -516,10 +534,10 @@ from a study of operations' words, field data platforms and API design guides (e
 | --- | --- |
 | Search | `search-too-broad` (422); `search-timeout` (503) |
 | Validation (422) | `mandatory-field-empty`; `not-an-integer` and the other value-type codes; `not-an-option-code`; `field-not-in-form-version` |
-| Entries (422) | `entry-outside-placement`; `entry-already-in-submission` |
+| Entries (422) | `entry-outside-placement` (`setEntry`); `entry-already-in-submission` (`setEntry`, `restoreRow`) |
 | Rows | `row-not-top-level`, `split-takes-all-rows`, `top-level-field-unstated` (422); `row-live-elsewhere` (409) |
 | Destinations | `destination-other-activity`, `form-not-on-destination`, `destination-deleted` (422); `already-at-destination` (409) |
-| State (409) | `already-deleted`; `not-deleted` |
+| State (409) | `already-deleted` (delete, move, split or accept on a deleted submission); `not-deleted` (restore) |
 | Phone copies (409) | `phone-copy-changed`; `phone-copy-rows-without-ids` |
 
 The switches' codes, `method-not-enabled` and `operation-not-enabled`, are already in the registry.
@@ -633,7 +651,7 @@ Invented ids and values. Team T312 has assignment A7 in village V7 and assignmen
    `"hasOpenConflict": true`. A user with `submissions.change` opens `GET /api/v2/submissions/…7f3a/conflicts/…c1`
    and sees the base version, the current state and the phone copy side by side. The copy still holds the 23 rows
    now in …9c2e, so a plain accept would answer 409 `row-live-elsewhere`. Seeing nothing in the copy to take, the
-   user sends `POST …/conflicts/…c1:keep` with `If-Match: "2"`, the receipt count it saw and a reason: the
+   user sends `POST …/conflicts/…c1:keep` with `If-Match: "2"`, the conflict's version it saw and a reason: the
    conflict is `KEPT`, and S stays at version 2.
 9. **A refusal.** Clearing a mandatory field without `"overrideMandatory": true` answers 422 with
    `"code": "mandatory-field-empty"` and `errors[0].pointer = "#/operations/0"`. The value is never repeated.

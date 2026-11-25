@@ -52,8 +52,8 @@ _Avoid_: data element (the authoring object whose id the field carries), element
 
 **Row** (صف):
 One repetition of a repeating section in a submission, such as one household of a village visit, known by its row
-id. A nested row has a parent row. A row stored without an id is shown with a derived one, which the first edit
-stores. API: `row`.
+id. A nested row has a parent row. A row without a unique stored id is shown with a derived one; the first
+server-side change stores it, and row ids never change after that. API: `row`.
 _Avoid_: repeat alone (it names the section as often as the row), item, event, entry, household
 
 **Top-level value**:
@@ -189,7 +189,8 @@ One submission in a phone's upload, answered on its own: `updated`, or a refusal
 _Avoid_: phone row (a row is a repetition of a repeating section)
 
 **Uploader** (المُرسِل):
-The user whose phone sent a submission or a phone copy. A submission's creator is the user who first sent it.
+The user whose phone sent a submission or a phone copy. A submission's creator is its stored `created_by`: the
+user who first sent it, or for a split-off the source's creator.
 
 **Phone copy** (نسخة الهاتف):
 The whole document a phone sends again for a submission the server already holds. A conflict keeps it unapplied.
