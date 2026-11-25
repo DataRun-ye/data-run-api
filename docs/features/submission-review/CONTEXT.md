@@ -193,23 +193,26 @@ The user whose phone sent a submission or a phone copy. A submission's creator i
 user who first sent it, or for a split-off the source's creator.
 
 **Phone copy** (نسخة الهاتف):
-The whole document a phone sends again for a submission the server already holds. A conflict keeps it unapplied.
+The whole document a phone sends again for a submission the server already holds. A conflict keeps it unapplied, as
+its upload route parsed it.
 _Avoid_: held copy, stale re-send
 
 **Unchanged re-send** (إعادة إرسال دون تغيير):
 A phone copy equal to the state it was based on, or to that uploader's last decided conflict copy, usually a retry
-after a lost answer. It changes nothing, opens no conflict, and is answered `updated`.
+after a lost answer. It changes nothing, opens no conflict, and is answered `updated`; while that uploader's conflict
+is open, it replaces the conflict's copy instead.
 _Avoid_: echo, absorbed, duplicate, retry
 
 **Server-side change** (تغيير على الخادم):
 A revision the uploader's phone did not make, exactly: an edit, move, split, delete or restore, another uploader's
-accepted copy, an admin delete, or a deleted baseline.
+accepted copy, an admin delete, or a deleted baseline, which counts for every uploader, also as a submission's first
+revision.
 _Avoid_: office change, room change
 
 **Conflict** (تعارض):
 A changed phone copy that arrived after a server-side change the phone had not seen. It is kept aside, the phone is
 answered `updated`, and the submission shows `hasOpenConflict`; there is one open conflict per submission and
-uploader. API: `conflicts`; states `OPEN`, `KEPT`, `ACCEPTED`; `cause` `SERVER_SIDE_CHANGE` or `DETECTION_ERROR`.
+uploader, and it always holds that uploader's newest copy. API: `conflicts`; states `OPEN`, `KEPT`, `ACCEPTED`; `cause` `SERVER_SIDE_CHANGE` or `DETECTION_ERROR`.
 _Avoid_: held, hold, held re-send, and `conflict` as the bare code of an HTTP 409
 
 **Keep** (إبقاء الحالي) / **accept** (قبول نسخة الهاتف) /

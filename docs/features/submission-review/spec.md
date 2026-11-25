@@ -409,6 +409,8 @@ they never uploaded the submission, and it is older than the journal or someone 
 **The decision,** for each upload item of an existing submission, under the submission lock, in this order
 (engineering, 2026-11-25):
 
+- **While the uploader has an open conflict on the submission,** its handling comes first, before the steps below
+  and before any save (*A re-send while the conflict is `OPEN`*).
 - **For an uploader with a base version of their own:**
   1. A copy equal to the base version's state, or to the uploader's last decided conflict copy, is an unchanged
      re-send: it changes nothing and opens nothing, so a kept conflict stays kept.
@@ -416,36 +418,53 @@ they never uploaded the submission, and it is older than the journal or someone 
   3. After a server-side `MOVE` later than the base version, a changed copy that fails authorization (E4124, E4114,
      E4122) is kept aside as a conflict. Any other refusal stays a refusal.
   4. A server-side change after the base version keeps the copy aside as a conflict. Server-side changes are `EDIT`,
-     `MOVE`, `SPLIT`, `DELETE`, `RESTORE`, another uploader's accept, `ADMIN_DELETE`, and a deleted baseline.
+     `MOVE`, `SPLIT`, `DELETE`, `RESTORE`, another uploader's accept, `ADMIN_DELETE`, and a deleted baseline, which
+     counts for every uploader, also as the submission's first revision: a submission deleted before the journal
+     began (engineering, 2026-11-25).
   5. Otherwise the upload applies as today.
 
   Steps 1 and 2 come before the upload checks. Nothing is written, so a copy the checks would refuse after a move is
   still answered `updated`.
 - **For any other uploader,** the upload checks run first, exactly as today, and their refusals stay refusals, so
-  these copies never enter the conflict queue. An authorized copy takes the submission's first revision as its base,
-  so any server-side change since then keeps it aside; otherwise it applies as today.
+  these copies never enter the conflict queue. An authorized copy equal to the current state, or to their last
+  decided conflict copy, changes nothing (engineering, 2026-11-25). Otherwise it takes the submission's first revision
+  as its base, so any server-side change since then keeps it aside; without one it applies as today.
+
+**Reference refusals come first** (engineering, 2026-11-25): before a copy is kept aside, the upload's Reference checks
+run against the copy's own assignment, and their refusals stay refusals, as today: E4118 (an entry twice in a field)
+and E4119 (an entry of another org unit). A copy kept aside creates no entries until it is accepted.
 
 **The comparison is structural** (engineering, 2026-11-25): two documents without row metadata, together with their
-deleted flag, assignment and form version. It does not go through the submission normalizer.
+deleted flag, assignment and status. A copy is unchanged only if applying it would write nothing the client owns
+differently. It does not go through the submission normalizer.
 
 - **Row metadata** is exactly the normalizer's row structure keys: `_id`, `_index`, `_parentId` and
-  `_submissionUid`. Everything else compares, the top-level `_status` included, which only phones write. Build
-  step 2's measurement (every submission re-sent unchanged gives 0 conflicts) checks that phones do not change
-  `_status` between re-sends; if they do, it joins the ignored keys on that evidence.
+  `_submissionUid`, ignored. Everything else compares, the top-level `_status` included, which only phones write.
+  Build step 2's measurement (every live submission re-sent unchanged gives 0 conflicts) checks that phones do not
+  change `_status` between re-sends; if they do, it joins the ignored keys on that evidence.
+- **The status counts:** `data_submission.status`, which an upload writes from the copy; phones never send it, API
+  callers can.
+- **The form version does not count** (engineering, 2026-11-26): an update never writes it (`template_version_uid` is
+  set at creation and kept, golden W1-07), so a copy that differs only in its form version, with identical data,
+  changes nothing.
 - **The deleted flag counts:** a `deleted: true` copy against a live state is a change (golden W1-14).
 
 **It never fails an upload item:** an exception in detection keeps the copy aside with cause `DETECTION_ERROR`.
 Only a failure to store the conflict can fail the upload item.
 
 **Storage:** `submission_review.conflict` holds one open conflict per submission and uploader; its state (`OPEN`,
-`KEPT`, `ACCEPTED`) and `cause`; the base version and whether the copy's rows lack ids; the copy as it arrived, its
-first and last receipt times, a re-send count and the conflict's own version; and the decision. The held-upload table
+`KEPT`, `ACCEPTED`) and `cause`; the base version and whether the copy's rows lack ids; the copy, the upload item as
+its route parsed it (the fidelity of an upload today, not the raw bytes); its first and last receipt times, a re-send
+count and the conflict's own version; and the decision. The held-upload table
 is not reused: it allows one row per uid and treats released rows as final.
 
-**A re-send while the conflict is `OPEN`** (engineering, 2026-11-25): a copy equal to the conflict's copy changes
-only its re-send count and last receipt time. A different copy replaces the conflict's copy, keeps the first
-receipt time and raises the conflict's own version, which changes its `ETag`: a decision made on the old view
-answers 412 `precondition-failed`.
+**A re-send while the conflict is `OPEN`** (engineering, 2026-11-25): its handling runs first, before the decision's
+steps and before any save, so the open conflict always holds the uploader's newest copy: an uploader with an open
+conflict never writes the submission directly, and an accept never applies a copy the phone abandoned. A copy equal
+to the conflict's copy changes only its re-send count and last receipt time. Any other copy, one equal to the base
+version's state or to the current state included, replaces the conflict's copy once the upload checks pass, counts as
+a re-send, keeps the first receipt time and raises the conflict's own version, which changes its `ETag`: a decision
+made on the old view answers 412 `precondition-failed`. A refused copy never replaces it.
 
 **Resolution** (decided with `submissions.change`; read with it or `submissions.viewHistory`):
 
@@ -561,12 +580,13 @@ The switches' codes, `method-not-enabled` and `operation-not-enabled`, are alrea
 | Search | — | The data paths each form version gives a field now; a read model later |
 | Downstream | Each change is revisions and outbox rows | The ETL's split re-attribution now; the feed later |
 
-**The journal grows additively** in this feature's changeset (engineering, 2026-11-25): the kind `RESTORE`; the
+**The journal grows additively** in this feature's changesets (engineering, 2026-11-25). Build step 2's adds the
 commands `EDIT`, `MOVE`, `SPLIT`, `DELETE`, `RESTORE` and `CONFLICT_ACCEPT` (the v1 admin delete keeps
-`ADMIN_DELETE` until it retires); `reason` required for those commands; `on_behalf_of_user_id` allowed for
-`CONFLICT_ACCEPT`; a nullable `detail jsonb` holding the edit operations, top-level choices, overrides,
-`formRules: NOT_RUN`, lineage, `entriesOutsidePlacement` and the conflict id. The checks are re-created in one
-changeset, whose rollback refuses once such revisions exist.
+`ADMIN_DELETE` until it retires) and allows `on_behalf_of_user_id` for `CONFLICT_ACCEPT`, so conflict detection
+recognises them before anything writes them. Step 4's adds the kind `RESTORE`; `reason` required for those commands;
+a nullable `detail jsonb` holding the edit operations, top-level choices, overrides, `formRules: NOT_RUN`, lineage,
+`entriesOutsidePlacement` and the conflict id. Each re-creates the checks it changes, and its rollback refuses once
+such revisions exist.
 
 **The submission normalizer** (`SubmissionNormalizer.normalize`, on `develop`) turns a stored submission into values
 keyed by row id and field id, typed by its form version. It never fails on data: it flags what it meets (normalization
@@ -601,9 +621,9 @@ There is no delivery deadline, and no search-only release: searching is of no us
 | --- | --- | --- |
 | 0 | The revision journal in production (6.5.6); the v2 foundation on `develop` | — |
 | 1 | The submission normalizer (reading by row id and field id, typed values: on `develop`) and the write direction back to stored places | Agreement with the feed spike on every submission |
-| 2 | Its own release, reviewed: the submission lock first on the upload paths; conflict detection shipped switched off, with the tagging of copies without row ids and the never-fail handling of copies refused after a move; the ETL's split re-attribution | Goldens unchanged with the switch off. With it on, on a clone: every submission re-sent unchanged, with and without row ids, gives 0 conflicts and 0 failures, and changed copies are kept aside. ETL test: split rows re-attributed |
+| 2 | Its own release, reviewed: the submission lock first on the upload paths; conflict detection shipped switched off, with the tagging of copies without row ids and the never-fail handling of copies refused after a move; the journal changeset of submission review's commands, so detection recognises them; the ETL's split re-attribution (shipped in step 2's first phase, `3c65b55f`) | Goldens unchanged with the switch off. With it on, on a clone: unchanged re-sends of live submissions, with and without row ids, give 0 conflicts and 0 failures; copies to deleted submissions, those deleted before the journal began included, are kept aside once per uploader and counted apart; changed copies after seeded server-side changes are all kept aside. ETL test: split rows re-attributed |
 | 3 | Access grants; search (both forms, the guard, the timeout, row semantics, entry tracking, `created`); view; history; the form dictionary; notes | Plans use the indexes; refusals for missing grants and other activities; the test of SQL against the normalizer; entry searches return split rows |
-| 4 | Edits; delete and restore with lineage checks; the conflict view, keep, accept, accept and re-apply; validation; dry run; the journal changeset | I1, I2, I5, I8, I10; 428, 412, 422 and replays; integrity check 11 reads 0 |
+| 4 | Edits; delete and restore with lineage checks; the conflict view, keep, accept, accept and re-apply; validation; dry run; the journal's second changeset (the kind `RESTORE`, required reasons, `detail`) | I1, I2, I5, I8, I10; 428, 412, 422 and replays; integrity check 11 reads 0 |
 | 5 | Move and split: destination rules, top-level choices, entry tracking, the two-submission transaction, lineage, accept's split rules; the randomized sequences | I2–I7 and I9 on the clone; rows and top-level values conserved |
 | 6 | The scaled measurement: about 30,000 village-shaped submissions of about 70 rows, and about a million submissions without rows | p50 and p95, warm and cold, for every search shape the guard allows; whether the GIN is added |
 | 7 | After activation: the v1 admin delete retired | Logs show no callers; goldens adjusted with intent |
