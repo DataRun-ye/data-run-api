@@ -65,7 +65,9 @@ Decisions are engineering (2026-11-25) unless marked. Counts come from a throwaw
   (`PATH_NOT_IN_FORM`; about 5,900 values in two forms today), also a second value for a field that already has one
   (`FIELD_ALREADY_HAS_VALUE`). A stored document that is not a JSON object is kept whole under the empty path `""`.
 - **Never a failure on data.** The normalizer flags what it meets and counts the flags per submission; the publisher
-  never fails a change because of the data.
+  never fails a change because of the data. The flag counts are server monitoring (integrity check 12 and a
+  metric), not part of the feed: downstream already sees `unmapped_values`. A count column would be an additive
+  change if downstream ever needs one (engineering, 2026-11-25).
 - **Types are the phone's:** the server does not check uploaded values (submission review checks its own edits).
   Cast by the dictionary's `value_type`, guarding against a stray type (none today).
 - **Labels are not in the feed.** Option labels, names and translations come through their own tables (owner,
@@ -130,6 +132,8 @@ One record, key `feed` = `submissions`, read with a full refresh at every sync.
 | `last_reconciled_at` | When reconcile last ran |
 | `first_publication_completed_at` | Null until the first publication has written every submission; models built earlier are partial |
 | `checked_at` | When the publisher last wrote this record, also when idle |
+
+Normalization flag counts are not in `freshness`; they are server monitoring (§4).
 
 ## 8. Order and delivery
 
@@ -336,7 +340,5 @@ crosswalk; the first-time values of §14, counted one by one.
 
 - **Phase D (owner):** whether tall, events and pivots may retire without the rollback margin, and whether a final
   dump may be their only archive.
-- **Flag counts.** The normalizer counts its flags per submission, and its documentation expects the publisher to
-  expose them; version 1 publishes no flag counts. A count per flag in `freshness` would be additive.
 - **For downstream:** the gap measurement above; schema `feed` added at phase B, with the first sync as §13 says; the
   Airbyte role's name, for the grant.

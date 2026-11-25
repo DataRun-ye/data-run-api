@@ -42,5 +42,4 @@ in writing. Details: [contract.md, Rollout](contract.md#rollout).
 
 - Phase D (owner): whether tall, events and pivots may retire without a rollback margin of one campaign or 90 days,
   and whether a final dump may be their only archive.
-- Flag counts: version 1 publishes none; a count per normalization flag in `freshness` would be additive.
 - For downstream: the gap measurement, schema `feed` at phase B, and the Airbyte role's name for the grant.
