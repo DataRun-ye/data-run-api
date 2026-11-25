@@ -7,8 +7,8 @@ import java.util.regex.Pattern;
 
 /**
  * Downstream's reading role: the database role Airbyte reads schema {@code feed} as. Liquibase changeset
- * {@code 20261125-d02-feed-reader-grant} grants it USAGE on the schema, SELECT on its tables and default privileges,
- * once the role is named here and exists.
+ * {@code 20261125-d02-feed-reader-grant} grants it USAGE on the schema, SELECT on its tables and default privileges at
+ * the first start after it is named here, if it exists then.
  *
  * <p>It is the setting {@value #PROPERTY} ({@code DATARUN_FEED_READER_ROLE} in the environment), passed to Liquibase as
  * the parameter {@value #LIQUIBASE_PARAMETER}. Only a plain role name is passed: letters, digits, {@code _} and

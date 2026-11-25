@@ -92,7 +92,7 @@ public class LiquibaseConfiguration {
     /**
      * The changelog parameters: those configured under {@code spring.liquibase.parameters}, and downstream's reading
      * role for the feed's grant, from {@value FeedReaderRole#PROPERTY} and only when it is a plain role name
-     * ({@link FeedReaderRole}); otherwise empty, and the grant waits.
+     * ({@link FeedReaderRole}); otherwise empty, and nothing is granted.
      */
     static Map<String, String> changeLogParameters(Map<String, String> configured, Environment env) {
         Map<String, String> parameters = new HashMap<>();

@@ -101,12 +101,13 @@ class FeedReaderRoleTest {
 
         assertThat(logged()).containsExactly(
             "INFO Schema feed is readable by reader role airbyte",
-            "WARN Downstream's grant on schema feed is not made: reader role airbyte does not exist; the first start "
-                + "after it is created makes it",
-            "WARN Downstream's grant on schema feed is not made yet for reader role airbyte, created after this start's "
-                + "migrations: the next start makes it",
-            "WARN Reader role airbyte cannot read schema feed, and changeset 20261125-d02-feed-reader-grant already ran "
-                + "(for this role or another): grant it USAGE on feed, SELECT on its tables and default privileges by hand",
+            "WARN Downstream's grant on schema feed is not made: reader role airbyte does not exist. Once it does, grant "
+                + "it by hand, or restart once with datarun.feed.reader-role empty and once with it set",
+            "WARN Downstream's grant on schema feed is not made for reader role airbyte: changeset "
+                + "20261125-d02-feed-reader-grant has not run, as Liquibase did not run at this start",
+            "WARN Reader role airbyte cannot read schema feed, and changeset 20261125-d02-feed-reader-grant runs again "
+                + "only when datarun.feed.reader-role changes: grant it USAGE on feed, SELECT on its tables and default "
+                + "privileges by hand",
             "WARN Downstream's grant on schema feed is not made: schema feed does not exist",
             "WARN Could not check downstream's grant on schema feed for reader role airbyte: QueryTimeoutException");
     }

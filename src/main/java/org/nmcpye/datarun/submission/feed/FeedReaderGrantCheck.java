@@ -14,9 +14,10 @@ import java.util.Optional;
 
 /**
  * Says at every start whether downstream can read schema {@code feed}: one WARN line naming the grant that is missing,
- * or one INFO line when the reader role has it. The grant itself is Liquibase changeset
- * {@value #GRANT_CHANGESET}, made at the first start where the role named by {@value FeedReaderRole#PROPERTY} exists
- * ({@link FeedReaderRole}). It reads the catalog only, and never fails a start.
+ * and what makes it, or one INFO line when the reader role has it. The grant itself is Liquibase changeset
+ * {@value #GRANT_CHANGESET}, which runs again at the first start after {@value FeedReaderRole#PROPERTY} changes, and
+ * grants the role it names if that role exists then ({@link FeedReaderRole}). It reads the catalog only, and never
+ * fails a start.
  */
 @Component
 public class FeedReaderGrantCheck {
@@ -95,16 +96,17 @@ public class FeedReaderGrantCheck {
         if (!state.schemaExists()) {
             log.warn("Downstream's grant on schema feed is not made: schema feed does not exist");
         } else if (!state.roleExists()) {
-            log.warn("Downstream's grant on schema feed is not made: reader role {} does not exist; the first start "
-                + "after it is created makes it", role);
+            log.warn("Downstream's grant on schema feed is not made: reader role {} does not exist. Once it does, grant "
+                + "it by hand, or restart once with {} empty and once with it set", role, FeedReaderRole.PROPERTY);
         } else if (state.readable()) {
             log.info("Schema feed is readable by reader role {}", role);
         } else if (state.grantRecorded()) {
-            log.warn("Reader role {} cannot read schema feed, and changeset {} already ran (for this role or another): "
-                + "grant it USAGE on feed, SELECT on its tables and default privileges by hand", role, GRANT_CHANGESET);
+            log.warn("Reader role {} cannot read schema feed, and changeset {} runs again only when {} changes: grant it "
+                + "USAGE on feed, SELECT on its tables and default privileges by hand", role, GRANT_CHANGESET,
+                FeedReaderRole.PROPERTY);
         } else {
-            log.warn("Downstream's grant on schema feed is not made yet for reader role {}, created after this start's "
-                + "migrations: the next start makes it", role);
+            log.warn("Downstream's grant on schema feed is not made for reader role {}: changeset {} has not run, as "
+                + "Liquibase did not run at this start", role, GRANT_CHANGESET);
         }
     }
 }

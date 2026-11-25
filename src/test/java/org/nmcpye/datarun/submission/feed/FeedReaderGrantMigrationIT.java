@@ -32,10 +32,10 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Downstream's grant on schema feed, against PostgreSQL 16, with and without a reader role: nothing is granted or
- * recorded while no existing role is named; the first run with an existing role grants it read access to feed, and to
- * streams added later, and nothing on feed_ops; naming another role later fails nothing and grants nothing; the
- * startup check reads the real catalog; the rollback revokes.
+ * Downstream's grant on schema feed, against PostgreSQL 16, with and without a reader role: while no existing role is
+ * named the grant is marked ran and grants nothing, so nothing is left pending; the first start after a role is named,
+ * or another one, grants it read access to feed and to streams added later, and nothing on feed_ops; a role named
+ * before it exists waits for the setting to change; the startup check reads the real catalog; the rollback revokes.
  */
 class FeedReaderGrantMigrationIT {
 
@@ -103,9 +103,27 @@ class FeedReaderGrantMigrationIT {
         liquibase(GRANT_CHANGELOG, readerRole, false);
     }
 
+    /** Each changeset recorded, with how it ran, in the order it last ran. */
     private static List<String> recorded() {
-        return db.queryForList("SELECT id FROM databasechangelog ORDER BY orderexecuted", String.class);
+        return db.queryForList("SELECT id || ' ' || exectype FROM databasechangelog ORDER BY orderexecuted",
+            String.class);
     }
+
+    /** The grant's changesets a start with this setting would run: none, once a start has run with it. */
+    private static List<String> pending(String readerRole) throws Exception {
+        ChangeLogHistoryServiceFactory.getInstance().resetAll();
+        Scope.getCurrentScope().getSingleton(FastCheckService.class).clearCache();
+        try (Connection connection = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())) {
+            Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
+            Liquibase liquibase = new Liquibase(GRANT_CHANGELOG, new ClassLoaderResourceAccessor(), database);
+            liquibase.setChangeLogParameter(FeedReaderRole.LIQUIBASE_PARAMETER, readerRole);
+            return liquibase.listUnrunChangeSets(new Contexts(), new LabelExpression()).stream()
+                .map(changeSet -> changeSet.getId()).toList();
+        }
+    }
+
+    private static final String SCHEMA_RAN = FeedSchemaMigrationIT.CHANGESET + " EXECUTED";
+    private static final String GRANT = FeedReaderGrantCheck.GRANT_CHANGESET;
 
     /** What a role may do in the feed's schemas, one line per privilege it has. */
     private static List<String> privileges(String role) {
@@ -138,38 +156,35 @@ class FeedReaderGrantMigrationIT {
     }
 
     @Test
-    void withoutAReaderRoleNothingIsGrantedNorRecorded_andTheStartSaysSo() throws Exception {
+    void withoutAReaderRoleTheGrantIsMarkedRanAndGrantsNothing_andTheStartSaysSo() throws Exception {
         start(null);
         start("");
-        assertThat(recorded()).as("the grant is skipped, never recorded, so it is tried again at each start")
-            .containsExactly(FeedSchemaMigrationIT.CHANGESET);
+        assertThat(recorded()).containsExactly(SCHEMA_RAN, GRANT + " MARK_RAN");
+        assertThat(pending("")).as("nothing is left pending").isEmpty();
 
         checkAtStart(null);
         assertThat(checkLines()).containsExactly(
             "WARN Downstream's grant on schema feed is not made: no reader role is set (datarun.feed.reader-role)");
 
         db.execute("CREATE ROLE feed_reader");
-        assertThat(privileges("feed_reader")).as("a role created later has nothing until a start names it").isEmpty();
+        assertThat(privileges("feed_reader")).as("a role has nothing until a start names it").isEmpty();
     }
 
     @Test
-    void aNamedRoleThatDoesNotExistYetIsGrantedAtTheFirstStartAfterItIsCreated() throws Exception {
-        start("feed_reader");
-        assertThat(recorded()).containsExactly(FeedSchemaMigrationIT.CHANGESET);
-        checkAtStart("feed_reader");
-
+    void theFirstStartAfterAnExistingRoleIsNamedGrantsIt() throws Exception {
         db.execute("CREATE ROLE feed_reader");
-        checkAtStart("feed_reader");
+        start("");
+        assertThat(pending("feed_reader")).as("naming a role changes the changeset").containsExactly(GRANT);
+
         start("feed_reader");
         checkAtStart("feed_reader");
 
-        assertThat(checkLines()).containsExactly(
-            "WARN Downstream's grant on schema feed is not made: reader role feed_reader does not exist; the first "
-                + "start after it is created makes it",
-            "WARN Downstream's grant on schema feed is not made yet for reader role feed_reader, created after this "
-                + "start's migrations: the next start makes it",
-            "INFO Schema feed is readable by reader role feed_reader");
-        assertThat(recorded()).containsExactly(FeedSchemaMigrationIT.CHANGESET, FeedReaderGrantCheck.GRANT_CHANGESET);
+        assertThat(privileges("feed_reader")).contains("USAGE feed", "SELECT feed.submission");
+        assertThat(recorded()).containsExactly(SCHEMA_RAN, GRANT + " RERAN");
+        assertThat(checkLines()).containsExactly("INFO Schema feed is readable by reader role feed_reader");
+        start("feed_reader");
+        assertThat(recorded()).as("the same setting runs nothing again").containsExactly(SCHEMA_RAN, GRANT + " RERAN");
+        assertThat(pending("feed_reader")).isEmpty();
     }
 
     @Test
@@ -177,6 +192,7 @@ class FeedReaderGrantMigrationIT {
         db.execute("CREATE ROLE feed_reader");
         start("feed_reader");
 
+        assertThat(recorded()).containsExactly(SCHEMA_RAN, GRANT + " EXECUTED");
         assertThat(privileges("feed_reader")).containsExactly(
             "SELECT feed.form_field",
             "SELECT feed.form_section",
@@ -193,7 +209,7 @@ class FeedReaderGrantMigrationIT {
     }
 
     @Test
-    void namingAnotherRoleLaterFailsNothingAndGrantsItNothing() throws Exception {
+    void namingAnotherRoleLaterGrantsItToo() throws Exception {
         db.execute("CREATE ROLE feed_reader");
         db.execute("CREATE ROLE other_reader");
         start("feed_reader");
@@ -201,11 +217,34 @@ class FeedReaderGrantMigrationIT {
         start("other_reader");
         checkAtStart("other_reader");
 
-        assertThat(recorded()).containsExactly(FeedSchemaMigrationIT.CHANGESET, FeedReaderGrantCheck.GRANT_CHANGESET);
-        assertThat(privileges("other_reader")).isEmpty();
-        assertThat(checkLines()).containsExactly("WARN Reader role other_reader cannot read schema feed, and changeset "
-            + "20261125-d02-feed-reader-grant already ran (for this role or another): grant it USAGE on feed, SELECT on "
-            + "its tables and default privileges by hand");
+        assertThat(privileges("other_reader")).contains("USAGE feed", "SELECT feed.submission_row");
+        assertThat(privileges("feed_reader")).as("the role named earlier keeps its grant").contains("USAGE feed");
+        assertThat(checkLines()).containsExactly("INFO Schema feed is readable by reader role other_reader");
+    }
+
+    @Test
+    void aRoleNamedBeforeItExistsIsGrantedWhenTheSettingChangesAgain() throws Exception {
+        start("feed_reader");
+        checkAtStart("feed_reader");
+        assertThat(recorded()).containsExactly(SCHEMA_RAN, GRANT + " MARK_RAN");
+
+        db.execute("CREATE ROLE feed_reader");
+        start("feed_reader");
+        checkAtStart("feed_reader");
+        assertThat(privileges("feed_reader")).as("the setting did not change").isEmpty();
+
+        start("");
+        start("feed_reader");
+        checkAtStart("feed_reader");
+
+        assertThat(privileges("feed_reader")).contains("USAGE feed");
+        assertThat(checkLines()).containsExactly(
+            "WARN Downstream's grant on schema feed is not made: reader role feed_reader does not exist. Once it does, "
+                + "grant it by hand, or restart once with datarun.feed.reader-role empty and once with it set",
+            "WARN Reader role feed_reader cannot read schema feed, and changeset 20261125-d02-feed-reader-grant runs "
+                + "again only when datarun.feed.reader-role changes: grant it USAGE on feed, SELECT on its tables and "
+                + "default privileges by hand",
+            "INFO Schema feed is readable by reader role feed_reader");
     }
 
     @Test
@@ -218,7 +257,7 @@ class FeedReaderGrantMigrationIT {
         assertThat(privileges("feed_reader")).isEmpty();
         db.execute("CREATE TABLE feed.later_stream (id text)");
         assertThat(privileges("feed_reader")).as("no default privilege left").isEmpty();
-        assertThat(recorded()).containsExactly(FeedSchemaMigrationIT.CHANGESET);
+        assertThat(recorded()).containsExactly(SCHEMA_RAN);
         db.execute("DROP TABLE feed.later_stream");
 
         start("feed_reader");
@@ -234,7 +273,7 @@ class FeedReaderGrantMigrationIT {
         start(FeedReaderRole.liquibaseParameter(environment));
         new FeedReaderGrantCheck(new NamedParameterJdbcTemplate(db), environment).checkAtStart();
 
-        assertThat(recorded()).containsExactly(FeedSchemaMigrationIT.CHANGESET);
+        assertThat(recorded()).containsExactly(SCHEMA_RAN, GRANT + " MARK_RAN");
         assertThat(privileges("feed_reader")).isEmpty();
         assertThat(db.queryForObject("SELECT to_regclass('feed.submission') IS NOT NULL", Boolean.class)).isTrue();
         assertThat(checkLines()).containsExactly("WARN Downstream's grant on schema feed is not made: "
