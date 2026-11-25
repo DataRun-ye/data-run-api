@@ -102,7 +102,7 @@ and its error shapes are untouched.
     with `currentVersion`, the current `ETag` and, when the module has one,
     `Link: <...>; rel="version-history"`.
 - The comparison runs after the idempotency key is claimed and the resource's
-  row is locked (Idempotency, below), never before.
+  row is locked (Changing Requests, below), never before.
 
 ## Paging
 
@@ -134,13 +134,15 @@ and its error shapes are untouched.
 
 ## Methods And Actions
 
-The vocabulary study's API rules (`.review/data-chain/2026-11-25-vocabulary.md`
-§6) apply; the domain nouns and verbs come from the feature's glossary.
+The API naming rules of the data-chain vocabulary study (2026-11-25, its
+section 6) apply; the domain nouns and verbs come from the feature's
+glossary when it lands under `docs/features/`.
 
-- Reads are `GET`. A change is a named action, never `PUT` or `PATCH` on a
-  submission: `POST /api/v2/<resources>/{id}:<verb>` (AIP-136), verbs in
-  camelCase; actions on a collection are `POST /api/v2/<resources>:<verb>`,
-  such as `:search`, a safe read with a large filter body.
+- Reads are `GET`; standard creates are `POST` on a collection and revokes
+  `DELETE`. A change is a named action, never `PUT` or `PATCH`:
+  `POST /api/v2/<resources>/{id}:<verb>` (AIP-136), verbs in camelCase;
+  actions on a collection are `POST /api/v2/<resources>:<verb>`, such as
+  `:search`, a safe read with a large filter body.
 - Spring MVC routes this form cleanly (`V2ActionRoutingIT`, real HTTP through
   Undertow, the firewall and the v2 chain): ULID, 24-hex and UUIDv7-text ids
   followed by `:verb` reach their action with the id intact, whether the colon
