@@ -210,7 +210,8 @@ class FeedAgreementIT {
     }
 
     private static FeedAgreement.Settings settings(List<String> forms, int batch) {
-        return new FeedAgreement.Settings(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword(), forms, batch);
+        return new FeedAgreement.Settings(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword(), PG.getDatabaseName(),
+            false, forms, batch);
     }
 
     private static FeedAgreement.Report run(List<String> forms, int batch, FeedAgreement.Normalizing normalizing)
@@ -305,6 +306,7 @@ class FeedAgreementIT {
                 "FEED_AGREEMENT_JDBC_URL", PG.getJdbcUrl(),
                 "FEED_AGREEMENT_USER", PG.getUsername(),
                 "FEED_AGREEMENT_PASSWORD", PG.getPassword(),
+                "FEED_AGREEMENT_DATABASE", PG.getDatabaseName(),
                 "FEED_AGREEMENT_FORMS", FORM_A + "," + FORM_NONE), out);
 
             assertThat(report.agrees()).isTrue();
@@ -318,22 +320,59 @@ class FeedAgreementIT {
     }
 
     @Test
-    void itReadsOnlyAndNeverRunsOnAProductionHost() throws Exception {
+    void itReadsOnlyAndHandsTheConnectionBackAsItCame() throws Exception {
         try (Connection connection = DriverManager.getConnection(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())) {
             FeedAgreement.run(connection, settings(List.of(), 500));
-            assertThat(connection.getAutoCommit()).as("the connection is handed back as it came").isTrue();
+            assertThat(connection.getAutoCommit()).isTrue();
             assertThat(connection.isReadOnly()).isFalse();
         }
         assertThat(db.queryForObject("SELECT count(*) FROM journal.submission_revision", Long.class))
             .isEqualTo(revisions);
-
-        assertThatThrownBy(() -> FeedAgreement.connect(new FeedAgreement.Settings(
-            "jdbc:postgresql://datarun-prod-db.lab:5432/nmcpdb", "u", "p", List.of(), 500)))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("production");
         assertThat(FeedAgreement.Settings.fromEnvironment(Map.of(
-            "FEED_AGREEMENT_JDBC_URL", "jdbc:postgresql://clone:5432/db", "FEED_AGREEMENT_FORMS", " a1 , b2 ",
-            "FEED_AGREEMENT_BATCH", "50")))
-            .isEqualTo(new FeedAgreement.Settings("jdbc:postgresql://clone:5432/db", null, null, List.of("a1", "b2"),
-                50));
+            "FEED_AGREEMENT_JDBC_URL", "jdbc:postgresql://clone:5432/db", "FEED_AGREEMENT_DATABASE", "db",
+            "FEED_AGREEMENT_FORMS", " a1 , b2 ", "FEED_AGREEMENT_BATCH", "50")))
+            .isEqualTo(new FeedAgreement.Settings("jdbc:postgresql://clone:5432/db", null, null, "db", false,
+                List.of("a1", "b2"), 50));
+    }
+
+    /** The run measures only the database the operator names, and production only when production is allowed. */
+    @Test
+    void itMeasuresOnlyTheDatabaseNamed_andProductionOnlyWhenAllowed() throws Exception {
+        String url = PG.getJdbcUrl();
+        assertThatThrownBy(() -> run(new FeedAgreement.Settings(url, PG.getUsername(), PG.getPassword(), null, false,
+            List.of(), 500))).hasMessageContaining("Name the database to measure");
+        assertThatThrownBy(() -> run(new FeedAgreement.Settings(url, PG.getUsername(), PG.getPassword(),
+            "datarun_staging", false, List.of(), 500)))
+            .as("connected to another database than the one named").isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("not to datarun_staging");
+
+        // production's database host, by name or address, refused before any connection is tried
+        for (String host : List.of("datarun-prod-db.lab", "DATARUN-PROD-DB.LAB", "192.168.1.111")) {
+            assertThatThrownBy(() -> FeedAgreement.connect(new FeedAgreement.Settings(
+                "jdbc:postgresql://" + host + ":5432/nmcpdb?sslmode=require", "u", "p", "nmcpdb", false, List.of(), 1)))
+                .as(host).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("FEED_AGREEMENT_PRODUCTION");
+        }
+        // staging's clone is not production, whatever its host's name says
+        assertThatThrownBy(() -> FeedAgreement.connect(new FeedAgreement.Settings(
+            "jdbc:postgresql://product-staging-db.lab.invalid:5432/datarun_staging?connectTimeout=1", "u", "p",
+            "datarun_staging", false, List.of(), 1)))
+            .as("passes the guards and only then fails to connect").isInstanceOf(java.sql.SQLException.class);
+
+        // production's database name, reached through any address (a tunnel, a clone under that name)
+        db.execute("CREATE DATABASE nmcpdb");
+        try {
+            String nmcpdb = url.substring(0, url.lastIndexOf('/') + 1) + "nmcpdb";
+            assertThatThrownBy(() -> run(new FeedAgreement.Settings(nmcpdb, PG.getUsername(), PG.getPassword(),
+                "nmcpdb", false, List.of(), 500)))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("production's database");
+        } finally {
+            db.execute("DROP DATABASE nmcpdb");
+        }
+    }
+
+    private static FeedAgreement.Report run(FeedAgreement.Settings settings) throws Exception {
+        try (Connection connection = FeedAgreement.connect(settings)) {
+            return FeedAgreement.run(connection, settings);
+        }
     }
 }

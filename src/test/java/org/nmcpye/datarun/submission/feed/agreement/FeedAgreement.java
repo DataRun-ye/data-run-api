@@ -57,10 +57,14 @@ import java.util.function.BiFunction;
  * what a definition gives one field (an object, rows at a path no version defines), and the oracle walks into it:
  * such values are counted in "values holding objects or rows", and each shows as missing and extra values.</p>
  *
+ * <p><b>Where it runs.</b> The operator names the database to measure ({@code FEED_AGREEMENT_DATABASE}), and the run
+ * refuses unless the database it is connected to is that one ({@code current_database()}). A second guard refuses
+ * production's known endpoints, its database host by name or address and its database's name, unless
+ * {@code FEED_AGREEMENT_PRODUCTION=true}, as {@code scripts/integrity/check.sh} gates production.</p>
+ *
  * <p><b>Safety.</b> One {@code REPEATABLE READ READ ONLY} transaction, so every count comes from one snapshot and
  * nothing can be written; {@code work_mem} 8MB, no parallel workers, no JIT, a statement timeout, a lock timeout, and
- * an idle timeout; batches of heads by submission id; it refuses a host whose name says production. It prints counts
- * and form uids, never a value or another id.</p>
+ * an idle timeout; batches of heads by submission id. It prints counts and form uids, never a value or another id.</p>
  */
 public final class FeedAgreement {
 
@@ -95,12 +99,22 @@ public final class FeedAgreement {
 
     private static final JsonNode EMPTY_ARRAY = new ObjectMapper().createArrayNode();
 
+    /** Production's database host, by name and address ({@code docs/agent-context/release-boundary.md}). */
+    static final Set<String> PRODUCTION_HOSTS = Set.of("datarun-prod-db.lab", "datarun-prod-db", "192.168.1.111");
+
+    /** Production's database ({@code deploy/production/compose.yml}). */
+    static final Set<String> PRODUCTION_DATABASES = Set.of("nmcpdb");
+
     /** How the normalizer side reads a head; the real normalizer, or a faulty one to prove the harness. */
     public interface Normalizing extends BiFunction<StoredSubmission, FormDefinition, NormalizedSubmission> {
     }
 
-    /** Where to connect, which forms (none: all), and how many heads per batch. */
-    public record Settings(String jdbcUrl, String user, String password, List<String> formUids, int batchSize) {
+    /**
+     * Where to connect, the database the operator names (the run refuses any other), whether production may be
+     * measured, which forms (none: all), and how many heads per batch.
+     */
+    public record Settings(String jdbcUrl, String user, String password, String database, boolean production,
+                           List<String> formUids, int batchSize) {
 
         public Settings {
             Objects.requireNonNull(jdbcUrl, "jdbcUrl");
@@ -110,13 +124,18 @@ public final class FeedAgreement {
             }
         }
 
-        /** From the environment: FEED_AGREEMENT_JDBC_URL, _USER, _PASSWORD, _FORMS (comma-separated), _BATCH. */
+        /**
+         * From the environment: FEED_AGREEMENT_JDBC_URL, _USER, _PASSWORD, _DATABASE, _PRODUCTION (true or not),
+         * _FORMS (comma-separated), _BATCH.
+         */
         public static Settings fromEnvironment(Map<String, String> environment) {
             String forms = environment.getOrDefault("FEED_AGREEMENT_FORMS", "");
             return new Settings(
                 environment.get("FEED_AGREEMENT_JDBC_URL"),
                 environment.get("FEED_AGREEMENT_USER"),
                 environment.get("FEED_AGREEMENT_PASSWORD"),
+                environment.get("FEED_AGREEMENT_DATABASE"),
+                "true".equals(environment.get("FEED_AGREEMENT_PRODUCTION")),
                 forms.isBlank() ? List.of() : List.of(forms.trim().split("\\s*,\\s*")),
                 Integer.parseInt(environment.getOrDefault("FEED_AGREEMENT_BATCH", "500")));
         }
@@ -167,13 +186,25 @@ public final class FeedAgreement {
         }
     }
 
-    /** Connects to the database the settings name, refusing a production host; the caller closes it. */
+    /**
+     * Connects to the URL the settings give, after the guards that need no connection: a database is named, and the
+     * host is not production's unless production is allowed. The caller closes the connection; {@link #run} checks
+     * that it reached the database named.
+     */
     public static Connection connect(Settings settings) throws SQLException {
-        String host = host(settings.jdbcUrl());
-        if (host.toLowerCase(Locale.ROOT).contains("prod")) {
-            throw new IllegalArgumentException("The agreement harness never runs on a production host");
+        requireNamedDatabase(settings);
+        String host = host(settings.jdbcUrl()).toLowerCase(Locale.ROOT);
+        if (PRODUCTION_HOSTS.contains(host) && !settings.production()) {
+            throw new IllegalArgumentException("Host " + host + " is production's database host: set "
+                + "FEED_AGREEMENT_PRODUCTION=true to measure production");
         }
         return DriverManager.getConnection(settings.jdbcUrl(), settings.user(), settings.password());
+    }
+
+    private static void requireNamedDatabase(Settings settings) {
+        if (settings.database() == null || settings.database().isBlank()) {
+            throw new IllegalArgumentException("Name the database to measure in FEED_AGREEMENT_DATABASE");
+        }
     }
 
     private static String host(String jdbcUrl) {
@@ -182,6 +213,23 @@ public final class FeedAgreement {
         }
         String host = URI.create(jdbcUrl.substring("jdbc:".length())).getHost();
         return host == null ? "" : host;
+    }
+
+    /** The run's database is the one named, and production's only when production is allowed. */
+    private static void requireTheDatabaseNamed(Statement statement, Settings settings) throws SQLException {
+        requireNamedDatabase(settings);
+        try (ResultSet rs = statement.executeQuery("SELECT current_database()")) {
+            rs.next();
+            String connected = rs.getString(1);
+            if (!connected.equals(settings.database())) {
+                throw new IllegalStateException("Connected to database " + connected + ", not to "
+                    + settings.database() + ", the database named in FEED_AGREEMENT_DATABASE");
+            }
+            if (PRODUCTION_DATABASES.contains(connected) && !settings.production()) {
+                throw new IllegalStateException("Database " + connected + " is production's database: set "
+                    + "FEED_AGREEMENT_PRODUCTION=true to measure production");
+            }
+        }
     }
 
     /** Measures every head of the forms named (none: every head) with the real normalizer. */
@@ -201,6 +249,7 @@ public final class FeedAgreement {
         connection.setReadOnly(true);
         try {
             try (Statement statement = connection.createStatement()) {
+                requireTheDatabaseNamed(statement, settings);
                 for (String setting : SESSION) {
                     statement.execute(setting);
                 }

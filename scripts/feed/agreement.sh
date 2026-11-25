@@ -7,12 +7,16 @@
 #   FEED_AGREEMENT_SETTINGS=/path/outside/the/repository/agreement.env scripts/feed/agreement.sh
 #
 # The settings file is sourced, never printed, and sets:
-#   FEED_AGREEMENT_JDBC_URL    jdbc:postgresql://<host>:<port>/<database> of a restored clone; a host whose name says
-#                              production is refused
+#   FEED_AGREEMENT_JDBC_URL    jdbc:postgresql://<host>:<port>/<database> of a restored clone
+#   FEED_AGREEMENT_DATABASE    the name of that database: the run refuses unless it is connected to exactly it
 #   FEED_AGREEMENT_USER        a clone-only role that can read public and journal
 #   FEED_AGREEMENT_PASSWORD
 #   FEED_AGREEMENT_FORMS       optional: form uids, comma-separated; every form when unset
 #   FEED_AGREEMENT_BATCH       optional: heads per batch, 500 when unset
+#
+# Production's database host (datarun-prod-db.lab, 192.168.1.111) and database (nmcpdb) are refused unless
+# FEED_AGREEMENT_PRODUCTION=true, as scripts/integrity/check.sh gates production; a clone restored under the
+# production name needs it too.
 #
 # It reads in one REPEATABLE READ READ ONLY transaction, with work_mem 8MB, no parallel workers, no JIT and a
 # 300 s statement timeout, and writes nothing. Before running it on a shared server, check its memory, disk and WAL
@@ -32,8 +36,8 @@ set -a
 # shellcheck disable=SC1090
 . "$settings"
 set +a
-if [ -z "${FEED_AGREEMENT_JDBC_URL:-}" ]; then
-    echo "The settings file sets no FEED_AGREEMENT_JDBC_URL" >&2
+if [ -z "${FEED_AGREEMENT_JDBC_URL:-}" ] || [ -z "${FEED_AGREEMENT_DATABASE:-}" ]; then
+    echo "The settings file sets FEED_AGREEMENT_JDBC_URL and FEED_AGREEMENT_DATABASE, the database to measure" >&2
     exit 2
 fi
 
