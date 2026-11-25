@@ -52,8 +52,8 @@ _Avoid_: data element (the authoring object whose id the field carries), element
 
 **Row** (صف):
 One repetition of a repeating section in a submission, such as one household of a village visit, known by its row
-id. A nested row has a parent row. A row without a unique stored id is shown with a derived one; the first
-server-side change stores it, and row ids never change after that. API: `row`.
+id. A nested row has a parent row. A row without a unique stored id is shown with a derived one, which the next
+edit, split or accept stores; a server-side change never changes a row id. API: `row`.
 _Avoid_: repeat alone (it names the section as often as the row), item, event, entry, household
 
 **Top-level value**:

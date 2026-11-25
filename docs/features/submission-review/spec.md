@@ -41,7 +41,7 @@ Decisions on the cases (2026-11-25):
 
 **C1. Phones work offline.** They push submissions and never download them, so a server-side change never reaches
 a phone and the team keeps seeing its own copy. A re-send carries the whole document and no version. After any
-failure a phone forgets that the server holds the submission. Old apps on the legacy route (before 6.0.2) send rows
+failure a phone forgets that the server holds the submission. Apps 5.2 and 5.3, on the legacy route, send rows
 without ids, and the server mints new ids at every re-send. Today a move or a handover can make the original team's
 copies fail (E4124, E4114, E4122). Most later copies are retries: 96.6% of re-sends arrive within an hour of the
 previous change.
@@ -150,11 +150,16 @@ Conflict detection is a requirement of every change switch, so no change can be 
   another row at that field.
 - **`addRow`** (later): a new row id, every mandatory field of the new row, and entries that exist in the org unit.
 - **Reported, not enforced:** issues already elsewhere in the document.
-- **Row ids freeze at the first server-side change** (engineering, 2026-11-25). Before the first server-side change
-  of any kind applies to a submission (an edit, move, split, delete, restore or accept), every row lacking a unique
-  stored id stores the id the API and the feed already show, in the same revision: its derived id, including the
-  `|<attempt>` id of a row whose id an earlier row already has. From then on row ids never change: a split's rows
-  keep theirs, the remaining siblings keep theirs, and the feed's `id_origin` turns `STORED` with the same value.
+- **Row ids are stored by the changes that write the document** (engineering, 2026-11-25). Every server-side change
+  that writes the document, an edit, a split or an accept, stores in the same revision the shown id of each row
+  lacking a unique stored id: its derived id, or the `|<attempt>` id of a row whose id an earlier row already has.
+  So a server-side change never changes a row id, rows without ids that an accept brings in included. Move, delete
+  and restore never write the document and store nothing; derived ids depend on neither placement nor deletion.
+  The feed's `id_origin` turns `STORED`, with the same value, at the first change that stores the id.
+- **What still changes row ids:** a phone upload that applies replaces the document, as today. Apps from 6.0 send
+  their rows' ids; for rows sent without ids (apps 5.2 and 5.3), the legacy route mints new ones. With conflict
+  detection on, such a copy is kept aside whenever a server-side change exists after its base version, so this
+  applies only to uploads with no server-side change since their base.
 
 ### 3.1 Search
 
@@ -381,10 +386,10 @@ accept with phone re-sends, unchanged and changed, with and without row ids, and
 ## 6. Concurrency and idempotency
 
 The v2 foundation's rules apply as built ([api-v2.md](../../agent-context/api-v2.md), Concurrency and Changing
-Requests). The `ETag` is the submission's version (`"4"`, also shown as `version`), and `If-Match` is required on
-every changing method (428 when missing, 412 with `currentVersion` when stale). Each changing transaction claims the
-`Idempotency-Key`, takes the submission lock (`SELECT … FOR UPDATE`, the first read), checks `If-Match`, validates
-and applies, records the outcome on the key, and commits; a rolled-back attempt takes its claim with it.
+Requests). A submission's `ETag` is its version (`"4"`, also shown as `version`; a conflict's is its own, §7), and
+`If-Match` is required on every changing method (428 when missing, 412 when stale). Each changing transaction
+claims the `Idempotency-Key`, takes the submission lock (`SELECT … FOR UPDATE`, the first read), checks `If-Match`,
+validates and applies, records the outcome on the key, and commits; a rolled-back attempt takes its claim with it.
 
 This feature adds (engineering, 2026-11-25): the upload routes and the v1 admin delete take the same submission lock
 first, and the stored-submission guard, conflict detection and the save read the submission under it. A latch test
@@ -434,21 +439,24 @@ Only a failure to store the conflict can fail the upload item.
 
 **Storage:** `submission_review.conflict` holds one open conflict per submission and uploader; its state (`OPEN`,
 `KEPT`, `ACCEPTED`) and `cause`; the base version and whether the copy's rows lack ids; the copy as it arrived, its
-first and last receipt times, a re-send count and the conflict's version; and the decision. The held-upload table
+first and last receipt times, a re-send count and the conflict's own version; and the decision. The held-upload table
 is not reused: it allows one row per uid and treats released rows as final.
 
 **A re-send while the conflict is `OPEN`** (engineering, 2026-11-25): a copy equal to the conflict's copy changes
 only its re-send count and last receipt time. A different copy replaces the conflict's copy, keeps the first
-receipt time and raises the conflict's version, so a decision made on the old copy answers 409
-`phone-copy-changed`.
+receipt time and raises the conflict's own version, which changes its `ETag`: a decision made on the old view
+answers 412 `precondition-failed`.
 
 **Resolution** (decided with `submissions.change`; read with it or `submissions.viewHistory`):
 
 - **The view** shows three columns, the base version, the current state and the phone copy, with each value and row
   marked as changed on the phone, on the server, or both.
-- **Both decisions take the same preconditions** (engineering, 2026-11-25): `If-Match` on the submission's version,
-  and the conflict's version as seen. A newer copy answers 409 `phone-copy-changed`, and a changed submission 412.
-  Every decision is made on the three-way view the resolver actually saw.
+- **The conflict is a versioned resource** (engineering, 2026-11-25). Its strong `ETag`, opaque to clients, covers
+  what the conflict view shows: it changes when the phone copy changes (the conflict's own version) or when the
+  submission's version does. `:keep` and `:accept` send `If-Match` with that `ETag`; a stale tag answers 412
+  `precondition-failed`, and the resolver views the conflict again. So every decision is made on the three-way view
+  the resolver actually saw. The representation has no `version` member, since R9 keeps `version` for the
+  submission; the items of `GET /api/v2/conflicts` carry each conflict's `ETag` as `etag`.
 - **Keep** closes the conflict with a reason. The submission is unchanged, and no revision is written.
 - **Accept** makes the copy's values and rows the state, by the resolver on behalf of the uploader. Placement never
   changes; validation and new entries use the copy's own assignment. It is also refused with 409
@@ -538,7 +546,7 @@ from a study of operations' words, field data platforms and API design guides (e
 | Rows | `row-not-top-level`, `split-takes-all-rows`, `top-level-field-unstated` (422); `row-live-elsewhere` (409) |
 | Destinations | `destination-other-activity`, `form-not-on-destination`, `destination-deleted` (422); `already-at-destination` (409) |
 | State (409) | `already-deleted` (delete, move, split or accept on a deleted submission); `not-deleted` (restore) |
-| Phone copies (409) | `phone-copy-changed`; `phone-copy-rows-without-ids` |
+| Phone copies (409) | `phone-copy-rows-without-ids` |
 
 The switches' codes, `method-not-enabled` and `operation-not-enabled`, are already in the registry.
 
@@ -648,11 +656,11 @@ Invented ids and values. Team T312 has assignment A7 in village V7 and assignmen
    `updated`.
 8. **The team leader edits S on the phone and re-sends it.** Its base version is 0, and server-side changes came
    after it, so a conflict `…c1` opens (`OPEN`); the phone is answered `updated`, and S shows
-   `"hasOpenConflict": true`. A user with `submissions.change` opens `GET /api/v2/submissions/…7f3a/conflicts/…c1`
+   `"hasOpenConflict": true`. A user with `submissions.change` views `GET /api/v2/submissions/…7f3a/conflicts/…c1`
    and sees the base version, the current state and the phone copy side by side. The copy still holds the 23 rows
    now in …9c2e, so a plain accept would answer 409 `row-live-elsewhere`. Seeing nothing in the copy to take, the
-   user sends `POST …/conflicts/…c1:keep` with `If-Match: "2"`, the conflict's version it saw and a reason: the
-   conflict is `KEPT`, and S stays at version 2.
+   user sends `POST …/conflicts/…c1:keep` with `If-Match` set to the conflict's `ETag` from that view, and a
+   reason: the conflict is `KEPT`, and S stays at version 2.
 9. **A refusal.** Clearing a mandatory field without `"overrideMandatory": true` answers 422 with
    `"code": "mandatory-field-empty"` and `errors[0].pointer = "#/operations/0"`. The value is never repeated.
 10. **A handover.** When V7 is handed to team T415, `POST /api/v2/submissions/…7f3a:move` with
