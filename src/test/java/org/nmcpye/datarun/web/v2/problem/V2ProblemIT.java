@@ -79,7 +79,7 @@ class V2ProblemIT {
         MockHttpServletResponse response = perform(post(BASE + "/body").contentType(MediaType.APPLICATION_JSON)
             .content("{\"name\": \"n\", \"count\": \"" + V2ProblemFixtureController.SECRET + "\"}"));
         JsonNode body = problem(response, 400, "bad-request");
-        assertThat(body.get("errors").get(0).get("pointer").asText()).isEqualTo("/count");
+        assertThat(body.get("errors").get(0).get("pointer").asText()).isEqualTo("#/count");
         assertThat(body.get("errors").get(0).get("code").asText()).isEqualTo("invalid-type");
         assertThat(response.getContentAsString()).doesNotContain(V2ProblemFixtureController.SECRET);
     }
@@ -89,7 +89,7 @@ class V2ProblemIT {
         MockHttpServletResponse response = perform(post(BASE + "/body").contentType(MediaType.APPLICATION_JSON)
             .content("{\"name\": \" \", \"count\": 0}"));
         JsonNode body = problem(response, 422, "validation-failed");
-        assertThat(body.get("errors").findValuesAsText("pointer")).containsExactlyInAnyOrder("/name", "/count");
+        assertThat(body.get("errors").findValuesAsText("pointer")).containsExactlyInAnyOrder("#/name", "#/count");
         assertThat(body.get("errors").findValuesAsText("code")).containsExactlyInAnyOrder("not-blank", "min");
     }
 

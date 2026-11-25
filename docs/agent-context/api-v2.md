@@ -35,12 +35,17 @@ and its error shapes are untouched.
 | `detail` | this occurrence in words; never a submitted value, a login or an exception message |
 | `instance` | `urn:uuid:<request id>`, the id also sent as `X-Request-ID` and written in the request's log lines |
 | `code` | one entry of the registry, `web.v2.problem.ProblemCode`; clients switch on it |
-| `errors` | findings, each with a `code` and at most one locator: `pointer` (RFC 6901, into the body), `parameter`, `header`; `field` names a form field by id |
+| `errors` | findings, each with a `code` and at most one locator: `pointer` (a JSON Pointer into the body in RFC 9457's fragment form, `#/reason`), `parameter`, `header`; `field` names a form field by id |
 
 - Extension members (for example `currentVersion` on a 412) sit beside these;
   clients ignore members and codes they do not know.
-- The registry is open: modules add codes; a published code is never renamed,
-  repurposed or given another status.
+- Codes are kebab-case and name the problem, not the remedy
+  (`search-too-broad`, `request-in-progress`); the generic ones keep their
+  HTTP status's name. A 409 never carries a bare `conflict` code.
+- The registry is open: modules add codes with their glossary's words; a
+  published code is never renamed, repurposed or given another status.
+- The problem's `status` member is RFC 9457's HTTP status; no domain field or
+  parameter is ever a bare `status` (vocabulary rule R9).
 - Status use: 400 malformed; 401; 403; 404; 405; 409 the same request may
   succeed later; 412 stale; 422 well formed but not applicable; 428 missing
   precondition; 5xx server faults.

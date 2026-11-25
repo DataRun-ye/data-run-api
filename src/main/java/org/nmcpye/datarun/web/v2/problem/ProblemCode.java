@@ -12,17 +12,17 @@ import java.util.stream.Collectors;
  * these and whose {@code type} is {@link #type()}, derived from the code; its {@code title} is the code's title and
  * its status the code's status.
  * <p>
- * The list is open: a later module adds codes here, and clients ignore codes they do not know (falling back on the
- * status). A code is never renamed, repurposed or given another status once published; retiring one means no
- * longer raising it. Codes and titles are neutral infrastructure words until the domain glossary chooses domain
- * words for module-specific codes.
+ * Codes are kebab-case and name the problem, not the remedy; the generic ones keep their HTTP status's name. A 409
+ * never carries a bare {@code conflict} code. The list is open: a later module adds codes here, with the words of
+ * its glossary, and clients ignore codes they do not know (falling back on the status). A code is never renamed,
+ * repurposed or given another status once published; retiring one means no longer raising it.
  */
 public enum ProblemCode {
 
     // 400: the request is malformed; resending it unchanged fails again.
     BAD_REQUEST("bad-request", 400, "The request is malformed"),
     INVALID_CURSOR("invalid-cursor", 400, "The cursor does not belong to this query"),
-    IDEMPOTENCY_KEY_REQUIRED("idempotency-key-required", 400, "An Idempotency-Key header is required"),
+    IDEMPOTENCY_KEY_MISSING("idempotency-key-missing", 400, "The Idempotency-Key header is missing"),
     INVALID_IDEMPOTENCY_KEY("invalid-idempotency-key", 400, "The Idempotency-Key header is not a UUID"),
     INVALID_IF_MATCH("invalid-if-match", 400, "The If-Match header is not a list of entity tags"),
 
@@ -33,8 +33,8 @@ public enum ProblemCode {
     NOT_ACCEPTABLE("not-acceptable", 406, "No acceptable representation is available"),
 
     // 409: the request may succeed when sent again later.
-    IDEMPOTENCY_KEY_IN_USE("idempotency-key-in-use", 409,
-        "A request with this Idempotency-Key is still being processed"),
+    REQUEST_IN_PROGRESS("request-in-progress", 409,
+        "An earlier request with the same Idempotency-Key is still being processed"),
     RESOURCE_BUSY("resource-busy", 409, "The resource is being changed by another request"),
 
     PRECONDITION_FAILED("precondition-failed", 412, "The resource has changed since the version in If-Match"),

@@ -151,7 +151,7 @@ class V2ProblemResolverTest {
         resolver.resolveException(request("POST", "/api/v2/things/7"), response, null, unreadable);
 
         JsonNode error = body(response).get("errors").get(0);
-        assertThat(error.get("pointer").asText()).isEqualTo("/operations/1/value");
+        assertThat(error.get("pointer").asText()).isEqualTo("#/operations/1/value");
         assertThat(error.get("code").asText()).isEqualTo("invalid-type");
         assertThat(error.get("detail").asText()).isEqualTo("Expected a number.");
         assertThat(response.getContentAsString()).doesNotContain(SECRET).doesNotContain("java.");
@@ -172,7 +172,7 @@ class V2ProblemResolverTest {
         assertThat(response.getStatus()).isEqualTo(422);
         JsonNode body = body(response);
         assertThat(body.get("code").asText()).isEqualTo("validation-failed");
-        assertThat(body.get("errors").get(0).get("pointer").asText()).isEqualTo("/operations/1/value");
+        assertThat(body.get("errors").get(0).get("pointer").asText()).isEqualTo("#/operations/1/value");
         assertThat(body.get("errors").get(0).get("code").asText()).isEqualTo("not-blank");
         assertThat(response.getContentAsString()).doesNotContain(SECRET);
     }
@@ -275,10 +275,12 @@ class V2ProblemResolverTest {
 
     @Test
     void fieldPathsBecomeJsonPointersAndConstraintCodesKebabCase() {
-        assertThat(V2ProblemResolver.fieldPointer("operations[1].value")).isEqualTo("/operations/1/value");
-        assertThat(V2ProblemResolver.fieldPointer("a.b[0][2].c")).isEqualTo("/a/b/0/2/c");
-        assertThat(V2ProblemResolver.fieldPointer("reason")).isEqualTo("/reason");
-        assertThat(ProblemError.pointer(List.of("a/b", "c~d"))).isEqualTo("/a~1b/c~0d");
+        assertThat(V2ProblemResolver.fieldPointer("operations[1].value")).isEqualTo("#/operations/1/value");
+        assertThat(V2ProblemResolver.fieldPointer("a.b[0][2].c")).isEqualTo("#/a/b/0/2/c");
+        assertThat(V2ProblemResolver.fieldPointer("reason")).isEqualTo("#/reason");
+        assertThat(ProblemError.pointer(List.of("a/b", "c~d"))).isEqualTo("#/a~1b/c~0d");
+        assertThat(ProblemError.pointer(List.of("a b", "\u0645", "x%y"))).isEqualTo("#/a%20b/%D9%85/x%25y");
+        assertThat(ProblemError.pointer(List.of())).isEqualTo("#");
         assertThat(V2ProblemResolver.kebab("NotBlank")).isEqualTo("not-blank");
         assertThat(V2ProblemResolver.kebab("Size")).isEqualTo("size");
         assertThat(V2ProblemResolver.kebab(null)).isEqualTo("invalid");

@@ -234,7 +234,7 @@ public class V2ProblemResolver implements HandlerExceptionResolver, Ordered {
     private static Answer invalidBody(MethodArgumentNotValidException ex) {
         List<ProblemError> errors = new ArrayList<>();
         for (ObjectError error : ex.getBindingResult().getAllErrors()) {
-            String pointer = error instanceof FieldError field ? fieldPointer(field.getField()) : "";
+            String pointer = error instanceof FieldError field ? fieldPointer(field.getField()) : "#";
             errors.add(ProblemError.atPointer(pointer, kebab(error.getCode()), error.getDefaultMessage()));
         }
         return new Answer(ProblemCode.VALIDATION_FAILED, ProblemCode.VALIDATION_FAILED.status(),
@@ -254,7 +254,7 @@ public class V2ProblemResolver implements HandlerExceptionResolver, Ordered {
             "Parameters have values that are not valid; see errors.", errors, Map.of(), new HttpHeaders());
     }
 
-    /** {@code operations[1].value} as {@code /operations/1/value}. */
+    /** {@code operations[1].value} as {@code #/operations/1/value}. */
     static String fieldPointer(String field) {
         List<String> segments = new ArrayList<>();
         for (String part : field.split("\\.")) {
