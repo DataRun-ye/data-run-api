@@ -91,17 +91,17 @@ class IntegrityCheck12IT {
             fixture.create(document("rows and parts", 2, row("r1", "a", "p1:x", "p2:y"), row("r2", "b"))),
             fixture.create(document("no rows", 0)),
             fixture.create("""
-                {"main": {"fd_name": "a field holding rows", "rows": [{"_id": "r1", "fd_item": "a"}]},
+                {"main": {"fp_name": "a field holding rows", "rows": [{"_id": "r1", "fp_item": "a"}]},
                  "elsewhere": {"list": [{"x": 1}, {"x": 2}]},
                  "main_rows_lookalike": [{"_id": "z"}],
                  "_status": "COMPLETE"}"""),
             fixture.create("""
-                {"main": {"fd_name": [{"kept": "whole"}], "rows": [{"_id": "r1"}, {"_id": "r2", "fd_item": null}]}}"""),
+                {"main": {"fp_name": [{"kept": "whole"}], "rows": [{"_id": "r1"}, {"_id": "r2", "fp_item": null}]}}"""),
             fixture.create("""
-                {"main": {"rows": [{"_id": "r1", "parts": []}, "not a row"], "fd_count": 1}}"""),
+                {"main": {"rows": [{"_id": "r1", "parts": []}, "not a row"], "fp_count": 1}}"""),
             fixture.create("""
-                {"main": {"rows": [{"_id": "r1", "parts": [{"_id": "p1", "fd_part": "x"}, {"fd_part": "derived"}]},
-                                   {"_id": "r1", "fd_item": "same id"}]}}"""),
+                {"main": {"rows": [{"_id": "r1", "parts": [{"_id": "p1", "fp_part": "x"}, {"fp_part": "derived"}]},
+                                   {"_id": "r1", "fp_item": "same id"}]}}"""),
             fixture.create("[1, 2, 3]"),
             fixture.create("null"));
     }

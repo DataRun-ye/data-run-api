@@ -123,8 +123,8 @@ class StoredSubmissionJdbcReaderIT {
             INSERT INTO data_submission (id, uid, template_uid, template_version_uid, assignment_uid, activity_uid,
                                          team_uid, org_unit_uid, form_data, lock_version, created_by, created_date,
                                          deleted)
-            VALUES (:id, :uid, 'fdForm00001', 'fdFormVer02', 'fdAssign001', 'fdActivity1', 'fdTeam00001',
-                    'fdOrgUnit01', '{}'::jsonb, 0, 'fd-test', timezone('UTC', now()), false)""",
+            VALUES (:id, :uid, 'fpForm00001', 'fpFormVer02', 'fpAssign001', 'fpActivity1', 'fpTeam00001',
+                    'fpOrgUnit01', '{}'::jsonb, 0, 'fp-test', timezone('UTC', now()), false)""",
             Map.of("id", withoutRevision.id(), "uid", withoutRevision.uid()));
 
         List<Head> heads = read(() -> reader.heads(List.of(first.id(), second.id(), withoutRevision.id())));

@@ -26,24 +26,24 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 final class FeedFixture {
 
-    static final String FORM_UID = "fdForm00001";
+    static final String FORM_UID = "fpForm00001";
     static final String FORM_ID = "01FDFORM000000000000000001";
-    static final String VERSION_1_UID = "fdFormVer01";
+    static final String VERSION_1_UID = "fpFormVer01";
     static final String VERSION_1_ID = "01FDFORMVER000000000000001";
-    static final String VERSION_2_UID = "fdFormVer02";
+    static final String VERSION_2_UID = "fpFormVer02";
     static final String VERSION_2_ID = "01FDFORMVER000000000000002";
 
-    static final String ACTIVITY_ID = "fd-activity";
-    static final String ACTIVITY_UID = "fdActivity1";
-    static final String ORG_UNIT_ID = "fd-org-unit";
-    static final String ORG_UNIT_UID = "fdOrgUnit01";
-    static final String TEAM_ID = "fd-team";
-    static final String TEAM_UID = "fdTeam00001";
-    static final String ASSIGNMENT_ID = "fd-assignment";
-    static final String ASSIGNMENT_UID = "fdAssign001";
+    static final String ACTIVITY_ID = "fp-activity";
+    static final String ACTIVITY_UID = "fpActivity1";
+    static final String ORG_UNIT_ID = "fp-org-unit";
+    static final String ORG_UNIT_UID = "fpOrgUnit01";
+    static final String TEAM_ID = "fp-team";
+    static final String TEAM_UID = "fpTeam00001";
+    static final String ASSIGNMENT_ID = "fp-assignment";
+    static final String ASSIGNMENT_UID = "fpAssign001";
     /** An assignment uid that names no assignment: a placement the feed cannot publish. */
-    static final String MISSING_ASSIGNMENT_UID = "fdAssignNo1";
-    static final String ACTOR_ID = "fd-actor";
+    static final String MISSING_ASSIGNMENT_UID = "fpAssignNo1";
+    static final String ACTOR_ID = "fp-actor";
 
     static final String NAME_FIELD = "01FDDE00000000000000000001";
     static final String COUNT_FIELD = "01FDDE00000000000000000002";
@@ -53,7 +53,7 @@ final class FeedFixture {
     static final String ROWS_SECTION = DerivedIds.sectionId(FORM_ID, "main.rows");
     static final String PARTS_SECTION = DerivedIds.sectionId(FORM_ID, "main.rows.parts");
 
-    /** Every submission the fixture writes has an id with this prefix and a uid starting with {@code fd}. */
+    /** Every submission the fixture writes has an id with this prefix and a uid starting with {@code fp}. */
     static final String ID_PREFIX = "01FDSUB";
 
     private static final AtomicInteger NEXT = new AtomicInteger();
@@ -79,7 +79,7 @@ final class FeedFixture {
 
     static Ids nextIds() {
         int n = NEXT.incrementAndGet();
-        String uid = String.format("fd%09d", n);
+        String uid = String.format("fp%09d", n);
         String id = (ID_PREFIX + String.format("%019d", n)).substring(0, 26);
         return new Ids(id, uid);
     }
@@ -88,9 +88,9 @@ final class FeedFixture {
     void ensureConfiguration() {
         tx.executeWithoutResult(status -> {
             UUID rows = canonicalElement("main.rows", "ARRAY", "Repeat", null);
-            canonicalElement("main.fd_name", "TEXT", null, null);
-            canonicalElement("main.fd_count", "INTEGER", null, null);
-            canonicalElement("main.rows.fd_item", "TEXT", null, rows);
+            canonicalElement("main.fp_name", "TEXT", null, null);
+            canonicalElement("main.fp_count", "INTEGER", null, null);
+            canonicalElement("main.rows.fp_item", "TEXT", null, rows);
         });
         Integer present = jdbc.queryForObject("SELECT count(*) FROM data_template WHERE uid = :uid",
             Map.of("uid", FORM_UID), Integer.class);
@@ -98,44 +98,44 @@ final class FeedFixture {
             return;
         }
         tx.executeWithoutResult(status -> {
-            update("INSERT INTO project (id, name, created_by) VALUES ('fd-project', 'fd project', 'fd-test')");
+            update("INSERT INTO project (id, name, created_by) VALUES ('fp-project', 'fp project', 'fp-test')");
             update("""
                 INSERT INTO activity (id, uid, name, project_id, disabled, created_by)
-                VALUES ('fd-activity', 'fdActivity1', 'fd activity', 'fd-project', false, 'fd-test')""");
+                VALUES ('fp-activity', 'fpActivity1', 'fp activity', 'fp-project', false, 'fp-test')""");
             update("""
                 INSERT INTO org_unit (id, uid, code, name, path, parent_id, created_by)
-                VALUES ('fd-org-unit', 'fdOrgUnit01', 'FDOU', 'fd org unit', ',fdOrgUnit01', NULL, 'fd-test')""");
+                VALUES ('fp-org-unit', 'fpOrgUnit01', 'FPOU', 'fp org unit', ',fpOrgUnit01', NULL, 'fp-test')""");
             update("""
                 INSERT INTO team (id, uid, code, name, activity_id, disabled, form_permissions, created_by)
-                VALUES ('fd-team', 'fdTeam00001', 'FDT', 'fd team', 'fd-activity', false, '[]'::jsonb, 'fd-test')""");
+                VALUES ('fp-team', 'fpTeam00001', 'FPT', 'fp team', 'fp-activity', false, '[]'::jsonb, 'fp-test')""");
             update("""
                 INSERT INTO assignment (id, uid, team_id, activity_id, org_unit_id, forms, deleted, created_by)
-                VALUES ('fd-assignment', 'fdAssign001', 'fd-team', 'fd-activity', 'fd-org-unit',
-                        '["fdForm00001"]'::jsonb, false, 'fd-test')""");
+                VALUES ('fp-assignment', 'fpAssign001', 'fp-team', 'fp-activity', 'fp-org-unit',
+                        '["fpForm00001"]'::jsonb, false, 'fp-test')""");
             update("""
                 INSERT INTO app_user (id, uid, login, password_hash, activated, lang_key, created_by)
-                VALUES ('fd-actor', 'fdActor0001', 'fd-actor', 'x', true, 'en', 'fd-test')""");
-            dataElement(NAME_FIELD, "fdDeName001", "fd_name", "Text");
-            dataElement(COUNT_FIELD, "fdDeCount01", "fd_count", "Integer");
-            dataElement(ITEM_FIELD, "fdDeItem001", "fd_item", "Text");
-            dataElement(PART_FIELD, "fdDePart001", "fd_part", "Text");
+                VALUES ('fp-actor', 'fpActor0001', 'fp-actor', 'x', true, 'en', 'fp-test')""");
+            dataElement(NAME_FIELD, "fpDeName001", "fp_name", "Text");
+            dataElement(COUNT_FIELD, "fpDeCount01", "fp_count", "Integer");
+            dataElement(ITEM_FIELD, "fpDeItem001", "fp_item", "Text");
+            dataElement(PART_FIELD, "fpDePart001", "fp_part", "Text");
             jdbc.update("""
                     INSERT INTO data_template (id, uid, code, name, version_uid, version_number, created_by)
-                    VALUES (:id, :uid, :uid, 'fd form', :version, 2, 'fd-test')""",
+                    VALUES (:id, :uid, :uid, 'fp form', :version, 2, 'fp-test')""",
                 Map.of("id", FORM_ID, "uid", FORM_UID, "version", VERSION_2_UID));
             String sections = """
                 [{"id": "main", "name": "main", "path": "main", "repeatable": false},
                  {"id": "rows", "name": "rows", "path": "main.rows", "parent": "main", "repeatable": true},
                  {"id": "parts", "name": "parts", "path": "main.rows.parts", "parent": "rows", "repeatable": true}]""";
             version(VERSION_1_ID, VERSION_1_UID, 1, sections, """
-                [{"id": "fdDeName001", "name": "fd_name", "path": "main.fdDeName001", "type": "Text"},
-                 {"id": "fdDeItem001", "name": "fd_item", "path": "main.rows.fdDeItem001", "type": "Text"},
-                 {"id": "fdDePart001", "name": "fd_part", "path": "main.rows.parts.fdDePart001", "type": "Text"}]""");
+                [{"id": "fpDeName001", "name": "fp_name", "path": "main.fpDeName001", "type": "Text"},
+                 {"id": "fpDeItem001", "name": "fp_item", "path": "main.rows.fpDeItem001", "type": "Text"},
+                 {"id": "fpDePart001", "name": "fp_part", "path": "main.rows.parts.fpDePart001", "type": "Text"}]""");
             version(VERSION_2_ID, VERSION_2_UID, 2, sections, """
-                [{"id": "fdDeName001", "name": "fd_name", "path": "main.fdDeName001", "type": "Text"},
-                 {"id": "fdDeCount01", "name": "fd_count", "path": "main.fdDeCount01", "type": "Integer"},
-                 {"id": "fdDeItem001", "name": "fd_item", "path": "main.rows.fdDeItem001", "type": "Text"},
-                 {"id": "fdDePart001", "name": "fd_part", "path": "main.rows.parts.fdDePart001", "type": "Text"}]""");
+                [{"id": "fpDeName001", "name": "fp_name", "path": "main.fpDeName001", "type": "Text"},
+                 {"id": "fpDeCount01", "name": "fp_count", "path": "main.fpDeCount01", "type": "Integer"},
+                 {"id": "fpDeItem001", "name": "fp_item", "path": "main.rows.fpDeItem001", "type": "Text"},
+                 {"id": "fpDePart001", "name": "fp_part", "path": "main.rows.parts.fpDePart001", "type": "Text"}]""");
         });
     }
 
@@ -165,7 +165,7 @@ final class FeedFixture {
     private void dataElement(String id, String uid, String name, String type) {
         jdbc.update("""
                 INSERT INTO data_element (id, uid, code, name, type, created_by)
-                VALUES (:id, :uid, :uid, :name, :type, 'fd-test')""",
+                VALUES (:id, :uid, :uid, :name, :type, 'fp-test')""",
             Map.of("id", id, "uid", uid, "name", name, "type", type));
     }
 
@@ -174,7 +174,7 @@ final class FeedFixture {
                 INSERT INTO data_template_version
                     (id, uid, template_uid, version_number, sections, fields, data_template_id, created_by)
                 VALUES (:id, :uid, :formUid, :number, CAST(:sections AS jsonb), CAST(:fields AS jsonb), :formId,
-                        'fd-test')""",
+                        'fp-test')""",
             Map.of("id", id, "uid", uid, "formUid", FORM_UID, "number", number, "sections", sections,
                 "fields", fields, "formId", FORM_ID));
     }
@@ -193,7 +193,7 @@ final class FeedFixture {
             json.append(rows[i]);
         }
         return """
-            {"main": {"fd_name": "%s", "fd_count": %d, "rows": [%s]}}""".formatted(name, count, json);
+            {"main": {"fp_name": "%s", "fp_count": %d, "rows": [%s]}}""".formatted(name, count, json);
     }
 
     /** One row of {@link #document}, with its parts given as {@code id:part}. */
@@ -205,11 +205,11 @@ final class FeedFixture {
                 json.append(',');
             }
             json.append("""
-                {"_id": "%s", "fd_part": "%s"}""".formatted(part[0], part[1]));
+                {"_id": "%s", "fp_part": "%s"}""".formatted(part[0], part[1]));
         }
         String nested = parts.length == 0 ? "" : ", \"parts\": [" + json + "]";
         return """
-            {"_id": "%s", "fd_item": "%s"%s}""".formatted(id, item, nested);
+            {"_id": "%s", "fp_item": "%s"%s}""".formatted(id, item, nested);
     }
 
     /** One change in a transaction of its own: open until {@link #commit}, as a slow writer's would be. */
@@ -266,8 +266,8 @@ final class FeedFixture {
                                          assignment_uid, activity_uid, team_uid, org_unit_uid, status, form_data,
                                          lock_version, created_by, created_date, last_modified_by,
                                          last_modified_date, deleted, start_entry_time, finished_entry_time)
-            VALUES (?, ?, ?, ?, 2, ?, ?, ?, ?, NULL, CAST(? AS jsonb), 0, 'fd-test', timezone('UTC', now()),
-                    'fd-test', timezone('UTC', now()), false, timezone('UTC', now()) - interval '10 minutes',
+            VALUES (?, ?, ?, ?, 2, ?, ?, ?, ?, NULL, CAST(? AS jsonb), 0, 'fp-test', timezone('UTC', now()),
+                    'fp-test', timezone('UTC', now()), false, timezone('UTC', now()) - interval '10 minutes',
                     timezone('UTC', now()) - interval '5 minutes')""")) {
             insert.setString(1, ids.id());
             insert.setString(2, ids.uid());
@@ -332,7 +332,7 @@ final class FeedFixture {
             INSERT INTO journal.submission_revision (submission_id, version, previous_version, kind, command,
                                                      actor_user_id, form_data, metadata)
             SELECT s.id, s.lock_version, CASE WHEN ? = 'CREATE' THEN NULL ELSE s.lock_version - 1 END, ?, 'UPLOAD',
-                   'fd-actor', s.form_data, journal.submission_revision_metadata(s)
+                   'fp-actor', s.form_data, journal.submission_revision_metadata(s)
             FROM data_submission s WHERE s.id = ?""")) {
             revision.setString(1, kind);
             revision.setString(2, kind);
@@ -358,19 +358,19 @@ final class FeedFixture {
         tx.executeWithoutResult(status -> {
             update("""
                 INSERT INTO org_unit (id, uid, code, name, path, parent_id, created_by)
-                VALUES ('fd-org-unit-2', 'fdOrgUnit02', 'FDOU2', 'fd org unit 2', ',fdOrgUnit02', NULL, 'fd-test')
+                VALUES ('fp-org-unit-2', 'fpOrgUnit02', 'FPOU2', 'fp org unit 2', ',fpOrgUnit02', NULL, 'fp-test')
                 ON CONFLICT (id) DO NOTHING""");
             update("""
                 INSERT INTO assignment (id, uid, team_id, activity_id, org_unit_id, forms, deleted, created_by)
-                VALUES ('fd-assignment-2', 'fdAssignNo1', 'fd-team', 'fd-activity', 'fd-org-unit-2',
-                        '["fdForm00001"]'::jsonb, false, 'fd-test')
+                VALUES ('fp-assignment-2', 'fpAssignNo1', 'fp-team', 'fp-activity', 'fp-org-unit-2',
+                        '["fpForm00001"]'::jsonb, false, 'fp-test')
                 ON CONFLICT (id) DO NOTHING""");
         });
     }
 
     /** Removes what {@link #fixPlacement} stored. */
     void unfixPlacement() {
-        tx.executeWithoutResult(status -> update("DELETE FROM assignment WHERE id = 'fd-assignment-2'"));
+        tx.executeWithoutResult(status -> update("DELETE FROM assignment WHERE id = 'fp-assignment-2'"));
     }
 
     /**
@@ -485,8 +485,8 @@ final class FeedFixture {
             update("DELETE FROM outbox_processing");
             update("DELETE FROM outbox");
             update("DELETE FROM etl_runs");
-            update("DELETE FROM analytics.tall_canonical WHERE submission_uid LIKE 'fd%'");
-            update("DELETE FROM analytics.events WHERE submission_uid LIKE 'fd%'");
+            update("DELETE FROM analytics.tall_canonical WHERE submission_uid LIKE 'fp%'");
+            update("DELETE FROM analytics.events WHERE submission_uid LIKE 'fp%'");
             update("DELETE FROM feed.submission_row");
             update("DELETE FROM feed.submission");
             update("DELETE FROM feed.freshness");
