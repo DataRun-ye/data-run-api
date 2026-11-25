@@ -5,6 +5,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
@@ -17,14 +18,28 @@ import org.mockito.stubbing.Answer;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Group;
 import org.nmcpye.datarun.characterization.a2.A2Payloads.Item;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datasubmission.command.HeldDecisionResult;
+import org.nmcpye.datarun.jpa.datasubmission.command.HeldSubmissionDecisions;
+import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionUploads;
+import org.nmcpye.datarun.jpa.datasubmission.repository.DataSubmissionRepository;
 import org.nmcpye.datarun.jpa.datasubmission.revision.JournalReconciliation;
+import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionCommand;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
+import org.nmcpye.datarun.jpa.intake.GoLiveRuleService;
+import org.nmcpye.datarun.jpa.intake.HeldState;
+import org.nmcpye.datarun.jpa.intake.HeldSubmissionRepository;
+import org.nmcpye.datarun.jpa.user.repository.UserRepository;
+import org.nmcpye.datarun.security.CurrentUserDetails;
+import org.nmcpye.datarun.security.CurrentUserDetailsService;
+import org.nmcpye.datarun.security.DomainUserDetailsService;
+import org.nmcpye.datarun.web.rest.v1.intake.HeldDecisionRequest;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -37,6 +52,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -98,6 +114,30 @@ class SubmissionLockIT extends A2GoldenSupport {
 
     @Autowired
     private DataSource dataSource;
+
+    @Autowired
+    private HeldSubmissionRepository heldSubmissions;
+
+    @Autowired
+    private GoLiveRuleService goLiveRuleService;
+
+    @Autowired
+    private DataSubmissionRepository submissionRepository;
+
+    @Autowired
+    private SubmissionUploads uploads;
+
+    @Autowired
+    private DomainUserDetailsService users;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CurrentUserDetailsService currentUserDetailsService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private ExecutorService writers;
     private HeldStill held;
@@ -161,6 +201,84 @@ class SubmissionLockIT extends A2GoldenSupport {
             soft.assertThat(phoneAnswer(get(upload))).as("the upload item's answer").isEqualTo(updated(uid));
             soft.assertThat(revisions(uid)).as("the journal, in order").containsExactly(
                 "0 CREATE " + command(group), "1 DELETE ADMIN_DELETE", "2 UPDATE " + command(group));
+            soft.assertThat(reconciliation(uid)).as("the journal against the submission").isEmpty();
+        });
+    }
+
+    /**
+     * Two upload items of one submission at once, from two phones or one phone twice, on either route: the second
+     * waits on the submission lock for the first, and both are saved, one after the other.
+     */
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = Group.class, names = {"G3", "G0"})
+    void anUploadWaitsForAnotherUploadOfTheSameSubmissionAndNeitherFails(Group waiting) throws Exception {
+        String uid = uid("lockUu" + waiting.name());
+        assertThat(phoneAnswer(upload(G3, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        doAnswer(held.thenTheRealMethod()).when(submissionService).upsert(withUid(uid), any(), any(), any());
+
+        CompletableFuture<MockHttpServletResponse> first = run(() -> upload(G3, formA(G3, uid, "changed on a phone")));
+        held.awaitReached();
+        CompletableFuture<MockHttpServletResponse> second =
+            run(() -> upload(waiting, formA(waiting, uid, "changed on another phone")));
+        boolean waited = waitsOnTheSubmissionLock(second);
+        held.release();
+
+        SoftAssertions.assertSoftly(soft -> {
+            soft.assertThat(waited)
+                .as("the second upload waited on the submission lock while the first was between its reads").isTrue();
+            soft.assertThat(phoneAnswer(get(first))).as("the first upload item's answer").isEqualTo(updated(uid));
+            soft.assertThat(phoneAnswer(get(second))).as("the second upload item's answer").isEqualTo(updated(uid));
+            soft.assertThat(revisions(uid)).as("the journal, in order").containsExactly(
+                "0 CREATE UPLOAD", "1 UPDATE UPLOAD", "2 UPDATE " + command(waiting));
+            soft.assertThat(reconciliation(uid)).as("the journal against the submission").isEmpty();
+        });
+    }
+
+    /**
+     * A held release whose replay finds its submission stored, because a live copy landed after the release checked
+     * the uid (A2 S6), takes the submission lock; a phone's re-send meanwhile waits for it. The replay is rolled back
+     * and its held copy superseded, then the re-send is saved: no upload item fails, and the release fails nothing.
+     */
+    @Test
+    void anUploadWaitsForAHeldReleaseThatFoundItsSubmissionStoredAndNeitherFails() throws Exception {
+        String uid = uid("lockRel");
+        goLiveRules.put(A2Seed.ACTIVITY, null, null, Instant.parse("2099-01-01T00:00:00Z"), null, "a2-test");
+        assertThat(phoneAnswer(upload(G3, formA(G3, uid, "held before the go-live")))).isEqualTo(created(uid));
+        inTransaction(() -> jdbc.update("DELETE FROM go_live_rule WHERE activity_uid = :activity",
+            Map.of("activity", A2Seed.ACTIVITY)));
+        DomainUserDetailsService liveCopyLandsFirst = new DomainUserDetailsService(userRepository,
+            currentUserDetailsService) {
+            @Override
+            public UserDetails loadUserByUsername(String login) {
+                assertThat(phoneAnswer(uploadOrFail(formA(G3, uid, "live copy")))).isEqualTo(created(uid));
+                return users.loadUserByUsername(login);
+            }
+        };
+        HeldSubmissionDecisions decisions = new HeldSubmissionDecisions(heldSubmissions, goLiveRuleService,
+            submissionRepository, uploads, liveCopyLandsFirst, objectMapper);
+        doAnswer(held.thenTheRealMethod()).when(submissionService).upsert(withUid(uid), any(), any(),
+            argThat(revision -> revision != null && revision.command() == RevisionCommand.HELD_RELEASE));
+        SubmissionActor admin = SubmissionActor.of((CurrentUserDetails) users.loadUserByUsername(ADMIN));
+
+        CompletableFuture<HeldDecisionResult> release = CompletableFuture.supplyAsync(() ->
+            decisions.release(admin, new HeldDecisionRequest(List.of(uid), null, null, null)), writers);
+        held.awaitReached();
+        CompletableFuture<MockHttpServletResponse> resend =
+            run(() -> upload(G3, formA(G3, uid, "re-sent while the release runs")));
+        boolean waited = waitsOnTheSubmissionLock(resend);
+        held.release();
+
+        SoftAssertions.assertSoftly(soft -> {
+            soft.assertThat(waited)
+                .as("the re-send waited on the submission lock while the replay held it").isTrue();
+            HeldDecisionResult decided = release.join();
+            soft.assertThat(decided.superseded()).as("the held copy").containsExactly(uid);
+            soft.assertThat(decided.failed()).as("the release's failures").isEmpty();
+            soft.assertThat(phoneAnswer(get(resend))).as("the re-send's answer").isEqualTo(updated(uid));
+            soft.assertThat(revisions(uid)).as("the journal: the live copy, then the re-send")
+                .containsExactly("0 CREATE UPLOAD", "1 UPDATE UPLOAD");
+            soft.assertThat(heldSubmissions.findByUid(uid)).map(row -> row.state())
+                .contains(HeldState.SUPERSEDED);
             soft.assertThat(reconciliation(uid)).as("the journal against the submission").isEmpty();
         });
     }
@@ -295,6 +413,14 @@ class SubmissionLockIT extends A2GoldenSupport {
             .content(json.writeValueAsString(A2Payloads.body(items)));
         group.headers().forEach(request::header);
         return mvc.perform(request).andReturn().getResponse();
+    }
+
+    private MockHttpServletResponse uploadOrFail(Item item) {
+        try {
+            return upload(G3, item);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private MockHttpServletResponse adminDelete(String uid) throws Exception {
