@@ -37,39 +37,45 @@ public class FormDefinitionJdbcReader {
 
     /**
      * Per version: its id and row version, then each data element and each option set its fields name, with their
-     * row versions.
+     * row versions. {@code f.fields} is the version's stored fields when they are an array ({@link #VERSIONS}).
      */
     private static final String VERSION_MARK = """
         v.id || ':' || v.xmin::text || ':' || coalesce((
             SELECT string_agg(de.id || ':' || de.xmin::text, ',' ORDER BY de.id)
-            FROM jsonb_array_elements(v.fields) AS f(field)
-            JOIN data_element de ON de.uid = f.field ->> 'id'), '') || ':' || coalesce((
+            FROM jsonb_array_elements(f.fields) AS e(field)
+            JOIN data_element de ON de.uid = e.field ->> 'id'), '') || ':' || coalesce((
             SELECT string_agg(os.id || ':' || os.xmin::text, ',' ORDER BY os.id)
-            FROM jsonb_array_elements(v.fields) AS f(field)
-            JOIN option_set os ON os.uid = f.field ->> 'optionSet'), '')""";
+            FROM jsonb_array_elements(f.fields) AS e(field)
+            JOIN option_set os ON os.uid = e.field ->> 'optionSet'), '')""";
+
+    /**
+     * Every version of the forms named, with its stored fields as {@code f.fields} when they are an array: anything
+     * else holds no field, and never fails the read.
+     */
+    private static final String VERSIONS = """
+        FROM data_template t
+        JOIN data_template_version v ON v.data_template_id = t.id
+        CROSS JOIN LATERAL (SELECT CASE WHEN jsonb_typeof(v.fields) = 'array' THEN v.fields END AS fields) f
+        WHERE t.uid IN (:formUids)""";
 
     private static final String DEFINITIONS = """
         SELECT t.uid AS form_uid, t.id AS form_id, v.id AS version_id, v.uid AS version_uid, v.version_number,
                v.sections::text AS sections, v.fields::text AS fields,
                (SELECT coalesce(jsonb_object_agg(de.uid, de.id), '{}'::jsonb)::text
-                FROM jsonb_array_elements(v.fields) AS f(field)
-                JOIN data_element de ON de.uid = f.field ->> 'id') AS field_ids,
+                FROM jsonb_array_elements(f.fields) AS e(field)
+                JOIN data_element de ON de.uid = e.field ->> 'id') AS field_ids,
                (SELECT coalesce(jsonb_object_agg(os.uid, os.id), '{}'::jsonb)::text
-                FROM jsonb_array_elements(v.fields) AS f(field)
-                JOIN option_set os ON os.uid = f.field ->> 'optionSet') AS option_set_ids,
+                FROM jsonb_array_elements(f.fields) AS e(field)
+                JOIN option_set os ON os.uid = e.field ->> 'optionSet') AS option_set_ids,
                """ + VERSION_MARK + """
          AS version_mark
-        FROM data_template t
-        JOIN data_template_version v ON v.data_template_id = t.id
-        WHERE t.uid IN (:formUids)""";
+        """ + VERSIONS;
 
     private static final String TOKENS = """
         SELECT t.uid AS form_uid,
                """ + VERSION_MARK + """
          AS version_mark
-        FROM data_template t
-        JOIN data_template_version v ON v.data_template_id = t.id
-        WHERE t.uid IN (:formUids)""";
+        """ + VERSIONS;
 
     private final NamedParameterJdbcTemplate jdbc;
     private final ObjectMapper objectMapper;

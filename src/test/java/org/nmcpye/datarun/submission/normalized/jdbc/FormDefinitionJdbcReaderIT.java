@@ -260,6 +260,38 @@ class FormDefinitionJdbcReaderIT {
         }
     }
 
+    /** Stored fields or sections that are not arrays, or arrays holding more than objects, never fail the read. */
+    @Test
+    void storedDefinitionsOfAnotherShapeAreReadAsFarAsTheyGo() {
+        String formUid = "nzFormOdd01";
+        String formId = "01JS1FO0000000000000000001";
+        inTransaction(() -> {
+            jdbc.update("""
+                    INSERT INTO data_template (id, uid, code, name, version_uid, version_number, created_by)
+                    VALUES (:id, :uid, :uid, 'nz form of odd shapes', 'nzOddVer002', 2, 'nz-test')""",
+                Map.of("id", formId, "uid", formUid));
+            version(formUid, formId, "01JS1FO0000000000000000002", "nzOddVer001", 1, "\"not an array\"",
+                "{\"id\": \"nzDeTitle01\", \"name\": \"nz_title\"}");
+            version(formUid, formId, "01JS1FO0000000000000000003", "nzOddVer002", 2, "[3, null]",
+                "[3, null, \"text\", [], {\"id\": \"nzDeTitle01\", \"name\": \"nz_title\", "
+                    + "\"path\": \"nzDeTitle01\", \"optionSet\": 7}]");
+        });
+        try {
+            FormDefinition form = reader.read(formUid).orElseThrow().definition();
+            assertThat(form.versions()).extracting(FormVersionDefinition::number).containsExactly(2, 1);
+            assertThat(form.versions().get(1).fields()).isEmpty();
+            assertThat(form.versions().get(1).sections()).isEmpty();
+            assertThat(form.versions().get(0).fields()).extracting(FieldDefinition::id, FieldDefinition::optionSetId)
+                .containsExactly(tuple(DATA_ELEMENTS.get("nzDeTitle01"), null));
+            assertThat(reader.changeTokens(Set.of(formUid))).containsOnlyKeys(formUid);
+        } finally {
+            inTransaction(() -> {
+                jdbc.update("DELETE FROM data_template_version WHERE data_template_id = :id", Map.of("id", formId));
+                jdbc.update("DELETE FROM data_template WHERE id = :id", Map.of("id", formId));
+            });
+        }
+    }
+
     private String currentToken() {
         return reader.changeTokens(Set.of(FORM_UID)).get(FORM_UID);
     }

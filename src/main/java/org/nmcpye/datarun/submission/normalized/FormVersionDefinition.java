@@ -45,8 +45,8 @@ public record FormVersionDefinition(
      * @param id            the form version's stored id
      * @param uid           the form version's uid
      * @param number        the version number
-     * @param sections      the stored {@code sections} array
-     * @param fields        the stored {@code fields} array
+     * @param sections      the stored {@code sections} array; anything else holds no section
+     * @param fields        the stored {@code fields} array; anything else holds no field
      * @param fieldIdForUid the stored id of the data element with a given uid, or {@code null} when there is none;
      *                      each field's {@code id} is a data element uid. A field whose data element has no id is
      *                      kept without an id, and its values are then unmapped, never refused
@@ -63,7 +63,7 @@ public record FormVersionDefinition(
         Function<String, String> fieldIdForUid,
         Function<String, String> optionSetIdForUid) {
         List<SectionDefinition> sectionList = new ArrayList<>();
-        if (sections != null) {
+        if (sections != null && sections.isArray()) {
             for (JsonNode section : sections) {
                 String path = text(section.get("path"));
                 if (path == null) {
@@ -80,7 +80,7 @@ public record FormVersionDefinition(
             }
         }
         List<FieldDefinition> fieldList = new ArrayList<>();
-        if (fields != null) {
+        if (fields != null && fields.isArray()) {
             for (JsonNode field : fields) {
                 String dataElementUid = text(field.get("id"));
                 String name = text(field.get("name"));
