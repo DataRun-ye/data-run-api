@@ -19,6 +19,7 @@ separately rather than being treated as equally active.
 | PUBLIC STATUS | `GET /api/v1/authenticate`, `GET /api/authenticate`, health and info management routes | no user data; retained compatibility/status surface |
 | ADMIN | `/api/v1/admin/**`, `/api/admin/**`, `/api/custom/admin/**`, and both account-creation aliases | current database `ROLE_ADMIN` is required |
 | DEPRECATED COMPATIBILITY | `/api/custom/**` | authenticated or administrator-gated alias; not used by the released mobile and not a target API |
+| NO ROUTES YET | `/api/v2/**` | its own chain: bearer JWT only (no HTTP Basic), every route authenticated, RFC 9457 problems; conventions in `api-v2.md` |
 
 JWT claims identify the subject, but request authority comes from the current
 activated database user and current database authorities. A stale token claim

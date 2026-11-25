@@ -47,3 +47,18 @@ and its error shapes are untouched.
 - Every answer is one log line: INFO for 4xx, ERROR for 5xx (reported to
   GlitchTip), with method, route pattern, status, code, exception types and
   request id, and nothing the client sent.
+
+## Authentication
+
+- `/api/v2/**` has its own security chain, `web.v2.config.V2SecurityConfiguration`,
+  ordered before the main chain and matching only v2 paths; the main chain
+  and every v1 answer are unchanged.
+- Every v2 route requires an authenticated caller. URL rules decide nothing
+  finer; each module's own policy does, by action and scope, once that model
+  is designed.
+- The only credential is the bearer JWT from `POST /api/v1/authenticate`. The
+  token names the account; the request's authority comes from the account's
+  current database state. HTTP Basic is not accepted on v2.
+- Refusals here are problems: 401 `unauthenticated` with the
+  `WWW-Authenticate: Bearer` challenge, 403 `forbidden`. They are not logged
+  by v2; the authentication listener records failures.
