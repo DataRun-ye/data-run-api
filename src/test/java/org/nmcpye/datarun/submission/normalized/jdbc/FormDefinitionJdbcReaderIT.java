@@ -186,10 +186,42 @@ class FormDefinitionJdbcReaderIT {
         inTransaction(() -> jdbc.update("UPDATE data_element SET short_name = 'renamed' WHERE uid = :uid",
             Map.of("uid", "nzDeTitle01")));
         String elementChanged = currentToken();
+        // version 2 names a data element that does not exist: create it, then delete it again
+        inTransaction(() -> jdbc.update("""
+                INSERT INTO data_element (id, uid, code, name, type, created_by)
+                VALUES ('01JS1DE0000000000000000003', 'nzDePart001', 'nzDePart001', 'nz_part', 'Text', 'nz-test')""",
+            Map.of()));
+        String elementCreated = currentToken();
+        inTransaction(() -> jdbc.update("DELETE FROM data_element WHERE uid = 'nzDePart001'", Map.of()));
+        String elementDeletedAgain = currentToken();
 
-        assertThat(List.of(token, added, rewritten, elementChanged)).doesNotHaveDuplicates();
+        assertThat(List.of(token, added, rewritten, elementChanged, elementCreated)).doesNotHaveDuplicates();
         assertThat(deleted).as("back to the same versions and elements").isEqualTo(token);
+        assertThat(elementDeletedAgain).as("back to the same elements").isEqualTo(elementChanged);
         assertThat(reader.read(FORM_UID).orElseThrow().changeToken()).isEqualTo(elementChanged);
+    }
+
+    @Test
+    void aFormWhoseVersionsAreAllDeletedHasNoToken_whichCallersTreatAsAChange() {
+        String formUid = "nzFormGone1";
+        String formId = "01JS1FG0000000000000000001";
+        inTransaction(() -> {
+            jdbc.update("""
+                    INSERT INTO data_template (id, uid, code, name, version_uid, version_number, created_by)
+                    VALUES (:id, :uid, :uid, 'nz form with no versions left', 'nzGoneVer01', 1, 'nz-test')""",
+                Map.of("id", formId, "uid", formUid));
+            version(formUid, formId, "01JS1FG0000000000000000002", "nzGoneVer01", 1, "[]", "[]");
+        });
+        assertThat(reader.changeTokens(Set.of(formUid))).containsOnlyKeys(formUid);
+
+        inTransaction(() -> jdbc.update("DELETE FROM data_template_version WHERE data_template_id = :id",
+            Map.of("id", formId)));
+        try {
+            assertThat(reader.changeTokens(Set.of(formUid))).as("no token: a change").isEmpty();
+            assertThat(reader.read(formUid)).isEmpty();
+        } finally {
+            inTransaction(() -> jdbc.update("DELETE FROM data_template WHERE id = :id", Map.of("id", formId)));
+        }
     }
 
     private String currentToken() {
@@ -208,12 +240,17 @@ class FormDefinitionJdbcReaderIT {
     }
 
     private void version(String id, String uid, int number, String sections, String fields) {
+        version(FORM_UID, FORM_ID, id, uid, number, sections, fields);
+    }
+
+    private void version(String formUid, String formId, String id, String uid, int number, String sections,
+                         String fields) {
         jdbc.update("""
                 INSERT INTO data_template_version
                     (id, uid, template_uid, version_number, sections, fields, data_template_id, created_by)
                 VALUES (:id, :uid, :formUid, :number, CAST(:sections AS jsonb), CAST(:fields AS jsonb), :formId,
                         'nz-test')""",
-            Map.of("id", id, "uid", uid, "formUid", FORM_UID, "number", number, "sections", sections,
-                "fields", fields, "formId", FORM_ID));
+            Map.of("id", id, "uid", uid, "formUid", formUid, "number", number, "sections", sections,
+                "fields", fields, "formId", formId));
     }
 }

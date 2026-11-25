@@ -123,7 +123,11 @@ public class FormDefinitionJdbcReader {
         return Map.copyOf(forms);
     }
 
-    /** The current change token of each form with these uids, without reading the definitions. */
+    /**
+     * The current change token of each form with these uids, without reading the definitions. A form gets no token
+     * when it has no stored version: it does not exist, or every version was deleted. A caller keeping a definition
+     * must treat a missing token as a change, and read again: {@link #read} then has no entry for the form either.
+     */
     public Map<String, String> changeTokens(Collection<String> formUids) {
         if (formUids.isEmpty()) {
             return Map.of();
