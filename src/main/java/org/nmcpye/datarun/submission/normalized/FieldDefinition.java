@@ -13,8 +13,8 @@ import java.util.Objects;
  * @param path      the data path: the parent section's path and the field's name, joined by a dot; the name alone
  *                  for a field outside every section
  * @param sectionId the id of the section that holds the field, or {@code null} outside every section. One form
- *                  version can place a field twice, in two sections (one version on staging places five), so a
- *                  field's identity inside a form version is this pair, not the field id alone
+ *                  version can place a field in two sections, so a definition is identified by this pair; a stored
+ *                  value is keyed by its field id alone, and carries its section as an attribute
  * @param valueType the declared value type, or {@code null} when the stored type is missing or unknown
  */
 public record FieldDefinition(String id, String path, String sectionId, ValueType valueType) {

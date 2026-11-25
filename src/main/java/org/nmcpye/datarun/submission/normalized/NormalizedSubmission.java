@@ -13,8 +13,8 @@ import java.util.Objects;
  * {@code data_submission}).
  *
  * <p><b>Keys are unique</b>, whatever the document holds: no two rows share an id within the submission, and no two
- * values share a section and field id within one row, or outside every row. A later row carrying a taken id gets a
- * derived one ({@link RowKeyKind#DUPLICATE_ID}); a second value for a field is unmapped
+ * values share a field id within one row, or outside every row, whatever their sections. A later row carrying a
+ * taken id gets a derived one ({@link RowKeyKind#DUPLICATE_ID}); a second value for a field is unmapped
  * ({@link UnmappedReason#FIELD_ALREADY_HAS_VALUE}). Both are flagged.</p>
  *
  * <p>Lists are in a fixed order, so equal documents give equal normalized submissions whatever their key order:

@@ -106,11 +106,11 @@ class SubmissionNormalizerRobustnessTest {
         assertThat(normalized.flags().values()).allSatisfy(count -> assertThat(count).isPositive());
         assertThat(values).allSatisfy(v -> assertThat(v.value().isNull()).isFalse());
         assertThat(unmapped).allSatisfy(u -> assertThat(u.value().isNull()).isFalse());
-        // keys are unique: row ids within the submission, (section, field) within each row and outside every row
+        // keys are unique: row ids within the submission, field ids within each row and outside every row
         assertThat(normalized.rows()).extracting(NormalizedRow::id).doesNotHaveDuplicates();
-        assertThat(normalized.values()).extracting(v -> v.sectionId() + "|" + v.fieldId()).doesNotHaveDuplicates();
+        assertThat(normalized.values()).extracting(FieldValue::fieldId).doesNotHaveDuplicates();
         for (NormalizedRow row : normalized.rows()) {
-            assertThat(row.values()).extracting(v -> v.sectionId() + "|" + v.fieldId()).doesNotHaveDuplicates();
+            assertThat(row.values()).extracting(FieldValue::fieldId).doesNotHaveDuplicates();
         }
         assertThat(normalized.flagged(NormalizationFlag.DUPLICATE_ID)).isEqualTo((int) normalized.rows().stream()
             .filter(r -> r.keyKind() == RowKeyKind.DUPLICATE_ID).count());

@@ -21,7 +21,7 @@ public enum NormalizationFlag {
     REPEATING_SECTION_HOLDS_NON_ROWS,
     /** Values unmapped because their field's data element no longer exists. */
     FIELD_WITHOUT_ID,
-    /** Values unmapped because their row (or the submission) already has a value for the same section and field. */
+    /** Values unmapped because their row (or the submission) already has a value for the same field. */
     FIELD_ALREADY_HAS_VALUE,
     /** Values unmapped because they lie deeper than the walk goes. */
     NESTED_TOO_DEEP,

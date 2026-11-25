@@ -9,8 +9,8 @@ import java.util.Objects;
  * One field's value in a submission or in one of its rows.
  *
  * @param fieldId           the field id: the stored id of the field's data element
- * @param sectionId         the id of the section holding the field, or {@code null} outside every section; with the
- *                          field id it identifies the value inside its submission or row
+ * @param sectionId         the id of the section holding the field at the value's path, or {@code null} outside every
+ *                          section; an attribute of the value, which its field id alone keys inside its row
  * @param path              the data path the value is stored at
  * @param value             the stored value, whole: a number stays a number, a multi-select an array. Never JSON
  *                          null (a stored null is no value). An array or object is a copy, never the stored node

@@ -87,15 +87,36 @@ class SubmissionNormalizerTest {
     }
 
     @Test
-    void aFieldPlacedInTwoSectionsKeepsBothValuesApartByItsSection() {
+    void aFieldPlacedInTwoSectionsKeepsOneValuePerFieldAndUnmapsTheOther() {
+        // the pinned version places one field in two plain sections: consumers key a value by (row, field), so the
+        // first in walk order stays, with its section as an attribute, and the other is unmapped and flagged
         NormalizedSubmission normalized = normalize("{'details': {'shared': 'a'}, 'other': {'shared': 'b'}}");
 
         assertThat(normalized.values())
             .extracting(FieldValue::fieldId, FieldValue::sectionId, v -> v.value().asText())
-            .containsExactly(
-                tuple(fieldId("deUidTwice01"), section("details"), "a"),
-                tuple(fieldId("deUidTwice01"), section("other"), "b"));
-        assertThat(normalized.flags()).isEmpty();
+            .containsExactly(tuple(fieldId("deUidTwice01"), section("details"), "a"));
+        assertThat(normalized.unmapped()).extracting(UnmappedValue::path, UnmappedValue::reason, u -> u.value().asText())
+            .containsExactly(tuple("other.shared", UnmappedReason.FIELD_ALREADY_HAS_VALUE, "b"));
+        assertThat(normalized.flags()).containsExactly(entry(NormalizationFlag.FIELD_ALREADY_HAS_VALUE, 1));
+    }
+
+    @Test
+    void aSectionRenamedWithBothNamesStoredKeepsThePinnedPlacement() {
+        // the review's probe {a: {q: 1}, b: {q: 2}}: section a in version 1 became b in version 2, the pinned one
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+            .section("a", false).field("deUidQ000001", "a", "q", "Integer").build(FORM);
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+            .section("b", false).field("deUidQ000001", "b", "q", "Integer").build(FORM);
+        NormalizedSubmission normalized = SubmissionNormalizer.normalize(
+            new StoredSubmission(SUBMISSION, "fvUid000002", json("{'a': {'q': 1}, 'b': {'q': 2}}")),
+            FormDefinition.of(FORM, List.of(v1, v2)));
+
+        assertThat(normalized.values())
+            .extracting(FieldValue::path, FieldValue::sectionId, FieldValue::fromPinnedVersion, v -> v.value().intValue())
+            .containsExactly(tuple("b.q", section("b"), true, 2));
+        assertThat(normalized.unmapped()).extracting(UnmappedValue::path, UnmappedValue::reason)
+            .containsExactly(tuple("a.q", UnmappedReason.FIELD_ALREADY_HAS_VALUE));
+        assertThat(normalized.flags()).containsExactly(entry(NormalizationFlag.FIELD_ALREADY_HAS_VALUE, 1));
     }
 
     @Test

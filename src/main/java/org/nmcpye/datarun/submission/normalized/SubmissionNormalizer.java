@@ -48,9 +48,11 @@ import java.util.Set;
  *       sections in key order), keeps its stored id in {@link NormalizedRow#storedId()} but is keyed by its
  *       position-derived id ({@link RowKeyKind#DUPLICATE_ID}, {@link DerivedIds#duplicateRowId}). The first row
  *       keeps the id: it is the one a phone or a reader most likely already knows by it.</li>
- *   <li>Two stored paths of one row, or of the submission outside every row, that resolve to the same section and
- *       field: the value resolved by the pinned version's own definition stays, otherwise the first in walk order;
- *       the other is unmapped whole at its path ({@link UnmappedReason#FIELD_ALREADY_HAS_VALUE}).</li>
+ *   <li>Two stored paths of one row, or of the submission outside every row, that resolve to the same field, in the
+ *       same section or not (a field placed in two sections, a section renamed with both names stored): the value
+ *       resolved by the pinned version's own definition stays, otherwise the first in walk order; the other is
+ *       unmapped whole at its path ({@link UnmappedReason#FIELD_ALREADY_HAS_VALUE}). Consumers key a value by its
+ *       row and field id, so one row holds one value per field; the section stays an attribute of the value.</li>
  * </ul>
  */
 public final class SubmissionNormalizer {
@@ -206,10 +208,9 @@ public final class SubmissionNormalizer {
             }
         }
 
-        /** Adds a field's value, unless the container already has one for that section and field. */
+        /** Adds a field's value, unless the container already has one for that field, in any section. */
         private void value(Container container, FieldValue value) {
-            Integer taken = container.positions.putIfAbsent(
-                new FieldKey(value.sectionId(), value.fieldId()), container.values.size());
+            Integer taken = container.positions.putIfAbsent(value.fieldId(), container.values.size());
             if (taken == null) {
                 container.values.add(value);
                 return;
@@ -283,15 +284,12 @@ public final class SubmissionNormalizer {
     private record RowKey(String id, RowKeyKind kind, String storedId) {
     }
 
-    /** What identifies a value inside one row, or outside every row. */
-    private record FieldKey(String sectionId, String fieldId) {
-    }
-
     /** The values of one row, or of the submission outside every row. */
     private static final class Container {
 
         private final List<FieldValue> values = new ArrayList<>();
         private final List<UnmappedValue> unmapped = new ArrayList<>();
-        private final Map<FieldKey, Integer> positions = new HashMap<>();
+        /** Field id to the position of its value: one value per field in a row, or outside every row. */
+        private final Map<String, Integer> positions = new HashMap<>();
     }
 }
