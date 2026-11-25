@@ -42,7 +42,8 @@ import java.util.function.IntSupplier;
  *
  * <p><b>After the live backlog</b> the ETL's poll calls {@link #publishAfterBacklog} for one batch at a time, the
  * live backlog first again after each: pending changes due for a retry, each failure counting an attempt until the
- * cap makes it dead. Each batch is one transaction under the feed's lock, each submission in its own savepoint, and
+ * cap makes it dead; then republish marks, each written again at the same version with new positions, its mark kept
+ * while it fails ({@link RepublishMarks}). Each batch is one transaction under the feed's lock, each submission in its own savepoint, and
  * stops starting submissions once it has run half the feed part's time limit, so it holds the lock briefly.</p>
  *
  * <p><b>The savepoint is a JDBC savepoint on the transaction's connection.</b> Spring's {@code Propagation.NESTED} is
@@ -63,6 +64,7 @@ public class SubmissionPublisher {
     private final Duration partTimeout;
     private final FeedWriter writer;
     private final PendingChanges pending;
+    private final RepublishMarks republishMarks;
     private final TransactionTemplate afterBacklog;
     private final Map<FeedWriter.Outcome, Counter> changes;
     private final Counter failures;
@@ -87,6 +89,7 @@ public class SubmissionPublisher {
         this.partTimeout = partTimeout(properties.getPartTimeout(), etlProperties.getRowTimeout());
         this.writer = writer;
         this.pending = new PendingChanges(properties);
+        this.republishMarks = new RepublishMarks(properties);
         this.afterBacklog = new TransactionTemplate(transactionManager);
         // a backstop: each submission's own statements stop at the feed part's limit
         this.afterBacklog.setTimeout((int) Math.max(1, partTimeout.multipliedBy(2).toSeconds()));
@@ -157,8 +160,8 @@ public class SubmissionPublisher {
     }
 
     /**
-     * Publishes one batch of the work that waits behind the live backlog: pending changes due for a retry. Called by
-     * the ETL's poll once no outbox row is due, again after each batch that did something.
+     * Publishes one batch of the work that waits behind the live backlog: pending changes due for a retry, else
+     * republish marks. Called by the ETL's poll once no outbox row is due, again after each batch that did something.
      *
      * @return whether the batch did anything; false when nothing waits, or the feed is off
      */
@@ -166,7 +169,7 @@ public class SubmissionPublisher {
         if (!isOn()) {
             return false;
         }
-        return retryPending() > 0;
+        return retryPending() > 0 || republish() > 0;
     }
 
     /** Retries the pending changes that are due, in one transaction under the feed's lock. */
@@ -176,6 +179,25 @@ public class SubmissionPublisher {
             return publishEach(due, false, (submissionId, attempt) -> {
                 if (attempt.failure() != null) {
                     recordFailure(submissionId, attempt);
+                }
+            });
+        });
+    }
+
+    /**
+     * Writes the marked submissions again at their held version with new positions, in one transaction under the
+     * feed's lock; a mark stays until its republication is written.
+     */
+    private int republish() {
+        return inFeedTransaction(() -> {
+            List<String> due = republishMarks.due(jdbc, Math.max(1, properties.getBatchSize()));
+            return publishEach(due, true, (submissionId, attempt) -> {
+                if (attempt.failure() == null) {
+                    republishMarks.written(jdbc, submissionId);
+                } else {
+                    int attempts = republishMarks.failed(jdbc, submissionId, attempt.failure());
+                    log.warn("The republication of submission {} failed ({}, {}); its mark stays and it is tried "
+                        + "again, failure {}", submissionId, attempt.failure(), attempt.type(), attempts);
                 }
             });
         });
