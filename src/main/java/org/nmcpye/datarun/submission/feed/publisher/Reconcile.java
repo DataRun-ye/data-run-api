@@ -1,11 +1,14 @@
 package org.nmcpye.datarun.submission.feed.publisher;
 
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.nmcpye.datarun.submission.normalized.jdbc.StoredSubmissionJdbcReader;
+import org.nmcpye.datarun.submission.normalized.jdbc.StoredSubmissionJdbcReader.HeadVersion;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -15,6 +18,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * publisher does in batches behind the live backlog, each under the feed's lock and reading the head again. That covers
  * periods with the feed off, a rollback to a release without it, dead outbox rows, and anything else that left a head
  * unpublished.
+ *
+ * <p>The submissions and their heads' versions come from the stored-submission read seam
+ * ({@link StoredSubmissionJdbcReader#headVersionsAfter}); the versions the feed holds and the pending changes, from the
+ * feed's own tables.</p>
  *
  * <p>A pass is requested at start (the switch is read at start, so this is also switch-on) and nightly; a request
  * during a pass starts another after it. A submission with a pending change that is not dead is counted but left to
@@ -26,18 +33,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 final class Reconcile {
 
-    /** The next submissions after a cursor, each with its head's version, the held version and its pending state. */
-    private static final String SCAN = """
-        SELECT s.id, h.version AS head, f.version AS held, p.submission_id IS NOT NULL AS pending,
-               p.dead_at IS NOT NULL AS dead
-        FROM data_submission s
-        CROSS JOIN LATERAL (SELECT max(r.version) AS version FROM journal.submission_revision r
-                            WHERE r.submission_id = s.id) h
-        LEFT JOIN feed.submission f ON f.id = s.id
-        LEFT JOIN feed_ops.pending p ON p.submission_id = s.id
-        WHERE s.id > :after
-        ORDER BY s.id
-        LIMIT :limit""";
+    /** The versions the feed holds of some submissions. */
+    private static final String HELD = "SELECT id, version FROM feed.submission WHERE id IN (:ids)";
+
+    /** Whether some submissions' pending changes are dead. */
+    private static final String PENDING = """
+        SELECT submission_id, dead_at IS NOT NULL AS dead FROM feed_ops.pending WHERE submission_id IN (:ids)""";
 
     /**
      * What a finished pass found.
@@ -56,6 +57,7 @@ final class Reconcile {
         }
     }
 
+    private final StoredSubmissionJdbcReader reader;
     private final AtomicBoolean requested = new AtomicBoolean();
 
     private boolean running;
@@ -67,6 +69,10 @@ final class Reconcile {
     private long published;
     private long failed;
     private long waiting;
+
+    Reconcile(StoredSubmissionJdbcReader reader) {
+        this.reader = reader;
+    }
 
     /** Requests a pass: the next batch behind the live backlog starts one, or the next after the current pass. */
     void request() {
@@ -101,27 +107,37 @@ final class Reconcile {
     }
 
     private void scan(NamedParameterJdbcTemplate jdbc, int scanSize) {
-        int[] read = {0};
-        jdbc.query(SCAN, new MapSqlParameterSource().addValue("after", after).addValue("limit", scanSize), rs -> {
-            read[0]++;
-            after = rs.getString("id");
-            Long head = rs.getObject("head", Long.class);
-            if (head == null) {
-                return;
+        List<HeadVersion> page = reader.headVersionsAfter(after, scanSize);
+        if (page.size() < scanSize) {
+            scannedAll = true;
+        }
+        if (page.isEmpty()) {
+            return;
+        }
+        after = page.get(page.size() - 1).submissionId();
+        Map<String, Object> ids = Map.of("ids", page.stream().map(HeadVersion::submissionId).toList());
+        Map<String, Long> held = new HashMap<>();
+        jdbc.query(HELD, ids, rs -> {
+            held.put(rs.getString("id"), rs.getLong("version"));
+        });
+        Map<String, Boolean> pending = new HashMap<>();
+        jdbc.query(PENDING, ids, rs -> {
+            pending.put(rs.getString("submission_id"), rs.getBoolean("dead"));
+        });
+        for (HeadVersion head : page) {
+            if (head.version() == null) {
+                continue;
             }
             checked++;
-            if (Objects.equals(head, rs.getObject("held", Long.class))) {
-                return;
+            if (Objects.equals(head.version(), held.get(head.submissionId()))) {
+                continue;
             }
             differing++;
-            if (rs.getBoolean("pending") && !rs.getBoolean("dead")) {
+            if (Boolean.FALSE.equals(pending.get(head.submissionId()))) {
                 waiting++;
             } else {
-                queue.add(rs.getString("id"));
+                queue.add(head.submissionId());
             }
-        });
-        if (read[0] < scanSize) {
-            scannedAll = true;
         }
     }
 

@@ -118,14 +118,18 @@ class SubmissionWriteOwnershipTest {
 
     /**
      * Where text may name each table at all, by source path: data_submission only in its entity's mapping (JPA
-     * writes it through the persistence port), held_submission in its repository, and the outbox in its writer and
-     * in the ETL consumer's claim, due check and backlog reads.
+     * writes it through the persistence port) and in the stored-submission read seam, held_submission in its
+     * repository, the journal in its own package and that read seam, and the outbox in its writer, in the ETL
+     * consumer's claim, due check and backlog reads, and in the change queue's backlog query of the processing seam.
      */
     private static final Map<String, List<String>> NAMED_IN = Map.of(
-        "data_submission", List.of("org/nmcpye/datarun/jpa/datasubmission/"),
+        "data_submission", List.of("org/nmcpye/datarun/jpa/datasubmission/",
+            "org/nmcpye/datarun/submission/normalized/jdbc/StoredSubmissionJdbcReader.java"),
         "held_submission", List.of("org/nmcpye/datarun/jpa/intake/"),
-        "submission_revision", List.of("org/nmcpye/datarun/jpa/datasubmission/revision/"),
+        "submission_revision", List.of("org/nmcpye/datarun/jpa/datasubmission/revision/",
+            "org/nmcpye/datarun/submission/normalized/jdbc/StoredSubmissionJdbcReader.java"),
         "outbox", List.of("org/nmcpye/datarun/outbox/repository/",
+            "org/nmcpye/datarun/outbox/processing/ChangeBacklog.java",
             "org/nmcpye/datarun/etl/admin/ScheduledOrchestratorRunner.java",
             "org/nmcpye/datarun/etl/metrics/EtlMetrics.java"));
     /** Where SQL may write each table: data_submission nowhere, the journal only in its writer. */

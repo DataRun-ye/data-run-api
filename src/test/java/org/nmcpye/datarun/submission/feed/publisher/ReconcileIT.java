@@ -7,7 +7,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.nmcpye.datarun.config.activation.ActivationSwitches;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
+import org.nmcpye.datarun.outbox.processing.ChangeBacklog;
 import org.nmcpye.datarun.submission.feed.publisher.FeedFixture.Ids;
+import org.nmcpye.datarun.submission.normalized.jdbc.StoredSubmissionJdbcReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -57,6 +59,12 @@ class ReconcileIT {
 
     @Autowired
     private FeedPublisherProperties properties;
+
+    @Autowired
+    private StoredSubmissionJdbcReader storedSubmissions;
+
+    @Autowired
+    private ChangeBacklog backlog;
 
     @Value("${spring.datasource.url}")
     private String url;
@@ -239,7 +247,8 @@ class ReconcileIT {
             .isNotEmpty().hasSizeLessThanOrEqualTo(5);
 
         SubmissionPublisher restarted = new SubmissionPublisher(switches, dataSource, transactionManager, properties,
-            new FeedWriter(new FormDefinitions(), objectMapper, SplitPartners.NONE), new SimpleMeterRegistry());
+            new FeedWriter(new FormDefinitions(), objectMapper, SplitPartners.NONE), storedSubmissions, backlog,
+            new SimpleMeterRegistry());
         restarted.reconcileAtStart();
         runUntilIdle(restarted);
 

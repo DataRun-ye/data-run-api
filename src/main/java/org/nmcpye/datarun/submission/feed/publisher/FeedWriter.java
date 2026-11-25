@@ -14,11 +14,13 @@ import org.nmcpye.datarun.submission.normalized.StoredSubmission;
 import org.nmcpye.datarun.submission.normalized.SubmissionNormalizer;
 import org.nmcpye.datarun.submission.normalized.UnmappedValue;
 import org.nmcpye.datarun.submission.normalized.jdbc.FormDefinitionJdbcReader;
+import org.nmcpye.datarun.submission.normalized.jdbc.Placement;
+import org.nmcpye.datarun.submission.normalized.jdbc.StoredSubmissionJdbcReader;
+import org.nmcpye.datarun.submission.normalized.jdbc.StoredSubmissionJdbcReader.Head;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.sql.Types;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
@@ -28,11 +30,11 @@ import java.util.function.UnaryOperator;
  * which holds the feed's lock: the caller takes {@link FeedLock} first, then this reads each head and the version the
  * feed holds, so positions taken here commit in position order.
  *
- * <p><b>The head</b> is the submission's newest revision in the journal, read joined to {@code data_submission} for
- * what a revision leaves out (the form, the entry times, the creation time); its placement is resolved to ids by
- * {@link Placement}. A head at or below the version the feed holds is skipped: versions never go backwards. A republication
- * writes the held version again, with new positions, and skips a submission whose held version is newer than its
- * head.</p>
+ * <p><b>The head</b> is the submission's newest revision in the journal, read through the stored-submission read seam
+ * ({@link StoredSubmissionJdbcReader}) with what a revision leaves out and its placement as ids; the feed's own table
+ * gives the version it holds. A head at or below the version the feed holds is skipped: versions never go backwards.
+ * A republication writes the held version again, with new positions, and skips a submission whose held version is
+ * newer than its head.</p>
  *
  * <p><b>The records:</b> the submission's record is rewritten with a new position; a row record only when it is new or
  * changed (or always, for a republication), keeping its last {@code changed_in_version} when only its position moves;
@@ -67,27 +69,7 @@ final class FeedWriter {
     record Result(Outcome outcome, long version, Map<NormalizationFlag, Integer> flags) {
     }
 
-    private static final String HEAD = """
-        SELECT s.id, s.template_uid AS form_uid, r.version, r.form_data::text AS form_data,
-               r.metadata ->> 'template_version_uid' AS form_version_uid,
-               coalesce((r.metadata ->> 'deleted')::boolean, false) AS deleted,
-               CASE WHEN r.kind = 'BASELINE'
-                    THEN coalesce((r.metadata ->> 'last_modified_date')::timestamptz, r.recorded_at)
-                    ELSE r.recorded_at END AS changed_at,
-               s.created_date AT TIME ZONE 'UTC' AS created_at,
-               s.start_entry_time AT TIME ZONE 'UTC' AS entered_start_at,
-               s.finished_entry_time AT TIME ZONE 'UTC' AS entered_end_at,
-               t.id AS form_id, v.id AS form_version_id, r.metadata::text AS metadata, f.version AS held_version
-        FROM data_submission s
-        JOIN LATERAL (SELECT x.version, x.kind, x.recorded_at, x.form_data, x.metadata
-                      FROM journal.submission_revision x
-                      WHERE x.submission_id = s.id
-                      ORDER BY x.version DESC
-                      LIMIT 1) r ON true
-        LEFT JOIN data_template t ON t.uid = s.template_uid
-        LEFT JOIN data_template_version v ON v.uid = r.metadata ->> 'template_version_uid' AND v.data_template_id = t.id
-        LEFT JOIN feed.submission f ON f.id = s.id
-        WHERE s.id = :submissionId""";
+    private static final String HELD = "SELECT version FROM feed.submission WHERE id = :submissionId";
 
     /** The submission's record, its gone rows and its new or changed rows, in one statement. */
     private static final String WRITE_RECORDS = """
@@ -188,23 +170,6 @@ final class FeedWriter {
 
     private static final JsonNodeFactory NODES = JsonNodeFactory.instance;
 
-    private record Head(
-        String submissionId,
-        String formUid,
-        long version,
-        String formData,
-        String formVersionUid,
-        boolean deleted,
-        OffsetDateTime changedAt,
-        OffsetDateTime createdAt,
-        OffsetDateTime enteredStartAt,
-        OffsetDateTime enteredEndAt,
-        String formId,
-        String formVersionId,
-        String metadata,
-        Long heldVersion) {
-    }
-
     private final FormDefinitions definitions;
     private final ObjectMapper objectMapper;
     private final SplitPartners partners;
@@ -234,23 +199,25 @@ final class FeedWriter {
 
     private Result publishOne(FeedStatements statements, String submissionId, boolean republish) {
         NamedParameterJdbcTemplate jdbc = statements.named();
-        Head head = readHead(jdbc, submissionId);
-        if (head.heldVersion() != null
-            && (head.heldVersion() > head.version() || (head.heldVersion() == head.version() && !republish))) {
+        Head head = new StoredSubmissionJdbcReader(jdbc, objectMapper).head(submissionId)
+            .orElseThrow(() -> new FeedFailure(FeedFailure.HEAD_MISSING));
+        List<Long> held = jdbc.queryForList(HELD, Map.of("submissionId", submissionId), Long.class);
+        Long heldVersion = held.isEmpty() ? null : held.get(0);
+        if (heldVersion != null && (heldVersion > head.version() || (heldVersion == head.version() && !republish))) {
             jdbc.update(RESOLVE, Map.of("submissionId", submissionId));
             return new Result(Outcome.SKIPPED, head.version(), Map.of());
         }
         if (head.formId() == null) {
             throw new FeedFailure(FeedFailure.FORM_UNRESOLVED);
         }
-        Placement placement = Placement.of(jdbc, head.metadata());
+        Placement placement = head.placement();
         if (!placement.complete()) {
             throw new FeedFailure(FeedFailure.PLACEMENT_UNRESOLVED);
         }
-        FormDefinition form = definitions.forHead(new FormDefinitionJdbcReader(jdbc, objectMapper), head.formUid(),
-            head.formVersionUid());
-        NormalizedSubmission normalized = SubmissionNormalizer.normalize(
-            new StoredSubmission(submissionId, head.formUid(), head.formVersionUid(), head.formData()), form);
+        StoredSubmission stored = head.submission();
+        FormDefinition form = definitions.forHead(new FormDefinitionJdbcReader(jdbc, objectMapper), stored.formUid(),
+            stored.formVersionUid());
+        NormalizedSubmission normalized = SubmissionNormalizer.normalize(stored, form);
 
         jdbc.queryForObject(WRITE_RECORDS, new MapSqlParameterSource()
             .addValue("submissionId", submissionId)
@@ -277,28 +244,6 @@ final class FeedWriter {
             .addValue("flags", flags(normalized.flags()), Types.VARCHAR)
             .addValue("changedAt", head.changedAt(), Types.TIMESTAMP_WITH_TIMEZONE));
         return new Result(Outcome.PUBLISHED, head.version(), normalized.flags());
-    }
-
-    private static Head readHead(NamedParameterJdbcTemplate jdbc, String submissionId) {
-        List<Head> heads = jdbc.query(HEAD, Map.of("submissionId", submissionId), (rs, n) -> new Head(
-            rs.getString("id"),
-            rs.getString("form_uid"),
-            rs.getLong("version"),
-            rs.getString("form_data"),
-            rs.getString("form_version_uid"),
-            rs.getBoolean("deleted"),
-            rs.getObject("changed_at", OffsetDateTime.class),
-            rs.getObject("created_at", OffsetDateTime.class),
-            rs.getObject("entered_start_at", OffsetDateTime.class),
-            rs.getObject("entered_end_at", OffsetDateTime.class),
-            rs.getString("form_id"),
-            rs.getString("form_version_id"),
-            rs.getString("metadata"),
-            rs.getObject("held_version", Long.class)));
-        if (heads.isEmpty()) {
-            throw new FeedFailure(FeedFailure.HEAD_MISSING);
-        }
-        return heads.get(0);
     }
 
     /** One container's values, keyed by field id: the normalizer gives each field at most one value per container. */

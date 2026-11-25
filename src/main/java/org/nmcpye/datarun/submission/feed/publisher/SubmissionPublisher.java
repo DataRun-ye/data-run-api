@@ -5,10 +5,12 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.nmcpye.datarun.config.activation.ActivationSwitches;
 import org.nmcpye.datarun.outbox.dto.OutboxDto;
+import org.nmcpye.datarun.outbox.processing.ChangeBacklog;
 import org.nmcpye.datarun.outbox.processing.ChangeOutput;
 import org.nmcpye.datarun.outbox.processing.DeferredWork;
 import org.nmcpye.datarun.submission.feed.FeedActivation;
 import org.nmcpye.datarun.submission.normalized.NormalizationFlag;
+import org.nmcpye.datarun.submission.normalized.jdbc.StoredSubmissionJdbcReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -60,7 +62,11 @@ import java.util.function.IntSupplier;
  *
  * <p><b>Freshness:</b> at each poll the runtime asks {@link #withinFreshnessTarget}, which writes what waits into
  * {@code feed.freshness} (backlog, pending and dead changes, the oldest of each) and says whether the feed is within
- * {@code datarun.feed.freshness-target}; the runtime's heartbeat stops while it is not (contract 12).</p>
+ * {@code datarun.feed.freshness-target}; the runtime's heartbeat stops while it is not (contract 12). The backlog comes
+ * from the change queue's own query ({@link ChangeBacklog}).</p>
+ *
+ * <p>It reads stored submissions only through their read seam ({@link StoredSubmissionJdbcReader}) and the change
+ * queue only through {@link ChangeBacklog}; the SQL here and in this package names the feed's own tables only.</p>
  *
  * <p><b>Savepoints are JDBC savepoints on the transaction's connection.</b> Spring's {@code Propagation.NESTED} is not
  * available: the application's transaction manager is JPA's, whose Hibernate dialect offers no savepoints, so a nested
@@ -81,7 +87,8 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
     private final FeedWriter writer;
     private final PendingChanges pending;
     private final RepublishMarks republishMarks;
-    private final Reconcile reconcile = new Reconcile();
+    private final Reconcile reconcile;
+    private final ChangeBacklog backlog;
     private final Freshness freshness = new Freshness();
     private final TransactionTemplate afterBacklog;
     private final TransactionTemplate reading;
@@ -95,14 +102,15 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
     public SubmissionPublisher(ActivationSwitches switches, DataSource dataSource,
                                PlatformTransactionManager transactionManager, ObjectMapper objectMapper,
                                FeedPublisherProperties properties, ObjectProvider<SplitPartners> splitPartners,
-                               MeterRegistry registry) {
+                               StoredSubmissionJdbcReader submissions, ChangeBacklog backlog, MeterRegistry registry) {
         this(switches, dataSource, transactionManager, properties, new FeedWriter(new FormDefinitions(), objectMapper,
-            splitPartners.getIfAvailable(() -> SplitPartners.NONE)), registry);
+            splitPartners.getIfAvailable(() -> SplitPartners.NONE)), submissions, backlog, registry);
     }
 
     SubmissionPublisher(ActivationSwitches switches, DataSource dataSource,
                         PlatformTransactionManager transactionManager, FeedPublisherProperties properties,
-                        FeedWriter writer, MeterRegistry registry) {
+                        FeedWriter writer, StoredSubmissionJdbcReader submissions, ChangeBacklog backlog,
+                        MeterRegistry registry) {
         this.switches = switches;
         this.dataSource = dataSource;
         this.jdbc = new NamedParameterJdbcTemplate(dataSource);
@@ -111,6 +119,8 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
         this.writer = writer;
         this.pending = new PendingChanges(properties);
         this.republishMarks = new RepublishMarks(properties);
+        this.reconcile = new Reconcile(submissions);
+        this.backlog = backlog;
         this.afterBacklog = new TransactionTemplate(transactionManager);
         // a backstop: each submission's own statements stop at the feed part's limit
         this.afterBacklog.setTimeout((int) Math.max(1, partTimeout.multipliedBy(2).toSeconds()));
@@ -214,7 +224,7 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
         }
         Freshness.Reading reading = afterBacklog.execute(status -> {
             FeedLock.take(jdbc.getJdbcOperations());
-            return freshness.refresh(jdbc);
+            return freshness.refresh(jdbc, backlog.read());
         });
         boolean within = reading != null && reading.withinTarget(properties.getFreshnessTarget());
         Boolean before = withinTarget;

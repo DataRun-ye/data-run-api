@@ -8,8 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.nmcpye.datarun.config.activation.ActivationSwitches;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
+import org.nmcpye.datarun.outbox.processing.ChangeBacklog;
 import org.nmcpye.datarun.submission.feed.publisher.FeedFixture.Change;
 import org.nmcpye.datarun.submission.feed.publisher.FeedFixture.Ids;
+import org.nmcpye.datarun.submission.normalized.jdbc.StoredSubmissionJdbcReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -68,6 +70,12 @@ class ConcurrentPublishersIT {
     @Autowired
     private FeedPublisherProperties properties;
 
+    @Autowired
+    private StoredSubmissionJdbcReader storedSubmissions;
+
+    @Autowired
+    private ChangeBacklog backlog;
+
     @Value("${spring.datasource.url}")
     private String url;
 
@@ -120,7 +128,8 @@ class ConcurrentPublishersIT {
 
     private SubmissionPublisher secondPublisher() {
         return new SubmissionPublisher(switches, dataSource, transactionManager, properties,
-            new FeedWriter(new FormDefinitions(), objectMapper, SplitPartners.NONE), new SimpleMeterRegistry());
+            new FeedWriter(new FormDefinitions(), objectMapper, SplitPartners.NONE), storedSubmissions, backlog,
+            new SimpleMeterRegistry());
     }
 
     /** Runs the task over and over on a thread of its own until {@code stop}, then once more. */

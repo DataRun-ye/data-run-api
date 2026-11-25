@@ -12,6 +12,7 @@ import org.nmcpye.datarun.submission.normalized.StoredSubmission;
 import org.nmcpye.datarun.submission.normalized.SubmissionNormalizer;
 import org.nmcpye.datarun.submission.normalized.UnmappedValue;
 import org.nmcpye.datarun.submission.normalized.jdbc.FormDefinitionJdbcReader;
+import org.nmcpye.datarun.submission.normalized.jdbc.StoredSubmissionJdbcReader;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 
@@ -29,6 +30,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -88,21 +90,6 @@ public final class FeedAgreement {
 
     private static final Path ORACLE_WALK = Path.of("scripts", "feed", "sql", "oracle-walk.sql");
     private static final Path ORACLE_HEADER = Path.of("scripts", "feed", "sql", "oracle-header.sql");
-
-    private static final String HEADS = """
-        SELECT s.id, s.template_uid, h.version, h.metadata ->> 'template_version_uid' AS form_version_uid,
-               h.form_data::text AS form_data
-        FROM data_submission s
-        CROSS JOIN LATERAL (SELECT r.version, r.metadata, r.form_data FROM journal.submission_revision r
-                            WHERE r.submission_id = s.id ORDER BY r.version DESC LIMIT 1) h
-        WHERE s.id > ? AND (cardinality(?::text[]) = 0 OR s.template_uid = ANY (?::text[]))
-        ORDER BY s.id
-        LIMIT ?""";
-
-    private static final String WITHOUT_HEAD = """
-        SELECT count(*) FROM data_submission s
-        WHERE (cardinality(?::text[]) = 0 OR s.template_uid = ANY (?::text[]))
-          AND NOT EXISTS (SELECT 1 FROM journal.submission_revision r WHERE r.submission_id = s.id)""";
 
     private static final List<String> SESSION = List.of(
         "SET LOCAL work_mem = '8MB'",
@@ -270,27 +257,42 @@ public final class FeedAgreement {
                 requireSetting(statement, "SHOW transaction_read_only", "on");
             }
             FeedAgreement agreement = new FeedAgreement(normalizing);
-            Map<String, FormDefinitionJdbcReader.Snapshot> definitions = new FormDefinitionJdbcReader(
-                new NamedParameterJdbcTemplate(new SingleConnectionDataSource(connection, true)), new ObjectMapper())
-                .readAll();
-            Array forms = connection.createArrayOf("text", settings.formUids().toArray());
-            try (PreparedStatement withoutHead = connection.prepareStatement(WITHOUT_HEAD)) {
-                withoutHead.setArray(1, forms);
-                withoutHead.setArray(2, forms);
-                try (ResultSet rs = withoutHead.executeQuery()) {
-                    rs.next();
-                    agreement.add("submissions without a head", rs.getLong(1));
-                }
-            }
+            NamedParameterJdbcTemplate jdbc =
+                new NamedParameterJdbcTemplate(new SingleConnectionDataSource(connection, true));
+            Map<String, FormDefinitionJdbcReader.Snapshot> definitions = new FormDefinitionJdbcReader(jdbc,
+                new ObjectMapper()).readAll();
+            // the normalizer's side reads heads through the stored-submission read seam, as the publisher does
+            StoredSubmissionJdbcReader submissions = new StoredSubmissionJdbcReader(jdbc, new ObjectMapper());
+            long withoutHead = 0;
             String after = "";
             while (true) {
-                List<Head> heads = heads(connection, forms, after, settings.batchSize());
-                if (heads.isEmpty()) {
+                List<StoredSubmissionJdbcReader.HeadVersion> page =
+                    submissions.headVersionsAfter(after, settings.batchSize());
+                if (page.isEmpty()) {
                     break;
                 }
-                agreement.compare(connection, walk, header, heads, definitions);
-                after = heads.get(heads.size() - 1).submissionId();
+                after = page.get(page.size() - 1).submissionId();
+                List<String> ids = new ArrayList<>();
+                for (StoredSubmissionJdbcReader.HeadVersion head : page) {
+                    if (!settings.formUids().isEmpty() && !settings.formUids().contains(head.formUid())) {
+                        continue;
+                    }
+                    if (head.version() == null) {
+                        withoutHead++;
+                    } else {
+                        ids.add(head.submissionId());
+                    }
+                }
+                List<Head> heads = submissions.heads(ids).stream()
+                    .map(head -> new Head(head.submission().id(), head.submission().formUid(), head.version(),
+                        head.submission().formVersionUid(), head.submission().formData()))
+                    .sorted(Comparator.comparing(Head::submissionId))
+                    .toList();
+                if (!heads.isEmpty()) {
+                    agreement.compare(connection, walk, header, heads, definitions);
+                }
             }
+            agreement.add("submissions without a head", withoutHead);
             return new Report(Collections.unmodifiableMap(new LinkedHashMap<>(agreement.lines)),
                 Collections.unmodifiableMap(new TreeMap<>(agreement.byForm)));
         } finally {
@@ -312,23 +314,6 @@ public final class FeedAgreement {
 
     /** One head of the journal and the submission's form uid. */
     private record Head(String submissionId, String formUid, long version, String formVersionUid, String formData) {
-    }
-
-    private static List<Head> heads(Connection connection, Array forms, String after, int limit) throws SQLException {
-        List<Head> heads = new ArrayList<>();
-        try (PreparedStatement statement = connection.prepareStatement(HEADS)) {
-            statement.setString(1, after);
-            statement.setArray(2, forms);
-            statement.setArray(3, forms);
-            statement.setInt(4, limit);
-            try (ResultSet rs = statement.executeQuery()) {
-                while (rs.next()) {
-                    heads.add(new Head(rs.getString("id"), rs.getString("template_uid"), rs.getLong("version"),
-                        rs.getString("form_version_uid"), rs.getString("form_data")));
-                }
-            }
-        }
-        return heads;
     }
 
     /** A value as compared: its row (null outside every row), its field id or data path, and its JSON, exact. */
