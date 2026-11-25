@@ -17,9 +17,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <pre>
  * CONFLICT_REHEARSAL_PASSWORD=... ./mvnw -Pprod verify -Dtest=NoSuchUnitTest -Dsurefire.failIfNoSpecifiedTests=false \
  *   -Dit.test=ConflictDetectionRehearsalIT -Dfailsafe.failIfNoSpecifiedTests=false \
- *   -Dconflict.rehearsal.url=jdbc:postgresql://HOST:PORT/DATABASE -Dconflict.rehearsal.user=USER
+ *   -Dconflict.rehearsal.url=jdbc:postgresql://HOST:PORT/DATABASE -Dconflict.rehearsal.user=USER \
+ *   -Dconflict.rehearsal.database=DATABASE
  * </pre>
- * The database must hold step S2's schema (its migrations run). Optional settings: {@code conflict.rehearsal.limit}
+ * The database must be a clone, never one serving phones: the changed-copy pass writes and rolls back, which takes row
+ * locks and consumes sequence values. The run refuses unless it is connected to the database named, and refuses
+ * production's known host, address and database name. It must hold step S2's schema (its migrations run). Optional settings: {@code conflict.rehearsal.limit}
  * (submissions in the re-send pass; all by default), {@code conflict.rehearsal.sample} (changed copies; 200),
  * {@code conflict.rehearsal.threads} (connections at work; 4) and {@code conflict.rehearsal.seed} (the sample's seed;
  * {@code s2}). The password is read from the environment only, so it never shows in a process list.
@@ -39,6 +42,7 @@ class ConflictDetectionRehearsalIT {
             required(System.getProperty("conflict.rehearsal.user"), "conflict.rehearsal.user"),
             required(System.getenv("CONFLICT_REHEARSAL_PASSWORD"),
                 "the environment variable CONFLICT_REHEARSAL_PASSWORD"),
+            required(System.getProperty("conflict.rehearsal.database"), "conflict.rehearsal.database"),
             Integer.getInteger("conflict.rehearsal.limit"),
             Integer.getInteger("conflict.rehearsal.sample", 200),
             Integer.getInteger("conflict.rehearsal.threads", 4),

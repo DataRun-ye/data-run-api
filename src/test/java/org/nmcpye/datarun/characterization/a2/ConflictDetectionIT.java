@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.Group.G0;
@@ -700,14 +701,20 @@ class ConflictDetectionIT extends A2GoldenSupport {
         String footprint = footprint();
 
         HikariDataSource pool = dataSource.unwrap(HikariDataSource.class);
+        String database = jdbc.getJdbcTemplate().queryForObject("SELECT current_database()", String.class);
+        try (ConflictRehearsal elsewhere = new ConflictRehearsal(new ConflictRehearsal.Settings(pool.getJdbcUrl(),
+            pool.getUsername(), pool.getPassword(), "another_database", null, 100, 2, "s2", "a2rh%"))) {
+            assertThatThrownBy(elsewhere::run).as("connected to another database than the one named")
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("not to another_database");
+        }
         List<String> report;
         try (ConflictRehearsal rehearsal = new ConflictRehearsal(new ConflictRehearsal.Settings(pool.getJdbcUrl(),
-            pool.getUsername(), pool.getPassword(), null, 100, 2, "s2", "a2rh%"))) {
+            pool.getUsername(), pool.getPassword(), database, null, 100, 2, "s2", "a2rh%"))) {
             report = rehearsal.run();
 
             assertThat(rehearsal.unchanged.sorted()).as("nine copies, two shapes each").containsOnly(
-                Map.entry("apps 6.0 and later (rows with ids), changes nothing, before the checks", 9L),
-                Map.entry("apps 5.2 and 5.3 (rows without ids), changes nothing, before the checks", 9L));
+                Map.entry("apps 6.0 and later (rows with ids), own base, changes nothing, before the checks", 9L),
+                Map.entry("apps 5.2 and 5.3 (rows without ids), own base, changes nothing, before the checks", 9L));
             assertThat(rehearsal.unchangedConflicts()).isZero();
             assertThat(rehearsal.unchangedFailures()).isZero();
             assertThat(rehearsal.holders.sorted()).containsOnly(Map.entry("creator", 1L), Map.entry("upload", 8L));

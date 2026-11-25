@@ -30,12 +30,15 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.lang.reflect.Proxy;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -58,15 +61,21 @@ import static org.mockito.Mockito.when;
  * <p><b>Whose copy.</b> A submission's copy is held by whoever last uploaded it: the newest {@code UPLOAD} or
  * {@code LEGACY_UPLOAD} revision's actor, or a {@code HELD_RELEASE}'s uploader, holding that revision's state. For a
  * submission no upload has changed since the journal began, it is the row's last modifier, holding the first
- * revision's state, sent as phones send it ({@code deleted} false). Each copy is re-sent in two shapes: as stored
+ * revision's state. Every copy is sent as phones send it, {@code deleted} false. A holder without a base of their own
+ * (a last modifier who is not the creator, or a creator whose baseline is deleted) is counted apart: after a
+ * server-side change, a deleted baseline included, their copy is kept aside by design. Each copy is re-sent in two shapes: as stored
  * (apps 6.0 and later, row ids included) and with every row's structure keys removed (apps 5.2 and 5.3). Documents are
  * read as the upload routes read a request, decimals as binary doubles.</p>
  *
- * <p><b>It never changes the database.</b> Every transaction is rolled back; the re-send and history passes run in
- * read-only transactions; the conflict store counts instead of writing. The changed-copy pass writes its seeded change
- * (the submission's row, its revision and its outbox row, as submission review's methods will) inside its transaction,
- * under the submission lock, and rolls it back. Each connection runs with a 30 s statement timeout, a 2 s lock timeout,
- * 4 MB of work memory and no parallel workers, and names itself {@code conflict-detection-rehearsal}.</p>
+ * <p><b>A clone only.</b> The re-send and history passes run in read-only transactions, and the conflict store counts
+ * instead of writing, but the changed-copy pass writes: its seeded change (the submission's row, its revision and its
+ * outbox row, as submission review's methods will) inside its transaction, under the submission lock, then rolled back.
+ * That takes row locks while it lasts and consumes sequence values (the outbox's) for good, so it runs on a clone,
+ * never on a database serving phones. The operator names the database ({@link Settings#database}); the rehearsal
+ * refuses to start unless {@code current_database()} is that one, and refuses production's known database host, by
+ * name or address, and its database's name, with no override. Each connection runs with a 30 s statement timeout, a
+ * 2 s lock timeout, 4 MB of work memory and no parallel workers, and names itself
+ * {@code conflict-detection-rehearsal}.</p>
  *
  * <p><b>It reports counts only</b>: no uid, no user, no value. Detection's own ERROR lines (identifiers and failure
  * shapes, as in production) stay on; its INFO lines are silenced.</p>
@@ -76,15 +85,21 @@ public final class ConflictRehearsal implements AutoCloseable {
     /**
      * What to rehearse, and where.
      *
-     * @param limit   at most this many submissions in the re-send pass, or null for all
+     * @param database the database to rehearse on, named by the operator: the run refuses any other
+     * @param limit    at most this many submissions in the re-send pass, or null for all
      * @param sample  how many submissions get a changed copy after a seeded server-side change
      * @param threads how many connections work at once
      * @param seed    the sample's seed: the same seed picks the same submissions
      * @param scope   an SQL {@code LIKE} pattern on uids, or null for every submission
      */
-    public record Settings(String url, String user, String password, Integer limit, int sample, int threads,
-                           String seed, String scope) {
+    public record Settings(String url, String user, String password, String database, Integer limit, int sample,
+                           int threads, String seed, String scope) {
     }
+
+    /** Production's database host, by name and address, as the feed's agreement harness lists them. */
+    static final Set<String> PRODUCTION_HOSTS = Set.of("datarun-prod-db.lab", "datarun-prod-db", "192.168.1.111");
+    /** Production's database ({@code deploy/production/compose.yml}). */
+    static final Set<String> PRODUCTION_DATABASES = Set.of("nmcpdb");
 
     /** Counts by outcome, in a stable order. */
     public static final class Tally {
@@ -122,6 +137,7 @@ public final class ConflictRehearsal implements AutoCloseable {
     private static final List<String> SEEDED_KINDS = List.of("EDIT", "MOVE", "DELETE", "ADMIN_DELETE");
     private static final String PHONE_CHANGE = "conflict_rehearsal_phone_change";
     private static final String NO_BASE = "no base of their own";
+    private static final String OWN_BASE = "own base";
     private static final String SERVER_CHANGE = "conflict_rehearsal_server_change";
     private static final int PAYLOAD_BATCH = 200;
 
@@ -145,6 +161,7 @@ public final class ConflictRehearsal implements AutoCloseable {
     public final Tally status = new Tally();
 
     public ConflictRehearsal(Settings settings) {
+        requireAClone(settings);
         this.settings = settings;
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(settings.url());
@@ -170,6 +187,7 @@ public final class ConflictRehearsal implements AutoCloseable {
     public List<String> run() {
         Level detectionLevel = quietDetection(Level.ERROR);
         try {
+            requireTheDatabaseNamed();
             requireTheSchema();
             line("database " + jdbc.getJdbcTemplate().queryForObject("SELECT current_database()", String.class)
                 + ", " + jdbc.getJdbcTemplate().queryForObject("SHOW server_version", String.class)
@@ -218,13 +236,16 @@ public final class ConflictRehearsal implements AutoCloseable {
             + seconds(started) + " s");
         holders.sorted().forEach((key, count) -> line("  copy holder " + key + ": " + count));
         unchanged.sorted().forEach((key, count) -> line("  " + key + ": " + count));
-        line("  expected: kept aside 0 (a server-side change or a detection error), failed 0; met: "
+        line("  expected: kept aside 0 for a holder with a base of their own, failed 0; met: "
             + (unchangedConflicts() == 0 && unchangedFailures() == 0 ? "yes" : "no"));
     }
 
-    /** Conflicts the re-send pass would have opened: kept aside, for a server-side change or a detection error. */
+    /**
+     * Conflicts the re-send pass would have opened for a holder with a base of their own: kept aside, for a server-side
+     * change or a detection error. A holder without one is kept aside by design after a server-side change.
+     */
     public long unchangedConflicts() {
-        return unchanged.counts.keySet().stream().filter(key -> key.contains("kept aside"))
+        return unchanged.counts.keySet().stream().filter(key -> key.contains("kept aside") && key.contains(OWN_BASE))
             .mapToLong(unchanged::get).sum();
     }
 
@@ -253,9 +274,11 @@ public final class ConflictRehearsal implements AutoCloseable {
         if (onlyStatusDiffers(head.get().document(), asStored)) {
             status.add("heads whose re-sent copy differs from the stored document only in _status");
         }
+        String base = holder.get().ownBase(state.get()) ? OWN_BASE : NO_BASE;
         for (Shape shape : Shape.values()) {
             JsonNode document = shape.of(parse(asStored));
-            unchanged.add(shape.label + ", " + outcome(head.get(), holder.get(), state.get(), document, null));
+            unchanged.add(shape.label + ", " + base + ", "
+                + outcome(head.get(), holder.get(), state.get(), document, null));
         }
     }
 
@@ -325,9 +348,7 @@ public final class ConflictRehearsal implements AutoCloseable {
             changed.add(requested + " seeded as " + kind + " (" + (requested.equals("MOVE")
                 ? "no other assignment in the activity" : "already deleted") + ")");
         }
-        // The holder's own revision is their base, unless it is a creator's deleted baseline.
-        boolean ownBase = !holder.how().equals("last modifier")
-            && !(holder.how().equals("creator") && state.get().deleted());
+        boolean ownBase = holder.ownBase(state.get());
         for (Shape shape : Shape.values()) {
             ObjectNode document = (ObjectNode) shape.of(parse(state.get().document()));
             document.put(PHONE_CHANGE, true);
@@ -554,7 +575,7 @@ public final class ConflictRehearsal implements AutoCloseable {
     }
 
     private static PhoneCopy copy(Head head, Holder holder, SubmissionRevisionReader.State state, JsonNode document) {
-        boolean deleted = holder.phoneDeleted() && state.deleted();
+        boolean deleted = false;
         ObjectNode item = REQUEST.createObjectNode();
         item.put("uid", head.uid());
         item.put("form", head.form());
@@ -586,12 +607,15 @@ public final class ConflictRehearsal implements AutoCloseable {
     /**
      * Whose phone holds the copy, and which revision's state it holds.
      *
-     * @param how          how they were found: {@code upload}, {@code release}, {@code creator} or
-     *                     {@code last modifier}, the last two for a submission no upload changed since the journal
-     *                     began
-     * @param phoneDeleted whether the copy carries the state's deleted flag: an upload's does, phones send false
+     * @param how how they were found: {@code upload}, {@code release}, {@code creator} or {@code last modifier}, the
+     *            last two for a submission no upload changed since the journal began
      */
-    private record Holder(String userId, String login, String how, long version, boolean phoneDeleted) {
+    private record Holder(String userId, String login, String how, long version) {
+
+        /** Whether the revision they hold is their base: not for a last modifier, nor a creator's deleted baseline. */
+        boolean ownBase(SubmissionRevisionReader.State state) {
+            return !how.equals("last modifier") && !(how.equals("creator") && state.deleted());
+        }
     }
 
     private Optional<Head> head(String id, boolean lock) {
@@ -622,8 +646,7 @@ public final class ConflictRehearsal implements AutoCloseable {
             }
             String how = release ? "release" : "upload";
             tally.add(how);
-            return Optional.of(new Holder(userId, login.get(), how, ((Number) upload.get("version")).longValue(),
-                true));
+            return Optional.of(new Holder(userId, login.get(), how, ((Number) upload.get("version")).longValue()));
         }
         Long first = jdbc.queryForObject(
             "SELECT min(version) FROM journal.submission_revision WHERE submission_id = :id",
@@ -643,7 +666,7 @@ public final class ConflictRehearsal implements AutoCloseable {
         boolean creator = head.createdBy() != null && head.createdBy().equalsIgnoreCase(login);
         String how = creator ? "creator" : "last modifier";
         tally.add(how);
-        return Optional.of(new Holder(userId.get(), login, how, first, false));
+        return Optional.of(new Holder(userId.get(), login, how, first));
     }
 
     private Optional<SubmissionRevisionReader.State> state(Head head, Holder holder) {
@@ -678,6 +701,47 @@ public final class ConflictRehearsal implements AutoCloseable {
             when(context.getElementsByPath()).thenReturn(Map.copyOf(byPath));
             return context;
         });
+    }
+
+    /** Before any connection: a database is named, and neither it nor the host is production's. */
+    static void requireAClone(Settings settings) {
+        if (settings.database() == null || settings.database().isBlank()) {
+            throw new IllegalArgumentException("Name the database to rehearse on: it must be a clone");
+        }
+        if (PRODUCTION_DATABASES.contains(settings.database().toLowerCase(Locale.ROOT))) {
+            throw new IllegalArgumentException("Database " + settings.database() + " is production's: the rehearsal "
+                + "writes and rolls back, so it runs on a clone only");
+        }
+        String url = settings.url() == null ? "" : settings.url();
+        if (!url.startsWith("jdbc:postgresql:")) {
+            throw new IllegalArgumentException("The rehearsal reads PostgreSQL only");
+        }
+        String host;
+        try {
+            host = URI.create(url.substring("jdbc:".length())).getHost();
+        } catch (IllegalArgumentException unreadable) {
+            host = null;
+        }
+        if (host == null || host.isBlank()) {
+            throw new IllegalArgumentException("The rehearsal needs one host it can read in the URL");
+        }
+        if (PRODUCTION_HOSTS.contains(host.toLowerCase(Locale.ROOT))) {
+            throw new IllegalArgumentException("Host " + host + " is production's database host: the rehearsal runs "
+                + "on a clone only");
+        }
+    }
+
+    /** Connected: the database is the one named, and not production's. */
+    private void requireTheDatabaseNamed() {
+        String connected = jdbc.getJdbcTemplate().queryForObject("SELECT current_database()", String.class);
+        if (!settings.database().equals(connected)) {
+            throw new IllegalStateException("Connected to database " + connected + ", not to " + settings.database()
+                + ", the database named");
+        }
+        if (PRODUCTION_DATABASES.contains(String.valueOf(connected).toLowerCase(Locale.ROOT))) {
+            throw new IllegalStateException("Database " + connected + " is production's: the rehearsal runs on a "
+                + "clone only");
+        }
     }
 
     private void requireTheSchema() {

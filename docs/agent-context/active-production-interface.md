@@ -231,8 +231,9 @@ not detected. The journal accepts submission review's commands since changeset
 changes are admin deletes and deleted baselines. A deleted baseline counts for
 every uploader, also as a submission's first revision: a copy of a submission
 deleted before the journal began is kept aside, as after an admin delete.
-`ConflictDetectionRehearsalIT` rehearses detection on a database the operator
-names, counts only, and changes nothing there.
+`ConflictDetectionRehearsalIT` rehearses detection, counts only, on a clone the
+operator names: its changed-copy pass writes and rolls back, so it refuses any
+database but the one named, and production's host and database outright.
 
 `data_submission`'s indexes: the primary key, the unique keys on `uid` and
 `serial_number`, `idx_ds_form_assignment`, and two that only the generic read
