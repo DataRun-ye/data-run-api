@@ -62,8 +62,9 @@ import java.util.function.Function;
  *
  * <p>Conflict detection ({@link ConflictDetection}, behind its switch) reads each live upload item of a stored
  * submission right after the lock, before the upload checks and before any row id is minted: a copy that changes
- * nothing, or that a server-side change keeps aside, is answered {@code updated} and nothing is written. Practice
- * uploads and held releases are not detected.</p>
+ * nothing, or that a server-side change keeps aside, is answered {@code updated} and nothing is written. After a
+ * server-side move, so is a changed copy the checks refuse for access. Practice uploads and held releases are not
+ * detected.</p>
  *
  * <p>Only the command service calls this class; it is a separate component so that a held release can replay an
  * upload through it.</p>
@@ -236,7 +237,14 @@ public class SubmissionUploads {
                 if (conflict.changesNothing()) {
                     return answeredUpdated(submission, summary);
                 }
-                checkLegacy(submission, stored, template, actor);
+                try {
+                    checkLegacy(submission, stored, template, actor);
+                } catch (ErrorCodeException refusal) {
+                    if (conflict.keptAsideOnRefusal(refusal.getErrorCode())) {
+                        return answeredUpdated(submission, summary);
+                    }
+                    throw refusal;
+                }
                 if (conflict.afterChecks() != ConflictCheck.Outcome.APPLY) {
                     return answeredUpdated(submission, summary);
                 }
@@ -268,7 +276,14 @@ public class SubmissionUploads {
         if (conflict.changesNothing()) {
             return answeredUpdated(submission, summary);
         }
-        authorize(submission, stored, assignment, actor.access(), assignment.getTeam().getUid());
+        try {
+            authorize(submission, stored, assignment, actor.access(), assignment.getTeam().getUid());
+        } catch (ErrorCodeException refusal) {
+            if (conflict.keptAsideOnRefusal(refusal.getErrorCode())) {
+                return answeredUpdated(submission, summary);
+            }
+            throw refusal;
+        }
         if (conflict.afterChecks() != ConflictCheck.Outcome.APPLY) {
             return answeredUpdated(submission, summary);
         }

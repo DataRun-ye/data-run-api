@@ -114,6 +114,8 @@ public class ConflictDetection {
         long after = base != null ? base : first;
         boolean serverSideChange = revisions.stream()
             .anyMatch(revision -> revision.version() > after && isServerSideChange(revision, uploader));
+        boolean moved = revisions.stream()
+            .anyMatch(revision -> revision.version() > after && "MOVE".equals(revision.command()));
 
         ComparedState copy = context.copy().canonical();
         boolean equalsLastDecided = conflicts.lastDecidedCopy(submissionId, uploader)
@@ -122,7 +124,7 @@ public class ConflictDetection {
         boolean equalsBase = base != null && sameState(copy, ComparedState.of(journal.stateAt(submissionId, base)));
         boolean equalsCurrent = sameState(copy, ComparedState.of(journal.current(submissionId)));
         return ConflictCheck.analysed(this, context, rowsLackIds, new ConflictCheck.Analysis(
-            base != null, after, equalsBase || equalsLastDecided, equalsCurrent, serverSideChange));
+            base != null, after, equalsBase || equalsLastDecided, equalsCurrent, serverSideChange, moved));
     }
 
     /** The uploader's own revisions: each leaves the state equal to what they last sent. */

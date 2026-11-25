@@ -30,6 +30,8 @@ import static org.nmcpye.datarun.characterization.a2.A2Payloads.ordinary;
 import static org.nmcpye.datarun.characterization.a2.A2Payloads.uid;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.ADMIN;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.ASSIGN_T1_V1;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.ASSIGN_T1_V2;
+import static org.nmcpye.datarun.characterization.a2.A2Seed.ASSIGN_T3_V3;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.EDITOR;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.FIELD_1;
 import static org.nmcpye.datarun.characterization.a2.A2Seed.FIELD_2;
@@ -47,6 +49,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  *   <li>A changed copy after a server-side change is kept aside, with its base version, its route's shape and whether
  *       its rows lack ids; re-sent while open, it counts or replaces the copy.</li>
  *   <li>A kept conflict stays kept under unchanged re-sends; a plain accept is the uploader's next base.</li>
+ *   <li>After a move, unchanged re-sends write nothing and are no longer refused, and a changed copy the upload checks
+ *       refuse for access is kept aside; any other refusal, and an access refusal without a move, stands.</li>
  *   <li>Another user's copy is checked first and refused as today, never queued; an authorized one takes the first
  *       revision as its base.</li>
  *   <li>A detection error keeps the copy aside and never fails the item; practice uploads are not detected.</li>
@@ -268,6 +272,100 @@ class ConflictDetectionIT extends A2GoldenSupport {
         assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 BASELINE GAP_REPAIR");
         assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
             .containsEntry("cause", "SERVER_SIDE_CHANGE").containsEntry("base_version", 0L));
+    }
+
+    // ---------------------------------------------------------------- after a move
+
+    /**
+     * Moved to team three's village, out of field1's reach: their unchanged re-sends, which the stored-record check
+     * refuses today (E4124), are answered updated and write nothing; repeated, they open nothing.
+     */
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = Group.class, names = {"G3", "G0"})
+    void unchangedReSendsAfterAMoveWriteNothingAndOpenNothing(Group group) throws Exception {
+        String uid = uid("cdMvSm" + group.name());
+        assertThat(answer(upload(group, FIELD_1, formA(group, uid, "first")))).isEqualTo(created(uid));
+        seed.move(uid, ADMIN, ASSIGN_T3_V3);
+
+        for (int i = 0; i < 3; i++) {
+            assertThat(answer(upload(group, FIELD_1, formA(group, uid, "first")))).isEqualTo(updated(uid));
+        }
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE " + command(group), "1 UPDATE MOVE");
+        assertThat(conflicts(uid)).isEmpty();
+        assertThat(reconciliation(uid)).isEmpty();
+    }
+
+    /** Moved out of field1's reach: a changed copy, refused today with E4124, is kept aside instead. */
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = Group.class, names = {"G3", "G0"})
+    void afterAMoveAChangedCopyRefusedForAccessIsKeptAside(Group group) throws Exception {
+        String uid = uid("cdMvKp" + group.name());
+        assertThat(answer(upload(group, FIELD_1, formA(group, uid, "first")))).isEqualTo(created(uid));
+        seed.move(uid, ADMIN, ASSIGN_T3_V3);
+
+        for (int i = 0; i < 2; i++) {
+            assertThat(answer(upload(group, FIELD_1, formA(group, uid, "changed on the phone"))))
+                .isEqualTo(updated(uid));
+        }
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE " + command(group), "1 UPDATE MOVE");
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("state", "OPEN").containsEntry("cause", "SERVER_SIDE_CHANGE")
+            .containsEntry("base_version", 0L).containsEntry("rows_lack_ids", group == G0)
+            .containsEntry("resend_count", 1));
+    }
+
+    /**
+     * Moved within field1's reach: an unchanged re-send no longer moves it back, and a changed copy passes the checks
+     * and is kept aside, as after any server-side change.
+     */
+    @Test
+    void aMoveWithinTheUploadersReachIsAServerSideChange() throws Exception {
+        String uid = uid("cdMvReach");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        seed.move(uid, ADMIN, ASSIGN_T1_V2);
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).as("unchanged").isEqualTo(updated(uid));
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed on the phone")))).isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE MOVE");
+        assertThat(jdbc.queryForObject("SELECT assignment_uid FROM data_submission WHERE uid = :uid",
+            Map.of("uid", uid), String.class)).isEqualTo(ASSIGN_T1_V2);
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("cause", "SERVER_SIDE_CHANGE").containsEntry("base_version", 0L));
+    }
+
+    /** After a move, a refusal that is not about access (E4125: field1 may not delete) stays a refusal. */
+    @Test
+    void afterAMoveAnyOtherRefusalStaysARefusal() throws Exception {
+        String uid = uid("cdMvOther");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        seed.move(uid, ADMIN, ASSIGN_T1_V2);
+        Item deleting = formA(G3, uid, "first");
+        deleting.node.put("deleted", true);
+
+        assertThat(answer(upload(G3, FIELD_1, deleting)))
+            .startsWith("200 created=[] updated=[] failed={\"" + uid + "\":\"E4125: ");
+
+        assertThat(conflicts(uid)).isEmpty();
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE MOVE");
+    }
+
+    /** Without a move since the base, an access refusal (E4114: a copy naming team three's village) stands. */
+    @Test
+    void withoutAMoveAnAccessRefusalStaysARefusal() throws Exception {
+        String uid = uid("cdNoMove");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        seed.edit(uid, ADMIN, "edited on the server");
+        Item elsewhere = item(G3, uid, FORM_A, version("FORM_A.v1"), ASSIGN_T3_V3,
+            ordinary(G3, uid, "changed on the phone", "r1", "s1", 1));
+
+        assertThat(answer(upload(G3, FIELD_1, elsewhere)))
+            .startsWith("200 created=[] updated=[] failed={\"" + uid + "\":\"E4114: ");
+
+        assertThat(conflicts(uid)).isEmpty();
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
     }
 
     // ---------------------------------------------------------------- other uploaders

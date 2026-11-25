@@ -1,11 +1,17 @@
 package org.nmcpye.datarun.jpa.datasubmission.conflict;
 
+import org.nmcpye.datarun.common.feedback.ErrorCode;
+
+import java.util.Set;
+
 /**
  * What conflict detection found of one phone copy, and what the upload does with it, in the spec's order:
  * <ol>
  *   <li>an unchanged re-send (a copy equal to its base version's state, or to the uploader's last decided conflict
  *       copy) changes nothing;</li>
  *   <li>a copy equal to the current state changes nothing;</li>
+ *   <li>after a server-side {@code MOVE} later than the base version, a copy the upload checks refuse for access
+ *       (E4124, E4114 or E4122) is kept aside as a conflict ({@link #keptAsideOnRefusal});</li>
  *   <li>a server-side change after the base version keeps the copy aside as a conflict;</li>
  *   <li>otherwise the upload applies as today.</li>
  * </ol>
@@ -16,6 +22,9 @@ package org.nmcpye.datarun.jpa.datasubmission.conflict;
  * {@code updated}.
  */
 public final class ConflictCheck {
+
+    /** The access refusals a move can cause: the stored submission's, the copy's team, and the copy's form grant. */
+    private static final Set<ErrorCode> MOVE_REFUSALS = Set.of(ErrorCode.E4124, ErrorCode.E4114, ErrorCode.E4122);
 
     /** What the upload does once the upload checks have passed. */
     public enum Outcome {
@@ -38,9 +47,10 @@ public final class ConflictCheck {
      * @param unchangedResend  the copy equals the base version's state, or the uploader's last decided conflict copy
      * @param equalsCurrent    the copy equals the current state
      * @param serverSideChange a server-side change came after the base
+     * @param moved            a server-side {@code MOVE} came after the base
      */
     record Analysis(boolean ownBase, long base, boolean unchangedResend, boolean equalsCurrent,
-                    boolean serverSideChange) {
+                    boolean serverSideChange, boolean moved) {
     }
 
     private final ConflictDetection detection;
@@ -78,6 +88,20 @@ public final class ConflictCheck {
      */
     public boolean changesNothing() {
         return analysis != null && analysis.ownBase() && (analysis.unchangedResend() || analysis.equalsCurrent());
+    }
+
+    /**
+     * When the upload checks refuse the copy: whether it is kept aside instead. Only for an uploader with a base
+     * version of their own, after a server-side {@code MOVE} later than it, and only for the access refusals a move
+     * causes (E4124, E4114, E4122); any other refusal, and every refusal when detection failed, stays a refusal.
+     * Keeping it aside stores its conflict here, in the upload item's transaction.
+     */
+    public boolean keptAsideOnRefusal(ErrorCode refusal) {
+        if (analysis == null || !analysis.ownBase() || !analysis.moved() || !MOVE_REFUSALS.contains(refusal)) {
+            return false;
+        }
+        detection.keepAside(context, ConflictCause.SERVER_SIDE_CHANGE, analysis.base(), rowsLackIds);
+        return true;
     }
 
     /**
