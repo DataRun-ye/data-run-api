@@ -133,6 +133,12 @@ deployment authority.
     (`E2060`);
   - an `assignment (team_id)` index speeds phone syncs; unused indexes and the dead `analytics.etl_runs` were dropped;
     the container log rotates.
+- `v6.5.6` / `568ae282`: deployed 2026-11-25 (GitHub release `v6.5.6`). The revision journal:
+  - `journal.submission_revision`, append-only, keyed (submission id, version); one baseline revision for each of
+    66,659 submissions;
+  - every write path records its revision in the same transaction as the submission and its outbox row; outbox rows
+    carry the version, and delete events are typed DELETE;
+  - a gap repair records changes made while an older image ran; integrity check lines 11a–h measure the journal.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

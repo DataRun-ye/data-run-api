@@ -7,7 +7,7 @@ or deployment authority.
 
 ## Now
 
-- ITN 2026 campaign (from the week of 2026-11-23) on server 6.5.5 and app
+- ITN 2026 campaign (from the week of 2026-11-23) on server 6.5.6 and app
   6.1.2, with the household lists loaded in production (see
   `reference-boundary.md`). A campaign-wide go-live rule holds every upload
   until operations set the real start; operations own the campaign's dates,
@@ -19,10 +19,11 @@ or deployment authority.
   - characterization goldens pin today's submission behaviour for each installed phone contract;
   - one submission write path: `SubmissionCommandService`, in 6.5.4;
   - privacy and logging hardening in 6.5.5: request errors are log lines and `error_event` is retired; the metrics
-    endpoint and the single-submission read are admin-only; admin generic submission lists are bounded.
+    endpoint and the single-submission read are admin-only; admin generic submission lists are bounded;
+  - the revision journal in 6.5.6: every change to a submission is recorded in `journal.submission_revision`, from a
+    baseline of every submission, with each change tied to one outbox event.
 
   Next, sequenced by engineering, with no delivery deadline:
-  - the revision journal (the change record as a contract), built and reviewed, released as its own version;
   - a published feed of current state for downstream analytics, in its own schema, which replaces tall, events and
     pivots as the analytics interface. They retire once downstream has switched;
   - submission review: operations find and open any form's submissions and change them through edits with a reason,
