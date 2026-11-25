@@ -77,6 +77,17 @@ class V2SecurityIT {
         assertThat(body.get("detail").asText()).contains("POST /api/v1/authenticate");
     }
 
+    /** An encoded spelling of the base meets the v2 chain too, never the main chain's bare 401. */
+    @Test
+    void anEncodedV2PathMeetsTheV2Chain() throws Exception {
+        MockHttpServletResponse response = perform(get(java.net.URI.create("/api/%762/no-such-route")));
+        problem(response, 401, "unauthenticated");
+        MockHttpServletResponse basic = perform(get(java.net.URI.create("/api/v%32/no-such-route"))
+            .header(HttpHeaders.AUTHORIZATION, "Basic " + Base64.getEncoder()
+                .encodeToString("admin:admin".getBytes(StandardCharsets.UTF_8))));
+        problem(basic, 401, "unauthenticated");
+    }
+
     @Test
     void aRejectedTokenIsA401ProblemThatSaysSoWithoutRepeatingIt() throws Exception {
         MockHttpServletResponse response = perform(get(V2_PATH)

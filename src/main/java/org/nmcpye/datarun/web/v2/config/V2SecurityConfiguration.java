@@ -21,7 +21,6 @@ import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthen
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.security.web.servlet.util.matcher.MvcRequestMatcher;
 
 import java.io.IOException;
 import java.util.List;
@@ -52,13 +51,14 @@ public class V2SecurityConfiguration {
 
     @Bean
     @Order(1)
-    public SecurityFilterChain v2SecurityFilterChain(HttpSecurity http, MvcRequestMatcher.Builder mvc,
+    public SecurityFilterChain v2SecurityFilterChain(HttpSecurity http,
                                                      DomainUserDetailsService userDetailsService,
                                                      ProblemWriter problems) throws Exception {
         AuthenticationEntryPoint unauthenticated = new ProblemAuthenticationEntryPoint(problems);
         AccessDeniedHandler forbidden = new ProblemAccessDeniedHandler(problems);
         http
-            .securityMatcher(mvc.pattern(ApiV2.BASE + "/**"))
+            // The one definition of a v2 request, also the problem resolver's: the decoded path, as MVC routes.
+            .securityMatcher(ApiV2::isV2)
             .cors(withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())

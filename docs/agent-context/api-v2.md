@@ -25,7 +25,10 @@ domain actions come from that glossary.
 Every v2 error response is an RFC 9457 problem, `application/problem+json`,
 written by `web.v2.problem.V2ProblemResolver` (MVC) for every request under
 `/api/v2` and declined for every other path, so v1's `ExceptionTranslator`
-and its error shapes are untouched.
+and its error shapes are untouched. What a v2 request is has one definition,
+`ApiV2.isV2`, used by the resolver and the security chain alike: the decoded
+path within the application, as MVC routes it, so `/api/%762/x` is v2 for
+all of them.
 
 | Member | Content |
 | --- | --- |

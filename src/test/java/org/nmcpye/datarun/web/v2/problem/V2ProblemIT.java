@@ -120,6 +120,19 @@ class V2ProblemIT {
             "unsupported-media-type");
     }
 
+    /**
+     * A v2 path with an encoded character is routed to v2's handlers, so v2 answers its errors too: deciding on the
+     * raw path once let v1's error handling, which returns exception messages, answer it.
+     */
+    @Test
+    void anEncodedV2PathIsAnsweredByV2() throws Exception {
+        MockHttpServletResponse fault = perform(get(java.net.URI.create("/api/%762/fixtures/problems/fault")));
+        problem(fault, 500, "internal-error");
+        assertThat(fault.getContentAsString()).doesNotContain(V2ProblemFixtureController.SECRET);
+        problem(perform(get(java.net.URI.create("/api/v%32/fixtures/problems/refusal"))), 422, "validation-failed");
+        problem(perform(get(java.net.URI.create("/api/%76%32/no-such-route"))), 404, "not-found");
+    }
+
     /** The same kind of failure on a v1 path keeps the v1 shape, so no v1 client sees a change. */
     @Test
     void v1ErrorsKeepTheirShape() throws Exception {
