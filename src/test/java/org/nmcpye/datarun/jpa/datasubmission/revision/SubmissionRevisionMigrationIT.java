@@ -70,6 +70,8 @@ class SubmissionRevisionMigrationIT {
         migrate(true);
         assertThat(db.queryForObject("SELECT to_regclass('journal.submission_revision') IS NULL", Boolean.class))
             .as("the first phase stops before step C").isTrue();
+        assertThat(count("SELECT count(*) FROM databasechangelog WHERE id LIKE '20261125-0%'"))
+            .as("as in production, 6.5.5's changesets are applied before step C").isEqualTo(5);
 
         live = submission(0, false);
         changedThrice = submission(3, false);
@@ -85,6 +87,11 @@ class SubmissionRevisionMigrationIT {
         integrityBeforeStepC = integrityCheck("01-outbox.sql", "11-revisions.sql");
 
         migrate(false);
+        assertThat(db.queryForObject("""
+                SELECT min(orderexecuted) FILTER (WHERE id LIKE '20261124-c%')
+                       > max(orderexecuted) FILTER (WHERE id LIKE '20261125-0%')
+                FROM databasechangelog""", Boolean.class))
+            .as("step C ran after 6.5.5's changesets").isTrue();
         outboxAfterStepC = count("SELECT count(*) FROM outbox");
         revisionsAfterStepC = count("SELECT count(*) FROM journal.submission_revision");
         integrityAfterStepC = integrityCheck("01-outbox.sql", "11-revisions.sql");
