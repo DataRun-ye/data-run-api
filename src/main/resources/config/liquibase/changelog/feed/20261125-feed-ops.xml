@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!--
+      The submission feed publisher's bookkeeping (contract 8 and 11), in schema feed_ops, which downstream never reads
+      and nothing grants. Only the publisher (org.nmcpye.datarun.submission.feed.publisher) writes these tables, each
+      write under the feed's lock, like every feed write.
+
+      - pending: one row per submission whose feed part failed and waits for a retry (a pending change). attempts counts
+        the failures so far; next_attempt_at is when it is retried, after the live backlog; reason is the last failure's
+        reason code. Once attempts reach the cap, dead_at is set: the change is dead, kept with its reason code, and
+        counted in freshness and by integrity check 12 until a later publication of the submission (a change, a fix and
+        reconcile) removes the row. No submitted value is ever stored here.
+      - republish: one row per submission whose current records are to be written again at the same version with new
+        positions (a republish mark). The mark is removed only once the republication is written: reconcile compares
+        versions only and would never see a republication that failed.
+      - normalization_flags: the normalizer's flag counts of each submission's published record, only for submissions
+        with a flag (contract 4): server monitoring for integrity check 12 and the metrics, never part of the feed.
+
+      Ids are text, as in the feed; no foreign key leaves the schema (an orphan is reported by check 12, never refused).
+
+      Additive only: three tables in an existing schema. Rollback drops them; the pending changes and marks they held
+      are found again by reconcile, which publishes every head the feed lacks or holds at another version, except a
+      republication still owed, which the operator repeats.
+    -->
+    <changeSet id="20261125-d03-feed-ops" author="datarun">
+        <sql>
+            CREATE TABLE feed_ops.pending (
+                submission_id   text        NOT NULL,
+                attempts        integer     NOT NULL,
+                reason          text        NOT NULL,
+                first_failed_at timestamptz NOT NULL,
+                last_failed_at  timestamptz NOT NULL,
+                next_attempt_at timestamptz NOT NULL,
+                dead_at         timestamptz,
+                CONSTRAINT pk_feed_ops_pending PRIMARY KEY (submission_id),
+                CONSTRAINT ck_feed_ops_pending_attempts CHECK (attempts >= 1)
+            )
+        </sql>
+        <sql>
+            CREATE INDEX idx_feed_ops_pending_due ON feed_ops.pending (next_attempt_at) WHERE dead_at IS NULL
+        </sql>
+        <sql>
+            COMMENT ON TABLE feed_ops.pending IS 'Pending changes: submissions whose feed part failed, retried after the live backlog; dead past the attempt cap.'
+        </sql>
+
+        <sql>
+            CREATE TABLE feed_ops.republish (
+                submission_id   text        NOT NULL,
+                marked_at       timestamptz NOT NULL,
+                attempts        integer     NOT NULL DEFAULT 0,
+                reason          text,
+                last_failed_at  timestamptz,
+                next_attempt_at timestamptz,
+                CONSTRAINT pk_feed_ops_republish PRIMARY KEY (submission_id),
+                CONSTRAINT ck_feed_ops_republish_attempts CHECK (attempts >= 0)
+            )
+        </sql>
+        <sql>
+            COMMENT ON TABLE feed_ops.republish IS 'Republish marks: submissions whose current records are written again at the same version, kept until written.'
+        </sql>
+
+        <sql>
+            CREATE TABLE feed_ops.normalization_flags (
+                submission_id text   NOT NULL,
+                version       bigint NOT NULL,
+                flags         jsonb  NOT NULL,
+                CONSTRAINT pk_feed_ops_normalization_flags PRIMARY KEY (submission_id)
+            )
+        </sql>
+        <sql>
+            COMMENT ON TABLE feed_ops.normalization_flags IS 'The normalizer''s flag counts of each published record that has any, by flag name: server monitoring.'
+        </sql>
+        <rollback>
+            <sql>DROP TABLE feed_ops.normalization_flags</sql>
+            <sql>DROP TABLE feed_ops.republish</sql>
+            <sql>DROP TABLE feed_ops.pending</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
