@@ -22,6 +22,7 @@ import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
 import org.nmcpye.datarun.common.uidgenerate.BaseDto;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
+import org.nmcpye.datarun.etl.config.EtlProperties;
 import org.nmcpye.datarun.etl.repository.TallCanonicalJdbcRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
@@ -33,6 +34,9 @@ import org.nmcpye.datarun.jpa.datatemplate.SemanticType;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
 import org.nmcpye.datarun.jpa.datatemplate.repository.CanonicalElementRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.MetadataUpsertService;
+import org.nmcpye.datarun.outbox.dto.OutboxDto;
+import org.nmcpye.datarun.outbox.service.impl.OutboxClaimServiceImpl;
+import org.nmcpye.datarun.outbox.service.impl.OutboxProcessingServiceImpl;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.security.DomainUserDetailsService;
 import org.nmcpye.datarun.submission.feed.publisher.DictionaryPublisher;
@@ -66,6 +70,7 @@ import static org.nmcpye.datarun.NewCodeSeamsTest.Kind.NEUTRAL;
 import static org.nmcpye.datarun.NewCodeSeamsTest.Kind.NEW_CODE;
 import static org.nmcpye.datarun.NewCodeSeamsTest.Kind.RETIRING;
 import static org.nmcpye.datarun.NewCodeSeamsTest.Kind.SYSTEM_OF_RECORD;
+import static org.nmcpye.datarun.NewCodeSeamsTest.Kind.TRANSITIONAL;
 
 /**
  * New code does not couple to old structures: the owner's rule of 2026-11-25, as engineering refined it. The map, with
@@ -75,12 +80,13 @@ import static org.nmcpye.datarun.NewCodeSeamsTest.Kind.SYSTEM_OF_RECORD;
  * most specific row that matches it. <b>2. The allowlist</b> names the seams new code may use. <b>3. The rules</b>
  * check new code against both. A change to the map is a row or a seam, each with its reason. Nothing is frozen.</p>
  * <ul>
- *   <li>(a) Retiring derived structures: no dependency from new code, and none from them to new code, so neither shares
- *       the other's transaction, schedule or failures.</li>
- *   <li>(b) Systems of record: new code reaches them only through the listed seams.</li>
+ *   <li>(a) Retiring derived structures: no dependency from new code, and none from them to new code, so new code
+ *       shares no transaction, schedule or failure with the legacy outputs; neutral and transitional code depend on
+ *       them only where {@link #LEFTOVERS} lists it.</li>
+ *   <li>(b) Systems of record and transitional code: new code reaches them only through the listed seams.</li>
  *   <li>(c) Client contracts: new code never depends on v1 resources, their DTOs, mappers or v1 error codes.</li>
  *   <li>SQL text in new code, which ArchUnit cannot see, is scanned as a tripwire, not proof: it names no retiring
- *       relation, and system-of-record tables only in the seam that owns the read.</li>
+ *       or transitional relation, and system-of-record tables only in the seam that owns the read.</li>
  * </ul>
  */
 class NewCodeSeamsTest {
@@ -98,6 +104,7 @@ class NewCodeSeamsTest {
     enum Kind {
         NEW_CODE("new code"),
         RETIRING("retiring derived code"),
+        TRANSITIONAL("transitional code"),
         SYSTEM_OF_RECORD("system-of-record code"),
         CLIENT_CONTRACT("client contract code"),
         NEUTRAL("neutral infrastructure");
@@ -122,8 +129,8 @@ class NewCodeSeamsTest {
         row("jpa.datasubmission.conflict..", NEW_CODE, "conflict detection (feat/review-s2)"),
 
         // Retiring derived structures
-        row("etl..", RETIRING, "tall, events, dimensions and pivots, and the ETL that writes them"),
-        row("outbox..", RETIRING, "the outbox, which only the ETL consumes and whose payload copies form_data"),
+        row("etl..", RETIRING, "tall, events, dimensions and pivots, their transformers, and for now the home and name "
+            + "of the outbox's claim loop"),
         row("jpa.datatemplategenerator..", RETIRING, "the canonical_element generator"),
         row(CanonicalElement.class, RETIRING, "canonical_element, which only the ETL and the pivots read"),
         row(CanonicalElementRepository.class, RETIRING, "canonical_element's repository"),
@@ -132,6 +139,9 @@ class NewCodeSeamsTest {
         row(SemanticType.class, RETIRING, "a canonical_element type"),
         row(DataType.class, RETIRING, "a canonical_element type"),
         row(PivotController.class, RETIRING, "the pivot route"),
+
+        // Transitional: stays for now; whether the journal replaces it is an open design question
+        row("outbox..", TRANSITIONAL, "the consumers' change queue and the gap repair's cue; its payload copy retires"),
 
         // Systems of record, with their old internals
         row("jpa.datasubmission", SYSTEM_OF_RECORD, "the submission entity"),
@@ -202,10 +212,14 @@ class NewCodeSeamsTest {
         row(CodeGenerator.class, NEUTRAL, "ids (nextUlid); its generateUid mints phone uids"),
         row(UuidUtils.class, NEUTRAL, "uuid helpers"));
 
-    /** SQL relations, by kind: whole retiring schemas, retiring tables, and system-of-record tables (schema public). */
+    /**
+     * SQL relations, by kind: whole retiring schemas, retiring tables, transitional tables (which new code reaches only
+     * through {@code outbox.processing}) and system-of-record tables, all in schema public unless named.
+     */
     static final Set<String> RETIRING_SCHEMAS = Set.of("analytics", "pivot");
     static final Set<String> RETIRING_TABLES = Set.of(
-        "canonical_element", "template_element", "outbox", "outbox_processing", "etl_runs", "error_event");
+        "canonical_element", "template_element", "etl_runs", "error_event");
+    static final Set<String> TRANSITIONAL_TABLES = Set.of("outbox", "outbox_processing");
     static final Set<String> SYSTEM_OF_RECORD_TABLES = Set.of(
         "data_submission", "held_submission", "go_live_rule", "reference_entry",
         "data_template", "data_template_version", "data_element", "option_set", "option_value", "option_group",
@@ -221,9 +235,10 @@ class NewCodeSeamsTest {
     private static final String ANY_NEW_CODE = null;
 
     /**
-     * The only system-of-record classes new code may depend on, each exactly (a nested class is not a seam unless
-     * listed), from where and why. The normalizer ({@code submission.normalized}) and the journal
-     * ({@code jpa.datasubmission.revision}) are seams too, but new code themselves, so not listed.
+     * The only system-of-record and transitional code new code may depend on: a class exactly (a nested class is not a
+     * seam unless listed), or a package with its subpackages ({@code "x.."}); from where, and why. The normalizer
+     * ({@code submission.normalized}) and the journal ({@code jpa.datasubmission.revision}) are seams too, but new code
+     * themselves, so not listed.
      */
     static final List<Seam> SEAMS = List.of(
         new Seam(SubmissionCommandService.class.getName(), ANY_NEW_CODE,
@@ -236,7 +251,20 @@ class NewCodeSeamsTest {
         new Seam(CurrentUserDetails.class.getName(), ROOT + ".web.v2.caller..",
             "ApiCaller adapts the request's principal to its user id and authorities, and nothing else"),
         new Seam(DomainUserDetailsService.class.getName(), ROOT + ".web.v2.config..",
-            "the v2 chain resolves the bearer token's account as v1 does: authentication, not scope"));
+            "the v2 chain resolves the bearer token's account as v1 does: authentication, not scope"),
+        new Seam(ROOT + ".outbox.processing..", ANY_NEW_CODE,
+            "the outputs' seam (ChangeOutput, on feat/feed-v1): a change as a submission id and version, wherever "
+                + "changes come from; never the outbox's table, rows or services"));
+
+    /**
+     * Neutral and transitional classes that still depend on retiring code, each with what it depends on. A class leaves
+     * the list with its dependency, and the test fails while a listed class no longer needs its place.
+     */
+    static final List<Leftover> LEFTOVERS = List.of(
+        new Leftover(OutboxClaimServiceImpl.class, "reads its claim lease from EtlProperties, until the claim loop "
+            + "leaves etl"),
+        new Leftover(OutboxProcessingServiceImpl.class, "counts outcomes on the ETL's run (EtlRunService), until the "
+            + "claim loop leaves etl"));
 
     /** Where SQL in new code may name system-of-record tables: the seam that owns the read, by source path prefix. */
     static final List<SqlSeam> SQL_SEAMS = List.of(
@@ -264,11 +292,19 @@ class NewCodeSeamsTest {
                 + "(rule a)");
     }
 
-    /** (b) New code reaches systems of record only through the seams. */
-    static ArchRule newCodeReachesSystemsOfRecordOnlyThroughSeams(DescribedPredicate<JavaClass> newCode) {
-        return classes().that(newCode).should(dependOnlyThroughSeams(Set.of(SYSTEM_OF_RECORD)))
-            .because("systems of record are reached through one named seam each, never through their entities, "
-                + "repositories or generic services (rule b)");
+    /** (a) Neutral and transitional code take no dependency on retiring code, beyond the listed leftovers. */
+    static ArchRule infrastructureDependsOnNoRetiringCode(DescribedPredicate<JavaClass> infrastructure) {
+        return noClasses().that(infrastructure)
+            .and(DescribedPredicate.not(belongToAnyOf(LEFTOVERS.stream().map(Leftover::type).toArray(Class<?>[]::new))))
+            .should().dependOnClassesThat(ofKind(RETIRING))
+            .because("what stays must not hold up what retires: retiring code is removed without touching it (rule a)");
+    }
+
+    /** (b) New code reaches systems of record and transitional code only through the seams. */
+    static ArchRule newCodeReachesOldCodeOnlyThroughSeams(DescribedPredicate<JavaClass> newCode) {
+        return classes().that(newCode).should(dependOnlyThroughSeams(Set.of(SYSTEM_OF_RECORD, TRANSITIONAL)))
+            .because("systems of record and the outbox are reached through one named seam each, never through their "
+                + "entities, tables, repositories or generic services (rule b)");
     }
 
     /** (c) New code takes no dependency on client contracts. */
@@ -291,6 +327,8 @@ class NewCodeSeamsTest {
                     findings.add(path + ": retiring relation " + schema + "." + table);
                 } else if (inPublic && RETIRING_TABLES.contains(table)) {
                     findings.add(path + ": retiring relation " + table);
+                } else if (inPublic && TRANSITIONAL_TABLES.contains(table)) {
+                    findings.add(path + ": transitional table " + table + " (new code uses outbox.processing)");
                 } else if (inPublic && SYSTEM_OF_RECORD_TABLES.contains(table) && SQL_SEAMS.stream()
                     .noneMatch(seam -> path.startsWith(seam.source()) && seam.tables().contains(table))) {
                     findings.add(path + ": system-of-record table " + table + " outside its seam");
@@ -313,8 +351,13 @@ class NewCodeSeamsTest {
     }
 
     @Test
-    void newCodeReachesSystemsOfRecordOnlyThroughTheirSeams() {
-        newCodeReachesSystemsOfRecordOnlyThroughSeams(ofKind(NEW_CODE)).check(MAIN);
+    void infrastructureTakesNoDependencyOnRetiringCodeBeyondTheLeftovers() {
+        infrastructureDependsOnNoRetiringCode(ofKind(NEUTRAL).or(ofKind(TRANSITIONAL))).check(MAIN);
+    }
+
+    @Test
+    void newCodeReachesSystemsOfRecordAndTransitionalCodeOnlyThroughSeams() {
+        newCodeReachesOldCodeOnlyThroughSeams(ofKind(NEW_CODE)).check(MAIN);
     }
 
     @Test
@@ -337,8 +380,9 @@ class NewCodeSeamsTest {
             }
         }
         assertThat(scanned).as("new code's sources found").isPositive();
-        assertThat(findings).as("SQL text in new code naming a retiring relation, or a system-of-record table "
-            + "outside its seam (a tripwire, not proof: SQL built at run time is not seen)").isEmpty();
+        assertThat(findings).as("SQL text in new code naming a retiring or transitional relation, or a "
+            + "system-of-record table outside its seam (a tripwire, not proof: SQL built at run time is not seen)")
+            .isEmpty();
     }
 
     // The tests: the table and the allowlist.
@@ -365,12 +409,21 @@ class NewCodeSeamsTest {
         assertThat(CLASSIFICATION).allSatisfy(r -> assertThat(r.why()).as(r.target()).isNotBlank());
     }
 
-    /** A seam is old code that stays, with a reason. */
+    /** A seam is system-of-record or transitional code, with a reason; a leftover still needs its place. */
     @Test
-    void everySeamIsSystemOfRecordCode() {
+    void everySeamAndLeftoverIsWhatItSays() {
         for (Seam seam : SEAMS) {
-            assertThat(kindOf(MAIN.get(seam.target()))).as(seam.target()).contains(SYSTEM_OF_RECORD);
+            Optional<Kind> kind = seam.isPackage() ? kindOfPackage(seam.packageName())
+                : kindOf(MAIN.get(seam.target()));
+            assertThat(kind.orElse(null)).as(seam.target()).isIn(SYSTEM_OF_RECORD, TRANSITIONAL);
             assertThat(seam.why()).as(seam.target()).isNotBlank();
+        }
+        for (Leftover leftover : LEFTOVERS) {
+            assertThat(kindOf(MAIN.get(leftover.type())).orElse(null)).as(leftover.type().getName())
+                .isIn(NEUTRAL, TRANSITIONAL);
+            classes().that().belongToAnyOf(leftover.type()).should().dependOnClassesThat(ofKind(RETIRING))
+                .because(leftover.type().getSimpleName() + " is listed as still depending on retiring code")
+                .check(MAIN);
         }
     }
 
@@ -379,15 +432,19 @@ class NewCodeSeamsTest {
     /** Each kind of leak is caught, and what the seams allow is not. */
     @Test
     void theRulesCatchALeak() {
-        JavaClasses classes = new ClassFileImporter().importClasses(Leak.class, EtlLeak.class);
+        JavaClasses classes = new ClassFileImporter()
+            .importClasses(Leak.class, EtlLeak.class, InfrastructureLeak.class);
         DescribedPredicate<JavaClass> leak = belongToAnyOf(Leak.class);
 
         assertThat(details(newCodeDependsOnNoRetiringCode(leak), classes))
             .isNotEmpty().allSatisfy(line -> assertThat(line).contains("TallCanonicalJdbcRepository"));
         assertThat(details(retiringCodeDependsOnNoNewCode(belongToAnyOf(EtlLeak.class), ofKind(NEW_CODE)), classes))
             .isNotEmpty().allSatisfy(line -> assertThat(line).contains("DictionaryPublisher"));
-        assertThat(details(newCodeReachesSystemsOfRecordOnlyThroughSeams(leak), classes))
+        assertThat(details(infrastructureDependsOnNoRetiringCode(belongToAnyOf(InfrastructureLeak.class)), classes))
+            .isNotEmpty().allSatisfy(line -> assertThat(line).contains("EtlProperties"));
+        assertThat(details(newCodeReachesOldCodeOnlyThroughSeams(leak), classes))
             .anySatisfy(line -> assertThat(line).contains("DataSubmission>"))
+            .anySatisfy(line -> assertThat(line).contains("OutboxDto"))
             .anySatisfy(line -> assertThat(line).contains("SubmissionCommand$Delete"))
             .anySatisfy(line -> assertThat(line).contains("CurrentUserDetails"))
             .noneSatisfy(line -> assertThat(line).containsAnyOf("SubmissionCommandService>", "ValueType"));
@@ -409,6 +466,10 @@ class NewCodeSeamsTest {
             .containsExactly(
                 "org/nmcpye/datarun/web/v2/X.java: retiring relation analytics.tall_canonical",
                 "org/nmcpye/datarun/web/v2/X.java: retiring relation canonical_element");
+        assertThat(sqlFindings("org/nmcpye/datarun/submission/feed/X.java",
+            "String backlog = \"SELECT count(*) FROM outbox o WHERE o.status = 'pending'\";"))
+            .containsExactly("org/nmcpye/datarun/submission/feed/X.java: transitional table outbox (new code uses "
+                + "outbox.processing)");
         assertThat(sqlFindings("org/nmcpye/datarun/submission/normalized/jdbc/FormDefinitionJdbcReader.java",
             "String v = \"FROM data_template t JOIN data_template_version v ON v.data_template_id = t.id\";"))
             .as("the normalizer's own reads").isEmpty();
@@ -431,12 +492,18 @@ class NewCodeSeamsTest {
     @SuppressWarnings("unused")
     static final class Leak {
         void leaks(TallCanonicalJdbcRepository tall, DataSubmission entity, CurrentUserDetails principal,
-                   DataSubmissionUploadV1Dto payload) {
+                   DataSubmissionUploadV1Dto payload, OutboxDto outboxRow) {
             new SubmissionCommand.Delete(null, "a uid");
         }
 
         void allowed(SubmissionCommandService commands, ValueType type, FailureShape shape) {
         }
+    }
+
+    /** Stands for neutral or transitional code that reaches into retiring code. */
+    @SuppressWarnings("unused")
+    static final class InfrastructureLeak {
+        EtlProperties lease;
     }
 
     /** Stands for retiring code that calls into new code. */
@@ -469,13 +536,29 @@ class NewCodeSeamsTest {
         return new Row(type.getName(), true, kind, why);
     }
 
-    /** A seam: exactly this class, usable from new code in these packages ({@code null}: any new code), and why. */
+    /**
+     * A seam: exactly this class, or this package with its subpackages ({@code "x.."}), usable from new code in these
+     * packages ({@code null}: any new code), and why.
+     */
     record Seam(String target, String usedFrom, String why) {
 
-        boolean allows(JavaClass origin, JavaClass target) {
-            return target.getName().equals(this.target)
-                && (usedFrom == null || PackageMatcher.of(usedFrom).matches(origin.getPackageName()));
+        boolean isPackage() {
+            return target.endsWith("..");
         }
+
+        String packageName() {
+            return target.substring(0, target.length() - 2);
+        }
+
+        boolean allows(JavaClass origin, JavaClass target) {
+            boolean seam = isPackage() ? PackageMatcher.of(this.target).matches(target.getPackageName())
+                : target.getName().equals(this.target);
+            return seam && (usedFrom == null || PackageMatcher.of(usedFrom).matches(origin.getPackageName()));
+        }
+    }
+
+    /** A neutral or transitional class that still depends on retiring code, and on what. */
+    record Leftover(Class<?> type, String why) {
     }
 
     /** A seam's own SQL: the source (a file, or a package folder) where new code may name these tables, and why. */
@@ -502,6 +585,12 @@ class NewCodeSeamsTest {
 
     static Optional<Kind> kindOf(JavaClass javaClass) {
         return rowOf(javaClass).map(Row::kind);
+    }
+
+    /** The kind a class in this package would have by the package rows alone. */
+    static Optional<Kind> kindOfPackage(String packageName) {
+        return CLASSIFICATION.stream().filter(r -> !r.isClass() && r.specificity(packageName) >= 0)
+            .max(Comparator.comparingInt(r -> r.specificity(packageName))).map(Row::kind);
     }
 
     static DescribedPredicate<JavaClass> ofKind(Kind kind) {
