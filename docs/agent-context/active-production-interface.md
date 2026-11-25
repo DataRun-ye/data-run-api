@@ -339,8 +339,8 @@ does not make them a second product authority.
 The disabled submission-history listener and its zero-caller processor/model
 alternatives are source-dead. Their physical table remains a schema concern.
 The legacy `outbox_event` table has no source left: no class reads or writes
-it, and only its changelog names it. The current `outbox` is written only by
-`OutboxWriter`.
+it, and only its changelog names it. The current `outbox` is inserted only by
+`OutboxWriter`; claims update its status (`OutboxClaimReader`).
 
 Mixed update/delete batches persist their classified collections separately;
 each submission whose version moved then gets its revision and its outbox
