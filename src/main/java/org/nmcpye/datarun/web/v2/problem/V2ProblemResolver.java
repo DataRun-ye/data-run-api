@@ -29,6 +29,7 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -238,27 +239,66 @@ public class V2ProblemResolver implements HandlerExceptionResolver, Ordered {
         return Answer.of(ProblemCode.BAD_REQUEST, "The request body is missing or cannot be read.");
     }
 
+    /**
+     * Bean validation of a body (a pointer per finding, 422) or of parameters bound from the query string (a
+     * parameter locator per finding, 400). Each finding's text is fixed by its constraint: a constraint's own
+     * message, or a binding failure's, can quote the value and Java type names.
+     */
     private static Answer invalidBody(MethodArgumentNotValidException ex) {
+        boolean body = ex.getParameter().hasParameterAnnotation(RequestBody.class);
         List<ProblemError> errors = new ArrayList<>();
         for (ObjectError error : ex.getBindingResult().getAllErrors()) {
-            String pointer = error instanceof FieldError field ? fieldPointer(field.getField()) : "#";
-            errors.add(ProblemError.atPointer(pointer, kebab(error.getCode()), error.getDefaultMessage()));
+            String code = kebab(error.getCode());
+            String field = error instanceof FieldError fieldError ? fieldError.getField() : null;
+            errors.add(body
+                ? ProblemError.atPointer(field == null ? "#" : fieldPointer(field), code, fixedText(code))
+                : ProblemError.atParameter(field, code, fixedText(code)));
         }
-        return new Answer(ProblemCode.VALIDATION_FAILED, ProblemCode.VALIDATION_FAILED.status(),
-            "The request body has values that are not valid; see errors.", errors, Map.of(), new HttpHeaders());
+        return body
+            ? new Answer(ProblemCode.VALIDATION_FAILED, ProblemCode.VALIDATION_FAILED.status(),
+                "The request body has values that are not valid; see errors.", errors, Map.of(), new HttpHeaders())
+            : new Answer(ProblemCode.BAD_REQUEST, ProblemCode.BAD_REQUEST.status(),
+                "Parameters have values that are not valid; see errors.", errors, Map.of(), new HttpHeaders());
     }
 
     private static Answer invalidParameters(HandlerMethodValidationException ex) {
         List<ProblemError> errors = new ArrayList<>();
         ex.getParameterValidationResults().forEach(result -> {
             String name = result.getMethodParameter().getParameterName();
-            result.getResolvableErrors().forEach(error -> errors.add(ProblemError.atParameter(
-                name, kebab(error.getCodes() != null && error.getCodes().length > 0
-                    ? lastSegment(error.getCodes()[error.getCodes().length - 1]) : null),
-                error.getDefaultMessage())));
+            result.getResolvableErrors().forEach(error -> {
+                String code = kebab(error.getCodes() != null && error.getCodes().length > 0
+                    ? lastSegment(error.getCodes()[error.getCodes().length - 1]) : null);
+                errors.add(ProblemError.atParameter(name, code, fixedText(code)));
+            });
         });
         return new Answer(ProblemCode.BAD_REQUEST, ProblemCode.BAD_REQUEST.status(),
             "Parameters have values that are not valid; see errors.", errors, Map.of(), new HttpHeaders());
+    }
+
+    /** What each constraint's finding says, in fixed words: never the value, never a type name. */
+    private static final Map<String, String> FIXED_TEXT = Map.ofEntries(
+        Map.entry("not-null", "A value is required."),
+        Map.entry("not-blank", "A value with text is required."),
+        Map.entry("not-empty", "A non-empty value is required."),
+        Map.entry("size", "The value's size is outside the allowed range."),
+        Map.entry("min", "The value is below the minimum."),
+        Map.entry("max", "The value is above the maximum."),
+        Map.entry("decimal-min", "The value is below the minimum."),
+        Map.entry("decimal-max", "The value is above the maximum."),
+        Map.entry("positive", "The value must be above zero."),
+        Map.entry("positive-or-zero", "The value must be zero or above."),
+        Map.entry("negative", "The value must be below zero."),
+        Map.entry("negative-or-zero", "The value must be zero or below."),
+        Map.entry("digits", "The value has too many digits."),
+        Map.entry("pattern", "The value does not have the required form."),
+        Map.entry("email", "The value is not an email address."),
+        Map.entry("past", "The time must be in the past."),
+        Map.entry("future", "The time must be in the future."),
+        Map.entry("type-mismatch", "The value does not have the expected type."),
+        Map.entry("missing", "This value is required."));
+
+    static String fixedText(String code) {
+        return FIXED_TEXT.getOrDefault(code, "The value is not valid.");
     }
 
     /** {@code operations[1].value} as {@code #/operations/1/value}. */

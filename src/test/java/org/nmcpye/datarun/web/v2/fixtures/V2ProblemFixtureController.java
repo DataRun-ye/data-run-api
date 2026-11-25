@@ -48,6 +48,15 @@ public class V2ProblemFixtureController {
         return Map.of("count", count);
     }
 
+    public record Filter(@Min(1) Integer count) {
+    }
+
+    /** Query parameters bound to an object and validated: findings locate parameters, never repeat values. */
+    @GetMapping("/filtered")
+    public Map<String, Object> filtered(@Valid Filter filter) {
+        return Map.of("count", filter.count());
+    }
+
     @GetMapping("/fault")
     public Map<String, Object> fault() {
         throw new IllegalStateException("failed while holding " + SECRET);

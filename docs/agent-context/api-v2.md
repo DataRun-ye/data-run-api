@@ -35,7 +35,7 @@ all of them.
 | `type` | `tag:nmcpye.org,2026:datarun/problem/<code>`: a permanent identifier that resolves nowhere (RFC 9457 allows it) |
 | `title` | the code's fixed title |
 | `status` | the HTTP status |
-| `detail` | this occurrence in words; never a submitted value, a login or an exception message |
+| `detail` | this occurrence in words; never a submitted value, a login or an exception message (validation findings use fixed text per constraint, never a constraint's or a binder's own message) |
 | `instance` | `urn:uuid:<request id>`, the id also sent as `X-Request-ID` and written in the request's log lines |
 | `code` | one entry of the registry, `web.v2.problem.ProblemCode`; clients switch on it |
 | `errors` | findings, each with a `code` and at most one locator: `pointer` (a JSON Pointer into the body in RFC 9457's fragment form, `#/reason`), `parameter`, `header`; `field` names a form field by id |

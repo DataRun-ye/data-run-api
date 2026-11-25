@@ -91,6 +91,23 @@ class V2ProblemIT {
         JsonNode body = problem(response, 422, "validation-failed");
         assertThat(body.get("errors").findValuesAsText("pointer")).containsExactlyInAnyOrder("#/name", "#/count");
         assertThat(body.get("errors").findValuesAsText("code")).containsExactlyInAnyOrder("not-blank", "min");
+        assertThat(body.get("errors").findValuesAsText("detail"))
+            .containsExactlyInAnyOrder("A value with text is required.", "The value is below the minimum.");
+    }
+
+    @Test
+    void validatedQueryParametersAreLocatedAndNeverRepeated() throws Exception {
+        MockHttpServletResponse mistyped = perform(get(BASE + "/filtered")
+            .param("count", V2ProblemFixtureController.SECRET));
+        JsonNode body = problem(mistyped, 400, "bad-request");
+        assertThat(body.get("errors").get(0).get("parameter").asText()).isEqualTo("count");
+        assertThat(body.get("errors").get(0).get("code").asText()).isEqualTo("type-mismatch");
+        assertThat(mistyped.getContentAsString()).doesNotContain(V2ProblemFixtureController.SECRET)
+            .doesNotContain("java.");
+
+        JsonNode small = problem(perform(get(BASE + "/filtered").param("count", "0")), 400, "bad-request");
+        assertThat(small.get("errors").get(0).get("code").asText()).isEqualTo("min");
+        assertThat(small.get("errors").get(0).get("detail").asText()).isEqualTo("The value is below the minimum.");
     }
 
     @Test

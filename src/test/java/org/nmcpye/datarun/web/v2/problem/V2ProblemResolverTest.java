@@ -159,14 +159,24 @@ class V2ProblemResolverTest {
         assertNoLineLeaks();
     }
 
+    @SuppressWarnings("unused")
+    private static void bodyTarget(@org.springframework.web.bind.annotation.RequestBody Object body) {
+    }
+
+    @SuppressWarnings("unused")
+    private static void queryTarget(Object filter) {
+    }
+
     @Test
-    void aBodyFailingBeanValidationIs422WithAPointerPerFinding() throws Exception {
+    void aBodyFailingBeanValidationIs422WithAPointerAndFixedTextPerFinding() throws Exception {
         MockHttpServletResponse response = new MockHttpServletResponse();
         BeanPropertyBindingResult result = new BeanPropertyBindingResult(new Object(), "request");
         result.addError(new FieldError("request", "operations[1].value", SECRET, false,
-            new String[] {"NotBlank"}, null, "must not be blank"));
-        MethodArgumentNotValidException invalid = new MethodArgumentNotValidException(
-            new MethodParameter(V2ProblemResolverTest.class.getDeclaredMethod("input"), -1), result);
+            new String[] {"NotBlank"}, null, "must not be blank, was " + SECRET));
+        result.addError(new FieldError("request", "reason", SECRET, true, new String[] {"typeMismatch"}, null,
+            "Failed to convert value of type 'java.lang.String' to required type 'java.lang.Integer'; " + SECRET));
+        MethodArgumentNotValidException invalid = new MethodArgumentNotValidException(new MethodParameter(
+            V2ProblemResolverTest.class.getDeclaredMethod("bodyTarget", Object.class), 0), result);
 
         resolver.resolveException(request("POST", "/api/v2/things/7"), response, null, invalid);
 
@@ -175,7 +185,30 @@ class V2ProblemResolverTest {
         assertThat(body.get("code").asText()).isEqualTo("validation-failed");
         assertThat(body.get("errors").get(0).get("pointer").asText()).isEqualTo("#/operations/1/value");
         assertThat(body.get("errors").get(0).get("code").asText()).isEqualTo("not-blank");
-        assertThat(response.getContentAsString()).doesNotContain(SECRET);
+        assertThat(body.get("errors").get(0).get("detail").asText()).isEqualTo("A value with text is required.");
+        assertThat(body.get("errors").get(1).get("code").asText()).isEqualTo("type-mismatch");
+        assertThat(body.get("errors").get(1).get("detail").asText())
+            .isEqualTo("The value does not have the expected type.");
+        assertThat(response.getContentAsString()).doesNotContain(SECRET).doesNotContain("java.");
+    }
+
+    @Test
+    void queryParametersFailingValidationAre400WithAParameterLocatorAndFixedText() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        BeanPropertyBindingResult result = new BeanPropertyBindingResult(new Object(), "filter");
+        result.addError(new FieldError("filter", "count", SECRET, true, new String[] {"typeMismatch"}, null,
+            "Failed to convert property value of type 'java.lang.String' for property 'count'; " + SECRET));
+        MethodArgumentNotValidException invalid = new MethodArgumentNotValidException(new MethodParameter(
+            V2ProblemResolverTest.class.getDeclaredMethod("queryTarget", Object.class), 0), result);
+
+        resolver.resolveException(request("GET", "/api/v2/things"), response, null, invalid);
+
+        assertThat(response.getStatus()).isEqualTo(400);
+        JsonNode error = body(response).get("errors").get(0);
+        assertThat(error.get("parameter").asText()).isEqualTo("count");
+        assertThat(error.has("pointer")).isFalse();
+        assertThat(error.get("detail").asText()).isEqualTo("The value does not have the expected type.");
+        assertThat(response.getContentAsString()).doesNotContain(SECRET).doesNotContain("java.");
     }
 
     @Test
