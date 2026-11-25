@@ -61,7 +61,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -371,10 +370,12 @@ class NewCodeSeamsTest {
 
     /**
      * SQL in new code: one finding per retiring or transitional relation, and per system-of-record table outside its
-     * seam. A tripwire, not proof. It reads only literals that look like SQL (an uppercase SELECT, INSERT, UPDATE,
-     * DELETE or WITH), so prose naming a table is not flagged. It does not see lowercase SQL, a fragment without one of
-     * those words that is joined to others at run time, names assembled from constants, a FROM list item after a
-     * nested parenthesis, or tables reached through views, functions or a search path.
+     * seam. A tripwire, not proof. It reads only literals with the structure of a query, in any case (select ... from,
+     * insert into, update ... set, delete from, with ... as (), so prose naming a table is not flagged. Names compare
+     * as written: tables are lowercase here, and JPQL names entities (Activity), so JPQL is not flagged either. It
+     * does not see a table name written in uppercase, a fragment without that structure joined to others at run time,
+     * names assembled from constants, a FROM list item after a nested parenthesis, or tables reached through views,
+     * functions or a search path.
      */
     static List<String> sqlFindings(String path, String source) {
         List<String> findings = new ArrayList<>();
@@ -383,8 +384,8 @@ class NewCodeSeamsTest {
                 continue;
             }
             for (String[] relation : relations(literal)) {
-                String schema = relation[0] == null ? null : relation[0].toLowerCase(Locale.ROOT);
-                String table = relation[1].toLowerCase(Locale.ROOT);
+                String schema = relation[0];
+                String table = relation[1];
                 boolean inPublic = schema == null || schema.equals("public");
                 if (schema != null && RETIRING_SCHEMAS.contains(schema)) {
                     findings.add(path + ": retiring relation " + schema + "." + table);
@@ -586,9 +587,18 @@ class NewCodeSeamsTest {
         assertThat(sqlFindings("org/nmcpye/datarun/submission/feed/X.java",
             "// SELECT * FROM data_submission in a comment\nString w = \"INSERT INTO feed.submission VALUES (1)\";"))
             .as("comments, and the new schemas").isEmpty();
+        assertThat(sqlFindings("org/nmcpye/datarun/submission/feed/X.java", String.join("\n",
+            "log.info(\"Submission {} moved from assignment {} with cause {}\", id, from, cause);",
+            "String hint = \"Select one team with the most rows\";")))
+            .as("prose naming a table, with 'with' and 'select'").isEmpty();
         assertThat(sqlFindings("org/nmcpye/datarun/submission/feed/X.java",
-            "log.info(\"Submission {} moved from assignment {} with cause {}\", id, from, cause);"))
-            .as("prose naming a table").isEmpty();
+            "String head = \"select s.id from data_submission s where s.id = :id\";"))
+            .as("a lowercase native query")
+            .containsExactly(
+                "org/nmcpye/datarun/submission/feed/X.java: system-of-record table data_submission outside its seam");
+        assertThat(sqlFindings("org/nmcpye/datarun/submission/feed/X.java",
+            "String jpql = \"select activity from Activity activity join activity.project p where p.uid = :uid\";"))
+            .as("JPQL, which names entities").isEmpty();
         assertThat(sqlFindings("org/nmcpye/datarun/submission/feed/X.java", String.join("\n",
             "String comma = \"SELECT 1 FROM feed.submission f, data_submission s WHERE f.id = s.id\";",
             "String using = \"DELETE FROM feed.submission f USING org_unit o WHERE f.org_unit_id = o.id\";",
@@ -792,8 +802,9 @@ class NewCodeSeamsTest {
 
     /** An optional double quote, escaped or not: Java source text holds quoted identifiers as \". */
     private static final String QUOTE = "(?:\\\\?\")?";
-    /** A literal that looks like SQL. */
-    private static final Pattern SQL_LIKE = Pattern.compile("\\b(?:SELECT|INSERT|UPDATE|DELETE|WITH)\\b");
+    /** A literal with the structure of a query, in any case. */
+    private static final Pattern SQL_LIKE = Pattern.compile("(?is)\\bselect\\b.*?\\bfrom\\b|\\binsert\\s+into\\b"
+        + "|\\bupdate\\s+\\S+\\s+set\\b|\\bdelete\\s+from\\b|\\bwith\\s+\\w+\\s+as\\s*\\(");
     /** A relation's name, schema-qualified or not, quoted or not. */
     private static final String NAME =
         "(?:only\\s+)?(?:" + QUOTE + "(\\w+)" + QUOTE + "\\s*\\.\\s*)?" + QUOTE + "(\\w+)";
