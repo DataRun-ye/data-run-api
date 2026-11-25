@@ -1,6 +1,6 @@
 # Completed Work
 
-Updated: 2026-11-19
+Updated: 2026-11-25
 
 Purpose: compact historical outcomes only. This file is not current runtime or
 deployment authority.
@@ -126,6 +126,13 @@ deployment authority.
   (`SubmissionCommandService`):
   - held-release races fixed, plus `runAgain` and `stopReason`;
   - an architecture test and an SQL tripwire for writers.
+- `v6.5.5` / `4bcdd1b3`: deployed 2026-11-25 (GitHub release `v6.5.5`). Privacy and logging hardening:
+  - request errors are log lines and `error_event` is retired (emptied once, no longer written); failed logins are
+    logged with a pseudonymous tag, never the login;
+  - `/management/prometheus` and the single-submission read are admin-only; admin generic submission lists are bounded
+    (`E2060`);
+  - an `assignment (team_id)` index speeds phone syncs; unused indexes and the dead `analytics.etl_runs` were dropped;
+    the container log rotates.
 
 Use commits, tests, focused context, and deployed evidence to determine current
 behavior.

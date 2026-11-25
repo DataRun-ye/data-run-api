@@ -1,36 +1,41 @@
 # Current Work
 
-Updated: 2026-11-24
+Updated: 2026-11-25
 
 Purpose: accepted server work only. This file is not code, API, architecture,
 or deployment authority.
 
 ## Now
 
-- ITN 2026 campaign (from the week of 2026-11-23) on server 6.5.4 and app
+- ITN 2026 campaign (from the week of 2026-11-23) on server 6.5.5 and app
   6.1.2, with the household lists loaded in production (see
   `reference-boundary.md`). A campaign-wide go-live rule holds every upload
   until operations set the real start; operations own the campaign's dates,
   districts and forms. Field fixes may still ship during the campaign, each
   through the staging rehearsal first. Shared status:
   [DataRun API #34](https://github.com/DataRun-ye/data-run-api/issues/34).
-- Data chain before any correction feature. Done:
+- Data chain, then submission review. Done:
   - `scripts/integrity/check.sh` measures the gaps between submissions, the outbox, tall rows, events and pivots;
   - characterization goldens pin today's submission behaviour for each installed phone contract;
-  - one submission write path: `SubmissionCommandService`, in 6.5.4.
+  - one submission write path: `SubmissionCommandService`, in 6.5.4;
+  - privacy and logging hardening in 6.5.5: request errors are log lines and `error_event` is retired; the metrics
+    endpoint and the single-submission read are admin-only; admin generic submission lists are bounded.
 
-  Next, in order:
-  - the change record as a contract;
-  - a projector that follows the truth;
-  - a published read contract for tall and events, which downstream analytics builds on;
-  - then corrections.
+  Next, sequenced by engineering, with no delivery deadline:
+  - the revision journal (the change record as a contract), built and reviewed, released as its own version;
+  - a published feed of current state for downstream analytics, in its own schema, which replaces tall, events and
+    pivots as the analytics interface. They retire once downstream has switched;
+  - submission review: operations find and open any form's submissions and change them through edits with a reason,
+    moves, splits, and delete and restore, over a v2 API. The admin tools use it first, then a screen for the
+    operations room.
 
   Pivots stay admin-only and on request until downstream no longer reads them.
 - Held-upload releases follow the runbook in `active-production-interface.md`. Repeat while `runAgain`; call once
   more when only `changed` is left. Use the default limit of 200 per call.
 - Access (#46) and the submission lifecycle (#47) are framed for the
-  access-scope work; the generic submission reads that return every team's
-  submissions are the first item to restrict.
+  access-scope work. 6.5.5 bounded the admin's generic submission lists and
+  made the single-submission read admin-only; submission review's scoped read
+  replaces the remaining generic submission reads.
 - Go-live and held uploads (#42): the first slice, admin API only, shipped in
   6.5.0. Next: an admin screen, a phone indicator, a closing time, and holding
   data stored before a go-live existed.
