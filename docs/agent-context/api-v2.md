@@ -48,7 +48,8 @@ all of them.
 - The registry is open: modules add codes with their glossary's words; a
   published code is never renamed, repurposed or given another status.
 - The problem's `status` member is RFC 9457's HTTP status; no domain field or
-  parameter is ever a bare `status` (vocabulary rule R9).
+  parameter is ever a bare `status` (naming rule R9 of
+  [submission review](../features/submission-review/spec.md#9-api-conventions)).
 - Status use: 400 malformed; 401; 403; 404; 405; 409 the same request may
   succeed later; 412 stale; 422 well formed but not applicable; 428 missing
   precondition; 5xx server faults.
@@ -148,9 +149,9 @@ all of them.
 
 ## Methods And Actions
 
-The API naming rules of the data-chain vocabulary study (2026-11-25, its
-section 6) apply; the domain nouns and verbs come from the feature's
-glossary when it lands under `docs/features/`.
+The API naming rules of [submission review's specification](../features/submission-review/spec.md#9-api-conventions)
+(§9, R1 to R15) apply; the domain nouns and verbs come from each feature's
+glossary under `docs/features/`.
 
 - Reads are `GET`; standard creates are `POST` on a collection and revokes
   `DELETE`. A change is a named action, never `PUT` or `PATCH`:
@@ -179,7 +180,8 @@ glossary when it lands under `docs/features/`.
 
 ## Changing Requests
 
-Every changing method takes the same four things (vocabulary rule R4): the
+Every changing method takes the same four things (naming rule R4 of
+[submission review](../features/submission-review/spec.md#9-api-conventions)): the
 `If-Match` and `Idempotency-Key` headers, which E0 enforces through
 `CommandRequest`, and a required `reason` with an optional `dryRun` in its
 body, which each method's request defines; E0 builds no shared body type.
@@ -224,7 +226,7 @@ body, which each method's request defines; E0 builds no shared body type.
 - A response, first or replayed, comes from the method's `OutcomeRenderer`,
   which renders the resource at the outcome's version from its history. For
   submissions that history is the revision journal (step C) through the
-  translation (step E1a); until a module has a history, it cannot offer
+  submission normalizer; until a module has a history, it cannot offer
   replayable commands.
 - A dry run is the same request with `dryRun: true`: it sends the same
   headers (the key and `If-Match`), which are checked the same way, including
