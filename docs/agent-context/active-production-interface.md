@@ -57,7 +57,7 @@ timings, exception types and error rates).
 | Status | Released mobile request | Server owner | Required downstream path |
 | --- | --- | --- | --- |
 | CORE-ACTIVE | `GET /api/v1/assignments?paged=false` | `AssignmentResource` inherited read route | `DefaultAssignmentService.findAllByUser` -> `AssignmentFilter` -> `AssignmentRepository` |
-| CORE-ACTIVE | `GET /api/v1/assignments/forms?paged=false&referenceVersion=1` | `AssignmentResource.getAllDto` | access-filtered assignments -> `AssignmentWithAccessMapper` -> `AssignmentFormAccessService` -> `ReferenceAssignmentFormGate` |
+| CORE-ACTIVE | `GET /api/v1/assignments/forms?paged=false&referenceVersion=1` | `AssignmentResource.getAllDto` | `DefaultAssignmentService.getAllUserAccessibleDto`: access-filtered assignments -> `AssignmentWithAccessMapper` (forms from `AssignmentFormAccessService`), then `ReferenceAssignmentFormGate.filterUnsupportedForms` on the result |
 | GATED | `GET /api/v1/assignments/{uid}/referenceEntries` | `ReferenceEntryResource` | `AssignmentService.findAccessibleByIdOrUid` and assignment/form access checks; deployed but unused until a Reference form is assigned |
 | SUPPORTING-REACHABLE | `GET /api/v1/formPermissions` | `UserFormPermissionsResource` | the mobile synchronizes this into `user_form_permissions`, but no active mobile behavior reads that table; retire mobile registration/table first, then this endpoint |
 
@@ -338,9 +338,9 @@ does not make them a second product authority.
 
 The disabled submission-history listener and its zero-caller processor/model
 alternatives are source-dead. Their physical table remains a schema concern.
-The separate `jpa/datasubmissionoutbox` tree targets the legacy
-`outbox_event` table; it has no active producer or enabled worker and is not
-the current `outbox` owner.
+The legacy `outbox_event` table has no source left: no class reads or writes
+it, and only its changelog names it. The current `outbox` is written only by
+`OutboxWriter`.
 
 Mixed update/delete batches persist their classified collections separately;
 each submission whose version moved then gets its revision and its outbox
@@ -413,9 +413,11 @@ The outbox contract:
   repair probes for its cue. The application's rows are never in it.
 - `event_type` follows the state after the change: `DELETE` whenever the
   submission is deleted afterwards, else `SAVE` for a creation and `UPDATE`.
-- Actor, kind and state are not copied into the outbox: the key names the
-  revision. Per-consumer progress is not built; the ETL keeps its claim state
-  on the row.
+- Actor and kind are not copied into the outbox: the key names the revision.
+  The row still carries `payload`, a copy of the submission's `form_data`
+  written with each revision, which no code reads (the ETL re-reads the
+  submission). Per-consumer progress is not built; the ETL keeps its claim
+  state on the row.
 
 The version is what submission review's `ETag` will carry: `ETag:
 "<version>"` on a view, `If-Match: "<version>"` on an edit or other change (412 when
