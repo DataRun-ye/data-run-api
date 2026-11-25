@@ -49,13 +49,17 @@ public class FormDefinitionJdbcReader {
             JOIN option_set os ON os.uid = e.field ->> 'optionSet'), '')""";
 
     /**
-     * Every version of the forms named, with its stored fields as {@code f.fields} when they are an array: anything
-     * else holds no field, and never fails the read.
+     * Every version of every form, with its stored fields as {@code f.fields} when they are an array: anything else
+     * holds no field, and never fails the read.
      */
     private static final String VERSIONS = """
         FROM data_template t
         JOIN data_template_version v ON v.data_template_id = t.id
-        CROSS JOIN LATERAL (SELECT CASE WHEN jsonb_typeof(v.fields) = 'array' THEN v.fields END AS fields) f
+        CROSS JOIN LATERAL (SELECT CASE WHEN jsonb_typeof(v.fields) = 'array' THEN v.fields END AS fields) f""";
+
+    /** Only the forms named. */
+    private static final String NAMED = """
+
         WHERE t.uid IN (:formUids)""";
 
     private static final String DEFINITIONS = """
@@ -100,6 +104,14 @@ public class FormDefinitionJdbcReader {
     }
 
     /**
+     * The definitions of every form with a stored version, by form uid, in one statement: what the feed's dictionary
+     * publishes. As {@link #read(Collection)}, nothing in the stored definitions makes the read fail.
+     */
+    public Map<String, Snapshot> readAll() {
+        return definitions(DEFINITIONS, Map.of());
+    }
+
+    /**
      * The definitions of the forms with these uids, by form uid. A uid that names no form has no entry: the caller
      * then normalizes with no definition ({@link org.nmcpye.datarun.submission.normalized.NormalizationFlag#FORM_MISSING}).
      * A stored field whose data element no longer exists is kept without an id, and one whose option set no longer
@@ -109,10 +121,14 @@ public class FormDefinitionJdbcReader {
         if (formUids.isEmpty()) {
             return Map.of();
         }
+        return definitions(DEFINITIONS + NAMED, Map.of("formUids", Set.copyOf(formUids)));
+    }
+
+    private Map<String, Snapshot> definitions(String statement, Map<String, ?> parameters) {
         Map<String, String> formIds = new HashMap<>();
         Map<String, List<FormVersionDefinition>> versions = new HashMap<>();
         Map<String, List<String>> marks = new HashMap<>();
-        jdbc.query(DEFINITIONS, Map.of("formUids", Set.copyOf(formUids)), rs -> {
+        jdbc.query(statement, parameters, rs -> {
             String formUid = rs.getString("form_uid");
             String formId = rs.getString("form_id");
             formIds.put(formUid, formId);
@@ -150,8 +166,21 @@ public class FormDefinitionJdbcReader {
         if (formUids.isEmpty()) {
             return Map.of();
         }
+        return tokens(TOKENS + NAMED, Map.of("formUids", Set.copyOf(formUids)));
+    }
+
+    /**
+     * The current change token of every form with a stored version, by form uid, without reading the definitions: the
+     * tokens of what {@link #readAll} would read now. A form missing from a set of tokens kept earlier was deleted, or
+     * lost its last version.
+     */
+    public Map<String, String> allChangeTokens() {
+        return tokens(TOKENS, Map.of());
+    }
+
+    private Map<String, String> tokens(String statement, Map<String, ?> parameters) {
         Map<String, List<String>> marks = new HashMap<>();
-        jdbc.query(TOKENS, Map.of("formUids", Set.copyOf(formUids)), rs -> {
+        jdbc.query(statement, parameters, rs -> {
             marks.computeIfAbsent(rs.getString("form_uid"), uid -> new ArrayList<>()).add(rs.getString("version_mark"));
         });
         Map<String, String> tokens = new HashMap<>();

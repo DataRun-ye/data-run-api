@@ -177,6 +177,20 @@ class FormDefinitionJdbcReaderIT {
         assertThat(reader.changeTokens(Set.of("nzNoSuchFrm"))).isEmpty();
     }
 
+    /** Every form at once, as the feed's dictionary reads them: the same definitions and tokens as one by one. */
+    @Test
+    void everyFormIsReadInOneStatementWithItsToken() {
+        Map<String, FormDefinitionJdbcReader.Snapshot> all = reader.readAll();
+        Map<String, String> tokens = reader.allChangeTokens();
+
+        FormDefinitionJdbcReader.Snapshot one = reader.read(FORM_UID).orElseThrow();
+        assertThat(all).containsKey(FORM_UID);
+        assertThat(all.get(FORM_UID).changeToken()).isEqualTo(one.changeToken());
+        assertThat(all.get(FORM_UID).definition().versions()).isEqualTo(one.definition().versions());
+        assertThat(tokens).containsEntry(FORM_UID, one.changeToken());
+        assertThat(tokens.keySet()).as("a token for every form read, and only those").isEqualTo(all.keySet());
+    }
+
     @Test
     void theReaderNeverWrites() {
         // in a read-only transaction PostgreSQL refuses every write, so a read that succeeds there wrote nothing
@@ -187,6 +201,10 @@ class FormDefinitionJdbcReaderIT {
         Map<String, String> tokens = readOnly.execute(status -> reader.changeTokens(Set.of(FORM_UID)));
         assertThat(token).isNotBlank();
         assertThat(tokens).containsOnlyKeys(FORM_UID);
+        Map<String, FormDefinitionJdbcReader.Snapshot> all = readOnly.execute(status -> reader.readAll());
+        Map<String, String> allTokens = readOnly.execute(status -> reader.allChangeTokens());
+        assertThat(all).containsKey(FORM_UID);
+        assertThat(allTokens).containsKey(FORM_UID);
         assertThatThrownBy(() -> readOnly.executeWithoutResult(status -> jdbc.update(
             "UPDATE data_element SET name = name WHERE uid = :uid", Map.of("uid", "nzDeTitle01"))))
             .as("the transaction really is read-only").isInstanceOf(DataAccessException.class);
