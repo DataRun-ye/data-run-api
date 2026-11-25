@@ -168,6 +168,21 @@ public class DataSubmissionResource extends BaseReadResource<DataSubmission, Str
             new SubmissionCommand.PracticeUpload(SubmissionActor.of(user), requests)));
     }
 
+    /**
+     * {@code GET /{id}}, on both mappings, is admin only since 6.5.5: any other user gets 403, as on
+     * {@code DELETE /{id}}. The inherited read checks only "admin, or member of any team" and finds by id or uid with
+     * no row filter, deleted submissions included, so any field user could read any team's submission. No phone
+     * release calls it (G0 pulls {@code objects?paged=false}, 6.x only uploads), and production's access logs of
+     * 2026-11-10 to 25 hold no call. The list reads keep their behaviour; other entities' single reads are unchanged.
+     */
+    @Override
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    public ResponseEntity<DataSubmission> getById(@PathVariable("id") String id,
+                                                  @AuthenticationPrincipal CurrentUserDetails user) {
+        return super.getById(id, user);
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteByIdUid(@PathVariable("id") String id,
