@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,7 +41,7 @@ final class OpenApiCompatibility {
     private static final Set<String> MODELED = Set.of("$ref", "type", "format", "enum", "x-extensible-enum",
         "properties", "required", "items", "allOf", "oneOf", "anyOf", "nullable", "additionalProperties",
         "maxLength", "minLength", "maximum", "minimum", "maxItems", "minItems", "pattern", "default",
-        "description", "title", "example", "examples", "deprecated", "externalDocs");
+        "discriminator", "description", "title", "example", "examples", "deprecated", "externalDocs");
 
     private final JsonNode baseline;
     private final JsonNode current;
@@ -270,17 +269,111 @@ final class OpenApiCompatibility {
         if (request && !Objects.equals(old.get("default"), now.get("default"))) {
             breaking(at, "default changed");
         }
-        if (request && !"false".equals(old.path("additionalProperties").asText())
-            && "false".equals(now.path("additionalProperties").asText())) {
-            breaking(at, "additional members no longer accepted");
-        }
+        mapValues(at, old.get("additionalProperties"), now.get("additionalProperties"), direction);
         properties(at, old, now, direction);
         if (old.has("items") || now.has("items")) {
             schema(at + "[]", old.get("items"), now.get("items"), direction);
         }
-        variants(at, "oneOf", old, now, request);
-        variants(at, "anyOf", old, now, request);
+        variants(at, "oneOf", old, now, direction);
+        variants(at, "anyOf", old, now, direction);
+        discriminator(at, old.get("discriminator"), now.get("discriminator"), request);
         residual(at, old, now);
+    }
+
+    private enum Extra { ANY, NONE, SCHEMA }
+
+    private static Extra extra(JsonNode additional) {
+        if (additional == null || additional.isBoolean() && additional.booleanValue()) {
+            return Extra.ANY;
+        }
+        return additional.isBoolean() ? Extra.NONE : Extra.SCHEMA;
+    }
+
+    /**
+     * {@code additionalProperties}: none, any, or a schema for every other member, which is how a map keyed by id
+     * (field values by field id) is written. Two schemas are compared like any other, by direction. Otherwise a
+     * request may accept more (none to a schema to any), and a response may only constrain what it sends: a map
+     * that disappears, or whose value schema is dropped, breaks a client reading it.
+     */
+    private void mapValues(String at, JsonNode oldExtra, JsonNode newExtra, Direction direction) {
+        Extra before = extra(oldExtra);
+        Extra after = extra(newExtra);
+        if (before == Extra.SCHEMA && after == Extra.SCHEMA) {
+            schema(at + "{}", oldExtra, newExtra, direction);
+            return;
+        }
+        if (before == after) {
+            return;
+        }
+        String what = "additional members " + before + " to " + after;
+        boolean breaks = direction == Direction.REQUEST
+            ? after == Extra.NONE || before == Extra.ANY && after == Extra.SCHEMA
+            : before == Extra.SCHEMA;
+        record(at, what, breaks);
+    }
+
+    /**
+     * oneOf and anyOf variants, matched by the {@code $ref} they name (springdoc writes polymorphic types as
+     * references), else by title, else by position, and compared by direction: a variant both sides keep is
+     * followed into its schema. A request may be accepted in more shapes, never fewer; a response may take new
+     * shapes (an open list) and drop old ones. A list appearing or disappearing entirely is breaking.
+     */
+    private void variants(String at, String key, JsonNode old, JsonNode now, Direction direction) {
+        if (!old.has(key) && !now.has(key)) {
+            return;
+        }
+        if (!old.has(key) || !now.has(key)) {
+            breaking(at, key + (old.has(key) ? " removed" : " added"));
+            return;
+        }
+        Map<String, JsonNode> before = variantsByKey(old.get(key));
+        Map<String, JsonNode> after = variantsByKey(now.get(key));
+        before.forEach((name, variant) -> {
+            JsonNode kept = after.get(name);
+            if (kept == null) {
+                record(at, key + " variant removed " + name, direction == Direction.REQUEST);
+            } else {
+                schema(at + " " + key + "[" + name + "]", variant, kept, direction);
+            }
+        });
+        after.keySet().stream().filter(name -> !before.containsKey(name))
+            .forEach(name -> additive(at, key + " variant added " + name));
+    }
+
+    private static Map<String, JsonNode> variantsByKey(JsonNode variants) {
+        Map<String, JsonNode> byKey = new java.util.LinkedHashMap<>();
+        int index = 0;
+        for (JsonNode variant : variants) {
+            String name = variant.has("$ref") ? variant.get("$ref").asText()
+                : variant.has("title") ? "title " + variant.get("title").asText() : "#" + index;
+            byKey.put(name, variant);
+            index++;
+        }
+        return byKey;
+    }
+
+    /** A discriminator's property must stay; a request may map more values, a response may map more or fewer. */
+    private void discriminator(String at, JsonNode old, JsonNode now, boolean request) {
+        if (old == null && now == null) {
+            return;
+        }
+        if (old == null || now == null
+            || !Objects.equals(old.path("propertyName").asText(null), now.path("propertyName").asText(null))) {
+            breaking(at, "discriminator changed");
+            return;
+        }
+        for (String value : names(old.path("mapping"))) {
+            if (!now.path("mapping").has(value)) {
+                record(at, "discriminator value removed " + value, request);
+            } else if (!old.path("mapping").get(value).equals(now.path("mapping").get(value))) {
+                breaking(at, "discriminator value " + value + " maps elsewhere");
+            }
+        }
+        for (String value : names(now.path("mapping"))) {
+            if (!old.path("mapping").has(value)) {
+                additive(at, "discriminator value added " + value);
+            }
+        }
     }
 
     /**
@@ -399,28 +492,6 @@ final class OpenApiCompatibility {
         }
         boolean tighter = now.has(key) && (!old.has(key) || now.get(key).decimalValue().compareTo(old.get(key).decimalValue()) > 0);
         record(at, key + " " + old.get(key) + " to " + now.get(key), request == tighter);
-    }
-
-    private void variants(String at, String key, JsonNode old, JsonNode now, boolean request) {
-        if (!old.has(key) && !now.has(key)) {
-            return;
-        }
-        Set<String> before = new LinkedHashSet<>();
-        old.path(key).forEach(variant -> before.add(variant.toString()));
-        Set<String> after = new LinkedHashSet<>();
-        now.path(key).forEach(variant -> after.add(variant.toString()));
-        // A request may be accepted in more shapes, never fewer; a response may take new shapes (an open list)
-        // and drop old ones.
-        for (String variant : before) {
-            if (!after.contains(variant)) {
-                record(at, key + " variant removed " + variant, request);
-            }
-        }
-        for (String variant : after) {
-            if (!before.contains(variant)) {
-                additive(at, key + " variant added " + variant);
-            }
-        }
     }
 
     /** Whatever else differs in a schema, unread here, is breaking until a person decides otherwise. */

@@ -127,7 +127,10 @@ class OpenApiCompatibilityTest {
             .contains("BREAKING document: global security requirement changed");
         assertThat(breaking(BASE.replace("\"Thing\":{\"type\":\"object\",", "\"Thing\":{\"type\":\"object\","
             + "\"discriminator\":{\"propertyName\":\"state\"},")))
-            .anyMatch(change -> change.contains("unclassified change of discriminator"));
+            .anyMatch(change -> change.contains("discriminator changed"));
+        assertThat(breaking(BASE.replace("\"Thing\":{\"type\":\"object\",", "\"Thing\":{\"type\":\"object\","
+            + "\"not\":{\"required\":[\"state\"]},")))
+            .anyMatch(change -> change.contains("unclassified change of not"));
     }
 
     /** OpenAPI 3.1 writes nullability into the type: a response that may now be null breaks a client. */

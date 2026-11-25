@@ -267,7 +267,11 @@ Deploying a release and turning on what it brings are separate steps
   `@MockitoBean`s. `V2OpenApiLiveIT` holds the running application to the
   same snapshot, test fixtures hidden (`@Hidden`).
 - The document is OpenAPI 3.1 (springdoc 2.8's default), so a type is
-  compared as a set (`["string", "null"]`). Schemas are compared through the
+  compared as a set (`["string", "null"]`). oneOf and anyOf variants are
+  matched by the reference they name (else title, else position) and followed
+  into their schemas, discriminator mappings are compared, and map value
+  schemas (`additionalProperties`, as for values keyed by field id) are
+  compared by direction like any other. Schemas are compared through the
   operations that use them; E0 publishes no operation yet, so its check bites
   from the first v2 route on (the test proves it fails on a deliberate break).
 - The same test checks the conventions that show in the document
