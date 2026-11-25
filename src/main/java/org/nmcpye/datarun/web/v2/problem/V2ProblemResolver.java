@@ -162,7 +162,8 @@ public class V2ProblemResolver implements HandlerExceptionResolver, Ordered {
             return Answer.of(ProblemCode.UNAUTHENTICATED, UNAUTHENTICATED_DETAIL)
                 .withHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
         }
-        if (ex instanceof PessimisticLockingFailureException || ex instanceof OptimisticLockingFailureException) {
+        if (ex instanceof PessimisticLockingFailureException || ex instanceof OptimisticLockingFailureException
+            || SqlStates.has(ex, SqlStates.LOCK_NOT_AVAILABLE)) {
             return Answer.of(ProblemCode.RESOURCE_BUSY,
                     "Another request is changing this resource; send the request again shortly.")
                 .withHeader(HttpHeaders.RETRY_AFTER, "1");

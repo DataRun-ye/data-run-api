@@ -22,6 +22,7 @@ import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -34,6 +35,7 @@ import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 
@@ -208,6 +210,18 @@ class V2ProblemResolverTest {
         assertThat(response.getHeader(HttpHeaders.RETRY_AFTER)).isEqualTo("1");
         assertThat(body(response).get("code").asText()).isEqualTo("resource-busy");
         assertNoLineLeaks();
+    }
+
+    /** Spring's default JDBC translation leaves PostgreSQL's lock timeout uncategorized; its state decides. */
+    @Test
+    void aLockTimeoutKnownOnlyByItsSqlStateIsTransientToo() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        resolver.resolveException(request("POST", "/api/v2/things/7"), response, null,
+            new UncategorizedSQLException("update", "UPDATE t SET v = 1",
+                new SQLException("canceling statement due to lock timeout", "55P03")));
+        assertThat(response.getStatus()).isEqualTo(409);
+        assertThat(body(response).get("code").asText()).isEqualTo("resource-busy");
+        assertThat(response.getContentAsString()).doesNotContain("UPDATE");
     }
 
     @Test
