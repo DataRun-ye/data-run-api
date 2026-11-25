@@ -429,11 +429,13 @@ and treats released rows as final.
 
 - **The view** shows three columns, the base version, the current state and the phone copy, with each value and row
   marked as changed on the phone, on the server, or both.
+- **Both decisions take the same preconditions** (engineering, 2026-11-25): `If-Match` on the submission's version,
+  and the copy's receipt count as seen. A newer copy answers 409 `phone-copy-changed`, and a changed submission
+  412. Every decision is made on the three-way view the resolver actually saw.
 - **Keep** closes the conflict with a reason. The submission is unchanged, and no revision is written.
-- **Accept** takes `If-Match` on the submission and the copy's receipt count as seen. The copy's values and rows
-  become the state, by the resolver on behalf of the uploader. Placement never changes; validation and new entries
-  use the copy's own assignment. It is refused with 409 `row-live-elsewhere` while the copy holds rows live elsewhere
-  in the lineage, with 409 `phone-copy-changed` when a newer copy has arrived, and on a deleted submission.
+- **Accept** makes the copy's values and rows the state, by the resolver on behalf of the uploader. Placement never
+  changes; validation and new entries use the copy's own assignment. It is also refused with 409
+  `row-live-elsewhere` while the copy holds rows live elsewhere in the lineage, and on a deleted submission.
 - **Accept and re-apply** (`reapplyEdits`) also replays, in order and in the same revision, the edit operations of
   the server-side edits since the base version, with splits replayed as row removals.
 - **A copy whose rows lack ids:** both kinds of accept answer 409 `phone-copy-rows-without-ids` once any row-level
@@ -630,7 +632,8 @@ Invented ids and values. Team T312 has assignment A7 in village V7 and assignmen
    `"hasOpenConflict": true`. A user with `submissions.change` opens `GET /api/v2/submissions/…7f3a/conflicts/…c1`
    and sees the base version, the current state and the phone copy side by side. The copy still holds the 23 rows
    now in …9c2e, so a plain accept would answer 409 `row-live-elsewhere`. Finding nothing in the copy to take, the
-   user sends `POST …/conflicts/…c1:keep` with a reason: the conflict is `KEPT`, and S stays at version 2.
+   user sends `POST …/conflicts/…c1:keep` with `If-Match: "2"`, the receipt count it saw and a reason: the
+   conflict is `KEPT`, and S stays at version 2.
 9. **A refusal.** Clearing a mandatory field without `"overrideMandatory": true` answers 422 with
    `"code": "mandatory-field-empty"` and `errors[0].pointer = "#/operations/0"`. The value is never repeated.
 10. **A handover.** When V7 is handed to team T415, `POST /api/v2/submissions/…7f3a:move` with
@@ -640,6 +643,5 @@ Invented ids and values. Team T312 has assignment A7 in village V7 and assignmen
 
 ## 14. Open
 
-- **`If-Match` on `:keep`.** Accept names the submission's version; keep's precondition is set in build step 4.
 - **Switch names** are kebab-case, from the glossary, chosen with each build step.
 - **The Arabic words** are to confirm with operations ([CONTEXT.md](CONTEXT.md)).
