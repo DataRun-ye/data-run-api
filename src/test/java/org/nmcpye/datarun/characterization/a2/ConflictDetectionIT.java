@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import javax.sql.DataSource;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -655,6 +656,37 @@ class ConflictDetectionIT extends A2GoldenSupport {
 
         assertThat(conflicts(uid)).isEmpty();
         assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
+    }
+
+    // ---------------------------------------------------------------- held releases
+
+    /**
+     * A held release only ever creates its submission, and detection never reads it: after the uid became real data and
+     * the server changed it, the older held copy is superseded and writes nothing, the switch on as off.
+     */
+    @Test
+    void aHeldReleaseAfterAServerSideChangeIsSupersededAndWritesNothing() throws Exception {
+        String uid = uid("cdRelease");
+        goLiveRules.put(A2Seed.ACTIVITY, null, null, Instant.parse("2099-01-01T00:00:00Z"), null, "a2-test");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "held before go-live")))).isEqualTo(created(uid));
+        assertThat(revisions(uid)).as("held, not real data").isEmpty();
+        inTransaction(() -> jdbc.update("DELETE FROM go_live_rule WHERE activity_uid = :activity",
+            Map.of("activity", A2Seed.ACTIVITY)));
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        seed.edit(uid, ADMIN, "edited on the server");
+
+        MockHttpServletResponse release = mvc.perform(post("/api/v1/admin/heldSubmissions/release")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + A2Tokens.token(jwtKey, ADMIN))
+                .content("{\"uids\": [\"" + uid + "\"]}"))
+            .andReturn().getResponse();
+
+        assertThat(release.getStatus()).isEqualTo(200);
+        JsonNode outcome = json.readTree(release.getContentAsString(StandardCharsets.UTF_8));
+        assertThat(outcome.path("superseded").toString()).isEqualTo("[\"" + uid + "\"]");
+        assertThat(outcome.path("released").toString()).isEqualTo("[]");
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
+        assertThat(conflicts(uid)).isEmpty();
     }
 
     // ---------------------------------------------------------------- the staging rehearsal
