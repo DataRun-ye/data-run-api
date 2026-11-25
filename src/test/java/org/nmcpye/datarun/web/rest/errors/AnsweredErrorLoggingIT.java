@@ -100,7 +100,8 @@ class AnsweredErrorLoggingIT {
     /**
      * A request without a valid token is answered 401 by Spring Security's entry point before any controller, so
      * ExceptionTranslator logs nothing for it: phones' connection checks (HEAD /api/authenticate, about 1,170 a
-     * day on production, and only GET is open there) stay out of the logs.
+     * day on production, and only GET is open there) stay out of the logs. A rejected bearer token is no failed
+     * login either: nothing logs it, the token least of all.
      */
     @Test
     @WithAnonymousUser
@@ -109,6 +110,9 @@ class AnsweredErrorLoggingIT {
         lines.addAll(send(head("/api/authenticate").header("Authorization", "Bearer not-a-token"), 401));
 
         assertThat(lines).noneMatch(line -> line.getLoggerName().equals(ExceptionTranslator.class.getName()));
+        assertThat(lines).as("a rejected bearer token is no failed login, and logs nothing")
+            .noneMatch(line -> line.getFormattedMessage().startsWith("Login failed"));
+        assertNothingLogged(lines, "not-a-token");
     }
 
     /** The table stays for 6.5.4, the rollback target, which still writes it; nothing here does. */

@@ -34,7 +34,12 @@ key drawn at each start and never stored: a login repeats its tag until the
 next restart, so repeated failures stand out, and the tag cannot be turned back
 into the login. The account's durable id is named when the account exists; it
 is read from the user cache that the login's own lookup has just filled, never
-by a query.
+by a query. Only a username-and-password failure is logged: Spring Security
+reports a rejected bearer token as bad credentials too, with the token as the
+principal, and such a request logs nothing. The invalid-token meter
+(`security.authentication.invalid-tokens`, by cause: expired, invalid
+signature, malformed) counts those. A failure inside the security chain (HTTP
+Basic) runs before `RequestIdFilter`, so its line names no request id.
 
 HTTP Basic and public Prometheus access remain baseline operational
 compatibility pending evidence from the administrator and monitoring smoke.

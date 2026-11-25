@@ -17,6 +17,8 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
+import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -124,6 +126,18 @@ class AuthenticationFailureListenerTest {
         } finally {
             RequestContextHolder.resetRequestAttributes();
         }
+    }
+
+    /** A rejected bearer token is reported as bad credentials too, with the token as principal: nothing is logged. */
+    @Test
+    void aRejectedBearerTokenLogsNothing() {
+        AuthenticationFailureListener listener = new AuthenticationFailureListener(caches);
+
+        List<ILoggingEvent> lines = logged(() -> listener.onApplicationEvent(new AuthenticationFailureBadCredentialsEvent(
+            new BearerTokenAuthenticationToken("eyJhbGciOiJIUzUxMiJ9.secret-token"),
+            new InvalidBearerTokenException("An error occurred while attempting to decode the Jwt"))));
+
+        assertThat(lines).isEmpty();
     }
 
     /** An email login is looked up as typed, in its own cache. */

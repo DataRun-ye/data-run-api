@@ -8,6 +8,7 @@ import org.slf4j.MDC;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationListener;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +22,8 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * Logs a failed login without the login it tried: a login is a personal identifier, often a phone number. The line
+ * Logs a failed username-and-password login without the login it tried: a login is a personal identifier, often a
+ * phone number. The line
  * names the outcome, the request id, a short tag of the attempted login, and the account's durable id when the
  * account exists and the user cache already holds it. The login's own lookup has just filled that cache, so reading
  * it makes no query.
@@ -48,8 +50,16 @@ public class AuthenticationFailureListener
         this.tagKey = new SecretKeySpec(key, TAG_ALGORITHM);
     }
 
+    /**
+     * Only a username-and-password login is logged. Spring Security also reports a rejected bearer token as bad
+     * credentials (an InvalidBearerTokenException, with the raw token as the principal): such a request logs nothing,
+     * and the invalid-token meter ({@code security.authentication.invalid-tokens}) counts it by cause.
+     */
     @Override
     public void onApplicationEvent(AuthenticationFailureBadCredentialsEvent event) {
+        if (!(event.getAuthentication() instanceof UsernamePasswordAuthenticationToken)) {
+            return;
+        }
         Object principal = event.getAuthentication().getPrincipal();
         String attemptedUsername = principal instanceof String ? (String) principal : String.valueOf(principal);
         String accountId = cachedAccountId(attemptedUsername).orElse(null);
