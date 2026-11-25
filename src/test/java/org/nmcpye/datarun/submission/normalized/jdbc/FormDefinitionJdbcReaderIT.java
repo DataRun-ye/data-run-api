@@ -147,7 +147,7 @@ class FormDefinitionJdbcReaderIT {
                 tuple(normalized.rows().get(1).id(), RowKeyKind.DERIVED, "01JS1RW0000000000000000001",
                     "main.rows.parts"));
         assertThat(normalized.unmapped()).isEmpty();
-        assertThat(normalized.keysAreUnique()).isTrue();
+        assertThat(normalized.flags()).isEmpty();
     }
 
     @Test

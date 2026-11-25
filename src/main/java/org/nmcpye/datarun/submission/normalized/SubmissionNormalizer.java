@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,8 +23,8 @@ import java.util.UUID;
  * <p><b>It never fails on data.</b> Its callers run it inside transactions, where one exception would retry a
  * change until it dies. Whatever the stored document and the stored definitions hold, it returns a result, and
  * counts what it met in {@link NormalizedSubmission#flags()}: a missing form or pinned version, values no field keys
- * (by reason), values that do not parse as their type, nesting deeper than {@link #MAX_DEPTH}. Only a programming
- * error (a null submission) throws.</p>
+ * (by reason), values that do not parse as their type, ids and fields used twice, nesting deeper than
+ * {@link #MAX_DEPTH}. Only a programming error (a null submission) throws.</p>
  *
  * <p><b>The walk</b> (the D feed spike's rules, measured on all 67,176 heads of the staging clone):</p>
  * <ul>
@@ -40,6 +40,17 @@ import java.util.UUID;
  *       {@code status} column).</li>
  *   <li>A row is keyed by its stored {@code _id} exactly as stored; a row without one gets a derived id
  *       ({@link DerivedIds}). Its parent is the row it is nested in, through any plain sections between them.</li>
+ * </ul>
+ *
+ * <p><b>Ids and fields used twice</b> (none on the staging clone) resolve by fixed rules, so keys stay unique:</p>
+ * <ul>
+ *   <li>A row whose id an earlier row of the submission already has, in walk order (arrays in stored order,
+ *       sections in key order), keeps its stored id in {@link NormalizedRow#storedId()} but is keyed by its
+ *       position-derived id ({@link RowKeyKind#DUPLICATE_ID}, {@link DerivedIds#duplicateRowKey}). The first row
+ *       keeps the id: it is the one a phone or a reader most likely already knows by it.</li>
+ *   <li>Two stored paths of one row, or of the submission outside every row, that resolve to the same section and
+ *       field: the value resolved by the pinned version's own definition stays, otherwise the first in walk order;
+ *       the other is unmapped whole at its path ({@link UnmappedReason#FIELD_ALREADY_HAS_VALUE}).</li>
  * </ul>
  */
 public final class SubmissionNormalizer {
@@ -76,18 +87,21 @@ public final class SubmissionNormalizer {
             flags.put(NormalizationFlag.PINNED_VERSION_MISSING, 1);
         }
         Walk walk = new Walk(definition, pinned, DerivedIds.submissionKey(submission.id()), flags);
-        Container top = new Container(null);
+        Container top = new Container();
         JsonNode data = submission.formData();
         if (data != null && !data.isNull() && !data.isMissingNode()) {
             if (data.isObject()) {
                 walk.members(data, null, top, null, false, 0);
             } else {
-                walk.unmapped(top, "", data, UnmappedReason.DOCUMENT_NOT_AN_OBJECT);
+                walk.unmapped(top, "", copy(data), UnmappedReason.DOCUMENT_NOT_AN_OBJECT);
             }
         }
-        List<NormalizedSubmission.ValueKey> duplicateValueKeys = new ArrayList<>(top.duplicateKeys);
-        for (Container container : walk.rowContainers) {
-            duplicateValueKeys.addAll(container.duplicateKeys);
+        int issues = countIssues(top.values);
+        for (NormalizedRow row : walk.rows) {
+            issues += countIssues(row.values());
+        }
+        if (issues > 0) {
+            flags.put(NormalizationFlag.VALUE_ISSUE, issues);
         }
         return new NormalizedSubmission(
             submission.id(),
@@ -96,9 +110,17 @@ public final class SubmissionNormalizer {
             top.values,
             top.unmapped,
             walk.rows,
-            List.copyOf(walk.duplicateRowIds),
-            duplicateValueKeys,
             flags);
+    }
+
+    private static int countIssues(List<FieldValue> values) {
+        int issues = 0;
+        for (FieldValue value : values) {
+            if (value.issue() != null) {
+                issues++;
+            }
+        }
+        return issues;
     }
 
     private static JsonNode copy(JsonNode value) {
@@ -113,9 +135,7 @@ public final class SubmissionNormalizer {
         private final UUID submissionKey;
         private final Map<NormalizationFlag, Integer> flags;
         private final List<NormalizedRow> rows = new ArrayList<>();
-        private final List<Container> rowContainers = new ArrayList<>();
         private final Set<String> rowIds = new HashSet<>();
-        private final Set<String> duplicateRowIds = new LinkedHashSet<>();
 
         Walk(FormDefinition form, FormVersionDefinition pinned, UUID submissionKey,
              Map<NormalizationFlag, Integer> flags) {
@@ -159,7 +179,7 @@ public final class SubmissionNormalizer {
             boolean walksRows = resolution != null && resolution.isRepeatingSection()
                 && (shape == StoredShape.ROWS || shape == StoredShape.ANY);
             if ((walksObject || walksRows) && depth >= MAX_DEPTH) {
-                unmapped(container, path, value, UnmappedReason.NESTED_TOO_DEEP);
+                unmapped(container, path, copy(value), UnmappedReason.NESTED_TOO_DEEP);
             } else if (walksObject) {
                 members(value, path, container, row, false, depth + 1);
             } else if (walksRows) {
@@ -167,32 +187,46 @@ public final class SubmissionNormalizer {
             } else if (resolution != null && resolution.isField()) {
                 FieldDefinition field = resolution.field();
                 if (field.id() == null) {
-                    unmapped(container, path, value, UnmappedReason.FIELD_WITHOUT_ID);
-                    return;
+                    unmapped(container, path, copy(value), UnmappedReason.FIELD_WITHOUT_ID);
+                } else {
+                    value(container, new FieldValue(
+                        field.id(),
+                        field.sectionId(),
+                        path,
+                        copy(value),
+                        field.valueType(),
+                        ValueConformance.check(field.valueType(), value),
+                        resolution.version().id(),
+                        resolution.fromPinnedVersion()));
                 }
-                ValueIssue issue = ValueConformance.check(field.valueType(), value);
-                if (issue != null) {
-                    flags.merge(NormalizationFlag.VALUE_ISSUE, 1, Integer::sum);
-                }
-                container.add(new FieldValue(
-                    field.id(),
-                    field.sectionId(),
-                    path,
-                    copy(value),
-                    field.valueType(),
-                    issue,
-                    resolution.version().id(),
-                    resolution.fromPinnedVersion()));
             } else {
-                unmapped(container, path, value, resolution == null ? UnmappedReason.PATH_NOT_IN_FORM
+                unmapped(container, path, copy(value), resolution == null ? UnmappedReason.PATH_NOT_IN_FORM
                     : resolution.isRepeatingSection() ? UnmappedReason.REPEATING_SECTION_HOLDS_NON_ROWS
                     : UnmappedReason.SECTION_HOLDS_VALUE);
             }
         }
 
+        /** Adds a field's value, unless the container already has one for that section and field. */
+        private void value(Container container, FieldValue value) {
+            Integer taken = container.positions.putIfAbsent(
+                new FieldKey(value.sectionId(), value.fieldId()), container.values.size());
+            if (taken == null) {
+                container.values.add(value);
+                return;
+            }
+            FieldValue kept = container.values.get(taken);
+            FieldValue other = value;
+            if (value.fromPinnedVersion() && !kept.fromPinnedVersion()) {
+                container.values.set(taken, value);
+                other = kept;
+            }
+            unmapped(container, other.path(), other.value(), UnmappedReason.FIELD_ALREADY_HAS_VALUE);
+        }
+
+        /** Keeps a value no field keys; the value is already a copy, or immutable. */
         void unmapped(Container container, String path, JsonNode value, UnmappedReason reason) {
             flags.merge(NormalizationFlag.of(reason), 1, Integer::sum);
-            container.unmapped.add(new UnmappedValue(path, copy(value), reason));
+            container.unmapped.add(new UnmappedValue(path, value, reason));
         }
 
         private void rows(JsonNode array, String sectionPath, SectionDefinition section, RowKey parent, int depth) {
@@ -201,17 +235,19 @@ public final class SubmissionNormalizer {
                 index++;
                 RowKey key = rowKey(element.get("_id"), sectionPath, parent, index);
                 if (!rowIds.add(key.id())) {
-                    duplicateRowIds.add(key.id());
+                    key = duplicateKey(key.storedId(), sectionPath, parent, index);
+                    rowIds.add(key.id());
+                    flags.merge(NormalizationFlag.DUPLICATE_ID, 1, Integer::sum);
                 }
                 // the row goes before its nested rows: reserve its place, walk it, then fill the place
                 int place = rows.size();
                 rows.add(null);
-                Container container = new Container(key.id());
-                rowContainers.add(container);
+                Container container = new Container();
                 members(element, sectionPath, container, key, true, depth);
                 rows.set(place, new NormalizedRow(
                     key.id(),
                     key.kind(),
+                    key.storedId(),
                     parent == null ? null : parent.id(),
                     section.id(),
                     sectionPath,
@@ -227,39 +263,39 @@ public final class SubmissionNormalizer {
             if (storedId == null || storedId.isEmpty()) {
                 UUID derived = DerivedIds.derivedRowKey(
                     submissionKey, sectionPath, parent == null ? null : parent.key(), index);
-                return new RowKey(derived.toString(), derived, RowKeyKind.DERIVED);
+                return new RowKey(derived.toString(), derived, RowKeyKind.DERIVED, null);
             }
             UUID ulid = DerivedIds.ulidToUuid(storedId);
             return ulid != null
-                ? new RowKey(storedId, ulid, RowKeyKind.CLIENT)
-                : new RowKey(storedId, DerivedIds.legacyRowKey(submissionKey, storedId), RowKeyKind.LEGACY);
+                ? new RowKey(storedId, ulid, RowKeyKind.CLIENT, storedId)
+                : new RowKey(storedId, DerivedIds.legacyRowKey(submissionKey, storedId), RowKeyKind.LEGACY, storedId);
+        }
+
+        /** The first free id of {@link DerivedIds#duplicateRowKey}'s attempts. */
+        private RowKey duplicateKey(String storedId, String sectionPath, RowKey parent, int index) {
+            UUID parentKey = parent == null ? null : parent.key();
+            for (int attempt = 1; ; attempt++) {
+                UUID key = DerivedIds.duplicateRowKey(submissionKey, sectionPath, parentKey, index, attempt);
+                if (!rowIds.contains(key.toString())) {
+                    return new RowKey(key.toString(), key, RowKeyKind.DUPLICATE_ID, storedId);
+                }
+            }
         }
     }
 
-    /** A row's id, and the key a derived id of a row nested in it is computed from. */
-    private record RowKey(String id, UUID key, RowKeyKind kind) {
+    /** A row's id, the key a derived id of a row nested in it is computed from, and its stored id. */
+    private record RowKey(String id, UUID key, RowKeyKind kind, String storedId) {
+    }
+
+    /** What identifies a value inside one row, or outside every row. */
+    private record FieldKey(String sectionId, String fieldId) {
     }
 
     /** The values of one row, or of the submission outside every row. */
     private static final class Container {
 
-        private final String rowId;
         private final List<FieldValue> values = new ArrayList<>();
         private final List<UnmappedValue> unmapped = new ArrayList<>();
-        private final Set<NormalizedSubmission.ValueKey> keys = new HashSet<>();
-        private final Set<NormalizedSubmission.ValueKey> duplicateKeys = new LinkedHashSet<>();
-
-        Container(String rowId) {
-            this.rowId = rowId;
-        }
-
-        void add(FieldValue value) {
-            NormalizedSubmission.ValueKey key =
-                new NormalizedSubmission.ValueKey(rowId, value.sectionId(), value.fieldId());
-            if (!keys.add(key)) {
-                duplicateKeys.add(key);
-            }
-            values.add(value);
-        }
+        private final Map<FieldKey, Integer> positions = new HashMap<>();
     }
 }

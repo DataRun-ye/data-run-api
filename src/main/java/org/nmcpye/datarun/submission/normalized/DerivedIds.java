@@ -88,6 +88,22 @@ public final class DerivedIds {
             + (parentRowKey == null ? "" : parentRowKey.toString()) + "|" + index);
     }
 
+    /**
+     * The id of a row whose own id an earlier row of the submission already has ({@link RowKeyKind#DUPLICATE_ID}).
+     * The first attempt is the row's position-derived id ({@link #derivedRowKey}); only when that is taken too (two
+     * parents with one key, such as one ULID stored in two cases) the next attempts add {@code |<attempt>} to the
+     * same recipe, from 2 up, until the id is free.
+     *
+     * @param attempt 1 for the position-derived id, then 2, 3 and so on
+     */
+    static UUID duplicateRowKey(UUID submissionKey, String sectionPath, UUID parentRowKey, int index, int attempt) {
+        if (attempt <= 1) {
+            return derivedRowKey(submissionKey, sectionPath, parentRowKey, index);
+        }
+        return uuidV5(NAMESPACE, submissionKey + "|" + sectionPath + "|"
+            + (parentRowKey == null ? "" : parentRowKey.toString()) + "|" + index + "|" + attempt);
+    }
+
     /** Whether the text is a ULID: 26 Crockford base-32 digits, either case, the first at most {@code 7}. */
     public static boolean isUlid(String text) {
         if (text == null || text.length() != ULID_LENGTH || text.charAt(0) > '7') {

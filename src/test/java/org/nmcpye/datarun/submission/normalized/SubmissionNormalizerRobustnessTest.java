@@ -20,7 +20,7 @@ import static org.nmcpye.datarun.submission.normalized.StoredForms.version;
  * No stored document makes the normalizer fail: seeded random documents, built from the form's own keys, structure
  * keys and stray keys, with every JSON type in every place, against a form of two versions, a pinned version that
  * exists, one that is gone and none, and no stored definition at all. Each result is checked for determinism, an
- * unchanged input, and flags that agree with what the lists hold.
+ * unchanged input, unique keys, and flags that agree with what the lists hold.
  */
 class SubmissionNormalizerRobustnessTest {
 
@@ -31,6 +31,7 @@ class SubmissionNormalizerRobustnessTest {
         .section("details", false)
         .section("items", false)
         .field("deUidOldNote", "details", "note", "Text")
+        .field("deUidDay0001", "details", "old_day", "Date")
         .field("deUidCount01", "items", "count", "Integer")
         .build(FORM);
 
@@ -50,7 +51,7 @@ class SubmissionNormalizerRobustnessTest {
 
     private static final FormDefinition FORM_DEFINITION = FormDefinition.of(FORM, List.of(V1, V2));
 
-    private static final String[] KEYS = {"title", "details", "day", "choices", "note", "items", "count", "parts",
+    private static final String[] KEYS = {"title", "details", "day", "old_day", "choices", "note", "items", "count", "parts",
         "qty", "extra", "kind", "_id", "_index", "_parentId", "_submissionUid", "_status", "stray", "", "x.y"};
     private static final String[] IDS = {"01J2Q7Y0V6M3N4P5R6S7T8V9W1", "01j2q7y0v6m3n4p5r6s7t8v9w1",
         "01J2Q7Y0V6M3N4P5R6S7T8V9W2", "aB3dE5fG7hJ9kL1m", ""};
@@ -64,6 +65,10 @@ class SubmissionNormalizerRobustnessTest {
         Set<NormalizationFlag> seen = EnumSet.noneOf(NormalizationFlag.class);
         for (int i = 0; i < 4_000; i++) {
             JsonNode document = i % 50 == 0 ? scalar(random) : object(random, 0);
+            if (document.isObject() && random.nextBoolean()) {
+                // half the documents hold rows where the form has a repeating section
+                ((ObjectNode) document).set("items", rows(random, 1));
+            }
             String pin = PINS[random.nextInt(PINS.length)];
             FormDefinition form = random.nextInt(12) == 0 ? null : FORM_DEFINITION;
             JsonNode before = document.deepCopy();
@@ -79,8 +84,7 @@ class SubmissionNormalizerRobustnessTest {
         }
         // the documents reached every condition but depth, which nestingDeeperThanTheWalkGoesIsKeptWholeAndFlagged
         // covers
-        assertThat(seen).containsAll(EnumSet.complementOf(EnumSet.of(
-            NormalizationFlag.NESTED_TOO_DEEP)));
+        assertThat(seen).containsAll(EnumSet.complementOf(EnumSet.of(NormalizationFlag.NESTED_TOO_DEEP)));
     }
 
     private static void flagsAgreeWithTheLists(NormalizedSubmission normalized, FormDefinition form, String pin) {
@@ -102,6 +106,14 @@ class SubmissionNormalizerRobustnessTest {
         assertThat(normalized.flags().values()).allSatisfy(count -> assertThat(count).isPositive());
         assertThat(values).allSatisfy(v -> assertThat(v.value().isNull()).isFalse());
         assertThat(unmapped).allSatisfy(u -> assertThat(u.value().isNull()).isFalse());
+        // keys are unique: row ids within the submission, (section, field) within each row and outside every row
+        assertThat(normalized.rows()).extracting(NormalizedRow::id).doesNotHaveDuplicates();
+        assertThat(normalized.values()).extracting(v -> v.sectionId() + "|" + v.fieldId()).doesNotHaveDuplicates();
+        for (NormalizedRow row : normalized.rows()) {
+            assertThat(row.values()).extracting(v -> v.sectionId() + "|" + v.fieldId()).doesNotHaveDuplicates();
+        }
+        assertThat(normalized.flagged(NormalizationFlag.DUPLICATE_ID)).isEqualTo((int) normalized.rows().stream()
+            .filter(r -> r.keyKind() == RowKeyKind.DUPLICATE_ID).count());
     }
 
     private static JsonNode any(Random random, int depth) {
@@ -124,12 +136,37 @@ class SubmissionNormalizerRobustnessTest {
         return object;
     }
 
+    private static ArrayNode rows(Random random, int depth) {
+        ArrayNode rows = NODES.arrayNode();
+        int size = 1 + random.nextInt(4);
+        for (int i = 0; i < size; i++) {
+            ObjectNode row = object(random, depth);
+            if (random.nextInt(5) < 3) {
+                row.put("_id", IDS[random.nextInt(IDS.length)]);
+            }
+            if (random.nextInt(4) == 0) {
+                row.putObject("extra").set("parts", depth > 3 ? NODES.arrayNode() : rows(random, depth + 2));
+            }
+            rows.add(row);
+        }
+        return rows;
+    }
+
     private static ArrayNode array(Random random, int depth) {
         ArrayNode array = NODES.arrayNode();
         int size = random.nextInt(4);
         boolean rows = random.nextInt(3) > 0;
         for (int i = 0; i < size; i++) {
-            array.add(rows ? object(random, depth) : any(random, depth));
+            if (rows) {
+                ObjectNode row = object(random, depth);
+                if (random.nextInt(5) < 3) {
+                    // rows mostly carry an id, from a small pool, so ids repeat
+                    row.put("_id", IDS[random.nextInt(IDS.length)]);
+                }
+                array.add(row);
+            } else {
+                array.add(any(random, depth));
+            }
         }
         return array;
     }

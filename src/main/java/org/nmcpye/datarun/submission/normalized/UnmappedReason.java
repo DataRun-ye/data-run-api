@@ -19,6 +19,12 @@ public enum UnmappedReason {
     /** The path resolves to a field whose data element no longer exists, so the field has no id to key it by. */
     FIELD_WITHOUT_ID,
     /**
+     * Another stored path of the same row (or of the submission, outside every row) resolves to the same section and
+     * field, and that value stays: the pinned version's own before one resolved through another version, otherwise
+     * the first in walk order. Typically a field renamed between versions with both names stored.
+     */
+    FIELD_ALREADY_HAS_VALUE,
+    /**
      * The value lies deeper than the walk goes ({@link SubmissionNormalizer#MAX_DEPTH} nested objects and rows); it
      * is kept whole at the path where the walk stopped.
      */

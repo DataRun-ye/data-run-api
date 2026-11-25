@@ -60,6 +60,18 @@ class DerivedIdsTest {
     }
 
     @Test
+    void aRowWhoseIdIsTakenTriesItsPositionThenNumberedAttempts() {
+        UUID submission = DerivedIds.submissionKey(SUBMISSION);
+        assertThat(DerivedIds.duplicateRowKey(submission, "visit.households", null, 1, 1))
+            .isEqualTo(DerivedIds.derivedRowKey(submission, "visit.households", null, 1));
+        assertThat(DerivedIds.duplicateRowKey(submission, "visit.households", null, 1, 2))
+            .hasToString("6f9e4d6b-3026-5852-acfb-7a782f5d8162");
+        assertThat(DerivedIds.duplicateRowKey(submission, "visit.households.members",
+            DerivedIds.ulidToUuid("01J2Q7Y0V6M3N4P5R6S7T8V9WY"), 1, 3))
+            .hasToString("2969d948-5f27-5894-a148-7defc6c11893");
+    }
+
+    @Test
     void aLegacyRowKeyIsTheVersion5UuidOverSubmissionAndStoredId() {
         assertThat(DerivedIds.legacyRowKey(DerivedIds.submissionKey(SUBMISSION), "aB3dE5fG7hJ9kL1m"))
             .hasToString("05e08d91-85e5-5ffe-a6f4-951e6507ec14");

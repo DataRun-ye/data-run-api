@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -95,7 +96,7 @@ class SubmissionNormalizerTest {
             .containsExactly(
                 tuple(fieldId("deUidTwice01"), section("details"), "a"),
                 tuple(fieldId("deUidTwice01"), section("other"), "b"));
-        assertThat(normalized.keysAreUnique()).isTrue();
+        assertThat(normalized.flags()).isEmpty();
     }
 
     @Test
@@ -199,7 +200,7 @@ class SubmissionNormalizerTest {
             .containsExactly(
                 tuple(firstHousehold, RowKeyKind.DERIVED, null, 1),
                 tuple(DerivedIds.derivedRowKey(DerivedIds.submissionKey(SUBMISSION), "visit.households.members",
-                    java.util.UUID.fromString(firstHousehold), 1).toString(), RowKeyKind.DERIVED, firstHousehold, 1),
+                    UUID.fromString(firstHousehold), 1).toString(), RowKeyKind.DERIVED, firstHousehold, 1),
                 tuple("01J2Q7Y0V6M3N4P5R6S7T8V9WY", RowKeyKind.CLIENT, null, 2),
                 tuple(DerivedIds.derivedRowKey(DerivedIds.submissionKey(SUBMISSION), "visit.households.members",
                     DerivedIds.ulidToUuid("01J2Q7Y0V6M3N4P5R6S7T8V9WY"), 1).toString(),
@@ -237,25 +238,82 @@ class SubmissionNormalizerTest {
     }
 
     @Test
-    void aRowIdTwiceInOneSubmissionIsReportedAndBothRowsAreKept() {
+    void aRowIdCarriedAgainKeepsTheFirstRowAndGivesLaterOnesTheirPositionsIdFlagged() {
         NormalizedSubmission normalized = normalize("""
             {'items': [{'_id': '01J2Q7Y0V6M3N4P5R6S7T8V9W1', 'count': 1},
-                       {'_id': '01J2Q7Y0V6M3N4P5R6S7T8V9W1', 'count': 2}]}""");
+                       {'_id': '01J2Q7Y0V6M3N4P5R6S7T8V9W1', 'count': 2,
+                        'extra': {'parts': [{'qty': 5}]}},
+                       {'_id': '01J2Q7Y0V6M3N4P5R6S7T8V9W1', 'count': 3}]}""");
 
-        assertThat(normalized.rows()).hasSize(2);
-        assertThat(normalized.duplicateRowIds()).containsExactly("01J2Q7Y0V6M3N4P5R6S7T8V9W1");
-        assertThat(normalized.keysAreUnique()).isFalse();
+        UUID submission = DerivedIds.submissionKey(SUBMISSION);
+        UUID second = DerivedIds.derivedRowKey(submission, "items", null, 2);
+        assertThat(normalized.rows())
+            .extracting(NormalizedRow::id, NormalizedRow::keyKind, NormalizedRow::storedId, NormalizedRow::parentRowId)
+            .containsExactly(
+                tuple("01J2Q7Y0V6M3N4P5R6S7T8V9W1", RowKeyKind.CLIENT, "01J2Q7Y0V6M3N4P5R6S7T8V9W1", null),
+                tuple(second.toString(), RowKeyKind.DUPLICATE_ID, "01J2Q7Y0V6M3N4P5R6S7T8V9W1", null),
+                // a row nested in a rekeyed row points to its new id, and derives its own id from it
+                tuple(DerivedIds.derivedRowKey(submission, "items.extra.parts", second, 1).toString(),
+                    RowKeyKind.DERIVED, null, second.toString()),
+                tuple(DerivedIds.derivedRowKey(submission, "items", null, 3).toString(), RowKeyKind.DUPLICATE_ID,
+                    "01J2Q7Y0V6M3N4P5R6S7T8V9W1", null));
+        assertThat(normalized.rows()).extracting(r -> r.values().get(0).value().intValue()).containsExactly(1, 2, 5, 3);
+        assertThat(normalized.flags()).containsExactly(entry(NormalizationFlag.DUPLICATE_ID, 2));
+        assertThat(normalize("""
+            {'items': [{'_id': '01J2Q7Y0V6M3N4P5R6S7T8V9W1', 'count': 1},
+                       {'_id': '01J2Q7Y0V6M3N4P5R6S7T8V9W1', 'count': 2}]}""").rows())
+            .extracting(NormalizedRow::id)
+            .as("the same document gets the same ids").containsExactly("01J2Q7Y0V6M3N4P5R6S7T8V9W1", second.toString());
     }
 
     @Test
-    void oneFieldUnderTwoStoredNamesIsReportedAndBothValuesAreKept() {
+    void aDerivedIdAnEarlierRowHasIsReplacedByTheNextAttempt() {
+        // one ULID stored in two cases: two parents with one key, so their first nested rows derive one id
+        NormalizedSubmission normalized = normalize("""
+            {'items': [{'_id': '01J2Q7Y0V6M3N4P5R6S7T8V9W1', 'extra': {'parts': [{'qty': 1}]}},
+                       {'_id': '01j2q7y0v6m3n4p5r6s7t8v9w1', 'extra': {'parts': [{'qty': 2}]}}]}""");
+
+        UUID submission = DerivedIds.submissionKey(SUBMISSION);
+        UUID parentKey = DerivedIds.ulidToUuid("01J2Q7Y0V6M3N4P5R6S7T8V9W1");
+        assertThat(normalized.rows())
+            .extracting(NormalizedRow::id, NormalizedRow::keyKind, NormalizedRow::parentRowId)
+            .containsExactly(
+                tuple("01J2Q7Y0V6M3N4P5R6S7T8V9W1", RowKeyKind.CLIENT, null),
+                tuple(DerivedIds.derivedRowKey(submission, "items.extra.parts", parentKey, 1).toString(),
+                    RowKeyKind.DERIVED, "01J2Q7Y0V6M3N4P5R6S7T8V9W1"),
+                tuple("01j2q7y0v6m3n4p5r6s7t8v9w1", RowKeyKind.CLIENT, null),
+                tuple(DerivedIds.duplicateRowKey(submission, "items.extra.parts", parentKey, 1, 2).toString(),
+                    RowKeyKind.DUPLICATE_ID, "01j2q7y0v6m3n4p5r6s7t8v9w1"));
+        assertThat(normalized.flags()).containsExactly(entry(NormalizationFlag.DUPLICATE_ID, 1));
+    }
+
+    @Test
+    void aSecondValueForAFieldKeepsThePinnedVersionsAndUnmapsTheOther() {
         // the field was renamed between versions, and the document holds the old name and the new one
         NormalizedSubmission normalized = normalize("{'details': {'old_name': 'a', 'new_name': 'b'}}");
 
-        assertThat(normalized.values()).extracting(FieldValue::path, FieldValue::fromPinnedVersion)
-            .containsExactly(tuple("details.new_name", true), tuple("details.old_name", false));
-        assertThat(normalized.duplicateValueKeys()).containsExactly(
-            new NormalizedSubmission.ValueKey(null, section("details"), fieldId("deUidRename")));
+        assertThat(normalized.values()).extracting(FieldValue::path, FieldValue::fromPinnedVersion, FieldValue::fieldId)
+            .containsExactly(tuple("details.new_name", true, fieldId("deUidRename")));
+        assertThat(normalized.unmapped()).extracting(UnmappedValue::path, UnmappedValue::reason, u -> u.value().asText())
+            .containsExactly(tuple("details.old_name", UnmappedReason.FIELD_ALREADY_HAS_VALUE, "a"));
+        assertThat(normalized.flags()).containsExactly(entry(NormalizationFlag.FIELD_ALREADY_HAS_VALUE, 1));
+    }
+
+    @Test
+    void withoutThePinnedVersionsValueTheFirstInWalkOrderStays() {
+        // two older names of one field, neither from the pinned version
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+            .field("deUidRenamed", null, "alpha", "Text").build(FORM);
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+            .field("deUidRenamed", null, "beta", "Text").build(FORM);
+        FormVersionDefinition v3 = version("01JV0000000000000000000003", "fvUid000003", 3)
+            .field("deUidRenamed", null, "gamma", "Text").build(FORM);
+        NormalizedSubmission normalized = SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, "fvUid000003",
+            json("{'beta': 'b', 'alpha': 'a'}")), FormDefinition.of(FORM, List.of(v1, v2, v3)));
+
+        assertThat(normalized.values()).extracting(FieldValue::path).containsExactly("alpha");
+        assertThat(normalized.unmapped()).extracting(UnmappedValue::path, UnmappedValue::reason)
+            .containsExactly(tuple("beta", UnmappedReason.FIELD_ALREADY_HAS_VALUE));
     }
 
     @Test

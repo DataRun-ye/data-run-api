@@ -21,12 +21,16 @@ public enum NormalizationFlag {
     REPEATING_SECTION_HOLDS_NON_ROWS,
     /** Values unmapped because their field's data element no longer exists. */
     FIELD_WITHOUT_ID,
+    /** Values unmapped because their row (or the submission) already has a value for the same section and field. */
+    FIELD_ALREADY_HAS_VALUE,
     /** Values unmapped because they lie deeper than the walk goes. */
     NESTED_TOO_DEEP,
     /** The stored document is not a JSON object. Counted once. */
     DOCUMENT_NOT_AN_OBJECT,
     /** Values kept whole that do not parse as their field's value type ({@link FieldValue#issue()}). */
-    VALUE_ISSUE;
+    VALUE_ISSUE,
+    /** Rows whose id was already taken by an earlier row of the submission, given a derived id instead. */
+    DUPLICATE_ID;
 
     /** The flag that counts values unmapped for this reason. */
     static NormalizationFlag of(UnmappedReason reason) {
