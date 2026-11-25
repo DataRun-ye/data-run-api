@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd"
+    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!--
+      The submission feed, contract version 1 (docs/features/submission-feed/contract.md): the current state of every
+      submission for downstream analytics, in its own schema, feed, which downstream's Airbyte reads; and the
+      publisher's bookkeeping, in schema feed_ops, which nothing outside DataRun reads.
+
+      The five streams, with the contract's names, types, nullability and keys:
+      - submission and submission_row: one record per submission and per row, rewritten in place with a new position
+        at each change (Incremental, Append + Deduped, cursor field position). position comes from one sequence for
+        both, feed.position_seq, with CACHE 1, so that two sessions never interleave cached values; the publisher
+        takes it under its lock, in commit order (contract 8);
+      - form_field and form_section: the dictionary, rewritten in place (Full Refresh, Overwrite);
+      - freshness: one record per feed (Full Refresh, Overwrite).
+
+      The cursor index is a BRIN on position (pages_per_range 4, autosummarize on), with fillfactor 80 on both
+      submission streams, the physical design the feed's spike measured (2026-11-25, phase 2): since PostgreSQL 16 an
+      update that changes only BRIN-indexed columns can be a HOT update, and a range's maximum widens with every change
+      on its pages, so a read of position >= cursor still reads only what changed. A unique btree on position would make
+      every rewrite a non-HOT update. Uniqueness of positions holds by construction (one sequence, one writer under one
+      lock) and integrity check 12 counts any position used twice. On these two tables the fixed-width columns come
+      first, as the spike measured them, so no padding falls between them; consumers select columns by name, and the
+      order is not part of the contract.
+
+      Ids are text, opaque, each equal to the id column of the public table it names (contract 5). No foreign key
+      leaves the schema: the feed is derived from the journal, its records outlive nothing they name, and a key would
+      lock public tables at each write.
+
+      Only the publisher (org.nmcpye.datarun.submission.feed.publisher) writes these schemas. Downstream's grant on
+      feed is changeset 20261125-d02; nothing grants feed_ops.
+
+      Additive only: two new schemas, no existing object touched. Rollback drops what this created; every record can
+      be published again from the journal. Roll back only after downstream has deselected the feed's streams
+      (contract, Rollout). DROP SCHEMA without CASCADE refuses if anything else was put in either schema.
+    -->
+    <changeSet id="20261125-d01-feed-schema" author="datarun">
+        <sql>CREATE SCHEMA feed</sql>
+        <sql>
+            COMMENT ON SCHEMA feed IS 'The submission feed, contract version 1 (docs/features/submission-feed/contract.md): current state for downstream analytics. Written only by the feed publisher.'
+        </sql>
+        <sql>CREATE SCHEMA feed_ops</sql>
+        <sql>
+            COMMENT ON SCHEMA feed_ops IS 'The submission feed publisher''s bookkeeping. Never granted, never part of the analytics copy.'
+        </sql>
+
+        <sql>CREATE SEQUENCE feed.position_seq AS bigint START WITH 1 INCREMENT BY 1 NO CYCLE CACHE 1</sql>
+        <sql>
+            COMMENT ON SEQUENCE feed.position_seq IS 'The feed''s position, shared by submission and submission_row; CACHE 1, taken under the publisher''s lock in commit order.'
+        </sql>
+
+        <sql>
+            CREATE TABLE feed.submission (
+                position         bigint      NOT NULL,
+                version          bigint      NOT NULL,
+                created_at       timestamptz NOT NULL,
+                entered_start_at timestamptz,
+                entered_end_at   timestamptz,
+                changed_at       timestamptz NOT NULL,
+                published_at     timestamptz NOT NULL,
+                deleted          boolean     NOT NULL,
+                id               text        NOT NULL,
+                form_id          text        NOT NULL,
+                form_version_id  text,
+                assignment_id    text        NOT NULL,
+                team_id          text        NOT NULL,
+                org_unit_id      text        NOT NULL,
+                activity_id      text        NOT NULL,
+                field_values     jsonb       NOT NULL,
+                unmapped_values  jsonb,
+                CONSTRAINT pk_feed_submission PRIMARY KEY (id)
+            ) WITH (fillfactor = 80)
+        </sql>
+        <sql>
+            CREATE INDEX idx_feed_submission_position ON feed.submission
+                USING brin (position) WITH (pages_per_range = 4, autosummarize = on)
+        </sql>
+        <sql>
+            COMMENT ON TABLE feed.submission IS 'Stream submission: one record per submission, live or deleted; key id, cursor field position.'
+        </sql>
+
+        <sql>
+            CREATE TABLE feed.submission_row (
+                position           bigint      NOT NULL,
+                changed_in_version bigint      NOT NULL,
+                published_at       timestamptz NOT NULL,
+                row_index          integer     NOT NULL,
+                deleted            boolean     NOT NULL,
+                submission_id      text        NOT NULL,
+                id                 text        NOT NULL,
+                id_origin          text        NOT NULL,
+                parent_row_id      text,
+                section_id         text        NOT NULL,
+                field_values       jsonb       NOT NULL,
+                unmapped_values    jsonb,
+                CONSTRAINT pk_feed_submission_row PRIMARY KEY (submission_id, id)
+            ) WITH (fillfactor = 80)
+        </sql>
+        <sql>
+            CREATE INDEX idx_feed_submission_row_position ON feed.submission_row
+                USING brin (position) WITH (pages_per_range = 4, autosummarize = on)
+        </sql>
+        <sql>
+            COMMENT ON TABLE feed.submission_row IS 'Stream submission_row: one record per row ever published in a submission''s current record; key (submission_id, id), cursor field position.'
+        </sql>
+
+        <sql>
+            CREATE TABLE feed.form_field (
+                form_id             text        NOT NULL,
+                form_version_id     text        NOT NULL,
+                form_version_number integer     NOT NULL,
+                field_id            text        NOT NULL,
+                section_id          text,
+                repeat_section_id   text,
+                name                text        NOT NULL,
+                label               jsonb,
+                value_type          text,
+                option_set_id       text,
+                mandatory           boolean,
+                sort_order          integer,
+                published_at        timestamptz NOT NULL,
+                CONSTRAINT uk_feed_form_field UNIQUE NULLS NOT DISTINCT (form_version_id, section_id, field_id)
+            )
+        </sql>
+        <sql>
+            COMMENT ON TABLE feed.form_field IS 'Stream form_field (the dictionary): one record per field placement per form version; unique (form_version_id, section_id, field_id), nulls not distinct.'
+        </sql>
+
+        <sql>
+            CREATE TABLE feed.form_section (
+                form_id             text        NOT NULL,
+                form_version_id     text        NOT NULL,
+                form_version_number integer     NOT NULL,
+                section_id          text        NOT NULL,
+                parent_section_id   text,
+                name                text,
+                label               jsonb,
+                repeatable          boolean     NOT NULL,
+                sort_order          integer,
+                published_at        timestamptz NOT NULL,
+                CONSTRAINT pk_feed_form_section PRIMARY KEY (form_version_id, section_id)
+            )
+        </sql>
+        <sql>
+            COMMENT ON TABLE feed.form_section IS 'Stream form_section (the dictionary): one record per section per form version; key (form_version_id, section_id).'
+        </sql>
+
+        <sql>
+            CREATE TABLE feed.freshness (
+                feed                           text        NOT NULL,
+                last_position                  bigint,
+                last_published_at              timestamptz,
+                last_changed_at                timestamptz,
+                backlog                        bigint      NOT NULL,
+                oldest_unpublished_at          timestamptz,
+                pending                        bigint      NOT NULL,
+                oldest_pending_at              timestamptz,
+                dead                           bigint      NOT NULL,
+                unpublished                    bigint,
+                last_reconciled_at             timestamptz,
+                first_publication_completed_at timestamptz,
+                checked_at                     timestamptz NOT NULL,
+                CONSTRAINT pk_feed_freshness PRIMARY KEY (feed)
+            )
+        </sql>
+        <sql>
+            COMMENT ON TABLE feed.freshness IS 'Stream freshness: how far each feed has got and what waits; one record per feed, key feed (submissions).'
+        </sql>
+        <rollback>
+            <sql>DROP TABLE feed.freshness</sql>
+            <sql>DROP TABLE feed.form_section</sql>
+            <sql>DROP TABLE feed.form_field</sql>
+            <sql>DROP TABLE feed.submission_row</sql>
+            <sql>DROP TABLE feed.submission</sql>
+            <sql>DROP SEQUENCE feed.position_seq</sql>
+            <sql>DROP SCHEMA feed_ops</sql>
+            <sql>DROP SCHEMA feed</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
