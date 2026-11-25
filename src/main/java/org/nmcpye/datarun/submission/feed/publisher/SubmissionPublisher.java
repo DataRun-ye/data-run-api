@@ -11,8 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -43,7 +46,8 @@ import java.util.function.IntSupplier;
  * <p><b>After the live backlog</b> the ETL's poll calls {@link #publishAfterBacklog} for one batch at a time, the
  * live backlog first again after each: pending changes due for a retry, each failure counting an attempt until the
  * cap makes it dead; then republish marks, each written again at the same version with new positions, its mark kept
- * while it fails ({@link RepublishMarks}). Each batch is one transaction under the feed's lock, each submission in its own savepoint, and
+ * while it fails ({@link RepublishMarks}); then reconcile, which publishes every head the feed lacks or holds at another
+ * version, at start (also switch-on) and nightly ({@link Reconcile}). Each batch is one transaction under the feed's lock, each submission in its own savepoint, and
  * stops starting submissions once it has run half the feed part's time limit, so it holds the lock briefly.</p>
  *
  * <p><b>The savepoint is a JDBC savepoint on the transaction's connection.</b> Spring's {@code Propagation.NESTED} is
@@ -65,7 +69,10 @@ public class SubmissionPublisher {
     private final FeedWriter writer;
     private final PendingChanges pending;
     private final RepublishMarks republishMarks;
+    private final Reconcile reconcile = new Reconcile();
+    private final Freshness freshness = new Freshness();
     private final TransactionTemplate afterBacklog;
+    private final TransactionTemplate reading;
     private final Map<FeedWriter.Outcome, Counter> changes;
     private final Counter failures;
     private final Map<NormalizationFlag, Counter> flags;
@@ -93,6 +100,8 @@ public class SubmissionPublisher {
         this.afterBacklog = new TransactionTemplate(transactionManager);
         // a backstop: each submission's own statements stop at the feed part's limit
         this.afterBacklog.setTimeout((int) Math.max(1, partTimeout.multipliedBy(2).toSeconds()));
+        this.reading = new TransactionTemplate(transactionManager);
+        this.reading.setReadOnly(true);
         Map<FeedWriter.Outcome, Counter> byOutcome = new EnumMap<>(FeedWriter.Outcome.class);
         for (FeedWriter.Outcome outcome : FeedWriter.Outcome.values()) {
             byOutcome.put(outcome, changeCounter(registry, outcome.name().toLowerCase()));
@@ -161,7 +170,8 @@ public class SubmissionPublisher {
 
     /**
      * Publishes one batch of the work that waits behind the live backlog: pending changes due for a retry, else
-     * republish marks. Called by the ETL's poll once no outbox row is due, again after each batch that did something.
+     * republish marks, else reconcile's next submissions. Called by the ETL's poll once no outbox row is due, again
+     * after each batch that did something.
      *
      * @return whether the batch did anything; false when nothing waits, or the feed is off
      */
@@ -169,7 +179,59 @@ public class SubmissionPublisher {
         if (!isOn()) {
             return false;
         }
-        return retryPending() > 0 || republish() > 0;
+        return retryPending() > 0 || republish() > 0 || reconcileBatch();
+    }
+
+    /** Requests a reconcile pass at start, which is also switch-on: the switch is read at start. */
+    @EventListener(ApplicationReadyEvent.class)
+    public void reconcileAtStart() {
+        if (isOn()) {
+            reconcile.request();
+        }
+    }
+
+    /** Requests a reconcile pass every night ({@code datarun.feed.reconcile-cron}, 02:00 by default). */
+    @Scheduled(cron = "${datarun.feed.reconcile-cron:0 0 2 * * *}")
+    public void reconcileNightly() {
+        if (isOn()) {
+            reconcile.request();
+        }
+    }
+
+    /**
+     * Publishes reconcile's next submissions, scanning further when none are queued, and records the pass in
+     * freshness once it ends. Whether a pass ran.
+     */
+    private boolean reconcileBatch() {
+        synchronized (reconcile) {
+            if (!reconcile.begin()) {
+                return false;
+            }
+            int batchSize = Math.max(1, properties.getBatchSize());
+            int scanSize = Math.max(1, properties.getReconcileScanSize());
+            List<String> batch = reading.execute(status -> reconcile.next(jdbc, scanSize, batchSize));
+            if (batch != null && !batch.isEmpty()) {
+                int[] failed = {0};
+                int attempted = inFeedTransaction(() -> publishEach(batch, false, (submissionId, attempt) -> {
+                    if (attempt.failure() != null) {
+                        failed[0]++;
+                        recordFailure(submissionId, attempt);
+                    }
+                }));
+                reconcile.attempted(attempted, failed[0]);
+            }
+            Reconcile.Summary summary = reconcile.finishIfDone();
+            if (summary != null) {
+                inFeedTransaction(() -> {
+                    freshness.reconciled(jdbc, summary);
+                    return 0;
+                });
+                log.info("Reconcile compared {} submissions with their heads: {} were unpublished, {} published, {} "
+                        + "failed, {} left to their retries", summary.checked(), summary.differing(), summary.published(),
+                    summary.failed(), summary.waiting());
+            }
+            return true;
+        }
     }
 
     /** Retries the pending changes that are due, in one transaction under the feed's lock. */
@@ -271,9 +333,12 @@ public class SubmissionPublisher {
     /** Records a failed feed part as a pending change, in the current transaction, and logs it without values. */
     private void recordFailure(String submissionId, Attempt attempt) {
         PendingChanges.Failure recorded = pending.recordFailure(jdbc, submissionId, attempt.failure());
-        if (recorded.dead()) {
+        if (recorded.newlyDead()) {
             log.error("The feed gave up on submission {} after {} failures ({}, {}); reconcile publishes it once the "
                 + "cause is fixed", submissionId, recorded.attempts(), attempt.failure(), attempt.type());
+        } else if (recorded.dead()) {
+            log.warn("The feed part of dead submission {} failed again ({}, {}); reconcile tries it at each pass",
+                submissionId, attempt.failure(), attempt.type());
         } else {
             log.warn("The feed part of submission {} failed ({}, {}); it waits for a retry after the live backlog, "
                     + "failure {} of {}", submissionId, attempt.failure(), attempt.type(), recorded.attempts(),

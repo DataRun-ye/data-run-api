@@ -21,10 +21,11 @@ final class PendingChanges {
     /**
      * What a failure left.
      *
-     * @param attempts the change's failures so far
-     * @param dead     whether it is dead
+     * @param attempts  the change's failures so far
+     * @param dead      whether it is dead
+     * @param newlyDead whether this failure made it dead
      */
-    record Failure(int attempts, boolean dead) {
+    record Failure(int attempts, boolean dead, boolean newlyDead) {
     }
 
     private static final String RECORD_FAILURE = """
@@ -39,7 +40,7 @@ final class PendingChanges {
             next_attempt_at = now() + make_interval(secs => least(:maxDelaySeconds,
                                                                   :delaySeconds * power(2, least(p.attempts, 40)))),
             dead_at = coalesce(p.dead_at, CASE WHEN p.attempts + 1 >= :maxAttempts THEN now() END)
-        RETURNING attempts, dead_at IS NOT NULL AS dead""";
+        RETURNING attempts, dead_at IS NOT NULL AS dead, dead_at IS NOT DISTINCT FROM now() AS newly_dead""";
 
     /** The pending changes due for a retry, longest waiting first; dead ones never. */
     private static final String DUE = """
@@ -67,6 +68,6 @@ final class PendingChanges {
                 .addValue("delaySeconds", (double) properties.getRetryDelay().toMillis() / 1000)
                 .addValue("maxDelaySeconds", (double) properties.getMaxRetryDelay().toMillis() / 1000)
                 .addValue("maxAttempts", properties.getMaxAttempts()),
-            (rs, n) -> new Failure(rs.getInt("attempts"), rs.getBoolean("dead")));
+            (rs, n) -> new Failure(rs.getInt("attempts"), rs.getBoolean("dead"), rs.getBoolean("newly_dead")));
     }
 }

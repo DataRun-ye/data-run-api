@@ -1,0 +1,145 @@
+package org.nmcpye.datarun.submission.feed.publisher;
+
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+/**
+ * Reconcile (contract 8, item 4): a pass over every submission, in id order, comparing its head's version with the
+ * version the feed holds. A submission the feed lacks or holds at another version is queued for publication, which the
+ * publisher does in batches behind the live backlog, each under the feed's lock and reading the head again. That covers
+ * periods with the feed off, a rollback to a release without it, dead outbox rows, and anything else that left a head
+ * unpublished.
+ *
+ * <p>A pass is requested at start (the switch is read at start, so this is also switch-on) and nightly; a request
+ * during a pass starts another after it. A submission with a pending change that is not dead is counted but left to
+ * its retries; a dead one is tried, so a fixed cause gets it published. A submission with no revision has no head to
+ * publish (integrity check 11 counts it). The pass is held in memory: a restart starts a new one, which skips every
+ * head already held.</p>
+ *
+ * <p>Not safe for concurrent use: the ETL's poll runs it, one batch at a time.</p>
+ */
+final class Reconcile {
+
+    /** The next submissions after a cursor, each with its head's version, the held version and its pending state. */
+    private static final String SCAN = """
+        SELECT s.id, h.version AS head, f.version AS held, p.submission_id IS NOT NULL AS pending,
+               p.dead_at IS NOT NULL AS dead
+        FROM data_submission s
+        CROSS JOIN LATERAL (SELECT max(r.version) AS version FROM journal.submission_revision r
+                            WHERE r.submission_id = s.id) h
+        LEFT JOIN feed.submission f ON f.id = s.id
+        LEFT JOIN feed_ops.pending p ON p.submission_id = s.id
+        WHERE s.id > :after
+        ORDER BY s.id
+        LIMIT :limit""";
+
+    /**
+     * What a finished pass found.
+     *
+     * @param checked   submissions compared with their head
+     * @param differing those the feed lacked or held at another version: the feed's {@code unpublished}
+     * @param published those published by the pass
+     * @param failed    those whose publication failed, now pending changes
+     * @param waiting   those left to the retries of their pending change
+     */
+    record Summary(long checked, long differing, long published, long failed, long waiting) {
+
+        /** Whether the pass wrote every head the feed lacked or held at another version. */
+        boolean complete() {
+            return failed == 0 && waiting == 0;
+        }
+    }
+
+    private final AtomicBoolean requested = new AtomicBoolean();
+
+    private boolean running;
+    private String after;
+    private boolean scannedAll;
+    private final Deque<String> queue = new ArrayDeque<>();
+    private long checked;
+    private long differing;
+    private long published;
+    private long failed;
+    private long waiting;
+
+    /** Requests a pass: the next batch behind the live backlog starts one, or the next after the current pass. */
+    void request() {
+        requested.set(true);
+    }
+
+    /** Starts a pass if one was requested and none runs; whether a pass runs. */
+    boolean begin() {
+        if (!running && requested.getAndSet(false)) {
+            running = true;
+            after = "";
+            scannedAll = false;
+            queue.clear();
+            checked = 0;
+            differing = 0;
+            published = 0;
+            failed = 0;
+            waiting = 0;
+        }
+        return running;
+    }
+
+    /**
+     * The next submissions to publish, at most {@code limit}, scanning further while none are queued; empty once the
+     * pass has scanned every submission and published its queue. The scan reads in the caller's transaction.
+     */
+    List<String> next(NamedParameterJdbcTemplate jdbc, int scanSize, int limit) {
+        while (queue.isEmpty() && !scannedAll) {
+            scan(jdbc, scanSize);
+        }
+        return queue.stream().limit(limit).toList();
+    }
+
+    private void scan(NamedParameterJdbcTemplate jdbc, int scanSize) {
+        int[] read = {0};
+        jdbc.query(SCAN, new MapSqlParameterSource().addValue("after", after).addValue("limit", scanSize), rs -> {
+            read[0]++;
+            after = rs.getString("id");
+            Long head = rs.getObject("head", Long.class);
+            if (head == null) {
+                return;
+            }
+            checked++;
+            if (Objects.equals(head, rs.getObject("held", Long.class))) {
+                return;
+            }
+            differing++;
+            if (rs.getBoolean("pending") && !rs.getBoolean("dead")) {
+                waiting++;
+            } else {
+                queue.add(rs.getString("id"));
+            }
+        });
+        if (read[0] < scanSize) {
+            scannedAll = true;
+        }
+    }
+
+    /** Counts the first {@code attempted} queued submissions as done, {@code failedOnes} of them failed. */
+    void attempted(int attempted, int failedOnes) {
+        for (int i = 0; i < attempted && !queue.isEmpty(); i++) {
+            queue.poll();
+        }
+        published += attempted - failedOnes;
+        failed += failedOnes;
+    }
+
+    /** Ends the pass once it has nothing left to publish; its summary, or {@code null} while it goes on. */
+    Summary finishIfDone() {
+        if (!running || !scannedAll || !queue.isEmpty()) {
+            return null;
+        }
+        running = false;
+        return new Summary(checked, differing, published, failed, waiting);
+    }
+}
