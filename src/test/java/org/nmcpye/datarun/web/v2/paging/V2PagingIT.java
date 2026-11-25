@@ -57,6 +57,21 @@ class V2PagingIT {
         assertThat(last.getHeader(HttpHeaders.LINK)).isNull();
     }
 
+    /** A raw '[' or '|' in the query once made the next link throw, so every such page was a 500. */
+    @Test
+    void aQueryWithCharactersAUriCannotHoldStillGetsItsNextLink() throws Exception {
+        MockHttpServletResponse response = mvc.perform(MockMvcRequestBuilders.get(ITEMS)
+            .param("group", "odd").param("limit", "1")
+            .with(request -> {
+                request.setQueryString("group=odd&tags=[x]&sep=|&limit=1");
+                return request;
+            })).andReturn().getResponse();
+        assertThat(response.getStatus()).isEqualTo(200);
+        String link = response.getHeader(HttpHeaders.LINK);
+        assertThat(link).startsWith("<" + ITEMS + "?group=odd&tags=%5Bx%5D&sep=%7C&limit=1&cursor=");
+        java.net.URI.create(link.substring(1, link.indexOf('>')));
+    }
+
     @Test
     void theDefaultLimitIs50() throws Exception {
         JsonNode body = json.readTree(get(ITEMS).getContentAsByteArray());

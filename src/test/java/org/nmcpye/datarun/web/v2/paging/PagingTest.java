@@ -135,6 +135,20 @@ class PagingTest {
             .as("a search body carries next in the body only").isFalse();
     }
 
+    /** A raw '[', '|', space, non-ASCII character or stray '%' in the query never fails the request's next link. */
+    @Test
+    void theNextLinkIsAValidUriWhateverTheQueryHolds() {
+        MockHttpServletRequest get = new MockHttpServletRequest("GET", "/api/v2/things");
+        get.setQueryString("group=a&tags=[x]&sep=|&q=a+b&raw=sp ace&name=%E2%9C%93&odd=50%&arabic=\u0634&cursor=old&limit=2");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(get));
+
+        String link = PageResponses.ok(new Page<>(List.of("x"), "next-token")).getHeaders().getFirst(HttpHeaders.LINK);
+
+        assertThat(link).isEqualTo("</api/v2/things?group=a&tags=%5Bx%5D&sep=%7C&q=a+b&raw=sp%20ace&name=%E2%9C%93"
+            + "&odd=50%25&arabic=%D8%B4&limit=2&cursor=next-token>; rel=\"next\"");
+        java.net.URI.create(link.substring(1, link.indexOf('>')));
+    }
+
     private static String b64(String json) {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(json.getBytes(StandardCharsets.UTF_8));
     }

@@ -118,7 +118,9 @@ all of them.
   `PageQuery` as a parameter.
 - The answer is `{"items": [...], "next": <cursor or null>}`; `next` is always
   present. A GET also sends `Link: <...>; rel="next"`, a relative reference to
-  the same request with the cursor replaced. There are no totals.
+  the same request with the cursor replaced; characters a URI cannot hold
+  literally (a raw `[`, `|`, space or non-ASCII character) are percent-encoded,
+  so the link is always valid. There are no totals.
 - A cursor is base64url text holding the sort key of the last item shown and
   a binding to its query (`QueryBinding`: the list's name and its filters,
   order-insensitive; the limit may change between pages). A cursor of another
