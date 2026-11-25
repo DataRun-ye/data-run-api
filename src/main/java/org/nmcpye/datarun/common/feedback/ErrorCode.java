@@ -72,7 +72,9 @@ public enum ErrorCode {
     // E4111, E4112, E4113, E4115 and E4116 are reserved: do not reuse them. The server no longer raises them, but
     // installed apps 6.0.0 to 6.1.2 still show a fixed text for each (rejected, form missing, team missing, form
     // version conflict, submission not found; data-run-mobile lib/commons/errors_management/
-    // d_error_localization.dart:85-90), so a new meaning would reach users under the old text.
+    // d_error_localization.dart:85-90), so a new meaning would reach users under the old text. E2015 (an unparsable
+    // sort, which 6.5.4 refused and 6.5.5 no longer reads) is reserved too: no installed app maps it, but the admin's
+    // tool, which this repository has not seen, may.
     E4114("your user is not part of the team {0} that created the submission: {1}"),
     E4117("Submission `{0}` contains an invalid Reference value at `{1}`"),
     E4118("Submission `{0}` repeats Reference `{1}` at `{2}`"),
