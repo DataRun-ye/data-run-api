@@ -1,9 +1,11 @@
 package org.nmcpye.datarun.submission.normalized;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,6 +47,7 @@ public final class FormDefinition {
     private final Map<String, Map<String, Resolution[]>> resolutionsByVersionUid;
     private final Map<String, Resolution[]> resolutionsWithoutPin;
     private final Set<String> ambiguousPaths;
+    private final Map<String, Map<String, List<String>>> dataPathsByField;
 
     /** The definition used when no definition of a form is stored: no versions, so no path resolves. */
     static final FormDefinition NO_VERSIONS = new FormDefinition("", List.of());
@@ -71,6 +74,7 @@ public final class FormDefinition {
         this.resolutionsByVersionUid = Map.copyOf(byVersion);
         this.resolutionsWithoutPin = resolveAll(candidates, null);
         this.ambiguousPaths = ambiguous(candidates);
+        this.dataPathsByField = dataPathsByField(this.versions);
     }
 
     /**
@@ -103,6 +107,18 @@ public final class FormDefinition {
 
     boolean isAmbiguous(String path) {
         return ambiguousPaths.contains(path);
+    }
+
+    /**
+     * Where each version of the form stores a field's values: the field's data paths, by version id, newest version
+     * first, and within a version in stored order (a version that places the field in two sections gives two paths).
+     * A version that does not place the field has no entry; a field no version places gives an empty map. The reverse
+     * of resolution, for readers that select or write by field id: search predicates, an edit's stored place.
+     *
+     * @param fieldId the field id: the stored id of a data element
+     */
+    public Map<String, List<String>> dataPaths(String fieldId) {
+        return fieldId == null ? Map.of() : dataPathsByField.getOrDefault(fieldId, Map.of());
     }
 
     /** The version a stored submission names by its uid. */
@@ -143,6 +159,27 @@ public final class FormDefinition {
             .thenComparing(c -> c.field() == null);
         candidatesByPath.values().forEach(list -> list.sort(order));
         return candidatesByPath;
+    }
+
+    /** Each field id's data paths, by version id, newest version first; fields without an id are never placed. */
+    private static Map<String, Map<String, List<String>>> dataPathsByField(List<FormVersionDefinition> newestFirst) {
+        Map<String, Map<String, List<String>>> building = new HashMap<>();
+        for (FormVersionDefinition version : newestFirst) {
+            for (FieldDefinition field : version.fields()) {
+                if (field.id() != null) {
+                    building.computeIfAbsent(field.id(), id -> new LinkedHashMap<>())
+                        .computeIfAbsent(version.id(), id -> new ArrayList<>())
+                        .add(field.path());
+                }
+            }
+        }
+        Map<String, Map<String, List<String>>> frozen = new HashMap<>();
+        building.forEach((fieldId, byVersion) -> {
+            Map<String, List<String>> versions = new LinkedHashMap<>();
+            byVersion.forEach((versionId, paths) -> versions.put(versionId, List.copyOf(paths)));
+            frozen.put(fieldId, Collections.unmodifiableMap(versions));
+        });
+        return Map.copyOf(frozen);
     }
 
     private static Set<String> ambiguous(Map<String, List<Candidate>> candidatesByPath) {

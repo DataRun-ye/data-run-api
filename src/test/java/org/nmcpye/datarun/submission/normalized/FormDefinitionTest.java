@@ -232,4 +232,34 @@ class FormDefinitionTest {
         assertThat(StoredShape.of(StoredForms.json("3"))).isEqualTo(StoredShape.LEAF);
         assertThat(StoredShape.of(StoredForms.json("'text'"))).isEqualTo(StoredShape.LEAF);
     }
+    /** The reverse of resolution: where every version stores a field's values, for search and edits by field id. */
+    @Test
+    void aFieldsDataPathsAreListedByVersionNewestFirst() {
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+            .section("visit", false)
+            .field("deUidMoved0", "visit", "moved", "Integer")
+            .build(FORM);
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+            .section("visit", false)
+            .section("visit.households", true)
+            .field("deUidMoved0", "visit.households", "moved_again", "Integer")
+            .field("deUidMoved0", null, "moved", "Integer")
+            .fieldWithoutDataElement("deUidGone00", null, "gone", "Text")
+            .build(FORM);
+        FormVersionDefinition v3 = version("01JV0000000000000000000003", "fvUid000003", 3)
+            .field("deUidOther0", null, "other", "Text")
+            .build(FORM);
+        FormDefinition form = FormDefinition.of(FORM, List.of(v1, v3, v2));
+
+        assertThat(form.dataPaths(fieldId("deUidMoved0"))).containsExactly(
+            org.assertj.core.api.Assertions.entry("01JV0000000000000000000002",
+                List.of("visit.households.moved_again", "moved")),
+            org.assertj.core.api.Assertions.entry("01JV0000000000000000000001", List.of("visit.moved")));
+        assertThat(form.dataPaths(fieldId("deUidOther0")))
+            .containsExactly(org.assertj.core.api.Assertions.entry("01JV0000000000000000000003", List.of("other")));
+        assertThat(form.dataPaths("01JD0000000000000000000099")).as("a field no version places").isEmpty();
+        assertThat(form.dataPaths(null)).isEmpty();
+        assertThatThrownBy(() -> form.dataPaths(fieldId("deUidMoved0")).clear())
+            .isInstanceOf(UnsupportedOperationException.class);
+    }
 }
