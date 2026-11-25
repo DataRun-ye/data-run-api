@@ -27,7 +27,7 @@ Package names are relative to `org.nmcpye.datarun`.
 | [`submission.feed`](../../src/main/java/org/nmcpye/datarun/submission/feed/) | the feed's switch and reader role; `publisher` writes the form dictionary (the submission streams are on `feat/feed-v1`) |
 | [`web.v2`](../../src/main/java/org/nmcpye/datarun/web/v2/) | v2's conventions (`api-v2.md`): problems, its security chain, `ApiCaller`, ids, paging, idempotent commands |
 | [`jpa.datasubmission.revision`](../../src/main/java/org/nmcpye/datarun/jpa/datasubmission/revision/) | the journal: `SubmissionRevisionWriter`, and `SubmissionRevisionReader` for conflict detection |
-| [`jpa.datasubmission.conflict`](../../src/main/java/org/nmcpye/datarun/jpa/datasubmission/conflict/) | conflict detection, called by `SubmissionUploads` for each upload item. It still takes the entity, the principal, the template context, the id generator and v1 `ErrorCode`, listed under Exceptions; its seam refactor is pending |
+| [`jpa.datasubmission.conflict`](../../src/main/java/org/nmcpye/datarun/jpa/datasubmission/conflict/) | conflict detection, called by `SubmissionUploads` for each upload item, which gives it plain values: the stored state, the phone copy with its row id tag, the uploader's user id, and a neutral refusal kind for the move rule |
 
 ## Retiring Derived
 
@@ -132,12 +132,6 @@ The two planned seams are being built for the feed (engineering, 2026-11-26).
 | [`OutboxClaimServiceImpl`](../../src/main/java/org/nmcpye/datarun/outbox/service/impl/OutboxClaimServiceImpl.java) | `etl.config.EtlProperties` (its claim lease) | the claim loop leaves `etl` |
 | [`OutboxProcessingServiceImpl`](../../src/main/java/org/nmcpye/datarun/outbox/service/impl/OutboxProcessingServiceImpl.java) | `etl.service.EtlRunService` (outcomes counted on the ETL's run) | the claim loop leaves `etl` |
 | [`DataTemplateInstanceServiceImpl`](../../src/main/java/org/nmcpye/datarun/jpa/datatemplate/service/DataTemplateInstanceServiceImpl.java) | `TemplateElementGeneratorService`: publishing a form version writes `canonical_element` in the same call ([`:144`](../../src/main/java/org/nmcpye/datarun/jpa/datatemplate/service/DataTemplateInstanceServiceImpl.java#L144)) | `canonical_element` goes |
-| `ConflictDetection` | `DataSubmission`: the stored entity from `SubmissionUploads`, whose uids it logs | removed by `refactor/conflict-detection-seam` |
-| `ConflictDetection` | `TemplateVersionContext`: the copy's form version, for the row id check | removed by `refactor/conflict-detection-seam` |
-| `ConflictDetection` | `MigrationRepeatIdGenerator`: whether the copy has rows without ids | removed by `refactor/conflict-detection-seam` |
-| `ConflictDetection` | `StoredSubmissionGuard`: whether the uploader made the submission | removed by `refactor/conflict-detection-seam` |
-| `ConflictDetection` | `CurrentUserDetails`: the uploader's access snapshot, for that question | removed by `refactor/conflict-detection-seam` |
-| `ConflictCheck` | `ErrorCode`: the v1 refusal codes E4124, E4114 and E4122 that keep a copy aside after a move | removed by `refactor/conflict-detection-seam` |
 
 Known and unguarded: [`CacheConfiguration.java:139`](../../src/main/java/org/nmcpye/datarun/config/CacheConfiguration.java#L139) names
 `RefTypeValueResolutionService.REF_RESOLUTION_CACHE_NAME`, a constant the compiler inlines, so no rule sees this use

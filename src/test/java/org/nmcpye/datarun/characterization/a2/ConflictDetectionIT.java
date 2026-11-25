@@ -273,7 +273,7 @@ class ConflictDetectionIT extends A2GoldenSupport {
         assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
         doAnswer(invocation -> jdbc.getJdbcTemplate().queryForObject("SELECT 1 / 0", Integer.class))
             .doCallRealMethod()
-            .when(journalReader).current(anyString());
+            .when(journalReader).revisions(anyString());
         assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed on the phone")))).isEqualTo(updated(uid));
 
         assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed again")))).isEqualTo(updated(uid));
@@ -649,7 +649,7 @@ class ConflictDetectionIT extends A2GoldenSupport {
         String uid = uid("cdError");
         assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
         doAnswer(invocation -> jdbc.getJdbcTemplate().queryForObject("SELECT 1 / 0", Integer.class))
-            .when(journalReader).current(anyString());
+            .when(journalReader).revisions(anyString());
 
         assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed on the phone")))).isEqualTo(updated(uid));
 

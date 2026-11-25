@@ -9,13 +9,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.nmcpye.datarun.common.exceptions.FailureShape;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.config.activation.ActivationSwitch;
 import org.nmcpye.datarun.config.activation.ActivationSwitches;
 import org.nmcpye.datarun.datatemplateelement.AbstractElement;
 import org.nmcpye.datarun.datatemplateelement.FormSectionConf;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.revision.SubmissionRevisionReader;
+import org.nmcpye.datarun.jpa.datasubmission.validation.StoredSubmissionGuard;
+import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
 import org.nmcpye.datarun.security.CurrentUserDetails;
 import org.nmcpye.datarun.submission.normalized.StoredJson;
@@ -356,7 +357,7 @@ public final class ConflictRehearsal implements AutoCloseable {
             changed.add(label + ", " + outcome(head, holder, state.get(), document, null));
             if (kind.equals("MOVE")) {
                 changed.add(label + ", refused for access (E4124), "
-                    + outcome(head, holder, state.get(), document, ErrorCode.E4124));
+                    + outcome(head, holder, state.get(), document, AccessRefusal.OUT_OF_SCOPE));
             }
         }
     }
@@ -541,12 +542,11 @@ public final class ConflictRehearsal implements AutoCloseable {
      * refuse it.
      */
     private String outcome(Head head, Holder holder, SubmissionRevisionReader.State state, JsonNode document,
-                           ErrorCode refusal) {
+                           AccessRefusal refusal) {
         store.clearLast();
-        PhoneCopy copy = copy(head, holder, state, document);
         try {
-            ConflictCheck check = detection.check(() -> copy, head.asStored(), template(state.formVersion()),
-                holder.userId(), user(holder.login()));
+            ConflictCheck check = detection.check(copy(head, state, document), storedState(head, holder),
+                holder.userId());
             if (check.answeredBeforeChecks()) {
                 return store.last() == null ? "changes nothing, before the checks"
                     : "counts on the open conflict, before the checks";
@@ -574,7 +574,8 @@ public final class ConflictRehearsal implements AutoCloseable {
         return "kept aside, " + kept.cause() + (kept.rowsLackIds() ? ", rows lack ids" : "");
     }
 
-    private static PhoneCopy copy(Head head, Holder holder, SubmissionRevisionReader.State state, JsonNode document) {
+    /** The copy as the upload builds it, tagged by the holder's form version before any id is minted. */
+    private PhoneCopy copy(Head head, SubmissionRevisionReader.State state, JsonNode document) {
         boolean deleted = false;
         ObjectNode item = REQUEST.createObjectNode();
         item.put("uid", head.uid());
@@ -585,14 +586,21 @@ public final class ConflictRehearsal implements AutoCloseable {
         item.put("status", state.status());
         item.set("formData", document);
         return new PhoneCopy(UploadRoute.LEGACY, item,
-            new ComparedState(document, deleted, state.assignment(), state.status()));
+            new ComparedState(document, deleted, state.assignment(), state.status()),
+            new MigrationRepeatIdGenerator(template(state.formVersion())).hasRowsWithoutIds(document));
+    }
+
+    /** The stored state as the upload gives it, the creator told by the upload's own guard. */
+    private static StoredState storedState(Head head, Holder holder) {
+        return new StoredState(head.id(), head.version(), head.document(), head.deleted(), head.assignment(),
+            head.status(), StoredSubmissionGuard.madeBy(head.asStored(), user(holder.login())));
     }
 
     // ------------------------------------------------------------------------------------------ reading
 
     /** A submission as the passes read it. */
     private record Head(String id, String uid, String form, String createdBy, String lastModifiedBy,
-                        boolean deleted, String assignment, String document) {
+                        boolean deleted, String assignment, String document, long version, String status) {
 
         DataSubmission asStored() {
             DataSubmission stored = new DataSubmission();
@@ -621,12 +629,13 @@ public final class ConflictRehearsal implements AutoCloseable {
     private Optional<Head> head(String id, boolean lock) {
         return jdbc.query("""
                 SELECT id, uid, template_uid, created_by, last_modified_by, coalesce(deleted, false) AS deleted,
-                       assignment_uid, form_data::text AS document
+                       assignment_uid, form_data::text AS document, lock_version, status
                 FROM data_submission WHERE id = :id""" + (lock ? " FOR NO KEY UPDATE" : ""),
             Map.of("id", id),
             (row, n) -> new Head(row.getString("id"), row.getString("uid"), row.getString("template_uid"),
                 row.getString("created_by"), row.getString("last_modified_by"), row.getBoolean("deleted"),
-                row.getString("assignment_uid"), row.getString("document"))).stream().findFirst();
+                row.getString("assignment_uid"), row.getString("document"), row.getLong("lock_version"),
+                row.getString("status"))).stream().findFirst();
     }
 
     private Optional<Holder> holder(Head head, Tally tally) {

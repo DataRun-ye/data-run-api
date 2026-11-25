@@ -1,5 +1,6 @@
 package org.nmcpye.datarun.jpa.datasubmission.command;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -13,10 +14,12 @@ import org.nmcpye.datarun.jpa.accessfilter.AssignmentFormAccessService;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
+import org.nmcpye.datarun.jpa.datasubmission.conflict.AccessRefusal;
 import org.nmcpye.datarun.jpa.datasubmission.conflict.ComparedState;
 import org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictCheck;
 import org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictDetection;
 import org.nmcpye.datarun.jpa.datasubmission.conflict.PhoneCopy;
+import org.nmcpye.datarun.jpa.datasubmission.conflict.StoredState;
 import org.nmcpye.datarun.jpa.datasubmission.conflict.UploadRoute;
 import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
@@ -45,6 +48,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -232,16 +236,15 @@ public class SubmissionUploads {
                 TemplateVersionContext template = templateVersionResolver.resolveByUid(
                     submission.getForm(),
                     submission.getFormVersion());
-                ConflictCheck conflict = conflictDetection.check(
-                    () -> phoneCopy(UploadRoute.LEGACY, objectMapper.valueToTree(submission), submission),
-                    stored, template, actor.userId(), actor.access());
+                ConflictCheck conflict = detectConflict(UploadRoute.LEGACY, () -> objectMapper.valueToTree(submission),
+                    submission, stored, template, actor);
                 if (conflict.answeredBeforeChecks()) {
                     return answeredUpdated(submission, summary);
                 }
                 try {
                     checkLegacy(submission, stored, template, actor);
                 } catch (ErrorCodeException refusal) {
-                    if (!conflict.keepsAsideOnRefusal(refusal.getErrorCode())) {
+                    if (!conflict.keepsAsideOnRefusal(accessRefusal(refusal))) {
                         throw refusal;
                     }
                     conflict.keepAside();
@@ -277,16 +280,16 @@ public class SubmissionUploads {
             submission,
             assignment,
             template.getTemplate());
-        ConflictCheck conflict = mode != IntakeMode.LIVE ? ConflictCheck.OFF : conflictDetection.check(
-            () -> phoneCopy(UploadRoute.VERSIONED, objectMapper.valueToTree(request), submission),
-            stored, template, actor.userId(), actor.access());
+        ConflictCheck conflict = mode != IntakeMode.LIVE ? ConflictCheck.OFF
+            : detectConflict(UploadRoute.VERSIONED, () -> objectMapper.valueToTree(request), submission, stored,
+            template, actor);
         if (conflict.answeredBeforeChecks()) {
             return answeredUpdated(submission, summary);
         }
         try {
             authorize(submission, stored, assignment, actor.access(), assignment.getTeam().getUid());
         } catch (ErrorCodeException refusal) {
-            if (!conflict.keepsAsideOnRefusal(refusal.getErrorCode())) {
+            if (!conflict.keepsAsideOnRefusal(accessRefusal(refusal))) {
                 throw refusal;
             }
             try {
@@ -323,15 +326,57 @@ public class SubmissionUploads {
     }
 
     /**
-     * The phone copy conflict detection reads: the upload item as received and its document, before any id is minted,
-     * with the assignment the upload resolved and its status.
+     * Conflict detection's check of a live upload item, or {@link ConflictCheck#OFF} for a new submission or with
+     * detection off. Detection reads only plain values, built here and only when it runs, from what the upload holds
+     * under the submission lock: the copy as received, tagged before any row id is minted; the stored submission's
+     * state, with whether the uploader made it; and the uploader's user id.
      */
-    private static PhoneCopy phoneCopy(UploadRoute route, JsonNode uploadItem, DataSubmission submission) {
-        return new PhoneCopy(route, uploadItem, new ComparedState(
+    private ConflictCheck detectConflict(UploadRoute route, Supplier<JsonNode> uploadItem, DataSubmission submission,
+                                         DataSubmission stored, TemplateVersionContext template,
+                                         SubmissionActor actor) {
+        if (stored == null || !conflictDetection.isOn()) {
+            return ConflictCheck.OFF;
+        }
+        PhoneCopy copy = new PhoneCopy(route, uploadItem.get(), new ComparedState(
             submission.getFormData(),
             Boolean.TRUE.equals(submission.getDeleted()),
             submission.getAssignment(),
-            submission.getStatus() == null ? null : submission.getStatus().name()));
+            submission.getStatus() == null ? null : submission.getStatus().name()),
+            new MigrationRepeatIdGenerator(template).hasRowsWithoutIds(submission.getFormData()));
+        StoredState state = new StoredState(
+            stored.getId(),
+            stored.getLockVersion() == null ? 0 : stored.getLockVersion(),
+            documentText(stored.getFormData()),
+            Boolean.TRUE.equals(stored.getDeleted()),
+            stored.getAssignment(),
+            stored.getStatus() == null ? null : stored.getStatus().name(),
+            StoredSubmissionGuard.madeBy(stored, actor.access()));
+        return conflictDetection.check(copy, state, actor.userId());
+    }
+
+    private String documentText(JsonNode document) {
+        try {
+            return document == null ? null : objectMapper.writeValueAsString(document);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("A stored document could not be written as JSON", e);
+        }
+    }
+
+    /**
+     * The access refusals of the upload checks that a server-side move can cause, which the move rule keeps aside;
+     * null for any other refusal, which stands.
+     */
+    private static AccessRefusal accessRefusal(ErrorCodeException refusal) {
+        ErrorCode code = refusal.getErrorCode();
+        if (code == null) {
+            return null;
+        }
+        return switch (code) {
+            case E4124 -> AccessRefusal.OUT_OF_SCOPE;
+            case E4114 -> AccessRefusal.ASSIGNMENT_REFUSED;
+            case E4122 -> AccessRefusal.FORM_NOT_PERMITTED;
+            default -> null;
+        };
     }
 
     /**

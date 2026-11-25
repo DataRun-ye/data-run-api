@@ -15,7 +15,6 @@ import org.nmcpye.datarun.jpa.activity.Activity;
 import org.nmcpye.datarun.jpa.assignment.Assignment;
 import org.nmcpye.datarun.jpa.assignment.repository.AssignmentRepository;
 import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
-import org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictCheck;
 import org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictDetection;
 import org.nmcpye.datarun.jpa.datasubmission.revision.RevisionContext;
 import org.nmcpye.datarun.jpa.datasubmission.service.DataSubmissionService;
@@ -114,7 +113,7 @@ class SubmissionUploadsTest {
         submissionRepository = mock(DataSubmissionRepository.class);
         submissionLock = mock(SubmissionLock.class);
         conflictDetection = mock(ConflictDetection.class);
-        when(conflictDetection.check(any(), any(), any(), any(), any())).thenReturn(ConflictCheck.OFF);
+        when(conflictDetection.isOn()).thenReturn(false);
         when(transactionManager.getTransaction(any(TransactionDefinition.class)))
             .thenReturn(transactionStatus);
         service = new SubmissionUploads(

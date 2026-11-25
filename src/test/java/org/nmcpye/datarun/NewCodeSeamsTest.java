@@ -20,7 +20,6 @@ import org.nmcpye.datarun.common.exceptions.DatabaseFailures;
 import org.nmcpye.datarun.common.exceptions.ErrorCodeException;
 import org.nmcpye.datarun.common.exceptions.FailureShape;
 import org.nmcpye.datarun.common.exceptions.IllegalQueryException;
-import org.nmcpye.datarun.common.feedback.ErrorCode;
 import org.nmcpye.datarun.common.uidgenerate.BaseDto;
 import org.nmcpye.datarun.common.uidgenerate.CodeGenerator;
 import org.nmcpye.datarun.datatemplateelement.enumeration.ValueType;
@@ -32,13 +31,10 @@ import org.nmcpye.datarun.jpa.datasubmission.DataSubmission;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionActor;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommand;
 import org.nmcpye.datarun.jpa.datasubmission.command.SubmissionCommandService;
-import org.nmcpye.datarun.jpa.datasubmission.validation.StoredSubmissionGuard;
-import org.nmcpye.datarun.jpa.datasubmissionbatching.job.MigrationRepeatIdGenerator;
 import org.nmcpye.datarun.jpa.datatemplate.CanonicalElement;
 import org.nmcpye.datarun.jpa.datatemplate.DataType;
 import org.nmcpye.datarun.jpa.datatemplate.SemanticType;
 import org.nmcpye.datarun.jpa.datatemplate.TemplateElement;
-import org.nmcpye.datarun.jpa.datatemplate.TemplateVersionContext;
 import org.nmcpye.datarun.jpa.datatemplate.repository.CanonicalElementRepository;
 import org.nmcpye.datarun.jpa.datatemplate.repository.MetadataUpsertService;
 import org.nmcpye.datarun.jpa.datatemplate.service.DataTemplateInstanceServiceImpl;
@@ -136,8 +132,8 @@ class NewCodeSeamsTest {
         row("submission..", NEW_CODE, "the submission normalizer and the feed"),
         row("web.v2..", NEW_CODE, "the v2 API"),
         row("jpa.datasubmission.revision..", NEW_CODE, "the revision journal"),
-        row("jpa.datasubmission.conflict..", NEW_CODE, "conflict detection, called by the write path; its breaches are "
-            + "listed until its seam refactor"),
+        row("jpa.datasubmission.conflict..", NEW_CODE, "conflict detection, called by the write path, which gives it "
+            + "plain values"),
 
         // Retiring derived structures
         row("etl..", RETIRING, "tall, events, dimensions and pivots, their transformers, and for now the home and name "
@@ -286,28 +282,12 @@ class NewCodeSeamsTest {
         new Leftover(DataTemplateInstanceServiceImpl.class, TemplateElementGeneratorService.class,
             "publishing a form version writes canonical_element in the same call, until canonical_element goes"));
 
-    private static final String CONFLICT_DETECTION = ROOT + ".jpa.datasubmission.conflict.ConflictDetection";
-    private static final String CONFLICT_CHECK = ROOT + ".jpa.datasubmission.conflict.ConflictCheck";
-    private static final String CONFLICT_REFACTOR = "removed by refactor/conflict-detection-seam";
-
     /**
      * Breaches by new code that are listed until a named change removes them, each by its class (nested classes
-     * included) and the class it depends on. Conflict detection's seam refactor is pending. A listed breach must still
-     * occur, so the list only shrinks.
+     * included) and the class it depends on. A listed breach must still occur, so the list only shrinks; none is
+     * listed now.
      */
-    static final List<Breach> BREACHES = List.of(
-        new Breach(CONFLICT_DETECTION, DataSubmission.class.getName(),
-            "takes the stored submission entity from SubmissionUploads, and logs its uids; " + CONFLICT_REFACTOR),
-        new Breach(CONFLICT_DETECTION, TemplateVersionContext.class.getName(),
-            "takes the copy's form version context, for the row id check; " + CONFLICT_REFACTOR),
-        new Breach(CONFLICT_DETECTION, MigrationRepeatIdGenerator.class.getName(),
-            "asks the legacy route's id minting whether the copy has rows without ids; " + CONFLICT_REFACTOR),
-        new Breach(CONFLICT_DETECTION, StoredSubmissionGuard.class.getName(),
-            "asks the stored-record guard whether the uploader made the submission; " + CONFLICT_REFACTOR),
-        new Breach(CONFLICT_DETECTION, CurrentUserDetails.class.getName(),
-            "takes the uploader's access snapshot, for that question; " + CONFLICT_REFACTOR),
-        new Breach(CONFLICT_CHECK, ErrorCode.class.getName(),
-            "keeps a copy aside after a move on the v1 refusal codes E4124, E4114 and E4122; " + CONFLICT_REFACTOR));
+    static final List<Breach> BREACHES = List.of();
 
     /**
      * Where SQL in new code may name system-of-record tables: the seam that owns the read, by source path prefix.

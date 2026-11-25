@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Reads the journal, and the submission it records, for conflict detection: which revisions a submission has, and the
- * state the comparison reads at one of them or now. Stored documents come back as the database prints them
+ * Reads the journal for conflict detection: which revisions a submission has, and the state the comparison reads at
+ * one of them. Stored documents come back as the database prints them
  * ({@code form_data::text}), so a reader can parse their numbers exactly. Called under the submission lock, in the
  * upload item's transaction, so the submission cannot change while it reads.
  */
@@ -67,17 +67,6 @@ public class SubmissionRevisionReader {
                 FROM journal.submission_revision
                 WHERE submission_id = :submissionId AND version = :version""",
             new MapSqlParameterSource().addValue("submissionId", submissionId).addValue("version", version),
-            (row, n) -> state(row));
-    }
-
-    /** The submission's state now, as stored. */
-    public State current(String submissionId) {
-        return jdbc.queryForObject("""
-                SELECT form_data::text AS document, coalesce(deleted, false) AS deleted,
-                       assignment_uid AS assignment, template_version_uid AS form_version, status
-                FROM data_submission
-                WHERE id = :submissionId""",
-            Map.of("submissionId", submissionId),
             (row, n) -> state(row));
     }
 

@@ -1,9 +1,5 @@
 package org.nmcpye.datarun.jpa.datasubmission.conflict;
 
-import org.nmcpye.datarun.common.feedback.ErrorCode;
-
-import java.util.Set;
-
 /**
  * What conflict detection found of one phone copy, and what the upload does with it, in the spec's order:
  * <ol>
@@ -11,7 +7,7 @@ import java.util.Set;
  *       copy) changes nothing;</li>
  *   <li>a copy equal to the current state changes nothing;</li>
  *   <li>after a server-side {@code MOVE} later than the base version, a copy the upload checks refuse for access
- *       (E4124, E4114 or E4122) is kept aside as a conflict ({@link #keepsAsideOnRefusal});</li>
+ *       ({@link AccessRefusal}) is kept aside as a conflict ({@link #keepsAsideOnRefusal});</li>
  *   <li>a server-side change after the base version keeps the copy aside as a conflict;</li>
  *   <li>otherwise the upload applies as today.</li>
  * </ol>
@@ -28,9 +24,6 @@ import java.util.Set;
  * checks, which create no entry then), and only then stores the conflict ({@link #keepAside}).</p>
  */
 public final class ConflictCheck {
-
-    /** The access refusals a move can cause: the stored submission's, the copy's team, and the copy's form grant. */
-    private static final Set<ErrorCode> MOVE_REFUSALS = Set.of(ErrorCode.E4124, ErrorCode.E4114, ErrorCode.E4122);
 
     /** The uploader's open conflict on the submission, as the copy finds it. */
     enum OpenCopy {
@@ -53,7 +46,7 @@ public final class ConflictCheck {
     }
 
     /** Detection does not run: switched off, a new submission, or a practice upload or a release. */
-    public static final ConflictCheck OFF = new ConflictCheck(null, null, false, null);
+    public static final ConflictCheck OFF = new ConflictCheck(null, null, null);
 
     /**
      * What detection read before the upload checks.
@@ -72,31 +65,22 @@ public final class ConflictCheck {
 
     private final ConflictDetection detection;
     private final ConflictDetection.Context context;
-    private final boolean rowsLackIds;
     /** Null when detection failed. */
     private final Analysis analysis;
 
-    private ConflictCheck(ConflictDetection detection, ConflictDetection.Context context, boolean rowsLackIds,
-                          Analysis analysis) {
+    private ConflictCheck(ConflictDetection detection, ConflictDetection.Context context, Analysis analysis) {
         this.detection = detection;
         this.context = context;
-        this.rowsLackIds = rowsLackIds;
         this.analysis = analysis;
     }
 
-    static ConflictCheck analysed(ConflictDetection detection, ConflictDetection.Context context, boolean rowsLackIds,
-                                  Analysis analysis) {
-        return new ConflictCheck(detection, context, rowsLackIds, analysis);
+    static ConflictCheck analysed(ConflictDetection detection, ConflictDetection.Context context, Analysis analysis) {
+        return new ConflictCheck(detection, context, analysis);
     }
 
-    /**
-     * Detection failed: the copy is kept aside once the upload checks pass.
-     *
-     * @param rowsLackIds whether the copy's rows lack ids; true when tagging itself failed, the stricter of the two
-     *                    for a later accept
-     */
-    static ConflictCheck failed(ConflictDetection.Context context, ConflictDetection detection, boolean rowsLackIds) {
-        return new ConflictCheck(detection, context, rowsLackIds, null);
+    /** Detection failed: the copy is kept aside once the upload checks pass. */
+    static ConflictCheck failed(ConflictDetection.Context context, ConflictDetection detection) {
+        return new ConflictCheck(detection, context, null);
     }
 
     /**
@@ -120,11 +104,11 @@ public final class ConflictCheck {
     /**
      * When the upload checks refuse the copy for access: whether it is to be kept aside instead. Only for an uploader
      * with a base version of their own, after a server-side {@code MOVE} later than it, and only for the access
-     * refusals a move causes (E4124, E4114, E4122); any other refusal, and every refusal when detection failed, stays
-     * a refusal.
+     * refusals a move causes, as the upload names them; any other refusal (null), and every refusal when detection
+     * failed, stays a refusal.
      */
-    public boolean keepsAsideOnRefusal(ErrorCode refusal) {
-        return analysis != null && analysis.ownBase() && analysis.moved() && MOVE_REFUSALS.contains(refusal);
+    public boolean keepsAsideOnRefusal(AccessRefusal refusal) {
+        return refusal != null && analysis != null && analysis.ownBase() && analysis.moved();
     }
 
     /** Once the upload checks have passed: whether to apply the copy, write nothing, or keep it aside. */
@@ -150,11 +134,11 @@ public final class ConflictCheck {
             throw new IllegalStateException("Detection did not run: there is no copy to keep aside");
         }
         if (analysis == null) {
-            detection.keepAside(context, ConflictCause.DETECTION_ERROR, null, rowsLackIds);
+            detection.keepAside(context, ConflictCause.DETECTION_ERROR, null);
         } else {
             // Without a server-side change only the open conflict keeps the copy aside, and its cause stays.
             detection.keepAside(context, analysis.serverSideChange() ? ConflictCause.SERVER_SIDE_CHANGE : null,
-                analysis.base(), rowsLackIds);
+                analysis.base());
         }
     }
 }
