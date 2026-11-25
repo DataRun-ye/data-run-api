@@ -7,10 +7,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.cfg.JsonNodeFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.DecimalNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.math.BigDecimal;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -27,6 +32,11 @@ import java.util.Objects;
  * exponent) fits Jackson's limit of 1,000 characters for a number, which already refuses longer digit strings.
  * PostgreSQL always prints a {@code jsonb} number in plain form, so {@code 1e10000} fails exactly as its
  * 10,001-digit plain spelling does. Every number read therefore writes again in plain form.</p>
+ *
+ * <p><b>Zero is read as PostgreSQL stores it.</b> A zero with a positive exponent ({@code 0e1000}, {@code -0e99999})
+ * reads as plain {@code 0}: {@code '0e1000'::jsonb} prints {@code 0}, and numeric has no negative zero. A zero with
+ * a negative exponent keeps its scale ({@code 0e-5} is {@code 0.00000}, as PostgreSQL prints it) and meets the
+ * plain-form rule like any number, so {@code 0e-1001} is refused.</p>
  *
  * <p><b>A key given twice in one object keeps its last value</b>, as {@code jsonb} keeps it on input: any text is read
  * as PostgreSQL would store it. {@code {"s": {"n": 1}, "s": {"i": 2}}} reads as {@code {"s": {"i": 2}}}.</p>
@@ -69,27 +79,71 @@ public final class StoredJson {
         if (node == null || node.isMissingNode()) {
             throw unreadable("no JSON value");
         }
-        checkNumbers(node);
-        return node;
+        return checkNumbers(node);
     }
 
-    /** Refuses a number whose plain form is longer than the reader's limit; walks without recursion. */
-    private static void checkNumbers(JsonNode root) throws JsonProcessingException {
+    /**
+     * Every number as PostgreSQL stores it, or a failure: a zero with a positive exponent becomes plain 0, and a
+     * number whose plain form is longer than the reader's limit is refused. Walks without recursion.
+     *
+     * @return the tree, with such zeros replaced; the root itself when it is such a zero
+     */
+    private static JsonNode checkNumbers(JsonNode root) throws JsonProcessingException {
+        JsonNode checkedRoot = checkNumber(root);
         Deque<JsonNode> pending = new ArrayDeque<>();
-        pending.push(root);
+        pending.push(checkedRoot);
         while (!pending.isEmpty()) {
-            JsonNode node = pending.pop();
-            if (node.isBigDecimal() && plainLength(node.decimalValue()) > MAX_NUMBER_LENGTH) {
-                throw unreadable("a number longer than " + MAX_NUMBER_LENGTH + " characters in plain form");
+            JsonNode container = pending.pop();
+            if (container instanceof ObjectNode object) {
+                List<String> names = new ArrayList<>(object.size());
+                object.fieldNames().forEachRemaining(names::add);
+                for (String name : names) {
+                    JsonNode child = object.get(name);
+                    JsonNode checked = checkNumber(child);
+                    if (checked != child) {
+                        object.set(name, checked);
+                    }
+                    if (checked.isContainerNode()) {
+                        pending.push(checked);
+                    }
+                }
+            } else if (container instanceof ArrayNode array) {
+                for (int i = 0; i < array.size(); i++) {
+                    JsonNode child = array.get(i);
+                    JsonNode checked = checkNumber(child);
+                    if (checked != child) {
+                        array.set(i, checked);
+                    }
+                    if (checked.isContainerNode()) {
+                        pending.push(checked);
+                    }
+                }
             }
-            node.forEach(pending::push);
         }
+        return checkedRoot;
+    }
+
+    private static JsonNode checkNumber(JsonNode node) throws JsonProcessingException {
+        if (!node.isBigDecimal()) {
+            return node;
+        }
+        BigDecimal number = node.decimalValue();
+        if (number.signum() == 0 && number.scale() < 0) {
+            return DecimalNode.valueOf(BigDecimal.ZERO);
+        }
+        if (plainLength(number) > MAX_NUMBER_LENGTH) {
+            throw unreadable("a number longer than " + MAX_NUMBER_LENGTH + " characters in plain form");
+        }
+        return node;
     }
 
     /** The length of the number's plain form, without its sign. */
     static long plainLength(BigDecimal number) {
         long precision = number.precision();
         long scale = number.scale();
+        if (number.signum() == 0 && scale <= 0) {
+            return 1;                                 // zero is "0", whatever its exponent
+        }
         if (scale <= 0) {
             return precision - scale;                 // the digits, then -scale zeros
         }

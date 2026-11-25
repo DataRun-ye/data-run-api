@@ -110,6 +110,25 @@ class StoredJsonTest {
     }
 
     @Test
+    void aZeroIsReadAsPostgreSqlStoresIt() throws Exception {
+        // a positive exponent: plain 0, as '0e1000'::jsonb prints; numeric has no negative zero
+        for (String zero : List.of("0e1000", "-0e1000", "0e9999", "0e99999", "0e2147483647")) {
+            JsonNode read = StoredJson.parse(zero);
+            assertThat(read.decimalValue()).as(zero).isEqualByComparingTo("0");
+            assertThat(read.decimalValue().scale()).as(zero).isZero();
+            assertThat(StoredJson.write(read)).as(zero).isEqualTo("0");
+        }
+        assertThat(StoredJson.write(StoredJson.parse("{\"a\": [0e99999, 1], \"b\": -0e1000}")))
+            .isEqualTo("{\"a\":[0,1],\"b\":0}");
+        // a negative exponent keeps its scale, as PostgreSQL prints it, under the plain-form rule
+        assertThat(StoredJson.write(StoredJson.parse("0e-5"))).isEqualTo("0.00000");
+        assertThat(StoredJson.write(StoredJson.parse("0.00000"))).isEqualTo("0.00000");
+        assertThatThrownBy(() -> StoredJson.parse("0e-1001")).isInstanceOf(JsonProcessingException.class);
+        assertThat(StoredJson.plainLength(new java.math.BigDecimal("0e1000"))).isEqualTo(1);
+        assertThat(StoredJson.plainLength(new java.math.BigDecimal("0e-5"))).isEqualTo(7);
+    }
+
+    @Test
     void aKeyGivenTwiceKeepsItsLastValue_asJsonbDoes() throws Exception {
         // SELECT '{"s":{"n":1},"s":{"i":2}}'::jsonb gives {"s": {"i": 2}}
         assertThat(StoredJson.parse("{\"s\":{\"n\":1},\"s\":{\"i\":2}}"))
