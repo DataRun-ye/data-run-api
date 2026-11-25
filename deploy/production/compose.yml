@@ -35,6 +35,9 @@ services:
       - DATARUN_ETL_HEARTBEAT_URL=${DATARUN_ETL_HEARTBEAT_URL:-}
       # Downstream's reader role for schema feed (FeedReaderGrants); empty changes no grant and logs a WARN at start.
       - DATARUN_FEED_READER_ROLE=${DATARUN_FEED_READER_ROLE:-}
+      # Submission review's conflict detection on the upload routes (docs/agent-context/api-v2.md, activation
+      # switches); off unless set to true here, the container then recreated. Setting it back is the rollback.
+      - DATARUN_ACTIVATION_CONFLICT_DETECTION=${DATARUN_ACTIVATION_CONFLICT_DETECTION:-false}
     ports:
       - "192.168.1.110:8080:8080"
     # The container log rotates: at most 5 files of 20 MB (json-file keeps everything without these options).
