@@ -32,6 +32,9 @@ Documentation roles:
 - Focused context documents contain current technical evidence and contracts.
 - `current-work.md` contains only accepted open work.
 - `completed-work.md` is a compact historical index, never runtime authority.
+- `docs/features/<name>/` holds one feature's design: its glossary (`CONTEXT.md`),
+  decisions (`adr/`), specification and dated research. Use the glossary's words in
+  that feature's new code and docs; its research is evidence, not authority.
 
 A code change is complete only when the active owner is identified, affected
 API/persistence/security/migration compatibility is evaluated, focused tests
