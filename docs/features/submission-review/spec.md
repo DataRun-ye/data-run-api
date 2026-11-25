@@ -582,8 +582,12 @@ There is no delivery deadline, and no search-only release: finding is of no use 
 | --- | --- | --- |
 | First | Conflict detection | Before any change; users see nothing new |
 | A | Search, view, history, notes; `setValue`, `setEntry`, `restoreRow`, move, split, delete, restore, conflict decisions | With the capability; split once the split re-attribution is in production |
-| B | `clearValue`, `removeRow` | Once downstream reads the feed: per activity, on downstream's written confirmation that no model reads that activity's rows in tall and events |
+| B | `clearValue`, `removeRow` | Server-wide, in one step: once downstream confirms in writing that no model reads tall and events, for any activity |
 | Then | The v1 admin delete retired | Once `:delete` is on and the logs show its callers have moved |
+
+Gate B is server-wide, never per activity (engineering, 2026-11-25): downstream re-points all its models to the feed,
+and tall and events then retire. Opening it per activity would need a per-activity setting that this plan does not
+use; revisit only if downstream switches activity by activity.
 
 **Later, by need:** marks as data; `addRow`; creating a submission through the API; area, form and team scopes; the
 server-owned read model for search; the operations screen, with its browser login.
@@ -632,8 +636,6 @@ Invented ids and values. Team T312 has assignment A7 in village V7 and assignmen
 
 ## 14. Open
 
-- **Gate B per activity.** Gate B opens per activity, but activation switches are server-wide; how a switch opens
-  for one activity is not designed.
 - **`entry-not-in-village`** names one activity's org-unit level; a generic word should replace it before the code
   is published.
 - **`deleted=any`** is not UPPER_SNAKE like other enumeration values; its spelling is settled when the search

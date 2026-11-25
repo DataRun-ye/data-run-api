@@ -47,7 +47,7 @@ Deployment and activation are separate. Nothing is on by default, and each gate 
 | --- | --- | --- |
 | First | Conflict detection | Before any change; users see nothing new |
 | A | Search, view, history, notes; `setValue`, `setEntry`, `restoreRow`, move, split, delete, restore, conflict decisions | With the capability; split once the ETL's split re-attribution is in production |
-| B | `clearValue`, `removeRow` | Once downstream reads the feed for the activity, since the ETL never removes a value or a row |
+| B | `clearValue`, `removeRow` | Server-wide, once downstream confirms in writing that no model reads tall and events; the ETL never removes a value or a row |
 | Then | The v1 admin delete retired | Once `:delete` is on and the logs show its callers have moved |
 
 ## Not built, by decision (owner, 2026-11-25)

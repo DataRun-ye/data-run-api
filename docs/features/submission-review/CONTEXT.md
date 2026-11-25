@@ -253,7 +253,7 @@ Operations never see these: they see history and "deleted".
 | **Position** | The feed's order: one number per published record, in commit order. A row's place among its siblings is its row index |
 | **Tombstone** | In prose only: a feed record with `deleted = true`, which keeps its last values |
 | **Activation switch** | A setting, off by default, that turns on one method or edit operation ([api-v2.md](../../agent-context/api-v2.md)) |
-| **Gate** | Switches turned on together once their condition holds: gate A with the capability, gate B once downstream reads the feed |
+| **Gate** | Switches turned on together, server-wide, once their condition holds: gate A with the capability; gate B once downstream confirms in writing that no model reads tall and events |
 
 ## Words to avoid
 

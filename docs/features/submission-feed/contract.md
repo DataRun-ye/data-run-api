@@ -313,9 +313,10 @@ crosswalk; the first-time values of §14, counted one by one.
   agree; dashboards follow. Not during a campaign peak.
 - Dimension tables stay as Airbyte copies them (daily) and are joined by text id. During a campaign, a new team or
   assignment joins nothing until the next copy; downstream may copy those two more often.
-- Submission review's gate B (clears and row removals) opens per activity, on downstream's written confirmation that
-  no model reads that activity's rows in tall and events: the server's counters are per table, not per activity. No
-  removal fix for tall is built; the split re-attribution stays (owner, 2026-11-25).
+- Submission review's gate B (clears and row removals) opens server-wide, once downstream confirms in writing that
+  no model reads tall and events, for any activity (engineering, 2026-11-25): downstream re-points all its models,
+  and tall and events then retire. No removal fix for tall is built; the split re-attribution stays (owner,
+  2026-11-25).
 - The server marks tall, events and pivots deprecated in its docs, and watches their scan counters until reads stop.
 - **Rollback:** downstream points back at tall and events, which are still maintained.
 
@@ -337,7 +338,5 @@ crosswalk; the first-time values of §14, counted one by one.
   dump may be their only archive.
 - **Flag counts.** The normalizer counts its flags per submission, and its documentation expects the publisher to
   expose them; version 1 publishes no flag counts. A count per flag in `freshness` would be additive.
-- **Gate B per activity:** activation switches are server-wide today
-  ([submission review, open points](../submission-review/spec.md#14-open)).
 - **For downstream:** the gap measurement above; schema `feed` added at phase B, with the first sync as §13 says; the
   Airbyte role's name, for the grant.
