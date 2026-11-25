@@ -190,11 +190,13 @@ every `UPDATE` of a submission takes. The stored-record guard and the save use
 the submission it locked, and another change of the same submission waits
 until the transaction ends instead of committing between its reads, where it
 used to fail the later write's version check (the upload item as
-`UNEXPECTED_FAILURE`, the delete as a 409). The waits are not bounded beyond
-the database's own settings. A new submission has nothing to lock: a second
-save of its uid still fails on the uid's unique constraint (below).
-`SubmissionWriteOwnershipTest` keeps the submission lock to the command
-service and its persistence layer.
+`UNEXPECTED_FAILURE`, the delete as a 409). `SubmissionLockIT` shows it with
+real transactions: it holds an upload on either route, or an admin delete,
+between its reads, and the other change waits on the submission lock until it
+ends. The waits are not bounded beyond the database's own settings. A new
+submission has nothing to lock: a second save of its uid still fails on the
+uid's unique constraint (below). `SubmissionWriteOwnershipTest` keeps the
+submission lock to the command service and its persistence layer.
 
 `data_submission`'s indexes: the primary key, the unique keys on `uid` and
 `serial_number`, `idx_ds_form_assignment`, and two that only the generic read
