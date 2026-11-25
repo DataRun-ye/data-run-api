@@ -63,7 +63,8 @@ import java.util.function.Function;
  * <p>Conflict detection ({@link ConflictDetection}, behind its switch) reads each live upload item of a stored
  * submission right after the lock, before the upload checks and before any row id is minted: a copy that changes
  * nothing, or that a server-side change keeps aside, is answered {@code updated} and nothing is written. After a
- * server-side move, so is a changed copy the checks refuse for access. Practice uploads and held releases are not
+ * server-side move, so is a changed copy the checks refuse for access. While the uploader has an open conflict, their
+ * copy counts there or replaces its copy, and never writes the submission. Practice uploads and held releases are not
  * detected.</p>
  *
  * <p>Only the command service calls this class; it is a separate component so that a held release can replay an
@@ -234,7 +235,7 @@ public class SubmissionUploads {
                 ConflictCheck conflict = conflictDetection.check(
                     () -> phoneCopy(UploadRoute.LEGACY, objectMapper.valueToTree(submission), submission),
                     stored, template, actor.userId(), actor.access());
-                if (conflict.changesNothing()) {
+                if (conflict.answeredBeforeChecks()) {
                     return answeredUpdated(submission, summary);
                 }
                 try {
@@ -279,7 +280,7 @@ public class SubmissionUploads {
         ConflictCheck conflict = mode != IntakeMode.LIVE ? ConflictCheck.OFF : conflictDetection.check(
             () -> phoneCopy(UploadRoute.VERSIONED, objectMapper.valueToTree(request), submission),
             stored, template, actor.userId(), actor.access());
-        if (conflict.changesNothing()) {
+        if (conflict.answeredBeforeChecks()) {
             return answeredUpdated(submission, summary);
         }
         try {

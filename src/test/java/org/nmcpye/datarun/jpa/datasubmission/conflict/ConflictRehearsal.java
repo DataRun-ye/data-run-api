@@ -526,8 +526,9 @@ public final class ConflictRehearsal implements AutoCloseable {
         try {
             ConflictCheck check = detection.check(() -> copy, head.asStored(), template(state.formVersion()),
                 holder.userId(), user(holder.login()));
-            if (check.changesNothing()) {
-                return "changes nothing, before the checks";
+            if (check.answeredBeforeChecks()) {
+                return store.last() == null ? "changes nothing, before the checks"
+                    : "counts on the open conflict, before the checks";
             }
             if (refusal != null) {
                 return check.keepsAsideOnRefusal(refusal) ? kept(check) : "refusal stands";

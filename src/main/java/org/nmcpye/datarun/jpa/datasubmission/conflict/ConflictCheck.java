@@ -15,8 +15,10 @@ import java.util.Set;
  *   <li>a server-side change after the base version keeps the copy aside as a conflict;</li>
  *   <li>otherwise the upload applies as today.</li>
  * </ol>
+ * While the uploader has an open conflict on the submission, it comes first: the same copy again only counts, and any
+ * other copy replaces the kept one, once the checks pass, whatever these steps would say ({@link OpenCopy}).
  * For an uploader with a base version of their own, the first two come before the upload checks
- * ({@link #changesNothing}), so a copy that would now be refused is still answered {@code updated}. For any other
+ * ({@link #answeredBeforeChecks}), so a copy that would now be refused is still answered {@code updated}. For any other
  * uploader the upload checks run first, exactly as before, and every refusal stands. An authorized copy then changes
  * nothing when it equals the current state or their last decided conflict copy; otherwise it takes the submission's
  * first revision as its base, so a server-side change since then keeps it aside, and without one it applies as today
@@ -29,6 +31,16 @@ public final class ConflictCheck {
 
     /** The access refusals a move can cause: the stored submission's, the copy's team, and the copy's form grant. */
     private static final Set<ErrorCode> MOVE_REFUSALS = Set.of(ErrorCode.E4124, ErrorCode.E4114, ErrorCode.E4122);
+
+    /** The uploader's open conflict on the submission, as the copy finds it. */
+    enum OpenCopy {
+        /** No conflict of theirs is open. */
+        NONE,
+        /** The copy equals the open conflict's: it only counts, before the checks. */
+        SAME,
+        /** Another copy: it replaces the open conflict's, once the checks pass. */
+        DIFFERENT
+    }
 
     /** What the upload does once the upload checks have passed. */
     public enum Outcome {
@@ -52,9 +64,10 @@ public final class ConflictCheck {
      * @param equalsCurrent    the copy equals the current state
      * @param serverSideChange a server-side change came after the base
      * @param moved            a server-side {@code MOVE} came after the base
+     * @param open             the uploader's open conflict, as the copy finds it
      */
     record Analysis(boolean ownBase, long base, boolean unchangedResend, boolean equalsCurrent,
-                    boolean serverSideChange, boolean moved) {
+                    boolean serverSideChange, boolean moved, OpenCopy open) {
     }
 
     private final ConflictDetection detection;
@@ -87,11 +100,21 @@ public final class ConflictCheck {
     }
 
     /**
-     * Before the upload checks: whether the copy changes nothing, so the upload writes nothing and skips the checks.
-     * Only for an uploader with a base version of their own.
+     * Before the upload checks: whether the item is answered now, the checks skipped and nothing written to the
+     * submission. So is a copy equal to the uploader's open conflict's, which only counts there (stored here); and,
+     * with no conflict of theirs open, an uploader's unchanged re-send or copy equal to the current state, when they
+     * have a base version of their own.
      */
-    public boolean changesNothing() {
-        return analysis != null && analysis.ownBase() && (analysis.unchangedResend() || analysis.equalsCurrent());
+    public boolean answeredBeforeChecks() {
+        if (analysis == null) {
+            return false;
+        }
+        if (analysis.open() == OpenCopy.SAME) {
+            keepAside();
+            return true;
+        }
+        return analysis.open() == OpenCopy.NONE && analysis.ownBase()
+            && (analysis.unchangedResend() || analysis.equalsCurrent());
     }
 
     /**
@@ -109,7 +132,7 @@ public final class ConflictCheck {
         if (context == null) {
             return Outcome.APPLY;
         }
-        if (analysis == null) {
+        if (analysis == null || analysis.open() != OpenCopy.NONE) {
             return Outcome.KEEP_ASIDE;
         }
         if (!analysis.ownBase() && (analysis.unchangedResend() || analysis.equalsCurrent())) {
@@ -129,7 +152,9 @@ public final class ConflictCheck {
         if (analysis == null) {
             detection.keepAside(context, ConflictCause.DETECTION_ERROR, null, rowsLackIds);
         } else {
-            detection.keepAside(context, ConflictCause.SERVER_SIDE_CHANGE, analysis.base(), rowsLackIds);
+            // Without a server-side change only the open conflict keeps the copy aside, and its cause stays.
+            detection.keepAside(context, analysis.serverSideChange() ? ConflictCause.SERVER_SIDE_CHANGE : null,
+                analysis.base(), rowsLackIds);
         }
     }
 }

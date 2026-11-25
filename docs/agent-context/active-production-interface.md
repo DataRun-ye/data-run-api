@@ -216,8 +216,10 @@ after the submission lock, before the upload checks and, on the legacy route,
 before row ids are minted. It tags a phone copy whose rows lack ids, finds the
 uploader's base version in the journal, and compares the copy structurally
 (`ConflictComparison`: rows' structure keys left out, numbers by value, with
-the deleted flag, assignment and form version). An unchanged re-send, or a copy
-equal to the current state, writes nothing. After a server-side change since
+the deleted flag, assignment, form version and status). While the uploader has
+an open conflict on the submission, their copy only counts there or replaces
+its copy, and never writes the submission. Otherwise an unchanged re-send, or a
+copy equal to the current state, writes nothing. After a server-side change since
 the base version, a changed copy is kept aside in `submission_review.conflict`
 (one open conflict per submission and uploader); after a move, so is a changed
 copy the checks refuse for access (E4124, E4114, E4122). An uploader without a

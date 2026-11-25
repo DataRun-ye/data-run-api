@@ -217,6 +217,54 @@ class ConflictDetectionIT extends A2GoldenSupport {
         assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
     }
 
+    /**
+     * An open conflict always holds the uploader's newest copy: while it is open, a copy equal to the base, or to the
+     * current state, replaces the kept copy instead of changing nothing, and the same copy again only counts. Nothing
+     * is written to the submission, so an accept can never apply a copy the phone abandoned.
+     */
+    @Test
+    void anOpenConflictAlwaysHoldsTheUploadersNewestCopy() throws Exception {
+        String uid = uid("cdNewest");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        seed.edit(uid, ADMIN, "edited on the server");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed on the phone")))).isEqualTo(updated(uid));
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).as("equal to the base")
+            .isEqualTo(updated(uid));
+        assertThat(keptName(uid)).isEqualTo("first");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "edited on the server")))).as("equal to the current state")
+            .isEqualTo(updated(uid));
+        assertThat(keptName(uid)).isEqualTo("edited on the server");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "edited on the server")))).as("the same again")
+            .isEqualTo(updated(uid));
+
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("state", "OPEN").containsEntry("version", 2L).containsEntry("resend_count", 3));
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD", "1 UPDATE EDIT");
+    }
+
+    /**
+     * A conflict kept aside for a detection error is open too: with no server-side change, the uploader's next copy,
+     * which would otherwise be saved, replaces the kept one, and its cause stays.
+     */
+    @Test
+    void anUploaderWithAnOpenConflictNeverWritesTheSubmission() throws Exception {
+        String uid = uid("cdOpenOnly");
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "first")))).isEqualTo(created(uid));
+        doAnswer(invocation -> jdbc.getJdbcTemplate().queryForObject("SELECT 1 / 0", Integer.class))
+            .doCallRealMethod()
+            .when(journalReader).current(anyString());
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed on the phone")))).isEqualTo(updated(uid));
+
+        assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed again")))).isEqualTo(updated(uid));
+
+        assertThat(revisions(uid)).containsExactly("0 CREATE UPLOAD");
+        assertThat(keptName(uid)).isEqualTo("changed again");
+        assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
+            .containsEntry("cause", "DETECTION_ERROR").containsEntry("version", 1L)
+            .containsEntry("base_version", 0L));
+    }
+
     @Test
     void aKeptConflictStaysKeptUnderUnchangedReSends() throws Exception {
         String uid = uid("cdKeep");
@@ -755,6 +803,13 @@ class ConflictDetectionIT extends A2GoldenSupport {
                 SELECT c.* FROM submission_review.conflict c JOIN data_submission s ON s.id = c.submission_id
                 WHERE s.uid = :uid ORDER BY c.first_received_at, c.id""",
             Map.of("uid", uid));
+    }
+
+    /** The top-level name in the uploader's open conflict's copy: which copy it keeps. */
+    private String keptName(String uid) throws Exception {
+        Map<String, Object> open = conflicts(uid).stream().filter(conflict -> "OPEN".equals(conflict.get("state")))
+            .findFirst().orElseThrow();
+        return json.readTree(open.get("phone_copy").toString()).at("/formData/main/a2_name").asText();
     }
 
     private String conflictId(String uid) {

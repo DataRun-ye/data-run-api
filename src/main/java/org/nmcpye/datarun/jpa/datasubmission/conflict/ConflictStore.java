@@ -94,19 +94,21 @@ public class ConflictStore {
     /**
      * A different copy arrived while the conflict is open: it replaces the copy kept, with what detection found of it,
      * keeps the first receipt time, and raises the conflict's own version, so a decision made on the older copy can be
-     * refused. A base version detection could not find leaves the known one.
+     * refused. A base version detection could not find leaves the known one, and so does a null cause: only the open
+     * conflict keeps the new copy aside.
      */
     public void replace(String id, ConflictCause cause, Long baseVersion, boolean rowsLackIds, UploadRoute route,
                         String phoneCopy) {
         jdbc.update("""
                 UPDATE submission_review.conflict
-                SET cause = :cause, base_version = coalesce(:base, base_version), rows_lack_ids = :rowsLackIds,
+                SET cause = coalesce(:cause, cause), base_version = coalesce(:base, base_version),
+                    rows_lack_ids = :rowsLackIds,
                     upload_route = :route, phone_copy = CAST(:copy AS jsonb), resend_count = resend_count + 1,
                     last_received_at = now(), version = version + 1
                 WHERE id = :id AND state = 'OPEN'""",
             new MapSqlParameterSource()
                 .addValue("id", id)
-                .addValue("cause", cause.name())
+                .addValue("cause", cause == null ? null : cause.name(), Types.VARCHAR)
                 .addValue("base", baseVersion, Types.BIGINT)
                 .addValue("rowsLackIds", rowsLackIds)
                 .addValue("route", route.name())

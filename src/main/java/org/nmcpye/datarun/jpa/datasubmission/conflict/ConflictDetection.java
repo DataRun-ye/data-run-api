@@ -38,6 +38,11 @@ import static org.nmcpye.datarun.jpa.datasubmission.conflict.ConflictComparison.
  * {@code DELETE}, {@code RESTORE}, an accept of another uploader's copy, {@code ADMIN_DELETE}, and a baseline of the
  * submission deleted, which counts for every uploader, also as the submission's first revision.</p>
  *
+ * <p><b>An open conflict comes first:</b> while the uploader has one on the submission, it always holds their newest
+ * copy. The same copy again only counts; any other copy, one equal to the base or to the current state included,
+ * replaces it. So an uploader with an open conflict never writes the submission directly, and an accept never applies
+ * a copy their phone abandoned.</p>
+ *
  * <p><b>It never fails an upload item:</b> anything detection throws keeps the copy aside with cause
  * {@code DETECTION_ERROR}, once the upload checks pass; its reads run in a savepoint, so a database error leaves the
  * transaction usable. Only a failure to store the conflict fails the item.</p>
@@ -123,13 +128,16 @@ public class ConflictDetection {
             .anyMatch(revision -> revision.version() > after && "MOVE".equals(revision.command()));
 
         ComparedState copy = context.copy().canonical();
+        ConflictCheck.OpenCopy openCopy = conflicts.findOpen(submissionId, uploader)
+            .map(open -> sameAsKept(context.copy(), open) ? ConflictCheck.OpenCopy.SAME : ConflictCheck.OpenCopy.DIFFERENT)
+            .orElse(ConflictCheck.OpenCopy.NONE);
         boolean equalsLastDecided = conflicts.lastDecidedCopy(submissionId, uploader)
             .map(text -> sameState(context.copy().asReceived(), ComparedState.ofUploadItem(ComparedState.parse(text))))
             .orElse(false);
         boolean equalsBase = base != null && sameState(copy, ComparedState.of(journal.stateAt(submissionId, base)));
         boolean equalsCurrent = sameState(copy, ComparedState.of(journal.current(submissionId)));
         return ConflictCheck.analysed(this, context, rowsLackIds, new ConflictCheck.Analysis(
-            base != null, after, equalsBase || equalsLastDecided, equalsCurrent, serverSideChange, moved));
+            base != null, after, equalsBase || equalsLastDecided, equalsCurrent, serverSideChange, moved, openCopy));
     }
 
     /** The uploader's own revisions: each leaves the state equal to what they last sent. */
@@ -158,6 +166,8 @@ public class ConflictDetection {
      * Keeps the copy aside: opens the uploader's conflict on the submission, or, while one is open, counts the same
      * copy again or lets a different one replace it. Runs in the upload item's transaction; a failure here is the one
      * that fails the item.
+     *
+     * @param cause why, or null when only the open conflict keeps the copy aside, whose cause then stays
      */
     void keepAside(Context context, ConflictCause cause, Long baseVersion, boolean rowsLackIds) {
         DataSubmission stored = context.stored();
@@ -166,6 +176,9 @@ public class ConflictDetection {
         String copyText = text(copy);
         Optional<ConflictStore.OpenConflict> open = conflicts.findOpen(stored.getId(), uploader);
         if (open.isEmpty()) {
+            if (cause == null) {
+                throw new IllegalStateException("A conflict is opened only for a cause");
+            }
             String id = conflicts.open(new ConflictStore.NewConflict(stored.getId(), uploader, cause, baseVersion,
                 rowsLackIds, copy.route(), copyText));
             log.info("Submission {} (form {}) from user {}: phone copy kept aside as conflict {} ({}, base version {})",
