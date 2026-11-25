@@ -204,3 +204,26 @@ body, which each method's request defines; E0 builds no shared body type.
   an idempotency key, so a tool may dry-run a change and then send it with
   its key.
 - Command bodies are at most 1 MB (413 `payload-too-large`).
+
+## Activation Switches
+
+Deploying a release and turning on what it brings are separate steps
+(`production-boundaries.md`). `config.activation`:
+
+- A module declares each feature it ships off as an `ActivationSwitch` bean:
+  a kebab-case name from its glossary, what it turns on, and the switches it
+  requires. E0 declares none: the later steps declare theirs with the
+  glossary's words, and the activation order the design note sets becomes
+  their requirements, so a feature cannot be turned on before what makes it
+  safe.
+- `ActivationSwitches` reads `datarun.activation.<name>` once at startup.
+  Nothing is on by default, anywhere. A switch whose requirement is off stays
+  off (ERROR line); a value other than true or false, or a setting no switch
+  of the build declares, is a WARN line, never a failed start, so phones keep
+  their service and a rollback to an older build still starts. The states are
+  logged at startup.
+- In production a switch is set in the host environment, for example
+  `DATARUN_ACTIVATION_SOME_FEATURE=true` passed by `compose.yml`, and the
+  container recreated; setting it back to false is the rollback.
+- A v2 handler calls `requireOn`; an operation switched off answers 422
+  `operation-not-enabled`, naming its switch.

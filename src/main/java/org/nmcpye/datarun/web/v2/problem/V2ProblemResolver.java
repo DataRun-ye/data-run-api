@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.nmcpye.datarun.config.activation.OperationNotEnabledException;
 import org.nmcpye.datarun.web.v2.ApiV2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,6 +131,10 @@ public class V2ProblemResolver implements HandlerExceptionResolver, Ordered {
         if (ex instanceof ApiProblemException problem) {
             return new Answer(problem.code(), problem.code().status(), problem.detail(), problem.errors(),
                 problem.extensions(), problem.headers());
+        }
+        if (ex instanceof OperationNotEnabledException off) {
+            return Answer.of(ProblemCode.OPERATION_NOT_ENABLED, "This operation is switched off on this server "
+                + "(activation switch " + off.switchName() + ").");
         }
         if (ex instanceof HttpMessageNotReadableException unreadable) {
             return unreadable(unreadable);
