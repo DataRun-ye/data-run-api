@@ -26,6 +26,12 @@ public interface DataSubmissionRepository
      * submission takes. A writer takes the submission lock as its first read, so its checks and its save see the
      * submission as locked, and another transaction's change of it waits until this one ends. A uid with no stored
      * submission locks nothing: a new submission's uid is kept unique by its unique constraint.
+     *
+     * <p>{@code FOR NO KEY UPDATE} rather than {@code FOR UPDATE}, and correctly so: no key column of a submission ever
+     * changes (its id, uid and serial number are written once), so this lock keeps out every other writer of the
+     * submission as {@code FOR UPDATE} would, while the journal's foreign-key checks on it ({@code KEY SHARE}, taken
+     * when a revision is inserted) stay compatible. The waits are bounded by the transaction's {@code lock_timeout},
+     * which {@code SubmissionLock} sets just before this read.</p>
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM DataSubmission s WHERE s.uid = :uid")

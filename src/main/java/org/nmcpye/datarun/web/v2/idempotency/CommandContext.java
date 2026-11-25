@@ -13,7 +13,8 @@ public interface CommandContext {
 
     /**
      * Compares the request's {@code If-Match} with the resource's current version. Call it once the resource's row
-     * is locked (its first read in the transaction is {@code SELECT ... FOR UPDATE}) and before changing anything.
+     * is locked (its first read in the transaction is {@code SELECT ... FOR UPDATE}, or {@code FOR NO KEY UPDATE}; see
+     * {@link Command}) and before changing anything.
      *
      * @param currentVersion the locked row's version
      * @param versionHistory a link to the resource's versions for the 412, or {@code null}
