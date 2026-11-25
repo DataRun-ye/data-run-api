@@ -236,8 +236,10 @@ Normalization flag counts are not in `freshness`; they are server monitoring (§
   release republishes everything at a quiet hour (positions move, so incremental syncs carry the column; about 3 GB of
   WAL per million submissions); otherwise old records hold null until they next change. The release notes say which.
   Either way downstream refreshes its schema in Airbyte to see the column.
-- **New streams** are readable at once: the feed's first changeset grants `SELECT` on future tables of schema `feed`
-  to the Airbyte role (`ALTER DEFAULT PRIVILEGES`).
+- **New streams** are readable at once: at every start the server grants the configured reader role
+  (`datarun.feed.reader-role`) `SELECT` on the tables of schema `feed`, and on future ones (`ALTER DEFAULT
+  PRIVILEGES`), and revokes every other non-owner grantee. When the setting is empty or names no existing role, it
+  changes nothing and logs a warning.
 - **Widening a type** is allowed only when Airbyte's type stays the same: integer to bigint (number), bounded text to
   unbounded (string). Any change of Airbyte type is breaking.
 - **Deprecating a column:** announced with a date and kept populated until a `feed_v2` replaces it; a name is never
