@@ -233,7 +233,7 @@ class NewCodeSeamsTest {
      */
     static final Set<String> RETIRING_SCHEMAS = Set.of("analytics", "pivot");
     static final Set<String> RETIRING_TABLES = Set.of(
-        "canonical_element", "template_element", "etl_runs", "error_event");
+        "canonical_element", "canonical_element_anchor", "template_element", "etl_runs", "error_event", "outbox_event");
     static final Set<String> TRANSITIONAL_TABLES = Set.of("outbox", "outbox_processing");
     static final Set<String> SYSTEM_OF_RECORD_TABLES = Set.of(
         "data_submission", "held_submission", "go_live_rule", "reference_entry",
@@ -369,14 +369,22 @@ class NewCodeSeamsTest {
                 + "travel inward (rule c)");
     }
 
-    /** SQL in new code: one finding per retiring relation, and per system-of-record table outside its seam. */
+    /**
+     * SQL in new code: one finding per retiring or transitional relation, and per system-of-record table outside its
+     * seam. A tripwire, not proof. It reads only literals that look like SQL (an uppercase SELECT, INSERT, UPDATE,
+     * DELETE or WITH), so prose naming a table is not flagged. It does not see lowercase SQL, a fragment without one of
+     * those words that is joined to others at run time, names assembled from constants, a FROM list item after a
+     * nested parenthesis, or tables reached through views, functions or a search path.
+     */
     static List<String> sqlFindings(String path, String source) {
         List<String> findings = new ArrayList<>();
         for (String literal : SubmissionWriteOwnershipTest.stringLiterals(source)) {
-            Matcher relation = RELATION.matcher(literal);
-            while (relation.find()) {
-                String schema = relation.group(1) == null ? null : relation.group(1).toLowerCase(Locale.ROOT);
-                String table = relation.group(2).toLowerCase(Locale.ROOT);
+            if (!SQL_LIKE.matcher(literal).find()) {
+                continue;
+            }
+            for (String[] relation : relations(literal)) {
+                String schema = relation[0] == null ? null : relation[0].toLowerCase(Locale.ROOT);
+                String table = relation[1].toLowerCase(Locale.ROOT);
                 boolean inPublic = schema == null || schema.equals("public");
                 if (schema != null && RETIRING_SCHEMAS.contains(schema)) {
                     findings.add(path + ": retiring relation " + schema + "." + table);
@@ -505,8 +513,9 @@ class NewCodeSeamsTest {
             assertThat(MAIN.contain(breach.origin())).as(breach.origin() + " is not in this build: remove the breach")
                 .isTrue();
             assertThat(kindOf(MAIN.get(breach.origin()))).as(breach.origin()).contains(NEW_CODE);
-            assertThat(occurs(breach.origin(), breach.dependency())).as(breach.origin() + " no longer depends on " + breach.dependency() + ": remove the "
-                + "breach").isTrue();
+            assertThat(occurs(breach.origin(), breach.dependency()))
+                .as(breach.origin() + " no longer depends on " + breach.dependency() + ": remove the breach")
+                .isTrue();
         }
     }
 
@@ -577,6 +586,19 @@ class NewCodeSeamsTest {
         assertThat(sqlFindings("org/nmcpye/datarun/submission/feed/X.java",
             "// SELECT * FROM data_submission in a comment\nString w = \"INSERT INTO feed.submission VALUES (1)\";"))
             .as("comments, and the new schemas").isEmpty();
+        assertThat(sqlFindings("org/nmcpye/datarun/submission/feed/X.java",
+            "log.info(\"Submission {} moved from assignment {} with cause {}\", id, from, cause);"))
+            .as("prose naming a table").isEmpty();
+        assertThat(sqlFindings("org/nmcpye/datarun/submission/feed/X.java", String.join("\n",
+            "String comma = \"SELECT 1 FROM feed.submission f, data_submission s WHERE f.id = s.id\";",
+            "String using = \"DELETE FROM feed.submission f USING org_unit o WHERE f.org_unit_id = o.id\";",
+            "String old = \"SELECT 1 FROM canonical_element_anchor a JOIN outbox_event e ON true\";")))
+            .as("comma joins, USING, and the old tables")
+            .containsExactly(
+                "org/nmcpye/datarun/submission/feed/X.java: system-of-record table data_submission outside its seam",
+                "org/nmcpye/datarun/submission/feed/X.java: system-of-record table org_unit outside its seam",
+                "org/nmcpye/datarun/submission/feed/X.java: retiring relation canonical_element_anchor",
+                "org/nmcpye/datarun/submission/feed/X.java: retiring relation outbox_event");
     }
 
     // Fixtures for the tests above.
@@ -770,7 +792,38 @@ class NewCodeSeamsTest {
 
     /** An optional double quote, escaped or not: Java source text holds quoted identifiers as \". */
     private static final String QUOTE = "(?:\\\\?\")?";
-    /** A relation after an SQL word that takes one, schema-qualified or not. */
-    private static final Pattern RELATION = Pattern.compile("(?i)\\b(?:from|join|into|update|truncate|table|copy)\\s+"
-        + "(?:only\\s+)?(?:" + QUOTE + "(\\w+)" + QUOTE + "\\s*\\.\\s*)?" + QUOTE + "(\\w+)");
+    /** A literal that looks like SQL. */
+    private static final Pattern SQL_LIKE = Pattern.compile("\\b(?:SELECT|INSERT|UPDATE|DELETE|WITH)\\b");
+    /** A relation's name, schema-qualified or not, quoted or not. */
+    private static final String NAME =
+        "(?:only\\s+)?(?:" + QUOTE + "(\\w+)" + QUOTE + "\\s*\\.\\s*)?" + QUOTE + "(\\w+)";
+    /** A relation after an SQL word that takes one. */
+    private static final Pattern RELATION =
+        Pattern.compile("(?i)\\b(?:from|join|into|update|truncate|table|copy|using)\\s+" + NAME);
+    /** A FROM list: from FROM to the next clause, closing parenthesis or end. */
+    private static final Pattern FROM_LIST = Pattern.compile("(?is)\\bfrom\\s+(.*?)(?=\\b(?:where|join|left|right"
+        + "|inner|full|cross|natural|group|order|limit|offset|having|union|except|intersect|returning|on|window|for)\\b"
+        + "|\\)|;|$)");
+    /** The relation an item of a FROM list starts with. */
+    private static final Pattern LEADING = Pattern.compile("(?i)\\s*" + NAME);
+
+    /** The relations a statement names: after the SQL words that take one, and every item of a FROM list. */
+    static List<String[]> relations(String sql) {
+        List<String[]> relations = new ArrayList<>();
+        Matcher relation = RELATION.matcher(sql);
+        while (relation.find()) {
+            relations.add(new String[] {relation.group(1), relation.group(2)});
+        }
+        Matcher fromList = FROM_LIST.matcher(sql);
+        while (fromList.find()) {
+            String[] items = fromList.group(1).split(",");
+            for (int i = 1; i < items.length; i++) {
+                Matcher item = LEADING.matcher(items[i]);
+                if (item.lookingAt()) {
+                    relations.add(new String[] {item.group(1), item.group(2)});
+                }
+            }
+        }
+        return relations;
+    }
 }
