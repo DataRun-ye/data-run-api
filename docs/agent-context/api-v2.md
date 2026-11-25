@@ -227,3 +227,38 @@ Deploying a release and turning on what it brings are separate steps
   container recreated; setting it back to false is the rollback.
 - A v2 handler calls `requireOn`; an operation switched off answers 422
   `operation-not-enabled`, naming its switch.
+
+## The Published Contract
+
+- The v2 OpenAPI document is group `v2` (`web.v2.config.V2OpenApiConfiguration`),
+  served at `/v3/api-docs/v2` (admin only, where the api-docs profile is on,
+  as in production) and checked in as `docs/api/openapi-v2.json`.
+- It documents the conventions once: the bearer scheme required everywhere;
+  the `Id`, `Problem` and `ProblemError` schemas; a `default` problem response
+  on every operation; `Idempotency-Key`, `If-Match`, 412 and 428 on every
+  command; `limit` and `cursor` on every list. Problem codes are listed as
+  `x-extensible-enum`, an open list, so generated clients do not reject a new
+  code.
+- `V2OpenApiContractTest` is a unit test, so `scripts/release/verify.sh`
+  (`./mvnw test`) runs it; the repository has no CI. It generates the
+  document from the v2 controllers in a web slice without a database and
+  compares it with the snapshot (`OpenApiCompatibility`): a breaking change
+  fails, and any other difference fails until the snapshot is updated, so the
+  snapshot is always the contract.
+- Additive inside v2: new operations, optional parameters, optional request
+  members, new response members, new enumeration values and codes. Breaking:
+  anything removed or renamed, a parameter or member newly required, a type,
+  format or limit that narrows what a client may send or widens what it may
+  receive, a new success status, a security change, and any schema change the
+  comparison does not model.
+- To publish an additive change: `./mvnw test -Dtest=V2OpenApiContractTest
+  -Dopenapi.v2.update=true`, then commit the snapshot with the change. A
+  breaking change also needs `-Dopenapi.v2.acceptBreaking=true` and a
+  reviewed decision; v2 takes none in ordinary work.
+- A v2 controller with collaborators adds them to that test as
+  `@MockitoBean`s. `V2OpenApiLiveIT` holds the running application to the
+  same snapshot, test fixtures hidden (`@Hidden`).
+- The document is OpenAPI 3.1 (springdoc 2.8's default), so a type is
+  compared as a set (`["string", "null"]`). Schemas are compared through the
+  operations that use them; E0 publishes no operation yet, so its check bites
+  from the first v2 route on (the test proves it fails on a deliberate break).

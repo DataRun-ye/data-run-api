@@ -1,0 +1,113 @@
+{
+  "components" : {
+    "responses" : {
+      "Problem" : {
+        "content" : {
+          "application/problem+json" : {
+            "schema" : {
+              "$ref" : "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description" : "An RFC 9457 problem; code is one entry of the problem registry."
+      }
+    },
+    "schemas" : {
+      "Id" : {
+        "description" : "An opaque identifier, at most 36 characters. Send it back exactly as received; do not parse it or assume a format.",
+        "maxLength" : 36,
+        "minLength" : 1,
+        "type" : "string"
+      },
+      "Problem" : {
+        "additionalProperties" : true,
+        "description" : "RFC 9457 problem details. Extension members such as currentVersion may follow.",
+        "properties" : {
+          "code" : {
+            "description" : "The problem's code; clients ignore codes they do not know.",
+            "type" : "string",
+            "x-extensible-enum" : [ "bad-request", "invalid-cursor", "idempotency-key-missing", "invalid-idempotency-key", "invalid-if-match", "unauthenticated", "forbidden", "not-found", "method-not-allowed", "not-acceptable", "request-in-progress", "resource-busy", "precondition-failed", "payload-too-large", "unsupported-media-type", "idempotency-key-reused", "validation-failed", "operation-not-enabled", "precondition-required", "internal-error", "service-unavailable" ]
+          },
+          "detail" : {
+            "description" : "This occurrence in words; never a submitted value or a caller's reason.",
+            "type" : "string"
+          },
+          "errors" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProblemError"
+            },
+            "type" : "array"
+          },
+          "instance" : {
+            "description" : "urn:uuid: and the request id, also sent as X-Request-ID.",
+            "format" : "uri",
+            "type" : "string"
+          },
+          "status" : {
+            "description" : "The HTTP status (RFC 9457).",
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "title" : {
+            "description" : "The code's fixed title.",
+            "type" : "string"
+          },
+          "type" : {
+            "description" : "tag:nmcpye.org,2026:datarun/problem/<code>; an identifier that resolves nowhere.",
+            "format" : "uri",
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "status", "title", "type" ],
+        "type" : "object"
+      },
+      "ProblemError" : {
+        "description" : "One finding, with at most one locator.",
+        "properties" : {
+          "code" : {
+            "description" : "What is wrong, kebab-case.",
+            "type" : "string"
+          },
+          "detail" : {
+            "type" : "string"
+          },
+          "field" : {
+            "$ref" : "#/components/schemas/Id"
+          },
+          "header" : {
+            "description" : "A request header.",
+            "type" : "string"
+          },
+          "parameter" : {
+            "description" : "A query or path parameter.",
+            "type" : "string"
+          },
+          "pointer" : {
+            "description" : "A JSON Pointer into the request body, in RFC 9457's fragment form: #/reason.",
+            "type" : "string"
+          }
+        },
+        "required" : [ "code" ],
+        "type" : "object"
+      }
+    },
+    "securitySchemes" : {
+      "bearerAuth" : {
+        "bearerFormat" : "JWT",
+        "description" : "The access token from POST /api/v1/authenticate.",
+        "scheme" : "bearer",
+        "type" : "http"
+      }
+    }
+  },
+  "info" : {
+    "description" : "Conventions: docs/agent-context/api-v2.md. Errors are RFC 9457 problems; ids are opaque strings; lists page by cursor; changes are named actions with If-Match and Idempotency-Key.",
+    "title" : "DataRun API v2",
+    "version" : "2"
+  },
+  "openapi" : "3.1.0",
+  "paths" : { },
+  "security" : [ {
+    "bearerAuth" : [ ]
+  } ]
+}
