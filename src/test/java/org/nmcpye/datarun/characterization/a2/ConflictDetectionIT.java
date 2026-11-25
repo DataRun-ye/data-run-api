@@ -262,7 +262,7 @@ class ConflictDetectionIT extends A2GoldenSupport {
         assertThat(answer(upload(G3, FIELD_1, formA(G3, uid, "changed on the phone")))).as("changed")
             .isEqualTo(updated(uid));
 
-        assertThat(revisions(uid)).as("no copy is absorbed into the deleted submission any more")
+        assertThat(revisions(uid)).as("no phone copy changes the deleted submission any more")
             .containsExactly("0 CREATE UPLOAD", "1 DELETE ADMIN_DELETE");
         assertThat(conflicts(uid)).singleElement().satisfies(conflict -> assertThat(conflict)
             .containsEntry("state", "OPEN").containsEntry("base_version", 0L));
