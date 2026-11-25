@@ -5,6 +5,7 @@ import org.nmcpye.datarun.etl.metrics.EtlHeartbeat;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.nmcpye.datarun.etl.orchestrator.EtlRunResult;
+import org.nmcpye.datarun.submission.feed.publisher.SubmissionPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -27,6 +28,10 @@ import java.util.concurrent.atomic.AtomicReference;
  * one doubles, up to {@code datarun.etl.max-poll-delay}, until a poll succeeds. A poll that succeeds also pings the
  * heartbeat monitor ({@link EtlHeartbeat}). Scheduling is enabled outside the test profiles;
  * {@code datarun.etl.enabled=false} stops this instance from polling.
+ * <p>
+ * While the submission feed is on, every poll takes the run lock, and once no outbox row is due it hands the feed's
+ * publisher the work that waits behind the live backlog ({@link SubmissionPublisher#publishAfterBacklog}), one batch
+ * at a time, with the live backlog first again after each, for as long as the poll may run.
  */
 @Service
 public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
@@ -49,18 +54,21 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
     private final EtlMetrics metrics;
     private final EtlProperties properties;
     private final EtlHeartbeat heartbeat;
+    private final SubmissionPublisher feed;
     private final AtomicReference<Duration> pause = new AtomicReference<>();
 
     private enum PollOutcome { SUCCEEDED, STOPPED, SKIPPED }
 
     public ScheduledOrchestratorRunner(NamedParameterJdbcTemplate jdbc, EtlOrchestrator orchestrator, EtlRunLock lock,
-                                       EtlMetrics metrics, EtlProperties properties, EtlHeartbeat heartbeat) {
+                                       EtlMetrics metrics, EtlProperties properties, EtlHeartbeat heartbeat,
+                                       SubmissionPublisher feed) {
         this.jdbc = jdbc;
         this.orchestrator = orchestrator;
         this.lock = lock;
         this.metrics = metrics;
         this.properties = properties;
         this.heartbeat = heartbeat;
+        this.feed = feed;
         this.pause.set(properties.getPollDelay());
     }
 
@@ -102,10 +110,11 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
     }
 
     private PollOutcome poll() {
-        if (!Boolean.TRUE.equals(jdbc.queryForObject(DUE_SQL, Map.of(), Boolean.class))) {
+        boolean publishing = feed.isOn();
+        if (!publishing && !rowsDue()) {
             return PollOutcome.SUCCEEDED;
         }
-        Optional<Boolean> stopped = lock.callExclusively(this::drain);
+        Optional<Boolean> stopped = lock.callExclusively(() -> drain(publishing));
         if (stopped.isEmpty()) {
             log.info("Another ETL run holds the lock; skipping this poll");
             return PollOutcome.SKIPPED;
@@ -123,14 +132,34 @@ public class ScheduledOrchestratorRunner implements SchedulingConfigurer {
         log.warn("The next ETL poll waits {}", next);
     }
 
-    /** Claims batches; true when one stopped on a lost connection or an interrupt. */
-    private boolean drain() {
+    private boolean rowsDue() {
+        return Boolean.TRUE.equals(jdbc.queryForObject(DUE_SQL, Map.of(), Boolean.class));
+    }
+
+    /**
+     * Claims batches while full ones come back, then, while the feed is on, runs the feed's batches behind the live
+     * backlog, claiming again first whenever a row is due; stops when nothing is left or the poll's time is up. True
+     * when a batch stopped on a lost connection or an interrupt.
+     */
+    private boolean drain(boolean publishing) {
         int batchSize = Math.max(1, properties.getBatchSize());
         long deadline = System.nanoTime() + properties.getMaxPollDuration().toNanos();
-        EtlRunResult batch;
-        do {
-            batch = orchestrator.runOnce(PIPELINE, batchSize);
-        } while (!batch.stopped() && batch.claimed() >= batchSize && System.nanoTime() - deadline < 0);
-        return batch.stopped();
+        while (true) {
+            if (rowsDue()) {
+                EtlRunResult batch = orchestrator.runOnce(PIPELINE, batchSize);
+                if (batch.stopped()) {
+                    return true;
+                }
+                if (System.nanoTime() - deadline >= 0) {
+                    return false;
+                }
+                if (batch.claimed() >= batchSize) {
+                    continue;
+                }
+            }
+            if (!publishing || System.nanoTime() - deadline >= 0 || !feed.publishAfterBacklog()) {
+                return false;
+            }
+        }
     }
 }

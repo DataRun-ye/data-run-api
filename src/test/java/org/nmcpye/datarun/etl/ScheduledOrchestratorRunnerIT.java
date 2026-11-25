@@ -16,6 +16,7 @@ import org.nmcpye.datarun.etl.metrics.EtlHeartbeat;
 import org.nmcpye.datarun.etl.metrics.EtlMetrics;
 import org.nmcpye.datarun.etl.orchestrator.EtlOrchestrator;
 import org.nmcpye.datarun.etl.orchestrator.EtlRunResult;
+import org.nmcpye.datarun.submission.feed.publisher.SubmissionPublisher;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -39,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
+import static org.mockito.Mockito.mock;
 
 /**
  * When the scheduled runner starts a run, and the lock that keeps two runs from overlapping, against
@@ -123,7 +125,8 @@ class ScheduledOrchestratorRunnerIT {
 
     private ScheduledOrchestratorRunner runner(EtlOrchestrator orchestrator, EtlProperties properties) {
         return new ScheduledOrchestratorRunner(new NamedParameterJdbcTemplate(pool), orchestrator, new EtlRunLock(pool),
-            new EtlMetrics(registry, pool, properties), properties, new EtlHeartbeat(properties));
+            new EtlMetrics(registry, pool, properties), properties, new EtlHeartbeat(properties),
+            mock(SubmissionPublisher.class));
     }
 
     private ScheduledOrchestratorRunner runner(EtlOrchestrator orchestrator) {

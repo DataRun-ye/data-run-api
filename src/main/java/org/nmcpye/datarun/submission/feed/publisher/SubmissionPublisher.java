@@ -14,14 +14,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.Savepoint;
 import java.time.Duration;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.IntSupplier;
 
 /**
  * The submission feed's publisher, as the ETL reaches it: the only entry point into the feed's writes from outside this
@@ -34,6 +39,11 @@ import java.util.Map;
  * A failure rolls back to the savepoint only, so tall and events still commit with the outbox row's success, and the
  * submission waits in the retry list as a pending change with its reason code ({@link PendingChanges}). The feed part
  * has a time limit below the row's ({@code datarun.feed.part-timeout}).</p>
+ *
+ * <p><b>After the live backlog</b> the ETL's poll calls {@link #publishAfterBacklog} for one batch at a time, the
+ * live backlog first again after each: pending changes due for a retry, each failure counting an attempt until the
+ * cap makes it dead. Each batch is one transaction under the feed's lock, each submission in its own savepoint, and
+ * stops starting submissions once it has run half the feed part's time limit, so it holds the lock briefly.</p>
  *
  * <p><b>The savepoint is a JDBC savepoint on the transaction's connection.</b> Spring's {@code Propagation.NESTED} is
  * not available here: the application's transaction manager is JPA's, whose Hibernate dialect offers no savepoints, so
@@ -53,19 +63,22 @@ public class SubmissionPublisher {
     private final Duration partTimeout;
     private final FeedWriter writer;
     private final PendingChanges pending;
+    private final TransactionTemplate afterBacklog;
     private final Map<FeedWriter.Outcome, Counter> changes;
     private final Counter failures;
     private final Map<NormalizationFlag, Counter> flags;
 
     @Autowired
-    public SubmissionPublisher(ActivationSwitches switches, DataSource dataSource, ObjectMapper objectMapper,
+    public SubmissionPublisher(ActivationSwitches switches, DataSource dataSource,
+                               PlatformTransactionManager transactionManager, ObjectMapper objectMapper,
                                FeedPublisherProperties properties, EtlProperties etlProperties,
                                ObjectProvider<SplitPartners> splitPartners, MeterRegistry registry) {
-        this(switches, dataSource, properties, etlProperties, new FeedWriter(new FormDefinitions(), objectMapper,
-            splitPartners.getIfAvailable(() -> SplitPartners.NONE)), registry);
+        this(switches, dataSource, transactionManager, properties, etlProperties, new FeedWriter(new FormDefinitions(),
+            objectMapper, splitPartners.getIfAvailable(() -> SplitPartners.NONE)), registry);
     }
 
-    SubmissionPublisher(ActivationSwitches switches, DataSource dataSource, FeedPublisherProperties properties,
+    SubmissionPublisher(ActivationSwitches switches, DataSource dataSource,
+                        PlatformTransactionManager transactionManager, FeedPublisherProperties properties,
                         EtlProperties etlProperties, FeedWriter writer, MeterRegistry registry) {
         this.switches = switches;
         this.dataSource = dataSource;
@@ -74,6 +87,9 @@ public class SubmissionPublisher {
         this.partTimeout = partTimeout(properties.getPartTimeout(), etlProperties.getRowTimeout());
         this.writer = writer;
         this.pending = new PendingChanges(properties);
+        this.afterBacklog = new TransactionTemplate(transactionManager);
+        // a backstop: each submission's own statements stop at the feed part's limit
+        this.afterBacklog.setTimeout((int) Math.max(1, partTimeout.multipliedBy(2).toSeconds()));
         Map<FeedWriter.Outcome, Counter> byOutcome = new EnumMap<>(FeedWriter.Outcome.class);
         for (FeedWriter.Outcome outcome : FeedWriter.Outcome.values()) {
             byOutcome.put(outcome, changeCounter(registry, outcome.name().toLowerCase()));
@@ -138,6 +154,59 @@ public class SubmissionPublisher {
         if (attempt.failure() != null) {
             recordFailure(submissionId, attempt);
         }
+    }
+
+    /**
+     * Publishes one batch of the work that waits behind the live backlog: pending changes due for a retry. Called by
+     * the ETL's poll once no outbox row is due, again after each batch that did something.
+     *
+     * @return whether the batch did anything; false when nothing waits, or the feed is off
+     */
+    public boolean publishAfterBacklog() {
+        if (!isOn()) {
+            return false;
+        }
+        return retryPending() > 0;
+    }
+
+    /** Retries the pending changes that are due, in one transaction under the feed's lock. */
+    private int retryPending() {
+        return inFeedTransaction(() -> {
+            List<String> due = pending.due(jdbc, Math.max(1, properties.getBatchSize()));
+            return publishEach(due, false, (submissionId, attempt) -> {
+                if (attempt.failure() != null) {
+                    recordFailure(submissionId, attempt);
+                }
+            });
+        });
+    }
+
+    /** Runs work in a transaction of its own that takes the feed's lock first; returns what the work returns. */
+    private int inFeedTransaction(IntSupplier work) {
+        Integer done = afterBacklog.execute(status -> {
+            FeedLock.take(jdbc.getJdbcOperations());
+            return work.getAsInt();
+        });
+        return done == null ? 0 : done;
+    }
+
+    /**
+     * Publishes these submissions one by one, each in its own savepoint, handing each attempt to {@code outcome};
+     * stops starting new ones once half the feed part's time limit has passed. Returns how many were attempted: the
+     * rest wait for the next batch.
+     */
+    private int publishEach(List<String> submissionIds, boolean republish,
+                            BiConsumer<String, Attempt> outcome) {
+        long started = System.nanoTime();
+        int attempted = 0;
+        for (String submissionId : submissionIds) {
+            if (attempted > 0 && System.nanoTime() - started > partTimeout.toNanos() / 2) {
+                break;
+            }
+            attempted++;
+            outcome.accept(submissionId, attempt(submissionId, republish));
+        }
+        return attempted;
     }
 
     /**

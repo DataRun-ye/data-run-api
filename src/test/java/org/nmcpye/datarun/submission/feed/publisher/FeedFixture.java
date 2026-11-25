@@ -350,6 +350,29 @@ final class FeedFixture {
         }
     }
 
+    /**
+     * Stores the assignment that {@link #MISSING_ASSIGNMENT_UID} names (in an org unit of its own, since one team has
+     * one assignment per org unit), so submissions placed on it become publishable.
+     */
+    void fixPlacement() {
+        tx.executeWithoutResult(status -> {
+            update("""
+                INSERT INTO org_unit (id, uid, code, name, path, parent_id, created_by)
+                VALUES ('fd-org-unit-2', 'fdOrgUnit02', 'FDOU2', 'fd org unit 2', ',fdOrgUnit02', NULL, 'fd-test')
+                ON CONFLICT (id) DO NOTHING""");
+            update("""
+                INSERT INTO assignment (id, uid, team_id, activity_id, org_unit_id, forms, deleted, created_by)
+                VALUES ('fd-assignment-2', 'fdAssignNo1', 'fd-team', 'fd-activity', 'fd-org-unit-2',
+                        '["fdForm00001"]'::jsonb, false, 'fd-test')
+                ON CONFLICT (id) DO NOTHING""");
+        });
+    }
+
+    /** Removes what {@link #fixPlacement} stored. */
+    void unfixPlacement() {
+        tx.executeWithoutResult(status -> update("DELETE FROM assignment WHERE id = 'fd-assignment-2'"));
+    }
+
     /** The submission's head version in the journal. */
     long head(Ids ids) {
         return jdbc.queryForObject("SELECT max(version) FROM journal.submission_revision WHERE submission_id = :id",

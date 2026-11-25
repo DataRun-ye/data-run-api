@@ -3,6 +3,9 @@ package org.nmcpye.datarun.submission.feed.publisher;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * The pending changes ({@code feed_ops.pending}): submissions whose feed part failed, one row each, whatever wrote the
  * failed change. Written in the caller's transaction, which holds the feed's lock.
@@ -38,10 +41,22 @@ final class PendingChanges {
             dead_at = coalesce(p.dead_at, CASE WHEN p.attempts + 1 >= :maxAttempts THEN now() END)
         RETURNING attempts, dead_at IS NOT NULL AS dead""";
 
+    /** The pending changes due for a retry, longest waiting first; dead ones never. */
+    private static final String DUE = """
+        SELECT submission_id FROM feed_ops.pending
+        WHERE dead_at IS NULL AND next_attempt_at <= now()
+        ORDER BY next_attempt_at, submission_id
+        LIMIT :limit""";
+
     private final FeedPublisherProperties properties;
 
     PendingChanges(FeedPublisherProperties properties) {
         this.properties = properties;
+    }
+
+    /** The submissions whose pending change is due for a retry, at most {@code limit}. */
+    List<String> due(NamedParameterJdbcTemplate jdbc, int limit) {
+        return jdbc.queryForList(DUE, Map.of("limit", limit), String.class);
     }
 
     /** Records one failure of the submission's feed part, with its reason code. */

@@ -511,7 +511,7 @@ class EtlOutboxProcessingIT {
         });
         SimpleMeterRegistry polled = new SimpleMeterRegistry();
         ScheduledOrchestratorRunner runner = new ScheduledOrchestratorRunner(jdbc, poolTimingOut, new EtlRunLock(dataSource),
-            new EtlMetrics(polled, dataSource, etlProperties), etlProperties, new EtlHeartbeat(etlProperties));
+            new EtlMetrics(polled, dataSource, etlProperties), etlProperties, new EtlHeartbeat(etlProperties), feed);
 
         for (int poll = 1; poll <= 12; poll++) {
             runner.scheduledRun();
