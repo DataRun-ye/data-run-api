@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -505,6 +506,31 @@ class SubmissionNormalizerTest {
         assertThat(normalized.values()).extracting(FieldValue::path, FieldValue::fieldId)
             .containsExactly(tuple("reused", fieldId("deUidReuse02")), tuple("same", fieldId("deUidSame001")));
         assertThat(normalized.flags()).containsExactly(entry(NormalizationFlag.AMBIGUOUS_PATH, 1));
+    }
+
+    @Test
+    void aDocumentAsDeepAsJacksonParsesNeedsLittleStack() throws Exception {
+        // a field holding 998 nested objects, kept whole: parsing is iterative, the walk stops at MAX_DEPTH and no
+        // value is copied, so a 256 KB stack is enough
+        FormVersionDefinition version = version("01JV0000000000000000000005", "fvUid000005", 5)
+            .field("deUidDeep001", null, "deep", "Text").build(FORM);
+        String document = "{\"deep\":" + "{\"k\":".repeat(998) + "1" + "}".repeat(998) + "}";
+        AtomicReference<Object> outcome = new AtomicReference<>();
+        Thread small = new Thread(null, () -> {
+            try {
+                outcome.set(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, "fvUid000005", document),
+                    FormDefinition.of(FORM, List.of(version))));
+            } catch (Throwable failure) {
+                outcome.set(failure);
+            }
+        }, "small-stack", 256 * 1024);
+        small.start();
+        small.join();
+
+        assertThat(outcome.get()).isInstanceOf(NormalizedSubmission.class);
+        NormalizedSubmission normalized = (NormalizedSubmission) outcome.get();
+        assertThat(normalized.values()).extracting(FieldValue::path, FieldValue::issue)
+            .containsExactly(tuple("deep", ValueIssue.NOT_TEXT));
     }
 
     @Test

@@ -12,8 +12,8 @@ import java.util.Objects;
  * @param sectionId         the id of the section holding the field at the value's path, or {@code null} outside every
  *                          section; an attribute of the value, which its field id alone keys inside its row
  * @param path              the data path the value is stored at
- * @param value             the stored value, whole: a number stays a number, a multi-select an array. Never JSON
- *                          null (a stored null is no value). An array or object is a copy, never the stored node
+ * @param value             the stored value, whole: a number stays an exact number, a multi-select an array. Never
+ *                          JSON null (a stored null is no value). A node of the result's own parsed tree
  * @param valueType         the declared value type of the definition that resolved the value, or {@code null} when
  *                          that definition declares none the server knows
  * @param issue             why the value does not parse as that type, or {@code null} when it does; the value is

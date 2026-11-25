@@ -28,7 +28,9 @@ import java.util.Set;
  * nesting deeper than {@link #MAX_DEPTH}. Only a programming error (a null submission) throws.</p>
  *
  * <p><b>Numbers are exact.</b> It parses the stored JSON text itself ({@link StoredJson}): a decimal keeps every digit
- * and its scale, and is never a binary float.</p>
+ * and its scale, and is never a binary float. The parsed tree is its own, so each value is a node of it, never copied;
+ * values never share nodes. Parsing is iterative and the walk stops at {@link #MAX_DEPTH}, so no document, however
+ * deep, can exhaust the stack.</p>
  *
  * <p><b>The walk</b> (the D feed spike's rules, measured on all 67,176 heads of the staging clone):</p>
  * <ul>
@@ -143,10 +145,6 @@ public final class SubmissionNormalizer {
         return issues;
     }
 
-    private static JsonNode copy(JsonNode value) {
-        return value.isContainerNode() ? value.deepCopy() : value;
-    }
-
     /** One submission's walk. */
     private static final class Walk {
 
@@ -202,7 +200,7 @@ public final class SubmissionNormalizer {
             boolean walksRows = resolution != null && resolution.isRepeatingSection()
                 && (shape == StoredShape.ROWS || shape == StoredShape.ANY);
             if ((walksObject || walksRows) && depth >= MAX_DEPTH) {
-                unmapped(container, path, copy(value), UnmappedReason.NESTED_TOO_DEEP);
+                unmapped(container, path, value, UnmappedReason.NESTED_TOO_DEEP);
             } else if (walksObject) {
                 members(value, path, container, row, false, depth + 1);
             } else if (walksRows) {
@@ -210,20 +208,20 @@ public final class SubmissionNormalizer {
             } else if (resolution != null && resolution.isField()) {
                 FieldDefinition field = resolution.field();
                 if (field.id() == null) {
-                    unmapped(container, path, copy(value), UnmappedReason.FIELD_WITHOUT_ID);
+                    unmapped(container, path, value, UnmappedReason.FIELD_WITHOUT_ID);
                 } else {
                     value(container, new FieldValue(
                         field.id(),
                         field.sectionId(),
                         path,
-                        copy(value),
+                        value,
                         field.valueType(),
                         ValueConformance.check(field.valueType(), value),
                         resolution.version().id(),
                         resolution.fromPinnedVersion()));
                 }
             } else {
-                unmapped(container, path, copy(value), resolution == null ? UnmappedReason.PATH_NOT_IN_FORM
+                unmapped(container, path, value, resolution == null ? UnmappedReason.PATH_NOT_IN_FORM
                     : resolution.isRepeatingSection() ? UnmappedReason.REPEATING_SECTION_HOLDS_NON_ROWS
                     : UnmappedReason.SECTION_HOLDS_VALUE);
             }
@@ -245,7 +243,7 @@ public final class SubmissionNormalizer {
             unmapped(container, other.path(), other.value(), UnmappedReason.FIELD_ALREADY_HAS_VALUE);
         }
 
-        /** Keeps a value no field keys; the value is already a copy, or immutable. */
+        /** Keeps a value no field keys, whole. */
         void unmapped(Container container, String path, JsonNode value, UnmappedReason reason) {
             flags.merge(NormalizationFlag.of(reason), 1, Integer::sum);
             container.unmapped.add(new UnmappedValue(path, value, reason));
