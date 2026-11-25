@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.cfg.JsonNodeFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 
+import java.util.Objects;
+
 /**
  * Stored documents as JSON text, read and written with every number exact.
  *
@@ -19,7 +21,9 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
  * written again keeps its text.</p>
  *
  * <p>Text that is not exactly one JSON value fails to parse: a syntax error, trailing content, a token JSON does not
- * have ({@code NaN}, {@code Infinity}), or nesting deeper than Jackson's limit of 1,000.</p>
+ * have ({@code NaN}, {@code Infinity}), a number Jackson cannot represent (an exponent out of range), or nesting
+ * deeper than Jackson's limit of 1,000. Every such failure is a {@link JsonProcessingException} with a fixed message
+ * naming only the kind of failure: Jackson's own messages can quote the text.</p>
  */
 public final class StoredJson {
 
@@ -36,15 +40,28 @@ public final class StoredJson {
     /**
      * Reads stored JSON text, such as {@code form_data::text}, with exact numbers.
      *
-     * @throws JsonProcessingException when the text is not exactly one JSON value
+     * @param jsonText the text; {@code null} is a programming error
+     * @throws JsonProcessingException when the text is not exactly one JSON value, whatever Jackson raised
      */
     public static JsonNode parse(String jsonText) throws JsonProcessingException {
-        JsonNode node = EXACT.readTree(jsonText);
+        Objects.requireNonNull(jsonText, "jsonText");
+        JsonNode node;
+        try {
+            node = EXACT.readTree(jsonText);
+        } catch (JsonProcessingException | RuntimeException e) {
+            // Jackson reports some numbers it cannot read (an exponent out of range) as a NumberFormatException
+            throw unreadable(e.getClass().getSimpleName());
+        }
         if (node == null || node.isMissingNode()) {
-            throw new JsonProcessingException("no JSON value in the text") {
-            };
+            throw unreadable("no JSON value");
         }
         return node;
+    }
+
+    /** A failure that names its kind, never the text or Jackson's message, and keeps no cause that might. */
+    private static JsonProcessingException unreadable(String kind) {
+        return new JsonProcessingException("stored text is not readable JSON: " + kind) {
+        };
     }
 
     /** A value as JSON text, every number in plain notation with all its digits. */

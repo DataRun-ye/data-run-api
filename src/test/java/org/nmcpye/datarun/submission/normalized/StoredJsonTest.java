@@ -75,6 +75,21 @@ class StoredJsonTest {
             .isInstanceOf(JsonProcessingException.class);
     }
 
+    @Test
+    void aNumberJacksonCannotRepresentIsAParseFailureThatDoesNotQuoteTheText() {
+        for (String number : OUT_OF_RANGE) {
+            for (String text : List.of(number, "{\"amount\": " + number + "}")) {
+                assertThatThrownBy(() -> StoredJson.parse(text)).as(text)
+                    .isInstanceOf(JsonProcessingException.class)
+                    .hasNoCause()
+                    .satisfies(e -> assertThat(e.getMessage()).doesNotContain("99999").doesNotContain("2147483648"));
+            }
+        }
+    }
+
+    /** Exponents Jackson reports as NumberFormatException, not as a JSON failure. */
+    static final List<String> OUT_OF_RANGE = List.of("1e9999999999", "1e-9999999999", "1E+2147483648", "0e99999999999");
+
     /** The text without the whitespace outside strings: JSON's canonical spacing. */
     private static String canonical(String json) throws Exception {
         StringBuilder out = new StringBuilder();

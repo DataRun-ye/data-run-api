@@ -391,6 +391,13 @@ class SubmissionNormalizerTest {
             assertThat(normalized.flags()).as(notJson)
                 .containsExactly(entry(NormalizationFlag.DOCUMENT_NOT_PARSED, 1));
         }
+        // numbers Jackson cannot represent, alone or inside a document
+        for (String number : StoredJsonTest.OUT_OF_RANGE) {
+            for (String stored : List.of(number, "{\"title\": " + number + "}")) {
+                assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, "fvUid000002", stored),
+                    FORM_DEFINITION).flags()).as(stored).containsExactly(entry(NormalizationFlag.DOCUMENT_NOT_PARSED, 1));
+            }
+        }
         // deeper than Jackson's limit of 1,000 levels
         String tooDeep = "{\"k\":".repeat(1_001) + "1" + "}".repeat(1_001);
         assertThat(SubmissionNormalizer.normalize(new StoredSubmission(SUBMISSION, "fvUid000002", tooDeep),
