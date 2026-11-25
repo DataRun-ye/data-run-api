@@ -56,6 +56,17 @@ test strategy is to be planned and built against the server surface that
 exists at that time; until then the gate does not depend on integration
 coverage.
 
+## API v2 Proxy Rule
+
+The proxy in front of the API must not compress `/api/v2` JSON responses:
+nginx's gzip module turns a strong `ETag` into a weak one, and v2 commands'
+`If-Match`, which needs strong comparison, then never matches. `gzip on` with
+nginx's default `gzip_types` (text/html only) leaves JSON alone; adding
+`application/json` or `application/problem+json` to `gzip_types` for the API
+site breaks v2 commands. The application compresses JSON itself (production
+profile) and keeps entity tags strong. The staging rehearsal checks that a v2
+response's `ETag` stays strong when requested with `Accept-Encoding: gzip`.
+
 ## Staging
 
 `deploy/staging/compose.yml` runs only the candidate API on

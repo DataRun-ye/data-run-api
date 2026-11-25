@@ -110,6 +110,11 @@ all of them.
     `Link: <...>; rel="version-history"`.
 - The comparison runs after the idempotency key is claimed and the resource's
   row is locked (Changing Requests, below), never before.
+- Entity tags must reach clients strong. The application's own compression
+  (production profile: `application/json` from 1 KB) keeps them strong
+  (`V2CompressionIT`), but nginx's gzip module turns a strong `ETag` weak, and
+  `If-Match` then never matches. Deployment rule: the proxy must not gzip
+  `/api/v2` JSON (`release-boundary.md`).
 
 ## Paging
 
