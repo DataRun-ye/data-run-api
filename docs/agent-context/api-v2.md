@@ -62,3 +62,24 @@ and its error shapes are untouched.
 - Refusals here are problems: 401 `unauthenticated` with the
   `WWW-Authenticate: Bearer` challenge, 403 `forbidden`. They are not logged
   by v2; the authentication listener records failures.
+
+## Ids
+
+- Every v2 id is an opaque string: the server's canonical id text, exactly as
+  stored. It is never the 11-character `uid`, which stays a v1 alias for
+  installed phones.
+- Clients send ids back exactly as received and assume no format or length
+  beyond 36 characters. The OpenAPI document says only `type: string`,
+  `maxLength: 36`, no `format`. The server compares ids exactly.
+- `web.v2.ids.ApiIds.isWellFormed` is the server's own guard (letters, digits,
+  `-`, up to 36): a value no stored id can take names nothing, is answered as
+  an unknown id, and never reaches a query or a log line. It is not part of
+  the contract.
+- Why opaque: stored ids are not all ULIDs, so no bit-for-bit uuid rule covers
+  them, and a later move of the database to the uuid type must change nothing
+  for clients. Measured on the staging production clone (2026-11-25, counts
+  only): every character-typed `id` in the 24 tables of that kind holds a
+  26-character ULID, except `data_template` (28 ULIDs, 27 24-hex legacy ids)
+  and `ou_level` (4 one-character ids); `canonical_element.id` is a uuid
+  column; `held_submission`, `go_live_rule` and the bookkeeping tables use
+  bigint ids.
