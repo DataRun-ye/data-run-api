@@ -28,6 +28,9 @@ import java.util.Objects;
  * PostgreSQL always prints a {@code jsonb} number in plain form, so {@code 1e10000} fails exactly as its
  * 10,001-digit plain spelling does. Every number read therefore writes again in plain form.</p>
  *
+ * <p><b>A key given twice in one object keeps its last value</b>, as {@code jsonb} keeps it on input: any text is read
+ * as PostgreSQL would store it. {@code {"s": {"n": 1}, "s": {"i": 2}}} reads as {@code {"s": {"i": 2}}}.</p>
+ *
  * <p>Text that is not exactly one JSON value fails to parse: a syntax error, trailing content, a token JSON does not
  * have ({@code NaN}, {@code Infinity}), a number Jackson cannot represent (an exponent out of range), or nesting
  * deeper than Jackson's limit of 1,000. Every such failure is a {@link JsonProcessingException} with a fixed message

@@ -109,6 +109,13 @@ class StoredJsonTest {
         assertThat(StoredJson.plainLength(new java.math.BigDecimal("123e2"))).isEqualTo(5);
     }
 
+    @Test
+    void aKeyGivenTwiceKeepsItsLastValue_asJsonbDoes() throws Exception {
+        // SELECT '{"s":{"n":1},"s":{"i":2}}'::jsonb gives {"s": {"i": 2}}
+        assertThat(StoredJson.parse("{\"s\":{\"n\":1},\"s\":{\"i\":2}}"))
+            .isEqualTo(StoredJson.parse("{\"s\":{\"i\":2}}"));
+    }
+
     /** Exponents Jackson reports as NumberFormatException, not as a JSON failure. */
     static final List<String> OUT_OF_RANGE = List.of("1e9999999999", "1e-9999999999", "1E+2147483648", "0e99999999999");
 
