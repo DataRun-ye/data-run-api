@@ -36,13 +36,17 @@ public class SqlTestContainersSpringContextCustomizerFactory implements ContextC
                                     this.getClass().getPackageName() + ".PostgreSqlTestContainer"
                             );
                             prodTestContainer = beanFactory.createBean(containerClass);
-                            beanFactory.registerSingleton(containerClass.getName(), prodTestContainer);
                             /**
                              * ((DefaultListableBeanFactory)beanFactory).registerDisposableBean(containerClass.getName(), prodTestContainer);
                              */
                         } catch (ClassNotFoundException e) {
                             throw new RuntimeException(e);
                         }
+                    }
+                    // every context can reach the one container, to run what the integrity check runs (psql) in it
+                    String containerBean = prodTestContainer.getClass().getName();
+                    if (!beanFactory.containsSingleton(containerBean)) {
+                        beanFactory.registerSingleton(containerBean, prodTestContainer);
                     }
                     testValues = testValues.and("spring.datasource.url=" + prodTestContainer.getTestContainer().getJdbcUrl() + "");
                     testValues = testValues.and("spring.datasource.username=" + prodTestContainer.getTestContainer().getUsername());

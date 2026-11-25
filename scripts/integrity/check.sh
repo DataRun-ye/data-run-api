@@ -43,6 +43,7 @@ expected_keys=(
     9a 9b 9c 9d
     10a 10b 10c 10d
     11a 11b 11c 11d 11e 11f 11g 11h
+    12a 12b 12c 12d 12e 12f 12g 12h 12i 12j 12k
 )
 
 usage() {
@@ -154,7 +155,7 @@ SELECT (SELECT count(*)
         LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
         WHERE l.locktype = 'relation' AND l.mode = 'AccessExclusiveLock'
           AND l.database = (SELECT oid FROM pg_database WHERE datname = current_database())
-          AND (c.oid IS NULL OR n.nspname IN ('public', 'analytics', 'pivot', 'journal')))
+          AND (c.oid IS NULL OR n.nspname IN ('public', 'analytics', 'pivot', 'journal', 'feed', 'feed_ops')))
        || ' ' ||
        (SELECT count(*) FROM public.databasechangeloglock WHERE locked);
 ROLLBACK;

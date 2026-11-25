@@ -63,9 +63,9 @@ the output was not understood.
     (`DATARUN_INTEGRITY_MIN_FREE_DISK_MB`, default 10240); sorts and hashes
     that pass `work_mem` spill to temporary files there;
   - an `AccessExclusiveLock` is held or waited for on a table in `public`,
-    `analytics`, `pivot` or `journal`, or on a table not committed yet (the long
-    `CREATE TABLE ..._new AS` of a pivot build), the sign of a migration or a
-    pivot build;
+    `analytics`, `pivot`, `journal`, `feed` or `feed_ops`, or on a table not
+    committed yet (the long `CREATE TABLE ..._new AS` of a pivot build), the
+    sign of a migration or a pivot build;
   - `databasechangeloglock.locked` is true: a migration is running, or stopped
     between changesets.
 - It lists the templates in a short read-only transaction (1-minute statement
@@ -112,11 +112,13 @@ about 0.5 GB, under the 1 GB limit.
 | `sql/09-version-labels.sql` | 9 |
 | `sql/10-etl-lag.sql` | 10 |
 | `sql/11-revisions.sql` | 11 |
+| `sql/12-feed.sql` | 12 |
 | `sql/payload-by-template.sql` | 2, 3, 5a–5b, 6, 7 |
 
 Each SQL statement returns rows of `key|count|description`, optionally with a
-fourth column saying where (a pivot table); the runner adds the rows up per key
-and fails (exit 5) if any expected key is missing.
+fourth column saying where (a pivot table, or for check 12 a reason code or a
+normalization flag); the runner adds the rows up per key and fails (exit 5) if
+any expected key is missing.
 
 ## The checks
 
@@ -337,6 +339,42 @@ the journal every line reads -1.
 - **11g** Reference: gap revisions. Rises only after a rollback window, by
   the number of submissions written meanwhile.
 - **11h** Reference: revisions in all.
+
+### 12. The submission feed (schema `feed`, contract version 1)
+
+The feed publishes each submission's current record from its head (its newest
+revision in the journal), with one record per row, positions from one
+sequence under one lock (`docs/features/submission-feed/contract.md`). The
+publisher keeps its pending changes (a feed part that failed, retried, and
+dead past the attempt cap, with a reason code), its republish marks and the
+normalizer's flag counts in `feed_ops`. The publication lines (12a to 12h)
+must read 0 once the feed is on and caught up (contract 8, item 4); with the
+feed off, 12a counts every head. On a database without the feed's tables
+every line reads -1.
+
+- **12a** Heads not published at their version, other than those waiting in
+  the backlog (an outbox row not processed yet) or as a pending change.
+- **12b** Submission records without their submission.
+- **12c** Row records without their submission's record.
+- **12d** Live row records of a submission whose record is deleted.
+- **12e** Positions used twice, across `submission` and `submission_row`.
+- **12f** Records at their head's version whose live row records differ in
+  number from the head's rows. The check finds a head's rows the way the
+  submission normalizer does, apart from its code: walking the document, an
+  object is walked when no form version defines its path or when its path
+  resolves to a plain section, and a non-empty array of objects is rows when
+  its path resolves to a repeating section; a path resolves, for the value's
+  shape, to the first definition that can hold it, the pinned version's first,
+  then the newest version's, a field before a section (the file states the
+  rule in full).
+- **12g** Pending changes older than the freshness target (two minutes).
+- **12h** Dead changes: pending changes past the attempt cap, by reason code,
+  and dead outbox rows (`OUTBOX_DEAD`), as `freshness.dead` counts them.
+  `--detail` splits them.
+- **12i** Reference: the backlog, outbox rows not processed yet.
+- **12j** Reference: the normalizer's flags in published records, by flag
+  (`PATH_NOT_IN_FORM` and the others). `--detail` splits them.
+- **12k** Reference: republish marks waiting.
 
 ## How the payload checks read a submission
 
