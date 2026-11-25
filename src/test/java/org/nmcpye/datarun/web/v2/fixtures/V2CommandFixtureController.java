@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.nmcpye.datarun.web.v2.idempotency.CommandOutcome;
 import org.nmcpye.datarun.web.v2.idempotency.CommandRequest;
+import org.nmcpye.datarun.web.v2.idempotency.CreateRequest;
 import org.nmcpye.datarun.web.v2.idempotency.IdempotentCommands;
 import org.nmcpye.datarun.web.v2.problem.ApiProblemException;
 import org.nmcpye.datarun.web.v2.problem.ProblemCode;
@@ -38,7 +39,10 @@ public class V2CommandFixtureController {
     /** How many times the command body ran, to tell a replay from a second application. */
     public static final AtomicInteger RUNS = new AtomicInteger();
 
-    public record Increment(@NotNull Integer by) {
+    public record Increment(@NotNull Integer by, Boolean dryRun) {
+    }
+
+    public record NewCounter(@NotNull String id, @NotNull Integer start) {
     }
 
     public record Counter(String id, long version, long value) {
@@ -59,7 +63,29 @@ public class V2CommandFixtureController {
     @PostMapping(path = "/counters/{id}:increment", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Counter> increment(@PathVariable String id, CommandRequest command,
                                              @Valid @RequestBody Increment increment) {
+        if (Boolean.TRUE.equals(increment.dryRun())) {
+            // Same headers, checked the same way, but no execute: nothing is claimed, nothing written.
+            Map<String, Object> row = reads.execute(status -> jdbc.queryForMap(
+                "SELECT version, value FROM v2_fixture_counter WHERE id = :id", Map.of("id", id)));
+            long version = ((Number) row.get("version")).longValue();
+            command.ifMatch().check(version, null);
+            return ResponseEntity.ok(new Counter(id, version + 1, ((Number) row.get("value")).longValue() + increment.by()));
+        }
         return add(id, command, increment.by());
+    }
+
+    /** A create: an Idempotency-Key and no If-Match, answered 201 with Location and the first version's ETag. */
+    @PostMapping(path = "/counters", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Counter> create(CreateRequest create, @Valid @RequestBody NewCounter counter) {
+        return commands.create(create, context -> {
+            RUNS.incrementAndGet();
+            MapSqlParameterSource first = new MapSqlParameterSource()
+                .addValue("id", counter.id()).addValue("version", 0).addValue("value", counter.start());
+            jdbc.update("INSERT INTO v2_fixture_counter (id, version, value) VALUES (:id, :version, :value)", first);
+            jdbc.update("INSERT INTO v2_fixture_counter_version (id, version, value) VALUES (:id, :version, :value)",
+                first);
+            return CommandOutcome.created("fixture-counter", counter.id(), 0);
+        }, this::render, outcome -> java.net.URI.create("/api/v2/fixtures/counters/" + outcome.resourceId()));
     }
 
     /** A command that reads no body: one sent anyway must not be hashed as empty. */
@@ -87,10 +113,15 @@ public class V2CommandFixtureController {
             jdbc.update("INSERT INTO v2_fixture_counter_version (id, version, value) VALUES (:id, :version, :value)",
                 next);
             return CommandOutcome.ok("fixture-counter", id, version + 1);
-        }, outcome -> reads.execute(status -> jdbc.queryForObject(
+        }, this::render);
+    }
+
+    /** The counter at the outcome's version, from its history, as a module renders a past version. */
+    private Counter render(CommandOutcome outcome) {
+        return reads.execute(status -> jdbc.queryForObject(
             "SELECT value FROM v2_fixture_counter_version WHERE id = :id AND version = :version",
             new MapSqlParameterSource().addValue("id", outcome.resourceId())
                 .addValue("version", outcome.resourceVersion()),
-            (rs, n) -> new Counter(outcome.resourceId(), outcome.resourceVersion(), rs.getLong(1)))));
+            (rs, n) -> new Counter(outcome.resourceId(), outcome.resourceVersion(), rs.getLong(1))));
     }
 }

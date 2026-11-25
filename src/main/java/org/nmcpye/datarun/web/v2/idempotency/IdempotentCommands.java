@@ -2,6 +2,7 @@ package org.nmcpye.datarun.web.v2.idempotency;
 
 import org.nmcpye.datarun.web.v2.caller.ApiCaller;
 import org.nmcpye.datarun.web.v2.concurrency.EntityTag;
+import org.nmcpye.datarun.web.v2.concurrency.IfMatch;
 import org.nmcpye.datarun.web.v2.config.V2Properties;
 import org.nmcpye.datarun.web.v2.problem.ApiProblemException;
 import org.nmcpye.datarun.web.v2.problem.ProblemCode;
@@ -13,7 +14,9 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.net.URI;
 import java.security.MessageDigest;
+import java.util.function.Function;
 
 /**
  * Runs v2 commands so that a retry after a lost response is answered with the first outcome, never applied twice.
@@ -53,7 +56,24 @@ public class IdempotentCommands {
         this.transactions.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
     }
 
+    /** Runs a change of a versioned resource: the command checks {@code If-Match} through its context. */
     public <B> ResponseEntity<B> execute(CommandRequest request, Command command, OutcomeRenderer<B> renderer) {
+        return run(request, request.ifMatch(), command, renderer, null);
+    }
+
+    /**
+     * Runs a create: the same claim and replay, with no {@code If-Match} (its context refuses
+     * {@code checkVersion}). The answer, first or replayed, also carries {@code Location}.
+     *
+     * @param location the created resource's URL, from the outcome
+     */
+    public <B> ResponseEntity<B> create(CreateRequest request, Command command, OutcomeRenderer<B> renderer,
+                                        Function<CommandOutcome, URI> location) {
+        return run(request, null, command, renderer, location);
+    }
+
+    private <B> ResponseEntity<B> run(IdempotentRequest request, IfMatch ifMatch, Command command,
+                                      OutcomeRenderer<B> renderer, Function<CommandOutcome, URI> location) {
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
             throw new IllegalStateException("A v2 command runs in its own transaction; call it outside one");
         }
@@ -75,7 +95,7 @@ public class IdempotentCommands {
                 }
                 return new Result(completed.outcome(), true);
             }
-            CommandOutcome outcome = command.run(new Context(request));
+            CommandOutcome outcome = command.run(new Context(caller, ifMatch));
             if (outcome == null) {
                 throw new IllegalStateException("A command returns its outcome");
             }
@@ -84,6 +104,9 @@ public class IdempotentCommands {
         });
         ResponseEntity.BodyBuilder response = ResponseEntity.status(result.outcome().responseStatus())
             .eTag(EntityTag.ofVersion(result.outcome().resourceVersion()).toString());
+        if (location != null) {
+            response.location(location.apply(result.outcome()));
+        }
         if (result.replayed()) {
             response.header(REPLAYED_HEADER, "true");
         }
@@ -93,16 +116,27 @@ public class IdempotentCommands {
     private record Result(CommandOutcome outcome, boolean replayed) {
     }
 
-    private record Context(CommandRequest request) implements CommandContext {
+    private static final class Context implements CommandContext {
+
+        private final ApiCaller caller;
+        private final IfMatch ifMatch;
+
+        Context(ApiCaller caller, IfMatch ifMatch) {
+            this.caller = caller;
+            this.ifMatch = ifMatch;
+        }
 
         @Override
         public ApiCaller caller() {
-            return request.caller();
+            return caller;
         }
 
         @Override
         public void checkVersion(long currentVersion, String versionHistory) {
-            request.ifMatch().check(currentVersion, versionHistory);
+            if (ifMatch == null) {
+                throw new IllegalStateException("A create names no version to check");
+            }
+            ifMatch.check(currentVersion, versionHistory);
         }
     }
 }

@@ -32,4 +32,9 @@ public record CommandOutcome(int responseStatus, String resourceType, String res
     public static CommandOutcome ok(String resourceType, String resourceId, long resourceVersion) {
         return new CommandOutcome(200, resourceType, resourceId, resourceVersion);
     }
+
+    /** A resource created by the command, at its first version. */
+    public static CommandOutcome created(String resourceType, String resourceId, long resourceVersion) {
+        return new CommandOutcome(201, resourceType, resourceId, resourceVersion);
+    }
 }

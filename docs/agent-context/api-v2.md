@@ -215,9 +215,14 @@ body, which each method's request defines; E0 builds no shared body type.
   submissions that history is the revision journal (step C) through the
   translation (step E1a); until a module has a history, it cannot offer
   replayable commands.
-- A dry run writes nothing and is not a command: it neither needs nor claims
-  an idempotency key, so a tool may dry-run a change and then send it with
-  its key.
+- A dry run is the same request with `dryRun: true`: it sends the same
+  headers (the key and `If-Match`), which are checked the same way, including
+  412 when stale, but it never runs through `execute`, so it claims nothing and
+  writes nothing; the change itself may follow with the same key.
+- A create of a resource with no version yet (a note, a grant) takes
+  `CreateRequest`: an `Idempotency-Key` and no `If-Match` (one sent is 400
+  `invalid-if-match`). `IdempotentCommands.create` claims and replays like a
+  change and answers 201 with `Location` and the first version's `ETag`.
 - Command bodies are at most 1 MB (413 `payload-too-large`).
 
 ## Activation Switches

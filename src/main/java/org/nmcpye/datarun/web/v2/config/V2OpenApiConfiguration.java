@@ -21,6 +21,7 @@ import org.nmcpye.datarun.web.v2.ApiV2;
 import org.nmcpye.datarun.web.v2.caller.ApiCaller;
 import org.nmcpye.datarun.web.v2.concurrency.IfMatch;
 import org.nmcpye.datarun.web.v2.idempotency.CommandRequest;
+import org.nmcpye.datarun.web.v2.idempotency.CreateRequest;
 import org.nmcpye.datarun.web.v2.idempotency.IdempotencyKey;
 import org.nmcpye.datarun.web.v2.ids.ApiIds;
 import org.nmcpye.datarun.web.v2.paging.CursorCodec;
@@ -44,7 +45,7 @@ import java.util.List;
  *   <li>the {@code Id} schema, {@code Problem} and {@code ProblemError}, and a {@code default} response on every
  *       operation: any error is an RFC 9457 problem;</li>
  *   <li>for a command (a handler taking {@link CommandRequest}): the {@code Idempotency-Key} and {@code If-Match}
- *       headers and the 412 and 428 answers;</li>
+ *       headers and the 412 and 428 answers; for a create ({@link CreateRequest}), the key alone;</li>
  *   <li>for a list (a handler taking {@link PageQuery}): the {@code limit} and {@code cursor} parameters.</li>
  * </ul>
  */
@@ -61,7 +62,8 @@ public class V2OpenApiConfiguration {
 
     static {
         // Supplied by v2's argument resolvers, not read from the request as such; documented by conventions().
-        SpringDocUtils.getConfig().addRequestWrapperToIgnore(CommandRequest.class, ApiCaller.class, PageQuery.class);
+        SpringDocUtils.getConfig().addRequestWrapperToIgnore(CommandRequest.class, CreateRequest.class,
+            ApiCaller.class, PageQuery.class);
     }
 
     @Bean
@@ -76,12 +78,14 @@ public class V2OpenApiConfiguration {
 
     static Operation conventions(Operation operation, HandlerMethod handler) {
         List<Class<?>> parameters = Arrays.asList(handler.getMethod().getParameterTypes());
-        if (parameters.contains(CommandRequest.class)) {
+        if (parameters.contains(CommandRequest.class) || parameters.contains(CreateRequest.class)) {
             operation.addParametersItem(new HeaderParameter().name(IdempotencyKey.HEADER).required(true)
                 .description("A UUID chosen for this change and sent unchanged on every retry of it; quoted as a "
                     + "Structured Field string or bare. A retry with the same key and request replays the first "
                     + "outcome (Idempotent-Replayed: true); the same key with another request is 422.")
                 .schema(new StringSchema().format("uuid")));
+        }
+        if (parameters.contains(CommandRequest.class)) {
             operation.addParametersItem(new HeaderParameter().name(IfMatch.HEADER).required(true)
                 .description("The ETag of the version this change was decided on. Missing or * is 428; stale is "
                     + "412.")

@@ -251,6 +251,52 @@ class V2CommandsIT {
         assertThat(storedVersion()).isEqualTo(1);
     }
 
+    /** A dry run sends the same headers, checked the same way, and claims nothing: the change may follow. */
+    @Test
+    void aDryRunChecksTheSameHeadersAndClaimsNothing() throws Exception {
+        String key = key();
+        MockHttpServletResponse dry = increment(key, "\"0\"", "{\"by\": 2, \"dryRun\": true}");
+        assertThat(dry.getStatus()).isEqualTo(200);
+        assertThat(body(dry).get("value").asLong()).isEqualTo(2);
+        assertThat(records()).isZero();
+        assertThat(storedVersion()).isZero();
+        assertThat(problemCode(increment(key, "\"5\"", "{\"by\": 2, \"dryRun\": true}")))
+            .isEqualTo("precondition-failed");
+        assertThat(problemCode(increment(null, "\"0\"", "{\"by\": 2, \"dryRun\": true}")))
+            .isEqualTo("idempotency-key-missing");
+
+        MockHttpServletResponse real = increment(key, "\"0\"", "{\"by\": 2}");
+        assertThat(real.getStatus()).isEqualTo(200);
+        assertThat(real.getHeader(IdempotentCommands.REPLAYED_HEADER)).isNull();
+        assertThat(storedVersion()).isEqualTo(1);
+    }
+
+    /** A create takes an Idempotency-Key and no If-Match, and replays like any command. */
+    @Test
+    void aCreateTakesAKeyAndNoIfMatch() throws Exception {
+        String key = key();
+        MockHttpServletResponse created = send(post("/api/v2/fixtures/counters"), V2TestUsers.CALLER_A, key, null,
+            "{\"id\": \"c2\", \"start\": 5}");
+        assertThat(created.getStatus()).isEqualTo(201);
+        assertThat(created.getHeader(HttpHeaders.LOCATION)).isEqualTo("/api/v2/fixtures/counters/c2");
+        assertThat(created.getHeader(HttpHeaders.ETAG)).isEqualTo("\"0\"");
+        assertThat(body(created).get("value").asLong()).isEqualTo(5);
+
+        MockHttpServletResponse replay = send(post("/api/v2/fixtures/counters"), V2TestUsers.CALLER_A, key, null,
+            "{\"id\": \"c2\", \"start\": 5}");
+        assertThat(replay.getStatus()).isEqualTo(201);
+        assertThat(replay.getHeader(IdempotentCommands.REPLAYED_HEADER)).isEqualTo("true");
+        assertThat(replay.getHeader(HttpHeaders.LOCATION)).isEqualTo("/api/v2/fixtures/counters/c2");
+        assertThat(V2CommandFixtureController.RUNS.get()).isEqualTo(1);
+
+        assertThat(problemCode(send(post("/api/v2/fixtures/counters"), V2TestUsers.CALLER_A, key, null,
+            "{\"id\": \"c3\", \"start\": 5}"))).isEqualTo("idempotency-key-reused");
+        assertThat(problemCode(send(post("/api/v2/fixtures/counters"), V2TestUsers.CALLER_A, key(), "\"0\"",
+            "{\"id\": \"c4\", \"start\": 5}"))).isEqualTo("invalid-if-match");
+        assertThat(problemCode(send(post("/api/v2/fixtures/counters"), V2TestUsers.CALLER_A, null, null,
+            "{\"id\": \"c5\", \"start\": 5}"))).isEqualTo("idempotency-key-missing");
+    }
+
     @Test
     void aBodyOverTheLimitIs413() throws Exception {
         String big = "{\"by\": 1, \"padding\": \"" + "x".repeat(1024 * 1024) + "\"}";

@@ -19,7 +19,7 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 
 /**
- * Keeps the body of a command (any handler that takes {@link CommandRequest}, wherever it is declared) as received,
+ * Keeps the body of a command (any handler that takes an {@link IdempotentRequest}, wherever it is declared) as received,
  * for its fingerprint, and hands the same bytes on to the handler's body parameter. A body over the configured size
  * is refused, 413, before it is parsed. It applies to every controller; {@link #supports} limits it to commands.
  */
@@ -36,7 +36,7 @@ public class CommandBodyCapture extends RequestBodyAdviceAdapter {
     public boolean supports(MethodParameter parameter, Type targetType,
                             Class<? extends HttpMessageConverter<?>> converterType) {
         return parameter.getMethod() != null && Arrays.stream(parameter.getMethod().getParameterTypes())
-            .anyMatch(type -> type == CommandRequest.class);
+            .anyMatch(IdempotentRequest.class::isAssignableFrom);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class CommandBodyCapture extends RequestBodyAdviceAdapter {
                 .detail("A command body may be at most " + max + " bytes.");
         }
         RequestContextHolder.currentRequestAttributes()
-            .setAttribute(CommandRequest.BODY_ATTRIBUTE, body, RequestAttributes.SCOPE_REQUEST);
+            .setAttribute(IdempotentRequest.BODY_ATTRIBUTE, body, RequestAttributes.SCOPE_REQUEST);
         HttpHeaders headers = input.getHeaders();
         return new HttpInputMessage() {
             @Override
