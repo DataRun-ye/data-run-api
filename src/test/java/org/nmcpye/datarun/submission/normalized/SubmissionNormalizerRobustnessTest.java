@@ -78,6 +78,9 @@ class SubmissionNormalizerRobustnessTest {
             if (i % 97 == 0) {
                 // now and then a document cut short: no JSON at all
                 stored = stored.substring(0, stored.length() / 2);
+            } else if (i % 89 == 0) {
+                // and now and then no document
+                stored = null;
             }
 
             NormalizedSubmission normalized =

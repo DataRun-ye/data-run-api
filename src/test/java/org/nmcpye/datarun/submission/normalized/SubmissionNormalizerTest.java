@@ -411,7 +411,7 @@ class SubmissionNormalizerTest {
     }
 
     @Test
-    void aDocumentThatIsNotAnObjectIsUnmappedWholeAndFlagged_andAMissingOneIsEmpty() {
+    void aDocumentThatIsNotAnObjectIsUnmappedWholeAndFlagged_andAMissingOneIsFlagged() {
         NormalizedSubmission array = normalize("['a']");
         assertThat(array.unmapped())
             .extracting(UnmappedValue::path, UnmappedValue::reason, u -> u.value().toString())
@@ -422,7 +422,7 @@ class SubmissionNormalizerTest {
         assertThat(missing.values()).isEmpty();
         assertThat(missing.unmapped()).isEmpty();
         assertThat(missing.rows()).isEmpty();
-        assertThat(missing.flags()).isEmpty();
+        assertThat(missing.flags()).containsExactly(entry(NormalizationFlag.DOCUMENT_MISSING, 1));
     }
 
     @Test

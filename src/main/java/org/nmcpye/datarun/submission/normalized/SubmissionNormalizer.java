@@ -23,9 +23,10 @@ import java.util.Set;
  *
  * <p><b>It never fails on data.</b> Its callers run it inside transactions, where one exception would retry a
  * change until it dies. Whatever the stored document and the stored definitions hold, it returns a result, and
- * counts what it met in {@link NormalizedSubmission#flags()}: a document that is not JSON, a missing form or pinned
- * version, values no field keys (by reason), values that do not parse as their type, ids and fields used twice,
- * nesting deeper than {@link #MAX_DEPTH}. Only a programming error (a null submission) throws.</p>
+ * counts what it met in {@link NormalizedSubmission#flags()}: a missing document or one that is not JSON, a missing
+ * form or pinned version, values no field keys (by reason), values that do not parse as their type, ids and fields
+ * used twice, paths reused across versions, nesting deeper than {@link #MAX_DEPTH}. Only a programming error (a null
+ * submission) throws.</p>
  *
  * <p><b>Numbers are exact.</b> It parses the stored JSON text itself ({@link StoredJson}): a decimal keeps every digit
  * and its scale, and is never a binary float. The parsed tree is its own, so each value is a node of it, never copied;
@@ -123,9 +124,12 @@ public final class SubmissionNormalizer {
             flags);
     }
 
-    /** The parsed document, or {@code null} when there is none or it is not JSON (then kept whole as text). */
+    /**
+     * The parsed document, or {@code null} when there is none (flagged) or it is not JSON (kept whole as text, flagged).
+     */
     private static JsonNode parse(String text, Walk walk, Container top) {
         if (text == null) {
+            walk.flags.put(NormalizationFlag.DOCUMENT_MISSING, 1);
             return null;
         }
         try {
