@@ -121,6 +121,10 @@ so a rebuild of the same commit is a different, untested image.
    one ordinary submission.
 6. Publish the GitHub release with the digest and the rollback image.
 
+Liquibase expands a `${}` parameter before it computes a changeset's checksum: setting, changing or removing a
+lock-timeout override (such as `outboxIndexLockTimeout`) after its changeset ran makes every later start fail
+validation, so set one only for the start that runs that changeset.
+
 Required host values are documented in `deploy/production/.env.example`.
 Keep the existing `DATARUN_JWT_BASE64_SECRET` unchanged unless key rotation and
 reauthentication are the explicit purpose of a separate release.

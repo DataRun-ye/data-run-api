@@ -8,6 +8,9 @@
 
     <!-- How long the drop may wait for its lock; a Liquibase parameter of the same name overrides it. -->
     <property name="analyticsEtlRunsLockTimeout" value="30s"/>
+    <!-- Set, change or remove that override only for the start that runs the changeset: Liquibase expands the
+         parameter into the SQL before it computes the checksum, so once the changeset ran, an override set,
+         changed or removed makes every later start fail validation (release-boundary.md, Release). -->
 
     <!--
       Drops analytics.etl_runs, an old copy of the ETL's run log that nothing uses: owner's decision of 2026-11-25

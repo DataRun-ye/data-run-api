@@ -8,6 +8,9 @@
 
     <!-- How long the index build may wait for a lock; a Liquibase parameter of the same name overrides it. -->
     <property name="assignmentTeamIndexLockTimeout" value="30s"/>
+    <!-- Set, change or remove that override only for the start that runs the changeset: Liquibase expands the
+         parameter into the SQL before it computes the checksum, so once the changeset ran, an override set,
+         changed or removed makes every later start fail validation (release-boundary.md, Release). -->
 
     <!--
       Assignments by team. The phone syncs and the supervisor scope read a team's assignments, and no index starts

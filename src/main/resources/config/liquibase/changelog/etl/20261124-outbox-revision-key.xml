@@ -8,6 +8,9 @@
 
     <!-- How long the outbox's DDL may wait for its lock; a Liquibase parameter of the same name overrides it. -->
     <property name="outboxRevisionLockTimeout" value="30s"/>
+    <!-- Set, change or remove that override only for the start that runs the changeset: Liquibase expands the
+         parameter into the SQL before it computes the checksum, so once the changeset ran, an override set,
+         changed or removed makes every later start fail validation (release-boundary.md, Release). -->
 
     <!--
       An outbox row announces only a revision that exists: (submission_id, submission_version) references the
