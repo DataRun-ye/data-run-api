@@ -52,6 +52,20 @@ public final class MigrationRepeatIdGenerator {
     }
 
     /**
+     * Whether {@link #generateMissingIdsForMigration} would give any row an id: a row of a repeatable section with
+     * neither {@code _id} nor {@code _uid}, as apps 5.2 and 5.3 send every row. It reads only: the document is not
+     * changed, and nothing is logged. Conflict detection tags such a copy before the upload mints its ids.
+     */
+    public boolean hasRowsWithoutIds(JsonNode root) {
+        if (root == null || !root.isObject()) {
+            return false;
+        }
+        int[] generated = {0};
+        traverseAndGenerate(root.deepCopy(), null, null, null, new HashSet<>(), generated);
+        return generated[0] > 0;
+    }
+
+    /**
      * Walks the provided root (must be an ObjectNode or converted to one).
      * Generates missing repeat IDs for any configured repeatable sections.
      *
