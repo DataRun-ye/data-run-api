@@ -18,6 +18,8 @@ import org.nmcpye.datarun.submission.normalized.FieldValue;
 import org.nmcpye.datarun.submission.normalized.NormalizedRow;
 import org.nmcpye.datarun.submission.normalized.NormalizedSubmission;
 import org.nmcpye.datarun.submission.normalized.SubmissionNormalizer;
+import org.nmcpye.datarun.submission.normalized.UnmappedReason;
+import org.nmcpye.datarun.submission.normalized.UnmappedValue;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -39,9 +41,11 @@ import static org.assertj.core.api.Assertions.entry;
  * The agreement harness proven on a database migrated by the whole changelog and seeded with heads of every shape
  * the harness must handle: rows with stored, empty and missing ids, nested rows, exact numbers, empty arrays, JSON
  * nulls and structure keys, a head newer than its first revision, values of another version and of a deleted one, a
- * document that is not an object, none at all, a row id used twice, a form with no definition, and a submission with
- * no head. The real normalizer agrees with the oracle on all of them; a faulty one is caught and named by form; what
- * the normalizer keeps whole is counted apart. Ids and values are invented.
+ * document that is not an object, none at all, a row id used twice, one field stored at two paths (the pinned
+ * version's value kept, else the first in walk order), a form with no definition, and a submission with no head. The
+ * real normalizer agrees with the oracle on all of them, mapped values by field id and unmapped ones by path; a value
+ * under the wrong field, a wrongly unmapped value and other faults are caught and named by form; what the normalizer
+ * keeps whole is its own category. Ids and values are invented.
  */
 class FeedAgreementIT {
 
@@ -93,6 +97,7 @@ class FeedAgreementIT {
         dataElement("01JAGDE0000000000000000004", "agDeChoice1", "SelectMulti");
         dataElement("01JAGDE0000000000000000005", "agDeOld0001", "Text");
         dataElement("01JAGDE0000000000000000006", "agDeAge0001", "Integer");
+        dataElement("01JAGDE0000000000000000007", "agDeGeo0001", "Text");
 
         form(FORM_A, FORM_A_ID);
         String sections = """
@@ -101,18 +106,21 @@ class FeedAgreementIT {
              {"name": "members", "path": "visit.households.members", "repeatable": true}]""";
         version(FORM_A, FORM_A_ID, "01JAGFV0000000000000000011", "agFormAVer1", 1, sections, """
             [{"id": "agDeTitle01", "name": "title", "path": "agDeTitle01", "type": "Text"},
+             {"id": "agDeTitle01", "name": "headline", "path": "visit.agDeTitle01", "type": "Text"},
              {"id": "agDeOld0001", "name": "old_note", "path": "visit.agDeOld0001", "type": "Text"},
              {"id": "agDeCount01", "name": "count", "path": "visit.households.agDeCount01", "type": "Integer"},
              {"id": "agDeAge0001", "name": "age", "path": "visit.households.members.agDeAge0001", "type": "Integer"}]""");
         version(FORM_A, FORM_A_ID, "01JAGFV0000000000000000012", "agFormAVer2", 2, sections, """
             [{"id": "agDeTitle01", "name": "title", "path": "agDeTitle01", "type": "Text"},
+             {"id": "agDeTitle01", "name": "visit-alt", "path": "agDeTitle01", "type": "Text"},
              {"id": "agDeAmount1", "name": "amount", "path": "visit.agDeAmount1", "type": "Number"},
              {"id": "agDeCount01", "name": "count", "path": "visit.households.agDeCount01", "type": "Integer"},
              {"id": "agDeChoice1", "name": "choice", "path": "visit.households.agDeChoice1", "type": "SelectMulti"},
              {"id": "agDeAge0001", "name": "age", "path": "visit.households.members.agDeAge0001", "type": "Integer"}]""");
         form(FORM_KEEP, FORM_KEEP_ID);
-        version(FORM_KEEP, FORM_KEEP_ID, "01JAGFV0000000000000000031", "agFormKVer1", 1, "[]",
-            "[{\"id\": \"agDeTitle01\", \"name\": \"title\", \"path\": \"agDeTitle01\", \"type\": \"Text\"}]");
+        version(FORM_KEEP, FORM_KEEP_ID, "01JAGFV0000000000000000031", "agFormKVer1", 1, "[]", """
+            [{"id": "agDeTitle01", "name": "title", "path": "agDeTitle01", "type": "Text"},
+             {"id": "agDeGeo0001", "name": "geo", "path": "agDeGeo0001", "type": "Text"}]""");
 
         // rows with a stored id, a missing one and an empty one; nested rows; zero rows; an exact decimal
         baseline("01JAGSB0000000000000000001", FORM_A, "agFormAVer2", false, """
@@ -148,12 +156,23 @@ class FeedAgreementIT {
         baseline("01JAGSB0000000000000000009", FORM_A, "agFormAVer2", true, "{\"title\": \"T9\"}");
         // a submission no revision records yet
         submission("01JAGSB0000000000000000010", FORM_A, "agFormAVer2", false, "{\"title\": \"T10\"}");
+        // one field at two paths of one container: the pinned version's value is kept, the other unmapped
+        baseline("01JAGSB0000000000000000013", FORM_A, "agFormAVer2", false,
+            "{\"title\": \"a\", \"visit\": {\"headline\": \"b\"}}");
+        // ... and with no pinned version, the first in walk order
+        baseline("01JAGSB0000000000000000014", FORM_A, "agGoneVer02", false,
+            "{\"title\": \"c\", \"visit\": {\"headline\": \"d\"}}");
+        // walk order compares key by key: visit before visit-alt, though "visit-alt" sorts before "visit.headline"
+        baseline("01JAGSB0000000000000000015", FORM_A, "agGoneVer02", false,
+            "{\"visit\": {\"headline\": \"e\"}, \"visit-alt\": \"f\"}");
         // a form with no stored definition: every value unmapped at its path
         baseline("01JAGSB0000000000000000011", FORM_NONE, "agNoneVer01", false,
             "{\"title\": \"x\", \"group\": {\"inner\": 5, \"deeper\": {\"leaf\": true}}}");
-        // rows at a path no version defines: the normalizer keeps them whole, the oracle walks them
+        // rows at a path no version defines, and an object at a field: the normalizer keeps them whole
         baseline("01JAGSB0000000000000000012", FORM_KEEP, "agFormKVer1", false,
             "{\"title\": \"t\", \"notes\": [{\"text\": \"a\"}, {\"text\": \"b\"}]}");
+        baseline("01JAGSB0000000000000000016", FORM_KEEP, "agFormKVer1", false,
+            "{\"geo\": {\"lat\": 15.35, \"lng\": 44.2}}");
     }
 
     private static void dataElement(String id, String uid, String type) {
@@ -230,71 +249,124 @@ class FeedAgreementIT {
         assertThat(report.agrees()).as(report.text()).isTrue();
         assertThat(report.disagreementsByForm()).isEmpty();
         assertThat(report.lines()).contains(
-            entry("heads", 10L),
+            entry("heads", 13L),
             entry("submissions without a head", 1L),
             entry("heads whose document is not an object", 1L),
-            entry("oracle values", 21L),
+            entry("oracle mapped values", 19L),
+            entry("oracle unmapped values", 8L),
             entry("oracle empty arrays (apart)", 3L),
             entry("oracle rows", 7L),
-            entry("normalized values", 16L),
-            entry("normalized unmapped values", 5L),
+            entry("normalized values", 20L),
+            entry("normalized unmapped values", 8L),
             entry("normalized unmapped values, PATH_NOT_IN_FORM", 4L),
+            entry("normalized unmapped values, FIELD_ALREADY_HAS_VALUE", 3L),
             entry("normalized unmapped values, DOCUMENT_NOT_AN_OBJECT", 1L),
             entry("normalized empty arrays (apart)", 1L),
             entry("normalized rows", 7L),
             entry("heads using a row id twice (compared without row ids)", 1L),
-            entry("values holding objects or rows (kept whole; the oracle walks into them)", 0L),
+            entry(FeedAgreement.WHOLE, 0L),
             entry("normalization flags, DUPLICATE_ID", 1L),
-            entry("normalization flags, PINNED_VERSION_MISSING", 2L),
+            entry("normalization flags, PINNED_VERSION_MISSING", 4L),
             entry("normalization flags, FORM_MISSING", 1L),
             entry("normalization flags, DOCUMENT_MISSING", 1L));
         assertThat(run(List.of(FORM_A, FORM_NONE), 500, SubmissionNormalizer::normalize).lines())
             .as("the batch size changes no count").isEqualTo(report.lines());
     }
 
+    /** The real normalizer's result for one head, changed by {@code change}; every other head as it is. */
+    private static FeedAgreement.Normalizing changing(String submissionId,
+                                                      java.util.function.UnaryOperator<NormalizedSubmission> change) {
+        return (stored, form) -> {
+            NormalizedSubmission real = SubmissionNormalizer.normalize(stored, form);
+            return stored.id().equals(submissionId) ? change.apply(real) : real;
+        };
+    }
+
     /** The harness is not vacuous: a normalizer that drops a value and renames a row is caught, and its form named. */
     @Test
     void aFaultyNormalizerIsCaughtAndItsFormNamed() throws Exception {
-        FeedAgreement.Report report = run(List.of(FORM_A, FORM_NONE), 500, (stored, form) -> {
-            NormalizedSubmission real = SubmissionNormalizer.normalize(stored, form);
-            if (!stored.id().equals("01JAGSB0000000000000000001")) {
-                return real;
-            }
-            List<FieldValue> values = real.values().subList(1, real.values().size());
-            List<NormalizedRow> rows = new ArrayList<>(real.rows());
-            NormalizedRow first = rows.get(0);
-            rows.set(0, new NormalizedRow("not-the-head-s-row", first.idOrigin(), first.storedId(),
-                first.parentRowId(), first.sectionId(), first.sectionPath(), first.index(), first.values(),
-                first.unmapped()));
-            return new NormalizedSubmission(real.submissionId(), real.formId(), "another-version", values,
-                real.unmapped(), rows, real.flags());
-        });
+        FeedAgreement.Report report = run(List.of(FORM_A, FORM_NONE), 500, changing("01JAGSB0000000000000000001",
+            real -> {
+                List<FieldValue> values = real.values().subList(1, real.values().size());
+                List<NormalizedRow> rows = new ArrayList<>(real.rows());
+                NormalizedRow first = rows.get(0);
+                rows.set(0, new NormalizedRow("not-the-head-s-row", first.idOrigin(), first.storedId(),
+                    first.parentRowId(), first.sectionId(), first.sectionPath(), first.index(), first.values(),
+                    first.unmapped()));
+                return new NormalizedSubmission(real.submissionId(), real.formId(), "another-version", values,
+                    real.unmapped(), rows, real.flags());
+            }));
 
         assertThat(report.agrees()).isFalse();
         assertThat(report.lines()).contains(
-            entry(FeedAgreement.AGREE + "values missing (in the head, not normalized)", 3L),
-            entry(FeedAgreement.AGREE + "values extra (normalized, not in the head)", 2L),
-            entry(FeedAgreement.AGREE + "values different (a missing and an extra at one row and path)", 0L),
-            entry(FeedAgreement.AGREE + "head rows missing from the normalized rows", 1L),
-            entry(FeedAgreement.AGREE + "normalized rows not in the head", 1L),
-            entry(FeedAgreement.AGREE + "form or form version differs from the head's", 1L));
+            entry(FeedAgreement.MAPPED_MISSING, 3L),
+            entry(FeedAgreement.MAPPED_EXTRA, 2L),
+            entry(FeedAgreement.MAPPED_DIFFERENT, 0L),
+            entry(FeedAgreement.UNMAPPED_MISSING, 0L),
+            entry(FeedAgreement.UNMAPPED_EXTRA, 0L),
+            entry(FeedAgreement.ROWS_MISSING, 1L),
+            entry(FeedAgreement.ROWS_EXTRA, 1L),
+            entry(FeedAgreement.FORM_DIFFERS, 1L));
         assertThat(report.disagreementsByForm()).containsOnlyKeys(FORM_A);
-        assertThat(report.text()).contains("form agFormA0001: values missing 3; values extra 2; rows missing 1; "
+        assertThat(report.text()).contains("form agFormA0001: mapped missing 3; mapped extra 2; rows missing 1; "
             + "rows extra 1; form or version 1;");
     }
 
-    /** Rows at a path no version defines are one value to the normalizer and rows to the oracle: counted apart. */
+    /** A value kept under another field than the head's rule gives it is caught, though its path and value agree. */
     @Test
-    void whatTheNormalizerKeepsWholeIsCountedApart() throws Exception {
-        FeedAgreement.Report report = run(List.of(FORM_KEEP), 500, SubmissionNormalizer::normalize);
+    void aValueUnderTheWrongFieldIdIsCaught() throws Exception {
+        FeedAgreement.Report report = run(List.of(FORM_A), 500, changing("01JAGSB0000000000000000001", real -> {
+            List<FieldValue> values = new ArrayList<>(real.values());
+            FieldValue title = values.get(0);
+            values.set(0, new FieldValue("01JAGDE0000000000000000003", title.sectionId(), title.path(), title.value(),
+                title.valueType(), title.issue(), title.formVersionId(), title.fromPinnedVersion()));
+            return new NormalizedSubmission(real.submissionId(), real.formId(), real.formVersionId(), values,
+                real.unmapped(), real.rows(), real.flags());
+        }));
 
         assertThat(report.lines()).contains(
-            entry("heads", 1L),
-            entry("values holding objects or rows (kept whole; the oracle walks into them)", 1L),
-            entry(FeedAgreement.AGREE + "values missing (in the head, not normalized)", 2L),
-            entry(FeedAgreement.AGREE + "values extra (normalized, not in the head)", 1L),
-            entry(FeedAgreement.AGREE + "head rows missing from the normalized rows", 2L));
-        assertThat(report.disagreementsByForm()).containsOnlyKeys(FORM_KEEP);
+            entry(FeedAgreement.MAPPED_MISSING, 1L),
+            entry(FeedAgreement.MAPPED_EXTRA, 1L),
+            entry(FeedAgreement.UNMAPPED_MISSING, 0L),
+            entry(FeedAgreement.UNMAPPED_EXTRA, 0L));
+        assertThat(report.agrees()).isFalse();
+    }
+
+    /** A value the head's rule maps, kept as unmapped at its own path, is caught: the two kinds are compared apart. */
+    @Test
+    void aWronglyUnmappedValueIsCaught() throws Exception {
+        FeedAgreement.Report report = run(List.of(FORM_A), 500, changing("01JAGSB0000000000000000001", real -> {
+            FieldValue title = real.values().get(0);
+            List<UnmappedValue> unmapped = new ArrayList<>(real.unmapped());
+            unmapped.add(new UnmappedValue(title.path(), title.value(), UnmappedReason.PATH_NOT_IN_FORM));
+            return new NormalizedSubmission(real.submissionId(), real.formId(), real.formVersionId(),
+                real.values().subList(1, real.values().size()), unmapped, real.rows(), real.flags());
+        }));
+
+        assertThat(report.lines()).contains(
+            entry(FeedAgreement.MAPPED_MISSING, 1L),
+            entry(FeedAgreement.MAPPED_EXTRA, 0L),
+            entry(FeedAgreement.UNMAPPED_MISSING, 0L),
+            entry(FeedAgreement.UNMAPPED_EXTRA, 1L));
+        assertThat(report.agrees()).isFalse();
+    }
+
+    /**
+     * Rows at a path no version defines, and an object at a field: one value to the normalizer, rows and values to
+     * the oracle. They are their own category, with what the oracle finds inside them, and inflate no agreement line.
+     */
+    @Test
+    void whatTheNormalizerKeepsWholeIsItsOwnCategory() throws Exception {
+        FeedAgreement.Report report = run(List.of(FORM_KEEP), 500, SubmissionNormalizer::normalize);
+
+        assertThat(report.agrees()).as(report.text()).isTrue();
+        assertThat(report.lines()).contains(
+            entry("heads", 2L),
+            entry(FeedAgreement.WHOLE, 2L),
+            entry("oracle values inside values kept whole", 4L),
+            entry("oracle rows inside values kept whole", 2L),
+            entry("oracle mapped values", 1L),
+            entry("oracle rows", 0L));
     }
 
     /** The coordinator's entry point: the environment names the database, and the counts go to a file. */
@@ -311,7 +383,7 @@ class FeedAgreementIT {
 
             assertThat(report.agrees()).isTrue();
             assertThat(java.nio.file.Files.readString(out)).isEqualTo(report.text())
-                .contains("heads = 10\n", "agree: values missing (in the head, not normalized) = 0\n")
+                .contains("heads = 13\n", FeedAgreement.MAPPED_MISSING + " = 0\n")
                 .doesNotContain("T1", "01JAGSB");
         } finally {
             java.nio.file.Files.deleteIfExists(out);

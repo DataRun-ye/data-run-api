@@ -44,18 +44,19 @@ import java.util.function.BiFunction;
  * The feed's agreement harness (build step F8's measure): the submission normalizer against the feed spike's oracle,
  * on every head of the revision journal, counts only.
  *
- * <p>The oracle ({@code scripts/feed/sql/oracle-walk.sql} and {@code oracle-header.sql}) reads each head with no form
- * definition: every value at its data path in its row, rows keyed by the contract's recipe, and the ids of the form and
- * form version the head names. The normalizer reads the same head with the stored definitions
- * ({@link FormDefinitionJdbcReader}), as the publisher will. For each head the two are compared as multisets of
- * values by row, data path and JSON value (numbers exact, an object's keys in any order), rows by id, and the form and
- * form version ids. Empty arrays are counted apart: without a definition they are zero rows or an empty
- * multi-select. A head whose rows use one id twice is compared without row ids, since the oracle cannot give the later
- * rows their derived ids.</p>
+ * <p>The oracle ({@code scripts/feed/sql/oracle-walk.sql} and {@code oracle-header.sql}) reads each head in SQL: every
+ * value at its data path in its row, rows keyed by the contract's recipe, the field each value is expected under by the
+ * contract's resolution rule, and the ids of the form and form version the head names. The normalizer reads the same
+ * head with the stored definitions ({@link FormDefinitionJdbcReader}), as the publisher will. For each head the two
+ * are compared as multisets: mapped values by row, field id and JSON value, unmapped values by row, data path and JSON
+ * value (numbers exact, an object's keys in any order), each reported apart, so that a value under the wrong field,
+ * or wrongly unmapped, is counted; rows by id; and the form and form version ids. Empty arrays are counted apart:
+ * without the shape of a definition they are zero rows or an empty multi-select. A head whose rows use one id twice is
+ * compared without row ids, since the oracle cannot give the later rows their derived ids.</p>
  *
- * <p>The lines whose names start with "agree:" must read 0; the others are for reference. The normalizer keeps whole
- * what a definition gives one field (an object, rows at a path no version defines), and the oracle walks into it:
- * such values are counted in "values holding objects or rows", and each shows as missing and extra values.</p>
+ * <p>The lines whose names start with "agree:" must read 0; the others are for reference. What the normalizer keeps
+ * whole, an object at a field or rows at a path no version defines, is its own category: the value is set apart with
+ * the oracle's values and rows inside it, and counted.</p>
  *
  * <p><b>Where it runs.</b> The operator names the database to measure ({@code FEED_AGREEMENT_DATABASE}), and the run
  * refuses unless the database it is connected to is that one ({@code current_database()}). A second guard refuses
@@ -70,6 +71,20 @@ public final class FeedAgreement {
 
     /** Every line that must read 0 starts with this. */
     public static final String AGREE = "agree: ";
+
+    public static final String MAPPED_MISSING = AGREE + "mapped values missing (in the head, not normalized under its field)";
+    public static final String MAPPED_EXTRA = AGREE + "mapped values extra (normalized under a field the head does not "
+        + "give it)";
+    public static final String MAPPED_DIFFERENT = AGREE + "mapped values different (one field of one row, another value)";
+    public static final String UNMAPPED_MISSING = AGREE + "unmapped values missing (in the head, not normalized as "
+        + "unmapped)";
+    public static final String UNMAPPED_EXTRA = AGREE + "unmapped values extra (normalized as unmapped, not in the head)";
+    public static final String UNMAPPED_DIFFERENT = AGREE + "unmapped values different (one path of one row, another "
+        + "value)";
+    public static final String ROWS_MISSING = AGREE + "head rows missing from the normalized rows";
+    public static final String ROWS_EXTRA = AGREE + "normalized rows not in the head";
+    public static final String FORM_DIFFERS = AGREE + "form or form version differs from the head's";
+    public static final String WHOLE = "values kept whole (an object at a field, or rows at a path no version defines)";
 
     private static final Path ORACLE_WALK = Path.of("scripts", "feed", "sql", "oracle-walk.sql");
     private static final Path ORACLE_HEADER = Path.of("scripts", "feed", "sql", "oracle-header.sql");
@@ -174,14 +189,12 @@ public final class FeedAgreement {
     private FeedAgreement(Normalizing normalizing) {
         this.normalizing = normalizing;
         for (String line : List.of("heads", "submissions without a head", "heads whose document is not an object",
-            "oracle values", "oracle empty arrays (apart)", "oracle rows", "normalized values",
-            "normalized unmapped values", "normalized empty arrays (apart)", "normalized rows",
-            "heads using a row id twice (compared without row ids)",
-            "values holding objects or rows (kept whole; the oracle walks into them)",
-            AGREE + "values missing (in the head, not normalized)", AGREE + "values extra (normalized, not in the head)",
-            AGREE + "values different (a missing and an extra at one row and path)",
-            AGREE + "head rows missing from the normalized rows", AGREE + "normalized rows not in the head",
-            AGREE + "form or form version differs from the head's")) {
+            "oracle mapped values", "oracle unmapped values", "oracle empty arrays (apart)", "oracle rows",
+            "normalized values", "normalized unmapped values", "normalized empty arrays (apart)", "normalized rows",
+            "heads using a row id twice (compared without row ids)", WHOLE, "oracle values inside values kept whole",
+            "oracle rows inside values kept whole",
+            MAPPED_MISSING, MAPPED_EXTRA, MAPPED_DIFFERENT, UNMAPPED_MISSING, UNMAPPED_EXTRA, UNMAPPED_DIFFERENT,
+            ROWS_MISSING, ROWS_EXTRA, FORM_DIFFERS)) {
             lines.put(line, 0L);
         }
     }
@@ -318,22 +331,34 @@ public final class FeedAgreement {
         return heads;
     }
 
-    /** A value as compared: its row (null outside every row), its data path, and its JSON written exactly. */
-    private record Value(String rowId, String path, String json) {
+    /** A value as compared: its row (null outside every row), its field id or data path, and its JSON, exact. */
+    private record Value(String rowId, String key, String json) {
     }
 
-    /** What one side holds of one head. */
-    private static final class Side {
-        final List<Value> values = new ArrayList<>();
-        final List<String> rows = new ArrayList<>();
+    /** A value of the oracle: its row, data path, JSON, and the field it is expected under (null: unmapped). */
+    private record Leaf(String rowId, String path, String json, String fieldId) {
+    }
+
+    /** A row of the oracle: its id, the row it is nested in, and its section's data path. */
+    private record OracleRow(String id, String parentId, String path) {
+    }
+
+    /** What the oracle holds of one head. */
+    private static final class OracleSide {
+        final List<Leaf> leaves = new ArrayList<>();
+        final List<OracleRow> rows = new ArrayList<>();
         String formId;
         String formVersionId;
     }
 
+    /** A value the normalizer keeps whole: its row and data path. */
+    private record Whole(String rowId, String path) {
+    }
+
     private void compare(Connection connection, String walk, String header, List<Head> heads,
                          Map<String, FormDefinitionJdbcReader.Snapshot> definitions) throws SQLException {
-        Map<String, Side> oracle = new HashMap<>();
-        heads.forEach(head -> oracle.put(head.submissionId(), new Side()));
+        Map<String, OracleSide> oracle = new HashMap<>();
+        heads.forEach(head -> oracle.put(head.submissionId(), new OracleSide()));
         Array ids = connection.createArrayOf("text", heads.stream().map(Head::submissionId).toArray());
         Array versions = connection.createArrayOf("bigint", heads.stream().map(Head::version).toArray());
         try (PreparedStatement statement = connection.prepareStatement(walk)) {
@@ -341,19 +366,13 @@ public final class FeedAgreement {
             statement.setArray(2, versions);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
-                    Side side = oracle.get(rs.getString("submission_id"));
+                    OracleSide side = oracle.get(rs.getString("submission_id"));
                     if (rs.getBoolean("is_row")) {
-                        side.rows.add(rs.getString("row_id"));
+                        side.rows.add(new OracleRow(rs.getString("row_id"), rs.getString("parent_row_id"),
+                            rs.getString("path")));
                     } else {
-                        String json = exact(rs.getString("value"));
-                        if (json.equals("[]")) {
-                            add("oracle empty arrays (apart)", 1);
-                        } else {
-                            side.values.add(new Value(rs.getString("row_id"), rs.getString("path"), json));
-                            if (rs.getString("path").isEmpty()) {
-                                add("heads whose document is not an object", 1);
-                            }
-                        }
+                        side.leaves.add(new Leaf(rs.getString("row_id"), rs.getString("path"),
+                            exact(rs.getString("value")), rs.getString("field_id")));
                     }
                 }
             }
@@ -363,7 +382,7 @@ public final class FeedAgreement {
             statement.setArray(2, versions);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
-                    Side side = oracle.get(rs.getString("submission_id"));
+                    OracleSide side = oracle.get(rs.getString("submission_id"));
                     side.formId = rs.getString("form_id");
                     side.formVersionId = rs.getString("form_version_id");
                 }
@@ -378,36 +397,102 @@ public final class FeedAgreement {
         }
     }
 
-    private void compare(Head head, Side oracle, NormalizedSubmission normalized) {
+    private void compare(Head head, OracleSide oracle, NormalizedSubmission normalized) {
         add("heads", 1);
-        Side side = new Side();
-        side.formId = normalized.formId();
-        side.formVersionId = normalized.formVersionId();
-        collect(side, null, normalized.values(), normalized.unmapped());
-        for (NormalizedRow row : normalized.rows()) {
-            side.rows.add(row.id());
-            collect(side, row.id(), row.values(), row.unmapped());
-        }
         normalized.flags().forEach((flag, count) -> add("normalization flags, " + flag, count));
 
-        add("oracle values", oracle.values.size());
-        add("oracle rows", oracle.rows.size());
-        add("normalized rows", side.rows.size());
+        // the normalizer's side: mapped by field id, unmapped by data path, what it keeps whole apart
+        List<Value> mapped = new ArrayList<>();
+        List<Value> unmapped = new ArrayList<>();
+        List<Whole> wholes = new ArrayList<>();
+        List<String> rows = new ArrayList<>();
+        collect(null, normalized.values(), normalized.unmapped(), mapped, unmapped, wholes);
+        for (NormalizedRow row : normalized.rows()) {
+            rows.add(row.id());
+            collect(row.id(), row.values(), row.unmapped(), mapped, unmapped, wholes);
+        }
+        add("normalized rows", rows.size());
 
-        boolean rowIdUsedTwice = new HashSet<>(oracle.rows).size() < oracle.rows.size();
+        // the oracle's side, without what lies inside a value the normalizer keeps whole
+        Set<String> rowsInside = rowsInside(oracle.rows, wholes);
+        List<Value> expectedMapped = new ArrayList<>();
+        List<Value> expectedUnmapped = new ArrayList<>();
+        for (Leaf leaf : oracle.leaves) {
+            if (rowsInside.contains(leaf.rowId()) || insideAWhole(leaf.rowId(), leaf.path(), wholes)) {
+                add("oracle values inside values kept whole", 1);
+            } else if (leaf.json().equals("[]")) {
+                add("oracle empty arrays (apart)", 1);
+            } else {
+                if (leaf.path().isEmpty()) {
+                    add("heads whose document is not an object", 1);
+                }
+                if (leaf.fieldId() != null) {
+                    expectedMapped.add(new Value(leaf.rowId(), leaf.fieldId(), leaf.json()));
+                } else {
+                    expectedUnmapped.add(new Value(leaf.rowId(), leaf.path(), leaf.json()));
+                }
+            }
+        }
+        List<String> headRows = new ArrayList<>();
+        for (OracleRow row : oracle.rows) {
+            if (rowsInside.contains(row.id())) {
+                add("oracle rows inside values kept whole", 1);
+            } else {
+                headRows.add(row.id());
+            }
+        }
+        add("oracle mapped values", expectedMapped.size());
+        add("oracle unmapped values", expectedUnmapped.size());
+        add("oracle rows", headRows.size());
+
+        boolean rowIdUsedTwice = new HashSet<>(headRows).size() < headRows.size();
         if (rowIdUsedTwice) {
             add("heads using a row id twice (compared without row ids)", 1);
         }
-        Map<Value, Integer> expected = multiset(oracle.values, rowIdUsedTwice);
-        Map<Value, Integer> actual = multiset(side.values, rowIdUsedTwice);
+        long[] mappedCounts = difference(expectedMapped, mapped, rowIdUsedTwice);
+        long[] unmappedCounts = difference(expectedUnmapped, unmapped, rowIdUsedTwice);
+
+        long rowsMissing;
+        long rowsExtra;
+        if (rowIdUsedTwice) {
+            rowsMissing = Math.max(0, headRows.size() - rows.size());
+            rowsExtra = Math.max(0, rows.size() - headRows.size());
+        } else {
+            Set<String> normalizedRows = new HashSet<>(rows);
+            Set<String> expectedRows = new HashSet<>(headRows);
+            rowsMissing = expectedRows.stream().filter(id -> !normalizedRows.contains(id)).count();
+            rowsExtra = normalizedRows.stream().filter(id -> !expectedRows.contains(id)).count();
+        }
+        long header = Objects.equals(oracle.formId, normalized.formId())
+            && Objects.equals(oracle.formVersionId, normalized.formVersionId()) ? 0 : 1;
+
+        String form = head.formUid();
+        disagree(form, "mapped missing", MAPPED_MISSING, mappedCounts[0]);
+        disagree(form, "mapped extra", MAPPED_EXTRA, mappedCounts[1]);
+        disagree(form, "mapped different", MAPPED_DIFFERENT, mappedCounts[2]);
+        disagree(form, "unmapped missing", UNMAPPED_MISSING, unmappedCounts[0]);
+        disagree(form, "unmapped extra", UNMAPPED_EXTRA, unmappedCounts[1]);
+        disagree(form, "unmapped different", UNMAPPED_DIFFERENT, unmappedCounts[2]);
+        disagree(form, "rows missing", ROWS_MISSING, rowsMissing);
+        disagree(form, "rows extra", ROWS_EXTRA, rowsExtra);
+        disagree(form, "form or version", FORM_DIFFERS, header);
+    }
+
+    /**
+     * Missing, extra and different values between the expected and the normalized multisets: a missing and an extra
+     * value at one row and key (field id or data path) count once more as different.
+     */
+    private static long[] difference(List<Value> expected, List<Value> actual, boolean withoutRows) {
+        Map<Value, Integer> want = multiset(expected, withoutRows);
+        Map<Value, Integer> have = multiset(actual, withoutRows);
+        Set<Value> keys = new HashSet<>(want.keySet());
+        keys.addAll(have.keySet());
         long missing = 0;
         long extra = 0;
         Map<List<String>, long[]> byPlace = new HashMap<>();
-        Set<Value> keys = new HashSet<>(expected.keySet());
-        keys.addAll(actual.keySet());
         for (Value value : keys) {
-            int difference = expected.getOrDefault(value, 0) - actual.getOrDefault(value, 0);
-            long[] place = byPlace.computeIfAbsent(Arrays.asList(value.rowId(), value.path()), p -> new long[2]);
+            int difference = want.getOrDefault(value, 0) - have.getOrDefault(value, 0);
+            long[] place = byPlace.computeIfAbsent(Arrays.asList(value.rowId(), value.key()), p -> new long[2]);
             if (difference > 0) {
                 missing += difference;
                 place[0] += difference;
@@ -417,55 +502,38 @@ public final class FeedAgreement {
             }
         }
         long different = byPlace.values().stream().mapToLong(place -> Math.min(place[0], place[1])).sum();
-
-        long rowsMissing;
-        long rowsExtra;
-        if (rowIdUsedTwice) {
-            rowsMissing = Math.max(0, oracle.rows.size() - side.rows.size());
-            rowsExtra = Math.max(0, side.rows.size() - oracle.rows.size());
-        } else {
-            Set<String> normalizedRows = new HashSet<>(side.rows);
-            Set<String> headRows = new HashSet<>(oracle.rows);
-            rowsMissing = headRows.stream().filter(id -> !normalizedRows.contains(id)).count();
-            rowsExtra = normalizedRows.stream().filter(id -> !headRows.contains(id)).count();
-        }
-        long header = Objects.equals(oracle.formId, side.formId)
-            && Objects.equals(oracle.formVersionId, side.formVersionId) ? 0 : 1;
-
-        disagree(head.formUid(), "values missing", AGREE + "values missing (in the head, not normalized)", missing);
-        disagree(head.formUid(), "values extra", AGREE + "values extra (normalized, not in the head)", extra);
-        disagree(head.formUid(), "values different",
-            AGREE + "values different (a missing and an extra at one row and path)", different);
-        disagree(head.formUid(), "rows missing", AGREE + "head rows missing from the normalized rows", rowsMissing);
-        disagree(head.formUid(), "rows extra", AGREE + "normalized rows not in the head", rowsExtra);
-        disagree(head.formUid(), "form or version", AGREE + "form or form version differs from the head's", header);
+        return new long[]{missing, extra, different};
     }
 
-    /** One side's values of one container: mapped and unmapped alike, at their data paths; empty arrays apart. */
-    private void collect(Side side, String rowId, List<FieldValue> values, List<UnmappedValue> unmapped) {
+    /** One container's values, by kind; empty arrays counted apart, values kept whole set apart. */
+    private void collect(String rowId, List<FieldValue> values, List<UnmappedValue> unmappedValues, List<Value> mapped,
+                         List<Value> unmapped, List<Whole> wholes) {
         for (FieldValue value : values) {
-            if (keep(value.value())) {
-                add("normalized values", 1);
-                side.values.add(new Value(rowId, value.path(), StoredJson.write(value.value())));
+            add("normalized values", 1);
+            if (keep(rowId, value.path(), value.value(), wholes)) {
+                mapped.add(new Value(rowId, value.fieldId(), StoredJson.write(value.value())));
             }
         }
-        for (UnmappedValue value : unmapped) {
-            if (keep(value.value())) {
-                add("normalized unmapped values", 1);
-                add("normalized unmapped values, " + value.reason(), 1);
-                side.values.add(new Value(rowId, value.path(), StoredJson.write(value.value())));
+        for (UnmappedValue value : unmappedValues) {
+            add("normalized unmapped values", 1);
+            add("normalized unmapped values, " + value.reason(), 1);
+            if (keep(rowId, value.path(), value.value(), wholes)) {
+                unmapped.add(new Value(rowId, value.path(), StoredJson.write(value.value())));
             }
         }
     }
 
-    /** Whether a normalized value is compared: not an empty array (counted apart); one holding more is counted too. */
-    private boolean keep(JsonNode value) {
+    /** Whether a normalized value is compared: not an empty array, and not a value kept whole. */
+    private boolean keep(String rowId, String path, JsonNode value, List<Whole> wholes) {
         if (value.equals(EMPTY_ARRAY)) {
             add("normalized empty arrays (apart)", 1);
             return false;
         }
-        if (holdsObjects(value)) {
-            add("values holding objects or rows (kept whole; the oracle walks into them)", 1);
+        // a document that is not an object is one value to both sides
+        if (!path.isEmpty() && holdsObjects(value)) {
+            add(WHOLE, 1);
+            wholes.add(new Whole(rowId, path));
+            return false;
         }
         return true;
     }
@@ -484,11 +552,42 @@ public final class FeedAgreement {
         return false;
     }
 
+    /** Whether a place (a row, or outside every row, and a data path) lies in a value kept whole. */
+    private static boolean insideAWhole(String rowId, String path, List<Whole> wholes) {
+        for (Whole whole : wholes) {
+            if (Objects.equals(whole.rowId(), rowId)
+                && (path.equals(whole.path()) || path.startsWith(whole.path() + "."))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The oracle's rows that lie in a value the normalizer keeps whole, nested ones included. */
+    private static Set<String> rowsInside(List<OracleRow> rows, List<Whole> wholes) {
+        Set<String> inside = new HashSet<>();
+        if (wholes.isEmpty()) {
+            return inside;
+        }
+        boolean grew = true;
+        while (grew) {
+            grew = false;
+            for (OracleRow row : rows) {
+                if (!inside.contains(row.id())
+                    && (insideAWhole(row.parentId(), row.path(), wholes) || inside.contains(row.parentId()))) {
+                    inside.add(row.id());
+                    grew = true;
+                }
+            }
+        }
+        return inside;
+    }
+
     /** The values as a multiset, by row or, for a head using a row id twice, without rows. */
     private static Map<Value, Integer> multiset(List<Value> values, boolean withoutRows) {
         Map<Value, Integer> multiset = new HashMap<>();
         for (Value value : values) {
-            multiset.merge(withoutRows ? new Value(null, value.path(), value.json()) : value, 1, Integer::sum);
+            multiset.merge(withoutRows ? new Value(null, value.key(), value.json()) : value, 1, Integer::sum);
         }
         return multiset;
     }
