@@ -359,8 +359,8 @@ The outbox contract:
   revision. Per-consumer progress is not built; the ETL keeps its claim state
   on the row.
 
-The version is what a later correction's `ETag` will carry: `ETag:
-"<version>"` on a read, `If-Match: "<version>"` on a correction (412 when
+The version is what submission review's `ETag` will carry: `ETag:
+"<version>"` on a view, `If-Match: "<version>"` on an edit or other change (412 when
 stale), for a submission's `lock_version`, which its head revision equals. A
 delete, and later a restore, is a version too. Never the form version
 (`template_version_uid`, `template_version_no`, the outbox `topic`) and never
