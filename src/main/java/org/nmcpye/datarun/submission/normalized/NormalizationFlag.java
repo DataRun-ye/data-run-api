@@ -25,7 +25,7 @@ public enum NormalizationFlag {
     FIELD_ALREADY_HAS_VALUE,
     /** Values unmapped because they lie deeper than the walk goes. */
     NESTED_TOO_DEEP,
-    /** The submission has no stored document, so no values. Counted once. */
+    /** The submission holds no document (SQL NULL, or the JSON {@code null}), so no values. Counted once. */
     DOCUMENT_MISSING,
     /** The stored document is JSON but not an object. Counted once. */
     DOCUMENT_NOT_AN_OBJECT,

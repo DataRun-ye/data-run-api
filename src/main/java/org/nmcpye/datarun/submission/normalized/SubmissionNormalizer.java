@@ -100,7 +100,10 @@ public final class SubmissionNormalizer {
         Walk walk = new Walk(definition, pinned, submission.id(), flags);
         Container top = new Container();
         JsonNode data = parse(submission.formData(), walk, top);
-        if (data != null && !data.isNull()) {
+        if (data != null && data.isNull()) {
+            // the JSON null means what SQL NULL means: the submission holds no document
+            flags.put(NormalizationFlag.DOCUMENT_MISSING, 1);
+        } else if (data != null) {
             if (data.isObject()) {
                 walk.members(data, null, top, null, false, 0);
             } else {

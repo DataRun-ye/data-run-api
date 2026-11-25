@@ -431,6 +431,14 @@ class SubmissionNormalizerTest {
         assertThat(missing.unmapped()).isEmpty();
         assertThat(missing.rows()).isEmpty();
         assertThat(missing.flags()).containsExactly(entry(NormalizationFlag.DOCUMENT_MISSING, 1));
+        // the JSON null means what SQL NULL means
+        NormalizedSubmission jsonNull = SubmissionNormalizer.normalize(
+            new StoredSubmission(SUBMISSION, "fvUid000002", " null "), FORM_DEFINITION);
+        assertThat(jsonNull.values()).isEmpty();
+        assertThat(jsonNull.unmapped()).isEmpty();
+        assertThat(jsonNull.flags()).containsExactly(entry(NormalizationFlag.DOCUMENT_MISSING, 1));
+        // a root that is any other non-object stays DOCUMENT_NOT_AN_OBJECT
+        assertThat(normalize("7").flags()).containsExactly(entry(NormalizationFlag.DOCUMENT_NOT_AN_OBJECT, 1));
     }
 
     @Test
