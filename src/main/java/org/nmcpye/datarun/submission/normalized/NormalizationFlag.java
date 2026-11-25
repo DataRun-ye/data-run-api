@@ -2,8 +2,9 @@ package org.nmcpye.datarun.submission.normalized;
 
 /**
  * A condition in a stored submission that the normalizer met and handled without failing, counted per submission in
- * {@link NormalizedSubmission#flags()}. The feed publisher and submission review expose the counts (freshness, an
- * integrity check) instead of failing on the data.
+ * {@link NormalizedSubmission#flags()}, so that no caller fails on the data. The counts are server monitoring
+ * (integrity check 12 and a metric, feed contract 4), never part of the feed: downstream sees what they count in the
+ * published values themselves, such as the unmapped values.
  */
 public enum NormalizationFlag {
     /** No definition of the submission's form is stored: every value is unmapped. Counted once. */
