@@ -166,6 +166,31 @@ class FormDefinitionTest {
     }
 
     @Test
+    void pathsThatNameDifferentThingsAcrossVersionsOrTwiceInOneAreAmbiguous() {
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+            .field("deUidReuse01", null, "reused", "Text")
+            .section("flip", false)
+            .section("stock", false)
+            .field("deUidSame001", null, "same", "Text")
+            .field("deUidTwiceA1", null, "twice", "Text")
+            .field("deUidTwiceB1", null, "twice", "Integer")
+            .build(FORM);
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+            .field("deUidReuse02", null, "reused", "Text")
+            .field("deUidFlip001", null, "flip", "Text")
+            .section("stock", true)
+            .field("deUidSame001", null, "same", "Text")
+            .build(FORM);
+        FormDefinition form = FormDefinition.of(FORM, List.of(v1, v2));
+
+        // another field's path, a section become a field, a path twice in one version; plain to repeating is not
+        assertThat(form.ambiguousPaths()).containsExactlyInAnyOrder("reused", "flip", "twice");
+        // resolution is unchanged: the pinned version's, and twice in one version the first in stored order
+        assertThat(form.resolve(v2, "reused", StoredShape.LEAF).field().id()).isEqualTo(fieldId("deUidReuse02"));
+        assertThat(form.resolve(v1, "twice", StoredShape.LEAF).field().id()).isEqualTo(fieldId("deUidTwiceA1"));
+    }
+
+    @Test
     void storedShapesFollowTheSpike() {
         assertThat(StoredShape.of(StoredForms.json("{}"))).isEqualTo(StoredShape.OBJECT);
         assertThat(StoredShape.of(StoredForms.json("[{}, {'a': 1}]"))).isEqualTo(StoredShape.ROWS);

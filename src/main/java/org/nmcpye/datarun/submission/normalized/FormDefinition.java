@@ -29,6 +29,13 @@ import java.util.Set;
  * <p>A submission whose pinned version is not among the form's stored versions (a deleted version) resolves by the
  * same order without step 2: through the form's other versions, newest first.</p>
  *
+ * <p><b>Ambiguous paths.</b> A data path that names different fields in different versions (a path reused for another
+ * data element), or a field in one version and a section in another, or that one version defines twice, still
+ * resolves by the order above (twice in one version: the first in stored order). Such paths are listed in
+ * {@link #ambiguousPaths()}, and every stored value or container at one is flagged
+ * {@link NormalizationFlag#AMBIGUOUS_PATH}. A section that is plain in one version and repeating in another is not
+ * ambiguous: the stored shape decides.</p>
+ *
  * <p>Immutable and safe to share between threads; built once per form and reused.</p>
  */
 public final class FormDefinition {
@@ -38,6 +45,7 @@ public final class FormDefinition {
     private final Map<String, FormVersionDefinition> versionsByUid;
     private final Map<String, Map<String, Resolution[]>> resolutionsByVersionUid;
     private final Map<String, Resolution[]> resolutionsWithoutPin;
+    private final Set<String> ambiguousPaths;
 
     /** The definition used when no definition of a form is stored: no versions, so no path resolves. */
     static final FormDefinition NO_VERSIONS = new FormDefinition("", List.of());
@@ -63,6 +71,7 @@ public final class FormDefinition {
         }
         this.resolutionsByVersionUid = Map.copyOf(byVersion);
         this.resolutionsWithoutPin = resolveAll(candidates, null);
+        this.ambiguousPaths = ambiguous(candidates);
     }
 
     /**
@@ -83,6 +92,18 @@ public final class FormDefinition {
     /** The form's versions, newest first. */
     public List<FormVersionDefinition> versions() {
         return versions;
+    }
+
+    /**
+     * The data paths that name different fields, or a field and a section, across the form's versions, or that one
+     * version defines twice; values at them resolve as usual and are flagged {@link NormalizationFlag#AMBIGUOUS_PATH}.
+     */
+    public Set<String> ambiguousPaths() {
+        return ambiguousPaths;
+    }
+
+    boolean isAmbiguous(String path) {
+        return ambiguousPaths.contains(path);
     }
 
     /** The version a stored submission names by its uid. */
@@ -123,6 +144,23 @@ public final class FormDefinition {
             .thenComparing(c -> c.field() == null);
         candidatesByPath.values().forEach(list -> list.sort(order));
         return candidatesByPath;
+    }
+
+    private static Set<String> ambiguous(Map<String, List<Candidate>> candidatesByPath) {
+        Set<String> ambiguous = new HashSet<>();
+        for (Map.Entry<String, List<Candidate>> entry : candidatesByPath.entrySet()) {
+            Set<String> identities = new HashSet<>();
+            Set<FormVersionDefinition> versions = new HashSet<>();
+            boolean twiceInAVersion = false;
+            for (Candidate candidate : entry.getValue()) {
+                identities.add(candidate.field() == null ? "section" : "field " + candidate.field().id());
+                twiceInAVersion |= !versions.add(candidate.version());
+            }
+            if (identities.size() > 1 || twiceInAVersion) {
+                ambiguous.add(entry.getKey());
+            }
+        }
+        return Set.copyOf(ambiguous);
     }
 
     /** Each path's resolution for each shape, with this version pinned ({@code null}: none). */

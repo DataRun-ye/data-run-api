@@ -33,6 +33,7 @@ class SubmissionNormalizerRobustnessTest {
         .field("deUidOldNote", "details", "note", "Text")
         .field("deUidDay0001", "details", "old_day", "Date")
         .field("deUidCount01", "items", "count", "Integer")
+        .field("deUidStray01", null, "stray", "Text")
         .build(FORM);
 
     private static final FormVersionDefinition V2 = version("01JV0000000000000000000002", "fvUid000002", 2)
@@ -47,6 +48,8 @@ class SubmissionNormalizerRobustnessTest {
         .field("deUidPartQty", "items.parts", "qty", "IntegerPositive")
         .field("deUidKind001", "items.extra", "kind", "SelectOne")
         .fieldWithoutDataElement("deUidGone001", "details", "note", "Text")
+        // the path "stray" names another field in version 1: ambiguous
+        .field("deUidStray02", null, "stray", "Text")
         .build(FORM);
 
     private static final FormDefinition FORM_DEFINITION = FormDefinition.of(FORM, List.of(V1, V2));

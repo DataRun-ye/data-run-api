@@ -493,6 +493,21 @@ class SubmissionNormalizerTest {
     }
 
     @Test
+    void aValueAtAPathReusedForAnotherFieldIsResolvedAsUsualAndFlagged() {
+        FormVersionDefinition v1 = version("01JV0000000000000000000001", "fvUid000001", 1)
+            .field("deUidReuse01", null, "reused", "Text").field("deUidSame001", null, "same", "Text").build(FORM);
+        FormVersionDefinition v2 = version("01JV0000000000000000000002", "fvUid000002", 2)
+            .field("deUidReuse02", null, "reused", "Text").field("deUidSame001", null, "same", "Text").build(FORM);
+        NormalizedSubmission normalized = SubmissionNormalizer.normalize(
+            new StoredSubmission(SUBMISSION, "fvUid000002", text("{'reused': 'r', 'same': 's'}")),
+            FormDefinition.of(FORM, List.of(v1, v2)));
+
+        assertThat(normalized.values()).extracting(FieldValue::path, FieldValue::fieldId)
+            .containsExactly(tuple("reused", fieldId("deUidReuse02")), tuple("same", fieldId("deUidSame001")));
+        assertThat(normalized.flags()).containsExactly(entry(NormalizationFlag.AMBIGUOUS_PATH, 1));
+    }
+
+    @Test
     void flagsCountWhatTheDataHeld() {
         NormalizedSubmission normalized = normalize("""
             {'loose': 7, 'ghost': {'a': 1, 'b': 2}, 'other': [], 'items': {'count': 1},

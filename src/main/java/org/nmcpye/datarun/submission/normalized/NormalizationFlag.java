@@ -31,6 +31,12 @@ public enum NormalizationFlag {
     DOCUMENT_NOT_PARSED,
     /** Values kept whole that do not parse as their field's value type ({@link FieldValue#issue()}). */
     VALUE_ISSUE,
+    /**
+     * Stored values and containers at a data path that names different fields, or a field and a section, across the
+     * form's versions, or that one version defines twice ({@link FormDefinition#ambiguousPaths()}); each resolved as
+     * usual.
+     */
+    AMBIGUOUS_PATH,
     /** Rows whose id was already taken by an earlier row of the submission, given a derived id instead. */
     DUPLICATE_ID;
 

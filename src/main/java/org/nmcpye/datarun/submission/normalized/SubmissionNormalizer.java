@@ -195,6 +195,9 @@ public final class SubmissionNormalizer {
             }
             StoredShape shape = StoredShape.of(value);
             FormDefinition.Resolution resolution = form.resolve(pinned, path, shape);
+            if (resolution != null && form.isAmbiguous(path)) {
+                flags.merge(NormalizationFlag.AMBIGUOUS_PATH, 1, Integer::sum);
+            }
             boolean walksObject = shape == StoredShape.OBJECT && (resolution == null || resolution.isPlainSection());
             boolean walksRows = resolution != null && resolution.isRepeatingSection()
                 && (shape == StoredShape.ROWS || shape == StoredShape.ANY);
