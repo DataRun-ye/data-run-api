@@ -37,6 +37,9 @@ public class TallCanonicalJdbcRepository {
         + ":submission_creation_time, :start_time, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP"
         + ") "
         + "ON CONFLICT (instance_key, canonical_element_id) DO UPDATE SET "
+        + "  submission_id = EXCLUDED.submission_id, "
+        + "  submission_uid = EXCLUDED.submission_uid, "
+        + "  submission_serial_number = EXCLUDED.submission_serial_number, "
         + "  activity_uid = EXCLUDED.activity_uid, "
         + "  assignment_uid = EXCLUDED.assignment_uid, "
         + "  org_unit_uid = EXCLUDED.org_unit_uid, "
@@ -61,6 +64,8 @@ public class TallCanonicalJdbcRepository {
      * Upsert a mixed batch of TallCanonicalValue entries.
      * <p>
      * - Calculates instance_key = COALESCE(repeat_instance_id, submission_uid) and binds it explicitly.
+     * - A value already stored for the same instance and field definition takes this submission's id, uid and
+     *   serial with its placement and value, so a row that another submission now holds is counted under it.
      * - Sanitizes/truncates value_text and value_json to reasonable sizes to avoid extremely large payloads.
      * - Executes a parameterized batchUpdate using MapSqlParameterSource[] for performance.
      * <p>

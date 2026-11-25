@@ -146,6 +146,45 @@ class EtlOutboxProcessingIT {
     }
 
     /**
+     * Tall keys a repeat row's values by the row's id, so when another submission comes to hold the row (a split moves
+     * rows into a new submission, ids and all), that submission's projection takes the row's values over: they carry
+     * its id, uid and serial, as the row's event does. The row the first submission still holds stays with it.
+     */
+    @Test
+    void aRowAnotherSubmissionNowHoldsIsCountedUnderThatSubmission() {
+        long sourceSerial = fixture.submission("srcSub00001", TEMPLATE, 2);
+        fixture.outbox("srcSub00001", "SAVE");
+        orchestrator.runOnce("test", 10);
+        String taken = "srcSub00001m1";
+        long takerSerial = fixture.submissionWithFormData("takeSub0001", TEMPLATE, """
+            {"main":{"hh_name":"household taken","hh_size":1,"has_nets":"yes","visit_note":"split"},
+             "members":[{"_id":"%s","_index":1,"member_name":"member 2","member_age":21,"sleeps_under_net":"yes"}]}"""
+            .formatted(taken));
+        fixture.outbox("takeSub0001", "SAVE");
+
+        orchestrator.runOnce("test", 10);
+
+        assertThat(tallAttribution(taken)).as("the row the new submission holds: the row and its 3 values")
+            .hasSize(4).containsOnly("takeSub0001 " + EtlFixture.submissionId("takeSub0001") + " " + takerSerial);
+        assertThat(tallAttribution("srcSub00001m0")).as("the row the first submission still holds")
+            .hasSize(4).containsOnly("srcSub00001 " + EtlFixture.submissionId("srcSub00001") + " " + sourceSerial);
+        assertThat(fixture.events("takeSub0001")).extracting(e -> e.get("event_type"))
+            .containsExactlyInAnyOrder("root", "repeat");
+        assertThat(fixture.events("srcSub00001")).extracting(e -> e.get("event_type"))
+            .containsExactlyInAnyOrder("root", "repeat");
+        assertThat(watchdog.cancelled()).isEmpty();
+    }
+
+    /** The submission each tall value of one instance is counted under: "uid id serial". */
+    private List<String> tallAttribution(String instanceKey) {
+        return jdbc.query("""
+                SELECT submission_uid, submission_id, submission_serial_number FROM analytics.tall_canonical
+                WHERE instance_key = :key""",
+            Map.of("key", instanceKey),
+            (result, n) -> result.getString(1) + " " + result.getString(2) + " " + result.getLong(3));
+    }
+
+    /**
      * A database error is recorded on the outbox row: failed, with its attempt, the database's own error line
      * (not the statement and its values) and a retry time one retry delay away.
      */
