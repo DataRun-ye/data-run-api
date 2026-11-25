@@ -18,6 +18,7 @@ import org.nmcpye.datarun.submission.normalized.StoredSubmission;
 import org.nmcpye.datarun.submission.normalized.SubmissionNormalizer;
 import org.nmcpye.datarun.submission.normalized.UnmappedValue;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
@@ -96,7 +98,7 @@ class FormDefinitionJdbcReaderIT {
 
     @Test
     void everyVersionIsReadWithDataPathsAndDataElementIds() {
-        FormDefinition form = reader.read(FORM_UID).orElseThrow();
+        FormDefinition form = reader.read(FORM_UID).orElseThrow().definition();
 
         assertThat(form.id()).isEqualTo(FORM_ID);
         assertThat(form.versions()).extracting(FormVersionDefinition::number).containsExactly(2, 1);
@@ -116,7 +118,7 @@ class FormDefinitionJdbcReaderIT {
 
     @Test
     void aStoredSubmissionNormalizesAgainstTheReadDefinition() throws Exception {
-        FormDefinition form = reader.read(FORM_UID).orElseThrow();
+        FormDefinition form = reader.read(FORM_UID).orElseThrow().definition();
 
         NormalizedSubmission normalized = SubmissionNormalizer.normalize(new StoredSubmission(
             "01JS1SB0000000000000000001", "s1FormVer02", json.writeValueAsString(Map.of(
@@ -149,6 +151,53 @@ class FormDefinitionJdbcReaderIT {
         assertThat(reader.read(Set.of(FORM_UID, "s1NoSuchFrm"))).containsOnlyKeys(FORM_UID);
         assertThat(reader.read("s1NoSuchFrm")).isEmpty();
         assertThat(reader.read(Set.of())).isEmpty();
+        assertThat(reader.changeTokens(Set.of("s1NoSuchFrm"))).isEmpty();
+    }
+
+    @Test
+    void theReaderNeverWrites() {
+        // in a read-only transaction PostgreSQL refuses every write, so a read that succeeds there wrote nothing
+        TransactionTemplate readOnly = new TransactionTemplate(transactionManager);
+        readOnly.setReadOnly(true);
+
+        String token = readOnly.execute(status -> reader.read(FORM_UID).orElseThrow().changeToken());
+        Map<String, String> tokens = readOnly.execute(status -> reader.changeTokens(Set.of(FORM_UID)));
+        assertThat(token).isNotBlank();
+        assertThat(tokens).containsOnlyKeys(FORM_UID);
+        assertThatThrownBy(() -> readOnly.executeWithoutResult(status -> jdbc.update(
+            "UPDATE data_element SET name = name WHERE uid = :uid", Map.of("uid", "s1DeTitle01"))))
+            .as("the transaction really is read-only").isInstanceOf(DataAccessException.class);
+    }
+
+    @Test
+    void theChangeTokenMovesWhenAVersionOrADataElementChanges() {
+        String token = reader.read(FORM_UID).orElseThrow().changeToken();
+        assertThat(reader.changeTokens(Set.of(FORM_UID))).containsEntry(FORM_UID, token);
+
+        inTransaction(() -> version("01JS1FV0000000000000000003", "s1FormVer03", 3, "[]",
+            "[{\"id\": \"s1DeTitle01\", \"name\": \"s1_title\", \"path\": \"s1DeTitle01\", \"type\": \"Text\"}]"));
+        String added = currentToken();
+        inTransaction(() -> jdbc.update("UPDATE data_template_version SET release_notes = 'rewritten' WHERE id = :id",
+            Map.of("id", "01JS1FV0000000000000000003")));
+        String rewritten = currentToken();
+        inTransaction(() -> jdbc.update("DELETE FROM data_template_version WHERE id = :id",
+            Map.of("id", "01JS1FV0000000000000000003")));
+        String deleted = currentToken();
+        inTransaction(() -> jdbc.update("UPDATE data_element SET short_name = 'renamed' WHERE uid = :uid",
+            Map.of("uid", "s1DeTitle01")));
+        String elementChanged = currentToken();
+
+        assertThat(List.of(token, added, rewritten, elementChanged)).doesNotHaveDuplicates();
+        assertThat(deleted).as("back to the same versions and elements").isEqualTo(token);
+        assertThat(reader.read(FORM_UID).orElseThrow().changeToken()).isEqualTo(elementChanged);
+    }
+
+    private String currentToken() {
+        return reader.changeTokens(Set.of(FORM_UID)).get(FORM_UID);
+    }
+
+    private void inTransaction(Runnable work) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> work.run());
     }
 
     private void dataElement(String uid, String name, String type) {
