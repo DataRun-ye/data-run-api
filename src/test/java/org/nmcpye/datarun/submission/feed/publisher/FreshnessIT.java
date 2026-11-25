@@ -133,6 +133,32 @@ class FreshnessIT {
         verify(heartbeat).pollSucceeded();
     }
 
+    /**
+     * Freshness counts the feed's own state only: a change tall or events fail on, and even give up on, is published by
+     * the feed, so it is neither in the feed's backlog nor dead, and the heartbeat goes on.
+     */
+    @Test
+    void aTallFailureLeavesNoBacklogNothingDeadAndTheHeartbeatSent() {
+        Ids submission = fixture.create(document("tall fails", 1, row("r1", "a")));
+        fixture.failLegacyWrites("tall_canonical");
+
+        runner.scheduledRun();
+
+        assertThat(fixture.outboxStatuses(submission)).containsExactly("failed");
+        assertThat(fixture.record(submission)).containsEntry("version", 0L);
+        assertThat(freshness()).containsEntry("backlog", 0L).containsEntry("dead", 0L)
+            .containsEntry("has_oldest_unpublished", false);
+        verify(heartbeat).pollSucceeded();
+
+        clearInvocations(heartbeat);
+        fixture.execute("UPDATE outbox SET status = 'dead' WHERE submission_id = :id", Map.of("id", submission.id()));
+        runner.scheduledRun();
+
+        assertThat(freshness()).as("a dead outbox row whose version the feed holds").containsEntry("backlog", 0L)
+            .containsEntry("dead", 0L);
+        verify(heartbeat).pollSucceeded();
+    }
+
     @Test
     void anOutboxChangeOlderThanTheTargetStopsTheHeartbeat() {
         Ids waiting = fixture.create(document("waiting", 1));

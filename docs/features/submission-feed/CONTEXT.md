@@ -115,14 +115,15 @@ The one-record stream `freshness`: how far the feed has got, and what waits.
 _Avoid_: status
 
 **Backlog**:
-Outbox changes the publisher has not processed yet.
+Recorded changes, still being processed, whose version the feed does not hold yet. It counts the feed's own state only,
+whatever DataRun's other outputs did with a change.
 
 **Pending**:
 A change whose feed part failed and waits for a retry.
 
 **Dead**:
-A change given up on (an outbox row marked dead, or a pending change past the attempt cap), kept with its reason code
-until a fix lets reconcile publish its submission.
+A change of the feed's given up on: a pending change past the attempt cap, kept with its reason code until a fix lets
+reconcile publish its submission.
 
 **Heartbeat**:
 The signal the publisher sends only while the feed is within its freshness target and nothing is dead; its absence

@@ -122,9 +122,8 @@ class IntegrityCheck12IT {
             assertThat(fixture.record(submission)).as(submission.id()).isNotEmpty();
         }
         PUBLICATION_LINES.forEach(line -> assertThat(check.line(line)).as(line).isZero());
-        assertThat(check.line("12h")).as("every dead change: the pending ones past the cap and dead outbox rows")
-            .isEqualTo(fixture.count("SELECT count(*) FROM feed_ops.pending WHERE dead_at IS NOT NULL", Map.of())
-                + fixture.count("SELECT count(*) FROM outbox WHERE status = 'dead'", Map.of()));
+        assertThat(check.line("12h")).as("the feed's dead changes: its pending changes past the cap")
+            .isEqualTo(fixture.count("SELECT count(*) FROM feed_ops.pending WHERE dead_at IS NOT NULL", Map.of()));
         assertThat(check.line("12i")).as("the backlog, for reference").isZero();
         assertThat(check.scoped().get("12j|PATH_NOT_IN_FORM")).as("unmapped values, for reference").isPositive();
         assertThat(check.line("12k")).isZero();
@@ -192,7 +191,10 @@ class IntegrityCheck12IT {
         assertThat(fixture.pending(unplaced).get("dead_at")).isNotNull();
         assertThat(after.scoped().getOrDefault("12h|PLACEMENT_UNRESOLVED", 0L)
             - before.scoped().getOrDefault("12h|PLACEMENT_UNRESOLVED", 0L)).isEqualTo(1);
-        assertThat(after.scoped().get("12h|OUTBOX_DEAD")).isGreaterThanOrEqualTo(1);
+        assertThat(after.scoped()).as("an outbox row the runtime gave up on is not the feed's dead change")
+            .doesNotContainKey("12h|OUTBOX_DEAD");
+        assertThat(after.line("12i")).as("but its version, which the feed lacks, is in the backlog")
+            .isGreaterThanOrEqualTo(1);
         assertThat(after.line("12g")).as("a dead change is no longer pending").isZero();
     }
 

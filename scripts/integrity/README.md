@@ -368,10 +368,11 @@ every line reads -1.
   then the newest version's, a field before a section (the file states the
   rule in full).
 - **12g** Pending changes older than the freshness target (two minutes).
-- **12h** Dead changes: pending changes past the attempt cap, by reason code,
-  and dead outbox rows (`OUTBOX_DEAD`), as `freshness.dead` counts them.
-  `--detail` splits them.
-- **12i** Reference: the backlog, outbox rows not processed yet.
+- **12h** The feed's dead changes: pending changes past the attempt cap, by
+  reason code, as `freshness.dead` counts them. `--detail` splits them.
+- **12i** Reference: the backlog, as `freshness.backlog` counts it: open outbox
+  changes (pending, failed or dead) whose version the feed does not hold. A
+  change tall or events failed on, but the feed published, is not in it.
 - **12j** Reference: the normalizer's flags in published records, by flag
   (`PATH_NOT_IN_FORM` and the others). `--detail` splits them.
 - **12k** Reference: republish marks waiting.

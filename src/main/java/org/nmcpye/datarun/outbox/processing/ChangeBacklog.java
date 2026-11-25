@@ -4,32 +4,34 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 
 /**
- * What waits in the change queue, as the outputs report it: changes recorded but not processed yet, and changes given
- * up on. The queue is the outbox today; this query is the one place an output reads it, so a change of queue touches
- * only this class. It reads in the caller's transaction, through the template it is given.
+ * The changes the queue still holds open, as references an output compares with what it holds: each change's
+ * submission, the version it made and when it was recorded. Open means not completed by the runtime: waiting for its
+ * first try, failed and waiting to be tried again, or given up on. An output counts the open changes whose version it
+ * lacks; what the runtime's own outputs did with a change is no part of that count. The queue is the outbox today; this
+ * query is the one place an output reads it, so a change of queue touches only this class. It reads in the caller's
+ * transaction, through the template it is given.
  */
 @Component
 public class ChangeBacklog {
 
-    /** The outbox's created_at is the writer's transaction time in UTC. */
-    private static final String READ = """
-        SELECT count(*) FILTER (WHERE o.status IN ('pending', 'failed')) AS waiting,
-               (min(o.created_at) FILTER (WHERE o.status IN ('pending', 'failed'))) AT TIME ZONE 'UTC' AS oldest,
-               count(*) FILTER (WHERE o.status = 'dead') AS dead
+    /** The outbox's created_at is the writer's transaction time in UTC; a row written before the journal has no version. */
+    private static final String OPEN = """
+        SELECT o.submission_id, o.submission_version, o.created_at AT TIME ZONE 'UTC' AS recorded_at
         FROM outbox o
-        WHERE o.status IN ('pending', 'failed', 'dead')""";
+        WHERE o.status IN ('pending', 'failed', 'dead') AND o.submission_version IS NOT NULL""";
 
     /**
-     * The queue at one moment.
+     * One open change.
      *
-     * @param waiting  changes recorded but not processed yet
-     * @param oldest   when the oldest of them was recorded, or {@code null} when none waits
-     * @param givenUp  changes the runtime gave up on (dead)
+     * @param submissionId the changed submission's id
+     * @param version      the version the change made
+     * @param recordedAt   when the change was recorded
      */
-    public record Reading(long waiting, OffsetDateTime oldest, long givenUp) {
+    public record OpenChange(String submissionId, long version, OffsetDateTime recordedAt) {
     }
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -38,8 +40,9 @@ public class ChangeBacklog {
         this.jdbc = jdbc;
     }
 
-    public Reading read() {
-        return jdbc.queryForObject(READ, Map.of(), (rs, n) -> new Reading(rs.getLong("waiting"),
-            rs.getObject("oldest", OffsetDateTime.class), rs.getLong("dead")));
+    /** Every change the queue holds open. */
+    public List<OpenChange> openChanges() {
+        return jdbc.query(OPEN, Map.of(), (rs, n) -> new OpenChange(rs.getString("submission_id"),
+            rs.getLong("submission_version"), rs.getObject("recorded_at", OffsetDateTime.class)));
     }
 }

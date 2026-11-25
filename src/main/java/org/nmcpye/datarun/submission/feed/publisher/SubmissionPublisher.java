@@ -62,8 +62,9 @@ import java.util.function.IntSupplier;
  *
  * <p><b>Freshness:</b> at each poll the runtime asks {@link #withinFreshnessTarget}, which writes what waits into
  * {@code feed.freshness} (backlog, pending and dead changes, the oldest of each) and says whether the feed is within
- * {@code datarun.feed.freshness-target}; the runtime's heartbeat stops while it is not (contract 12). The backlog comes
- * from the change queue's own query ({@link ChangeBacklog}).</p>
+ * {@code datarun.feed.freshness-target}; the runtime's heartbeat stops while it is not (contract 12). Freshness counts
+ * only the feed's own state: the backlog is the change queue's open changes ({@link ChangeBacklog}) whose version the
+ * feed lacks, and its dead changes are its own.</p>
  *
  * <p>It reads stored submissions only through their read seam ({@link StoredSubmissionJdbcReader}) and the change
  * queue only through {@link ChangeBacklog}; the SQL here and in this package names the feed's own tables only.</p>
@@ -224,13 +225,13 @@ public class SubmissionPublisher implements ChangeOutput, DeferredWork {
         }
         Freshness.Reading reading = afterBacklog.execute(status -> {
             FeedLock.take(jdbc.getJdbcOperations());
-            return freshness.refresh(jdbc, backlog.read());
+            return freshness.refresh(jdbc, backlog.openChanges());
         });
         boolean within = reading != null && reading.withinTarget(properties.getFreshnessTarget());
         Boolean before = withinTarget;
         withinTarget = within;
         if (!within && !Boolean.FALSE.equals(before) && reading != null) {
-            log.warn("The feed is behind its freshness target ({}): {} outbox changes waiting, the oldest {} s; {} "
+            log.warn("The feed is behind its freshness target ({}): {} changes not published yet, the oldest {} s; {} "
                     + "pending changes, the oldest {} s; {} dead. The heartbeat stops until it is within it again",
                 properties.getFreshnessTarget(), reading.backlog(), seconds(reading.oldestBacklogAge()),
                 reading.pending(), seconds(reading.oldestPendingAge()), reading.dead());

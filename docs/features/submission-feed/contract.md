@@ -167,11 +167,11 @@ One record, key `feed` = `submissions`, read with a full refresh at every sync.
 | `last_position` | bigint (number) | yes | The highest position published; null until the first record |
 | `last_published_at` | timestamptz (string) | yes | When the publisher last wrote a record; null until then |
 | `last_changed_at` | timestamptz | yes | The newest `changed_at` published ("data as of", for dashboards); null until the first record |
-| `backlog` | bigint | no | Changes recorded but not yet processed by the publisher; 0 when none |
-| `oldest_unpublished_at` | timestamptz | yes | When the oldest change recorded but not yet processed by the publisher was recorded; null when none |
+| `backlog` | bigint | no | Changes recorded and still being processed whose version the feed does not hold yet; 0 when none. Changes made while the feed was off count in `unpublished` at the next reconcile |
+| `oldest_unpublished_at` | timestamptz | yes | When the oldest change in `backlog` was recorded; null when none |
 | `pending` | bigint | no | Changes whose feed part failed and wait for a retry; 0 when none |
 | `oldest_pending_at` | timestamptz | yes | When the oldest pending change first failed; null when none |
-| `dead` | bigint | no | Changes given up on: outbox rows marked dead, and pending changes past the attempt cap, each kept with its reason code; 0 when none. Reconcile still publishes their submissions once the cause is fixed |
+| `dead` | bigint | no | The feed's own changes given up on: pending changes past the attempt cap, each kept with its reason code; 0 when none. Reconcile still publishes their submissions once the cause is fixed |
 | `unpublished` | bigint | yes | Submissions whose published version differed from the journal's head at the last reconcile; null until the first reconcile |
 | `last_reconciled_at` | timestamptz | yes | When reconcile last ran; null until then |
 | `first_publication_completed_at` | timestamptz | yes | Null until the first publication has written every submission; models built earlier are partial |
@@ -261,9 +261,9 @@ Normalization flag counts are not in `freshness`; they are server monitoring (§
 
 - **Target:** a committed change published within 2 minutes at p95 during a campaign peak. Basis: the ETL's lag is
   28 s at p95, and the publisher adds 1.4–5.7 ms of CPU per change.
-- **Alerting:** the heartbeat is sent only while the oldest unpublished outbox change and the oldest pending change are
-  both younger than the target, and nothing is dead. A stall, a failure that recurs on every retry, or a change past
-  the attempt cap stops it, and GlitchTip alerts.
+- **Alerting:** the heartbeat is sent only while the oldest change in `backlog` and the oldest pending change are both
+  younger than the target, and the feed has nothing dead. A stall, a failure that recurs on every retry, or a change
+  past the attempt cap stops it, and GlitchTip alerts.
 - **End to end** adds Airbyte's cadence and downstream's model runs, which downstream sets and shows. Only a need under
   about 5 minutes would change the design (engineering default, open to the owner).
 
@@ -396,3 +396,7 @@ crosswalk; the first-time values of §14, counted one by one.
   dump may be their only archive.
 - **For downstream:** the gap measurement above; schema `feed` added at phase B, with the first sync as §13 says; the
   Airbyte role's name, for the grant.
+
+## Revisions
+
+- 2026-11-26: freshness counts only the feed's own state.

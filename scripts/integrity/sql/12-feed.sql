@@ -9,10 +9,10 @@
 --   12d live row records of a deleted submission's record; 12e positions used twice, across both streams;
 --   12f records at their head's version whose live row records differ in number from the head's rows;
 --   12g pending changes older than the freshness target (two minutes);
---   12h dead changes, by reason code: pending changes past the cap, and dead outbox rows (scope OUTBOX_DEAD), as
---       freshness.dead counts them.
--- For reference only: 12i the backlog (outbox rows not processed yet), 12j the normalizer's flags in published records,
--- by flag, and 12k republish marks waiting.
+--   12h the feed's dead changes (pending changes past the cap), by reason code, as freshness.dead counts them.
+-- For reference only: 12i the backlog (open outbox changes whose version the feed lacks, as freshness.backlog counts
+-- them), 12j the normalizer's flags in published records, by flag, and 12k republish marks waiting. Freshness, and so
+-- these lines, count the feed's own state only: what tall and events did with a change does not count.
 --
 -- 12f finds a head's rows the way the submission normalizer does, from the stored form definitions, apart from its
 -- code: walking the document from its root, an object is walked when no version defines its path or when its path
@@ -196,14 +196,14 @@ pending AS (
     FROM feed_ops.pending p
 ),
 totals AS (
-    SELECT (SELECT count(*) FROM outbox o WHERE o.status IN ('pending', 'failed')) AS backlog,
+    SELECT (SELECT count(*) FROM outbox o
+            LEFT JOIN feed.submission f ON f.id = o.submission_id
+            WHERE o.status IN ('pending', 'failed', 'dead') AND o.submission_version IS NOT NULL
+              AND (f.version IS NULL OR f.version < o.submission_version)) AS backlog,
            (SELECT count(*) FROM feed_ops.republish) AS marks
 ),
 dead AS (
     SELECT p.reason AS scope, count(*) AS n FROM feed_ops.pending p WHERE p.dead_at IS NOT NULL GROUP BY p.reason
-    UNION ALL
-    SELECT 'OUTBOX_DEAD', count(*) FROM outbox o WHERE o.status IN ('pending', 'failed', 'dead') AND o.status = 'dead'
-    HAVING count(*) > 0
 ),
 flags AS (
     SELECT f.key AS scope, sum(f.value::bigint) AS n
@@ -222,14 +222,14 @@ CROSS JOIN LATERAL (VALUES
     ('12e', p.twice, 'positions used twice, across both streams'),
     ('12f', r.n, 'records at their head''s version whose live rows differ in number from the head''s rows'),
     ('12g', q.old, 'pending changes older than the freshness target (2 minutes)'),
-    ('12i', t.backlog, 'backlog: outbox rows not processed yet (reference)'),
+    ('12i', t.backlog, 'backlog: open changes whose version the feed lacks (reference)'),
     ('12k', t.marks, 'republish marks waiting (reference)')
 ) AS kv(key, n, label)
 UNION ALL
-SELECT '12h', d.n, 'dead changes: pending changes past the attempt cap, by reason code, and dead outbox rows', d.scope
+SELECT '12h', d.n, 'the feed''s dead changes: pending changes past the attempt cap, by reason code', d.scope
 FROM dead d
 UNION ALL
-SELECT '12h', 0, 'dead changes: pending changes past the attempt cap, by reason code, and dead outbox rows', ''
+SELECT '12h', 0, 'the feed''s dead changes: pending changes past the attempt cap, by reason code', ''
 WHERE NOT EXISTS (SELECT 1 FROM dead)
 UNION ALL
 SELECT '12j', f.n, 'normalization flags in published records, by flag (reference)', f.scope
@@ -247,8 +247,8 @@ FROM (VALUES
     ('12e', -1, 'positions used twice, across both streams'),
     ('12f', -1, 'records at their head''s version whose live rows differ in number from the head''s rows'),
     ('12g', -1, 'pending changes older than the freshness target (2 minutes)'),
-    ('12h', -1, 'dead changes: pending changes past the attempt cap, by reason code, and dead outbox rows'),
-    ('12i', -1, 'backlog: outbox rows not processed yet (reference)'),
+    ('12h', -1, 'the feed''s dead changes: pending changes past the attempt cap, by reason code'),
+    ('12i', -1, 'backlog: open changes whose version the feed lacks (reference)'),
     ('12j', -1, 'normalization flags in published records, by flag (reference)'),
     ('12k', -1, 'republish marks waiting (reference)')
 ) AS kv(key, n, label);

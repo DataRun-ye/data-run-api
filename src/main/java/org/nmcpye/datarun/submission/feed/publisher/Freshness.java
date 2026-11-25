@@ -6,18 +6,24 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.sql.Types;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * The feed's freshness record ({@code feed.freshness}, key {@code submissions}; contract 7), written in the caller's
  * transaction, which holds the feed's lock. Each publication moves its last position, last publication and newest
- * change forward ({@link FeedWriter}); this class writes the rest.
+ * change forward ({@link FeedWriter}); this class writes the rest. Freshness counts only the feed's own state: its
+ * backlog is the open changes whose version the feed lacks, whatever the runtime's other outputs did with them, and
+ * its dead changes are its own.
  */
 final class Freshness {
 
     /**
-     * What waits, at each poll: the changes recorded but not processed yet and the oldest of them, and the changes
-     * given up on, read from the change queue ({@link ChangeBacklog}), with the pending changes and the oldest one's
-     * first failure, and the pending changes past the cap, from the feed's own table.
+     * What waits, at each poll: the backlog and its oldest change, given; the pending changes, the oldest one's first
+     * failure, and the pending changes past the cap (the feed's dead), from the feed's own table.
      */
     private static final String REFRESH = """
         WITH pending_counts AS (
@@ -28,7 +34,7 @@ final class Freshness {
         )
         INSERT INTO feed.freshness AS f (feed, backlog, oldest_unpublished_at, pending, oldest_pending_at, dead,
                                          checked_at)
-        SELECT 'submissions', :waiting, :oldestWaiting, p.pending, p.oldest, :givenUp + p.dead, now()
+        SELECT 'submissions', :backlog, :oldestUnpublished, p.pending, p.oldest, p.dead, now()
         FROM pending_counts p
         ON CONFLICT (feed) DO UPDATE SET
             backlog = excluded.backlog,
@@ -43,17 +49,17 @@ final class Freshness {
     /**
      * What the feed reported at a poll.
      *
-     * @param backlog            changes recorded but not processed yet
+     * @param backlog            open changes whose version the feed does not hold yet
      * @param oldestBacklogAge   how long ago the oldest of them was recorded, in seconds, or {@code null} when none
      * @param pending            pending changes
      * @param oldestPendingAge   how long ago the oldest pending change first failed, in seconds, or {@code null}
-     * @param dead               changes given up on: by the runtime, and pending changes past the cap
+     * @param dead               the feed's changes given up on: pending changes past the cap
      */
     record Reading(long backlog, Double oldestBacklogAge, long pending, Double oldestPendingAge, long dead) {
 
         /**
-         * Whether the feed is within its freshness target (contract 12): the oldest unpublished outbox change and the
-         * oldest pending change are both younger than the target, and nothing is dead.
+         * Whether the feed is within its freshness target (contract 12): the oldest change of its backlog and its oldest
+         * pending change are both younger than the target, and it has nothing dead.
          */
         boolean withinTarget(Duration target) {
             double seconds = target.toMillis() / 1000.0;
@@ -63,12 +69,39 @@ final class Freshness {
         }
     }
 
-    /** Writes what waits into the freshness record, also when nothing does ({@code checked_at}); what it wrote. */
-    Reading refresh(NamedParameterJdbcTemplate jdbc, ChangeBacklog.Reading backlog) {
+    private static final String HELD = "SELECT id, version FROM feed.submission WHERE id IN (:ids)";
+
+    /** Open changes compared with the feed's versions at a time, so a burst never makes one huge statement. */
+    private static final int CHUNK = 5000;
+
+    /**
+     * Writes what waits into the freshness record, also when nothing does ({@code checked_at}); what it wrote. The
+     * backlog is the open changes (from the change queue's seam) whose version the feed does not hold yet.
+     */
+    Reading refresh(NamedParameterJdbcTemplate jdbc, List<ChangeBacklog.OpenChange> open) {
+        long backlog = 0;
+        OffsetDateTime oldestUnpublished = null;
+        for (int from = 0; from < open.size(); from += CHUNK) {
+            List<ChangeBacklog.OpenChange> chunk = open.subList(from, Math.min(open.size(), from + CHUNK));
+            List<String> ids = new ArrayList<>(chunk.stream().map(ChangeBacklog.OpenChange::submissionId).distinct()
+                .toList());
+            Map<String, Long> held = new HashMap<>();
+            jdbc.query(HELD, Map.of("ids", ids), rs -> {
+                held.put(rs.getString("id"), rs.getLong("version"));
+            });
+            for (ChangeBacklog.OpenChange change : chunk) {
+                Long version = held.get(change.submissionId());
+                if (version == null || version < change.version()) {
+                    backlog++;
+                    if (oldestUnpublished == null || change.recordedAt().isBefore(oldestUnpublished)) {
+                        oldestUnpublished = change.recordedAt();
+                    }
+                }
+            }
+        }
         return jdbc.queryForObject(REFRESH, new MapSqlParameterSource()
-            .addValue("waiting", backlog.waiting())
-            .addValue("oldestWaiting", backlog.oldest(), Types.TIMESTAMP_WITH_TIMEZONE)
-            .addValue("givenUp", backlog.givenUp()), (rs, n) -> new Reading(
+            .addValue("backlog", backlog)
+            .addValue("oldestUnpublished", oldestUnpublished, Types.TIMESTAMP_WITH_TIMEZONE), (rs, n) -> new Reading(
             rs.getLong("backlog"),
             rs.getObject("backlog_age") == null ? null : rs.getDouble("backlog_age"),
             rs.getLong("pending"),
